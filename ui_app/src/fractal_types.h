@@ -1,0 +1,98 @@
+#pragma once
+
+#include <cmath>
+#include <cstdint>
+
+struct Float2 {
+    float x;
+    float y;
+};
+
+struct Int2 {
+    int x;
+    int y;
+};
+
+enum class PolyKind : int {
+    z3_minus_1 = 0,
+    z4_minus_1 = 1,
+    custom = 2,
+};
+
+enum class ColoringMode : int {
+    root_basin = 0,
+    iteration_count = 1,
+    smooth_escape = 2,
+    joy_basins = 3,
+};
+
+enum class FractalType : int {
+    newton = 0,
+    nova = 1,
+    mandelbrot = 2,
+    julia = 3,
+    burning_ship = 4,
+    multibrot = 5,
+    phoenix = 6,
+};
+
+enum class CameraBehavior : int {
+    manual = 0,
+    complexity = 1,
+    orbit = 2,
+    entropy = 3,
+    off = 4,
+};
+
+struct ViewState {
+    Float2 center{0.0f, 0.0f};
+    float zoom{1.0f};
+    float rotation_degrees{0.0f};
+    bool auto_refresh{true};
+
+    // High-precision view state used by the renderer and input updates.
+    // The float fields above remain as the schema/UI binding surface.
+    double center_hp_x{0.0};
+    double center_hp_y{0.0};
+    double log2_zoom{0.0};
+
+    FractalType fractal_type{FractalType::newton};
+
+    CameraBehavior camera_behavior{CameraBehavior::complexity};
+    bool auto_dive{true};
+    float dive_speed{1.0f};
+};
+
+struct KernelParams {
+    int max_iter{500};
+    float epsilon{1e-6f};
+    float nova_alpha{0.50f};
+    float phoenix_p_real{-0.50f};
+    float phoenix_p_imag{0.0f};
+    PolyKind poly_kind{PolyKind::z3_minus_1};
+    float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
+    int multibrot_power{3};
+    ColoringMode coloring_mode{ColoringMode::root_basin};
+    float exposure{1.0f};
+};
+
+struct RenderSettings {
+    Int2 resolution{1024, 768};
+    int block_size{256};
+    int device_id{0};
+    bool benchmark{false};
+};
+
+struct RenderStats {
+    float last_render_ms{0.0f};
+    int last_iters_avg{0};
+    int last_device_id{0};
+};
+
+bool RenderFractalCUDA(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    uint32_t* outRGBA,
+    RenderStats* outStats,
+    const char** outError);

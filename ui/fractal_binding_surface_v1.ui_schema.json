@@ -1,0 +1,615 @@
+{
+  "schema_version": "1",
+  "namespace": "fractal",
+  "panels": [
+    {
+      "id": "view",
+      "label": "View",
+      "order": 10,
+      "controls": [
+        {
+          "id": "center_x",
+          "type": "drag_float",
+          "label": "Center X",
+          "value_type": "float",
+          "min": -2.0,
+          "max": 2.0,
+          "step": 0.001,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.center.x"
+          }
+        },
+        {
+          "id": "center_y",
+          "type": "drag_float",
+          "label": "Center Y",
+          "value_type": "float",
+          "min": -2.0,
+          "max": 2.0,
+          "step": 0.001,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.center.y"
+          }
+        },
+        {
+          "id": "zoom",
+          "type": "drag_float",
+          "label": "Zoom",
+          "value_type": "float",
+          "min": 0.1,
+          "max": 1000.0,
+          "step": 0.01,
+          "default": 1.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.zoom"
+          }
+        },
+        {
+          "id": "camera_behavior",
+          "type": "combo",
+          "label": "Camera Behavior",
+          "value_type": "enum",
+          "default": "complexity",
+          "options": [
+            {
+              "id": "manual",
+              "label": "Manual Pan"
+            },
+            {
+              "id": "complexity",
+              "label": "Complexity Gradient"
+            },
+            {
+              "id": "orbit",
+              "label": "Orbit Attractor"
+            },
+            {
+              "id": "entropy",
+              "label": "Entropy Seeker"
+            },
+            {
+              "id": "off",
+              "label": "Off"
+            }
+          ],
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.camera_behavior"
+          }
+        },
+        {
+          "id": "auto_dive",
+          "type": "checkbox",
+          "label": "Auto-Dive",
+          "value_type": "bool",
+          "default": true,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.auto_dive"
+          }
+        },
+        {
+          "id": "dive_speed",
+          "type": "slider_float",
+          "label": "Dive Speed",
+          "value_type": "float",
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.01,
+          "default": 1.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.dive_speed"
+          },
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.auto_dive",
+            "value": true
+          }
+        },
+        {
+          "id": "rotation_deg",
+          "type": "drag_float",
+          "label": "Rotation (deg)",
+          "help": "Optional: engine may ignore",
+          "value_type": "float",
+          "min": -180.0,
+          "max": 180.0,
+          "step": 0.1,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.rotation"
+          }
+        },
+        {
+          "id": "auto_refresh",
+          "type": "checkbox",
+          "label": "Auto-refresh",
+          "value_type": "bool",
+          "default": true,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.auto_refresh"
+          }
+        },
+        {
+          "id": "render_once",
+          "type": "button",
+          "label": "Render Once",
+          "binding": {
+            "kind": "action",
+            "path": "fractal.actions.render_once"
+          }
+        },
+        {
+          "id": "reset_view",
+          "type": "button",
+          "label": "Reset View",
+          "binding": {
+            "kind": "action",
+            "path": "fractal.actions.reset_view"
+          }
+        },
+        {
+          "id": "reset_all",
+          "type": "button",
+          "label": "Reset All",
+          "order": 901,
+          "binding": {
+            "kind": "action",
+            "path": "fractal.actions.reset_all"
+          }
+        },
+        {
+          "id": "fractal_type",
+          "type": "combo",
+          "label": "Fractal Type",
+          "value_type": "enum",
+          "order": 12,
+          "default": "newton",
+          "options": [
+            {
+              "id": "newton",
+              "label": "Newton"
+            },
+            {
+              "id": "nova",
+              "label": "Nova"
+            },
+            {
+              "id": "mandelbrot",
+              "label": "Mandelbrot"
+            },
+            {
+              "id": "julia",
+              "label": "Julia"
+            },
+            {
+              "id": "burning_ship",
+              "label": "Burning Ship"
+            },
+            {
+              "id": "multibrot",
+              "label": "Multibrot"
+            },
+            {
+              "id": "phoenix",
+              "label": "Phoenix"
+            }
+          ],
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.fractal_type"
+          },
+          "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
+        },
+        {
+          "id": "multibrot_power",
+          "type": "slider_int",
+          "label": "Multibrot Power",
+          "value_type": "int",
+          "min": 2,
+          "max": 8,
+          "step": 1,
+          "order": 13,
+          "default": 3,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.multibrot_power"
+          },
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.fractal_type",
+            "value": "multibrot"
+          },
+          "help": "Exponent p in z_{n+1} = z_n^p + c (used only when Fractal Type = Multibrot)."
+        }
+      ]
+    },
+    {
+      "id": "fractal",
+      "label": "Fractal",
+      "order": 20,
+      "controls": [
+        {
+          "id": "max_iter",
+          "type": "slider_int",
+          "label": "Max Iterations",
+          "value_type": "int",
+          "min": 1,
+          "max": 5000,
+          "step": 1,
+          "default": 500,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.max_iter"
+          }
+        },
+        {
+          "id": "epsilon",
+          "type": "drag_float",
+          "label": "Epsilon",
+          "help": "Convergence threshold",
+          "value_type": "float",
+          "min": 1e-12,
+          "max": 0.01,
+          "step": 1e-06,
+          "default": 1e-06,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.epsilon"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          }
+        },
+        {
+          "id": "nova_alpha",
+          "type": "slider_float",
+          "label": "Nova Alpha",
+          "help": "Relaxation factor α in z_{n+1} = z_n - α f(z)/f'(z) + c",
+          "value_type": "float",
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01,
+          "default": 0.5,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.nova_alpha"
+          },
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.fractal_type",
+            "value": "nova"
+          }
+        },
+        {
+          "id": "phoenix_p_real",
+          "type": "drag_float",
+          "label": "Phoenix p (real)",
+          "help": "Memory term p in z_{n+1} = z_n^2 + c + p z_{n-1}",
+          "value_type": "float",
+          "min": -1.0,
+          "max": 1.0,
+          "step": 0.01,
+          "default": -0.5,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.phoenix_p_real"
+          },
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.fractal_type",
+            "value": "phoenix"
+          }
+        },
+        {
+          "id": "phoenix_p_imag",
+          "type": "drag_float",
+          "label": "Phoenix p (imag)",
+          "value_type": "float",
+          "min": -1.0,
+          "max": 1.0,
+          "step": 0.01,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.phoenix_p_imag"
+          },
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.fractal_type",
+            "value": "phoenix"
+          }
+        },
+        {
+          "id": "poly_kind",
+          "type": "combo",
+          "label": "Polynomial",
+          "value_type": "enum",
+          "default": "z3_minus_1",
+          "options": [
+            {
+              "id": "z3_minus_1",
+              "label": "z^3 - 1"
+            },
+            {
+              "id": "z4_minus_1",
+              "label": "z^4 - 1"
+            },
+            {
+              "id": "custom",
+              "label": "Custom"
+            }
+          ],
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.poly_kind"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          }
+        },
+        {
+          "id": "poly_c0",
+          "type": "drag_float",
+          "label": "Coeff c0 (z^0)",
+          "value_type": "float",
+          "min": -10.0,
+          "max": 10.0,
+          "step": 0.01,
+          "default": -1.0,
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          },
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.poly_coeffs.0"
+          }
+        },
+        {
+          "id": "coloring_mode_newton",
+          "type": "combo",
+          "label": "Coloring Mode",
+          "value_type": "enum",
+          "order": 40,
+          "default": "joy_basins",
+          "options": [
+            {
+              "id": "root_basin",
+              "label": "Root Basins (Newton/Nova)"
+            },
+            {
+              "id": "joy_basins",
+              "label": "Joy Basins (All paths succeed)"
+            },
+            {
+              "id": "iteration_count",
+              "label": "Iteration Count"
+            },
+            {
+              "id": "smooth_escape",
+              "label": "Smooth Escape"
+            }
+          ],
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.coloring_mode"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          },
+          "help": "Newton/Nova support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
+        },
+        {
+          "id": "coloring_mode_escape",
+          "type": "combo",
+          "label": "Coloring Mode",
+          "value_type": "enum",
+          "order": 40,
+          "default": "smooth_escape",
+          "options": [
+            {
+              "id": "iteration_count",
+              "label": "Iteration Count"
+            },
+            {
+              "id": "smooth_escape",
+              "label": "Smooth Escape"
+            }
+          ],
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.coloring_mode"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "mandelbrot,julia,burning_ship,multibrot,phoenix"
+          },
+          "help": "Escape-time fractals use iteration-based coloring."
+        },
+        {
+          "id": "poly_c1",
+          "type": "drag_float",
+          "label": "Coeff c1 (z^1)",
+          "value_type": "float",
+          "min": -10.0,
+          "max": 10.0,
+          "step": 0.01,
+          "default": 0.0,
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          },
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.poly_coeffs.1"
+          }
+        },
+        {
+          "id": "poly_c2",
+          "type": "drag_float",
+          "label": "Coeff c2 (z^2)",
+          "value_type": "float",
+          "min": -10.0,
+          "max": 10.0,
+          "step": 0.01,
+          "default": 0.0,
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          },
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.poly_coeffs.2"
+          }
+        },
+        {
+          "id": "poly_c3",
+          "type": "drag_float",
+          "label": "Coeff c3 (z^3)",
+          "value_type": "float",
+          "min": -10.0,
+          "max": 10.0,
+          "step": 0.01,
+          "default": 1.0,
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "newton,nova"
+          },
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.poly_coeffs.3"
+          }
+        },
+        {
+          "id": "poly_c4",
+          "type": "drag_float",
+          "label": "Coeff c4 (z^4)",
+          "value_type": "float",
+          "min": -10.0,
+          "max": 10.0,
+          "step": 0.01,
+          "default": 0.0,
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.fractal_type",
+            "value": "newton"
+          },
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.poly_coeffs.4"
+          }
+        },
+        {
+          "id": "exposure",
+          "type": "slider_float",
+          "label": "Exposure",
+          "value_type": "float",
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.01,
+          "default": 1.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.exposure"
+          }
+        }
+      ]
+    },
+    {
+      "id": "render",
+      "label": "Render",
+      "order": 30,
+      "controls": [
+        {
+          "id": "width",
+          "type": "slider_int",
+          "label": "Width",
+          "value_type": "int",
+          "min": 64,
+          "max": 4096,
+          "step": 1,
+          "default": 1024,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.render.resolution.x"
+          }
+        },
+        {
+          "id": "height",
+          "type": "slider_int",
+          "label": "Height",
+          "value_type": "int",
+          "min": 64,
+          "max": 4096,
+          "step": 1,
+          "default": 768,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.render.resolution.y"
+          }
+        },
+        {
+          "id": "block_size",
+          "type": "drag_int",
+          "label": "Block size (threads)",
+          "help": "Engine should validate/clamp",
+          "value_type": "int",
+          "min": 32,
+          "max": 1024,
+          "step": 32,
+          "default": 256,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.render.block_size"
+          }
+        },
+        {
+          "id": "device_id",
+          "type": "slider_int",
+          "label": "Device",
+          "help": "Optional: engine clamps to available devices",
+          "value_type": "int",
+          "min": 0,
+          "max": 7,
+          "step": 1,
+          "default": 0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.render.device_id"
+          }
+        },
+        {
+          "id": "benchmark",
+          "type": "checkbox",
+          "label": "Benchmark mode",
+          "value_type": "bool",
+          "default": false,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.render.benchmark"
+          }
+        }
+      ]
+    }
+  ]
+}
