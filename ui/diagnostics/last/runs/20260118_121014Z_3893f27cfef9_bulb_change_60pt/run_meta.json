@@ -1,0 +1,14 @@
+﻿{
+    "version":  1,
+    "created_utc":  "20260118_121014Z",
+    "run_id":  "20260118_121014Z_3893f27cfef9_bulb_change_60pt",
+    "run_name":  "bulb_change_60pt",
+    "seed_path":  "C:\\code\\setup-test\\docs\\seeds\\explaino_bulb_change_60pt.md",
+    "seed_sha256_12":  "3893f27cfef9",
+    "ticks":  7,
+    "warp":  0,
+    "closure_last":  true,
+    "no_export":  false,
+    "auto_emit":  true,
+    "live":  true
+}

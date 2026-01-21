@@ -27,6 +27,11 @@ struct UISchemaControl {
     std::string label;
 
     std::string value_type; // float | int | bool | enum | vec2 | vec3 | vec4
+
+    // Optional ImGui format string (e.g. "%.2e" for scientific notation).
+    // If absent, ImGui defaults apply (often "%.3f").
+    std::string format;
+    bool has_format = false;
     double min = 0.0;
     double max = 0.0;
     double step = 0.0;

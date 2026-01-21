@@ -2,12 +2,13 @@
 
 This is the interactive UI front-end for the CUDA Newton fractal demo.
 
-The UI is schema-driven: it loads the canonical ImGuiSpec JSON schema at startup and generates the control surface from `panels[]/controls[]` + bindings.
+The UI is schema-driven: it loads the editable UI schema at startup and generates the control surface from `panels[]/controls[]` + bindings.
 
 ## One-time setup (Dear ImGui)
 
 ```powershell
-cd C:\artifacts\cuda_newton_fractal\ui_app
+# Run from the ui_app folder (path can be the workspace junction)
+cd .\
 powershell -ExecutionPolicy Bypass -File .\setup_imgui.ps1
 ```
 
@@ -16,36 +17,42 @@ powershell -ExecutionPolicy Bypass -File .\setup_imgui.ps1
 Uses the same Visual Studio dev environment path as the core demo.
 
 ```powershell
-cd C:\artifacts\cuda_newton_fractal\ui_app
+cd .\
 .\build_vsdevcmd.cmd
 ```
 
 ## Run
 
 ```powershell
-cd C:\artifacts\cuda_newton_fractal\ui_app
+cd .\
 .\fractal_ui.exe
 ```
 
-## UI schema (single source of truth)
+## UI schema (fail-fast dev workflow)
 
-At startup, the app loads:
+By default (dev-friendly, fail-fast), the app loads the editable schema:
 
-- `..\ui\fractal_binding_surface_v1.ui_schema.canonical.json` (relative to `ui_app`)  
-  Full path: `C:\artifacts\cuda_newton_fractal\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
+- `..\ui\fractal_binding_surface_v1.ui_schema.json` (relative to `ui_app`)
+
+To make schema selection fully deterministic in scripts/CI, pass an explicit schema path:
+
+- `--ui-schema ..\ui\fractal_binding_surface_v1.ui_schema.json`
+
+Canonical schema is intentionally not part of the fast dev loop.
 
 To tweak the UI without changing code:
 
-1) Edit the non-canonical schema (recommended):
-	- `C:\artifacts\cuda_newton_fractal\ui\fractal_binding_surface_v1.ui_schema.json`
-2) Re-canonicalize/validate:
-	- `python C:\artifacts\imgui_spec\validate_schema.py --in C:\artifacts\cuda_newton_fractal\ui\fractal_binding_surface_v1.ui_schema.json --out C:\artifacts\cuda_newton_fractal\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
-3) Relaunch `fractal_ui.exe`
+1) Edit the schema:
+	- `..\ui\fractal_binding_surface_v1.ui_schema.json`
+2) Validate quickly:
+	- `..\fractal_ui.exe --validate-ui --ui-schema ..\ui\fractal_binding_surface_v1.ui_schema.json`
+3) Optional (packaging later): re-canonicalize for release tooling:
+	- `python C:\artifacts\imgui_spec\validate_schema.py --in ..\ui\fractal_binding_surface_v1.ui_schema.json --out ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
 
 Notes:
 - Schema `default` values are applied at app startup.
 - `visible_if` currently supports `eq/neq/lt/lte/gt/gte` (where meaningful) and fails-open if a predicate cannot be evaluated.
 
 Notes:
-- All artifacts stay under `C:\artifacts\...` per workspace hygiene.
+- The build scripts `cd` to their own directory, so they work via the workspace junction path and avoid accidental builds against a different external folder.
 - If build fails on missing Windows SDK libs (e.g., `d3d11.lib`), install the Windows 11 SDK component in Visual Studio.

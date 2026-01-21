@@ -1,0 +1,3572 @@
+{
+  "version": 1,
+  "schema_path": "C:\\code\\setup-test\\_artifacts_cuda_newton_fractal\\ui_app\\..\\ui\\fractal_binding_surface_v1.ui_schema.json",
+  "seed_path": "C:\\code\\setup-test\\docs\\explaino_show_work\\2026-01-18_000000_explaino-show-work-bulb-change-60pt-red-dwarf.md",
+  "conversation_seed32": 3816730914,
+  "spectrum8_u32": [2230131811, 1390496742, 524645543, 1938656978, 4001936171, 587667113, 1441837644, 3887727609],
+  "ticks": 80,
+  "radius": 0.75000000,
+  "zoom_radius": 0.25000000,
+  "probe_params": {
+    "explaino_warp_strength": 0.00000000
+  },
+  "probe_safety": {
+    "applied_schema_defaults": false,
+    "camera_behavior": "manual",
+    "auto_dive": false,
+    "dive_speed": 0.0
+  },
+  "base_camera": {
+    "center_hp_x": 0.00000000,
+    "center_hp_y": 0.00000000,
+    "log2_zoom": 0.00000000
+  },
+  "schedule": {
+    "bands": 4,
+    "closure_mode": "repeat_ref_tick",
+    "closure_last": true,
+    "closure_ref_t": 0
+  },
+  "trace": [
+    {
+      "t": 0,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.21535562,
+        "center_hp_y": 0.19392189,
+        "log2_zoom": -0.07530625
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 8,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 26.87005234, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 83.43864441, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -136.76460266, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 190.09056091, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -30.28426552, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 26.87005234,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 8,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 26.87005234,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 0.00000000
+      }
+    },
+    {
+      "t": 1,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.00929021,
+        "center_hp_y": 1.45573498,
+        "log2_zoom": -0.80095625
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 92.92393494, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 150.76460266, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -71.29650116, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 255.97288513, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 36.35533524, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 36.35533524,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 92.92393494,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 3,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 66.05387878
+      }
+    },
+    {
+      "t": 2,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.97201974,
+        "center_hp_y": 1.52783218,
+        "log2_zoom": -0.87876337
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 88.26707458, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 145.76460266, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -75.95335388, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 251.31602478, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 32.11269379, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 32.11269379,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 88.26707458,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -4.65686035
+      }
+    },
+    {
+      "t": 3,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.85482098,
+        "center_hp_y": 1.52018875,
+        "log2_zoom": -0.92571824
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 80.19599915, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 136.76460266, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -84.02443695, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 243.24494934, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 23.62741280, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 23.62741280,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 80.19599915,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -8.07107544
+      }
+    },
+    {
+      "t": 4,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.69167223,
+        "center_hp_y": 1.46671257,
+        "log2_zoom": -0.95686856
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 70.29649353, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 126.45088196, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -93.92394257, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 233.34544373, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 13.72792053, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 13.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 70.29649353,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -9.89950562
+      }
+    },
+    {
+      "t": 5,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.49661235,
+        "center_hp_y": 1.38021853,
+        "log2_zoom": -0.97826184
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 58.56856155, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 114.55137634, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -105.65187073, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 221.61750793, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 2.41421366, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 58.56856155,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -11.72793198
+      }
+    },
+    {
+      "t": 6,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.29604560,
+        "center_hp_y": 1.27685648,
+        "log2_zoom": -0.99227284
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 46.66905594, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 103.23765564, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -116.96559906, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 210.30378723, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -9.89949417, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 9.89949417,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 46.66905594,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -11.89950562
+      }
+    },
+    {
+      "t": 7,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.10091670,
+        "center_hp_y": 1.16507856,
+        "log2_zoom": -1.00164846
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 35.35533524, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 91.92393494, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -128.27931213, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 198.99006653, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -21.21319962, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 21.21319962,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 35.35533524,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -11.31372070
+      }
+    },
+    {
+      "t": 8,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.08054650,
+        "center_hp_y": 1.05115851,
+        "log2_zoom": -1.00821410
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 25.04162598, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 81.19599915, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -139.17881775, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 188.09056091, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -32.11269379, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 25.04162598,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 25.04162598,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -10.31370926
+      }
+    },
+    {
+      "t": 9,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.18670212,
+        "center_hp_y": 0.93186322,
+        "log2_zoom": -1.01431470
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 16.97056007, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 73.53913879, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -146.66410828, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 180.60527039, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -39.59798050, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 16.97056007,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 16.97056007,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -8.07106590
+      }
+    },
+    {
+      "t": 10,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.21181818,
+        "center_hp_y": 0.81171287,
+        "log2_zoom": -1.02038424
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 12.72792053, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 69.29649353, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -150.90675354, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 176.36262512, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -43.84062576, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 12.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 12.72792053,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -4.24263954
+      }
+    },
+    {
+      "t": 11,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.18249869,
+        "center_hp_y": 0.69486285,
+        "log2_zoom": -1.02634060
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 11.31370735, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 67.46806335, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -152.73518372, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 174.53419495, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -46.25484085, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.31370735,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 11.31370735,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.41421318
+      }
+    },
+    {
+      "t": 12,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.11909257,
+        "center_hp_y": 0.58310078,
+        "log2_zoom": -1.03218345
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 10.89949417, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 67.05384827, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -153.32096863, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 173.94841003, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -46.25484467, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 10.89949417,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 10.89949417,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -0.41421318
+      }
+    },
+    {
+      "t": 13,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.03399585,
+        "center_hp_y": 0.47535414,
+        "log2_zoom": -1.03804068
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 11.31370735, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 67.46806335, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -152.73518372, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 174.53419495, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -45.84062958, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.31370735,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 11.31370735,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 0.41421318
+      }
+    },
+    {
+      "t": 14,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.06220166,
+        "center_hp_y": 0.37346400,
+        "log2_zoom": -1.04387050
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 12.31370735, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 68.88227844, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -151.32096863, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 175.36262512, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -44.84062576, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 12.31370735,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 12.31370735,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 1.00000000
+      }
+    },
+    {
+      "t": 15,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.16170549,
+        "center_hp_y": 0.27853626,
+        "log2_zoom": -1.04965212
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 13.72792053, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 70.29649353, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -112.52690125, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 69.22541809, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -43.42641068, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 13.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 13.72792053,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 1.41421318
+      }
+    },
+    {
+      "t": 16,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.25731699,
+        "center_hp_y": 0.19266058,
+        "log2_zoom": -1.05527590
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 15.55634689, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 47.48529053, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -114.18380737, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 178.77684021, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -41.59798431, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 15.55634689,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 15.55634689,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": -1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 1.82842636
+      }
+    },
+    {
+      "t": 17,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.34829919,
+        "center_hp_y": 0.11347564,
+        "log2_zoom": -1.06091997
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 16.97056007, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 41.11269379, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -96.19599915, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 65.91169739, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -40.18376923, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 16.97056007,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 16.97056007,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 1.41421318
+      }
+    },
+    {
+      "t": 18,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.43325144,
+        "center_hp_y": 0.04014261,
+        "log2_zoom": -1.06669904
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 18.38477325, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 12.41421318, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -77.45584106, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 64.15434265, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -38.76955414, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 12.41421318,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 18.38477325,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 1.41421318
+      }
+    },
+    {
+      "t": 19,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.50739698,
+        "center_hp_y": -0.02481068,
+        "log2_zoom": -1.07245621
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 8.82842731, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 4.41421366, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -76.07106781, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 61.66905594, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -37.76955032, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 4.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 8.82842731,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -9.55634594
+      }
+    },
+    {
+      "t": 20,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.55103229,
+        "center_hp_y": -0.07335190,
+        "log2_zoom": -1.07748385
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 14.07106590, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 2.41421366, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -79.01219177, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 67.39698792, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -37.35533905, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 14.07106590,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 5.24263859
+      }
+    },
+    {
+      "t": 21,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.55724047,
+        "center_hp_y": -0.10326567,
+        "log2_zoom": -1.08132130
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 11.24263954, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 13.00000000, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -82.65685272, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 75.05384827, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -37.76955414, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.24263954,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 11.24263954,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.82842636
+      }
+    },
+    {
+      "t": 22,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.53833362,
+        "center_hp_y": -0.12021892,
+        "log2_zoom": -1.08421486
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 17.97056007, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 27.45583916, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -89.07106781, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 82.02442932, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -39.18376541, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 17.97056007,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 17.97056007,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 6.72792053
+      }
+    },
+    {
+      "t": 23,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.50311947,
+        "center_hp_y": -0.12808445,
+        "log2_zoom": -1.08631723
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 16.55634689, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 48.69847870, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -93.07107544, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 100.15434265, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -40.59798050, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 16.55634689,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 16.55634689,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.41421318
+      }
+    },
+    {
+      "t": 24,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.45735439,
+        "center_hp_y": -0.12965736,
+        "log2_zoom": -1.08775579
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 14.72792053, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 71.29649353, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -82.52690125, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 116.65187073, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -42.42641068, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 14.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 14.72792053,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.82842636
+      }
+    },
+    {
+      "t": 25,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.40618588,
+        "center_hp_y": -0.12692809,
+        "log2_zoom": -1.08859318
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 12.72792053, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 69.29649353, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -150.90675354, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 74.82843018, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -44.42641449, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 12.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 12.72792053,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.00000000
+      }
+    },
+    {
+      "t": 26,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.35227291,
+        "center_hp_y": -0.12129655,
+        "log2_zoom": -1.08889593
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 10.89949417, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 67.46806335, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -152.73518372, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 27.65685272, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -46.25484467, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 10.89949417,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 10.89949417,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.82842636
+      }
+    },
+    {
+      "t": 27,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.29894959,
+        "center_hp_y": -0.11392953,
+        "log2_zoom": -1.08870989
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 9.07106781, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 60.82842636, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -25.04162598, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 9.48528099, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -20.82842636, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 9.07106781,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 9.07106781,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.82842636
+      }
+    },
+    {
+      "t": 28,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.24611923,
+        "center_hp_y": -0.10529267,
+        "log2_zoom": -1.08805098
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 2.00000000, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 39.18376541, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -39.04162598, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 15.89949322, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -30.79898453, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 2.00000000,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": -1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -7.07106781
+      }
+    },
+    {
+      "t": 29,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.19453193,
+        "center_hp_y": -0.09576769,
+        "log2_zoom": -1.08690052
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 5.24264050, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 31.79898643, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -43.52690506, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 19.72791862, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -38.52691269, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 5.24264050,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 5.24264050,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 3.24264050
+      }
+    },
+    {
+      "t": 30,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.14728674,
+        "center_hp_y": -0.08614918,
+        "log2_zoom": -1.08531877
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 3.82842708, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 28.62741089, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -42.94112015, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 19.65685272, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -43.42641449, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 3.82842708,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 3.82842708,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": -1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.41421342
+      }
+    },
+    {
+      "t": 31,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.09973177,
+        "center_hp_y": -0.07775105,
+        "log2_zoom": -1.08244481
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 2.41421366, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 26.31370544, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -43.84062576, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 23.82842636, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -52.49748993, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 2.41421366,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.41421342
+      }
+    },
+    {
+      "t": 32,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.03901915,
+        "center_hp_y": -0.06449733,
+        "log2_zoom": -1.07839163
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -1.00000000, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 10.48528099, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -49.49748611, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 26.45583916, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -56.56856155, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 1.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -1.00000000,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.41421366
+      }
+    },
+    {
+      "t": 33,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.04816173,
+        "center_hp_y": -0.03777598,
+        "log2_zoom": -1.07395374
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -3.41421366, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 11.48528004, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -57.08327103, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 37.72792053, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -59.39699173, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 3.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -3.41421366,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.41421366
+      }
+    },
+    {
+      "t": 34,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.17081256,
+        "center_hp_y": 0.00833649,
+        "log2_zoom": -1.06968697
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -7.07106781, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 18.24263954, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -65.01219177, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 43.28426361, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -63.22542572, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 7.07106781,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -7.07106781,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.65685415
+      }
+    },
+    {
+      "t": 35,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.33287609,
+        "center_hp_y": 0.07696258,
+        "log2_zoom": -1.06603049
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -11.31370735, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 32.45583725, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -69.89949036, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 45.94112015, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -67.88227844, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.31370735,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -11.31370735,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -4.24263954
+      }
+    },
+    {
+      "t": 36,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.53942012,
+        "center_hp_y": 0.17117741,
+        "log2_zoom": -1.06321793
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -16.97056007, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 39.59798050, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -80.38477325, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 45.35533524, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -73.53913879, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 16.97056007,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -16.97056007,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -5.65685272
+      }
+    },
+    {
+      "t": 37,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.79410506,
+        "center_hp_y": 0.29326321,
+        "log2_zoom": -1.06143335
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -24.04162598, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 32.52690506, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -83.65685272, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 43.76955032, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -80.61021423, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 24.04162598,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -24.04162598,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -7.07106590
+      }
+    },
+    {
+      "t": 38,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 1.09637019,
+        "center_hp_y": 0.44326637,
+        "log2_zoom": -1.06081025
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -32.52690506, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 25.04162598, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -90.31370544, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 38.35533524, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -88.68129730, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 25.04162598,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -32.52690506,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -8.48527908
+      }
+    },
+    {
+      "t": 39,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 1.45582371,
+        "center_hp_y": 0.62627551,
+        "log2_zoom": -1.06144521
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -42.01219559, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 15.14213371, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -92.00000000, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 98.22541809, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -98.16658783, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 15.14213371,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -42.01219559,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -9.48529053
+      }
+    },
+    {
+      "t": 40,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 1.86036020,
+        "center_hp_y": 0.83620015,
+        "log2_zoom": -1.06334658
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -34.55634689, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 4.82842731, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -102.04162598, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 13.89949322, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -104.04162598, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 4.82842731,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -34.55634689,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 7.45584869
+      }
+    },
+    {
+      "t": 41,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 2.31656842,
+        "center_hp_y": 1.07645605,
+        "log2_zoom": -1.06654098
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -64.22542572, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": -7.65685463, "inside": true, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -112.32591248, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 7.41421366, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -110.32591248, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 7.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -64.22542572,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -29.66907883
+      }
+    },
+    {
+      "t": 42,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 2.65651303,
+        "center_hp_y": 1.29292459,
+        "log2_zoom": -1.07119760
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -26.97055817, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": -15.14213371, "inside": true, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -107.95335388, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 20.82842636, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -127.95335388, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 15.14213371,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -26.97055817,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 37.25486755
+      }
+    },
+    {
+      "t": 43,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 2.66812979,
+        "center_hp_y": 1.40511551,
+        "log2_zoom": -1.07664521
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -42.31370544, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": -12.72792053, "inside": true, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -105.68131256, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 34.38477325, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -125.45088196, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 12.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -42.31370544,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -15.34314728
+      }
+    },
+    {
+      "t": 44,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 2.46429713,
+        "center_hp_y": 1.44288866,
+        "log2_zoom": -1.08209981
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -59.98278046, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": -3.82842708, "inside": true, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -43.48527908, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 40.94112015, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -115.96559143, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 3.82842708,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -59.98278046,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -17.66907501
+      }
+    },
+    {
+      "t": 45,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 2.12061922,
+        "center_hp_y": 1.42977998,
+        "log2_zoom": -1.08721151
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -46.66905594, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 10.48528099, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -172.25488281, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 45.59798050, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -102.82344818, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 10.48528099,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -46.66905594,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 13.31372452
+      }
+    },
+    {
+      "t": 46,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 1.70242961,
+        "center_hp_y": 1.38282174,
+        "log2_zoom": -1.09156530
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -31.69847870, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 25.45583916, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -5.24264097, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 47.89949036, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -87.68128967, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 5.24264097,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -31.69847870,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 14.97057724
+      }
+    },
+    {
+      "t": 47,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 1.23757910,
+        "center_hp_y": 1.31192901,
+        "log2_zoom": -1.09505745
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -15.14213371, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 9.89949417, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -14.31370640, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 42.35533524, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -71.71071625, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 9.89949417,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -15.14213371,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 16.55634499
+      }
+    },
+    {
+      "t": 48,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.74877850,
+        "center_hp_y": 1.22361048,
+        "log2_zoom": -1.09750808
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 2.00000000, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 25.79898643, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -19.79898643, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 41.52690506, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -55.15434647, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 2.00000000,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 17.14213371
+      }
+    },
+    {
+      "t": 49,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.27587805,
+        "center_hp_y": 1.12721450,
+        "log2_zoom": -1.09869925
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 17.89949226, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 45.25484085, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -20.79898643, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 37.52690506, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -29.87005234, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 17.89949226,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 17.89949226,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 15.89949226
+      }
+    },
+    {
+      "t": 50,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.16843301,
+        "center_hp_y": 1.02678600,
+        "log2_zoom": -1.09857738
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 28.45583916, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 66.05384827, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -18.14213371, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 36.79898453, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -11.00000000, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 28.45583916,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 10.55634689
+      }
+    },
+    {
+      "t": 51,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.59070950,
+        "center_hp_y": 0.92082917,
+        "log2_zoom": -1.09697740
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 24.21319962, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 86.02442932, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -13.07106686, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 29.07106590, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -2.00000000, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 24.21319962,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -4.24263954
+      }
+    },
+    {
+      "t": 52,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.97583463,
+        "center_hp_y": 0.81217917,
+        "log2_zoom": -1.09367621
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 13.65685272, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 105.33815002, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -2.41421366, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 25.82842636, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 2.00000000, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 13.65685272,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -10.55634689
+      }
+    },
+    {
+      "t": 53,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.25132321,
+        "center_hp_y": 0.70596191,
+        "log2_zoom": -1.08625406
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 2.41421366, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 111.72294617, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -4.24264050, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 10.89949417, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 5.82842731, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 2.41421366,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -11.24263954
+      }
+    },
+    {
+      "t": 54,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.39564315,
+        "center_hp_y": 0.59627115,
+        "log2_zoom": -1.07221681
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 7.07106781, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 111.82344055, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -17.55634689, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 7.41421366, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 1.41421354, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 1.41421354,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 7.07106781,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 4.65685415
+      }
+    },
+    {
+      "t": 55,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.44745288,
+        "center_hp_y": 0.48912403,
+        "log2_zoom": -1.05408697
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 16.31370544, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 106.65187073, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -27.87005234, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 2.00000000, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 6.00000000, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 2.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 16.31370544,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 9.24263763
+      }
+    },
+    {
+      "t": 56,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.44006069,
+        "center_hp_y": 0.39302505,
+        "log2_zoom": -1.03485896
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 25.14213181, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 96.75236511, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -35.79898453, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 13.72792053, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 4.41421366, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 4.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 25.14213181,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": -1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 8.82842636
+      }
+    },
+    {
+      "t": 57,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.39553741,
+        "center_hp_y": 0.30335532,
+        "log2_zoom": -1.01458105
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 28.87005234, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 86.02442932, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -44.59798050, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 26.97055817, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 7.65685415, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 7.65685415,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 28.87005234,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 3.72792053
+      }
+    },
+    {
+      "t": 58,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.32733819,
+        "center_hp_y": 0.22108520,
+        "log2_zoom": -0.99404641
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 34.28426361, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 74.29649353, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -52.84062576, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 40.59798050, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 4.82842731, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 4.82842731,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 34.28426361,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 5.41421127
+      }
+    },
+    {
+      "t": 59,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.24360114,
+        "center_hp_y": 0.14577387,
+        "log2_zoom": -0.97354316
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 34.65685272, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 63.66905594, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -61.04162598, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 54.18376541, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -1.00000000, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 1.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 34.65685272,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 0.37258911
+      }
+    },
+    {
+      "t": 60,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.15561614,
+        "center_hp_y": 0.08111492,
+        "log2_zoom": -0.95450188
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 26.62741280, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 51.25484085, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -67.65685272, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 60.15434647, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -5.24264097, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 5.24264097,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 26.62741280,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -8.02943993
+      }
+    },
+    {
+      "t": 61,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -1.06209877,
+        "center_hp_y": 0.02297121,
+        "log2_zoom": -0.93597961
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 23.31370544, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 37.35533524, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -74.87004852, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 69.66905212, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -10.48528099, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 10.48528099,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 23.31370544,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.31370735
+      }
+    },
+    {
+      "t": 62,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.97230455,
+        "center_hp_y": -0.02522168,
+        "log2_zoom": -0.91936712
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 11.41421318, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 26.04162598, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -82.32591248, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 78.05384827, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -15.14213371, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.41421318,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 11.41421318,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -11.89949226
+      }
+    },
+    {
+      "t": 63,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.88352459,
+        "center_hp_y": -0.06636020,
+        "log2_zoom": -0.90391018
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 37.35533524, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 14.07106590, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -82.97055817, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 80.61021423, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -19.79898643, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 14.07106590,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 37.35533524,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 25.94112206
+      }
+    },
+    {
+      "t": 64,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.78203331,
+        "center_hp_y": -0.08250830,
+        "log2_zoom": -0.89073562
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 31.11269188, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 11.00000000, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -88.29649353, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 75.95335388, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -24.62741280, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 31.11269188,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -6.24264336
+      }
+    },
+    {
+      "t": 65,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.66798511,
+        "center_hp_y": -0.07573256,
+        "log2_zoom": -0.87948791
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 6.41421366, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 6.41421366, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -76.48527527, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 66.63963318, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -29.28426552, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 6.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 6.41421366,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -24.69847870
+      }
+    },
+    {
+      "t": 66,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.55221656,
+        "center_hp_y": -0.05490575,
+        "log2_zoom": -0.86998225
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 11,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 23.62741280, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 6.24264050, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -67.65685272, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 57.08327103, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -33.52690887, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 6.24264050,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 11,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 23.62741280,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 17.21319962
+      }
+    },
+    {
+      "t": 67,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.43228958,
+        "center_hp_y": -0.02425757,
+        "log2_zoom": -0.86128636
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 12.41421318, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 10.82842731, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -58.89949036, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 46.28426361, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -37.76955414, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 10.82842731,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 12.41421318,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -11.21319962
+      }
+    },
+    {
+      "t": 68,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.31853763,
+        "center_hp_y": 0.01020527,
+        "log2_zoom": -0.85362238
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 15.14213371, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 10.07106781, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -46.41421509, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 27.87005234, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -42.01219940, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 10.07106781,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 15.14213371,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 2.72792053
+      }
+    },
+    {
+      "t": 69,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.20802138,
+        "center_hp_y": 0.04711598,
+        "log2_zoom": -0.84642764
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 11.31370735, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 9.48528099, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -34.69847870, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 19.38477325, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -45.84062958, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 9.48528099,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 11.31370735,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.82842636
+      }
+    },
+    {
+      "t": 70,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.10543137,
+        "center_hp_y": 0.08334419,
+        "log2_zoom": -0.83974624
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 12,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 7.65685415, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 8.65685463, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -23.41421318, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 4.00000000, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -49.49748611, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 4.00000000,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 12,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 7.65685415,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.65685320
+      }
+    },
+    {
+      "t": 71,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.01455577,
+        "center_hp_y": 0.11635831,
+        "log2_zoom": -0.83364512
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 4.24264050, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 13.48528004, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -15.24263954, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 9.48528099, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -47.04164505, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 4.24264050,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 4.24264050,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.41421366
+      }
+    },
+    {
+      "t": 72,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.06757810,
+        "center_hp_y": 0.14644787,
+        "log2_zoom": -0.82779487
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 13,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 1.41421354, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 15.89949322, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -5.41421366, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 14.14213371, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -43.52692032, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 1.41421354,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 13,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 1.41421354,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.82842684
+      }
+    },
+    {
+      "t": 73,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.13743650,
+        "center_hp_y": 0.17177811,
+        "log2_zoom": -0.82236819
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -1.41421354, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 18.14213371, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -11.82842636, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 32.55634308, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -40.59798050, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 1.41421354,
+        "near_eps_px": 2.00000000,
+        "near_count": 1,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -1.41421354,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.82842708
+      }
+    },
+    {
+      "t": 74,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.19607414,
+        "center_hp_y": 0.19238145,
+        "log2_zoom": -0.81724565
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -3.41421366, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 21.21319962, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -21.97055817, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 44.01219559, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -39.87004852, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 3.41421366,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -3.41421366,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.00000000
+      }
+    },
+    {
+      "t": 75,
+      "band": 3,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.29207116,
+        "center_hp_y": 0.25248765,
+        "log2_zoom": -0.80729568
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -6.65685415, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 7.24264050, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -10.00000000, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 30.45583725, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -46.52692413, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 6.65685415,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -6.65685415,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -3.24264050
+      }
+    },
+    {
+      "t": 76,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.40233984,
+        "center_hp_y": 0.33634082,
+        "log2_zoom": -0.79475785
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -9.48528099, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 17.31370544, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -25.97055817, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 8.82842731, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -65.63964081, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 8.82842731,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -9.48528099,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.82842684
+      }
+    },
+    {
+      "t": 77,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.52134787,
+        "center_hp_y": 0.44062497,
+        "log2_zoom": -0.78003831
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -11.89949417, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 44.72792053, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -61.24263763, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 40.52690506, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -67.88227844, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 11.89949417,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -11.89949417,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -2.41421318
+      }
+    },
+    {
+      "t": 78,
+      "band": 2,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.63878904,
+        "center_hp_y": 0.55798706,
+        "log2_zoom": -0.76418353
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 14,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -13.72792053, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 43.42641068, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -99.97055817, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 75.71070862, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -70.29649353, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 13.72792053,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 14,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -13.72792053,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": -1.82842636
+      }
+    },
+    {
+      "t": 79,
+      "band": 0,
+      "closure": true,
+      "closure_ref_t": 0,
+      "camera": {
+        "center_hp_x": -1.34244307,
+        "center_hp_y": 1.09456741,
+        "log2_zoom": -0.08085118
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 9,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 159.80625916, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 229.76460266, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -3.82842731, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 323.44097900, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": 103.82344055, "inside": false, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 3.82842731,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 9,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 159.80625916,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": -5,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 173.53417969
+      }
+    }
+  ],
+  "summary": {
+    "base_iters_avg_t0": 8,
+    "peak_iters_avg": 14,
+    "peak_t": 25,
+    "peak_amplitude_over_t0": 6,
+    "iters_threshold": 50,
+    "best_saddle_t": 32,
+    "best_saddle_min_abs_signed_px": 1.00000000,
+    "best_saddle_near_count": 1,
+    "closure": {
+      "enabled": true,
+      "ref_t": 0,
+      "closure_t": 79,
+      "ok": false,
+      "d_iters_avg": 1,
+      "signed_comparable": true,
+      "d_sdf_center_signed_px": 132.93620300
+    }
+  }
+}

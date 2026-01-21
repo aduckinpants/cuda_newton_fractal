@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "schema_path": "C:\\code\\setup-test\\_artifacts_cuda_newton_fractal\\ui_app\\..\\ui\\fractal_binding_surface_v1.ui_schema.json",
+  "seed_path": "C:\\code\\setup-test\\docs\\seeds\\explaino_bulb_change_60pt.md",
+  "conversation_seed32": 1716368706,
+  "spectrum8_u32": [4035076622, 1425502080, 1279381878, 3786275191, 3166903372, 3589101424, 1759155104, 200591224],
+  "ticks": 2,
+  "radius": 0.75000000,
+  "zoom_radius": 0.25000000,
+  "fractal_type": "explaino_fp",
+  "probe_params": {
+    "explaino_warp_strength": 0.00000000
+  },
+  "probe_safety": {
+    "applied_schema_defaults": true,
+    "camera_behavior": "manual",
+    "auto_dive": false,
+    "dive_speed": 0.0
+  },
+  "base_camera": {
+    "center_hp_x": 0.00000000,
+    "center_hp_y": 0.00000000,
+    "log2_zoom": 0.00000000
+  },
+  "schedule": {
+    "bands": 4,
+    "closure_mode": "repeat_ref_tick",
+    "closure_last": false,
+    "closure_ref_t": 0
+  },
+  "trace": [
+    {
+      "t": 0,
+      "band": 0,
+      "closure": false,
+      "camera": {
+        "center_hp_x": 0.40721013,
+        "center_hp_y": 1.12329175,
+        "log2_zoom": 0.12374467
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 8,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": -43.82842636, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 16.89949226, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": -107.26707458, "inside": true, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": -33.11269379, "inside": true, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -45.42641068, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 16.89949226,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 8,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": -43.82842636,
+        "sdf_center_inside": true
+      },
+      "delta": {
+        "d_iters_avg": 0,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 0.00000000
+      }
+    },
+    {
+      "t": 1,
+      "band": 1,
+      "closure": false,
+      "camera": {
+        "center_hp_x": -0.68810934,
+        "center_hp_y": 0.17364145,
+        "log2_zoom": 0.11090097
+      },
+      "render": {
+        "last_render_ms": 0.00000000,
+        "last_iters_avg": 9,
+        "device_id": 0
+      },
+      "lens": {
+        "downsample": 2,
+        "lens_low_size": [512, 384],
+        "sdf_max_abs_px_low": 24.00000000
+      },
+      "samples": [
+        {"u": 0.50000000, "v": 0.50000000, "x": 256, "y": 192, "signed_px": 31.11269188, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.25000000, "x": 128, "y": 96, "signed_px": 24.89949226, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.25000000, "x": 384, "y": 96, "signed_px": 25.04162598, "inside": false, "ok": true},
+        {"u": 0.25000000, "v": 0.75000000, "x": 128, "y": 288, "signed_px": 36.76955032, "inside": false, "ok": true},
+        {"u": 0.75000000, "v": 0.75000000, "x": 384, "y": 288, "signed_px": -62.65686035, "inside": true, "ok": true}
+      ],
+      "saddle": {
+        "min_abs_signed_px": 24.89949226,
+        "near_eps_px": 2.00000000,
+        "near_count": 0,
+        "mixed_inside": true
+      },
+      "loss_proxy": {
+        "iters_avg": 9,
+        "render_ms": 0.00000000,
+        "sdf_center_signed_px": 31.11269188,
+        "sdf_center_inside": false
+      },
+      "delta": {
+        "d_iters_avg": 1,
+        "d_render_ms": 0.00000000,
+        "d_sdf_center_signed_px": 74.94111633
+      }
+    }
+  ],
+  "summary": {
+    "base_iters_avg_t0": 8,
+    "peak_iters_avg": 9,
+    "peak_t": 1,
+    "peak_amplitude_over_t0": 1,
+    "iters_threshold": 50,
+    "best_saddle_t": 0,
+    "best_saddle_min_abs_signed_px": 16.89949226,
+    "best_saddle_near_count": 0,
+    "closure": {
+      "enabled": false,
+      "ref_t": 0,
+      "closure_t": 1,
+      "ok": true,
+      "d_iters_avg": -8,
+      "signed_comparable": false,
+      "d_sdf_center_signed_px": 43.82842636
+    }
+  }
+}

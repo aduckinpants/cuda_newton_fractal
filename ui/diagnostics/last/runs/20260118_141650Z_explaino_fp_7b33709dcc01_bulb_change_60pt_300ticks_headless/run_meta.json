@@ -1,0 +1,14 @@
+﻿{
+    "version":  1,
+    "created_utc":  "20260118_141650Z",
+    "run_id":  "20260118_141650Z_explaino_fp_7b33709dcc01_bulb_change_60pt_300ticks_headless",
+    "run_name":  "bulb_change_60pt_300ticks_headless",
+    "seed_path":  "C:\\code\\setup-test\\docs\\explaino_show_work\\2026-01-18_000000_explaino-show-work-bulb-change-60pt-red-dwarf.md",
+    "seed_sha256_12":  "7b33709dcc01",
+    "ticks":  300,
+    "warp":  0,
+    "fractal_type":  "explaino_fp",
+    "closure_last":  true,
+    "no_export":  false,
+    "make_gif":  false
+}

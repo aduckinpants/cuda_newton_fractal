@@ -19,6 +19,51 @@ struct Cxd {
     double y;
 };
 
+__device__ __forceinline__ Cx cx_rot(Cx z, float a) {
+    float cs = cosf(a);
+    float sn = sinf(a);
+    return {z.x * cs - z.y * sn, z.x * sn + z.y * cs};
+}
+
+__device__ __forceinline__ float hash01_u32(unsigned int x) {
+    // Simple integer hash -> [0,1). Deterministic, cheap, CUDA-friendly.
+    x ^= x >> 16;
+    x *= 0x7feb352dU;
+    x ^= x >> 15;
+    x *= 0x846ca68bU;
+    x ^= x >> 16;
+    // 24 bits of mantissa-ish
+    return (float)(x & 0x00ffffffU) / (float)0x01000000U;
+}
+
+__device__ __forceinline__ Cx explaino_warp_start(Cx coord, int seed, float phase, float strength) {
+    // Artistic intent: "all paths lead to success" => still Newton basins,
+    // but with a seed-controlled, smooth warp that creates expressive ridges/flows.
+    // Keep the warp mild so Newton still converges broadly.
+    float s = fmaxf(0.0f, fminf(1.0f, strength));
+    unsigned int u = (unsigned int)seed;
+    float a0 = hash01_u32(u ^ 0x1234567u);
+    float a1 = hash01_u32(u ^ 0x89abcdefu);
+
+    // IMPORTANT: keep orientation stable while Alive runs.
+    // We allow a fixed, seed-driven rotation, but do not couple global rotation to phase.
+    // Phase should evolve local shear/undertow rather than spinning the entire field.
+    float rot = (a0 * 2.0f - 1.0f) * 3.1415926f;
+    Cx z = cx_rot(coord, rot);
+
+    // Gentle non-linear shear to create "undertow" structure without exploding.
+    float freq = 2.0f + 6.0f * a1;
+    float k = 0.10f + 0.35f * a0;
+    z.x += s * k * sinf(z.y * freq + phase);
+    z.y += s * k * sinf(z.x * freq - phase);
+
+    // Mild polynomial push (kept small).
+    Cx z2{z.x * z.x - z.y * z.y, 2.0f * z.x * z.y};
+    float push = s * (0.06f + 0.10f * a1);
+    z = {z.x + z2.x * push, z.y + z2.y * push};
+    return z;
+}
+
 __device__ __forceinline__ Cx cx_add(Cx a, Cx b) { return {a.x + b.x, a.y + b.y}; }
 __device__ __forceinline__ Cx cx_sub(Cx a, Cx b) { return {a.x - b.x, a.y - b.y}; }
 __device__ __forceinline__ Cx cx_mul(Cx a, Cx b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
@@ -63,6 +108,27 @@ __device__ __forceinline__ int nearest_root_index_unit_roots(Cx z, int n) {
     return k;
 }
 
+__device__ __forceinline__ Cx unit_root_k(int k, int n) {
+    // exp(i * 2pi k / n)
+    float a = (2.0f * CUDART_PI_F) * ((float)k / (float)max(1, n));
+    return {cosf(a), sinf(a)};
+}
+
+__device__ __forceinline__ int nearest_root_index_list(Cx z, const Float2* roots, int n) {
+    int best = 0;
+    float bestD2 = 1.0e30f;
+    for (int i = 0; i < n; ++i) {
+        float dx = z.x - roots[i].x;
+        float dy = z.y - roots[i].y;
+        float d2 = dx * dx + dy * dy;
+        if (d2 < bestD2) {
+            bestD2 = d2;
+            best = i;
+        }
+    }
+    return best;
+}
+
 __device__ __forceinline__ uchar4 palette_root(int idx, int n) {
     // Simple distinct palette (wrap)
     const uchar4 colors[8] = {
@@ -82,17 +148,63 @@ __device__ __forceinline__ uchar4 palette_joy_root(int idx, int n) {
     // Warm, happy palette tuned for "many success pits".
     // Keep it simple and distinct per root.
     const uchar4 warm[8] = {
-        {255, 180, 120, 255}, // peach
-        {255, 220, 120, 255}, // gold
-        {255, 140, 120, 255}, // coral
-        {255, 190, 210, 255}, // soft pink
-        {255, 210, 160, 255}, // apricot
-        {255, 170, 220, 255}, // rose
-        {255, 205, 135, 255}, // honey
-        {255, 240, 200, 255}, // cream
+        {255, 140,  80, 255}, // vivid peach
+        {255, 205,  70, 255}, // vivid gold
+        {255,  90,  90, 255}, // warm red
+        {255, 130, 200, 255}, // hot pink
+        {255, 165,  90, 255}, // apricot
+        {255,  95, 190, 255}, // rose-magenta
+        {255, 185,  95, 255}, // honey
+        {255, 235, 170, 255}, // cream
     };
     (void)n;
     return warm[idx % 8];
+}
+
+__device__ __forceinline__ uchar4 saturate_rgb(uchar4 c, float sat) {
+    // sat=1 keeps as-is; >1 increases chroma.
+    float r = (float)c.x;
+    float g = (float)c.y;
+    float b = (float)c.z;
+    float l = 0.2126f * r + 0.7152f * g + 0.0722f * b;
+    r = l + (r - l) * sat;
+    g = l + (g - l) * sat;
+    b = l + (b - l) * sat;
+    int rr = (int)roundf(r);
+    int gg = (int)roundf(g);
+    int bb = (int)roundf(b);
+    rr = max(0, min(255, rr));
+    gg = max(0, min(255, gg));
+    bb = max(0, min(255, bb));
+    return {(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255};
+}
+
+__device__ __forceinline__ uchar4 contrast_rgb(uchar4 c, float contrast) {
+    // contrast=1 keeps as-is; >1 increases; <1 decreases.
+    float k = fmaxf(0.0f, contrast);
+    float r = ((float)c.x - 128.0f) * k + 128.0f;
+    float g = ((float)c.y - 128.0f) * k + 128.0f;
+    float b = ((float)c.z - 128.0f) * k + 128.0f;
+    int rr = (int)roundf(r);
+    int gg = (int)roundf(g);
+    int bb = (int)roundf(b);
+    rr = max(0, min(255, rr));
+    gg = max(0, min(255, gg));
+    bb = max(0, min(255, bb));
+    return {(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255};
+}
+
+__device__ __forceinline__ uchar4 tint_rgb(uchar4 c, float tr, float tg, float tb) {
+    float r = (float)c.x * fmaxf(0.0f, tr);
+    float g = (float)c.y * fmaxf(0.0f, tg);
+    float b = (float)c.z * fmaxf(0.0f, tb);
+    int rr = (int)roundf(r);
+    int gg = (int)roundf(g);
+    int bb = (int)roundf(b);
+    rr = max(0, min(255, rr));
+    gg = max(0, min(255, gg));
+    bb = max(0, min(255, bb));
+    return {(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255};
 }
 
 __device__ __forceinline__ uchar4 mul_rgb(uchar4 c, float s) {
@@ -117,6 +229,20 @@ __device__ __forceinline__ uchar4 apply_exposure(uchar4 c, float exposure) {
     return {tone_map(c.x, e), tone_map(c.y, e), tone_map(c.z, e), 255};
 }
 
+__device__ __forceinline__ uchar4 palette_escape_vivid(float t) {
+    // Vivid, high-variance cosine palette. t is expected in [0,1].
+    t = fminf(1.0f, fmaxf(0.0f, t));
+    float w = 6.2831853f;
+    float r = 0.55f + 0.45f * cosf(w * (t + 0.00f));
+    float g = 0.55f + 0.45f * cosf(w * (t + 0.33f));
+    float b = 0.55f + 0.45f * cosf(w * (t + 0.67f));
+    // Add a gentle "hot" bias so Phoenix/Nova don't read pastel.
+    r = fminf(1.0f, r * 1.15f);
+    g = fminf(1.0f, g * 1.05f);
+    b = fminf(1.0f, b * 0.95f);
+    return {(unsigned char)(r * 255.0f), (unsigned char)(g * 255.0f), (unsigned char)(b * 255.0f), 255};
+}
+
 __device__ __forceinline__ Cx cx_abs_components(Cx a) {
     return {fabsf(a.x), fabsf(a.y)};
 }
@@ -137,6 +263,7 @@ __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; 
 
 __global__ void kernel_render(
     uint32_t* outRGBA,
+    uint8_t* outMask,
     int width,
     int height,
     ViewState view,
@@ -219,6 +346,190 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino) {
+        // Explaino (V0): Newton basins with a seed-driven warp of the start-space.
+        // This preserves the "many success pits" story while giving us a unique identity.
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        z = explaino_warp_start(coord, params.explaino_seed, phase, strength);
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dP);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx step = cx_div(P, dP);
+            z = cx_sub(z, step);
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino_fp) {
+        // Explaino Fixed-Point (Flow): damped Newton / fixed-point style iteration.
+        // Design goal: bounded steps + graceful fallback => no blow-ups.
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        z = explaino_warp_start(coord, params.explaino_seed, phase, strength);
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dP);
+            Cx step;
+            if (dAbs2 < 1e-20f) {
+                // Fallback: move against the residual (very soft, bounded).
+                step = P;
+            } else {
+                step = cx_div(P, dP);
+            }
+
+            // Bounded, globally damped step (prevents jumps that cause NaN spirals).
+            float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+            float alpha = 1.0f;
+            float damp = alpha / (1.0f + stepMag);
+            Cx stepD = cx_scale(step, damp);
+            z = cx_sub(z, stepD);
+
+            // Keep the state bounded to avoid accidental overflow in deep zooms.
+            float r2 = cx_abs2(z);
+            if (r2 > 16.0f) {
+                float r = sqrtf(r2);
+                float s = 4.0f / fmaxf(1e-12f, r);
+                z = cx_scale(z, s);
+            }
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+
+        // Pit-of-success: if we didn't converge in maxIter, still assign to a basin deterministically.
+        if (!converged) {
+            int nRoots = 0;
+            if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
+            if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+
+            if (nRoots > 0) {
+                int idx = nearest_root_index_unit_roots(z, nRoots);
+                z = unit_root_k(idx, nRoots);
+            } else if (params.explaino_root_count > 0) {
+                int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+            }
+            converged = true;
+        }
+    } else if (ft == FractalType::explaino_y) {
+        // Explaino Y (Unfold): a gentle "unfolding" recurrence that mixes a warped evaluation
+        // with a damped update. This produces recursive-looking basin boundaries while staying bounded.
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        z = explaino_warp_start(coord, params.explaino_seed, phase, strength);
+        Cx zPrev = z;
+
+        // Track the iterate with the smallest residual as our "winner".
+        float bestP = 1.0e30f;
+        int bestIt = 0;
+        Cx bestZ = z;
+
+        for (; it < maxIter; ++it) {
+            // Re-warp the current iterate a little each step (the "unfold" feel).
+            float localPhase = phase + 0.07f * (float)it;
+            Cx zW = explaino_warp_start(z, params.explaino_seed, localPhase, strength * 0.30f);
+
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, zW, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < bestP) {
+                bestP = pAbs;
+                bestIt = it;
+                bestZ = zW;
+            }
+            if (pAbs < eps) {
+                z = zW;
+                break;
+            }
+
+            float dAbs2 = cx_abs2(dP);
+            Cx step;
+            if (dAbs2 < 1e-20f) step = P;
+            else step = cx_div(P, dP);
+
+            float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+            float alpha = 0.90f;
+            float damp = alpha / (1.0f + stepMag);
+            Cx stepD = cx_scale(step, damp);
+
+            Cx newtonW = cx_sub(zW, stepD);
+
+            // Mix current state with the warped update (contractive blend).
+            float mix = 0.78f;
+            Cx zNext = cx_add(cx_scale(z, 1.0f - mix), cx_scale(newtonW, mix));
+
+            // Small momentum term for "unfold" texture.
+            Cx vel = cx_sub(z, zPrev);
+            float beta = 0.10f;
+            zNext = cx_add(zNext, cx_scale(vel, beta));
+
+            // A tiny, bounded injection of the pixel coordinate prevents global collapse
+            // into a single attractor while keeping the story "all paths succeed".
+            zNext = cx_add(zNext, cx_scale(coord, 0.045f));
+
+            zPrev = z;
+            z = zNext;
+
+            // Smooth bounding (compression) instead of hard clipping.
+            float r2 = cx_abs2(z);
+            float k = 1.0f / sqrtf(1.0f + r2 * 0.0625f); // 1/sqrt(1 + r^2/16)
+            z = cx_scale(z, 4.0f * k);
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+
+        // Pit-of-success: if we didn't strictly converge, use the best-residual iterate.
+        // This preserves meaningful structure (rather than snapping everything to a single basin).
+        if (!converged) {
+            z = bestZ;
+            it = bestIt;
+            pAbs = bestP;
+            converged = true;
+        }
     } else if (ft == FractalType::nova) {
         // Nova (V1): z_{n+1} = z_n - alpha * f(z_n)/f'(z_n) + c
         // Treat as escape-time family for coloring; points that do not escape are interior.
@@ -349,30 +660,33 @@ __global__ void kernel_render(
 
             int p = params.multibrot_power;
 
-            float r2 = 0.0f;
-            for (; it < maxIter; ++it) {
-                if (ft == FractalType::burning_ship) {
-                    Cx a = cx_abs_components(z);
-                    Cx z2 = cx_mul(a, a);
-                    z = cx_add(z2, cConst);
-                } else if (ft == FractalType::multibrot) {
-                    Cx zp = cx_pow_int(z, p);
-                    z = cx_add(zp, cConst);
-                } else {
-                    // Mandelbrot / Julia default to z^2 + c
-                    Cx z2 = cx_mul(z, z);
-                    z = cx_add(z2, cConst);
-                }
+            // Phoenix uses its own recurrence; do NOT run the generic z^p + c loop afterwards.
+            if (ft != FractalType::phoenix) {
+                float r2 = 0.0f;
+                for (; it < maxIter; ++it) {
+                    if (ft == FractalType::burning_ship) {
+                        Cx a = cx_abs_components(z);
+                        Cx z2 = cx_mul(a, a);
+                        z = cx_add(z2, cConst);
+                    } else if (ft == FractalType::multibrot) {
+                        Cx zp = cx_pow_int(z, p);
+                        z = cx_add(zp, cConst);
+                    } else {
+                        // Mandelbrot / Julia default to z^2 + c
+                        Cx z2 = cx_mul(z, z);
+                        z = cx_add(z2, cConst);
+                    }
 
-                r2 = cx_abs2(z);
-                if (r2 > 4.0f) {
-                    escaped = true;
-                    break;
-                }
+                    r2 = cx_abs2(z);
+                    if (r2 > 4.0f) {
+                        escaped = true;
+                        break;
+                    }
 
-                if (!isfinite(z.x) || !isfinite(z.y)) {
-                    escaped = true;
-                    break;
+                    if (!isfinite(z.x) || !isfinite(z.y)) {
+                        escaped = true;
+                        break;
+                    }
                 }
             }
         }
@@ -387,32 +701,55 @@ __global__ void kernel_render(
     uchar4 color{0, 0, 0, 255};
     const uchar4 errorColor{255, 0, 255, 255};
 
-    if (ft == FractalType::newton || ft == FractalType::nova) {
-        // Root-finding family coloring (Newton + Nova).
+    if (ft == FractalType::newton || ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) {
+        // Root-finding family coloring (Newton + Explaino).
         if (mode == ColoringMode::joy_basins) {
             if (!converged) {
                 // "Submerged" undertow: preserve faint structure, but keep it dark.
                 float t = (float)it / (float)maxIter;
                 float a = atan2f(z.y, z.x);
-                float v = 0.5f + 0.5f * sinf(a * 3.0f + t * 6.2831853f);
-                unsigned char r = (unsigned char)(8.0f + 18.0f * v);
-                unsigned char g = (unsigned char)(14.0f + 24.0f * v);
-                unsigned char b = (unsigned char)(28.0f + 44.0f * v);
+                float phase = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) ? view.explaino_phase : 0.0f;
+                float v = 0.5f + 0.5f * sinf(a * 3.0f + t * 6.2831853f + phase);
+                float w = 0.5f + 0.5f * sinf(a * 11.0f + t * 12.5663706f - phase * 0.7f);
+                // Slightly warmer undertow + a bit more contrast than before.
+                unsigned char r = (unsigned char)(10.0f + 26.0f * v + 8.0f * w);
+                unsigned char g = (unsigned char)(8.0f + 20.0f * v + 10.0f * w);
+                unsigned char b = (unsigned char)(18.0f + 34.0f * v + 14.0f * w);
                 color = {r, g, b, 255};
             } else {
                 int nRoots = 0;
                 if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
                 if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
 
-                if (nRoots > 0) {
-                    int idx = nearest_root_index_unit_roots(z, nRoots);
+                bool useCustomRoots = (nRoots == 0) && (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) && (params.explaino_root_count > 0);
+
+                if (nRoots > 0 || useCustomRoots) {
+                    int idx = 0;
+                    if (useCustomRoots) idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                    else idx = nearest_root_index_unit_roots(z, nRoots);
                     uchar4 base = palette_joy_root(idx, nRoots);
 
                     // Brightness: faster convergence => brighter, but never gloomy.
                     float u = (float)it / (float)maxIter;
                     float bright = 1.0f - powf(fminf(1.0f, u), 0.65f);
                     bright = 0.35f + 0.90f * bright;
-                    color = mul_rgb(base, bright);
+
+                    // Ridge/glow: slow-to-converge areas approximate basin boundaries.
+                    float edge = powf(fminf(1.0f, u), 0.85f); // 0 interior -> 1 boundary
+                    float phase = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) ? view.explaino_phase : 0.0f;
+                    float a = atan2f(z.y, z.x);
+                    float stripe = 0.5f + 0.5f * sinf((float)it * 0.35f + a * 3.0f + phase);
+
+                    uchar4 c0 = mul_rgb(base, bright);
+                    // Add a warm highlight and a subtle stripe modulation.
+                    float glow = 0.30f * edge + 0.12f * stripe;
+                    int rr = (int)c0.x + (int)(glow * 255.0f);
+                    int gg = (int)c0.y + (int)(glow * 210.0f);
+                    int bb = (int)c0.z + (int)(glow * 160.0f);
+                    rr = max(0, min(255, rr));
+                    gg = max(0, min(255, gg));
+                    bb = max(0, min(255, bb));
+                    color = saturate_rgb({(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255}, 1.40f);
                 } else {
                     // Invalid: basin identity not defined for custom polynomial in this demo.
                     color = errorColor;
@@ -426,11 +763,15 @@ __global__ void kernel_render(
                 if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
                 if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
 
-                if (nRoots > 0) {
+                bool useCustomRoots = (nRoots == 0) && (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) && (params.explaino_root_count > 0);
+                if (useCustomRoots) {
+                    int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                    color = saturate_rgb(palette_root(idx, params.explaino_root_count), 1.30f);
+                } else if (nRoots > 0) {
                     int idx = nearest_root_index_unit_roots(z, nRoots);
-                    color = palette_root(idx, nRoots);
+                    color = saturate_rgb(palette_root(idx, nRoots), 1.30f);
                 } else {
-                    // Invalid: root basins are not defined for custom polynomial in this demo.
+                    // Invalid: root identity not defined.
                     color = errorColor;
                 }
             }
@@ -447,6 +788,48 @@ __global__ void kernel_render(
                 color = {r, g, (unsigned char)(255 - r), 255};
             }
         }
+    } else if (ft == FractalType::nova) {
+        // Nova is a hybrid: it can converge to roots (like Newton) or escape (like escape-time).
+        // We keep the coloring mode orthogonal: basin modes color converged points by root, and
+        // use a vivid escape palette for escaped points.
+        if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
+            if (converged) {
+                int nRoots = 0;
+                if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
+                if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+
+                if (nRoots > 0) {
+                    int idx = nearest_root_index_unit_roots(z, nRoots);
+                    uchar4 base = (mode == ColoringMode::joy_basins) ? palette_joy_root(idx, nRoots) : palette_root(idx, nRoots);
+                    float u = (float)it / (float)maxIter;
+                    float bright = 1.0f - powf(fminf(1.0f, u), 0.65f);
+                    bright = 0.30f + 0.95f * bright;
+                    color = mul_rgb(base, bright);
+                    if (mode == ColoringMode::joy_basins) color = saturate_rgb(color, 1.35f);
+                } else {
+                    color = errorColor;
+                }
+            } else if (escaped) {
+                // Escaped: show energy / feedback as vivid bands.
+                float t = (float)it / (float)maxIter;
+                color = palette_escape_vivid(t);
+            } else {
+                // Neither converged nor escaped within maxIter: treat as deep interior.
+                color = {0, 0, 0, 255};
+            }
+        } else if (!escaped) {
+            color = {0, 0, 0, 255};
+        } else if (mode == ColoringMode::iteration_count) {
+            float t = (float)it / (float)maxIter;
+            color = palette_escape_vivid(t);
+        } else if (mode == ColoringMode::smooth_escape) {
+            float mag = cx_abs(z);
+            float log_zn = logf(fmaxf(mag, 1e-12f));
+            float denom = logf(2.0f);
+            float nu = (float)it + 1.0f - logf(fmaxf(log_zn / denom, 1e-12f)) / denom;
+            float t = fminf(1.0f, fmaxf(0.0f, nu / (float)maxIter));
+            color = palette_escape_vivid(t);
+        }
     } else {
         // Escape-time coloring.
         if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
@@ -457,8 +840,7 @@ __global__ void kernel_render(
             color = {0, 0, 0, 255};
         } else if (mode == ColoringMode::iteration_count) {
             float t = (float)it / (float)maxIter;
-            unsigned char v = (unsigned char)(fminf(1.0f, t) * 255.0f);
-            color = {64, v, (unsigned char)(255 - v), 255};
+            color = palette_escape_vivid(t);
         } else if (mode == ColoringMode::smooth_escape) {
             // Classic smooth escape-time coloring.
             float mag = cx_abs(z);
@@ -470,22 +852,66 @@ __global__ void kernel_render(
 
             float nu = (float)it + 1.0f - logf(fmaxf(log_zn / denom, 1e-12f)) / denom;
             float t = fminf(1.0f, fmaxf(0.0f, nu / (float)maxIter));
-            unsigned char r = (unsigned char)(t * 255.0f);
-            unsigned char g = (unsigned char)(sqrtf(t) * 255.0f);
-            color = {r, g, (unsigned char)(255 - r), 255};
+            color = palette_escape_vivid(t);
         }
+    }
+
+    // Global color grading (all fractals/modes). Skip the fail-fast magenta error marker.
+    if (!(color.x == 255 && color.y == 0 && color.z == 255)) {
+        color = tint_rgb(color, params.color_tint_r, params.color_tint_g, params.color_tint_b);
+        color = saturate_rgb(color, params.color_saturation);
+        color = contrast_rgb(color, params.color_contrast);
     }
 
     color = apply_exposure(color, params.exposure);
 
+    const int idx = py * width + px;
     uint32_t rgba = (uint32_t)color.x | ((uint32_t)color.y << 8) | ((uint32_t)color.z << 16) | ((uint32_t)color.w << 24);
-    outRGBA[py * width + px] = rgba;
+    outRGBA[idx] = rgba;
+
+    if (outMask) {
+        // Generic mask surface used by lenses:
+        // - Root-finding family (Newton/Explaino): use basin identity parity to create stable boundaries.
+        //   (Flow/Fixed-Point forces convergence as a pit-of-success, so 'converged' would degenerate to all-1 and SDF goes black.)
+        // - Nova: converged => inside (escaped => outside)
+        // - Escape-time: escaped => outside (so mask is "interior")
+        bool inside = false;
+        if (ft == FractalType::newton || ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) {
+            if (!converged) {
+                inside = false;
+            } else {
+                int nRoots = 0;
+                if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
+                if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+
+                bool useCustomRoots = (nRoots == 0) && (params.explaino_root_count > 0);
+                int rootIdx = 0;
+                bool hasRootIdx = false;
+                if (useCustomRoots) {
+                    rootIdx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                    hasRootIdx = (params.explaino_root_count > 0);
+                } else if (nRoots > 0) {
+                    rootIdx = nearest_root_index_unit_roots(z, nRoots);
+                    hasRootIdx = true;
+                }
+
+                // Partition basins into a binary mask via parity.
+                inside = hasRootIdx ? ((rootIdx & 1) == 0) : true;
+            }
+        } else if (ft == FractalType::nova) {
+            inside = converged;
+        } else {
+            inside = !escaped;
+        }
+        outMask[idx] = inside ? 255 : 0;
+    }
 }
 
 struct CachedBuffers {
     int w = 0;
     int h = 0;
     uint32_t* d_rgba = nullptr;
+    uint8_t* d_mask = nullptr;
     int* d_itersSum = nullptr;
     double2* d_refOrbit = nullptr;
     int refOrbitLen = 0;
@@ -508,11 +934,13 @@ bool ensure_buffers(int w, int h, const char** outError) {
     if (g_cached.w == w && g_cached.h == h && g_cached.d_rgba && g_cached.d_itersSum) return true;
 
     if (g_cached.d_rgba) cudaFree(g_cached.d_rgba);
+    if (g_cached.d_mask) cudaFree(g_cached.d_mask);
     if (g_cached.d_itersSum) cudaFree(g_cached.d_itersSum);
     if (g_cached.d_refOrbit) cudaFree(g_cached.d_refOrbit);
 
     g_cached.w = w;
     g_cached.h = h;
+    g_cached.d_mask = nullptr;
     g_cached.refOrbitLen = 0;
     g_cached.hostRefOrbit.clear();
     g_cached.hostRefValid = false;
@@ -526,6 +954,8 @@ bool ensure_buffers(int w, int h, const char** outError) {
         g_cached.d_rgba = nullptr;
         return false;
     }
+
+    // Mask buffer is allocated lazily when requested.
 
     if (cudaMalloc(&g_cached.d_itersSum, sizeof(int)) != cudaSuccess) {
         if (outError) *outError = "cudaMalloc failed for itersSum";
@@ -562,6 +992,7 @@ bool RenderFractalCUDA(
     const KernelParams& params,
     const RenderSettings& render,
     uint32_t* outRGBA,
+    uint8_t* outMask,
     RenderStats* outStats,
     const char** outError)
 {
@@ -609,6 +1040,15 @@ bool RenderFractalCUDA(
     int h = render.resolution.y;
 
     if (!ensure_buffers(w, h, outError)) return false;
+
+    if (outMask && !g_cached.d_mask) {
+        size_t maskBytes = (size_t)w * (size_t)h * sizeof(uint8_t);
+        if (cudaMalloc(&g_cached.d_mask, maskBytes) != cudaSuccess) {
+            if (outError) *outError = "cudaMalloc failed for mask buffer";
+            g_cached.d_mask = nullptr;
+            return false;
+        }
+    }
 
     // Perturbation deep zoom (Mandelbrot/Julia): build and upload a double-precision reference orbit.
     // This is enabled only at high zoom to extend effective precision.
@@ -690,6 +1130,7 @@ bool RenderFractalCUDA(
 
     kernel_render<<<grid, block>>>(
         g_cached.d_rgba,
+        outMask ? g_cached.d_mask : nullptr,
         w,
         h,
         view,
@@ -720,6 +1161,11 @@ bool RenderFractalCUDA(
 
     size_t bytes = (size_t)w * (size_t)h * sizeof(uint32_t);
     cudaMemcpy(outRGBA, g_cached.d_rgba, bytes, cudaMemcpyDeviceToHost);
+
+    if (outMask) {
+        size_t maskBytes = (size_t)w * (size_t)h * sizeof(uint8_t);
+        cudaMemcpy(outMask, g_cached.d_mask, maskBytes, cudaMemcpyDeviceToHost);
+    }
 
     int itersSum = 0;
     cudaMemcpy(&itersSum, g_cached.d_itersSum, sizeof(int), cudaMemcpyDeviceToHost);

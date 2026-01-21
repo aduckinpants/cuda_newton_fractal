@@ -11,7 +11,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-cd /d C:\artifacts\cuda_newton_fractal\ui_app
+REM Always build from the script's directory (works via junctions and prevents path mismatches).
+cd /d "%~dp0"
 
 if not exist third_party\imgui\imgui.h (
   echo Dear ImGui not staged. Run: powershell -ExecutionPolicy Bypass -File .\setup_imgui.ps1
@@ -47,13 +48,5 @@ link /nologo /SUBSYSTEM:WINDOWS /OUT:fractal_ui.exe ^
   .\build\imgui_impl_win32.obj .\build\imgui_impl_dx11.obj .\build\fractal_renderer.obj ^
   /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib ^
   d3d11.lib dxgi.lib d3dcompiler.lib user32.lib gdi32.lib shell32.lib
-
-REM Stage UI schema artifact next to the exe (best-effort; Safe Mode handles missing/invalid schema during edits)
-if not exist ui mkdir ui
-if exist ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json (
-  copy /Y ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json ui\fractal_binding_surface_v1.ui_schema.canonical.json >NUL
-) else (
-  echo WARNING: canonical schema missing at ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json
-)
 
 exit /b %errorlevel%

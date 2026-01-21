@@ -34,6 +34,9 @@ enum class FractalType : int {
     burning_ship = 4,
     multibrot = 5,
     phoenix = 6,
+    explaino = 7,
+    explaino_y = 8,
+    explaino_fp = 9,
 };
 
 enum class CameraBehavior : int {
@@ -58,6 +61,13 @@ struct ViewState {
 
     FractalType fractal_type{FractalType::newton};
 
+    // Explaino-family: optional time evolution.
+    bool explaino_alive{false};
+    bool explaino_seed_tween{true};
+    float explaino_alive_speed{1.0f};
+    float explaino_phase{0.0f};
+    float explaino_seed_drift{0.0f};
+
     CameraBehavior camera_behavior{CameraBehavior::complexity};
     bool auto_dive{true};
     float dive_speed{1.0f};
@@ -74,6 +84,23 @@ struct KernelParams {
     int multibrot_power{3};
     ColoringMode coloring_mode{ColoringMode::root_basin};
     float exposure{1.0f};
+
+    // Global color grading (applies to ALL fractals/modes).
+    // Kept intentionally simple for direct artistic control.
+    float color_saturation{1.15f};
+    float color_contrast{1.10f};
+    float color_tint_r{1.00f};
+    float color_tint_g{1.00f};
+    float color_tint_b{1.00f};
+
+    // Explaino: seed-driven warp controls (kept small for stability).
+    int explaino_seed{1337};
+    float explaino_warp_strength{0.35f};
+
+    // Explaino: roots of the current seed-derived polynomial (for basin coloring).
+    // For real coefficients, we use conjugate pairs, so roots are stable and expressive.
+    int explaino_root_count{0};
+    Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
 };
 
 struct RenderSettings {
@@ -81,6 +108,15 @@ struct RenderSettings {
     int block_size{256};
     int device_id{0};
     bool benchmark{false};
+};
+
+// Lens (SDF/raytrace) settings. Intentionally small in V0.
+// This is a generic surface that any fractal can feed via auxiliary fields.
+struct LensSettings {
+    bool enabled{false};
+        // Power-of-two preview downsample factor for the Lens SDF.
+        // 1 = full res (slow), 2 = half (default), 4 = quarter, 8 = eighth.
+        int downsample{2};
 };
 
 struct RenderStats {

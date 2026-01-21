@@ -1,0 +1,28 @@
+[Window][Debug##Default]
+Pos=60,60
+Size=400,400
+
+[Window][Controls]
+Pos=17,0
+Size=568,964
+
+[Window][Fractal]
+Pos=589,467
+Size=468,341
+
+[Window][Lens]
+Pos=1046,166
+Size=349,342
+
+[Window][Mask]
+Pos=1006,513
+Size=356,286
+
+[Window][Flashlight Trace]
+Pos=586,49
+Size=409,340
+
+[Window][Flashlight Composite]
+Pos=60,60
+Size=32,45
+

@@ -1,0 +1,16 @@
+﻿{
+    "version":  1,
+    "created_utc":  "20260118_134146Z",
+    "run_id":  "20260118_134146Z_7b33709dcc01_bulb_change_60pt_900ticks",
+    "run_name":  "bulb_change_60pt_900ticks",
+    "seed_path":  "C:\\code\\setup-test\\docs\\explaino_show_work\\2026-01-18_000000_explaino-show-work-bulb-change-60pt-red-dwarf.md",
+    "seed_sha256_12":  "7b33709dcc01",
+    "prompt_seed_path":  "C:\\code\\setup-test\\docs\\seeds\\explaino_bulb_change_60pt.md",
+    "prompt_seed_sha256_12":  "3893f27cfef9",
+    "ticks":  900,
+    "warp":  0,
+    "closure_last":  true,
+    "no_export":  false,
+    "auto_emit":  true,
+    "live":  true
+}

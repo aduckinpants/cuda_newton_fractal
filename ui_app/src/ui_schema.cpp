@@ -106,6 +106,10 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
 
             get_string(c, "value_type", ctrl.value_type);
 
+            if (get_string(c, "format", ctrl.format)) {
+                ctrl.has_format = true;
+            }
+
             double n = 0.0;
             if (get_number(c, "min", n)) { ctrl.min = n; ctrl.has_min = true; }
             if (get_number(c, "max", n)) { ctrl.max = n; ctrl.has_max = true; }
