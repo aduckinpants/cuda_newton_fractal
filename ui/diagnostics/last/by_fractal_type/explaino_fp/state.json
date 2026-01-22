@@ -1,10 +1,10 @@
 {
-  "schema_path": "C:\\code\\setup-test\\_artifacts_cuda_newton_fractal\\ui_app\\..\\ui\\fractal_binding_surface_v1.ui_schema.json",
+  "schema_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui_app\\..\\ui\\fractal_binding_surface_v1.ui_schema.json",
   "version": 1,
   "camera": {
-    "center_hp_x": -0.03713064794685675,
-    "center_hp_y": 0.42033295908413215,
-    "log2_zoom": -0.83407994760457960,
+    "center_hp_x": 0.17243618023529750,
+    "center_hp_y": 0.04872056897114199,
+    "log2_zoom": 0.02885023504495621,
     "rotation_degrees": 0.00000000000000000,
     "camera_behavior": "manual",
     "auto_dive": false,
@@ -15,8 +15,8 @@
     "explaino_alive": false,
     "explaino_seed_tween": true,
     "explaino_alive_speed": 1.00000000000000000,
-    "explaino_phase": 1.05000007152557373,
-    "explaino_seed_drift": 7.00000000000000000
+    "explaino_phase": 2.25000000000000000,
+    "explaino_seed_drift": 15.00000000000000000
   },
   "lens": {
     "enabled": true,
@@ -29,7 +29,7 @@
     "phoenix_p_real": -0.50000000000000000,
     "phoenix_p_imag": 0.00000000000000000,
     "poly_kind": "custom",
-    "poly_coeffs": [0.38378283381462097, -1.72594463825225830, 3.21280813217163086, -2.80788016319274902, 1.00000000000000000],
+    "poly_coeffs": [0.53924846649169922, -1.13504791259765625, 2.06675529479980469, -1.55170559883117676, 1.00000000000000000],
     "multibrot_power": 3.00000000000000000,
     "coloring_mode": "joy_basins",
     "exposure": 1.35000002384185791,
@@ -38,7 +38,7 @@
     "color_tint_r": 1.00000000000000000,
     "color_tint_g": 1.00000000000000000,
     "color_tint_b": 1.00000000000000000,
-    "explaino_seed": 1337.00000000000000000,
+    "explaino_seed": 1054671253.00000000000000000,
     "explaino_warp_strength": 0.00000000000000000
   },
   "engine": {

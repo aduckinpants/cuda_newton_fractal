@@ -36,12 +36,84 @@ __device__ __forceinline__ float hash01_u32(unsigned int x) {
     return (float)(x & 0x00ffffffU) / (float)0x01000000U;
 }
 
-__device__ __forceinline__ Cx explaino_warp_start(Cx coord, int seed, float phase, float strength) {
+// --- Logistic-area helper: map u in [0,1] -> deterministic seed double in [0,1) ---
+__device__ __forceinline__ double WedgeCumulativeRaw(double x) {
+    const double p = 3.141592653589793;
+    // C_raw(x) = (p-1) x^2 / 2 - p x^3 / 3
+    return (p - 1.0) * x * x * 0.5 - p * x * x * x / 3.0;
+}
+
+__device__ __forceinline__ double WedgeTotalArea() {
+    const double p = 3.141592653589793;
+    double x1 = 1.0 - 1.0 / p;
+    return WedgeCumulativeRaw(x1);
+}
+
+__device__ __forceinline__ double AreaFractionToX(double u) {
+    // invert C_raw(x) / A_total = u for x in [0, x1] using bisection
+    const double p = 3.141592653589793;
+    double x1 = 1.0 - 1.0 / p;
+    if (u <= 0.0) return 0.0;
+    if (u >= 1.0) return x1;
+    double A = WedgeTotalArea();
+    double target = u * A;
+    double lo = 0.0;
+    double hi = x1;
+    for (int i = 0; i < 60; ++i) {
+        double mid = 0.5 * (lo + hi);
+        double val = WedgeCumulativeRaw(mid);
+        if (val < target) lo = mid; else hi = mid;
+    }
+    return 0.5 * (lo + hi);
+}
+
+__device__ __forceinline__ unsigned long long splitmix64_ull(unsigned long long z) {
+    z += 0x9e3779b97f4a7c15ULL;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    z = z ^ (z >> 31);
+    return z;
+}
+
+__device__ __forceinline__ unsigned long long HashLogisticOrbit(double x0, int iters) {
+    unsigned long long acc = 0x9e3779b97f4a7c15ULL;
+    double x = x0;
+    const double p = 3.141592653589793;
+    for (int i = 0; i < iters; ++i) {
+        x = p * x * (1.0 - x);
+        unsigned long long bits = (unsigned long long)__double_as_longlong(x);
+        acc = splitmix64_ull(acc ^ bits);
+    }
+    return acc;
+}
+
+__device__ __forceinline__ double LogisticAreaUToSeed(double s) {
+    // Fold an unbounded physical slider `s` into the canonical normalized
+    // cumulative-area coordinate u ∈ [0,1). This implements u = s - floor(s)
+    // and correctly handles negative values (floor semantics).
+    double u = s - floor(s);
+    // Defensive clamp (shouldn't be necessary, but keeps numerics safe).
+    if (u < 0.0) u += 1.0;
+    if (u >= 1.0) u = nextafter(1.0, 0.0);
+
+    double x = AreaFractionToX(u);
+    unsigned long long h = HashLogisticOrbit(x, 12);
+    // normalize to [0,1)
+    const double denom = 18446744073709551615.0; // 2^64-1
+    return (double)h / denom;
+}
+
+__device__ __forceinline__ Cx explaino_warp_start(Cx coord, double seed, float phase, float strength) {
     // Artistic intent: "all paths lead to success" => still Newton basins,
     // but with a seed-controlled, smooth warp that creates expressive ridges/flows.
     // Keep the warp mild so Newton still converges broadly.
+    // Accept a floating-point seed and fold its bit-pattern deterministically
+    // into a 32-bit integer for hashing. This preserves fractional changes
+    // while keeping the host/device hashing cheap and deterministic.
     float s = fmaxf(0.0f, fminf(1.0f, strength));
-    unsigned int u = (unsigned int)seed;
+    // Fold the double seed's bit pattern into a 32-bit integer and hash.
+    unsigned long long bits = (unsigned long long)__double_as_longlong(seed);
+    unsigned int u = (unsigned int)(bits ^ (bits >> 32));
     float a0 = hash01_u32(u ^ 0x1234567u);
     float a1 = hash01_u32(u ^ 0x89abcdefu);
 
@@ -141,6 +213,7 @@ __device__ __forceinline__ uchar4 palette_root(int idx, int n) {
         {255, 128, 64, 255},
         {192, 192, 192, 255},
     };
+    (void)n;
     return colors[idx % 8];
 }
 
@@ -351,7 +424,9 @@ __global__ void kernel_render(
         // This preserves the "many success pits" story while giving us a unique identity.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
-        z = explaino_warp_start(coord, params.explaino_seed, phase, strength);
+        double seed_u = params.explaino_seed;
+        double seed = LogisticAreaUToSeed(seed_u);
+        z = explaino_warp_start(coord, seed, phase, strength);
 
         for (; it < maxIter; ++it) {
             Cx P, dP;
@@ -383,7 +458,9 @@ __global__ void kernel_render(
         // Design goal: bounded steps + graceful fallback => no blow-ups.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
-        z = explaino_warp_start(coord, params.explaino_seed, phase, strength);
+        double seed_u = params.explaino_seed;
+        double seed = LogisticAreaUToSeed(seed_u);
+        z = explaino_warp_start(coord, seed, phase, strength);
 
         for (; it < maxIter; ++it) {
             Cx P, dP;
@@ -449,7 +526,9 @@ __global__ void kernel_render(
         // with a damped update. This produces recursive-looking basin boundaries while staying bounded.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
-        z = explaino_warp_start(coord, params.explaino_seed, phase, strength);
+        double seed_u = params.explaino_seed;
+        double seed = LogisticAreaUToSeed(seed_u);
+        z = explaino_warp_start(coord, seed, phase, strength);
         Cx zPrev = z;
 
         // Track the iterate with the smallest residual as our "winner".
@@ -460,7 +539,7 @@ __global__ void kernel_render(
         for (; it < maxIter; ++it) {
             // Re-warp the current iterate a little each step (the "unfold" feel).
             float localPhase = phase + 0.07f * (float)it;
-            Cx zW = explaino_warp_start(z, params.explaino_seed, localPhase, strength * 0.30f);
+            Cx zW = explaino_warp_start(z, seed, localPhase, strength * 0.30f);
 
             Cx P, dP;
 

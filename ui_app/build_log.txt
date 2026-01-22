@@ -1,0 +1,18 @@
+﻿**********************************************************************
+** Visual Studio 2026 Developer Command Prompt v18.2.0
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+[DEBUG:ext\vcvars.bat] Found potential v145 version file: 'Microsoft.VCToolsVersion.VC.14.50.18.0.txt'
+[DEBUG:ext\vcvars.bat] Testing v145 version file: 'Microsoft.VCToolsVersion.VC.14.50.18.0.txt'
+fractal_renderer.cu
+tmpxft_000073d0_00000000-7_fractal_renderer.compute_121.cudafe1.cpp
+main.cpp
+json_min.cpp
+ui_schema.cpp
+imgui.cpp
+imgui_draw.cpp
+imgui_tables.cpp
+imgui_widgets.cpp
+imgui_impl_win32.cpp
+imgui_impl_dx11.cpp
+Generating Code...

@@ -3,7 +3,7 @@
 This is a minimal CUDA smoke-test that renders a Newton fractal to a `.ppm` image.
 
 - Output format: binary PPM (`P6`) so there are no extra dependencies.
-- Workspace hygiene: this project intentionally lives under `C:\artifacts`.
+- Workspace hygiene: this project now lives under `project\\cuda_newton_fractal` (local workspace path).
 
 ## Prerequisites (Windows)
 

@@ -54,6 +54,19 @@ static float SaturateF(float v) {
     return v;
 }
 
+static bool SchemaHasBinding(const UISchema& schema, const char* kind, const char* path) {
+    if (!kind || !path) return false;
+    for (const auto& p : schema.panels) {
+        for (const auto& c : p.controls) {
+            if (!c.has_binding) continue;
+            if (_stricmp(c.binding.kind.c_str(), kind) != 0) continue;
+            if (_stricmp(c.binding.path.c_str(), path) != 0) continue;
+            return true;
+        }
+    }
+    return false;
+}
+
 static float FractF(float v) {
     return v - floorf(v);
 }
@@ -449,6 +462,23 @@ static bool TryLoadSchemaFromCandidates(const std::vector<std::string>& candidat
     std::string firstFailStage;
     std::string firstFailDetail;
 
+    // Safety assertion: if multiple schema candidate files exist simultaneously,
+    // fail-fast to avoid ambiguous load behavior. Projects must present a single
+    // authoritative UI schema. This prevents accidental dual-loading of
+    // shadow/canonical copies.
+    std::vector<std::string> existing;
+    for (const auto& cand : candidates) {
+        std::string txt = ReadTextFile(cand.c_str());
+        if (!txt.empty()) existing.push_back(cand);
+    }
+    if (existing.size() > 1) {
+        std::ostringstream oss;
+        oss << "Multiple UI schema candidates present (ambiguous load):\n";
+        for (const auto& e : existing) oss << "  " << e << "\n";
+        FailFastUiError("schema.multiple_candidates", existing.front(), existing.front(), oss.str());
+        return false;
+    }
+
     for (const auto& cand : candidates) {
         std::string text = ReadTextFile(cand.c_str());
         if (text.empty()) continue;
@@ -475,6 +505,25 @@ static bool TryLoadSchemaFromCandidates(const std::vector<std::string>& candidat
             continue;
         }
 
+        // Diagnostic dump: write parsed control id/type pairs to project/ui/parsed_controls.json
+        try {
+            std::ostringstream ss;
+            ss << "{\n  \"schema_path\": \"" << JsonEscape(cand) << "\",\n  \"controls\": [\n";
+            bool firstCtrl = true;
+            for (const auto& panel : lr.schema.panels) {
+                for (const auto& c : panel.controls) {
+                    if (!firstCtrl) ss << ",\n";
+                    firstCtrl = false;
+                    ss << "    { \"id\": \"" << JsonEscape(c.id) << "\", \"type\": \"" << JsonEscape(c.type) << "\" }";
+                }
+            }
+            ss << "\n  ]\n}\n";
+            const std::string outPath = "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\parsed_controls.json";
+            WriteTextFileAtomicReplace(outPath, ss.str());
+        } catch (...) {
+            // best-effort only; don't fail schema load for diagnostics
+        }
+
         outSchema = std::move(lr.schema);
         outSchemaPath = cand;
         outStage.clear();
@@ -498,18 +547,6 @@ static bool TryLoadSchemaFromCandidates(const std::vector<std::string>& candidat
     return false;
 }
 
-static bool SchemaHasBinding(const UISchema& schema, const char* kind, const char* path) {
-    if (!kind || !path) return false;
-    for (const auto& p : schema.panels) {
-        for (const auto& c : p.controls) {
-            if (!c.has_binding) continue;
-            if (_stricmp(c.binding.kind.c_str(), kind) != 0) continue;
-            if (_stricmp(c.binding.path.c_str(), path) != 0) continue;
-            return true;
-        }
-    }
-    return false;
-}
 
 static const char* FractalTypeId(FractalType t) {
     switch (t) {
@@ -1107,33 +1144,23 @@ static int RequireIntRange(const std::string& schemaPath, const json_min::Value&
 }
 
 static void ImportStateFromFile(const std::string& schemaPath, ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens, bool* ioDirty) {
+    // Import (read) of the runtime state is intentionally disabled.
+    // The project policy enforces that `last_state.json` is writeable only
+    // (used for diagnostics/export). Any attempt to import state will
+    // fail-fast so users cannot rely on file-based presets that bypass
+    // the UI/schema binding surface.
+    // Declare lightweight placeholders so the remainder of this function
+    // (kept for reference) compiles cleanly even though import is disabled.
+    json_min::ParseResult pr{}
+        ;
+    const json_min::Value* vCamera = nullptr;
+    const json_min::Value* vFractal = nullptr;
+    const json_min::Value* vParams = nullptr;
+    const json_min::Value* vEngine = nullptr;
+
     const std::string inPrimary = GetStatePrimaryPath();
-    std::string text = ReadTextFile(inPrimary.c_str());
-    if (text.empty()) {
-        const std::string inSecondary = GetStateSecondaryPath();
-        text = ReadTextFile(inSecondary.c_str());
-        if (text.empty()) {
-            FailFastUiError("state.import.missing", schemaPath, inPrimary, "State file missing/unreadable: " + inPrimary);
-        }
-    }
-
-    auto pr = json_min::Parse(text);
-    if (!pr.error.empty()) {
-        FailFastUiError("state.import.parse", schemaPath, inPrimary, pr.error);
-    }
-    if (!pr.value.is_object()) {
-        FailFastUiError("state.import.type", schemaPath, "root", "Top-level state must be an object");
-    }
-
-    const json_min::Value* vVersion = pr.value.get("version");
-    if (!vVersion || !vVersion->is_number() || (int)std::round(vVersion->as_number()) != 1) {
-        FailFastUiError("state.import.version", schemaPath, "version", "Unsupported or missing state version (expected 1)");
-    }
-
-    const json_min::Value* vCamera = RequireObjField(schemaPath, pr.value, "root", "camera");
-    const json_min::Value* vFractal = RequireObjField(schemaPath, pr.value, "root", "fractal");
-    const json_min::Value* vParams = RequireObjField(schemaPath, pr.value, "root", "params");
-    const json_min::Value* vEngine = RequireObjField(schemaPath, pr.value, "root", "engine");
+    FailFastUiError("state.import.disabled", schemaPath, inPrimary, "Import of state from last_state.json is disabled; state file is write-only.");
+    return;
 
     // Lens (optional)
     if (const json_min::Value* vLens = pr.value.get("lens")) {
@@ -1229,7 +1256,8 @@ static void ImportStateFromFile(const std::string& schemaPath, ViewState& view, 
     params.color_tint_r = (float)RequireNumber(schemaPath, *RequireObjField(schemaPath, *vParams, "params", "color_tint_r"), "params.color_tint_r");
     params.color_tint_g = (float)RequireNumber(schemaPath, *RequireObjField(schemaPath, *vParams, "params", "color_tint_g"), "params.color_tint_g");
     params.color_tint_b = (float)RequireNumber(schemaPath, *RequireObjField(schemaPath, *vParams, "params", "color_tint_b"), "params.color_tint_b");
-    params.explaino_seed = RequireIntRange(schemaPath, *RequireObjField(schemaPath, *vParams, "params", "explaino_seed"), "params.explaino_seed", -2147483647, 2147483647);
+    params.explaino_seed = RequireNumber(schemaPath, *RequireObjField(schemaPath, *vParams, "params", "explaino_seed"), "params.explaino_seed");
+    
     params.explaino_warp_strength = (float)RequireNumber(schemaPath, *RequireObjField(schemaPath, *vParams, "params", "explaino_warp_strength"), "params.explaino_warp_strength");
 
     // Engine
@@ -1842,6 +1870,14 @@ struct BindingContext {
         return true;
     }
 
+    bool GetDoubleValue(const std::string& path, double& out) const {
+        double* ptr = nullptr;
+        BindingContext* self = const_cast<BindingContext*>(this);
+        if (!self->BindDouble(path, &ptr) || !ptr) return false;
+        out = *ptr;
+        return true;
+    }
+
     bool EvalVisibleIf(const UISchemaPredicate& pred) const {
         if (pred.op.empty() || pred.path.empty()) {
             UiErrorOrFail("predicate.invalid", schema_path, pred.path, "visible_if missing op/path");
@@ -1883,12 +1919,14 @@ struct BindingContext {
             return true;
         }
 
-        // Numeric predicates (int/float)
+        // Numeric predicates (int/float/double)
         double curN = 0.0;
         {
             int curI = 0;
             float curF = 0.0f;
+            double curD = 0.0;
             if (GetIntValue(pred.path, curI)) curN = (double)curI;
+            else if (GetDoubleValue(pred.path, curD)) curN = curD;
             else if (GetFloatValue(pred.path, curF)) curN = (double)curF;
             else {
                 UiErrorOrFail("predicate.path_unbound", schema_path, pred.path, "Predicate path did not bind to enum/bool/int/float: " + pred.path);
@@ -1922,6 +1960,7 @@ struct BindingContext {
         if (path == "fractal.view.rotation") { *outPtr = &view->rotation_degrees; return true; }
         if (path == "fractal.view.dive_speed") { *outPtr = &view->dive_speed; return true; }
         if (path == "fractal.view.explaino_alive_speed") { *outPtr = &view->explaino_alive_speed; return true; }
+        if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
         if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
         if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
         if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
@@ -1941,11 +1980,17 @@ struct BindingContext {
         return false;
     }
 
+    bool BindDouble(const std::string& path, double** outPtr) {
+        if (!view || !params) return false;
+        if (path == "fractal.params.explaino_seed") { *outPtr = &params->explaino_seed; return true; }
+        return false;
+    }
+
     bool BindInt(const std::string& path, int** outPtr) {
         if (!params || !render) return false;
         if (path == "fractal.params.max_iter") { *outPtr = &params->max_iter; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
-        if (path == "fractal.params.explaino_seed") { *outPtr = &params->explaino_seed; return true; }
+        // explaino_seed is double-backed now; bind via BindDouble
         if (path == "fractal.render.resolution.x") { *outPtr = &render->resolution.x; return true; }
         if (path == "fractal.render.resolution.y") { *outPtr = &render->resolution.y; return true; }
         if (path == "fractal.render.block_size") { *outPtr = &render->block_size; return true; }
@@ -1960,6 +2005,7 @@ struct BindingContext {
         if (path == "fractal.view.auto_dive") { *outPtr = &view->auto_dive; return true; }
         if (path == "fractal.view.explaino_alive") { *outPtr = &view->explaino_alive; return true; }
         if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
+        if (path == "fractal.view.auto_increment_seed") { *outPtr = &view->auto_increment_seed; return true; }
         if (path == "fractal.render.benchmark") { *outPtr = &render->benchmark; return true; }
         if (path == "fractal.lens.enabled") { if (!lens) return false; *outPtr = &lens->enabled; return true; }
         return false;
@@ -2019,6 +2065,22 @@ static bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContex
         return false;
     }
 
+    if (c.value_type == "double") {
+        double* ptr = nullptr;
+        if (!ctx.BindDouble(path, &ptr) || !ptr) return false;
+        double newV = *ptr;
+        if (c.def.is_number()) newV = c.def.as_number();
+        else if (c.def.is_string()) {
+            try { newV = std::stod(c.def.as_string()); } catch (...) { return false; }
+        } else return false;
+        if (*ptr != newV) {
+            *ptr = newV;
+            if (ioDirty) *ioDirty = true;
+            return true;
+        }
+        return false;
+    }
+
     if (c.value_type == "enum") {
         if (!c.def.is_string()) return false;
         std::string cur = ctx.GetEnumId(path);
@@ -2059,6 +2121,12 @@ static inline double Log2D(double v) {
     return log(v) / log(2.0);
 }
 
+// Simple helper: return the explaino free slider value (identity getter).
+static double GetExplainoFreeSlider(const KernelParams* params) {
+    if (!params) return 0.0;
+    return params->explaino_seed;
+}
+
 static inline double Exp2D(double v) {
     return exp(v * log(2.0));
 }
@@ -2087,7 +2155,7 @@ static void SyncViewUiFromHp(ViewState& view) {
 
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     if (!view.auto_dive) return;
-    if (view.camera_behavior == CameraBehavior::manual || view.camera_behavior == CameraBehavior::off) return;
+    if (view.camera_behavior == CameraBehavior::off) return;
 
     // Quick-stabilization pass (per informal spec feedback):
     // "Default behavior should be a simple center-zoom".
@@ -2167,7 +2235,7 @@ static void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& para
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
         params.phoenix_p_imag = 0.0f;
-        params.explaino_seed = 1337;
+        
         params.explaino_warp_strength = 0.0f;
         params.explaino_root_count = 0;
         if (ioDirty) *ioDirty = true;
@@ -2190,7 +2258,7 @@ static void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& para
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
         params.phoenix_p_imag = 0.0f;
-        params.explaino_seed = 1337;
+        
         params.explaino_warp_strength = 0.0f;
         params.explaino_root_count = 0;
         if (ioDirty) *ioDirty = true;
@@ -2240,6 +2308,34 @@ static inline uint32_t HashU32(uint32_t x) {
 static inline float Hash01(uint32_t x) {
     // 24-bit fraction
     return (float)(HashU32(x) & 0x00ffffffU) / (float)0x01000000U;
+}
+
+// Compute deterministic, per-tick modulation delta in fractional-seed units.
+// mode: 1=sinusoid,2=sweep,3=dreamy(composite)
+static double ComputeSeedModDelta(int mode, double amp, double period, double phase, uint32_t seed32, int t) {
+    if (mode == 0 || amp == 0.0) return 0.0;
+    const double twoPi = 6.283185307179586;
+    double tt = (double)t;
+    double T = fmax(1.0, period);
+    if (mode == 1) {
+        return amp * sin(twoPi * (tt / T) + phase);
+    } else if (mode == 2) {
+        // triangle wave in [-amp, +amp]
+        double frac = fmod(tt / T, 1.0);
+        double tri = (frac < 0.5) ? (4.0 * frac - 1.0) : (3.0 - 4.0 * frac);
+        return amp * tri;
+    } else if (mode == 3) {
+        // Dreamy composite: slow triangle sweep + faster carrier + seeded low-freq noise
+        double slow = 0.50 * amp * ((fmod(tt / T, 1.0) < 0.5) ? (4.0 * fmod(tt / T, 1.0) - 1.0) : (3.0 - 4.0 * fmod(tt / T, 1.0)));
+        double carrierT = fmax(1.0, T / 3.0);
+        double carrier = 0.35 * amp * sin(twoPi * (tt / carrierT) + phase + ((double)Hash01(HashU32(seed32 ^ 0x9E3779B9u)) * twoPi));
+        // seeded pseudo-noise: deterministic hash -> mapped to [-1,1], low frequency by stepping per period block
+        uint32_t hh = HashU32((uint32_t)(t / fmax(1.0, floor(T)) ) ^ seed32);
+        double n = (double)Hash01(hh) * 2.0 - 1.0;
+        double noise = 0.15 * amp * n;
+        return slow + carrier + noise;
+    }
+    return 0.0;
 }
 
 // Flashlight manifold sampler (shared invariant): the LIVE trace and the headless probe
@@ -2331,7 +2427,7 @@ static void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params
     if (!isfinite(driftFrac)) driftFrac = 0.0f;
     driftFrac = ClampF(driftFrac, 0.0f, 1.0f);
 
-    int seedBase = params.explaino_seed + (int)driftFloor;
+    int seedBase = (int)params.explaino_seed + (int)driftFloor;
     uint32_t s0 = (uint32_t)seedBase;
     uint32_t s1 = (uint32_t)(seedBase + 1);
     float phase = view.explaino_phase;
@@ -2559,6 +2655,88 @@ static bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ct
         return changed;
     }
 
+    if (c.type == "slider_double" || c.type == "drag_double") {
+        double* ptr = nullptr;
+        if (!ctx.BindDouble(b.path, &ptr) || !ptr) {
+            FailFastUiError("ui.bind_failed", ctx.schema_path, b.path, "BindDouble failed for path: " + b.path + " (control: " + c.id + ")");
+            ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
+            ImGui::PopID();
+            return false;
+        }
+
+        double minV = c.has_min ? c.min : 0.0;
+        double maxV = c.has_max ? c.max : 1.0;
+        // Compute a sensible default drag speed for doubles.
+        // If a step is provided in the schema, use it; otherwise pick a fraction
+        // of the full range so dragging produces smooth, small adjustments even
+        // with very large min/max values.
+        double speedD;
+        if (c.has_step) {
+            speedD = c.step;
+        } else {
+            double range = fabs(maxV - minV);
+            // Spread one full-range change across ~10000 drag units; but clamp
+            // to a small epsilon so tiny ranges still move.
+            speedD = (range > 0.0) ? (range / 10000.0) : 1e-6;
+            if (speedD < 1e-9) speedD = 1e-9;
+        }
+
+        bool changed = false;
+        // Choose a sane format: prefer the schema format when it looks float-like,
+        // otherwise force a fractional format so decimals are visible.
+        std::string valFmt = c.has_format ? c.format : "%.6f";
+        // If schema accidentally provided an integer format, prefer fractional display
+        if (valFmt.find('%') != std::string::npos && valFmt.find('d') != std::string::npos && valFmt.find('f') == std::string::npos) {
+            valFmt = "%.6f";
+        }
+
+        // Special-case the explaino seed control so the UI shows the
+        // instantaneous seed (integer seed + fractional drift) while
+        // auto-increment is active. When edited, write back into both
+        // `params.explaino_seed` (integer part) and `view.explaino_seed_drift` (fraction).
+        BindingContext* bctx = &ctx;
+        if (b.path == "fractal.params.explaino_seed" && bctx->view && bctx->params) {
+            double cur = bctx->params->explaino_seed + (double)bctx->view->explaino_seed_drift;
+            double displayed = cur;
+            bool localChanged = false;
+            if (c.type == "slider_double") {
+                localChanged = ImGui::SliderScalar(c.label.c_str(), ImGuiDataType_Double, &displayed, &minV, &maxV, valFmt.c_str());
+            } else {
+                localChanged = ImGui::DragScalar(c.label.c_str(), ImGuiDataType_Double, &displayed, (float)speedD, &minV, &maxV, valFmt.c_str());
+            }
+            ImGui::SameLine();
+            bool typedChanged = ImGui::InputDouble("##val", &displayed, 0.0, 0.0, valFmt.c_str());
+            if (typedChanged) localChanged = true;
+            if (localChanged) {
+                double intpart = floor(displayed);
+                double frac = displayed - intpart;
+                if (!isfinite(frac) || frac < 0.0) frac = 0.0;
+                bctx->params->explaino_seed = intpart;
+                bctx->view->explaino_seed_drift = (float)frac;
+                if (ioDirty) *ioDirty = true;
+                ImGui::PopID();
+                return true;
+            }
+            ImGui::PopID();
+            return false;
+        }
+
+        if (c.type == "slider_double") {
+            changed = ImGui::SliderScalar(c.label.c_str(), ImGuiDataType_Double, ptr, &minV, &maxV, valFmt.c_str());
+        } else {
+            changed = ImGui::DragScalar(c.label.c_str(), ImGuiDataType_Double, ptr, (float)speedD, &minV, &maxV, valFmt.c_str());
+        }
+
+        // Also expose an adjacent compact input box so users can click and type an exact
+        // double value. Use a schemaless label (scoped by PushID) so layout stays tidy.
+        ImGui::SameLine();
+        bool typedChanged = ImGui::InputDouble("##val", ptr, 0.0, 0.0, valFmt.c_str());
+        if (typedChanged) changed = true;
+        if (changed && ioDirty) *ioDirty = true;
+        ImGui::PopID();
+        return changed;
+    }
+
     if (c.type == "combo") {
         if (c.value_type == "enum") {
             std::string cur = ctx.GetEnumId(b.path);
@@ -2647,6 +2825,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     //      Optional: --flashlight-ticks <N> (default 8), --flashlight-radius <r> (default 0.75), --flashlight-zoom-radius <r> (default 0.25)
     //  - --flashlight-live <path> : same probe, but runs with the interactive window and draws live debug lenses + vector trace
     //  - --ui-schema <path> : explicit schema path (disables implicit search)
+    //  - --explaino-seed <number> : set initial Explain-o seed (accepts integer or float)
     //  - --no-messagebox : disable MessageBox popups (useful for CI / scripts)
     const std::vector<std::string> args = GetCommandLineArgsUtf8();
     g_uiSoftErrors = HasArg(args, "--ui-soft");
@@ -2812,6 +2991,61 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::string schemaOverride;
     TryGetArgValue(args, "--ui-schema", schemaOverride);
 
+    // Optional CLI override for Explain-o seed (accepts integers or floats).
+    std::string explainoSeedArg;
+    bool haveExplainoSeed = false;
+    double explainoSeedValue = 0.0;
+    if (TryGetArgValue(args, "--explaino-seed", explainoSeedArg) && !explainoSeedArg.empty()) {
+        try {
+            explainoSeedValue = std::stod(explainoSeedArg);
+            haveExplainoSeed = true;
+        } catch (...) {
+            ReportUiErrorOnce("args.invalid", "", "--explaino-seed", "Usage: --explaino-seed <number>");
+            return 1;
+        }
+    }
+
+    // Optional CLI flags to control headless seed modulation (overrides prefill).
+    std::string seedModModeArg;
+    std::string seedModAmpArg;
+    std::string seedModPeriodArg;
+    std::string seedModPhaseArg;
+    int cli_seed_mod_mode = 0; // 0=none,1=sinusoid,2=sweep
+    double cli_seed_mod_amp = 0.0;
+    double cli_seed_mod_period = 1.0;
+    double cli_seed_mod_phase = 0.0;
+    bool haveCliSeedMod = false;
+    if (TryGetArgValue(args, "--seed-mod-mode", seedModModeArg) && !seedModModeArg.empty()) {
+        std::string m = seedModModeArg;
+        if (m == "sinusoid") cli_seed_mod_mode = 1;
+        else if (m == "sweep") cli_seed_mod_mode = 2;
+        else cli_seed_mod_mode = 0;
+        haveCliSeedMod = true;
+    }
+    if (TryGetArgValue(args, "--seed-mod-amp", seedModAmpArg) && !seedModAmpArg.empty()) {
+        try { cli_seed_mod_amp = std::stod(seedModAmpArg); haveCliSeedMod = true; } catch (...) {}
+    }
+    if (TryGetArgValue(args, "--seed-mod-period", seedModPeriodArg) && !seedModPeriodArg.empty()) {
+        try { cli_seed_mod_period = std::stod(seedModPeriodArg); haveCliSeedMod = true; } catch (...) {}
+    }
+    if (TryGetArgValue(args, "--seed-mod-phase", seedModPhaseArg) && !seedModPhaseArg.empty()) {
+        try { cli_seed_mod_phase = std::stod(seedModPhaseArg); haveCliSeedMod = true; } catch (...) {}
+    }
+    // Debug: write CLI parsing result to diagnostics folder so we can inspect what args were seen.
+    {
+        std::ostringstream ss;
+        ss << "{\n  \"args_count\": " << args.size() << ",\n  \"haveExplainoSeed\": " << (haveExplainoSeed ? "true" : "false") << ",\n  \"explainoSeedValue\": " << explainoSeedValue << ",\n  \"args\": [\n";
+        for (size_t i = 0; i < args.size(); ++i) {
+            ss << "    \"" << JsonEscape(args[i]) << "\"";
+            if (i + 1 < args.size()) ss << ",\n";
+            else ss << "\n";
+        }
+        ss << "  ]\n}\n";
+        std::string dbgDir = NormalizePath(JoinPath(GetExeDir(), "..\\ui\\diagnostics\\last"));
+        EnsureDirectoryRecursive(dbgDir);
+        WriteTextFile(JoinPath(dbgDir, "cli_debug.json"), ss.str());
+    }
+
     std::string exeDirEarly = GetExeDir();
     std::vector<std::string> schemaCandidatesEarly;
     if (!schemaOverride.empty()) {
@@ -2836,6 +3070,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ViewState view{};
         KernelParams params{};
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
         RenderSettings render{};
         LensSettings lens{};
         bool dirty = false;
@@ -2855,6 +3090,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
 
         ApplySchemaDefaults(schema, ctx, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
 
         // Invariants for fast bug-fix workflows: these must exist in the loaded schema.
         if (!SchemaHasBinding(schema, "param", "fractal.lens.enabled")) {
@@ -2881,6 +3117,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ViewState view{};
         KernelParams params{};
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
         RenderSettings render{};
         LensSettings lens{};
         bool dirty = false;
@@ -2899,6 +3136,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
 
         ApplySchemaDefaults(schema, ctx, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
 
         // Same invariants as validate-only: ensures headless captures always include lens toggle + diag capture action in the schema.
         if (!SchemaHasBinding(schema, "param", "fractal.lens.enabled")) {
@@ -2912,6 +3150,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         // Ensure derived fields are coherent with the chosen fractal.
         ApplyFractalPresetDefaults(view, params, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
         UpdateExplainoPolynomial(view, params, &dirty);
         SyncViewHpFromUi(view);
 
@@ -2961,6 +3201,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ViewState view{};
         KernelParams params{};
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
         RenderSettings render{};
         LensSettings lens{};
         bool dirty = false;
@@ -2979,11 +3220,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
 
         ApplySchemaDefaults(schema, ctx, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
 
         // Force lens on for a probe (we need a mask to compute SDF).
         lens.enabled = true;
 
         ApplyFractalPresetDefaults(view, params, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
         UpdateExplainoPolynomial(view, params, &dirty);
         SyncViewHpFromUi(view);
 
@@ -3056,6 +3299,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ViewState view{};
         KernelParams params{};
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
         RenderSettings render{};
         LensSettings lens{};
         bool dirty = false;
@@ -3075,6 +3319,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         // Apply UI schema defaults so the headless probe matches what the UI would do.
         // (Probe safety still overrides camera automation below.)
         ApplySchemaDefaults(schema, ctx, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
 
         // Force an Explain-o family target so the probe is sampling the seed-driven runtime.
         // Default: explaino_fp (flow).
@@ -3093,6 +3338,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         // Use preset defaults for this mode (keeps the headless probe aligned with the normal UI presets).
         ApplyFractalPresetDefaults(view, params, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
 
         // PROBE SAFETY: disable all camera automation.
         view.camera_behavior = CameraBehavior::manual;
@@ -3105,13 +3351,86 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         view.zoom = 1.0f;
 
         // Deterministic parameterization from the seed.
-        params.explaino_seed = (int)seed32;
+        params.explaino_seed = (double)seed32;
         // PROBE SAFETY: warp must be explicitly provided (external parameter). Default 0.
         params.explaino_warp_strength = flashlightWarp;
         view.explaino_seed_tween = true;
         view.explaino_alive = false;
         view.explaino_phase = 0.0f;
+        // Default drift is zero, but allow a workspace prefill to override for deterministic tests.
         view.explaino_seed_drift = 0.0f;
+        // Prefill-local seed modulation parameters (optional)
+        int prefill_seed_mod_mode = 0; // 0=none,1=sinusoid,2=sweep
+        double prefill_seed_mod_amp = 0.0;
+        double prefill_seed_mod_period = 1.0;
+        double prefill_seed_mod_phase = 0.0;
+        bool have_prefill_seed_mod = false;
+
+        // If a prefill JSON exists in diagnostics, apply `view` overrides (opt-in testing hook).
+        {
+            std::string baseDir = NormalizePath(GetDiagnosticsPrimaryDir());
+            if (GetFileAttributesA(baseDir.c_str()) == INVALID_FILE_ATTRIBUTES) {
+                baseDir = NormalizePath(GetDiagnosticsSecondaryDir());
+            }
+            const std::string prefillPath = JoinPath(baseDir, "flashlight_bridge_prefill.json");
+            std::string prefillText;
+            if (ReadTextFile(prefillPath, prefillText)) {
+                auto pr = json_min::Parse(prefillText);
+                if (pr.error.empty() && pr.value.is_object()) {
+                    if (const json_min::Value* vv = pr.value.get("view")) {
+                        if (vv->is_object()) {
+                            if (const json_min::Value* a = vv->get("auto_increment_seed")) {
+                                if (a->is_bool()) view.auto_increment_seed = a->as_bool();
+                            }
+                            if (const json_min::Value* d = vv->get("explaino_seed_drift")) {
+                                if (d->is_number()) {
+                                    double dv = d->as_number();
+                                    if (dv < 0.0) dv = 0.0;
+                                    if (dv >= 1.0) dv = fmod(dv, 1.0);
+                                    view.explaino_seed_drift = (float)dv;
+                                }
+                            }
+                            if (const json_min::Value* sm = vv->get("seed_modulation")) {
+                                have_prefill_seed_mod = true;
+                                if (sm->is_string()) {
+                                    const std::string m = sm->as_string();
+                                    if (m == "sinusoid") prefill_seed_mod_mode = 1;
+                                    else if (m == "sweep") prefill_seed_mod_mode = 2;
+                                    else prefill_seed_mod_mode = 0;
+                                } else if (sm->is_object()) {
+                                    if (const json_min::Value* s = sm->get("mode")) {
+                                        if (s->is_string()) {
+                                            const std::string m = s->as_string();
+                                            if (m == "sinusoid") prefill_seed_mod_mode = 1;
+                                            else if (m == "sweep") prefill_seed_mod_mode = 2;
+                                            else prefill_seed_mod_mode = 0;
+                                        }
+                                    }
+                                    if (const json_min::Value* a2 = sm->get("amp")) {
+                                        if (a2->is_number()) prefill_seed_mod_amp = a2->as_number();
+                                    }
+                                    if (const json_min::Value* p = sm->get("period")) {
+                                        if (p->is_number()) prefill_seed_mod_period = p->as_number();
+                                    }
+                                    if (const json_min::Value* ph = sm->get("phase")) {
+                                        if (ph->is_number()) prefill_seed_mod_phase = ph->as_number();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // If the CLI supplied modulation flags, prefer them over prefill JSON.
+        if (haveCliSeedMod) {
+            prefill_seed_mod_mode = cli_seed_mod_mode;
+            prefill_seed_mod_amp = cli_seed_mod_amp;
+            prefill_seed_mod_period = cli_seed_mod_period;
+            prefill_seed_mod_phase = cli_seed_mod_phase;
+            have_prefill_seed_mod = true;
+        }
 
         UpdateExplainoPolynomial(view, params, &dirty);
         SyncViewHpFromUi(view);
@@ -3197,6 +3516,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         float closureSigned0 = 0.0f;
         bool closureSampled0 = false;
 
+        const double probeRatePerSecond = 0.35; // slower default (30% reduction)
+        const double perTickDt = 1.0; // treat each probe tick as 1s for deterministic advance
+        const double driftBaseline = view.explaino_seed_drift;
         for (int t = 0; t < flashlightTicks; t++) {
             const bool isClosureTick = flashlightClosureLast && (t == flashlightTicks - 1);
             const int walkT = isClosureTick ? flashlightClosureRefT : t;
@@ -3214,9 +3536,25 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             view.center_hp_y = baseCy + dyWorld;
             SyncViewUiFromHp(view);
 
-            // Treat time as tick index: drift the seed in a deterministic, bounded way.
-            view.explaino_seed_drift = (float)walkT;
-            view.explaino_phase = (float)walkT * 0.15f;
+            // Treat time as tick index: deterministic walk by default.
+            // If the workspace prefill enabled `auto_increment_seed`, prefer
+            // a continuous, opt-in drift so headless probes can exercise smoothing.
+            // Compute optional modulation delta (applied additively to the drift baseline).
+            double modDelta = 0.0;
+            if (have_prefill_seed_mod && prefill_seed_mod_mode != 0) {
+                modDelta = ComputeSeedModDelta(prefill_seed_mod_mode, prefill_seed_mod_amp, prefill_seed_mod_period, prefill_seed_mod_phase, seed32, t);
+            }
+
+            if (view.auto_increment_seed) {
+                // Deterministic advance based on tick index + optional modulation.
+                view.explaino_seed_drift = (float)(driftBaseline + (probeRatePerSecond * perTickDt * (double)t) + modDelta);
+                if (view.explaino_seed_drift > 1.0e6f) view.explaino_seed_drift = fmodf(view.explaino_seed_drift, 1024.0f);
+                view.explaino_phase = view.explaino_phase + (float)(0.15f * probeRatePerSecond * perTickDt);
+            } else {
+                // Deterministic walk based on tick but allow additive modulation.
+                view.explaino_seed_drift = (float)((double)walkT + modDelta);
+                view.explaino_phase = (float)walkT * 0.15f;
+            }
             UpdateExplainoPolynomial(view, params, &dirty);
 
             std::vector<uint32_t> rgba;
@@ -3229,6 +3567,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             if (!RenderFractalCUDA(view, params, render, rgba.data(), mask.data(), &stats, &err)) {
                 ReportUiErrorOnce("render.cuda", schemaPath, "RenderFractalCUDA", err ? err : "Render failed");
                 return 1;
+            }
+
+            // Emit a per-tick full-resolution frame BMP so external tooling can
+            // composite the trace (fixed view) onto each fractal underlay.
+            {
+                std::string baseDir = NormalizePath(GetDiagnosticsPrimaryDir());
+                if (GetFileAttributesA(baseDir.c_str()) == INVALID_FILE_ATTRIBUTES) {
+                    baseDir = NormalizePath(GetDiagnosticsSecondaryDir());
+                }
+                EnsureDirectoryRecursive(baseDir);
+                char fn[64];
+                snprintf(fn, sizeof(fn), "frame_%03d.bmp", t);
+                const std::string perTickFrame = JoinPath(baseDir, fn);
+                WriteBmp32BGRA(perTickFrame, rgba.data(), render.resolution.x, render.resolution.y);
             }
 
             const int ds = NormalizeLensDownsamplePow2(lens.downsample);
@@ -3255,6 +3607,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             if (isClosureTick) {
                 js << "      \"closure_ref_t\": " << walkT << ",\n";
             }
+            js << "      \"explaino_seed\": " << (double)params.explaino_seed << ",\n";
+            js << "      \"explaino_seed_drift\": " << (double)view.explaino_seed_drift << ",\n";
             js << "      \"camera\": {\n";
             js << "        \"center_hp_x\": " << view.center_hp_x << ",\n";
             js << "        \"center_hp_y\": " << view.center_hp_y << ",\n";
@@ -3436,6 +3790,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     ViewState view{};
     KernelParams params{};
+    if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
     RenderSettings render{};
     LensSettings lens{};
     RenderStats stats{};
@@ -3483,6 +3838,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     {
         ApplySchemaDefaults(uiSchema, initBind, &dirty);
+        if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
 
         // Ensure polynomial coefficients remain coherent if schema sets poly_kind.
         if (params.poly_kind != PolyKind::custom) {
@@ -3651,10 +4007,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         bool pendingAutoEmit = false;
         std::string lastPrefillNote;
         std::string lastStatus;
+        // Optional test/time-modulation for headless probes (populated from prefill).
+        // 0 = none, 1 = sinusoid, 2 = sweep
+        int seed_mod_mode = 0;
+        double seed_mod_amp = 0.0;
+        double seed_mod_period = 1.0;
+        double seed_mod_phase = 0.0;
     } bridge;
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
-    int lastExplainoSeed = params.explaino_seed;
+    double lastExplainoSeed = params.explaino_seed;
     float lastExplainoWarp = params.explaino_warp_strength;
     bool lastExplainoAlive = view.explaino_alive;
 
@@ -3755,7 +4117,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
                 // Ensure derived fields match the target.
                 ApplyFractalPresetDefaults(view, params, &dirty);
-                params.explaino_seed = (int)fl.seed32;
+                if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
+                params.explaino_seed = (double)fl.seed32;
                 // PROBE SAFETY: warp must be explicitly provided (external parameter). Default 0.
                 params.explaino_warp_strength = flashlightLiveWarp;
                 view.explaino_seed_tween = false;
@@ -3965,6 +4328,55 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                                 bridge.lastPrefillIdAutoEmitted = prefillId;
                             }
 
+                            // Allow workspace prefill to set certain view flags (opt-in).
+                            if (const json_min::Value* vv = pr.value.get("view")) {
+                                if (vv->is_object()) {
+                                    if (const json_min::Value* a = vv->get("auto_increment_seed")) {
+                                        if (a->is_bool()) {
+                                            view.auto_increment_seed = a->as_bool();
+                                        }
+                                    }
+                                    // Optional: allow setting initial drift fraction for testing.
+                                    if (const json_min::Value* d = vv->get("explaino_seed_drift")) {
+                                        if (d->is_number()) {
+                                            double dv = d->as_number();
+                                            if (dv < 0.0) dv = 0.0;
+                                            if (dv >= 1.0) dv = fmod(dv, 1.0);
+                                            view.explaino_seed_drift = (float)dv;
+                                        }
+                                    }
+                                    // Optional: seed modulation settings (sinusoid/sweep).
+                                    if (const json_min::Value* sm = vv->get("seed_modulation")) {
+                                        if (sm->is_string()) {
+                                            const std::string m = sm->as_string();
+                                            if (m == "sinusoid") bridge.seed_mod_mode = 1;
+                                            else if (m == "sweep") bridge.seed_mod_mode = 2;
+                                            else if (m == "dreamy") bridge.seed_mod_mode = 3;
+                                            else bridge.seed_mod_mode = 0;
+                                        } else if (sm->is_object()) {
+                                            if (const json_min::Value* s = sm->get("mode")) {
+                                                if (s->is_string()) {
+                                                    const std::string m = s->as_string();
+                                                    if (m == "sinusoid") bridge.seed_mod_mode = 1;
+                                                    else if (m == "sweep") bridge.seed_mod_mode = 2;
+                                                    else if (m == "dreamy") bridge.seed_mod_mode = 3;
+                                                    else bridge.seed_mod_mode = 0;
+                                                }
+                                            }
+                                            if (const json_min::Value* a = sm->get("amp")) {
+                                                if (a->is_number()) bridge.seed_mod_amp = a->as_number();
+                                            }
+                                            if (const json_min::Value* p = sm->get("period")) {
+                                                if (p->is_number()) bridge.seed_mod_period = p->as_number();
+                                            }
+                                            if (const json_min::Value* ph = sm->get("phase")) {
+                                                if (ph->is_number()) bridge.seed_mod_phase = ph->as_number();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             // One-shot behavior: if the workspace is using this, treat it as consumed.
                             DeleteFileA(prefillPath.c_str());
                         } else {
@@ -4098,6 +4510,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (view.fractal_type != lastFractalType) {
             lastFractalType = view.fractal_type;
             ApplyFractalPresetDefaults(view, params, &dirty);
+            if (haveExplainoSeed) params.explaino_seed = explainoSeedValue;
             UpdateExplainoPolynomial(view, params, &dirty);
             SyncViewHpFromUi(view);
         }
@@ -5740,6 +6153,36 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 UpdateExplainoPolynomial(view, params, &dirty);
                 dirty = true;
             }
+        }
+
+        // Auto-increment global explaino seed via the existing drift mechanism
+        // (smooth tweening): when enabled, advance `view.explaino_seed_drift`
+        // continuously by `rate` per second; when it crosses 1.0, bump the
+        // integer seed and retain the fractional remainder. This produces
+        // visually smooth interpolation using the existing polynomial tween.
+        if (view.auto_increment_seed) {
+            static double seedIncAccum = 0.0;
+            double dt = io.DeltaTime;
+            if (!isfinite(dt) || dt <= 0.0) dt = 0.0;
+            // Use per-second rate from view state so the user can tune it at runtime
+            const double ratePerSecond = fmax(0.0, (double)view.explaino_seed_rate);
+            double delta = ratePerSecond * dt;
+            // Accumulate into the View's fractional drift (keeps semantics used by UpdateExplainoPolynomial)
+            float oldDrift = view.explaino_seed_drift;
+            view.explaino_seed_drift = view.explaino_seed_drift + (float)delta;
+            // Carry overflow into the integer seed
+            if (view.explaino_seed_drift >= 1.0f) {
+                int carry = (int)floorf(view.explaino_seed_drift);
+                view.explaino_seed_drift -= (float)carry;
+                params.explaino_seed = params.explaino_seed + (double)carry;
+            }
+            // If the fractional drift changed this frame, update the polynomial so interpolation is smooth.
+            if (fabsf(view.explaino_seed_drift - oldDrift) > 0.0f) {
+                UpdateExplainoPolynomial(view, params, &dirty);
+                dirty = true;
+            }
+            // Keep drift bounded to avoid runaway accumulation in odd cases
+            if (view.explaino_seed_drift > 1.0e6f) view.explaino_seed_drift = fmodf(view.explaino_seed_drift, 1024.0f);
         }
 
         // Camera behavior loop (per-frame deltas scaled only by dive_speed; no dt semantics).

@@ -67,6 +67,12 @@ struct ViewState {
     float explaino_alive_speed{1.0f};
     float explaino_phase{0.0f};
     float explaino_seed_drift{0.0f};
+    // When true, automatically increment the global explaino seed slowly
+    // (advance by one representable double ULP per second).
+    bool auto_increment_seed{false};
+    // Per-second rate used when `auto_increment_seed` is enabled.
+    // This allows the user to slow/speed the smooth fractional drift.
+    float explaino_seed_rate{0.35f};
 
     CameraBehavior camera_behavior{CameraBehavior::complexity};
     bool auto_dive{true};
@@ -94,7 +100,7 @@ struct KernelParams {
     float color_tint_b{1.00f};
 
     // Explaino: seed-driven warp controls (kept small for stability).
-    int explaino_seed{1337};
+    double explaino_seed{3.141592653589793};
     float explaino_warp_strength{0.35f};
 
     // Explaino: roots of the current seed-derived polynomial (for basin coloring).

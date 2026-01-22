@@ -1,5 +1,5 @@
 // Minimal CUDA Newton fractal renderer (PPM output)
-// Artifacts-only: intended to live under C:\artifacts\cuda_newton_fractal
+// Previously referenced artifacts-only location; now local under project\cuda_newton_fractal
 
 #include <cuda_runtime.h>
 

@@ -1,6 +1,6 @@
 {
   "stage": "probe.read_failed",
   "schema_path": "",
-  "failing_path": "--flashlight-ticks",
+  "failing_path": "..\\..\\docs\\last_response.md",
   "detail": "Failed to read flashlight seed text file"
 }

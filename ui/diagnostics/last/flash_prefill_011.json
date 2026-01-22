@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "flashlight_probe_headless",
+  "prefill_id": 123467,
+  "seed_path": "C:\\\\code\\\\setup-test\\\\docs\\\\last_response.md",
+  "ticks": 1,
+  "warp": 0.0,
+  "closure_last": false,
+  "no_export": false,
+  "auto_emit": false,
+  "note": "frame_prefill_11",
+  "fractal_type": "explaino_fp",
+  "fractal_function_index": 9,
+  "view": {
+    "auto_increment_seed": false,
+    "explaino_seed_drift": 10.734583333333333,
+    "show_composite": false,
+    "show_trace": false
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "stage": "schema.bind_failed",
+  "schema_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\fractal_binding_surface_v1.ui_schema.json",
+  "failing_path": "fractal.view.auto_increment_seed",
+  "detail": "Bind failed for bool path: fractal.view.auto_increment_seed (control: auto_increment_seed)"
+}

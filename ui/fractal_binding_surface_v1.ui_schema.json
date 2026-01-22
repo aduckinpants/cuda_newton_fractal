@@ -1,153 +1,37 @@
 {
+  "title": "Newton Fractal UI Schema",
+  "description": "UI schema for controlling the Newton fractal renderer.",
   "schema_version": "1",
   "namespace": "fractal",
-  "notes": [
-    "Refreshed layout (v1).",
-    "Bindings/capabilities validate fail-fast; use --ui-soft to keep app running while editing."
-  ],
   "panels": [
     {
-      "id": "quick",
-      "label": "Quick",
-      "order": 10,
+      "label": "View",
+      "order": 27,
       "controls": [
         {
           "id": "fractal_type",
           "type": "combo",
-          "label": "Fractal Type",
+          "label": "Fractal",
           "value_type": "enum",
-          "order": 10,
-          "help": "Select the fractal formula.",
+          "order": 5,
           "binding": {
             "kind": "param",
             "path": "fractal.view.fractal_type"
           },
           "default": "explaino",
           "options": [
-            {
-              "id": "newton",
-              "label": "Newton"
-            },
-            {
-              "id": "nova",
-              "label": "Nova"
-            },
-            {
-              "id": "explaino",
-              "label": "Explaino (Newton Joy)"
-            },
-            {
-              "id": "explaino_y",
-              "label": "Explaino Y (Unfold)"
-            },
-            {
-              "id": "explaino_fp",
-              "label": "Explaino Fixed-Point (Flow)"
-            },
-            {
-              "id": "mandelbrot",
-              "label": "Mandelbrot"
-            },
-            {
-              "id": "julia",
-              "label": "Julia"
-            },
-            {
-              "id": "burning_ship",
-              "label": "Burning Ship"
-            },
-            {
-              "id": "multibrot",
-              "label": "Multibrot"
-            },
-            {
-              "id": "phoenix",
-              "label": "Phoenix"
-            }
+            { "id": "explaino", "label": "Explaino (fp)" },
+            { "id": "explaino_y", "label": "Explaino Y" },
+            { "id": "explaino_fp", "label": "Explaino FP" },
+            { "id": "newton", "label": "Newton" },
+            { "id": "nova", "label": "Nova" },            
+            { "id": "mandelbrot", "label": "Mandelbrot" },
+            { "id": "julia", "label": "Julia" },
+            { "id": "burning_ship", "label": "Burning Ship" },
+            { "id": "multibrot", "label": "Multibrot" },
+            { "id": "phoenix", "label": "Phoenix" }
           ]
         },
-        {
-          "id": "auto_refresh",
-          "type": "checkbox",
-          "label": "Auto-refresh",
-          "value_type": "bool",
-          "order": 20,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.auto_refresh"
-          },
-          "default": true
-        },
-        {
-          "id": "render_once",
-          "type": "button",
-          "label": "Render Once",
-          "order": 30,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.render_once"
-          }
-        },
-        {
-          "id": "reset_view",
-          "type": "button",
-          "label": "Reset View",
-          "order": 40,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.reset_view"
-          }
-        },
-        {
-          "id": "reset_all",
-          "type": "button",
-          "label": "Reset All",
-          "order": 50,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.reset_all"
-          }
-        },
-        {
-          "id": "export_state",
-          "type": "button",
-          "label": "Save State (last_state.json)",
-          "order": 60,
-          "help": "Write camera/fractal/engine state to ..\\ui\\last_state.json.",
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.export_state"
-          }
-        },
-        {
-          "id": "import_state",
-          "type": "button",
-          "label": "Load State (last_state.json)",
-          "order": 70,
-          "help": "Load camera/fractal/engine state from ..\\ui\\last_state.json (strict).",
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.import_state"
-          }
-        },
-        {
-          "id": "capture_diagnostic",
-          "label": "Capture Diagnostic (F12)",
-          "help": "Writes ..\\\\ui\\\\diagnostics\\\\last\\\\{frame.bmp,state.json,ui_error.json?} (overwrites).",
-          "type": "button",
-          "order": 80,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.capture_diagnostic"
-          }
-        }
-      ]
-    },
-    {
-      "id": "camera",
-      "label": "Camera",
-      "order": 20,
-      "controls": [
         {
           "id": "center_x",
           "type": "drag_float",
@@ -161,7 +45,7 @@
           "default": 0.0,
           "min": -2.0,
           "max": 2.0,
-          "step": 0.001
+          "step": 0.0001
         },
         {
           "id": "center_y",
@@ -188,10 +72,10 @@
             "kind": "param",
             "path": "fractal.view.zoom"
           },
-          "default": 1.0,
-          "min": 0.05,
-          "max": 1000000.0,
-          "step": 0.01
+            "default": 2.0,
+            "min": 0.0,
+            "max": 1e12,
+            "step": null
         },
         {
           "id": "rotation_deg",
@@ -206,7 +90,7 @@
           "default": 0.0,
           "min": -180.0,
           "max": 180.0,
-          "step": 0.1
+          "step": null
         },
         {
           "id": "camera_behavior",
@@ -252,7 +136,8 @@
             "kind": "param",
             "path": "fractal.view.auto_dive"
           },
-          "default": false
+          "default": false,
+          "help": "When enabled, camera will periodically dive based on `Dive Speed`."
         },
         {
           "id": "dive_speed",
@@ -264,7 +149,7 @@
             "kind": "param",
             "path": "fractal.view.dive_speed"
           },
-          "default": 0.0,
+          "default": 0.25,
           "min": 0.0,
           "max": 5.0,
           "step": 0.01,
@@ -272,9 +157,48 @@
             "op": "eq",
             "path": "fractal.view.auto_dive",
             "value": true
-          }
+          },
+          "help": "Per-frame dive speed scale; meaningful only when Auto-Dive is enabled."
         }
-      ]
+        ,
+        {
+          "id": "auto_increment_seed",
+          "type": "checkbox",
+          "label": "Auto-Increment Seed",
+          "value_type": "bool",
+          "order": 85,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.auto_increment_seed"
+          },
+          "default": false,
+          "help": "When checked, slowly advance the Explain-o seed by one representable double ULP per second."
+        }
+        ,
+        {
+          "id": "explaino_seed_rate",
+          "type": "slider_float",
+          "label": "Seed Increment Rate (per sec)",
+          "value_type": "float",
+          "order": 86,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.explaino_seed_rate"
+          },
+          "default": 0.35,
+          "min": 1e-05,
+          "max": 2.0,
+          "step": 1e-05,
+          "format": "%.6f",
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.auto_increment_seed",
+            "value": true
+          },
+          "help": "Controls the per-second advance applied to the Explain-o seed fractional drift when Auto-Increment is enabled."
+        }
+      ],
+      "id": "panel_0"
     },
     {
       "label": "Lens",
@@ -581,23 +505,17 @@
         },
         {
           "id": "explaino_seed",
-          "type": "drag_int",
+          "type": "slider_double",
           "label": "Explaino Seed",
-          "value_type": "int",
+          "value_type": "double",
           "order": 100,
           "binding": {
             "kind": "param",
             "path": "fractal.params.explaino_seed"
           },
-          "default": 1337,
-          "min": -2147483647,
-          "max": 2147483647,
-          "step": 1,
-          "visible_if": {
-            "op": "eq",
-            "path": "fractal.cap.supports_explaino_controls",
-            "value": true
-          }
+          "default": 0.4725357142857143,
+          "min": 0.0,
+          "max": 10.0
         },
         {
           "id": "explaino_prev_seed",
@@ -875,6 +793,18 @@
             "path": "fractal.render.benchmark"
           },
           "default": false
+        }
+        ,
+        {
+          "id": "capture_diag",
+          "type": "button",
+          "label": "Capture Diagnostic",
+          "order": 60,
+          "help": "Capture diagnostic snapshot and logs.",
+          "binding": {
+            "kind": "action",
+            "path": "fractal.actions.capture_diagnostic"
+          }
         }
       ]
     }

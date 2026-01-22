@@ -1,0 +1,1304 @@
+{
+  "probe": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\flashlight_probe.json",
+  "ticks": 16,
+  "entries": [
+    {
+      "t": 0,
+      "seed": 1054671253.0,
+      "drift": 0.0,
+      "camera": {
+        "center_hp_x": 1.61808512,
+        "center_hp_y": -0.09588781,
+        "log2_zoom": -0.04188743
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_000.bmp",
+      "sha256": "43c3ef0c801f75049a070ebb3dd9f486d68d8278d862d38c23d2d4cb1cfab85b",
+      "stats": {
+        "mean_luminance": 159.2826287299861,
+        "std_luminance": 8.718074898592281,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            144,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            159,
+            47
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            163,
+            52
+          ]
+        }
+      },
+      "diff_from_prev": null
+    },
+    {
+      "t": 1,
+      "seed": 1054671253.0,
+      "drift": 1.0,
+      "camera": {
+        "center_hp_x": 0.23132503,
+        "center_hp_y": -0.13466792,
+        "log2_zoom": -0.05846252
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_001.bmp",
+      "sha256": "374b901c482eb56ee9deaecd252e65ccfc22b359641440bc18ed9c9b4e078f52",
+      "stats": {
+        "mean_luminance": 148.54757090654752,
+        "std_luminance": 19.962480262120813,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            148,
+            188
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            153,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            153,
+            188
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            95,
+            94
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            91,
+            91
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 86359277,
+        "pixels_changed": 694738,
+        "fraction_changed": 0.8834050496419271
+      }
+    },
+    {
+      "t": 2,
+      "seed": 1054671253.0,
+      "drift": 2.0,
+      "camera": {
+        "center_hp_x": -0.03846197,
+        "center_hp_y": -0.06124107,
+        "log2_zoom": 0.02155678
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_002.bmp",
+      "sha256": "66e2da0fd4d5667614c67814b751b0c935f78e5e364bb28f5358680d2c592de5",
+      "stats": {
+        "mean_luminance": 150.77353007185428,
+        "std_luminance": 15.010003664554281,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            141,
+            188
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            148,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            114,
+            106
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            156,
+            43
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 36599082,
+        "pixels_changed": 723443,
+        "fraction_changed": 0.9199053446451823
+      }
+    },
+    {
+      "t": 3,
+      "seed": 1054671253.0,
+      "drift": 3.0,
+      "camera": {
+        "center_hp_x": 0.17004838,
+        "center_hp_y": -0.111357,
+        "log2_zoom": 0.01569897
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_003.bmp",
+      "sha256": "f3b3c6b2617de23f8488a43d41556c99d72f058b86902dcc1080796b4929e40f",
+      "stats": {
+        "mean_luminance": 154.87715309256888,
+        "std_luminance": 15.744448205526147,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            149,
+            188
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            160,
+            50
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            94,
+            91
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 112873690,
+        "pixels_changed": 785136,
+        "fraction_changed": 0.99835205078125
+      }
+    },
+    {
+      "t": 4,
+      "seed": 1054671253.0,
+      "drift": 4.0,
+      "camera": {
+        "center_hp_x": 1.52539758,
+        "center_hp_y": -0.41239738,
+        "log2_zoom": -0.12368354
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_004.bmp",
+      "sha256": "59453d00abbe5d1929638cb938712f71cfa31a0373e9af5b0a8ba2dc76f1f953",
+      "stats": {
+        "mean_luminance": 156.8592891993398,
+        "std_luminance": 12.301600729508754,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            137,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            160,
+            50
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            150,
+            35
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 94399262,
+        "pixels_changed": 649957,
+        "fraction_changed": 0.8264630635579427
+      }
+    },
+    {
+      "t": 5,
+      "seed": 1054671253.0,
+      "drift": 5.0,
+      "camera": {
+        "center_hp_x": 0.66376034,
+        "center_hp_y": -0.46235608,
+        "log2_zoom": 0.0303867
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_005.bmp",
+      "sha256": "9f989d14b0a90b67bbb9c98d02dc54ea3ca8c12a6a443d3c190dbc4725c8e929",
+      "stats": {
+        "mean_luminance": 149.39325621363625,
+        "std_luminance": 15.854038440229418,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            134,
+            188
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            136,
+            188
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            118,
+            108
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            92,
+            90
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 138464545,
+        "pixels_changed": 772107,
+        "fraction_changed": 0.9817848205566406
+      }
+    },
+    {
+      "t": 6,
+      "seed": 1054671253.0,
+      "drift": 6.0,
+      "camera": {
+        "center_hp_x": -0.27955505,
+        "center_hp_y": -0.11096904,
+        "log2_zoom": 0.00751522
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_006.bmp",
+      "sha256": "6cfed8db3ad6f465ceaf62accf450db4542da7da64c51bb49a755b34835760b1",
+      "stats": {
+        "mean_luminance": 148.8826482404061,
+        "std_luminance": 17.65012734056499,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            143,
+            188
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            134,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            94,
+            91
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            164,
+            55
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 95359305,
+        "pixels_changed": 757849,
+        "fraction_changed": 0.9636548360188802
+      }
+    },
+    {
+      "t": 7,
+      "seed": 1054671253.0,
+      "drift": 7.0,
+      "camera": {
+        "center_hp_x": 0.10444487,
+        "center_hp_y": -0.02202733,
+        "log2_zoom": 0.02011148
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_007.bmp",
+      "sha256": "0e2097cabc0537f2346767eb6b8796db150f5ba0913f07ae0d5b366635358de2",
+      "stats": {
+        "mean_luminance": 153.5008219436053,
+        "std_luminance": 14.059381329274043,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            138,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            106,
+            99
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            153,
+            38
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 41031428,
+        "pixels_changed": 613046,
+        "fraction_changed": 0.7795282999674479
+      }
+    },
+    {
+      "t": 8,
+      "seed": 1054671253.0,
+      "drift": 8.0,
+      "camera": {
+        "center_hp_x": -1.07393119,
+        "center_hp_y": -0.37544344,
+        "log2_zoom": -0.248285
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_008.bmp",
+      "sha256": "c28e76c9f0baea981a44dc1361760b5c5aa2735786d7b844b5e04efd8760dad7",
+      "stats": {
+        "mean_luminance": 152.3968476472282,
+        "std_luminance": 15.42094704416582,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            153,
+            188
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            143,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            111,
+            104
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            109,
+            102
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 65458018,
+        "pixels_changed": 656630,
+        "fraction_changed": 0.8349482218424479
+      }
+    },
+    {
+      "t": 9,
+      "seed": 1054671253.0,
+      "drift": 9.0,
+      "camera": {
+        "center_hp_x": 0.166789,
+        "center_hp_y": 0.21767789,
+        "log2_zoom": 0.10593848
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_009.bmp",
+      "sha256": "69d42eca773543b3cbd4005b9ea52a5f767b74adfb3c55476aa2a3ac456a0f11",
+      "stats": {
+        "mean_luminance": 152.72449554863513,
+        "std_luminance": 13.943519917086267,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            150,
+            35
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            149,
+            188
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            151,
+            36
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            111,
+            104
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 108262538,
+        "pixels_changed": 759874,
+        "fraction_changed": 0.9662297566731771
+      }
+    },
+    {
+      "t": 10,
+      "seed": 1054671253.0,
+      "drift": 10.0,
+      "camera": {
+        "center_hp_x": -0.2623379,
+        "center_hp_y": 0.3383006,
+        "log2_zoom": 0.03756785
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_010.bmp",
+      "sha256": "7e0eb3580523190e41cc9c6dd9555816d25fbf7276ccabb31999642cd4f3bc22",
+      "stats": {
+        "mean_luminance": 152.5322070135676,
+        "std_luminance": 14.777811912070899,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            166,
+            58
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            90,
+            88
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            156,
+            43
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 61857116,
+        "pixels_changed": 630851,
+        "fraction_changed": 0.8021685282389323
+      }
+    },
+    {
+      "t": 11,
+      "seed": 1054671253.0,
+      "drift": 11.0,
+      "camera": {
+        "center_hp_x": 0.17156874,
+        "center_hp_y": 0.09399708,
+        "log2_zoom": -0.00562171
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_011.bmp",
+      "sha256": "ac4a143aa0bb8c754a20c01eac772e99417651c2fe85907bfb607aeeb1011785",
+      "stats": {
+        "mean_luminance": 148.78066187870488,
+        "std_luminance": 17.970763926813213,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            99,
+            95
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            139,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            99,
+            95
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            165,
+            55
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 72455703,
+        "pixels_changed": 650623,
+        "fraction_changed": 0.8273099263509115
+      }
+    },
+    {
+      "t": 12,
+      "seed": 1054671253.0,
+      "drift": 12.0,
+      "camera": {
+        "center_hp_x": 0.06339534,
+        "center_hp_y": -0.51273615,
+        "log2_zoom": -0.05121845
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_012.bmp",
+      "sha256": "dacf3399aabd79ac451e51675da3e695338c20d831f2ebead18999cd6382ed45",
+      "stats": {
+        "mean_luminance": 154.40044789500098,
+        "std_luminance": 15.35924431146895,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            134,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            94,
+            91
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            166,
+            58
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 36623239,
+        "pixels_changed": 585902,
+        "fraction_changed": 0.7450129191080729
+      }
+    },
+    {
+      "t": 13,
+      "seed": 1054671253.0,
+      "drift": 13.0,
+      "camera": {
+        "center_hp_x": 0.93549937,
+        "center_hp_y": 0.77021515,
+        "log2_zoom": -0.10868026
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_013.bmp",
+      "sha256": "3de070ae3d4488aefaef89da9f9876b96b052d686935ee7284c5917bf744c268",
+      "stats": {
+        "mean_luminance": 146.4439022295937,
+        "std_luminance": 14.2893743044862,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            112,
+            104
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            152,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            139,
+            188
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            155,
+            42
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            112,
+            104
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 107328780,
+        "pixels_changed": 785651,
+        "fraction_changed": 0.9990069071451823
+      }
+    },
+    {
+      "t": 14,
+      "seed": 1054671253.0,
+      "drift": 14.0,
+      "camera": {
+        "center_hp_x": -0.42149813,
+        "center_hp_y": -0.36488845,
+        "log2_zoom": -0.05807076
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_014.bmp",
+      "sha256": "4a3bb819aa6c7b1d8c9f5810d3446efd9dfaaf1183cdc423813382e519725bcf",
+      "stats": {
+        "mean_luminance": 158.15689446762056,
+        "std_luminance": 11.145684923112102,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            153,
+            188
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            150,
+            33
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            115,
+            107
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 71310845,
+        "pixels_changed": 718150,
+        "fraction_changed": 0.9131749471028646
+      }
+    },
+    {
+      "t": 15,
+      "seed": 1054671253.0,
+      "drift": 15.0,
+      "camera": {
+        "center_hp_x": 0.17243618,
+        "center_hp_y": 0.04872057,
+        "log2_zoom": 0.02885024
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_015.bmp",
+      "sha256": "7547262276d53d10cc0da7bee1863aac195800326e8e27c88395f92bacb20c55",
+      "stats": {
+        "mean_luminance": 149.41682930588698,
+        "std_luminance": 17.468817627695724,
+        "w": 1024,
+        "h": 768
+      },
+      "samples": {
+        "center": {
+          "xy": [
+            512,
+            384
+          ],
+          "rgb": [
+            188,
+            104,
+            98
+          ]
+        },
+        "up_left_quarter": {
+          "xy": [
+            256,
+            192
+          ],
+          "rgb": [
+            188,
+            145,
+            188
+          ]
+        },
+        "up_right_quarter": {
+          "xy": [
+            768,
+            192
+          ],
+          "rgb": [
+            188,
+            188,
+            0
+          ]
+        },
+        "down_left_quarter": {
+          "xy": [
+            256,
+            576
+          ],
+          "rgb": [
+            188,
+            104,
+            98
+          ]
+        },
+        "down_right_quarter": {
+          "xy": [
+            768,
+            576
+          ],
+          "rgb": [
+            188,
+            161,
+            50
+          ]
+        }
+      },
+      "diff_from_prev": {
+        "sum_abs_diff": 116419041,
+        "pixels_changed": 750665,
+        "fraction_changed": 0.9545199076334635
+      }
+    }
+  ],
+  "summary": {
+    "velocities": [
+      0.0,
+      1.3873022180290855,
+      0.2796006574919353,
+      0.21444853111384884,
+      1.3883791860767665,
+      0.8630843557037212,
+      1.0066363677569043,
+      0.39416565849618423,
+      1.2302329395641525,
+      1.3752016222992922,
+      0.44575748392074593,
+      0.4979550000958721,
+      0.6163008168530956,
+      1.5512992868282802,
+      1.7691530170505914,
+      0.7237612769556938
+    ],
+    "corr_velocity_vs_frame_diff": 0.4726541761666087,
+    "corr_velocity_vs_log2_zoom": -0.387757911995383
+  }
+}

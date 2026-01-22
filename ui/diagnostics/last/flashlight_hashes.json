@@ -1,0 +1,198 @@
+{
+  "probe": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\flashlight_probe.json",
+  "ticks": 16,
+  "entries": [
+    {
+      "t": 0,
+      "seed": 1054671253.0,
+      "drift": 0.0,
+      "camera": {
+        "center_hp_x": 1.61808512,
+        "center_hp_y": -0.09588781,
+        "log2_zoom": -0.04188743
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_000.bmp",
+      "frame_sha256": "43c3ef0c801f75049a070ebb3dd9f486d68d8278d862d38c23d2d4cb1cfab85b"
+    },
+    {
+      "t": 1,
+      "seed": 1054671253.0,
+      "drift": 1.0,
+      "camera": {
+        "center_hp_x": 0.23132503,
+        "center_hp_y": -0.13466792,
+        "log2_zoom": -0.05846252
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_001.bmp",
+      "frame_sha256": "374b901c482eb56ee9deaecd252e65ccfc22b359641440bc18ed9c9b4e078f52"
+    },
+    {
+      "t": 2,
+      "seed": 1054671253.0,
+      "drift": 2.0,
+      "camera": {
+        "center_hp_x": -0.03846197,
+        "center_hp_y": -0.06124107,
+        "log2_zoom": 0.02155678
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_002.bmp",
+      "frame_sha256": "66e2da0fd4d5667614c67814b751b0c935f78e5e364bb28f5358680d2c592de5"
+    },
+    {
+      "t": 3,
+      "seed": 1054671253.0,
+      "drift": 3.0,
+      "camera": {
+        "center_hp_x": 0.17004838,
+        "center_hp_y": -0.111357,
+        "log2_zoom": 0.01569897
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_003.bmp",
+      "frame_sha256": "f3b3c6b2617de23f8488a43d41556c99d72f058b86902dcc1080796b4929e40f"
+    },
+    {
+      "t": 4,
+      "seed": 1054671253.0,
+      "drift": 4.0,
+      "camera": {
+        "center_hp_x": 1.52539758,
+        "center_hp_y": -0.41239738,
+        "log2_zoom": -0.12368354
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_004.bmp",
+      "frame_sha256": "59453d00abbe5d1929638cb938712f71cfa31a0373e9af5b0a8ba2dc76f1f953"
+    },
+    {
+      "t": 5,
+      "seed": 1054671253.0,
+      "drift": 5.0,
+      "camera": {
+        "center_hp_x": 0.66376034,
+        "center_hp_y": -0.46235608,
+        "log2_zoom": 0.0303867
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_005.bmp",
+      "frame_sha256": "9f989d14b0a90b67bbb9c98d02dc54ea3ca8c12a6a443d3c190dbc4725c8e929"
+    },
+    {
+      "t": 6,
+      "seed": 1054671253.0,
+      "drift": 6.0,
+      "camera": {
+        "center_hp_x": -0.27955505,
+        "center_hp_y": -0.11096904,
+        "log2_zoom": 0.00751522
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_006.bmp",
+      "frame_sha256": "6cfed8db3ad6f465ceaf62accf450db4542da7da64c51bb49a755b34835760b1"
+    },
+    {
+      "t": 7,
+      "seed": 1054671253.0,
+      "drift": 7.0,
+      "camera": {
+        "center_hp_x": 0.10444487,
+        "center_hp_y": -0.02202733,
+        "log2_zoom": 0.02011148
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_007.bmp",
+      "frame_sha256": "0e2097cabc0537f2346767eb6b8796db150f5ba0913f07ae0d5b366635358de2"
+    },
+    {
+      "t": 8,
+      "seed": 1054671253.0,
+      "drift": 8.0,
+      "camera": {
+        "center_hp_x": -1.07393119,
+        "center_hp_y": -0.37544344,
+        "log2_zoom": -0.248285
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_008.bmp",
+      "frame_sha256": "c28e76c9f0baea981a44dc1361760b5c5aa2735786d7b844b5e04efd8760dad7"
+    },
+    {
+      "t": 9,
+      "seed": 1054671253.0,
+      "drift": 9.0,
+      "camera": {
+        "center_hp_x": 0.166789,
+        "center_hp_y": 0.21767789,
+        "log2_zoom": 0.10593848
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_009.bmp",
+      "frame_sha256": "69d42eca773543b3cbd4005b9ea52a5f767b74adfb3c55476aa2a3ac456a0f11"
+    },
+    {
+      "t": 10,
+      "seed": 1054671253.0,
+      "drift": 10.0,
+      "camera": {
+        "center_hp_x": -0.2623379,
+        "center_hp_y": 0.3383006,
+        "log2_zoom": 0.03756785
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_010.bmp",
+      "frame_sha256": "7e0eb3580523190e41cc9c6dd9555816d25fbf7276ccabb31999642cd4f3bc22"
+    },
+    {
+      "t": 11,
+      "seed": 1054671253.0,
+      "drift": 11.0,
+      "camera": {
+        "center_hp_x": 0.17156874,
+        "center_hp_y": 0.09399708,
+        "log2_zoom": -0.00562171
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_011.bmp",
+      "frame_sha256": "ac4a143aa0bb8c754a20c01eac772e99417651c2fe85907bfb607aeeb1011785"
+    },
+    {
+      "t": 12,
+      "seed": 1054671253.0,
+      "drift": 12.0,
+      "camera": {
+        "center_hp_x": 0.06339534,
+        "center_hp_y": -0.51273615,
+        "log2_zoom": -0.05121845
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_012.bmp",
+      "frame_sha256": "dacf3399aabd79ac451e51675da3e695338c20d831f2ebead18999cd6382ed45"
+    },
+    {
+      "t": 13,
+      "seed": 1054671253.0,
+      "drift": 13.0,
+      "camera": {
+        "center_hp_x": 0.93549937,
+        "center_hp_y": 0.77021515,
+        "log2_zoom": -0.10868026
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_013.bmp",
+      "frame_sha256": "3de070ae3d4488aefaef89da9f9876b96b052d686935ee7284c5917bf744c268"
+    },
+    {
+      "t": 14,
+      "seed": 1054671253.0,
+      "drift": 14.0,
+      "camera": {
+        "center_hp_x": -0.42149813,
+        "center_hp_y": -0.36488845,
+        "log2_zoom": -0.05807076
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_014.bmp",
+      "frame_sha256": "4a3bb819aa6c7b1d8c9f5810d3446efd9dfaaf1183cdc423813382e519725bcf"
+    },
+    {
+      "t": 15,
+      "seed": 1054671253.0,
+      "drift": 15.0,
+      "camera": {
+        "center_hp_x": 0.17243618,
+        "center_hp_y": 0.04872057,
+        "log2_zoom": 0.02885024
+      },
+      "frame_path": "C:\\code\\setup-test\\project\\cuda_newton_fractal\\ui\\diagnostics\\last\\frame_raw_015.bmp",
+      "frame_sha256": "7547262276d53d10cc0da7bee1863aac195800326e8e27c88395f92bacb20c55"
+    }
+  ]
+}

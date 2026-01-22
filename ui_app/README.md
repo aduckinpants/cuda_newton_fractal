@@ -47,7 +47,7 @@ To tweak the UI without changing code:
 2) Validate quickly:
 	- `..\fractal_ui.exe --validate-ui --ui-schema ..\ui\fractal_binding_surface_v1.ui_schema.json`
 3) Optional (packaging later): re-canonicalize for release tooling:
-	- `python C:\artifacts\imgui_spec\validate_schema.py --in ..\ui\fractal_binding_surface_v1.ui_schema.json --out ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
+	- `python project\imgui_spec\validate_schema.py --in ..\ui\fractal_binding_surface_v1.ui_schema.json --out ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
 
 Notes:
 - Schema `default` values are applied at app startup.
