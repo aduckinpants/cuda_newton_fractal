@@ -1,5 +1,6 @@
 #include "fractal_derived_fields.h"
 
+#include "explaino_seed.h"
 #include "view_hp_sync.h"
 
 #include <cmath>
@@ -25,6 +26,46 @@ float Hash01(uint32_t x) {
 
 static inline float LerpF(float a, float b, float t) {
     return a + (b - a) * t;
+}
+
+void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
+    Float2 center = {0.0f, 0.0f};
+    float zoom = 1.0f;
+
+    switch (view.fractal_type) {
+    case FractalType::mandelbrot:
+        center = {-0.745f, 0.186f};
+        zoom = 38.0f;
+        break;
+    case FractalType::julia:
+        center = {0.0f, 0.0f};
+        zoom = 1.5f;
+        break;
+    case FractalType::burning_ship:
+        center = {-1.762f, -0.028f};
+        zoom = 25.0f;
+        break;
+    case FractalType::multibrot:
+        center = {-0.15f, 0.75f};
+        zoom = 4.5f;
+        break;
+    case FractalType::phoenix:
+        center = {0.36f, -0.1f};
+        zoom = 2.8f;
+        break;
+    case FractalType::newton:
+    case FractalType::nova:
+    case FractalType::explaino:
+    case FractalType::explaino_y:
+    case FractalType::explaino_fp:
+    default:
+        break;
+    }
+
+    view.center = center;
+    view.zoom = zoom;
+    view.rotation_degrees = 0.0f;
+    if (ioDirty) *ioDirty = true;
 }
 
 void SetPolyPreset(KernelParams& params) {
@@ -93,13 +134,49 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     }
 
     if (view.fractal_type == FractalType::phoenix) {
-        params.max_iter = 800;
+        params.max_iter = 1200;
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
-        params.phoenix_p_real = -0.50f;
+        params.phoenix_p_real = 0.5667f;
         params.phoenix_p_imag = 0.0f;
         params.coloring_mode = ColoringMode::smooth_escape;
-        params.exposure = 1.0f;
+        params.exposure = 1.6f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::mandelbrot) {
+        params.max_iter = 1200;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.exposure = 1.5f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::burning_ship) {
+        params.max_iter = 1200;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.exposure = 1.5f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::julia) {
+        params.max_iter = 1000;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.exposure = 1.4f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::multibrot) {
+        params.max_iter = 1000;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.exposure = 1.4f;
         params.multibrot_power = 3;
         if (ioDirty) *ioDirty = true;
         return;
@@ -197,7 +274,7 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
 void ApplyFractalDerivedFieldsAndSyncHp(ViewState& view, KernelParams& params, bool* ioDirty,
     bool haveExplainoSeedOverride, double explainoSeedOverride) {
     ApplyFractalPresetDefaults(view, params, ioDirty);
-    if (haveExplainoSeedOverride) params.explaino_seed = explainoSeedOverride;
+    if (haveExplainoSeedOverride) ExplainoSeedSetCombined(view, params, explainoSeedOverride);
     UpdateExplainoPolynomial(view, params, ioDirty);
     SyncViewHpFromUi(view);
 }

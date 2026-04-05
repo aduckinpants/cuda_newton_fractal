@@ -353,7 +353,8 @@ __global__ void kernel_render(
     } else if (ft == FractalType::explaino) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
-        double seed = LogisticAreaUToSeed(params.explaino_seed);
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
 
         for (; it < maxIter; ++it) {
@@ -384,7 +385,8 @@ __global__ void kernel_render(
     } else if (ft == FractalType::explaino_fp) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
-        double seed = LogisticAreaUToSeed(params.explaino_seed);
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
 
         for (; it < maxIter; ++it) {
@@ -437,7 +439,8 @@ __global__ void kernel_render(
     } else if (ft == FractalType::explaino_y) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
-        double seed = LogisticAreaUToSeed(params.explaino_seed);
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
         Cx zPrev = z;
 
@@ -772,7 +775,7 @@ __global__ void kernel_render(
             unsigned char v = (unsigned char)(fminf(1.0f, t) * 255.0f);
             color = {64, v, (unsigned char)(255 - v), 255};
         } else if (mode == ColoringMode::smooth_escape) {
-            // Classic smooth escape-time coloring.
+            // Cyclic multi-stop palette for escape-time fractals.
             float mag = cx_abs(z);
             float log_zn = logf(fmaxf(mag, 1e-12f));
 
@@ -781,10 +784,32 @@ __global__ void kernel_render(
             if (ft == FractalType::multibrot && p > 1) denom = logf((float)p);
 
             float nu = (float)it + 1.0f - logf(fmaxf(log_zn / denom, 1e-12f)) / denom;
-            float t = fminf(1.0f, fmaxf(0.0f, nu / (float)maxIter));
-            unsigned char r = (unsigned char)(t * 255.0f);
-            unsigned char g = (unsigned char)(sqrtf(t) * 255.0f);
-            color = {r, g, (unsigned char)(255 - r), 255};
+
+            // Map to a cycling band index rather than a linear 0-1 ramp.
+            float band = nu * 0.025f; // period ~40 iterations
+            float frac = band - floorf(band);
+
+            // 5-stop palette: deep blue -> cyan -> gold -> orange -> deep blue
+            // Each stop is a (r,g,b) triple in [0,1].
+            const float stops[6][3] = {
+                {0.00f, 0.03f, 0.20f},  // deep navy
+                {0.05f, 0.35f, 0.65f},  // ocean blue
+                {0.10f, 0.75f, 0.85f},  // cyan
+                {0.95f, 0.85f, 0.25f},  // gold
+                {0.90f, 0.45f, 0.10f},  // burnt orange
+                {0.00f, 0.03f, 0.20f},  // wrap to deep navy
+            };
+            float u5 = frac * 5.0f;
+            int seg = (int)u5;
+            if (seg > 4) seg = 4;
+            float segT = u5 - (float)seg;
+            float rf = stops[seg][0] + (stops[seg+1][0] - stops[seg][0]) * segT;
+            float gf = stops[seg][1] + (stops[seg+1][1] - stops[seg][1]) * segT;
+            float bf = stops[seg][2] + (stops[seg+1][2] - stops[seg][2]) * segT;
+
+            color = {(unsigned char)(fminf(1.0f, rf) * 255.0f),
+                     (unsigned char)(fminf(1.0f, gf) * 255.0f),
+                     (unsigned char)(fminf(1.0f, bf) * 255.0f), 255};
         }
     }
 

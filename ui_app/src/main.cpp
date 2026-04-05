@@ -18,6 +18,7 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "diagnostics_capture.h"
+#include "explaino_seed.h"
 #include "fractal_derived_fields.h"
 #include "json_min.h"
 #include "sweep_player.h"
@@ -1178,12 +1179,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         if (haveCliFractalType) {
             view.fractal_type = cliFractalType;
+            ApplyFractalViewPresetDefaults(view, &dirty);
             dirty = true;
         } else if (haveExplainoSeedOverride) {
             view.fractal_type = FractalType::explaino;
+            ApplyFractalViewPresetDefaults(view, &dirty);
             dirty = true;
         } else if (sweepConfig.enabled) {
             view.fractal_type = FractalType::explaino;
+            ApplyFractalViewPresetDefaults(view, &dirty);
             dirty = true;
         }
 
@@ -1253,6 +1257,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
     SweepPlayerState sweepState{};
+    bool sweepPaused = false;
+    bool sweepSingleStep = false;
     if (sweepConfig.enabled) {
         std::string sweepError;
         if (!InitializeSweepPlayer(sweepConfig, &sweepState, &sweepError)) {
@@ -1269,7 +1275,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             UnregisterClass(wc.lpszClassName, wc.hInstance);
             return 1;
         }
-        params.explaino_seed = initialSweepSeed;
+        ExplainoSeedSetCombined(view, params, initialSweepSeed);
         UpdateExplainoPolynomial(view, params, nullptr);
         dirty = true;
     }
@@ -1288,18 +1294,25 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui::NewFrame();
 
         if (sweepConfig.enabled) {
+            if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+                sweepPaused = !sweepPaused;
+            }
             bool sweepChanged = false;
-            if (!AdvanceSweepPlayer(sweepConfig, (double)io.DeltaTime, &sweepState, &sweepChanged)) {
-                sweepChanged = false;
+            if (!sweepPaused || sweepSingleStep) {
+                double deltaSeconds = sweepSingleStep ? sweepConfig.dwell_seconds : (double)io.DeltaTime;
+                if (!AdvanceSweepPlayer(sweepConfig, deltaSeconds, &sweepState, &sweepChanged)) {
+                    sweepChanged = false;
+                }
             }
             if (sweepChanged) {
                 double currentSweepSeed = 0.0;
                 if (SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
-                    params.explaino_seed = currentSweepSeed;
+                    ExplainoSeedSetCombined(view, params, currentSweepSeed);
                     UpdateExplainoPolynomial(view, params, nullptr);
                     dirty = true;
                 }
             }
+            sweepSingleStep = false;
         }
 
         // Controls window
@@ -1360,6 +1373,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         // Apply per-fractal presets immediately when the user changes fractal type.
         if (view.fractal_type != lastFractalType) {
             lastFractalType = view.fractal_type;
+            ApplyFractalViewPresetDefaults(view, &dirty);
             ApplyFractalPresetDefaults(view, params, &dirty);
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, nullptr);
@@ -1386,8 +1400,27 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     sweepState.current_index + 1,
                     (int)sweepState.seeds.size(),
                     currentSweepSeed,
-                    sweepState.finished ? "  [done]" : (sweepConfig.loop ? "  [loop]" : ""));
+                    sweepState.finished ? "  [done]" : (sweepPaused ? "  [paused]" : (sweepConfig.loop ? "  [loop]" : "")));
                 ImGui::Text("Sweep dwell: %.0f ms", sweepConfig.dwell_seconds * 1000.0);
+                ImGui::Text("Combined seed: %.6f", ExplainoSeedCombined(view, params));
+                if (ImGui::Button(sweepPaused ? "Resume Sweep" : "Pause Sweep")) {
+                    sweepPaused = !sweepPaused;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Step Sweep")) {
+                    sweepPaused = true;
+                    sweepSingleStep = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Restart Sweep")) {
+                    std::string sweepError;
+                    if (InitializeSweepPlayer(sweepConfig, &sweepState, &sweepError) && SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
+                        ExplainoSeedSetCombined(view, params, currentSweepSeed);
+                        UpdateExplainoPolynomial(view, params, nullptr);
+                        dirty = true;
+                    }
+                }
+                ImGui::TextUnformatted("Space toggles sweep pause.");
             }
         }
 
@@ -1399,18 +1432,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui::End();
 
         if (resetViewAction) {
-            view.center = {0.0f, 0.0f};
-            view.zoom = 1.0f;
-            view.rotation_degrees = 0.0f;
+            ApplyFractalViewPresetDefaults(view, &dirty);
             SyncViewHpFromUi(view);
             dirty = true;
         }
 
         if (resetAllAction) {
             // View defaults
-            view.center = {0.0f, 0.0f};
-            view.zoom = 1.0f;
-            view.rotation_degrees = 0.0f;
             view.auto_refresh = true;
             view.camera_behavior = CameraBehavior::complexity;
             view.auto_dive = true;
@@ -1419,6 +1447,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             view.explaino_seed_tween = true;
             view.explaino_phase = 0.0f;
             view.explaino_seed_drift = 0.0f;
+            ApplyFractalViewPresetDefaults(view, &dirty);
 
             // Kernel defaults (per current fractal type)
             params.explaino_seed = 0.0;
