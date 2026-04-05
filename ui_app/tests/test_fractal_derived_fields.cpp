@@ -44,6 +44,17 @@ int main() {
     {
         ViewState view{};
         KernelParams params{};
+        view.fractal_type = FractalType::nova;
+        ApplyFractalPresetDefaults(view, params, nullptr);
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Nova should default to smooth_escape, not basin coloring\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
         view.fractal_type = FractalType::mandelbrot;
         bool dirty = false;
         ApplyFractalPresetDefaults(view, params, &dirty);

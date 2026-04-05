@@ -5,6 +5,7 @@
 - Nova is the current top technical blocker because its escape-time iteration contract is mismatched with its preset defaults, schema messaging, and renderer coloring dispatch.
 - Startup defaults were also wrong for the current UX goal. The active worktree now changes startup and Reset All behavior so `auto_dive` starts off and Explaino warp starts at `0.0` instead of `0.35`.
 - The helper-test lane is in place and currently covers explaino seed math, derived-field defaults, sweep playback, and high-precision view sync.
+- `TDD_SLICE_PROTOCOL_2026-04-05.md` is the working rail for bounded test-first slices and is intended to be portable to later mainline implementation work.
 
 ## Priority Order
 1. Nova repair and rule extraction

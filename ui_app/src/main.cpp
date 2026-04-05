@@ -20,6 +20,7 @@
 #include "diagnostics_capture.h"
 #include "explaino_seed.h"
 #include "fractal_derived_fields.h"
+#include "fractal_family_rules.h"
 #include "json_min.h"
 #include "sweep_player.h"
 #include "ui_schema.h"
@@ -140,18 +141,6 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
     if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
     return false;
-}
-
-static bool IsExplainoFamily(FractalType fractalType) {
-    return fractalType == FractalType::explaino ||
-        fractalType == FractalType::explaino_y ||
-        fractalType == FractalType::explaino_fp;
-}
-
-static bool IsRootFindingFamily(FractalType fractalType) {
-    return fractalType == FractalType::newton ||
-        fractalType == FractalType::nova ||
-        IsExplainoFamily(fractalType);
 }
 
 static UISchema BuildSafeModeSchema() {
@@ -1362,11 +1351,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             SyncViewHpFromUi(view);
         }
 
-        if (!IsRootFindingFamily(view.fractal_type)) {
+        if (IsEscapeTimeFamily(view.fractal_type)) {
             ImGui::Spacing();
             ImGui::TextWrapped("Note: escape-time fractals use iteration-based coloring.");
-            if (params.coloring_mode == ColoringMode::root_basin || params.coloring_mode == ColoringMode::joy_basins) {
-                ImGui::TextWrapped("Root-basin coloring is for Newton, Nova, and the Explaino family. Choose 'iteration_count' or 'smooth_escape' for escape-time modes.");
+            if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
+                ImGui::TextWrapped("Root-basin coloring is for Newton and the Explaino family. Choose 'iteration_count' or 'smooth_escape' for escape-time modes.");
             }
         }
 

@@ -423,9 +423,9 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,explaino,explaino_y,explaino_fp"
+            "value": "newton,explaino,explaino_y,explaino_fp"
           },
-          "help": "Newton, Nova, and the Explaino family support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
+          "help": "Newton and the Explaino family support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
         },
         {
           "id": "coloring_mode_escape",
@@ -451,7 +451,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "mandelbrot,julia,burning_ship,multibrot,phoenix"
+            "value": "nova,mandelbrot,julia,burning_ship,multibrot,phoenix"
           },
           "help": "Escape-time fractals use iteration-based coloring."
         },

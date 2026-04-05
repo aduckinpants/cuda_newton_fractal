@@ -1,6 +1,7 @@
 #include "fractal_derived_fields.h"
 
 #include "explaino_seed.h"
+#include "fractal_family_rules.h"
 #include "view_hp_sync.h"
 
 #include <cmath>
@@ -91,7 +92,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.nova_alpha = 0.50f;
         params.poly_kind = PolyKind::z3_minus_1;
         SetPolyPreset(params);
-        params.coloring_mode = ColoringMode::joy_basins;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.0f;
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
@@ -106,7 +107,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.nova_alpha = 0.50f;
         params.poly_kind = PolyKind::z3_minus_1;
         SetPolyPreset(params);
-        params.coloring_mode = ColoringMode::joy_basins;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.0f;
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
@@ -122,7 +123,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
         params.poly_kind = PolyKind::custom;
-        params.coloring_mode = ColoringMode::joy_basins;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.0f;
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
@@ -139,7 +140,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.nova_alpha = 0.50f;
         params.phoenix_p_real = 0.5667f;
         params.phoenix_p_imag = 0.0f;
-        params.coloring_mode = ColoringMode::smooth_escape;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.6f;
         params.multibrot_power = 3;
         if (ioDirty) *ioDirty = true;
@@ -148,7 +149,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 
     if (view.fractal_type == FractalType::mandelbrot) {
         params.max_iter = 1200;
-        params.coloring_mode = ColoringMode::smooth_escape;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.5f;
         params.multibrot_power = 3;
         if (ioDirty) *ioDirty = true;
@@ -157,7 +158,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 
     if (view.fractal_type == FractalType::burning_ship) {
         params.max_iter = 1200;
-        params.coloring_mode = ColoringMode::smooth_escape;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.5f;
         params.multibrot_power = 3;
         if (ioDirty) *ioDirty = true;
@@ -166,7 +167,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 
     if (view.fractal_type == FractalType::julia) {
         params.max_iter = 1000;
-        params.coloring_mode = ColoringMode::smooth_escape;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.4f;
         params.multibrot_power = 3;
         if (ioDirty) *ioDirty = true;
@@ -175,7 +176,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 
     if (view.fractal_type == FractalType::multibrot) {
         params.max_iter = 1000;
-        params.coloring_mode = ColoringMode::smooth_escape;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.4f;
         params.multibrot_power = 3;
         if (ioDirty) *ioDirty = true;
@@ -183,7 +184,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     }
 
     params.max_iter = 800;
-    params.coloring_mode = ColoringMode::smooth_escape;
+    params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
     params.exposure = 1.0f;
     params.multibrot_power = 3;
     if (ioDirty) *ioDirty = true;

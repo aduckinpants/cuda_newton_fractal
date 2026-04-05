@@ -1,4 +1,5 @@
 #include "fractal_types.h"
+#include "fractal_family_rules.h"
 
 #include <cuda_runtime.h>
 #include <math_constants.h>
@@ -675,8 +676,8 @@ __global__ void kernel_render(
     uchar4 color{0, 0, 0, 255};
     const uchar4 errorColor{255, 0, 255, 255};
 
-    if (ft == FractalType::newton || ft == FractalType::nova || ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) {
-        // Root-finding family coloring (Newton + Nova + Explaino).
+    if (SupportsBasinColoring(ft)) {
+        // Basin-coloring family branch (Newton + Explaino family).
         if (mode == ColoringMode::joy_basins) {
             if (!converged) {
                 // "Submerged" undertow: preserve faint structure, but keep it dark.
@@ -765,7 +766,7 @@ __global__ void kernel_render(
     } else {
         // Escape-time coloring.
         if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
-            // Invalid: basin coloring is Newton/Nova-specific.
+            // Invalid: basin coloring is not valid for escape-time modes.
             // Fail-fast: show error color even for interior points.
             color = errorColor;
         } else if (!escaped) {
@@ -914,6 +915,10 @@ bool RenderFractalCUDA(
             if (outError) *outError = "nova_alpha must be in (0,2] and finite";
             return false;
         }
+    }
+    if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
+        if (outError) *outError = "selected coloring_mode is not valid for fractal_type";
+        return false;
     }
     if (view.fractal_type == FractalType::phoenix) {
         if (!std::isfinite(params.phoenix_p_real) || !std::isfinite(params.phoenix_p_imag)) {
