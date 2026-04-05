@@ -94,7 +94,7 @@
             "kind": "param",
             "path": "fractal.view.auto_dive"
           },
-          "default": true,
+          "default": false,
           "id": "auto_dive",
           "label": "Auto-Dive",
           "type": "checkbox",
@@ -348,7 +348,7 @@
             "kind": "param",
             "path": "fractal.params.explaino_warp_strength"
           },
-          "default": 0.35,
+          "default": 0.0,
           "id": "explaino_warp_strength",
           "label": "Explaino Warp",
           "max": 1.0,

@@ -10,6 +10,14 @@ static bool NearlyEqual(float a, float b, float eps = 1.0e-5f) {
 int main() {
     {
         ViewState view{};
+        if (view.auto_dive) {
+            std::cerr << "ViewState should start with auto_dive disabled\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
         view.fractal_type = FractalType::mandelbrot;
         bool dirty = false;
         ApplyFractalViewPresetDefaults(view, &dirty);
@@ -62,7 +70,7 @@ int main() {
         KernelParams params{};
         view.fractal_type = FractalType::explaino;
         params.explaino_seed = 7.0;
-        params.explaino_warp_strength = 0.35f;
+        params.explaino_warp_strength = 0.99f;
         view.explaino_phase = 0.0f;
         view.explaino_seed_drift = 0.0f;
 
@@ -76,6 +84,10 @@ int main() {
         }
         if (params.poly_kind != PolyKind::custom) {
             std::cerr << "Explaino should force custom polynomial\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.0f)) {
+            std::cerr << "Explaino should start with warp disabled\n";
             return 1;
         }
         if (params.explaino_root_count != 4) {

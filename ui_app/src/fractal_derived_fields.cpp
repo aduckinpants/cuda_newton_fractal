@@ -127,7 +127,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
         params.phoenix_p_imag = 0.0f;
-        params.explaino_warp_strength = 0.35f;
+        params.explaino_warp_strength = 0.0f;
         params.explaino_root_count = 0;
         if (ioDirty) *ioDirty = true;
         return;

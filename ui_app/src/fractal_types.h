@@ -67,7 +67,7 @@ struct ViewState {
     float explaino_seed_drift{0.0f};
 
     CameraBehavior camera_behavior{CameraBehavior::complexity};
-    bool auto_dive{true};
+    bool auto_dive{false};
     float dive_speed{1.0f};
 };
 
@@ -84,7 +84,7 @@ struct KernelParams {
     float exposure{1.0f};
 
     double explaino_seed{0.0};
-    float explaino_warp_strength{0.35f};
+    float explaino_warp_strength{0.0f};
     int explaino_root_count{0};
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
 };

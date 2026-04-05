@@ -1441,7 +1441,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             // View defaults
             view.auto_refresh = true;
             view.camera_behavior = CameraBehavior::complexity;
-            view.auto_dive = true;
+            view.auto_dive = false;
             view.dive_speed = 1.0f;
             view.explaino_alive = false;
             view.explaino_seed_tween = true;
@@ -1451,7 +1451,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
             // Kernel defaults (per current fractal type)
             params.explaino_seed = 0.0;
-            params.explaino_warp_strength = 0.35f;
+            params.explaino_warp_strength = 0.0f;
             ApplyFractalPresetDefaults(view, params, &dirty);
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, nullptr);

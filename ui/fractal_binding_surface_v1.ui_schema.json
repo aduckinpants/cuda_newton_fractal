@@ -87,7 +87,7 @@
           "type": "checkbox",
           "label": "Auto-Dive",
           "value_type": "bool",
-          "default": true,
+          "default": false,
           "binding": {
             "kind": "param",
             "path": "fractal.view.auto_dive"
@@ -553,7 +553,7 @@
           "min": 0.0,
           "max": 1.0,
           "step": 0.01,
-          "default": 0.35,
+          "default": 0.0,
           "binding": {
             "kind": "param",
             "path": "fractal.params.explaino_warp_strength"

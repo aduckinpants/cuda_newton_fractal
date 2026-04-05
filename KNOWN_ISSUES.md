@@ -5,6 +5,31 @@ Priority tiers: **P0** (blocks demo quality), **P1** (materially degrades experi
 
 ---
 
+## P0 — Nova violates its own escape-time contract
+
+**Status:** open
+**Area:** renderer / presets / schema
+
+Nova is visibly wrong because the shipped code mixes two incompatible contracts:
+- The iteration loop implements Nova as an escape-time hybrid (`z = z - alpha * f(z)/f'(z) + c`, `z0 = 0`, `c = coord`, escape radius 2).
+- The preset layer still defaults Nova to `joy_basins` coloring.
+- The renderer still routes Nova through the root-finding coloring branch instead of the escape-time coloring branch.
+- The schema help text and visibility rules still describe Nova as basin-colored alongside Newton and the Explaino family.
+
+Result:
+- Nova does not present like a proper escape-time fractal.
+- The default UI state lands on a misleading coloring mode.
+- Renderer comments and actual branch structure disagree, which makes future work riskier.
+
+Required fix shape:
+1. Treat Nova as escape-time everywhere: presets, schema visibility/help text, and renderer coloring dispatch.
+2. Add focused headless tests for Nova preset defaults and coloring validity.
+3. Re-capture diagnostics for Nova after the fix to choose a better default view and exposure.
+
+**Files:** `ui_app/src/fractal_renderer.cu`, `ui_app/src/fractal_derived_fields.cpp`, `ui/fractal_binding_surface_v1.ui_schema*.json`
+
+---
+
 ## P0 — Dive depth is shallow and untuned
 
 **Status:** open
