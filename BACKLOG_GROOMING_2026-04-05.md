@@ -7,25 +7,31 @@
 - The helper-test lane is in place and currently covers explaino seed math, derived-field defaults, sweep playback, and high-precision view sync.
 - `TDD_SLICE_PROTOCOL_2026-04-05.md` is the working rail for bounded test-first slices and is intended to be portable to later mainline implementation work.
 - `REALITY_TOOLKIT_FRACTALS_INTEGRATION.md` is the cross-repo constraint note: use `nine` as the upstream reality-toolkit reference, and prefer its shared broker/flex-grid path if this repo can load/unload sessions cleanly without stomping in-flight work. A repo-owned broker instance is the fallback, not the first choice.
-- `spec_intake/ExplainoDesignSpace_DeepDive_2026-04-05.md` is now the deeper Explaino planning source. It separates solver variants, topology variants, observation modes, and operator-bridge work so Explaino expansion does not collapse into a vague catch-all bucket.
+- `spec_intake/ExplainoDesignSpace_DeepDive_2026-04-05.md` is now the deeper Explaino planning source. It splits Explaino work into observation and family lanes, adds temporal continuation plus embedding/boundary geometry as first-class axes, and treats Salticid CLI probes plus `ndepend-salt` as the default pre-CUDA research rail.
 
 ## Priority Order
 1. Nova repair and rule extraction
 2. Checkpoint the startup default-off fix
 3. Explaino design-space deep dive
-4. Explaino-LUT port packet
-5. Explaino family expansion groundwork
-6. Explaino-Nova
-7. Explaino-Halley
-8. Explaino-DualSeed
-9. Explaino-Multiplicity
-10. Transcendental Newton presets
-11. Non-integer Multibrot
-12. Tricorn / Multicorn
-13. General Halley fractal
-14. McMullen rational presets
-15. View preset dropdown and preset catalog
-16. Lambda research spike
+4. Explaino observation lane: LUT packet
+5. Explaino observation lane: Jacobian packet
+6. Explaino observation lane: atlas packet
+7. Explaino family expansion groundwork
+8. Explaino-Nova
+9. Explaino-Halley
+10. Explaino-DualSeed
+11. Explaino-Multiplicity
+12. Explaino-Phoenix
+13. Explaino-Transcendental
+14. Explaino-Warp-Driven Julia
+15. Transcendental Newton presets
+16. Non-integer Multibrot
+17. Tricorn / Multicorn
+18. General Halley fractal
+19. McMullen rational presets
+20. View preset dropdown and preset catalog
+21. Lambda research spike
+22. Explaino capstone hybrids
 
 ## Detailed Execution Plan
 
@@ -76,21 +82,25 @@ Planning source:
 - `spec_intake/ExplainoDesignSpace_DeepDive_2026-04-05.md`
 
 Required work:
-- adopt the new Explaino expansion packet as the planning source
+- adopt the deep-dive packet as the planning source
+- keep observation-lane work separate from family-lane work
 - decide the next 2 enum ids to reserve now (`explaino_nova`, `explaino_halley` recommended)
 - identify the shared helper seams needed for future variants:
   - seeded polynomial generation
   - optional second-derivative evaluation
   - shared Explaino diagnostics labels
+- identify which candidate questions can be answered first through Salticid CLI probes, broker sweeps, and `ndepend-salt`
 
 Do not do yet:
 - no palette v2 work
 - no generic `explaino_mode` surface yet
 - do not confuse the legacy Explaino LUT with `joy_basins`; the deep-dive packet treats that as an observation seam, not a new fractal type by default
+- do not jump to tri-hybrids before the single-axis baselines are understood
 
 Exit criteria:
 - the next two Explaino families are named, specced, and ordered
 - the shared math helpers required for them are identified before implementation starts
+- the first observation-lane packet is separated cleanly from `FractalType` growth
 
 ### Slice 4 — Explaino-Nova
 **Goal:** make the seeded procedural polynomial surface participate in an escape-time contract.
@@ -136,4 +146,7 @@ Reasoning:
 - Dive-depth work is still important, but it should not take priority over Nova correctness and the near-term catalog roadmap.
 - Any future catalog slice should keep the current no-warp / no-auto-dive startup posture unless a spec explicitly reopens that decision.
 - Any future broker/live-view slice should start by proving smooth session attach/detach inside `nine`'s broker/viewer flow. If that proof fails, then switch to a repo-local isolated broker plan.
-- Explaino implementation should now follow the deeper matrix model: topology, solver law, memory, observation, and runtime coupling are separate axes and should not be collapsed into one overloaded `Explaino` bucket.
+- Explaino implementation should now follow the deeper matrix model: topology, solver law, memory, temporal continuation, observation, embedding/boundary geometry, and runtime coupling are separate axes and should not be collapsed into one overloaded `Explaino` bucket.
+- Salticid probe sweeps, CLI tooling, and `ndepend-salt` should be the default proving ground for new Explaino questions before they become CUDA implementation slices.
+- Observation-lane work and family-lane work should stay separate in planning and naming.
+- Tri-hybrids are explicitly later capstone work, not first-wave baseline items.
