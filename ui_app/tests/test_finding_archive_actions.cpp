@@ -103,6 +103,20 @@ int main() {
     }
 
     {
+        FindingArchiveIdentity identity = BuildUniqueFindingIdentity(
+            tempRoot,
+            "manual sweep!",
+            "2026-04-05",
+            "235959_999",
+            FractalType::explaino_nova);
+
+        if (identity.finding_id != "235959_999__explaino_nova") {
+            std::cerr << "Expected explaino_nova fractal type suffix in finding id\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path repoRoot = tempRoot / "repo_root_probe";
         const fs::path scriptPath = repoRoot / "tools" / "reality_toolkit" / "scripts" / "run_fractal_explorer_archive_finding.py";
         fs::create_directories(scriptPath.parent_path());
@@ -116,6 +130,27 @@ int main() {
         const fs::path resolved = FindRepoRootContainingArchiveScript(nestedStart);
         if (resolved != repoRoot) {
             std::cerr << "Expected repo-root discovery to walk upward until archive script is found\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path repoRoot = tempRoot / "repo_root_metadata_probe";
+        const fs::path scriptPath = repoRoot / "tools" / "reality_toolkit" / "scripts" / "run_fractal_explorer_archive_finding.py";
+        fs::create_directories(scriptPath.parent_path());
+        std::ofstream scriptFile(scriptPath, std::ios::out | std::ios::binary | std::ios::trunc);
+        scriptFile << "# archive stub\n";
+        scriptFile.close();
+
+        const fs::path runtimeDir = tempRoot / "runtime_root_probe" / "runtime";
+        fs::create_directories(runtimeDir);
+        std::ofstream metadataFile(runtimeDir / "fractal_ui_repo_root.txt", std::ios::out | std::ios::binary | std::ios::trunc);
+        metadataFile << repoRoot.string() << "\n";
+        metadataFile.close();
+
+        const fs::path resolved = FindRepoRootFromRuntimeMetadata(runtimeDir);
+        if (resolved != repoRoot) {
+            std::cerr << "Expected runtime metadata file to resolve the absolute repo root\n";
             return 1;
         }
     }

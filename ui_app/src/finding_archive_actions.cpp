@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -42,8 +43,13 @@ const char* FractalTypeSlug(FractalType fractalType) {
     case FractalType::explaino: return "explaino";
     case FractalType::explaino_y: return "explaino_y";
     case FractalType::explaino_fp: return "explaino_fp";
+    case FractalType::explaino_nova: return "explaino_nova";
     }
     return "unknown";
+}
+
+std::filesystem::path RuntimeRepoRootMetadataPath(const std::filesystem::path& runtimeDir) {
+    return runtimeDir / "fractal_ui_repo_root.txt";
 }
 
 std::wstring WidenAscii(const std::string& text) {
@@ -224,7 +230,10 @@ std::filesystem::path RepoRootFromSourceFile() {
     return std::filesystem::path(__FILE__).lexically_normal().parent_path().parent_path().parent_path();
 }
 
-std::filesystem::path ResolveRepoRoot() {
+std::filesystem::path ResolveRepoRoot(const std::filesystem::path& runtimeDir) {
+    const std::filesystem::path metadataResolved = FindRepoRootFromRuntimeMetadata(runtimeDir);
+    if (!metadataResolved.empty()) return metadataResolved;
+
     const std::filesystem::path sourceRoot = RepoRootFromSourceFile();
     const std::filesystem::path sourceResolved = FindRepoRootContainingArchiveScript(sourceRoot);
     if (!sourceResolved.empty()) return sourceResolved;
@@ -267,7 +276,7 @@ bool RunArchiveScript(
     const std::string& why,
     const std::string& reproCommand,
     std::string* outError) {
-    const std::filesystem::path resolvedRepoRoot = repoRoot.empty() ? ResolveRepoRoot() : repoRoot;
+    const std::filesystem::path resolvedRepoRoot = repoRoot.empty() ? ResolveRepoRoot({}) : repoRoot;
     if (resolvedRepoRoot.empty()) {
         if (outError) *outError = "Could not resolve an absolute repository root for finding archive capture.";
         return false;
@@ -389,6 +398,24 @@ std::filesystem::path FindRepoRootContainingArchiveScript(const std::filesystem:
     return {};
 }
 
+std::filesystem::path FindRepoRootFromRuntimeMetadata(const std::filesystem::path& runtimeDir) {
+    if (runtimeDir.empty()) return {};
+
+    const std::filesystem::path metadataPath = RuntimeRepoRootMetadataPath(runtimeDir.lexically_normal());
+    std::ifstream file(metadataPath, std::ios::in | std::ios::binary);
+    if (!file) return {};
+
+    std::string text;
+    std::getline(file, text);
+    const std::string trimmed = TrimWhitespace(text);
+    if (trimmed.empty()) return {};
+
+    const std::filesystem::path candidate = std::filesystem::path(trimmed).lexically_normal();
+    if (!candidate.is_absolute()) return {};
+    if (!PathExists(candidate / ArchiveScriptRelativePath())) return {};
+    return candidate;
+}
+
 std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& pythonLauncher,
     const std::filesystem::path& scriptPath,
@@ -478,7 +505,7 @@ bool CaptureAndArchiveFindingBundle(
     const std::filesystem::path publishedExePath = std::filesystem::path(exeDir) / "fractal_ui.exe";
     const std::filesystem::path reproRuntimePath = PathExists(launcherPath) ? launcherPath : publishedExePath;
     const std::string reproCommand = reproRuntimePath.string() + " --load-state-json " + (identity.output_dir / "state.json").string() + " --capture-diagnostic";
-    const std::filesystem::path repoRoot = ResolveRepoRoot();
+    const std::filesystem::path repoRoot = ResolveRepoRoot(std::filesystem::path(exeDir));
 
     if (!RunArchiveScript(repoRoot, capture.output_dir, identity.out_root, identity.finding_id, why, reproCommand, outError)) {
         return false;

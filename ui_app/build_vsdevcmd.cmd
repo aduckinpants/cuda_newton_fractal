@@ -26,6 +26,7 @@ set PRIMARY_EXE_NAME=fractal_ui.exe
 set FALLBACK_EXE=%OUTROOT%\fractal_ui_dev.exe
 set FALLBACK_EXE_NAME=fractal_ui_dev.exe
 set LINK_LOG=%BUILDROOT%\link_runtime.log
+for %%I in (..) do set REPO_ROOT=%%~fI
 
 if not exist "%OUTROOT%" mkdir "%OUTROOT%"
 if not exist "%BUILDROOT%" mkdir "%BUILDROOT%"
@@ -83,6 +84,12 @@ if errorlevel 1 (
 > "%OUTROOT%\fractal_ui_active.txt" echo %ACTIVE_EXE_NAME%
 if errorlevel 1 (
   echo Failed to write runtime launcher metadata to %OUTROOT%\fractal_ui_active.txt
+  exit /b 1
+)
+
+> "%OUTROOT%\fractal_ui_repo_root.txt" echo %REPO_ROOT%
+if errorlevel 1 (
+  echo Failed to write runtime repo-root metadata to %OUTROOT%\fractal_ui_repo_root.txt
   exit /b 1
 )
 

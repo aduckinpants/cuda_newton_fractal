@@ -21,6 +21,8 @@ FindingArchiveIdentity BuildUniqueFindingIdentity(
 
 std::filesystem::path FindRepoRootContainingArchiveScript(const std::filesystem::path& startPath);
 
+std::filesystem::path FindRepoRootFromRuntimeMetadata(const std::filesystem::path& runtimeDir);
+
 std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& pythonLauncher,
     const std::filesystem::path& scriptPath,

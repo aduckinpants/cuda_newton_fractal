@@ -27,6 +27,7 @@ D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd
 ```
 
 The build tries to publish `fractal_ui.exe` first. If that file is locked, it falls back to `fractal_ui_dev.exe` and updates `fractal_ui.cmd` plus `fractal_ui_active.txt` to point at the latest successful runtime.
+It also stages `fractal_ui_repo_root.txt` so manual finding capture can still locate the source-repo archive script when the app is launched from the published runtime directory.
 
 Focused helper tests:
 
