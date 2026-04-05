@@ -118,7 +118,9 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"log2_zoom\": " << view.log2_zoom << ",\n";
     js << "    \"explaino_phase\": " << static_cast<double>(view.explaino_phase) << ",\n";
     js << "    \"explaino_seed_drift\": " << static_cast<double>(view.explaino_seed_drift) << ",\n";
-    js << "    \"explaino_seed_tween\": " << (view.explaino_seed_tween ? "true" : "false") << "\n";
+    js << "    \"explaino_seed_tween\": " << (view.explaino_seed_tween ? "true" : "false") << ",\n";
+    js << "    \"auto_increment_seed\": " << (view.auto_increment_seed ? "true" : "false") << ",\n";
+    js << "    \"explaino_seed_rate\": " << static_cast<double>(view.explaino_seed_rate) << "\n";
     js << "  },\n";
     js << "  \"params\": {\n";
     js << "    \"max_iter\": " << params.max_iter << ",\n";

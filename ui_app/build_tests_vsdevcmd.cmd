@@ -23,6 +23,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\explaino_seed.cpp .\src\explaino_seed_dynamics.cpp .\tests\test_explaino_seed_dynamics.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_seed_dynamics.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_fractal_derived_fields.cpp ^
   /Fe:"%TESTROOT%\test_fractal_derived_fields.exe"
 if errorlevel 1 exit /b 1
@@ -63,6 +68,9 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_seed.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_explaino_seed_dynamics.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_derived_fields.exe"

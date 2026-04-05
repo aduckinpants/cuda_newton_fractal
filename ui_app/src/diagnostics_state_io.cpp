@@ -83,6 +83,36 @@ bool TryGetOptionalString(const json_min::Value& object, const char* key, std::s
     return true;
 }
 
+bool GetOptionalNumber(const json_min::Value& object, const char* key, double* outValue, bool* outPresent, std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value) {
+        if (outPresent) *outPresent = false;
+        return true;
+    }
+    if (!value->is_number()) {
+        if (outError) *outError = std::string("Invalid optional number field: ") + key;
+        return false;
+    }
+    if (outValue) *outValue = value->as_number();
+    if (outPresent) *outPresent = true;
+    return true;
+}
+
+bool GetOptionalBool(const json_min::Value& object, const char* key, bool* outValue, bool* outPresent, std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value) {
+        if (outPresent) *outPresent = false;
+        return true;
+    }
+    if (!value->is_bool()) {
+        if (outError) *outError = std::string("Invalid optional bool field: ") + key;
+        return false;
+    }
+    if (outValue) *outValue = value->as_bool();
+    if (outPresent) *outPresent = true;
+    return true;
+}
+
 bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "newton") { if (outType) *outType = FractalType::newton; return true; }
     if (text == "nova") { if (outType) *outType = FractalType::nova; return true; }
@@ -184,6 +214,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoPhase = 0.0;
     double explainoSeedDrift = 0.0;
     bool explainoSeedTween = true;
+    bool autoIncrementSeed = nextView.auto_increment_seed;
+    double explainoSeedRate = nextView.explaino_seed_rate;
     if (!GetRequiredNumber(*viewObject, "center_x", &centerX, outError)) return false;
     if (!GetRequiredNumber(*viewObject, "center_y", &centerY, outError)) return false;
     if (!GetRequiredNumber(*viewObject, "zoom", &zoom, outError)) return false;
@@ -194,6 +226,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetRequiredNumber(*viewObject, "explaino_phase", &explainoPhase, outError)) return false;
     if (!GetRequiredNumber(*viewObject, "explaino_seed_drift", &explainoSeedDrift, outError)) return false;
     if (!GetRequiredBool(*viewObject, "explaino_seed_tween", &explainoSeedTween, outError)) return false;
+    if (!GetOptionalBool(*viewObject, "auto_increment_seed", &autoIncrementSeed, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*viewObject, "explaino_seed_rate", &explainoSeedRate, nullptr, outError)) return false;
 
     nextView.center.x = static_cast<float>(centerX);
     nextView.center.y = static_cast<float>(centerY);
@@ -205,6 +239,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextView.explaino_phase = static_cast<float>(explainoPhase);
     nextView.explaino_seed_drift = static_cast<float>(explainoSeedDrift);
     nextView.explaino_seed_tween = explainoSeedTween;
+    nextView.auto_increment_seed = autoIncrementSeed;
+    nextView.explaino_seed_rate = static_cast<float>(explainoSeedRate);
 
     int maxIter = 0;
     int rawPolyKind = 0;

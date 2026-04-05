@@ -90,6 +90,18 @@ int main() {
             std::cerr << "view explaino_seed_tween mismatch\n";
             return 1;
         }
+        if (view.explaino_alive) {
+          std::cerr << "view explaino_alive should default to false when missing from saved state\n";
+          return 1;
+        }
+        if (view.auto_increment_seed) {
+          std::cerr << "view auto_increment_seed should default to false when missing from saved state\n";
+          return 1;
+        }
+        if (!NearlyEqual(view.explaino_seed_rate, 0.35f, 1.0e-6)) {
+          std::cerr << "new Explaino seed rate default should survive older saved states\n";
+          return 1;
+        }
         if (params.max_iter != 1200 || !NearlyEqual(params.exposure, 1.6f, 1.0e-6)) {
             std::cerr << "params mismatch\n";
             return 1;
@@ -112,6 +124,73 @@ int main() {
         }
         if (render.resolution.x != 1440 || render.resolution.y != 900 || render.block_size != 512 || render.device_id != 1) {
             std::cerr << "render mismatch\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "seed_motion_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "explaino_fp",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0.125,
+    "explaino_seed_drift": 0.625,
+    "explaino_seed_tween": true,
+    "auto_increment_seed": true,
+    "explaino_seed_rate": 0.6
+  },
+  "params": {
+    "max_iter": 650,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": -0.5,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 4,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 1]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected seed-motion state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.explaino_alive || !view.auto_increment_seed) {
+          std::cerr << "Expected auto-increment seed toggle to round-trip while explaino_alive stays at its default\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.explaino_seed_rate, 0.6f, 1.0e-6)) {
+          std::cerr << "Expected seed increment rate to round-trip from saved state\n";
             return 1;
         }
     }

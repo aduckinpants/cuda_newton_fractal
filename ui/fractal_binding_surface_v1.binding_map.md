@@ -9,6 +9,10 @@ All bindings are under `fractal.*`.
 - `fractal.view.zoom` → `ViewState.zoom` (float)
 - `fractal.view.rotation` → `ViewState.rotation_degrees` (float, optional; may be ignored by engine)
 - `fractal.view.auto_refresh` → `ViewState.auto_refresh` (bool)
+- `fractal.view.auto_increment_seed` → `ViewState.auto_increment_seed` (bool; Explaino-family seed motion)
+- `fractal.view.explaino_seed_drift` → `ViewState.explaino_seed_drift` (float; advanced fractional component of the combined Explaino seed)
+- `fractal.view.explaino_seed_rate` → `ViewState.explaino_seed_rate` (float; per-second Explaino seed motion rate)
+- `fractal.view.explaino_seed_tween` → `ViewState.explaino_seed_tween` (bool; tween neighboring seed-derived Explaino polynomials)
 - `fractal.actions.render_once` → action: enqueue one render tick
 - `fractal.actions.load_state` → action: prompt for `state.json` or `finding.json` and load it into runtime state
 - `fractal.actions.capture_finding` → action: archive the current frame/state into the findings tree
@@ -18,6 +22,7 @@ All bindings are under `fractal.*`.
 
 - `fractal.params.max_iter` → `KernelParams.max_iter` (int)
 - `fractal.params.epsilon` → `KernelParams.epsilon` (float)
+- `fractal.params.explaino_seed` → host-combined Explaino seed surface (`KernelParams.explaino_seed` integer base plus `ViewState.explaino_seed_drift` fractional component)
 - `fractal.params.poly_kind` → `KernelParams.poly_kind` (enum)
 - `fractal.params.poly_coeffs.0` → `KernelParams.poly_coeffs[0]` (float, real)
 - `fractal.params.poly_coeffs.1` → `KernelParams.poly_coeffs[1]` (float, real)

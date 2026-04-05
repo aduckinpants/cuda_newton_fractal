@@ -22,6 +22,8 @@ All bindings live under the `fractal.*` namespace.
 - `fractal.view.zoom` : float, range [1e-12, 1e12], step 0.01, default 1.0
 - `fractal.view.rotation` : float degrees, range [-180, 180], step 0.1, default 0.0 (optional feature; binding exists, engine may ignore)
 - `fractal.view.auto_refresh` : bool, default true
+- `fractal.view.auto_increment_seed` : bool, default false; Explaino-family only; advances the combined Explaino seed continuously through the existing drift+tween seam
+- `fractal.view.explaino_seed_rate` : float, default 0.35; Explaino-family only; visible when auto-increment is enabled
 - `fractal.actions.render_once` : action (button)
 - `fractal.actions.load_state` : action (button; opens a saved `state.json` or `finding.json`)
 - `fractal.actions.capture_finding` : action (button; archives the current frame/state into the findings tree)
@@ -31,12 +33,15 @@ All bindings live under the `fractal.*` namespace.
 
 - `fractal.params.max_iter` : int, range [1, 5000], step 1, default 500
 - `fractal.params.epsilon` : float, range [1e-12, 1e-2], step 1e-6, default 1e-6
+- `fractal.params.explaino_seed` : double, range [0, 10], step 0.001, Explaino-family only; primary combined seed control surfaced by the host as integer seed base + fractional drift
 - `fractal.params.poly_kind` : enum {`z3_minus_1`, `z4_minus_1`, `custom`}, default `z3_minus_1`
 - `fractal.params.poly_coeffs.0..4` : float array (real coefficients), visible only when `poly_kind == custom`
   - Ordering: coefficient `k` multiplies $z^k$.
   - Defaults represent $z^3 - 1$: [-1, 0, 0, 1, 0]
 - `fractal.params.coloring_mode` : enum {`root_basin`, `iteration_count`, `smooth_escape`}, default `root_basin`
 - `fractal.params.exposure` : float, range [0.1, 5.0], step 0.01, default 1.0
+- `fractal.view.explaino_seed_drift` : float, range [0, 0.999], Explaino-family only; advanced fractional component of the combined Explaino seed
+- `fractal.view.explaino_seed_tween` : bool, Explaino-family only; blends between neighboring seed-derived polynomials during fractional seed motion
 
 ## Render (host + device)
 

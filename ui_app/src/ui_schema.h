@@ -26,7 +26,7 @@ struct UISchemaControl {
     std::string type;
     std::string label;
 
-    std::string value_type; // float | int | bool | enum | vec2 | vec3 | vec4
+    std::string value_type; // float | double | int | bool | enum | vec2 | vec3 | vec4
     double min = 0.0;
     double max = 0.0;
     double step = 0.0;

@@ -608,9 +608,29 @@
           }
         },
         {
+          "id": "explaino_seed",
+          "type": "slider_double",
+          "label": "Explaino Seed",
+          "value_type": "double",
+          "min": 0.0,
+          "max": 10.0,
+          "step": 0.001,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.explaino_seed"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+          },
+          "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
+        },
+        {
           "id": "explaino_seed_drift",
           "type": "slider_float",
-          "label": "Explaino Seed Drift",
+          "label": "Explaino Seed Fraction",
           "value_type": "float",
           "min": 0.0,
           "max": 0.999,
@@ -624,7 +644,8 @@
             "op": "in",
             "path": "fractal.view.fractal_type",
             "value": "explaino,explaino_y,explaino_fp,explaino_nova"
-          }
+          },
+          "help": "Advanced fractional component of the combined Explaino seed. Usually edit Explaino Seed instead."
         },
         {
           "id": "explaino_seed_tween",
@@ -641,6 +662,43 @@
             "path": "fractal.view.fractal_type",
             "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
+        },
+        {
+          "id": "auto_increment_seed",
+          "type": "checkbox",
+          "label": "Auto-Increment Seed",
+          "value_type": "bool",
+          "default": false,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.auto_increment_seed"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+          },
+          "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
+        },
+        {
+          "id": "explaino_seed_rate",
+          "type": "slider_float",
+          "label": "Seed Increment Rate",
+          "value_type": "float",
+          "min": 0.00001,
+          "max": 2.0,
+          "step": 0.00001,
+          "default": 0.35,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.explaino_seed_rate"
+          },
+          "visible_if": {
+            "op": "eq",
+            "path": "fractal.view.auto_increment_seed",
+            "value": true
+          },
+          "help": "Per-second rate for smooth Explaino seed stepping when Auto-Increment Seed is enabled."
         }
       ]
     },

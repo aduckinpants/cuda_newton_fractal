@@ -66,6 +66,8 @@ struct ViewState {
     bool explaino_seed_tween{true};
     float explaino_phase{0.0f};
     float explaino_seed_drift{0.0f};
+    bool auto_increment_seed{false};
+    float explaino_seed_rate{0.35f};
 
     CameraBehavior camera_behavior{CameraBehavior::complexity};
     bool auto_dive{false};

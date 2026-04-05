@@ -23,6 +23,7 @@
 #include "finding_archive_actions.h"
 #include "finding_state_actions.h"
 #include "explaino_seed.h"
+#include "explaino_seed_dynamics.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "json_min.h"
@@ -670,6 +671,14 @@ struct BindingContext {
         return true;
     }
 
+    bool GetDoubleValue(const std::string& path, double& out) const {
+        double* ptr = nullptr;
+        BindingContext* self = const_cast<BindingContext*>(this);
+        if (!self->BindDouble(path, &ptr) || !ptr) return false;
+        out = *ptr;
+        return true;
+    }
+
     bool EvalVisibleIf(const UISchemaPredicate& pred) const {
         // Fail-open: if we cannot evaluate a predicate, keep the control visible.
         if (pred.op.empty() || pred.path.empty()) return true;
@@ -712,8 +721,10 @@ struct BindingContext {
         {
             int curI = 0;
             float curF = 0.0f;
+            double curD = 0.0;
             if (GetIntValue(pred.path, curI)) curN = (double)curI;
             else if (GetFloatValue(pred.path, curF)) curN = (double)curF;
+            else if (GetDoubleValue(pred.path, curD)) curN = curD;
             else return true;
         }
 
@@ -742,6 +753,7 @@ struct BindingContext {
         if (path == "fractal.view.dive_speed") { *outPtr = &view->dive_speed; return true; }
         if (path == "fractal.view.explaino_phase") { *outPtr = &view->explaino_phase; return true; }
         if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
+        if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
         if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
         if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
         if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
@@ -753,6 +765,12 @@ struct BindingContext {
         if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
         if (path == "fractal.params.poly_coeffs.3") { *outPtr = &params->poly_coeffs[3]; return true; }
         if (path == "fractal.params.poly_coeffs.4") { *outPtr = &params->poly_coeffs[4]; return true; }
+        return false;
+    }
+
+    bool BindDouble(const std::string& path, double** outPtr) {
+        if (!params) return false;
+        if (path == "fractal.params.explaino_seed") { *outPtr = &params->explaino_seed; return true; }
         return false;
     }
 
@@ -773,6 +791,7 @@ struct BindingContext {
         if (path == "fractal.view.auto_dive") { *outPtr = &view->auto_dive; return true; }
         if (path == "fractal.view.explaino_alive") { *outPtr = &view->explaino_alive; return true; }
         if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
+        if (path == "fractal.view.auto_increment_seed") { *outPtr = &view->auto_increment_seed; return true; }
         if (path == "fractal.render.benchmark") { *outPtr = &render->benchmark; return true; }
         return false;
     }
@@ -823,6 +842,30 @@ static bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContex
         else if (c.def.is_string()) {
             try { newV = (float)std::stod(c.def.as_string()); } catch (...) { return false; }
         } else return false;
+        if (*ptr != newV) {
+            *ptr = newV;
+            if (ioDirty) *ioDirty = true;
+            return true;
+        }
+        return false;
+    }
+
+    if (c.value_type == "double") {
+        double* ptr = nullptr;
+        if (!ctx.BindDouble(path, &ptr) || !ptr) return false;
+        double newV = *ptr;
+        if (c.def.is_number()) newV = c.def.as_number();
+        else if (c.def.is_string()) {
+            try { newV = std::stod(c.def.as_string()); } catch (...) { return false; }
+        } else return false;
+        if (path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+            if (ExplainoSeedCombined(*ctx.view, *ctx.params) != newV) {
+                ExplainoSeedSetCombined(*ctx.view, *ctx.params, newV);
+                if (ioDirty) *ioDirty = true;
+                return true;
+            }
+            return false;
+        }
         if (*ptr != newV) {
             *ptr = newV;
             if (ioDirty) *ioDirty = true;
@@ -922,6 +965,12 @@ static bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, 
                 float* ptr = nullptr;
                 if (!ctx.BindFloat(b.path, &ptr) || !ptr) {
                     if (outError) *outError = "Bind failed for float path: " + b.path + " (control: " + c.id + ")";
+                    return false;
+                }
+            } else if (c.value_type == "double") {
+                double* ptr = nullptr;
+                if (!ctx.BindDouble(b.path, &ptr) || !ptr) {
+                    if (outError) *outError = "Bind failed for double path: " + b.path + " (control: " + c.id + ")";
                     return false;
                 }
             } else if (c.value_type == "enum") {
@@ -1036,6 +1085,52 @@ static bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ct
         } else {
             changed = ImGui::DragFloat(c.label.c_str(), ptr, speed, minV, maxV);
         }
+        if (changed && ioDirty) *ioDirty = true;
+        ImGui::PopID();
+        return changed;
+    }
+
+    if (c.type == "slider_double" || c.type == "drag_double") {
+        double* ptr = nullptr;
+        if (!ctx.BindDouble(b.path, &ptr) || !ptr) {
+            ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
+            ImGui::PopID();
+            return false;
+        }
+
+        double minV = c.has_min ? c.min : 0.0;
+        double maxV = c.has_max ? c.max : 1.0;
+        double speedD = c.has_step ? c.step : 0.001;
+        const char* valueFormat = "%.6f";
+
+        if (b.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+            double displayed = ExplainoSeedCombined(*ctx.view, *ctx.params);
+            bool changed = false;
+            if (c.type == "slider_double") {
+                changed = ImGui::SliderScalar(c.label.c_str(), ImGuiDataType_Double, &displayed, &minV, &maxV, valueFormat);
+            } else {
+                changed = ImGui::DragScalar(c.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speedD), &minV, &maxV, valueFormat);
+            }
+            ImGui::SameLine();
+            bool typedChanged = ImGui::InputDouble("##val", &displayed, 0.0, 0.0, valueFormat);
+            if (typedChanged) changed = true;
+            if (changed) {
+                ExplainoSeedSetCombined(*ctx.view, *ctx.params, displayed);
+                if (ioDirty) *ioDirty = true;
+            }
+            ImGui::PopID();
+            return changed;
+        }
+
+        bool changed = false;
+        if (c.type == "slider_double") {
+            changed = ImGui::SliderScalar(c.label.c_str(), ImGuiDataType_Double, ptr, &minV, &maxV, valueFormat);
+        } else {
+            changed = ImGui::DragScalar(c.label.c_str(), ImGuiDataType_Double, ptr, static_cast<float>(speedD), &minV, &maxV, valueFormat);
+        }
+        ImGui::SameLine();
+        bool typedChanged = ImGui::InputDouble("##val", ptr, 0.0, 0.0, valueFormat);
+        if (typedChanged) changed = true;
         if (changed && ioDirty) *ioDirty = true;
         ImGui::PopID();
         return changed;
@@ -1584,6 +1679,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             view.explaino_seed_tween = true;
             view.explaino_phase = 0.0f;
             view.explaino_seed_drift = 0.0f;
+            view.auto_increment_seed = false;
+            view.explaino_seed_rate = 0.35f;
             ApplyFractalViewPresetDefaults(view, &dirty);
 
             // Kernel defaults (per current fractal type)
@@ -1620,6 +1717,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     dirty = true;
                 }
             }
+        }
+
+        if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
+            dirty = true;
         }
 
         // Render dispatch (fail-fast, delta-independent):
