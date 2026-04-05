@@ -21,7 +21,9 @@ bool ApplyExplainoSeedDynamics(const RenderStats& stats,
         const double ratePerSecond = std::fmax(0.0, static_cast<double>(view.explaino_seed_rate));
         const double delta = ratePerSecond * deltaSeconds;
         if (delta != 0.0) {
-            ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
+            // Advance only the base seed; leave explaino_seed_drift untouched
+            // so the fraction slider remains stable during auto-increment.
+            params.explaino_seed += delta;
             return true;
         }
     }

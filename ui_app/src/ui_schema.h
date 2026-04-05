@@ -49,6 +49,8 @@ struct UISchemaControl {
     bool has_visible_if = false;
     UISchemaPredicate visible_if;
 
+    bool logarithmic = false;
+
     int order = 0;
     bool has_order = false;
 };

@@ -728,6 +728,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     SweepPlayerState sweepState{};
     bool sweepPaused = false;
     bool sweepSingleStep = false;
+    float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
     if (sweepConfig.enabled) {
         std::string sweepError;
         if (!InitializeSweepPlayer(sweepConfig, &sweepState, &sweepError)) {
@@ -815,9 +816,23 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         for (const auto& panel : uiSchema.panels) {
             if (ImGui::CollapsingHeader(panel.label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+                bool prevWasSeedButton = false;
                 for (const auto& ctrl : panel.controls) {
                     // Hook extra actions without expanding the schema model yet.
                     if (ctrl.type == "button" && ctrl.has_binding && ctrl.binding.kind == "action") {
+                        // Evaluate visibility predicates for action buttons too.
+                        if (ctrl.has_visible_if && !bind.EvalVisibleIf(ctrl.visible_if)) {
+                            prevWasSeedButton = false;
+                            continue;
+                        }
+
+                        // Place prev/next seed buttons on the same line.
+                        bool isSeedButton = (ctrl.binding.path == "fractal.actions.prev_seed" ||
+                                             ctrl.binding.path == "fractal.actions.next_seed");
+                        if (isSeedButton && prevWasSeedButton) {
+                            ImGui::SameLine();
+                        }
+
                         ImGui::PushID(ctrl.id.c_str());
                         bool pressed = ImGui::Button(ctrl.label.c_str());
                         ImGui::PopID();
@@ -831,7 +846,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                             if (ctrl.binding.path == "fractal.actions.next_seed") nextSeedAction = true;
                             if (ctrl.binding.path == "fractal.actions.prev_seed") prevSeedAction = true;
                         }
+                        prevWasSeedButton = isSeedButton;
                     } else {
+                        prevWasSeedButton = false;
                         RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction);
                     }
                 }
@@ -979,6 +996,28 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             params.explaino_seed -= 1.0;
             UpdateExplainoPolynomial(view, params, nullptr);
             dirty = true;
+        }
+
+        // Arrow-key seed scrubber with short acceleration ramp.
+        // Holding Left/Right smoothly advances the seed; acceleration builds
+        // over ~0.5s from a slow crawl to the configured seed rate.
+        if (IsExplainoFamily(view.fractal_type)) {
+            bool left = ImGui::IsKeyDown(ImGuiKey_LeftArrow);
+            bool right = ImGui::IsKeyDown(ImGuiKey_RightArrow);
+            if (left || right) {
+                // Ramp from 0 to 1 over ~0.5s (acceleration window)
+                seedScrubAccel = fminf(seedScrubAccel + io.DeltaTime * 2.0f, 1.0f);
+                // Nonlinear curve: slow start, fast finish (cubic ease-in)
+                float t = seedScrubAccel * seedScrubAccel * seedScrubAccel;
+                float rate = fmaxf(0.001f, view.explaino_seed_rate);
+                double delta = (double)(t * rate) * (double)io.DeltaTime;
+                if (left) delta = -delta;
+                params.explaino_seed += delta;
+                UpdateExplainoPolynomial(view, params, nullptr);
+                dirty = true;
+            } else {
+                seedScrubAccel = 0.0f;
+            }
         }
 
         if (captureDiagnosticAction) {

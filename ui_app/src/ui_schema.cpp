@@ -111,6 +111,10 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
             if (get_number(c, "max", n)) { ctrl.max = n; ctrl.has_max = true; }
             if (get_number(c, "step", n)) { ctrl.step = n; ctrl.has_step = true; }
 
+            if (auto* logv = c.get("logarithmic")) {
+                if (logv->is_bool()) ctrl.logarithmic = logv->as_bool();
+            }
+
             if (auto* defv = c.get("default")) {
                 ctrl.def = *defv;
                 ctrl.has_default = true;

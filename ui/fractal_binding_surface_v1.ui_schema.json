@@ -155,10 +155,11 @@
           "type": "slider_float",
           "label": "Seed Increment Rate",
           "value_type": "float",
-          "min": 0.00001, "max": 2.0, "step": 0.00001, "default": 0.35,
+          "min": 0.001, "max": 5.0, "step": 0.001, "default": 0.35,
+          "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.explaino_seed_rate" },
           "visible_if": { "op": "eq", "path": "fractal.view.auto_increment_seed", "value": true },
-          "help": "Per-second rate for smooth Explaino seed stepping when Auto-Increment Seed is enabled."
+          "help": "Per-second rate for smooth Explaino seed stepping. Logarithmic scale gives more room in the low end. Left/Right arrow keys also scrub with acceleration."
         },
         {
           "id": "multibrot_power",
@@ -194,7 +195,9 @@
           "options": [
             { "id": "1", "label": "1x (Full)" },
             { "id": "2", "label": "2x" },
-            { "id": "4", "label": "4x" }
+            { "id": "4", "label": "4x" },
+            { "id": "8", "label": "8x" },
+            { "id": "16", "label": "16x" }
           ],
           "binding": { "kind": "param", "path": "fractal.lens.downsample" },
           "visible_if": { "op": "eq", "path": "fractal.lens.enabled", "value": true }
@@ -391,7 +394,7 @@
         },
         {
           "id": "explaino_phase",
-          "type": "drag_float",
+          "type": "slider_float",
           "label": "Explaino Phase",
           "value_type": "float",
           "min": -6.283185307179586, "max": 6.283185307179586, "step": 0.01, "default": 0.0,

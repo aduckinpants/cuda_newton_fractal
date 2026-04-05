@@ -419,7 +419,9 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
         ImGui::TextDisabled("?");
         if (ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
-            ImGui::TextWrapped("%s", c.help.c_str());
+            ImGui::PushTextWrapPos(300.0f);
+            ImGui::TextUnformatted(c.help.c_str());
+            ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
         }
         ImGui::SameLine();
@@ -502,10 +504,11 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
         float speed = c.has_step ? (float)c.step : 0.01f;
 
         bool changed = false;
+        ImGuiSliderFlags flags = c.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
         if (c.type == "slider_float") {
-            changed = ImGui::SliderFloat(c.label.c_str(), ptr, minV, maxV);
+            changed = ImGui::SliderFloat(c.label.c_str(), ptr, minV, maxV, "%.5f", flags);
         } else {
-            changed = ImGui::DragFloat(c.label.c_str(), ptr, speed, minV, maxV);
+            changed = ImGui::DragFloat(c.label.c_str(), ptr, speed, minV, maxV, "%.3f", flags);
         }
         if (changed && ioDirty) *ioDirty = true;
         ImGui::PopID();
