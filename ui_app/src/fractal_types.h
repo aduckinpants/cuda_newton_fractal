@@ -34,6 +34,9 @@ enum class FractalType : int {
     burning_ship = 4,
     multibrot = 5,
     phoenix = 6,
+    explaino = 7,
+    explaino_y = 8,
+    explaino_fp = 9,
 };
 
 enum class CameraBehavior : int {
@@ -58,6 +61,11 @@ struct ViewState {
 
     FractalType fractal_type{FractalType::newton};
 
+    bool explaino_alive{false};
+    bool explaino_seed_tween{true};
+    float explaino_phase{0.0f};
+    float explaino_seed_drift{0.0f};
+
     CameraBehavior camera_behavior{CameraBehavior::complexity};
     bool auto_dive{true};
     float dive_speed{1.0f};
@@ -74,6 +82,11 @@ struct KernelParams {
     int multibrot_power{3};
     ColoringMode coloring_mode{ColoringMode::root_basin};
     float exposure{1.0f};
+
+    double explaino_seed{0.0};
+    float explaino_warp_strength{0.35f};
+    int explaino_root_count{0};
+    Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
 };
 
 struct RenderSettings {

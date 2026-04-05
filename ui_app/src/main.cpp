@@ -2,8 +2,10 @@
 
 #include <Windows.h>
 #include <d3d11.h>
+#include <shellapi.h>
 #include <tchar.h>
 
+#include <cstdlib>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -15,8 +17,12 @@
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx11.h"
 
+#include "diagnostics_capture.h"
+#include "fractal_derived_fields.h"
 #include "json_min.h"
+#include "sweep_player.h"
 #include "ui_schema.h"
+#include "view_hp_sync.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -59,6 +65,94 @@ static std::string JoinPath(const std::string& a, const char* b) {
     if (last == '\\' || last == '/') return a + b;
     return a + "\\" + b;
 }
+
+static std::string Utf8FromWide(const wchar_t* wide) {
+    if (!wide) return {};
+    int needed = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
+    if (needed <= 0) return {};
+    std::string utf8((size_t)needed, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wide, -1, utf8.data(), needed, nullptr, nullptr);
+    utf8.pop_back();
+    return utf8;
+}
+
+static std::vector<std::string> GetCommandLineArgsUtf8() {
+    int argc = 0;
+    LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    std::vector<std::string> args;
+    if (!argv) return args;
+    args.reserve((size_t)argc);
+    for (int i = 0; i < argc; ++i) args.push_back(Utf8FromWide(argv[i]));
+    LocalFree(argv);
+    return args;
+}
+
+static bool HasArg(const std::vector<std::string>& args, const char* flag) {
+    for (const auto& arg : args) {
+        if (arg == flag) return true;
+    }
+    return false;
+}
+
+static bool TryGetArgValue(const std::vector<std::string>& args, const char* flag, std::string* outValue) {
+    for (size_t i = 0; i + 1 < args.size(); ++i) {
+        if (args[i] == flag) {
+            if (outValue) *outValue = args[i + 1];
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool TryParseDoubleArg(const std::vector<std::string>& args, const char* flag, double* outValue) {
+    std::string text;
+    if (!TryGetArgValue(args, flag, &text)) return false;
+    char* end = nullptr;
+    double value = std::strtod(text.c_str(), &end);
+    if (!end || *end != '\0') return false;
+    if (outValue) *outValue = value;
+    return true;
+}
+
+static bool TryParseIntArg(const std::vector<std::string>& args, const char* flag, int* outValue) {
+    std::string text;
+    if (!TryGetArgValue(args, flag, &text)) return false;
+    char* end = nullptr;
+    long value = std::strtol(text.c_str(), &end, 10);
+    if (!end || *end != '\0') return false;
+    if (outValue) *outValue = (int)value;
+    return true;
+}
+
+static bool TryParseFractalTypeArg(const std::vector<std::string>& args, FractalType* outType) {
+    std::string text;
+    if (!TryGetArgValue(args, "--fractal-type", &text)) return false;
+
+    if (text == "newton") { if (outType) *outType = FractalType::newton; return true; }
+    if (text == "nova") { if (outType) *outType = FractalType::nova; return true; }
+    if (text == "mandelbrot") { if (outType) *outType = FractalType::mandelbrot; return true; }
+    if (text == "julia") { if (outType) *outType = FractalType::julia; return true; }
+    if (text == "burning_ship") { if (outType) *outType = FractalType::burning_ship; return true; }
+    if (text == "multibrot") { if (outType) *outType = FractalType::multibrot; return true; }
+    if (text == "phoenix") { if (outType) *outType = FractalType::phoenix; return true; }
+    if (text == "explaino") { if (outType) *outType = FractalType::explaino; return true; }
+    if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
+    if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
+    return false;
+}
+
+static bool IsExplainoFamily(FractalType fractalType) {
+    return fractalType == FractalType::explaino ||
+        fractalType == FractalType::explaino_y ||
+        fractalType == FractalType::explaino_fp;
+}
+
+static bool IsRootFindingFamily(FractalType fractalType) {
+    return fractalType == FractalType::newton ||
+        fractalType == FractalType::nova ||
+        IsExplainoFamily(fractalType);
+}
+
 static UISchema BuildSafeModeSchema() {
     UISchema s;
     s.schema_version = "1";
@@ -87,6 +181,9 @@ static UISchema BuildSafeModeSchema() {
             {"burning_ship", "Burning Ship"},
             {"multibrot", "Multibrot"},
             {"phoenix", "Phoenix"},
+            {"explaino", "Explaino"},
+            {"explaino_y", "Explaino Y"},
+            {"explaino_fp", "Explaino FP"},
         };
         view.controls.push_back(std::move(c));
     }
@@ -393,22 +490,6 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-static void SetPolyPreset(KernelParams& params) {
-    if (params.poly_kind == PolyKind::z3_minus_1) {
-        params.poly_coeffs[0] = -1.0f;
-        params.poly_coeffs[1] = 0.0f;
-        params.poly_coeffs[2] = 0.0f;
-        params.poly_coeffs[3] = 1.0f;
-        params.poly_coeffs[4] = 0.0f;
-    } else if (params.poly_kind == PolyKind::z4_minus_1) {
-        params.poly_coeffs[0] = -1.0f;
-        params.poly_coeffs[1] = 0.0f;
-        params.poly_coeffs[2] = 0.0f;
-        params.poly_coeffs[3] = 0.0f;
-        params.poly_coeffs[4] = 1.0f;
-    }
-}
-
 static std::string ReadTextFile(const char* path) {
     std::ifstream f(path, std::ios::in | std::ios::binary);
     if (!f) return {};
@@ -448,6 +529,9 @@ struct BindingContext {
             case FractalType::burning_ship: return "burning_ship";
             case FractalType::multibrot: return "multibrot";
             case FractalType::phoenix: return "phoenix";
+            case FractalType::explaino: return "explaino";
+            case FractalType::explaino_y: return "explaino_y";
+            case FractalType::explaino_fp: return "explaino_fp";
             }
         }
         if (view && path == "fractal.view.camera_behavior") {
@@ -486,6 +570,9 @@ struct BindingContext {
             else if (id == "burning_ship") view->fractal_type = FractalType::burning_ship;
             else if (id == "multibrot") view->fractal_type = FractalType::multibrot;
             else if (id == "phoenix") view->fractal_type = FractalType::phoenix;
+            else if (id == "explaino") view->fractal_type = FractalType::explaino;
+            else if (id == "explaino_y") view->fractal_type = FractalType::explaino_y;
+            else if (id == "explaino_fp") view->fractal_type = FractalType::explaino_fp;
             else return false;
             return true;
         }
@@ -595,11 +682,14 @@ struct BindingContext {
         if (path == "fractal.view.zoom") { *outPtr = &view->zoom; return true; }
         if (path == "fractal.view.rotation") { *outPtr = &view->rotation_degrees; return true; }
         if (path == "fractal.view.dive_speed") { *outPtr = &view->dive_speed; return true; }
+        if (path == "fractal.view.explaino_phase") { *outPtr = &view->explaino_phase; return true; }
+        if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
         if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
         if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
         if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
         if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
+        if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
         if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
         if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
         if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
@@ -623,6 +713,8 @@ struct BindingContext {
         if (!view || !render) return false;
         if (path == "fractal.view.auto_refresh") { *outPtr = &view->auto_refresh; return true; }
         if (path == "fractal.view.auto_dive") { *outPtr = &view->auto_dive; return true; }
+        if (path == "fractal.view.explaino_alive") { *outPtr = &view->explaino_alive; return true; }
+        if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
         if (path == "fractal.render.benchmark") { *outPtr = &render->benchmark; return true; }
         return false;
     }
@@ -711,42 +803,6 @@ static inline float ClampF(float v, float lo, float hi) {
     return v;
 }
 
-static inline double ClampD(double v, double lo, double hi) {
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
-}
-
-static inline double Log2D(double v) {
-    return log(v) / log(2.0);
-}
-
-static inline double Exp2D(double v) {
-    return exp(v * log(2.0));
-}
-
-static constexpr double kMinZoom = 0.05;
-static constexpr double kMaxLog2Zoom = 1020.0; // exp2(1020) ~ 1e307 (finite in double)
-
-static inline double SafeZoomFromLog2(double log2Zoom) {
-    return Exp2D(ClampD(log2Zoom, Log2D(1.0e-30), kMaxLog2Zoom));
-}
-
-static void SyncViewHpFromUi(ViewState& view) {
-    view.center_hp_x = (double)view.center.x;
-    view.center_hp_y = (double)view.center.y;
-    view.log2_zoom = Log2D(fmax(1.0e-30, (double)view.zoom));
-}
-
-static void SyncViewUiFromHp(ViewState& view) {
-    // Keep UI-facing floats finite.
-    double z = SafeZoomFromLog2(view.log2_zoom);
-    z = ClampD(z, 1.0e-30, 1.0e30);
-    view.zoom = (float)z;
-    view.center.x = (float)view.center_hp_x;
-    view.center.y = (float)view.center_hp_y;
-}
-
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     if (!view.auto_dive) return;
     if (view.camera_behavior == CameraBehavior::manual || view.camera_behavior == CameraBehavior::off) return;
@@ -765,62 +821,6 @@ static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     // No arbitrary max zoom; clamp only to keep the exponent finite.
     view.log2_zoom = ClampD(view.log2_zoom + dlog2, Log2D(kMinZoom), kMaxLog2Zoom);
     SyncViewUiFromHp(view);
-    if (ioDirty) *ioDirty = true;
-}
-
-static void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, bool* ioDirty) {
-    // Explicit preset selection based on explicit fractal type.
-    // This is NOT a fallback mechanism: we only apply this on (a) Reset All, or (b) when the user changes fractal_type.
-    // View mapping controls (center/zoom/rotation) remain untouched.
-
-    if (view.fractal_type == FractalType::newton) {
-        params.max_iter = 500;
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.poly_kind = PolyKind::z3_minus_1;
-        SetPolyPreset(params);
-        params.coloring_mode = ColoringMode::joy_basins;
-        params.exposure = 1.0f;
-        params.multibrot_power = 3;
-        params.phoenix_p_real = -0.50f;
-        params.phoenix_p_imag = 0.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::nova) {
-        params.max_iter = 300;
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.poly_kind = PolyKind::z3_minus_1;
-        SetPolyPreset(params);
-        params.coloring_mode = ColoringMode::joy_basins;
-        params.exposure = 1.0f;
-        params.multibrot_power = 3;
-        params.phoenix_p_real = -0.50f;
-        params.phoenix_p_imag = 0.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::phoenix) {
-        params.max_iter = 800;
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.phoenix_p_real = -0.50f;
-        params.phoenix_p_imag = 0.0f;
-        params.coloring_mode = ColoringMode::smooth_escape;
-        params.exposure = 1.0f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    // Escape-time family.
-    params.max_iter = 800;
-    params.coloring_mode = ColoringMode::smooth_escape;
-    params.exposure = 1.0f;
-    params.multibrot_power = 3;
     if (ioDirty) *ioDirty = true;
 }
 
@@ -1012,28 +1012,97 @@ static bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ct
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
-    WNDCLASSEX wc = {sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, hInstance, nullptr, nullptr, nullptr, nullptr, _T("FractalUI"), nullptr};
-    RegisterClassEx(&wc);
-
-    HWND hwnd = CreateWindow(wc.lpszClassName, _T("CUDA Newton Fractal Explorer"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
-
-    if (!CreateDeviceD3D(hwnd)) {
-        CleanupDeviceD3D();
-        UnregisterClass(wc.lpszClassName, wc.hInstance);
+    std::vector<std::string> args = GetCommandLineArgsUtf8();
+    const bool validateUiOnly = HasArg(args, "--validate-ui");
+    const bool captureDiagnosticOnly = HasArg(args, "--capture-diagnostic");
+    if (validateUiOnly && captureDiagnosticOnly) {
         return 1;
     }
 
-    ShowWindow(hwnd, SW_SHOWDEFAULT);
-    UpdateWindow(hwnd);
+    FractalType cliFractalType = FractalType::newton;
+    const bool haveCliFractalType = TryParseFractalTypeArg(args, &cliFractalType);
+    if (HasArg(args, "--fractal-type") && !haveCliFractalType) {
+        return 1;
+    }
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    (void)io;
-    ImGui::StyleColorsDark();
+    double explainoSeedOverride = 0.0;
+    const bool haveExplainoSeedOverride = TryParseDoubleArg(args, "--explaino-seed", &explainoSeedOverride);
+    if (HasArg(args, "--explaino-seed") && !haveExplainoSeedOverride) {
+        return 1;
+    }
 
-    ImGui_ImplWin32_Init(hwnd);
-    ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
+    double explainoPhaseOverride = 0.0;
+    const bool haveExplainoPhaseOverride = TryParseDoubleArg(args, "--explaino-phase", &explainoPhaseOverride);
+    if (HasArg(args, "--explaino-phase") && !haveExplainoPhaseOverride) {
+        return 1;
+    }
+
+    double explainoWarpOverride = 0.0;
+    const bool haveExplainoWarpOverride = TryParseDoubleArg(args, "--explaino-warp-strength", &explainoWarpOverride);
+    if (HasArg(args, "--explaino-warp-strength") && !haveExplainoWarpOverride) {
+        return 1;
+    }
+
+    double explainoSeedDriftOverride = 0.0;
+    const bool haveExplainoSeedDriftOverride = TryParseDoubleArg(args, "--explaino-seed-drift", &explainoSeedDriftOverride);
+    if (HasArg(args, "--explaino-seed-drift") && !haveExplainoSeedDriftOverride) {
+        return 1;
+    }
+
+    int widthOverride = 0;
+    const bool haveWidthOverride = TryParseIntArg(args, "--width", &widthOverride);
+    if (HasArg(args, "--width") && !haveWidthOverride) {
+        return 1;
+    }
+
+    int heightOverride = 0;
+    const bool haveHeightOverride = TryParseIntArg(args, "--height", &heightOverride);
+    if (HasArg(args, "--height") && !haveHeightOverride) {
+        return 1;
+    }
+
+    double sweepSeedStart = 0.0;
+    const bool haveSweepSeedStart = TryParseDoubleArg(args, "--sweep-seed-start", &sweepSeedStart);
+    if (HasArg(args, "--sweep-seed-start") && !haveSweepSeedStart) {
+        return 1;
+    }
+
+    double sweepSeedStop = 0.0;
+    const bool haveSweepSeedStop = TryParseDoubleArg(args, "--sweep-seed-stop", &sweepSeedStop);
+    if (HasArg(args, "--sweep-seed-stop") && !haveSweepSeedStop) {
+        return 1;
+    }
+
+    double sweepSeedStep = 0.0;
+    const bool haveSweepSeedStep = TryParseDoubleArg(args, "--sweep-seed-step", &sweepSeedStep);
+    if (HasArg(args, "--sweep-seed-step") && !haveSweepSeedStep) {
+        return 1;
+    }
+
+    int sweepDwellMs = 450;
+    const bool haveSweepDwellMs = TryParseIntArg(args, "--sweep-dwell-ms", &sweepDwellMs);
+    if (HasArg(args, "--sweep-dwell-ms") && !haveSweepDwellMs) {
+        return 1;
+    }
+
+    const bool sweepLoop = HasArg(args, "--sweep-loop");
+    const bool haveAnySweepArg = haveSweepSeedStart || haveSweepSeedStop || haveSweepSeedStep || haveSweepDwellMs || sweepLoop;
+    SweepPlayerConfig sweepConfig{};
+    if (haveAnySweepArg) {
+        if (!(haveSweepSeedStart && haveSweepSeedStop && haveSweepSeedStep)) {
+            return 1;
+        }
+        sweepConfig.enabled = true;
+        sweepConfig.seed_start = sweepSeedStart;
+        sweepConfig.seed_stop = sweepSeedStop;
+        sweepConfig.seed_step = sweepSeedStep;
+        sweepConfig.dwell_seconds = (double)sweepDwellMs / 1000.0;
+        sweepConfig.loop = sweepLoop;
+    }
+
+    if ((haveWidthOverride && widthOverride <= 0) || (haveHeightOverride && heightOverride <= 0)) {
+        return 1;
+    }
 
     ViewState view{};
     KernelParams params{};
@@ -1107,17 +1176,101 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             SetPolyPreset(params);
         }
 
-        // Ensure non-Newton starts with non-Newton-friendly params.
-        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (haveCliFractalType) {
+            view.fractal_type = cliFractalType;
+            dirty = true;
+        } else if (haveExplainoSeedOverride) {
+            view.fractal_type = FractalType::explaino;
+            dirty = true;
+        } else if (sweepConfig.enabled) {
+            view.fractal_type = FractalType::explaino;
+            dirty = true;
+        }
 
-        // Initialize high-precision view from the finalized initial float surface.
-        SyncViewHpFromUi(view);
+        if (sweepConfig.enabled && !IsExplainoFamily(view.fractal_type)) {
+            return 1;
+        }
+
+        if (haveWidthOverride) render.resolution.x = widthOverride;
+        if (haveHeightOverride) render.resolution.y = heightOverride;
+        if (haveExplainoPhaseOverride) view.explaino_phase = (float)explainoPhaseOverride;
+        if (haveExplainoSeedDriftOverride) view.explaino_seed_drift = (float)explainoSeedDriftOverride;
+        if (haveExplainoWarpOverride) params.explaino_warp_strength = (float)explainoWarpOverride;
+        if (sweepConfig.enabled) view.auto_refresh = true;
+
+        ApplyFractalDerivedFieldsAndSyncHp(view, params, &dirty, haveExplainoSeedOverride, explainoSeedOverride);
     }
+
+    if (validateUiOnly) {
+        return 0;
+    }
+
+    if (captureDiagnosticOnly) {
+        std::vector<uint32_t> headlessRgba;
+        headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+
+        const char* err = nullptr;
+        RenderStats headlessStats{};
+        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), &headlessStats, &err)) {
+            return 1;
+        }
+
+        std::string captureError;
+        DiagnosticsCaptureResult captureResult;
+        if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), &captureResult, &captureError)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    WNDCLASSEX wc = {sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, hInstance, nullptr, nullptr, nullptr, nullptr, _T("FractalUI"), nullptr};
+    RegisterClassEx(&wc);
+
+    HWND hwnd = CreateWindow(wc.lpszClassName, _T("CUDA Newton Fractal Explorer"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
+
+    if (!CreateDeviceD3D(hwnd)) {
+        CleanupDeviceD3D();
+        UnregisterClass(wc.lpszClassName, wc.hInstance);
+        return 1;
+    }
+
+    ShowWindow(hwnd, SW_SHOWDEFAULT);
+    UpdateWindow(hwnd);
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplWin32_Init(hwnd);
+    ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     std::vector<uint32_t> rgba;
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
+    SweepPlayerState sweepState{};
+    if (sweepConfig.enabled) {
+        std::string sweepError;
+        if (!InitializeSweepPlayer(sweepConfig, &sweepState, &sweepError)) {
+            CleanupDeviceD3D();
+            DestroyWindow(hwnd);
+            UnregisterClass(wc.lpszClassName, wc.hInstance);
+            return 1;
+        }
+
+        double initialSweepSeed = 0.0;
+        if (!SweepPlayerCurrentSeed(sweepState, &initialSweepSeed)) {
+            CleanupDeviceD3D();
+            DestroyWindow(hwnd);
+            UnregisterClass(wc.lpszClassName, wc.hInstance);
+            return 1;
+        }
+        params.explaino_seed = initialSweepSeed;
+        UpdateExplainoPolynomial(view, params, nullptr);
+        dirty = true;
+    }
 
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
@@ -1131,6 +1284,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+
+        if (sweepConfig.enabled) {
+            bool sweepChanged = false;
+            if (!AdvanceSweepPlayer(sweepConfig, (double)io.DeltaTime, &sweepState, &sweepChanged)) {
+                sweepChanged = false;
+            }
+            if (sweepChanged) {
+                double currentSweepSeed = 0.0;
+                if (SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
+                    params.explaino_seed = currentSweepSeed;
+                    UpdateExplainoPolynomial(view, params, nullptr);
+                    dirty = true;
+                }
+            }
+        }
 
         // Controls window
         ImGui::Begin("Controls");
@@ -1179,11 +1347,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             SyncViewHpFromUi(view);
         }
 
-        if (view.fractal_type != FractalType::newton && view.fractal_type != FractalType::nova) {
+        if (!IsRootFindingFamily(view.fractal_type)) {
             ImGui::Spacing();
             ImGui::TextWrapped("Note: escape-time fractals use iteration-based coloring.");
-            if (params.coloring_mode == ColoringMode::root_basin) {
-                ImGui::TextWrapped("Coloring Mode 'root_basin' is Newton/Nova-only. Choose 'iteration_count' or 'smooth_escape'.");
+            if (params.coloring_mode == ColoringMode::root_basin || params.coloring_mode == ColoringMode::joy_basins) {
+                ImGui::TextWrapped("Root-basin coloring is for Newton, Nova, and the Explaino family. Choose 'iteration_count' or 'smooth_escape' for escape-time modes.");
             }
         }
 
@@ -1191,6 +1359,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (view.fractal_type != lastFractalType) {
             lastFractalType = view.fractal_type;
             ApplyFractalPresetDefaults(view, params, &dirty);
+            if (IsExplainoFamily(view.fractal_type)) {
+                UpdateExplainoPolynomial(view, params, nullptr);
+            }
             SyncViewHpFromUi(view);
         }
 
@@ -1205,6 +1376,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ImGui::Separator();
         ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
+
+        if (sweepConfig.enabled) {
+            double currentSweepSeed = 0.0;
+            if (SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
+                ImGui::Text("Sweep: %d/%d  seed %.6f%s",
+                    sweepState.current_index + 1,
+                    (int)sweepState.seeds.size(),
+                    currentSweepSeed,
+                    sweepState.finished ? "  [done]" : (sweepConfig.loop ? "  [loop]" : ""));
+                ImGui::Text("Sweep dwell: %.0f ms", sweepConfig.dwell_seconds * 1000.0);
+            }
+        }
 
         {
             const double zhp = SafeZoomFromLog2(view.log2_zoom);
@@ -1230,9 +1413,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             view.camera_behavior = CameraBehavior::complexity;
             view.auto_dive = true;
             view.dive_speed = 1.0f;
+            view.explaino_alive = false;
+            view.explaino_seed_tween = true;
+            view.explaino_phase = 0.0f;
+            view.explaino_seed_drift = 0.0f;
 
             // Kernel defaults (per current fractal type)
+            params.explaino_seed = 0.0;
+            params.explaino_warp_strength = 0.35f;
             ApplyFractalPresetDefaults(view, params, &dirty);
+            if (IsExplainoFamily(view.fractal_type)) {
+                UpdateExplainoPolynomial(view, params, nullptr);
+            }
             SyncViewHpFromUi(view);
             lastPolyKind = params.poly_kind;
             lastFractalType = view.fractal_type;
@@ -1250,6 +1442,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         // - If auto_refresh is ON, we render every frame.
         // - Otherwise, render on explicit request or any state change (dirty).
         if (view.auto_refresh || dirty || renderOnceAction) {
+            if (IsExplainoFamily(view.fractal_type)) {
+                UpdateExplainoPolynomial(view, params, nullptr);
+            }
             rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
             EnsureFractalTexture(render.resolution.x, render.resolution.y);
 

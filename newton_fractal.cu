@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -151,6 +152,11 @@ static float parseFloat(const char* s, float defaultValue) {
 }
 
 static void writePPM(const std::string& path, int w, int h, const std::vector<unsigned char>& rgb) {
+    std::filesystem::path outPath(path);
+    if (outPath.has_parent_path()) {
+        std::error_code ec;
+        std::filesystem::create_directories(outPath.parent_path(), ec);
+    }
     std::FILE* f = std::fopen(path.c_str(), "wb");
     if (!f) {
         std::perror("fopen");
@@ -162,6 +168,12 @@ static void writePPM(const std::string& path, int w, int h, const std::vector<un
     std::fclose(f);
 }
 
+static std::string defaultOutputPath() {
+    const char* root = std::getenv("SALT_FRACTAL_ROOT");
+    std::string base = (root && *root) ? std::string(root) : std::string("D:\\salt-fractal");
+    return base + "\\cuda_newton_fractal_clone\\smoke\\newton.ppm";
+}
+
 int main(int argc, char** argv) {
     int width = 1024;
     int height = 1024;
@@ -171,7 +183,7 @@ int main(int argc, char** argv) {
     float xMin = -2.0f, xMax = 2.0f;
     float yMin = -2.0f, yMax = 2.0f;
 
-    std::string outPath = "newton.ppm";
+    std::string outPath = defaultOutputPath();
 
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--width") && i + 1 < argc) { width = parseInt(argv[++i], width); continue; }
@@ -189,7 +201,7 @@ int main(int argc, char** argv) {
                 "Newton fractal (CUDA)\n\n"
                 "Usage:\n"
                 "  newton_fractal.exe [--width N] [--height N] [--max-iter N] [--eps E] [--xmin X] [--xmax X] [--ymin Y] [--ymax Y] [--out path.ppm]\n\n"
-                "Defaults: 1024x1024, max-iter=50, eps=1e-4, view=[-2,2]x[-2,2], out=newton.ppm\n"
+                "Defaults: 1024x1024, max-iter=50, eps=1e-4, view=[-2,2]x[-2,2], out=D:\\salt-fractal\\cuda_newton_fractal_clone\\smoke\\newton.ppm\n"
             );
             return 0;
         }

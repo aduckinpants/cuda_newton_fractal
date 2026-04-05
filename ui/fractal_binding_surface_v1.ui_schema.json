@@ -201,6 +201,18 @@
             {
               "id": "phoenix",
               "label": "Phoenix"
+            },
+            {
+              "id": "explaino",
+              "label": "Explaino"
+            },
+            {
+              "id": "explaino_y",
+              "label": "Explaino Y"
+            },
+            {
+              "id": "explaino_fp",
+              "label": "Explaino FP"
             }
           ],
           "binding": {
@@ -389,7 +401,7 @@
           "options": [
             {
               "id": "root_basin",
-              "label": "Root Basins (Newton/Nova)"
+              "label": "Root Basins (Root-Finding)"
             },
             {
               "id": "joy_basins",
@@ -411,9 +423,9 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova"
+            "value": "newton,nova,explaino,explaino_y,explaino_fp"
           },
-          "help": "Newton/Nova support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
+          "help": "Newton, Nova, and the Explaino family support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
         },
         {
           "id": "coloring_mode_escape",
@@ -531,6 +543,79 @@
           "binding": {
             "kind": "param",
             "path": "fractal.params.exposure"
+          }
+        },
+        {
+          "id": "explaino_warp_strength",
+          "type": "slider_float",
+          "label": "Explaino Warp",
+          "value_type": "float",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01,
+          "default": 0.35,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.params.explaino_warp_strength"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp"
+          }
+        },
+        {
+          "id": "explaino_phase",
+          "type": "drag_float",
+          "label": "Explaino Phase",
+          "value_type": "float",
+          "min": -6.283185307179586,
+          "max": 6.283185307179586,
+          "step": 0.01,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.explaino_phase"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp"
+          }
+        },
+        {
+          "id": "explaino_seed_drift",
+          "type": "slider_float",
+          "label": "Explaino Seed Drift",
+          "value_type": "float",
+          "min": 0.0,
+          "max": 0.999,
+          "step": 0.001,
+          "default": 0.0,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.explaino_seed_drift"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp"
+          }
+        },
+        {
+          "id": "explaino_seed_tween",
+          "type": "checkbox",
+          "label": "Explaino Seed Tween",
+          "value_type": "bool",
+          "default": true,
+          "binding": {
+            "kind": "param",
+            "path": "fractal.view.explaino_seed_tween"
+          },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp"
           }
         }
       ]

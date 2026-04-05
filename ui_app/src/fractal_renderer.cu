@@ -19,6 +19,100 @@ struct Cxd {
     double y;
 };
 
+__device__ __forceinline__ Cx cx_rot(Cx z, float a) {
+    float cs = cosf(a);
+    float sn = sinf(a);
+    return {z.x * cs - z.y * sn, z.x * sn + z.y * cs};
+}
+
+__device__ __forceinline__ float hash01_u32(unsigned int x) {
+    x ^= x >> 16;
+    x *= 0x7feb352dU;
+    x ^= x >> 15;
+    x *= 0x846ca68bU;
+    x ^= x >> 16;
+    return (float)(x & 0x00ffffffU) / (float)0x01000000U;
+}
+
+__device__ __forceinline__ double WedgeCumulativeRaw(double x) {
+    const double p = 3.141592653589793;
+    return (p - 1.0) * x * x * 0.5 - p * x * x * x / 3.0;
+}
+
+__device__ __forceinline__ double WedgeTotalArea() {
+    const double p = 3.141592653589793;
+    double x1 = 1.0 - 1.0 / p;
+    return WedgeCumulativeRaw(x1);
+}
+
+__device__ __forceinline__ double AreaFractionToX(double u) {
+    const double p = 3.141592653589793;
+    double x1 = 1.0 - 1.0 / p;
+    if (u <= 0.0) return 0.0;
+    if (u >= 1.0) return x1;
+    double target = u * WedgeTotalArea();
+    double lo = 0.0;
+    double hi = x1;
+    for (int i = 0; i < 60; ++i) {
+        double mid = 0.5 * (lo + hi);
+        double val = WedgeCumulativeRaw(mid);
+        if (val < target) lo = mid; else hi = mid;
+    }
+    return 0.5 * (lo + hi);
+}
+
+__device__ __forceinline__ unsigned long long splitmix64_ull(unsigned long long z) {
+    z += 0x9e3779b97f4a7c15ULL;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    z = z ^ (z >> 31);
+    return z;
+}
+
+__device__ __forceinline__ unsigned long long HashLogisticOrbit(double x0, int iters) {
+    unsigned long long acc = 0x9e3779b97f4a7c15ULL;
+    double x = x0;
+    const double p = 3.141592653589793;
+    for (int i = 0; i < iters; ++i) {
+        x = p * x * (1.0 - x);
+        unsigned long long bits = (unsigned long long)__double_as_longlong(x);
+        acc = splitmix64_ull(acc ^ bits);
+    }
+    return acc;
+}
+
+__device__ __forceinline__ double LogisticAreaUToSeed(double s) {
+    double u = s - floor(s);
+    if (u < 0.0) u += 1.0;
+    if (u >= 1.0) u = nextafter(1.0, 0.0);
+
+    double x = AreaFractionToX(u);
+    unsigned long long h = HashLogisticOrbit(x, 12);
+    const double denom = 18446744073709551615.0;
+    return (double)h / denom;
+}
+
+__device__ __forceinline__ Cx explaino_warp_start(Cx coord, double seed, float phase, float strength) {
+    float s = fmaxf(0.0f, fminf(1.0f, strength));
+    unsigned long long bits = (unsigned long long)__double_as_longlong(seed);
+    unsigned int u = (unsigned int)(bits ^ (bits >> 32));
+    float a0 = hash01_u32(u ^ 0x1234567u);
+    float a1 = hash01_u32(u ^ 0x89abcdefu);
+
+    float rot = (a0 * 2.0f - 1.0f) * 3.1415926f;
+    Cx z = cx_rot(coord, rot);
+
+    float freq = 2.0f + 6.0f * a1;
+    float k = 0.10f + 0.35f * a0;
+    z.x += s * k * sinf(z.y * freq + phase);
+    z.y += s * k * sinf(z.x * freq - phase);
+
+    Cx z2{z.x * z.x - z.y * z.y, 2.0f * z.x * z.y};
+    float push = s * (0.06f + 0.10f * a1);
+    z = {z.x + z2.x * push, z.y + z2.y * push};
+    return z;
+}
+
 __device__ __forceinline__ Cx cx_add(Cx a, Cx b) { return {a.x + b.x, a.y + b.y}; }
 __device__ __forceinline__ Cx cx_sub(Cx a, Cx b) { return {a.x - b.x, a.y - b.y}; }
 __device__ __forceinline__ Cx cx_mul(Cx a, Cx b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
@@ -63,6 +157,26 @@ __device__ __forceinline__ int nearest_root_index_unit_roots(Cx z, int n) {
     return k;
 }
 
+__device__ __forceinline__ Cx unit_root_k(int k, int n) {
+    float a = (2.0f * CUDART_PI_F) * ((float)k / (float)max(1, n));
+    return {cosf(a), sinf(a)};
+}
+
+__device__ __forceinline__ int nearest_root_index_list(Cx z, const Float2* roots, int n) {
+    int best = 0;
+    float bestD2 = 1.0e30f;
+    for (int i = 0; i < n; ++i) {
+        float dx = z.x - roots[i].x;
+        float dy = z.y - roots[i].y;
+        float d2 = dx * dx + dy * dy;
+        if (d2 < bestD2) {
+            bestD2 = d2;
+            best = i;
+        }
+    }
+    return best;
+}
+
 __device__ __forceinline__ uchar4 palette_root(int idx, int n) {
     // Simple distinct palette (wrap)
     const uchar4 colors[8] = {
@@ -82,17 +196,34 @@ __device__ __forceinline__ uchar4 palette_joy_root(int idx, int n) {
     // Warm, happy palette tuned for "many success pits".
     // Keep it simple and distinct per root.
     const uchar4 warm[8] = {
-        {255, 180, 120, 255}, // peach
-        {255, 220, 120, 255}, // gold
-        {255, 140, 120, 255}, // coral
-        {255, 190, 210, 255}, // soft pink
-        {255, 210, 160, 255}, // apricot
-        {255, 170, 220, 255}, // rose
-        {255, 205, 135, 255}, // honey
-        {255, 240, 200, 255}, // cream
+        {255, 140, 80, 255},
+        {255, 205, 70, 255},
+        {255, 90, 90, 255},
+        {255, 130, 200, 255},
+        {255, 165, 90, 255},
+        {255, 95, 190, 255},
+        {255, 185, 95, 255},
+        {255, 235, 170, 255},
     };
     (void)n;
     return warm[idx % 8];
+}
+
+__device__ __forceinline__ uchar4 saturate_rgb(uchar4 c, float sat) {
+    float r = (float)c.x;
+    float g = (float)c.y;
+    float b = (float)c.z;
+    float l = 0.2126f * r + 0.7152f * g + 0.0722f * b;
+    r = l + (r - l) * sat;
+    g = l + (g - l) * sat;
+    b = l + (b - l) * sat;
+    int rr = (int)roundf(r);
+    int gg = (int)roundf(g);
+    int bb = (int)roundf(b);
+    rr = max(0, min(255, rr));
+    gg = max(0, min(255, gg));
+    bb = max(0, min(255, bb));
+    return {(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255};
 }
 
 __device__ __forceinline__ uchar4 mul_rgb(uchar4 c, float s) {
@@ -219,6 +350,158 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino) {
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        double seed = LogisticAreaUToSeed(params.explaino_seed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dP);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx step = cx_div(P, dP);
+            z = cx_sub(z, step);
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino_fp) {
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        double seed = LogisticAreaUToSeed(params.explaino_seed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dP);
+            Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+
+            float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+            float damp = 1.0f / (1.0f + stepMag);
+            z = cx_sub(z, cx_scale(step, damp));
+
+            float r2 = cx_abs2(z);
+            if (r2 > 16.0f) {
+                float r = sqrtf(r2);
+                float s = 4.0f / fmaxf(1e-12f, r);
+                z = cx_scale(z, s);
+            }
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+        if (!converged) {
+            int nRoots = 0;
+            if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
+            if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+
+            if (nRoots > 0) {
+                int idx = nearest_root_index_unit_roots(z, nRoots);
+                z = unit_root_k(idx, nRoots);
+            } else if (params.explaino_root_count > 0) {
+                int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+            }
+            converged = true;
+        }
+    } else if (ft == FractalType::explaino_y) {
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        double seed = LogisticAreaUToSeed(params.explaino_seed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+        Cx zPrev = z;
+
+        float bestP = 1.0e30f;
+        int bestIt = 0;
+        Cx bestZ = z;
+
+        for (; it < maxIter; ++it) {
+            float localPhase = phase + 0.07f * (float)it;
+            Cx zW = explaino_warp_start(z, seed, localPhase, strength * 0.30f);
+
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, zW, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < bestP) {
+                bestP = pAbs;
+                bestIt = it;
+                bestZ = zW;
+            }
+            if (pAbs < eps) {
+                z = zW;
+                break;
+            }
+
+            float dAbs2 = cx_abs2(dP);
+            Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+
+            float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+            float damp = 0.90f / (1.0f + stepMag);
+            Cx newtonW = cx_sub(zW, cx_scale(step, damp));
+
+            float mix = 0.78f;
+            Cx zNext = cx_add(cx_scale(z, 1.0f - mix), cx_scale(newtonW, mix));
+
+            Cx vel = cx_sub(z, zPrev);
+            zNext = cx_add(zNext, cx_scale(vel, 0.10f));
+            zNext = cx_add(zNext, cx_scale(coord, 0.045f));
+
+            zPrev = z;
+            z = zNext;
+
+            float r2 = cx_abs2(z);
+            float k = 1.0f / sqrtf(1.0f + r2 * 0.0625f);
+            z = cx_scale(z, 4.0f * k);
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+        if (!converged) {
+            z = bestZ;
+            it = bestIt;
+            pAbs = bestP;
+            converged = true;
+        }
     } else if (ft == FractalType::nova) {
         // Nova (V1): z_{n+1} = z_n - alpha * f(z_n)/f'(z_n) + c
         // Treat as escape-time family for coloring; points that do not escape are interior.
@@ -349,30 +632,32 @@ __global__ void kernel_render(
 
             int p = params.multibrot_power;
 
-            float r2 = 0.0f;
-            for (; it < maxIter; ++it) {
-                if (ft == FractalType::burning_ship) {
-                    Cx a = cx_abs_components(z);
-                    Cx z2 = cx_mul(a, a);
-                    z = cx_add(z2, cConst);
-                } else if (ft == FractalType::multibrot) {
-                    Cx zp = cx_pow_int(z, p);
-                    z = cx_add(zp, cConst);
-                } else {
-                    // Mandelbrot / Julia default to z^2 + c
-                    Cx z2 = cx_mul(z, z);
-                    z = cx_add(z2, cConst);
-                }
+            if (ft != FractalType::phoenix) {
+                float r2 = 0.0f;
+                for (; it < maxIter; ++it) {
+                    if (ft == FractalType::burning_ship) {
+                        Cx a = cx_abs_components(z);
+                        Cx z2 = cx_mul(a, a);
+                        z = cx_add(z2, cConst);
+                    } else if (ft == FractalType::multibrot) {
+                        Cx zp = cx_pow_int(z, p);
+                        z = cx_add(zp, cConst);
+                    } else {
+                        // Mandelbrot / Julia default to z^2 + c
+                        Cx z2 = cx_mul(z, z);
+                        z = cx_add(z2, cConst);
+                    }
 
-                r2 = cx_abs2(z);
-                if (r2 > 4.0f) {
-                    escaped = true;
-                    break;
-                }
+                    r2 = cx_abs2(z);
+                    if (r2 > 4.0f) {
+                        escaped = true;
+                        break;
+                    }
 
-                if (!isfinite(z.x) || !isfinite(z.y)) {
-                    escaped = true;
-                    break;
+                    if (!isfinite(z.x) || !isfinite(z.y)) {
+                        escaped = true;
+                        break;
+                    }
                 }
             }
         }
@@ -387,32 +672,53 @@ __global__ void kernel_render(
     uchar4 color{0, 0, 0, 255};
     const uchar4 errorColor{255, 0, 255, 255};
 
-    if (ft == FractalType::newton || ft == FractalType::nova) {
-        // Root-finding family coloring (Newton + Nova).
+    if (ft == FractalType::newton || ft == FractalType::nova || ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp) {
+        // Root-finding family coloring (Newton + Nova + Explaino).
         if (mode == ColoringMode::joy_basins) {
             if (!converged) {
                 // "Submerged" undertow: preserve faint structure, but keep it dark.
                 float t = (float)it / (float)maxIter;
                 float a = atan2f(z.y, z.x);
-                float v = 0.5f + 0.5f * sinf(a * 3.0f + t * 6.2831853f);
-                unsigned char r = (unsigned char)(8.0f + 18.0f * v);
-                unsigned char g = (unsigned char)(14.0f + 24.0f * v);
-                unsigned char b = (unsigned char)(28.0f + 44.0f * v);
+                bool isExplainoFamily = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp);
+                float phase = isExplainoFamily ? view.explaino_phase : 0.0f;
+                float v = 0.5f + 0.5f * sinf(a * 3.0f + t * 6.2831853f + phase);
+                float w = 0.5f + 0.5f * sinf(a * 11.0f + t * 12.5663706f - phase * 0.7f);
+                unsigned char r = (unsigned char)(10.0f + 26.0f * v + 8.0f * w);
+                unsigned char g = (unsigned char)(8.0f + 20.0f * v + 10.0f * w);
+                unsigned char b = (unsigned char)(18.0f + 34.0f * v + 14.0f * w);
                 color = {r, g, b, 255};
             } else {
                 int nRoots = 0;
                 if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
                 if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
 
-                if (nRoots > 0) {
-                    int idx = nearest_root_index_unit_roots(z, nRoots);
+                bool isExplainoFamily = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp);
+                bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
+
+                if (nRoots > 0 || useCustomRoots) {
+                    int idx = useCustomRoots ? nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count)
+                                             : nearest_root_index_unit_roots(z, nRoots);
                     uchar4 base = palette_joy_root(idx, nRoots);
 
                     // Brightness: faster convergence => brighter, but never gloomy.
                     float u = (float)it / (float)maxIter;
                     float bright = 1.0f - powf(fminf(1.0f, u), 0.65f);
                     bright = 0.35f + 0.90f * bright;
-                    color = mul_rgb(base, bright);
+
+                    float edge = powf(fminf(1.0f, u), 0.85f);
+                    float phase = isExplainoFamily ? view.explaino_phase : 0.0f;
+                    float a = atan2f(z.y, z.x);
+                    float stripe = 0.5f + 0.5f * sinf((float)it * 0.35f + a * 3.0f + phase);
+
+                    uchar4 c0 = mul_rgb(base, bright);
+                    float glow = 0.30f * edge + 0.12f * stripe;
+                    int rr = (int)c0.x + (int)(glow * 255.0f);
+                    int gg = (int)c0.y + (int)(glow * 210.0f);
+                    int bb = (int)c0.z + (int)(glow * 160.0f);
+                    rr = max(0, min(255, rr));
+                    gg = max(0, min(255, gg));
+                    bb = max(0, min(255, bb));
+                    color = saturate_rgb({(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255}, 1.40f);
                 } else {
                     // Invalid: basin identity not defined for custom polynomial in this demo.
                     color = errorColor;
@@ -426,11 +732,17 @@ __global__ void kernel_render(
                 if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
                 if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
 
-                if (nRoots > 0) {
+                bool isExplainoFamily = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp);
+                bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
+
+                if (useCustomRoots) {
+                    int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                    color = saturate_rgb(palette_root(idx, params.explaino_root_count), 1.30f);
+                } else if (nRoots > 0) {
                     int idx = nearest_root_index_unit_roots(z, nRoots);
-                    color = palette_root(idx, nRoots);
+                    color = saturate_rgb(palette_root(idx, nRoots), 1.30f);
                 } else {
-                    // Invalid: root basins are not defined for custom polynomial in this demo.
+                    // Invalid: root identity not defined.
                     color = errorColor;
                 }
             }
@@ -592,6 +904,16 @@ bool RenderFractalCUDA(
     if (view.fractal_type == FractalType::multibrot) {
         if (params.multibrot_power < 2 || params.multibrot_power > 12) {
             if (outError) *outError = "multibrot_power must be in [2,12]";
+            return false;
+        }
+    }
+    if (view.fractal_type == FractalType::explaino || view.fractal_type == FractalType::explaino_y || view.fractal_type == FractalType::explaino_fp) {
+        if (!std::isfinite(params.explaino_seed)) {
+            if (outError) *outError = "explaino_seed must be finite";
+            return false;
+        }
+        if (!std::isfinite(params.explaino_warp_strength) || params.explaino_warp_strength < 0.0f || params.explaino_warp_strength > 1.0f) {
+            if (outError) *outError = "explaino_warp_strength must be finite and in [0,1]";
             return false;
         }
     }
