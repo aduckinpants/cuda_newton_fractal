@@ -32,6 +32,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_sweep_player.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\tests\test_view_hp_sync.cpp ^
+  /Fe:"%TESTROOT%\test_view_hp_sync.exe"
+if errorlevel 1 exit /b 1
+
 "%TESTROOT%\test_explaino_seed.exe"
 if errorlevel 1 exit /b 1
 
@@ -39,6 +44,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_sweep_player.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_view_hp_sync.exe"
 if errorlevel 1 exit /b 1
 
 echo All helper tests passed.
