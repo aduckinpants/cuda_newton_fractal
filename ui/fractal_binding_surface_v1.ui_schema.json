@@ -8,46 +8,60 @@
       "order": 10,
       "controls": [
         {
+          "id": "fractal_type",
+          "type": "combo",
+          "label": "Fractal Type",
+          "value_type": "enum",
+          "order": 1,
+          "default": "newton",
+          "options": [
+            { "id": "newton", "label": "Newton" },
+            { "id": "nova", "label": "Nova" },
+            { "id": "mandelbrot", "label": "Mandelbrot" },
+            { "id": "julia", "label": "Julia" },
+            { "id": "burning_ship", "label": "Burning Ship" },
+            { "id": "multibrot", "label": "Multibrot" },
+            { "id": "phoenix", "label": "Phoenix" },
+            { "id": "explaino", "label": "Explaino" },
+            { "id": "explaino_y", "label": "Explaino Y" },
+            { "id": "explaino_fp", "label": "Explaino FP" },
+            { "id": "explaino_nova", "label": "Explaino Nova" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
+          "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
+        },
+        {
           "id": "center_x",
           "type": "drag_float",
           "label": "Center X",
           "value_type": "float",
-          "min": -2.0,
-          "max": 2.0,
-          "step": 0.001,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.center.x"
-          }
+          "min": -2.0, "max": 2.0, "step": 0.001, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.view.center.x" }
         },
         {
           "id": "center_y",
           "type": "drag_float",
           "label": "Center Y",
           "value_type": "float",
-          "min": -2.0,
-          "max": 2.0,
-          "step": 0.001,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.center.y"
-          }
+          "min": -2.0, "max": 2.0, "step": 0.001, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.view.center.y" }
         },
         {
           "id": "zoom",
           "type": "drag_float",
           "label": "Zoom",
           "value_type": "float",
-          "min": 1e-12,
-          "max": 1000000000000.0,
-          "step": 0.01,
-          "default": 1.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.zoom"
-          }
+          "min": 1e-12, "max": 1000000000000.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.view.zoom" }
+        },
+        {
+          "id": "rotation_deg",
+          "type": "drag_float",
+          "label": "Rotation (deg)",
+          "help": "Optional: engine may ignore",
+          "value_type": "float",
+          "min": -180.0, "max": 180.0, "step": 0.1, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.view.rotation" }
         },
         {
           "id": "camera_behavior",
@@ -56,31 +70,13 @@
           "value_type": "enum",
           "default": "complexity",
           "options": [
-            {
-              "id": "manual",
-              "label": "Manual Pan"
-            },
-            {
-              "id": "complexity",
-              "label": "Complexity Gradient"
-            },
-            {
-              "id": "orbit",
-              "label": "Orbit Attractor"
-            },
-            {
-              "id": "entropy",
-              "label": "Entropy Seeker"
-            },
-            {
-              "id": "off",
-              "label": "Off"
-            }
+            { "id": "manual", "label": "Manual Pan" },
+            { "id": "complexity", "label": "Complexity Gradient" },
+            { "id": "orbit", "label": "Orbit Attractor" },
+            { "id": "entropy", "label": "Entropy Seeker" },
+            { "id": "off", "label": "Off" }
           ],
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.camera_behavior"
-          }
+          "binding": { "kind": "param", "path": "fractal.view.camera_behavior" }
         },
         {
           "id": "auto_dive",
@@ -88,44 +84,16 @@
           "label": "Auto-Dive",
           "value_type": "bool",
           "default": false,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.auto_dive"
-          }
+          "binding": { "kind": "param", "path": "fractal.view.auto_dive" }
         },
         {
           "id": "dive_speed",
           "type": "slider_float",
           "label": "Dive Speed",
           "value_type": "float",
-          "min": 0.0,
-          "max": 5.0,
-          "step": 0.01,
-          "default": 1.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.dive_speed"
-          },
-          "visible_if": {
-            "op": "eq",
-            "path": "fractal.view.auto_dive",
-            "value": true
-          }
-        },
-        {
-          "id": "rotation_deg",
-          "type": "drag_float",
-          "label": "Rotation (deg)",
-          "help": "Optional: engine may ignore",
-          "value_type": "float",
-          "min": -180.0,
-          "max": 180.0,
-          "step": 0.1,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.rotation"
-          }
+          "min": 0.0, "max": 5.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.view.dive_speed" },
+          "visible_if": { "op": "eq", "path": "fractal.view.auto_dive", "value": true }
         },
         {
           "id": "auto_refresh",
@@ -133,138 +101,103 @@
           "label": "Auto-refresh",
           "value_type": "bool",
           "default": true,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.auto_refresh"
-          }
+          "binding": { "kind": "param", "path": "fractal.view.auto_refresh" }
         },
         {
           "id": "render_once",
           "type": "button",
           "label": "Render Once",
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.render_once"
-          }
+          "binding": { "kind": "action", "path": "fractal.actions.render_once" }
         },
         {
           "id": "reset_view",
           "type": "button",
           "label": "Reset View",
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.reset_view"
-          }
+          "binding": { "kind": "action", "path": "fractal.actions.reset_view" }
         },
         {
           "id": "reset_all",
           "type": "button",
           "label": "Reset All",
           "order": 901,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.reset_all"
-          }
+          "binding": { "kind": "action", "path": "fractal.actions.reset_all" }
         },
         {
           "id": "load_state",
           "type": "button",
           "label": "Load Finding State",
           "order": 902,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.load_state"
-          }
+          "binding": { "kind": "action", "path": "fractal.actions.load_state" }
         },
         {
           "id": "capture_finding",
           "type": "button",
           "label": "Capture Finding",
           "order": 903,
-          "binding": {
-            "kind": "action",
-            "path": "fractal.actions.capture_finding"
-          }
+          "binding": { "kind": "action", "path": "fractal.actions.capture_finding" }
         },
         {
-          "id": "fractal_type",
-          "type": "combo",
-          "label": "Fractal Type",
-          "value_type": "enum",
-          "order": 12,
-          "default": "newton",
-          "options": [
-            {
-              "id": "newton",
-              "label": "Newton"
-            },
-            {
-              "id": "nova",
-              "label": "Nova"
-            },
-            {
-              "id": "mandelbrot",
-              "label": "Mandelbrot"
-            },
-            {
-              "id": "julia",
-              "label": "Julia"
-            },
-            {
-              "id": "burning_ship",
-              "label": "Burning Ship"
-            },
-            {
-              "id": "multibrot",
-              "label": "Multibrot"
-            },
-            {
-              "id": "phoenix",
-              "label": "Phoenix"
-            },
-            {
-              "id": "explaino",
-              "label": "Explaino"
-            },
-            {
-              "id": "explaino_y",
-              "label": "Explaino Y"
-            },
-            {
-              "id": "explaino_fp",
-              "label": "Explaino FP"
-            },
-            {
-              "id": "explaino_nova",
-              "label": "Explaino Nova"
-            }
-          ],
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.fractal_type"
+          "id": "auto_increment_seed",
+          "type": "checkbox",
+          "label": "Auto-Increment Seed",
+          "value_type": "bool",
+          "default": false,
+          "binding": { "kind": "param", "path": "fractal.view.auto_increment_seed" },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           },
-          "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
+          "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
+        },
+        {
+          "id": "explaino_seed_rate",
+          "type": "slider_float",
+          "label": "Seed Increment Rate",
+          "value_type": "float",
+          "min": 0.00001, "max": 2.0, "step": 0.00001, "default": 0.35,
+          "binding": { "kind": "param", "path": "fractal.view.explaino_seed_rate" },
+          "visible_if": { "op": "eq", "path": "fractal.view.auto_increment_seed", "value": true },
+          "help": "Per-second rate for smooth Explaino seed stepping when Auto-Increment Seed is enabled."
         },
         {
           "id": "multibrot_power",
           "type": "slider_int",
           "label": "Multibrot Power",
           "value_type": "int",
-          "min": 2,
-          "max": 8,
-          "step": 1,
-          "order": 13,
-          "default": 3,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.multibrot_power"
-          },
-          "visible_if": {
-            "op": "eq",
-            "path": "fractal.view.fractal_type",
-            "value": "multibrot"
-          },
+          "min": 2, "max": 8, "step": 1, "default": 3,
+          "binding": { "kind": "param", "path": "fractal.params.multibrot_power" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" },
           "help": "Exponent p in z_{n+1} = z_n^p + c (used only when Fractal Type = Multibrot)."
+        }
+      ]
+    },
+    {
+      "id": "lens",
+      "label": "Lens",
+      "order": 15,
+      "controls": [
+        {
+          "id": "lens_enabled",
+          "type": "checkbox",
+          "label": "Lens Enabled",
+          "value_type": "bool",
+          "default": false,
+          "binding": { "kind": "param", "path": "fractal.lens.enabled" }
+        },
+        {
+          "id": "lens_downsample",
+          "type": "combo",
+          "label": "Lens Downsample",
+          "value_type": "int",
+          "default": "2",
+          "options": [
+            { "id": "1", "label": "1x (Full)" },
+            { "id": "2", "label": "2x" },
+            { "id": "4", "label": "4x" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.lens.downsample" },
+          "visible_if": { "op": "eq", "path": "fractal.lens.enabled", "value": true }
         }
       ]
     },
@@ -278,14 +211,8 @@
           "type": "slider_int",
           "label": "Max Iterations",
           "value_type": "int",
-          "min": 1,
-          "max": 5000,
-          "step": 1,
-          "default": 500,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.max_iter"
-          }
+          "min": 1, "max": 5000, "step": 1, "default": 500,
+          "binding": { "kind": "param", "path": "fractal.params.max_iter" }
         },
         {
           "id": "epsilon",
@@ -293,14 +220,8 @@
           "label": "Epsilon",
           "help": "Convergence threshold",
           "value_type": "float",
-          "min": 1e-12,
-          "max": 0.01,
-          "step": 1e-06,
-          "default": 1e-06,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.epsilon"
-          },
+          "min": 1e-12, "max": 0.01, "step": 1e-06, "default": 1e-06,
+          "binding": { "kind": "param", "path": "fractal.params.epsilon" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
@@ -311,16 +232,10 @@
           "id": "nova_alpha",
           "type": "slider_float",
           "label": "Nova Alpha",
-          "help": "Relaxation factor α in z_{n+1} = z_n - α f(z)/f'(z) + c",
+          "help": "Relaxation factor in z_{n+1} = z_n - a f(z)/f'(z) + c",
           "value_type": "float",
-          "min": 0.0,
-          "max": 2.0,
-          "step": 0.01,
-          "default": 0.5,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.nova_alpha"
-          },
+          "min": 0.0, "max": 2.0, "step": 0.01, "default": 0.5,
+          "binding": { "kind": "param", "path": "fractal.params.nova_alpha" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
@@ -333,38 +248,18 @@
           "label": "Phoenix p (real)",
           "help": "Memory term p in z_{n+1} = z_n^2 + c + p z_{n-1}",
           "value_type": "float",
-          "min": -1.0,
-          "max": 1.0,
-          "step": 0.01,
-          "default": -0.5,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.phoenix_p_real"
-          },
-          "visible_if": {
-            "op": "eq",
-            "path": "fractal.view.fractal_type",
-            "value": "phoenix"
-          }
+          "min": -1.0, "max": 1.0, "step": 0.01, "default": -0.5,
+          "binding": { "kind": "param", "path": "fractal.params.phoenix_p_real" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "phoenix" }
         },
         {
           "id": "phoenix_p_imag",
           "type": "drag_float",
           "label": "Phoenix p (imag)",
           "value_type": "float",
-          "min": -1.0,
-          "max": 1.0,
-          "step": 0.01,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.phoenix_p_imag"
-          },
-          "visible_if": {
-            "op": "eq",
-            "path": "fractal.view.fractal_type",
-            "value": "phoenix"
-          }
+          "min": -1.0, "max": 1.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.phoenix_p_imag" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "phoenix" }
         },
         {
           "id": "poly_kind",
@@ -373,23 +268,11 @@
           "value_type": "enum",
           "default": "z3_minus_1",
           "options": [
-            {
-              "id": "z3_minus_1",
-              "label": "z^3 - 1"
-            },
-            {
-              "id": "z4_minus_1",
-              "label": "z^4 - 1"
-            },
-            {
-              "id": "custom",
-              "label": "Custom"
-            }
+            { "id": "z3_minus_1", "label": "z^3 - 1" },
+            { "id": "z4_minus_1", "label": "z^4 - 1" },
+            { "id": "custom", "label": "Custom" }
           ],
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.poly_kind"
-          },
+          "binding": { "kind": "param", "path": "fractal.params.poly_kind" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
@@ -401,101 +284,25 @@
           "type": "drag_float",
           "label": "Coeff c0 (z^0)",
           "value_type": "float",
-          "min": -10.0,
-          "max": 10.0,
-          "step": 0.01,
-          "default": -1.0,
+          "min": -10.0, "max": 10.0, "step": 0.01, "default": -1.0,
+          "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.0" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
             "value": "newton,nova"
-          },
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.poly_coeffs.0"
           }
-        },
-        {
-          "id": "coloring_mode_newton",
-          "type": "combo",
-          "label": "Coloring Mode",
-          "value_type": "enum",
-          "order": 40,
-          "default": "joy_basins",
-          "options": [
-            {
-              "id": "root_basin",
-              "label": "Root Basins (Root-Finding)"
-            },
-            {
-              "id": "joy_basins",
-              "label": "Joy Basins (All paths succeed)"
-            },
-            {
-              "id": "iteration_count",
-              "label": "Iteration Count"
-            },
-            {
-              "id": "smooth_escape",
-              "label": "Smooth Escape"
-            }
-          ],
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.coloring_mode"
-          },
-          "visible_if": {
-            "op": "in",
-            "path": "fractal.view.fractal_type",
-            "value": "newton,explaino,explaino_y,explaino_fp"
-          },
-          "help": "Newton and the root-finding Explaino variants support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
-        },
-        {
-          "id": "coloring_mode_escape",
-          "type": "combo",
-          "label": "Coloring Mode",
-          "value_type": "enum",
-          "order": 40,
-          "default": "smooth_escape",
-          "options": [
-            {
-              "id": "iteration_count",
-              "label": "Iteration Count"
-            },
-            {
-              "id": "smooth_escape",
-              "label": "Smooth Escape"
-            }
-          ],
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.coloring_mode"
-          },
-          "visible_if": {
-            "op": "in",
-            "path": "fractal.view.fractal_type",
-            "value": "nova,explaino_nova,mandelbrot,julia,burning_ship,multibrot,phoenix"
-          },
-          "help": "Escape-time fractals use iteration-based coloring."
         },
         {
           "id": "poly_c1",
           "type": "drag_float",
           "label": "Coeff c1 (z^1)",
           "value_type": "float",
-          "min": -10.0,
-          "max": 10.0,
-          "step": 0.01,
-          "default": 0.0,
+          "min": -10.0, "max": 10.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.1" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
             "value": "newton,nova"
-          },
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.poly_coeffs.1"
           }
         },
         {
@@ -503,18 +310,12 @@
           "type": "drag_float",
           "label": "Coeff c2 (z^2)",
           "value_type": "float",
-          "min": -10.0,
-          "max": 10.0,
-          "step": 0.01,
-          "default": 0.0,
+          "min": -10.0, "max": 10.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.2" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
             "value": "newton,nova"
-          },
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.poly_coeffs.2"
           }
         },
         {
@@ -522,18 +323,12 @@
           "type": "drag_float",
           "label": "Coeff c3 (z^3)",
           "value_type": "float",
-          "min": -10.0,
-          "max": 10.0,
-          "step": 0.01,
-          "default": 1.0,
+          "min": -10.0, "max": 10.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.3" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
             "value": "newton,nova"
-          },
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.poly_coeffs.3"
           }
         },
         {
@@ -541,32 +336,44 @@
           "type": "drag_float",
           "label": "Coeff c4 (z^4)",
           "value_type": "float",
-          "min": -10.0,
-          "max": 10.0,
-          "step": 0.01,
-          "default": 0.0,
+          "min": -10.0, "max": 10.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.4" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "newton" }
+        },
+        {
+          "id": "explaino_seed",
+          "type": "slider_double",
+          "label": "Explaino Seed",
+          "value_type": "double",
+          "min": 0.0, "max": 10.0, "step": 0.001, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_seed" },
           "visible_if": {
-            "op": "eq",
+            "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           },
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.poly_coeffs.4"
+          "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
+        },
+        {
+          "id": "prev_seed",
+          "type": "button",
+          "label": "Prev Seed",
+          "binding": { "kind": "action", "path": "fractal.actions.prev_seed" },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
         },
         {
-          "id": "exposure",
-          "type": "slider_float",
-          "label": "Exposure",
-          "value_type": "float",
-          "min": 0.1,
-          "max": 5.0,
-          "step": 0.01,
-          "default": 1.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.exposure"
+          "id": "next_seed",
+          "type": "button",
+          "label": "Next Seed",
+          "binding": { "kind": "action", "path": "fractal.actions.next_seed" },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
         },
         {
@@ -574,14 +381,8 @@
           "type": "slider_float",
           "label": "Explaino Warp",
           "value_type": "float",
-          "min": 0.0,
-          "max": 1.0,
-          "step": 0.01,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.explaino_warp_strength"
-          },
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_warp_strength" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
@@ -593,14 +394,8 @@
           "type": "drag_float",
           "label": "Explaino Phase",
           "value_type": "float",
-          "min": -6.283185307179586,
-          "max": 6.283185307179586,
-          "step": 0.01,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.explaino_phase"
-          },
+          "min": -6.283185307179586, "max": 6.283185307179586, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.view.explaino_phase" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
@@ -608,38 +403,12 @@
           }
         },
         {
-          "id": "explaino_seed",
-          "type": "slider_double",
-          "label": "Explaino Seed",
-          "value_type": "double",
-          "min": 0.0,
-          "max": 10.0,
-          "step": 0.001,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.params.explaino_seed"
-          },
-          "visible_if": {
-            "op": "in",
-            "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
-          },
-          "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
-        },
-        {
           "id": "explaino_seed_drift",
           "type": "slider_float",
           "label": "Explaino Seed Fraction",
           "value_type": "float",
-          "min": 0.0,
-          "max": 0.999,
-          "step": 0.001,
-          "default": 0.0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.explaino_seed_drift"
-          },
+          "min": 0.0, "max": 0.999, "step": 0.001, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.view.explaino_seed_drift" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
@@ -653,52 +422,107 @@
           "label": "Explaino Seed Tween",
           "value_type": "bool",
           "default": true,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.explaino_seed_tween"
-          },
+          "binding": { "kind": "param", "path": "fractal.view.explaino_seed_tween" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
             "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
-        },
+        }
+      ]
+    },
+    {
+      "id": "color",
+      "label": "Color",
+      "order": 25,
+      "controls": [
         {
-          "id": "auto_increment_seed",
-          "type": "checkbox",
-          "label": "Auto-Increment Seed",
-          "value_type": "bool",
-          "default": false,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.auto_increment_seed"
-          },
+          "id": "coloring_mode_newton",
+          "type": "combo",
+          "label": "Coloring Mode",
+          "value_type": "enum",
+          "order": 1,
+          "default": "joy_basins",
+          "options": [
+            { "id": "root_basin", "label": "Root Basins (Root-Finding)" },
+            { "id": "joy_basins", "label": "Joy Basins (All paths succeed)" },
+            { "id": "iteration_count", "label": "Iteration Count" },
+            { "id": "smooth_escape", "label": "Smooth Escape" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "newton,explaino,explaino_y,explaino_fp"
           },
-          "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
+          "help": "Newton and the root-finding Explaino variants support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
         },
         {
-          "id": "explaino_seed_rate",
-          "type": "slider_float",
-          "label": "Seed Increment Rate",
-          "value_type": "float",
-          "min": 0.00001,
-          "max": 2.0,
-          "step": 0.00001,
-          "default": 0.35,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.view.explaino_seed_rate"
-          },
+          "id": "coloring_mode_escape",
+          "type": "combo",
+          "label": "Coloring Mode",
+          "value_type": "enum",
+          "order": 1,
+          "default": "smooth_escape",
+          "options": [
+            { "id": "iteration_count", "label": "Iteration Count" },
+            { "id": "smooth_escape", "label": "Smooth Escape" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
           "visible_if": {
-            "op": "eq",
-            "path": "fractal.view.auto_increment_seed",
-            "value": true
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "nova,explaino_nova,mandelbrot,julia,burning_ship,multibrot,phoenix"
           },
-          "help": "Per-second rate for smooth Explaino seed stepping when Auto-Increment Seed is enabled."
+          "help": "Escape-time fractals use iteration-based coloring."
+        },
+        {
+          "id": "exposure",
+          "type": "slider_float",
+          "label": "Exposure",
+          "value_type": "float",
+          "min": 0.1, "max": 5.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.exposure" }
+        },
+        {
+          "id": "color_saturation",
+          "type": "slider_float",
+          "label": "Saturation",
+          "value_type": "float",
+          "min": 0.0, "max": 3.0, "step": 0.01, "default": 1.15,
+          "binding": { "kind": "param", "path": "fractal.params.color_saturation" }
+        },
+        {
+          "id": "color_contrast",
+          "type": "slider_float",
+          "label": "Contrast",
+          "value_type": "float",
+          "min": 0.0, "max": 3.0, "step": 0.01, "default": 1.1,
+          "binding": { "kind": "param", "path": "fractal.params.color_contrast" }
+        },
+        {
+          "id": "tint_r",
+          "type": "slider_float",
+          "label": "Tint Red",
+          "value_type": "float",
+          "min": 0.0, "max": 2.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.color_tint_r" }
+        },
+        {
+          "id": "tint_g",
+          "type": "slider_float",
+          "label": "Tint Green",
+          "value_type": "float",
+          "min": 0.0, "max": 2.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.color_tint_g" }
+        },
+        {
+          "id": "tint_b",
+          "type": "slider_float",
+          "label": "Tint Blue",
+          "value_type": "float",
+          "min": 0.0, "max": 2.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.color_tint_b" }
         }
       ]
     },
@@ -712,43 +536,30 @@
           "type": "slider_int",
           "label": "Width",
           "value_type": "int",
-          "min": 64,
-          "max": 4096,
-          "step": 1,
-          "default": 1024,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.render.resolution.x"
-          }
+          "min": 64, "max": 4096, "step": 1, "default": 1024,
+          "binding": { "kind": "param", "path": "fractal.render.resolution.x" }
         },
         {
           "id": "height",
           "type": "slider_int",
           "label": "Height",
           "value_type": "int",
-          "min": 64,
-          "max": 4096,
-          "step": 1,
-          "default": 768,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.render.resolution.y"
-          }
+          "min": 64, "max": 4096, "step": 1, "default": 768,
+          "binding": { "kind": "param", "path": "fractal.render.resolution.y" }
         },
         {
           "id": "block_size",
-          "type": "drag_int",
-          "label": "Block size (threads)",
-          "help": "Engine should validate/clamp",
+          "type": "combo",
+          "label": "Block Size",
           "value_type": "int",
-          "min": 32,
-          "max": 1024,
-          "step": 32,
-          "default": 256,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.render.block_size"
-          }
+          "default": "256",
+          "options": [
+            { "id": "64", "label": "64" },
+            { "id": "128", "label": "128" },
+            { "id": "256", "label": "256" },
+            { "id": "512", "label": "512" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.render.block_size" }
         },
         {
           "id": "device_id",
@@ -756,14 +567,8 @@
           "label": "Device",
           "help": "Optional: engine clamps to available devices",
           "value_type": "int",
-          "min": 0,
-          "max": 7,
-          "step": 1,
-          "default": 0,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.render.device_id"
-          }
+          "min": 0, "max": 7, "step": 1, "default": 0,
+          "binding": { "kind": "param", "path": "fractal.render.device_id" }
         },
         {
           "id": "benchmark",
@@ -771,10 +576,13 @@
           "label": "Benchmark mode",
           "value_type": "bool",
           "default": false,
-          "binding": {
-            "kind": "param",
-            "path": "fractal.render.benchmark"
-          }
+          "binding": { "kind": "param", "path": "fractal.render.benchmark" }
+        },
+        {
+          "id": "capture_diagnostic",
+          "type": "button",
+          "label": "Capture Diagnostic",
+          "binding": { "kind": "action", "path": "fractal.actions.capture_diagnostic" }
         }
       ]
     }

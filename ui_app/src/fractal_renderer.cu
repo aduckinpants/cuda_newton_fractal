@@ -210,23 +210,6 @@ __device__ __forceinline__ uchar4 palette_joy_root(int idx, int n) {
     return warm[idx % 8];
 }
 
-__device__ __forceinline__ uchar4 saturate_rgb(uchar4 c, float sat) {
-    float r = (float)c.x;
-    float g = (float)c.y;
-    float b = (float)c.z;
-    float l = 0.2126f * r + 0.7152f * g + 0.0722f * b;
-    r = l + (r - l) * sat;
-    g = l + (g - l) * sat;
-    b = l + (b - l) * sat;
-    int rr = (int)roundf(r);
-    int gg = (int)roundf(g);
-    int bb = (int)roundf(b);
-    rr = max(0, min(255, rr));
-    gg = max(0, min(255, gg));
-    bb = max(0, min(255, bb));
-    return {(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255};
-}
-
 __device__ __forceinline__ uchar4 mul_rgb(uchar4 c, float s) {
     s = fmaxf(0.0f, fminf(1.5f, s));
     int r = (int)roundf((float)c.x * s);
@@ -249,6 +232,28 @@ __device__ __forceinline__ uchar4 apply_exposure(uchar4 c, float exposure) {
     return {tone_map(c.x, e), tone_map(c.y, e), tone_map(c.z, e), 255};
 }
 
+__device__ __forceinline__ uchar4 tint_rgb(uchar4 c, float tr, float tg, float tb) {
+    return {(unsigned char)fminf(255.0f, fmaxf(0.0f, (float)c.x * tr)),
+            (unsigned char)fminf(255.0f, fmaxf(0.0f, (float)c.y * tg)),
+            (unsigned char)fminf(255.0f, fmaxf(0.0f, (float)c.z * tb)),
+            c.w};
+}
+
+__device__ __forceinline__ uchar4 saturate_rgb(uchar4 c, float sat) {
+    float lum = 0.299f * (float)c.x + 0.587f * (float)c.y + 0.114f * (float)c.z;
+    return {(unsigned char)fminf(255.0f, fmaxf(0.0f, lum + sat * ((float)c.x - lum))),
+            (unsigned char)fminf(255.0f, fmaxf(0.0f, lum + sat * ((float)c.y - lum))),
+            (unsigned char)fminf(255.0f, fmaxf(0.0f, lum + sat * ((float)c.z - lum))),
+            c.w};
+}
+
+__device__ __forceinline__ uchar4 contrast_rgb(uchar4 c, float con) {
+    return {(unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.x - 128.0f))),
+            (unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.y - 128.0f))),
+            (unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.z - 128.0f))),
+            c.w};
+}
+
 __device__ __forceinline__ Cx cx_abs_components(Cx a) {
     return {fabsf(a.x), fabsf(a.y)};
 }
@@ -269,6 +274,7 @@ __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; 
 
 __global__ void kernel_render(
     uint32_t* outRGBA,
+    uint8_t* outMask,
     int width,
     int height,
     ViewState view,
@@ -722,7 +728,7 @@ __global__ void kernel_render(
                     rr = max(0, min(255, rr));
                     gg = max(0, min(255, gg));
                     bb = max(0, min(255, bb));
-                    color = saturate_rgb({(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255}, 1.40f);
+                    color = {(unsigned char)rr, (unsigned char)gg, (unsigned char)bb, 255};
                 } else {
                     // Invalid: basin identity not defined for custom polynomial in this demo.
                     color = errorColor;
@@ -741,10 +747,10 @@ __global__ void kernel_render(
 
                 if (useCustomRoots) {
                     int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
-                    color = saturate_rgb(palette_root(idx, params.explaino_root_count), 1.30f);
+                    color = palette_root(idx, params.explaino_root_count);
                 } else if (nRoots > 0) {
                     int idx = nearest_root_index_unit_roots(z, nRoots);
-                    color = saturate_rgb(palette_root(idx, nRoots), 1.30f);
+                    color = palette_root(idx, nRoots);
                 } else {
                     // Invalid: root identity not defined.
                     color = errorColor;
@@ -815,15 +821,23 @@ __global__ void kernel_render(
     }
 
     color = apply_exposure(color, params.exposure);
+    color = tint_rgb(color, params.color_tint_r, params.color_tint_g, params.color_tint_b);
+    color = saturate_rgb(color, params.color_saturation);
+    color = contrast_rgb(color, params.color_contrast);
 
     uint32_t rgba = (uint32_t)color.x | ((uint32_t)color.y << 8) | ((uint32_t)color.z << 16) | ((uint32_t)color.w << 24);
     outRGBA[py * width + px] = rgba;
+
+    if (outMask) {
+        outMask[py * width + px] = converged ? 255 : 0;
+    }
 }
 
 struct CachedBuffers {
     int w = 0;
     int h = 0;
     uint32_t* d_rgba = nullptr;
+    uint8_t* d_mask = nullptr;
     int* d_itersSum = nullptr;
     double2* d_refOrbit = nullptr;
     int refOrbitLen = 0;
@@ -843,9 +857,10 @@ bool ensure_buffers(int w, int h, const char** outError) {
         if (outError) *outError = "Invalid resolution";
         return false;
     }
-    if (g_cached.w == w && g_cached.h == h && g_cached.d_rgba && g_cached.d_itersSum) return true;
+    if (g_cached.w == w && g_cached.h == h && g_cached.d_rgba && g_cached.d_mask && g_cached.d_itersSum) return true;
 
     if (g_cached.d_rgba) cudaFree(g_cached.d_rgba);
+    if (g_cached.d_mask) cudaFree(g_cached.d_mask);
     if (g_cached.d_itersSum) cudaFree(g_cached.d_itersSum);
     if (g_cached.d_refOrbit) cudaFree(g_cached.d_refOrbit);
 
@@ -862,6 +877,13 @@ bool ensure_buffers(int w, int h, const char** outError) {
     if (cudaMalloc(&g_cached.d_rgba, bytes) != cudaSuccess) {
         if (outError) *outError = "cudaMalloc failed for output buffer";
         g_cached.d_rgba = nullptr;
+        return false;
+    }
+
+    size_t maskBytes = (size_t)w * (size_t)h * sizeof(uint8_t);
+    if (cudaMalloc(&g_cached.d_mask, maskBytes) != cudaSuccess) {
+        if (outError) *outError = "cudaMalloc failed for mask buffer";
+        g_cached.d_mask = nullptr;
         return false;
     }
 
@@ -900,6 +922,7 @@ bool RenderFractalCUDA(
     const KernelParams& params,
     const RenderSettings& render,
     uint32_t* outRGBA,
+    uint8_t* outMask,
     RenderStats* outStats,
     const char** outError)
 {
@@ -1042,6 +1065,7 @@ bool RenderFractalCUDA(
 
     kernel_render<<<grid, block>>>(
         g_cached.d_rgba,
+        outMask ? g_cached.d_mask : nullptr,
         w,
         h,
         view,
@@ -1072,6 +1096,11 @@ bool RenderFractalCUDA(
 
     size_t bytes = (size_t)w * (size_t)h * sizeof(uint32_t);
     cudaMemcpy(outRGBA, g_cached.d_rgba, bytes, cudaMemcpyDeviceToHost);
+
+    if (outMask) {
+        size_t maskBytes = (size_t)w * (size_t)h * sizeof(uint8_t);
+        cudaMemcpy(outMask, g_cached.d_mask, maskBytes, cudaMemcpyDeviceToHost);
+    }
 
     int itersSum = 0;
     cudaMemcpy(&itersSum, g_cached.d_itersSum, sizeof(int), cudaMemcpyDeviceToHost);

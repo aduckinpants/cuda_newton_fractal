@@ -43,6 +43,7 @@ bool RenderFractalCUDA(
     const KernelParams& params,
     const RenderSettings& render,
     uint32_t* outRGBA,
+    uint8_t* outMask,
     RenderStats* outStats,
     const char** outError);
 
@@ -53,6 +54,9 @@ static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
 static ID3D11Texture2D* g_fractalTexture = nullptr;
 static ID3D11ShaderResourceView* g_fractalSRV = nullptr;
+
+static ID3D11Texture2D* g_maskTexture = nullptr;
+static ID3D11ShaderResourceView* g_maskSRV = nullptr;
 
 static void CleanupRenderTarget() {
     if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
@@ -434,6 +438,8 @@ static void CreateRenderTarget() {
 
 static void CleanupDeviceD3D() {
     CleanupRenderTarget();
+    if (g_maskSRV) { g_maskSRV->Release(); g_maskSRV = nullptr; }
+    if (g_maskTexture) { g_maskTexture->Release(); g_maskTexture = nullptr; }
     if (g_fractalSRV) { g_fractalSRV->Release(); g_fractalSRV = nullptr; }
     if (g_fractalTexture) { g_fractalTexture->Release(); g_fractalTexture = nullptr; }
 
@@ -523,6 +529,55 @@ static void UploadFractalRGBA(const uint32_t* rgba, int width, int height) {
     }
 }
 
+static void EnsureMaskTexture(int width, int height) {
+    if (width <= 0 || height <= 0) return;
+
+    D3D11_TEXTURE2D_DESC desc{};
+    if (g_maskTexture) {
+        g_maskTexture->GetDesc(&desc);
+        if ((int)desc.Width == width && (int)desc.Height == height) return;
+
+        g_maskSRV->Release();
+        g_maskSRV = nullptr;
+        g_maskTexture->Release();
+        g_maskTexture = nullptr;
+    }
+
+    desc.Width = (UINT)width;
+    desc.Height = (UINT)height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    g_pd3dDevice->CreateTexture2D(&desc, nullptr, &g_maskTexture);
+    g_pd3dDevice->CreateShaderResourceView(g_maskTexture, nullptr, &g_maskSRV);
+}
+
+static void UploadMaskAsRGBA(const uint8_t* mask, int width, int height) {
+    if (!mask || !g_maskTexture) return;
+
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    if (SUCCEEDED(g_pd3dDeviceContext->Map(g_maskTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+        uint8_t* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+        for (int y = 0; y < height; y++) {
+            uint8_t* row = dst + (size_t)mapped.RowPitch * (size_t)y;
+            const uint8_t* srcRow = mask + (size_t)width * (size_t)y;
+            for (int x = 0; x < width; x++) {
+                uint8_t v = srcRow[x];
+                row[x * 4 + 0] = v;
+                row[x * 4 + 1] = v;
+                row[x * 4 + 2] = v;
+                row[x * 4 + 3] = 255;
+            }
+        }
+        g_pd3dDeviceContext->Unmap(g_maskTexture, 0);
+    }
+}
+
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -559,6 +614,7 @@ struct BindingContext {
     ViewState* view = nullptr;
     KernelParams* params = nullptr;
     RenderSettings* render = nullptr;
+    LensSettings* lens = nullptr;
 
     // Return enum ids for predicates / combos
     std::string GetEnumId(const std::string& path) const {
@@ -759,6 +815,11 @@ struct BindingContext {
         if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
         if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
+        if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
+        if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
+        if (path == "fractal.params.color_tint_r") { *outPtr = &params->color_tint_r; return true; }
+        if (path == "fractal.params.color_tint_g") { *outPtr = &params->color_tint_g; return true; }
+        if (path == "fractal.params.color_tint_b") { *outPtr = &params->color_tint_b; return true; }
         if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
         if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
         if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
@@ -782,6 +843,7 @@ struct BindingContext {
         if (path == "fractal.render.resolution.y") { *outPtr = &render->resolution.y; return true; }
         if (path == "fractal.render.block_size") { *outPtr = &render->block_size; return true; }
         if (path == "fractal.render.device_id") { *outPtr = &render->device_id; return true; }
+        if (lens && path == "fractal.lens.downsample") { *outPtr = &lens->downsample; return true; }
         return false;
     }
 
@@ -793,6 +855,7 @@ struct BindingContext {
         if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
         if (path == "fractal.view.auto_increment_seed") { *outPtr = &view->auto_increment_seed; return true; }
         if (path == "fractal.render.benchmark") { *outPtr = &render->benchmark; return true; }
+        if (lens && path == "fractal.lens.enabled") { *outPtr = &lens->enabled; return true; }
         return false;
     }
 };
@@ -937,7 +1000,7 @@ static bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, 
             }
 
             if (b.kind == "action") {
-                if (!(b.path == "fractal.actions.render_once" || b.path == "fractal.actions.reset_view" || b.path == "fractal.actions.reset_all" || b.path == "fractal.actions.load_state" || b.path == "fractal.actions.capture_finding")) {
+                if (!(b.path == "fractal.actions.render_once" || b.path == "fractal.actions.reset_view" || b.path == "fractal.actions.reset_all" || b.path == "fractal.actions.load_state" || b.path == "fractal.actions.capture_finding" || b.path == "fractal.actions.capture_diagnostic" || b.path == "fractal.actions.next_seed" || b.path == "fractal.actions.prev_seed")) {
                     if (outError) *outError = "Unknown action binding path: " + b.path + " (control: " + c.id + ")";
                     return false;
                 }
@@ -1137,7 +1200,45 @@ static bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ct
     }
 
     if (c.type == "combo") {
-        // Only enum combos supported in this demo
+        // Int-valued combos: option ids are integer strings
+        if (c.value_type == "int") {
+            int* ptr = nullptr;
+            if (!ctx.BindInt(b.path, &ptr) || !ptr) {
+                ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
+                ImGui::PopID();
+                return false;
+            }
+
+            int curIndex = 0;
+            for (int i = 0; i < (int)c.options.size(); i++) {
+                try {
+                    int optV = std::stoi(c.options[i].id);
+                    if (optV == *ptr) { curIndex = i; break; }
+                } catch (...) {}
+            }
+
+            std::vector<const char*> labels;
+            labels.reserve(c.options.size());
+            for (const auto& o : c.options) labels.push_back(o.label.c_str());
+
+            bool changed = false;
+            if (!labels.empty() && ImGui::Combo(c.label.c_str(), &curIndex, labels.data(), (int)labels.size())) {
+                if (curIndex >= 0 && curIndex < (int)c.options.size()) {
+                    try {
+                        int newV = std::stoi(c.options[curIndex].id);
+                        if (newV != *ptr) {
+                            *ptr = newV;
+                            changed = true;
+                            if (ioDirty) *ioDirty = true;
+                        }
+                    } catch (...) {}
+                }
+            }
+            ImGui::PopID();
+            return changed;
+        }
+
+        // Enum combos
         std::string cur = ctx.GetEnumId(b.path);
         int curIndex = 0;
         for (int i = 0; i < (int)c.options.size(); i++) {
@@ -1283,6 +1384,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     KernelParams params{};
     RenderSettings render{};
     RenderStats stats{};
+    LensSettings lens{};
     bool dirty = true;
 
     // Schema load policy (short-term unblock):
@@ -1335,10 +1437,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     initBind.view = &view;
     initBind.params = &params;
     initBind.render = &render;
+    initBind.lens = &lens;
     {
         std::string bindError;
         if (!ValidateSchemaBindings(uiSchema, initBind, &bindError)) {
-            SchemaStartupFailureResult failure = ResolveSchemaBindingFailure(schemaPath, bindError);
+            SchemaStartupFailureResult failure = ResolveSchemaBindingFailure(schemaPath, bindError, validateUiOnly);
             if (!failure.enter_safe_mode) {
                 return 1;
             }
@@ -1416,7 +1519,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         const char* err = nullptr;
         RenderStats headlessStats{};
-        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), &headlessStats, &err)) {
+        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), nullptr, &headlessStats, &err)) {
             return 1;
         }
 
@@ -1435,7 +1538,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         const char* err = nullptr;
         RenderStats headlessStats{};
-        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), &headlessStats, &err)) {
+        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), nullptr, &headlessStats, &err)) {
             WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", err ? err : "RenderFractalCUDA failed during headless finding capture.");
             return 1;
         }
@@ -1477,6 +1580,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     std::vector<uint32_t> rgba;
+    std::vector<uint8_t> maskBuffer;
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
@@ -1554,12 +1658,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         bind.view = &view;
         bind.params = &params;
         bind.render = &render;
+        bind.lens = &lens;
 
         bool renderOnceAction = false;
         bool resetViewAction = false;
         bool resetAllAction = false;
         bool loadStateAction = false;
         bool captureFindingAction = false;
+        bool captureDiagnosticAction = false;
+        bool nextSeedAction = false;
+        bool prevSeedAction = false;
 
         // If schema/UI edits the float surface (center/zoom), keep high-precision state in sync.
         Float2 uiCenterBefore = view.center;
@@ -1579,6 +1687,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                             if (ctrl.binding.path == "fractal.actions.reset_all") resetAllAction = true;
                             if (ctrl.binding.path == "fractal.actions.load_state") loadStateAction = true;
                             if (ctrl.binding.path == "fractal.actions.capture_finding") captureFindingAction = true;
+                            if (ctrl.binding.path == "fractal.actions.capture_diagnostic") captureDiagnosticAction = true;
+                            if (ctrl.binding.path == "fractal.actions.next_seed") nextSeedAction = true;
+                            if (ctrl.binding.path == "fractal.actions.prev_seed") prevSeedAction = true;
                         }
                     } else {
                         RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction);
@@ -1719,6 +1830,28 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             }
         }
 
+        if (nextSeedAction && IsExplainoFamily(view.fractal_type)) {
+            params.explaino_seed += 1.0;
+            UpdateExplainoPolynomial(view, params, nullptr);
+            dirty = true;
+        }
+        if (prevSeedAction && IsExplainoFamily(view.fractal_type)) {
+            params.explaino_seed -= 1.0;
+            UpdateExplainoPolynomial(view, params, nullptr);
+            dirty = true;
+        }
+
+        if (captureDiagnosticAction) {
+            rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+            std::string captureError;
+            DiagnosticsCaptureResult captureResult;
+            if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba.data(), &captureResult, &captureError)) {
+                findingStatus = "Capture diagnostic failed: " + captureError;
+            } else {
+                findingStatus = "Diagnostic captured.";
+            }
+        }
+
         if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
             dirty = true;
         }
@@ -1733,9 +1866,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
             EnsureFractalTexture(render.resolution.x, render.resolution.y);
 
+            uint8_t* maskPtr = nullptr;
+            if (lens.enabled) {
+                maskBuffer.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+                maskPtr = maskBuffer.data();
+            }
+
             const char* err = nullptr;
             RenderStats newStats{};
-            if (!RenderFractalCUDA(view, params, render, rgba.data(), &newStats, &err)) {
+            if (!RenderFractalCUDA(view, params, render, rgba.data(), maskPtr, &newStats, &err)) {
                 // Show error pane
                 ImGui::Begin("CUDA Error");
                 ImGui::TextWrapped("Render failed: %s", err ? err : "unknown error");
@@ -1743,6 +1882,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             } else {
                 stats = newStats;
                 UploadFractalRGBA(rgba.data(), render.resolution.x, render.resolution.y);
+                if (lens.enabled && maskPtr) {
+                    EnsureMaskTexture(render.resolution.x, render.resolution.y);
+                    UploadMaskAsRGBA(maskPtr, render.resolution.x, render.resolution.y);
+                }
             }
             dirty = false;
         }
@@ -1830,6 +1973,22 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             ImGui::TextUnformatted("No texture yet. Toggle auto-refresh or click Render Once.");
         }
         ImGui::End();
+
+        // Mask window (lens pipeline)
+        if (lens.enabled && g_maskSRV) {
+            ImGui::Begin("Mask");
+            ImVec2 avail = ImGui::GetContentRegionAvail();
+            float scale = 1.0f;
+            if (render.resolution.x > 0 && render.resolution.y > 0) {
+                float sx = avail.x / (float)render.resolution.x;
+                float sy = avail.y / (float)render.resolution.y;
+                scale = (sx < sy) ? sx : sy;
+                if (scale <= 0.0f) scale = 1.0f;
+            }
+            ImVec2 maskSize((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+            ImGui::Image((ImTextureID)g_maskSRV, maskSize);
+            ImGui::End();
+        }
 
         // Camera behavior loop (per-frame deltas scaled only by dive_speed; no dt semantics).
         // This runs after UI, so changing behavior updates immediately.

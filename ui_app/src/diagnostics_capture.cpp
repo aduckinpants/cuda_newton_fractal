@@ -106,7 +106,7 @@ bool WriteRgbaBmp(const std::filesystem::path& path, const uint32_t* rgba, int w
 std::string BuildStateJson(const ViewState& view, const KernelParams& params, const RenderSettings& render, const RenderStats& stats) {
     std::ostringstream js;
     js << "{\n";
-    js << "  \"state_version\": 2,\n";
+    js << "  \"state_version\": 3,\n";
     js << "  \"fractal_type\": \"" << FractalTypeId(view.fractal_type) << "\",\n";
     js << "  \"view\": {\n";
     js << "    \"center_x\": " << static_cast<double>(view.center.x) << ",\n";
@@ -140,7 +140,12 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
         if (i > 0) js << ", ";
         js << static_cast<double>(params.poly_coeffs[i]);
     }
-    js << "]\n";
+    js << "],\n";
+    js << "    \"color_saturation\": " << static_cast<double>(params.color_saturation) << ",\n";
+    js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
+    js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
+    js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
+    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << "\n";
     js << "  },\n";
     js << "  \"render\": {\n";
     js << "    \"width\": " << render.resolution.x << ",\n";

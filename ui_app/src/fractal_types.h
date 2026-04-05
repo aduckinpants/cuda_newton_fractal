@@ -86,6 +86,12 @@ struct KernelParams {
     ColoringMode coloring_mode{ColoringMode::root_basin};
     float exposure{1.0f};
 
+    float color_saturation{1.15f};
+    float color_contrast{1.10f};
+    float color_tint_r{1.0f};
+    float color_tint_g{1.0f};
+    float color_tint_b{1.0f};
+
     double explaino_seed{0.0};
     float explaino_warp_strength{0.0f};
     int explaino_root_count{0};
@@ -99,6 +105,11 @@ struct RenderSettings {
     bool benchmark{false};
 };
 
+struct LensSettings {
+    bool enabled{false};
+    int downsample{2};
+};
+
 struct RenderStats {
     float last_render_ms{0.0f};
     int last_iters_avg{0};
@@ -110,5 +121,6 @@ bool RenderFractalCUDA(
     const KernelParams& params,
     const RenderSettings& render,
     uint32_t* outRGBA,
+    uint8_t* outMask,
     RenderStats* outStats,
     const char** outError);

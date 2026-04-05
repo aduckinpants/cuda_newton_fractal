@@ -26,6 +26,36 @@ int main() {
         }
     }
 
+    // validate-ui mode: binding failures must NOT enter safe mode (must fail hard)
+    {
+        SchemaStartupFailureResult result = ResolveSchemaBindingFailure(
+            "schema.json",
+            "Bind failed for float path: fractal.params.color_saturation (control: color_saturation)",
+            true);
+
+        if (result.enter_safe_mode) {
+            std::cerr << "validate-ui mode should reject (not enter safe mode) on binding failure\n";
+            return 1;
+        }
+        if (result.warning.find("validation failed") == std::string::npos) {
+            std::cerr << "validate-ui warning should mention validation failed\n";
+            return 1;
+        }
+    }
+
+    // normal mode: same error should enter safe mode
+    {
+        SchemaStartupFailureResult result = ResolveSchemaBindingFailure(
+            "schema.json",
+            "Bind failed for float path: fractal.params.color_saturation (control: color_saturation)",
+            false);
+
+        if (!result.enter_safe_mode) {
+            std::cerr << "normal mode should enter safe mode on binding failure\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_schema_startup_policy: all passed\n";
     return 0;
 }

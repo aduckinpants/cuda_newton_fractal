@@ -7,4 +7,4 @@ struct SchemaStartupFailureResult {
     std::string warning;
 };
 
-SchemaStartupFailureResult ResolveSchemaBindingFailure(const std::string& schemaPath, const std::string& bindingError);
+SchemaStartupFailureResult ResolveSchemaBindingFailure(const std::string& schemaPath, const std::string& bindingError, bool validate_ui_mode = false);

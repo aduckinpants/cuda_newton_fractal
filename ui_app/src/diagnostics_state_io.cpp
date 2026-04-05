@@ -180,7 +180,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     const json_min::Value& root = parseResult.value;
     int stateVersion = 0;
     if (!ParseIntField(root, "state_version", &stateVersion, outError)) return false;
-    if (stateVersion != 1 && stateVersion != 2) {
+    if (stateVersion != 1 && stateVersion != 2 && stateVersion != 3) {
         if (outError) *outError = "Unsupported state_version: " + std::to_string(stateVersion);
         return false;
     }
@@ -314,6 +314,24 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_seed = explainoSeed;
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_count = explainoRootCount;
+
+    // Color grading (v3+, optional for backward compat)
+    double colorSaturation = nextParams.color_saturation;
+    double colorContrast = nextParams.color_contrast;
+    double colorTintR = nextParams.color_tint_r;
+    double colorTintG = nextParams.color_tint_g;
+    double colorTintB = nextParams.color_tint_b;
+    if (!GetOptionalNumber(*paramsObject, "color_saturation", &colorSaturation, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_contrast", &colorContrast, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_tint_r", &colorTintR, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_tint_g", &colorTintG, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_tint_b", &colorTintB, nullptr, outError)) return false;
+    nextParams.color_saturation = static_cast<float>(colorSaturation);
+    nextParams.color_contrast = static_cast<float>(colorContrast);
+    nextParams.color_tint_r = static_cast<float>(colorTintR);
+    nextParams.color_tint_g = static_cast<float>(colorTintG);
+    nextParams.color_tint_b = static_cast<float>(colorTintB);
+
     for (size_t index = 0; index < 5; ++index) {
         const json_min::Value& coeff = polyCoeffsArray->as_array()[index];
         if (!coeff.is_number()) {

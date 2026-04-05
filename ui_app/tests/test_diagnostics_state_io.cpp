@@ -463,6 +463,94 @@ int main() {
         }
       }
 
+    // V3 round-trip: color grading fields
+    {
+        const fs::path statePath = tempRoot / "v3_grading.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0],
+    "color_saturation": 1.35,
+    "color_contrast": 1.22,
+    "color_tint_r": 0.9,
+    "color_tint_g": 1.1,
+    "color_tint_b": 0.85
+  },
+  "render": { "width": 512, "height": 384, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V3 grading round-trip load failed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(p.color_saturation, 1.35, 0.001)) { std::cerr << "color_saturation mismatch\n"; return 1; }
+        if (!NearlyEqual(p.color_contrast, 1.22, 0.001)) { std::cerr << "color_contrast mismatch\n"; return 1; }
+        if (!NearlyEqual(p.color_tint_r, 0.9, 0.001)) { std::cerr << "color_tint_r mismatch\n"; return 1; }
+        if (!NearlyEqual(p.color_tint_g, 1.1, 0.001)) { std::cerr << "color_tint_g mismatch\n"; return 1; }
+        if (!NearlyEqual(p.color_tint_b, 0.85, 0.001)) { std::cerr << "color_tint_b mismatch\n"; return 1; }
+    }
+
+    // V2 backward compat: grading fields should get defaults
+    {
+        const fs::path statePath = tempRoot / "v2_grading_defaults.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 512, "height": 384, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V2 backward compat grading load failed: " << error << "\n";
+            return 1;
+        }
+        // Should get struct defaults when fields are missing
+        if (!NearlyEqual(p.color_saturation, 1.15, 0.01)) { std::cerr << "v2 color_saturation should be default 1.15\n"; return 1; }
+        if (!NearlyEqual(p.color_contrast, 1.10, 0.01)) { std::cerr << "v2 color_contrast should be default 1.10\n"; return 1; }
+        if (!NearlyEqual(p.color_tint_r, 1.0, 0.01)) { std::cerr << "v2 color_tint_r should be default 1.0\n"; return 1; }
+    }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }
