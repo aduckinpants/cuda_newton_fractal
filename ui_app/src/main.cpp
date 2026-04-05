@@ -1240,7 +1240,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    (void)io;
+    static std::string imguiIniPath;
+    imguiIniPath = JoinPath(exeDir, "imgui.ini");
+    io.IniFilename = imguiIniPath.c_str();
     ImGui::StyleColorsDark();
 
     ImGui_ImplWin32_Init(hwnd);

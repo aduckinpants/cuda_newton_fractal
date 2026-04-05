@@ -1,5 +1,6 @@
 /_build_tmp.cmd
 /artifacts/
+/imgui.ini
 /logs/
 /newton.ppm
 /newton_driver_updated.ppm
@@ -13,4 +14,5 @@
 /ui_app/*.obj
 /ui_app/build/
 /ui_app/build_tests/
+/ui_app/imgui.ini
 /ui_app/ui/

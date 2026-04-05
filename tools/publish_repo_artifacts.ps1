@@ -31,8 +31,10 @@ $moveFiles = @(
     @{ Source = Join-Path $repoRoot "newton_driver_updated.ppm"; Destination = Join-Path $publishDir "root_outputs\newton_driver_updated.ppm" },
     @{ Source = Join-Path $repoRoot "newton_fractal.exe"; Destination = Join-Path $publishDir "root_outputs\newton_fractal.exe" },
     @{ Source = Join-Path $repoRoot "newton_fractal_fresh.exe"; Destination = Join-Path $publishDir "root_outputs\newton_fractal_fresh.exe" },
+    @{ Source = Join-Path $repoRoot "imgui.ini"; Destination = Join-Path $publishDir "root_outputs\imgui.ini" },
     @{ Source = Join-Path $repoRoot "_build_tmp.cmd"; Destination = Join-Path $publishDir "root_outputs\_build_tmp.cmd" },
-    @{ Source = Join-Path $repoRoot "ui_app\fractal_ui.exe"; Destination = Join-Path $publishDir "ui_app_runtime\fractal_ui.exe" }
+    @{ Source = Join-Path $repoRoot "ui_app\fractal_ui.exe"; Destination = Join-Path $publishDir "ui_app_runtime\fractal_ui.exe" },
+    @{ Source = Join-Path $repoRoot "ui_app\imgui.ini"; Destination = Join-Path $publishDir "ui_app_runtime\imgui.ini" }
 )
 
 $uiAppLooseObjects = Get-ChildItem -Path (Join-Path $repoRoot "ui_app") -Filter *.obj -ErrorAction SilentlyContinue
