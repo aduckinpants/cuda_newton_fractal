@@ -200,6 +200,120 @@ int main() {
         }
     }
 
+    {
+        const fs::path findingDir = tempRoot / "bad_finding_metadata";
+        fs::create_directories(findingDir);
+
+        const fs::path findingPath = findingDir / "finding.json";
+        WriteTextFile(findingPath, R"({
+  "finding_id": "missing_state_file"
+})");
+
+        ViewState view{};
+        view.center = {8.0f, 9.0f};
+        view.zoom = 10.0f;
+        KernelParams params{};
+        params.max_iter = 111;
+        RenderSettings render{};
+        render.resolution = {800, 600};
+
+        std::string resolvedStatePath = "sentinel";
+        std::string error;
+        if (LoadFindingSelectionIntoRuntime(findingPath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+            std::cerr << "Expected bad finding metadata to fail\n";
+            return 1;
+        }
+        if (error.find("Missing or invalid string field: state_file") == std::string::npos) {
+            std::cerr << "Unexpected bad-metadata error text: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.center.x, 8.0f, 1.0e-6) || !NearlyEqual(view.center.y, 9.0f, 1.0e-6) || !NearlyEqual(view.zoom, 10.0f, 1.0e-6)) {
+            std::cerr << "View state mutated on bad finding metadata\n";
+            return 1;
+        }
+        if (params.max_iter != 111 || render.resolution.x != 800 || render.resolution.y != 600) {
+            std::cerr << "Runtime state mutated on bad finding metadata\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path findingDir = tempRoot / "invalid_finding_state_payload";
+        fs::create_directories(findingDir);
+
+        const fs::path statePath = findingDir / "state.json";
+        WriteTextFile(statePath, R"({
+  "state_version": 2,
+  "fractal_type": "explaino",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": -0.5,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 1,
+    "explaino_warp_strength": 0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})");
+
+        const fs::path findingPath = findingDir / "finding.json";
+        WriteTextFile(findingPath, R"({
+  "finding_id": "bad_state_payload",
+  "state_file": "state.json"
+})");
+
+        ViewState view{};
+        view.center = {12.0f, -13.0f};
+        view.zoom = 14.0f;
+        KernelParams params{};
+        params.max_iter = 222;
+        RenderSettings render{};
+        render.resolution = {900, 700};
+
+        std::string resolvedStatePath = "sentinel";
+        std::string error;
+        if (LoadFindingSelectionIntoRuntime(findingPath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+            std::cerr << "Expected invalid finding state payload to fail\n";
+            return 1;
+        }
+        if (error.find("poly_kind must be custom for fractal_type explaino") == std::string::npos) {
+            std::cerr << "Unexpected invalid-state propagation text: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.center.x, 12.0f, 1.0e-6) || !NearlyEqual(view.center.y, -13.0f, 1.0e-6) || !NearlyEqual(view.zoom, 14.0f, 1.0e-6)) {
+            std::cerr << "View state mutated on invalid finding state payload\n";
+            return 1;
+        }
+        if (params.max_iter != 222 || render.resolution.x != 900 || render.resolution.y != 700) {
+            std::cerr << "Runtime state mutated on invalid finding state payload\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_finding_state_actions: all passed\n";
     return 0;
 }

@@ -242,6 +242,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "Unknown poly_kind: " + std::to_string(rawPolyKind);
         return false;
     }
+    if (IsExplainoFamily(nextView.fractal_type) && nextParams.poly_kind != PolyKind::custom) {
+        if (outError) *outError = "poly_kind must be custom for fractal_type " + fractalTypeId;
+        return false;
+    }
     if (stateVersion >= 2) {
         if (!ParseColoringMode(coloringModeId, &nextParams.coloring_mode)) {
             if (outError) *outError = "Unknown coloring_mode: " + coloringModeId;
