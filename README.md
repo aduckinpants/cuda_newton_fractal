@@ -4,6 +4,7 @@ This is a minimal CUDA smoke-test that renders a Newton fractal to a `.ppm` imag
 
 - Output format: binary PPM (`P6`) so there are no extra dependencies.
 - Runtime artifacts now publish under `D:\salt-fractal\cuda_newton_fractal_clone\...` by default.
+- Cross-repo integration notes for the future `reality-toolkit-fractals` layer live in `REALITY_TOOLKIT_FRACTALS_INTEGRATION.md`.
 
 ## Prerequisites (Windows)
 

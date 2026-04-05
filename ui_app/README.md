@@ -96,3 +96,4 @@ Notes:
 Notes:
 - Runtime, diagnostics, and sweep outputs now default to `D:\salt-fractal\cuda_newton_fractal_clone\...`.
 - If build fails on missing Windows SDK libs (e.g., `d3d11.lib`), install the Windows 11 SDK component in Visual Studio.
+- Cross-repo note: this repo's local `tools/reality_toolkit` is the beginning of a `reality-toolkit-fractals` extension surface. Use `nine` as the upstream analysis-toolkit reference, but do not reuse `nine`'s running broker/viewer instance for this repo's future live-view work. Keep that stack repo-local and isolated.

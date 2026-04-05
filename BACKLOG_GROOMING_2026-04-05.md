@@ -6,6 +6,7 @@
 - Startup defaults were also wrong for the current UX goal. The active worktree now changes startup and Reset All behavior so `auto_dive` starts off and Explaino warp starts at `0.0` instead of `0.35`.
 - The helper-test lane is in place and currently covers explaino seed math, derived-field defaults, sweep playback, and high-precision view sync.
 - `TDD_SLICE_PROTOCOL_2026-04-05.md` is the working rail for bounded test-first slices and is intended to be portable to later mainline implementation work.
+- `REALITY_TOOLKIT_FRACTALS_INTEGRATION.md` is the cross-repo constraint note: use `nine` as the upstream reality-toolkit reference, but future live-view/broker work in this repo must use a dedicated repo-owned instance rather than reusing `nine`'s active broker.
 
 ## Priority Order
 1. Nova repair and rule extraction
@@ -125,3 +126,4 @@ Reasoning:
 - The view preset dropdown remains worthwhile, but it should follow Nova repair and the next catalog wave rather than interrupt them.
 - Dive-depth work is still important, but it should not take priority over Nova correctness and the near-term catalog roadmap.
 - Any future catalog slice should keep the current no-warp / no-auto-dive startup posture unless a spec explicitly reopens that decision.
+- Any future broker/live-view slice should start with repo-local isolation rules first: dedicated instance, dedicated port/config, and no attachment to `nine`'s active testing broker.
