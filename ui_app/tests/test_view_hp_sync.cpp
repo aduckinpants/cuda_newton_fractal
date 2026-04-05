@@ -138,6 +138,15 @@ int main() {
         }
     }
 
+    // --- Interaction clamp: allow zooming out well below the old 0.05 floor ---
+    {
+        const double requested = Log2D(1.0e-8);
+        const double clamped = ClampInteractionLog2Zoom(requested);
+        if (!NearlyEqual(clamped, requested, 1.0e-12)) {
+            std::cerr << "ClampInteractionLog2Zoom clamped a valid low zoom-out request\n"; return 1;
+        }
+    }
+
     std::cout << "test_view_hp_sync: all passed\n";
     return 0;
 }

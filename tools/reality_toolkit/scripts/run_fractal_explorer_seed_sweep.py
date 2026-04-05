@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.reality_toolkit.fractal_explorer.paths import default_seed_sweep_out_dir, diagnostics_last_dir, runtime_root
+from tools.reality_toolkit.fractal_explorer.paths import default_seed_sweep_out_dir, diagnostics_last_dir, runtime_launcher_path
 from tools.reality_toolkit.fractal_explorer.seed_sweep import SweepConfig, build_seed_values, run_seed_sweep
 
 
@@ -27,6 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--explaino-warp-strength", type=float)
     parser.add_argument("--timeout-seconds", type=float, default=180.0)
     parser.add_argument("--no-validate-ui", action="store_true")
+    parser.add_argument("--archive-findings", action="store_true")
+    parser.add_argument("--finding-group", default=None)
     parser.add_argument(
         "--out-dir",
         type=Path,
@@ -49,7 +51,7 @@ def main() -> int:
 
     config = SweepConfig(
         repo_root=repo_root,
-        exe_path=runtime_root(repo_root) / "fractal_ui.exe",
+        exe_path=runtime_launcher_path(repo_root),
         diagnostics_last_dir=diagnostics_last_dir(repo_root),
         out_dir=out_dir,
         seeds=seeds,
@@ -60,6 +62,8 @@ def main() -> int:
         height=args.height,
         explaino_phase=args.explaino_phase,
         explaino_warp_strength=args.explaino_warp_strength,
+        archive_findings=args.archive_findings,
+        finding_group=args.finding_group,
     )
 
     summary = run_seed_sweep(config)
@@ -69,6 +73,7 @@ def main() -> int:
         "best_edge_seed": summary["best_edge_seed"],
         "best_delta_seed": summary["best_delta_seed"],
         "out_dir": str(config.out_dir),
+        "finding_batch_dir": summary["finding_batch_dir"],
     }, indent=2))
     return 0
 

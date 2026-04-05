@@ -26,6 +26,16 @@ const char* FractalTypeId(FractalType fractalType) {
     return "unknown";
 }
 
+const char* ColoringModeId(ColoringMode coloringMode) {
+    switch (coloringMode) {
+    case ColoringMode::root_basin: return "root_basin";
+    case ColoringMode::iteration_count: return "iteration_count";
+    case ColoringMode::smooth_escape: return "smooth_escape";
+    case ColoringMode::joy_basins: return "joy_basins";
+    }
+    return "unknown";
+}
+
 bool WriteTextFile(const std::filesystem::path& path, const std::string& text, std::string* outError) {
     std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!file) {
@@ -95,7 +105,7 @@ bool WriteRgbaBmp(const std::filesystem::path& path, const uint32_t* rgba, int w
 std::string BuildStateJson(const ViewState& view, const KernelParams& params, const RenderSettings& render, const RenderStats& stats) {
     std::ostringstream js;
     js << "{\n";
-    js << "  \"state_version\": 1,\n";
+    js << "  \"state_version\": 2,\n";
     js << "  \"fractal_type\": \"" << FractalTypeId(view.fractal_type) << "\",\n";
     js << "  \"view\": {\n";
     js << "    \"center_x\": " << static_cast<double>(view.center.x) << ",\n";
@@ -114,6 +124,11 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"epsilon\": " << static_cast<double>(params.epsilon) << ",\n";
     js << "    \"exposure\": " << static_cast<double>(params.exposure) << ",\n";
     js << "    \"poly_kind\": " << static_cast<int>(params.poly_kind) << ",\n";
+    js << "    \"coloring_mode\": \"" << ColoringModeId(params.coloring_mode) << "\",\n";
+    js << "    \"nova_alpha\": " << static_cast<double>(params.nova_alpha) << ",\n";
+    js << "    \"phoenix_p_real\": " << static_cast<double>(params.phoenix_p_real) << ",\n";
+    js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";
+    js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
     js << "    \"explaino_seed\": " << params.explaino_seed << ",\n";
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";

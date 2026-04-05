@@ -38,6 +38,26 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\diagnostics_state_io.cpp .\tests\test_diagnostics_state_io.cpp ^
+  /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\diagnostics_state_io.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\finding_state_actions.cpp .\tests\test_finding_state_actions.cpp ^
+  /Fe:"%TESTROOT%\test_finding_state_actions.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\schema_startup_policy.cpp .\tests\test_schema_startup_policy.cpp ^
+  /Fe:"%TESTROOT%\test_schema_startup_policy.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\tests\test_finding_archive_actions.cpp ^
+  /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_fractal_family_rules.cpp ^
   /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
 if errorlevel 1 exit /b 1
@@ -52,6 +72,18 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_view_hp_sync.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_finding_state_actions.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_schema_startup_policy.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_finding_archive_actions.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_family_rules.exe"

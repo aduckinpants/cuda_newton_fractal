@@ -19,10 +19,12 @@ All bindings live under the `fractal.*` namespace.
 
 - `fractal.view.center.x` : float, range [-2, 2], step 0.001, default 0.0
 - `fractal.view.center.y` : float, range [-2, 2], step 0.001, default 0.0
-- `fractal.view.zoom` : float, range [0.1, 1000], step 0.01, default 1.0
+- `fractal.view.zoom` : float, range [1e-12, 1e12], step 0.01, default 1.0
 - `fractal.view.rotation` : float degrees, range [-180, 180], step 0.1, default 0.0 (optional feature; binding exists, engine may ignore)
 - `fractal.view.auto_refresh` : bool, default true
 - `fractal.actions.render_once` : action (button)
+- `fractal.actions.load_state` : action (button; opens a saved `state.json` or `finding.json`)
+- `fractal.actions.capture_finding` : action (button; archives the current frame/state into the findings tree)
 
 ## Fractal (kernel parameter pack)
 

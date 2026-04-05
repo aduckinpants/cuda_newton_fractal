@@ -10,6 +10,8 @@ All bindings are under `fractal.*`.
 - `fractal.view.rotation` → `ViewState.rotation_degrees` (float, optional; may be ignored by engine)
 - `fractal.view.auto_refresh` → `ViewState.auto_refresh` (bool)
 - `fractal.actions.render_once` → action: enqueue one render tick
+- `fractal.actions.load_state` → action: prompt for `state.json` or `finding.json` and load it into runtime state
+- `fractal.actions.capture_finding` → action: archive the current frame/state into the findings tree
 
 ## Fractal (kernel parameter pack)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import math
+import re
 import shutil
 import struct
 import subprocess
@@ -10,6 +11,9 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
+
+from .finding_capture import archive_finding_bundle
+from .paths import findings_root
 
 
 def format_seed_label(seed: float) -> str:
@@ -62,6 +66,9 @@ class SweepConfig:
     height: int | None = None
     explaino_phase: float | None = None
     explaino_warp_strength: float | None = None
+    archive_findings: bool = False
+    finding_group: str | None = None
+    finding_out_root: Path | None = None
 
 
 def _run_command(command: Sequence[str], *, cwd: Path, timeout_seconds: float) -> subprocess.CompletedProcess[str]:
@@ -75,8 +82,15 @@ def _run_command(command: Sequence[str], *, cwd: Path, timeout_seconds: float) -
     )
 
 
+def _runtime_command(exe_path: Path, *args: str) -> list[str]:
+    command = [str(exe_path), *args]
+    if exe_path.suffix.lower() in {".cmd", ".bat"}:
+        return ["cmd.exe", "/d", "/c", *command]
+    return command
+
+
 def _run_validate(config: SweepConfig) -> None:
-    result = _run_command([str(config.exe_path), "--validate-ui"], cwd=config.repo_root, timeout_seconds=config.timeout_seconds)
+    result = _run_command(_runtime_command(config.exe_path, "--validate-ui"), cwd=config.repo_root, timeout_seconds=config.timeout_seconds)
     if result.returncode != 0:
         raise RuntimeError(f"validate-ui failed with exit code {result.returncode}: {result.stderr or result.stdout}")
 
@@ -185,14 +199,14 @@ def _run_one_seed(config: SweepConfig, seed: float, previous_pixels: bytes | Non
     run_dir = config.out_dir / f"seed_{seed_label}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    command = [
-        str(config.exe_path),
+    command = _runtime_command(
+        config.exe_path,
         "--capture-diagnostic",
         "--fractal-type",
         config.fractal_type,
         "--explaino-seed",
         seed_label,
-    ]
+    )
     if config.width is not None:
         command.extend(["--width", str(config.width)])
     if config.height is not None:
@@ -258,6 +272,8 @@ def _write_csv(path: Path, rows: Iterable[dict[str, object]]) -> None:
         "frame_path",
         "state_path",
         "error",
+        "finding_dir",
+        "finding_error",
     ]
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -266,8 +282,42 @@ def _write_csv(path: Path, rows: Iterable[dict[str, object]]) -> None:
             writer.writerow({name: row.get(name) for name in fieldnames})
 
 
+def _sanitize_folder_label(text: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", text.strip())
+    cleaned = cleaned.strip("._-")
+    return cleaned or "finding_batch"
+
+
+def _finding_batch_dir(config: SweepConfig) -> Path:
+    out_root = config.finding_out_root or findings_root(config.repo_root)
+    if config.finding_group:
+        return out_root / _sanitize_folder_label(config.finding_group) / config.out_dir.name
+    return out_root / config.out_dir.name
+
+
+def _repro_command(config: SweepConfig, seed: float) -> str:
+    parts = [
+        str(config.exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        config.fractal_type,
+        "--explaino-seed",
+        format_seed_label(seed),
+    ]
+    if config.width is not None:
+        parts.extend(["--width", str(config.width)])
+    if config.height is not None:
+        parts.extend(["--height", str(config.height)])
+    if config.explaino_phase is not None:
+        parts.extend(["--explaino-phase", f"{config.explaino_phase:.12g}"])
+    if config.explaino_warp_strength is not None:
+        parts.extend(["--explaino-warp-strength", f"{config.explaino_warp_strength:.12g}"])
+    return " ".join(parts)
+
+
 def run_seed_sweep(config: SweepConfig) -> dict[str, object]:
     config.out_dir.mkdir(parents=True, exist_ok=True)
+    finding_batch_dir = _finding_batch_dir(config) if config.archive_findings else None
 
     if config.validate_ui:
         _run_validate(config)
@@ -276,6 +326,23 @@ def run_seed_sweep(config: SweepConfig) -> dict[str, object]:
     previous_pixels: bytes | None = None
     for seed in config.seeds:
         entry, previous_pixels = _run_one_seed(config, seed, previous_pixels)
+        if config.archive_findings and entry.get("ok"):
+            try:
+                diagnostics_dir = Path(str(entry["frame_path"])).parent
+                finding_id = f"{len(runs) + 1:03d}__seed_{entry['seed_label']}"
+                output_dir = finding_batch_dir / finding_id
+                archive_finding_bundle(
+                    diagnostics_dir=diagnostics_dir,
+                    output_dir=output_dir,
+                    finding_id=finding_id,
+                    why=f"Automated sweep finding for {config.fractal_type} seed {entry['seed_label']}.",
+                    repro_command=_repro_command(config, seed),
+                )
+                entry["finding_dir"] = str(output_dir)
+                entry["finding_error"] = None
+            except Exception as exc:
+                entry["finding_dir"] = None
+                entry["finding_error"] = str(exc)
         runs.append(entry)
 
     summary = {
@@ -290,6 +357,7 @@ def run_seed_sweep(config: SweepConfig) -> dict[str, object]:
         "runs_ok": sum(1 for row in runs if row["ok"]),
         "best_edge_seed": None,
         "best_delta_seed": None,
+        "finding_batch_dir": str(finding_batch_dir) if finding_batch_dir is not None else None,
         "runs": runs,
     }
 

@@ -20,8 +20,16 @@ def runtime_root(repo_root: Path) -> Path:
     return repo_publish_root(repo_root) / "runtime"
 
 
+def runtime_launcher_path(repo_root: Path) -> Path:
+    return runtime_root(repo_root) / "fractal_ui.cmd"
+
+
 def diagnostics_last_dir(repo_root: Path) -> Path:
     return runtime_root(repo_root) / "diagnostics" / "last"
+
+
+def findings_root(repo_root: Path) -> Path:
+    return repo_publish_root(repo_root) / "findings"
 
 
 def default_seed_sweep_out_dir(repo_root: Path) -> Path:

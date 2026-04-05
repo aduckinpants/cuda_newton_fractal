@@ -1,11 +1,13 @@
 #include "fractal_types.h"
 
 #include <Windows.h>
+#include <commdlg.h>
 #include <d3d11.h>
 #include <shellapi.h>
 #include <tchar.h>
 
 #include <cstdlib>
+#include <cstdio>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -18,10 +20,13 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "diagnostics_capture.h"
+#include "finding_archive_actions.h"
+#include "finding_state_actions.h"
 #include "explaino_seed.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "json_min.h"
+#include "schema_startup_policy.h"
 #include "sweep_player.h"
 #include "ui_schema.h"
 #include "view_hp_sync.h"
@@ -29,6 +34,7 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "Comdlg32.lib")
 
 // Forward declare the CUDA renderer.
 bool RenderFractalCUDA(
@@ -68,6 +74,28 @@ static std::string JoinPath(const std::string& a, const char* b) {
     return a + "\\" + b;
 }
 
+static std::string HeadlessDiagnosticsErrorPath(const std::string& exeDir, const char* fileName) {
+    return JoinPath(JoinPath(exeDir, "diagnostics\\last"), fileName);
+}
+
+static void ClearHeadlessErrorFile(const std::string& exeDir, const char* fileName) {
+    const std::string errorPath = HeadlessDiagnosticsErrorPath(exeDir, fileName);
+    DeleteFileA(errorPath.c_str());
+}
+
+static void WriteHeadlessErrorFile(const std::string& exeDir, const char* fileName, const std::string& message) {
+    const std::string diagnosticsDir = JoinPath(exeDir, "diagnostics");
+    const std::string diagnosticsLastDir = JoinPath(diagnosticsDir, "last");
+    CreateDirectoryA(diagnosticsDir.c_str(), nullptr);
+    CreateDirectoryA(diagnosticsLastDir.c_str(), nullptr);
+
+    const std::string errorPath = HeadlessDiagnosticsErrorPath(exeDir, fileName);
+    std::ofstream file(errorPath, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (file) file << message << "\n";
+
+    std::fprintf(stderr, "%s\n", message.c_str());
+}
+
 static std::string Utf8FromWide(const wchar_t* wide) {
     if (!wide) return {};
     int needed = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
@@ -87,6 +115,22 @@ static std::vector<std::string> GetCommandLineArgsUtf8() {
     for (int i = 0; i < argc; ++i) args.push_back(Utf8FromWide(argv[i]));
     LocalFree(argv);
     return args;
+}
+
+static bool PromptOpenFindingStatePath(HWND owner, std::string* outPath) {
+    char buffer[MAX_PATH] = {};
+    OPENFILENAMEA dialog{};
+    dialog.lStructSize = sizeof(dialog);
+    dialog.hwndOwner = owner;
+    dialog.lpstrFile = buffer;
+    dialog.nMaxFile = static_cast<DWORD>(sizeof(buffer));
+    dialog.lpstrFilter = "Finding or State JSON\0finding.json;state.json;*.json\0JSON Files\0*.json\0\0";
+    dialog.nFilterIndex = 1;
+    dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    dialog.lpstrDefExt = "json";
+    if (!GetOpenFileNameA(&dialog)) return false;
+    if (outPath) *outPath = buffer;
+    return true;
 }
 
 static bool HasArg(const std::vector<std::string>& args, const char* flag) {
@@ -213,7 +257,7 @@ static UISchema BuildSafeModeSchema() {
         c.type = "drag_float";
         c.label = "Zoom";
         c.value_type = "float";
-        c.min = 0.1; c.max = 1000.0; c.step = 0.01;
+        c.min = 1.0e-12; c.max = 1.0e12; c.step = 0.01;
         c.has_min = c.has_max = c.has_step = true;
         c.has_binding = true;
         c.binding.kind = "param";
@@ -278,6 +322,26 @@ static UISchema BuildSafeModeSchema() {
         c.has_binding = true;
         c.binding.kind = "action";
         c.binding.path = "fractal.actions.reset_all";
+        view.controls.push_back(std::move(c));
+    }
+    {
+        UISchemaControl c;
+        c.id = "load_state";
+        c.type = "button";
+        c.label = "Load Finding State";
+        c.has_binding = true;
+        c.binding.kind = "action";
+        c.binding.path = "fractal.actions.load_state";
+        view.controls.push_back(std::move(c));
+    }
+    {
+        UISchemaControl c;
+        c.id = "capture_finding";
+        c.type = "button";
+        c.label = "Capture Finding";
+        c.has_binding = true;
+        c.binding.kind = "action";
+        c.binding.path = "fractal.actions.capture_finding";
         view.controls.push_back(std::move(c));
     }
     UISchemaPanel fractal;
@@ -809,7 +873,7 @@ static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     double zoomFactor = 1.0 + 0.002 * (double)speed;
     double dlog2 = Log2D(zoomFactor);
     // No arbitrary max zoom; clamp only to keep the exponent finite.
-    view.log2_zoom = ClampD(view.log2_zoom + dlog2, Log2D(kMinZoom), kMaxLog2Zoom);
+    view.log2_zoom = ClampInteractionLog2Zoom(view.log2_zoom + dlog2);
     SyncViewUiFromHp(view);
     if (ioDirty) *ioDirty = true;
 }
@@ -826,7 +890,7 @@ static bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, 
             }
 
             if (b.kind == "action") {
-                if (!(b.path == "fractal.actions.render_once" || b.path == "fractal.actions.reset_view" || b.path == "fractal.actions.reset_all")) {
+                if (!(b.path == "fractal.actions.render_once" || b.path == "fractal.actions.reset_view" || b.path == "fractal.actions.reset_all" || b.path == "fractal.actions.load_state" || b.path == "fractal.actions.capture_finding")) {
                     if (outError) *outError = "Unknown action binding path: " + b.path + " (control: " + c.id + ")";
                     return false;
                 }
@@ -1005,7 +1069,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<std::string> args = GetCommandLineArgsUtf8();
     const bool validateUiOnly = HasArg(args, "--validate-ui");
     const bool captureDiagnosticOnly = HasArg(args, "--capture-diagnostic");
-    if (validateUiOnly && captureDiagnosticOnly) {
+    const bool captureFindingOnly = HasArg(args, "--capture-finding");
+    if (captureDiagnosticOnly && captureFindingOnly) {
+        return 1;
+    }
+    if (validateUiOnly && (captureDiagnosticOnly || captureFindingOnly)) {
         return 1;
     }
 
@@ -1048,6 +1116,24 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     int heightOverride = 0;
     const bool haveHeightOverride = TryParseIntArg(args, "--height", &heightOverride);
     if (HasArg(args, "--height") && !haveHeightOverride) {
+        return 1;
+    }
+
+    std::string loadStateSelection;
+    const bool haveLoadStateSelection = TryGetArgValue(args, "--load-state-json", &loadStateSelection);
+    if (HasArg(args, "--load-state-json") && !haveLoadStateSelection) {
+        return 1;
+    }
+
+    std::string findingGroupArg;
+    const bool haveFindingGroupArg = TryGetArgValue(args, "--finding-group", &findingGroupArg);
+    if (HasArg(args, "--finding-group") && !haveFindingGroupArg) {
+        return 1;
+    }
+
+    std::string findingWhyArg;
+    const bool haveFindingWhyArg = TryGetArgValue(args, "--finding-why", &findingWhyArg);
+    if (HasArg(args, "--finding-why") && !haveFindingWhyArg) {
         return 1;
     }
 
@@ -1153,17 +1239,36 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     {
         std::string bindError;
         if (!ValidateSchemaBindings(uiSchema, initBind, &bindError)) {
-            MessageBoxA(nullptr, bindError.c_str(), "Schema binding error", MB_OK | MB_ICONERROR);
-            return 1;
+            SchemaStartupFailureResult failure = ResolveSchemaBindingFailure(schemaPath, bindError);
+            if (!failure.enter_safe_mode) {
+                return 1;
+            }
+            schemaWarning = failure.warning;
+            uiSchema = BuildSafeModeSchema();
+            std::string safeBindError;
+            if (!ValidateSchemaBindings(uiSchema, initBind, &safeBindError)) {
+                return 1;
+            }
         }
     }
 
     {
+        bool loadedState = false;
         ApplySchemaDefaults(uiSchema, initBind, &dirty);
 
         // Ensure polynomial coefficients remain coherent if schema sets poly_kind.
         if (params.poly_kind != PolyKind::custom) {
             SetPolyPreset(params);
+        }
+
+        if (haveLoadStateSelection) {
+            std::string loadError;
+            std::string loadedStatePath;
+            if (!LoadFindingSelectionIntoRuntime(loadStateSelection, &view, &params, &render, &loadedStatePath, &loadError)) {
+                return 1;
+            }
+            loadedState = true;
+            dirty = true;
         }
 
         if (haveCliFractalType) {
@@ -1191,7 +1296,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (haveExplainoWarpOverride) params.explaino_warp_strength = (float)explainoWarpOverride;
         if (sweepConfig.enabled) view.auto_refresh = true;
 
-        ApplyFractalDerivedFieldsAndSyncHp(view, params, &dirty, haveExplainoSeedOverride, explainoSeedOverride);
+        const bool needPresetDerivedFields = !loadedState || haveCliFractalType || haveExplainoSeedOverride || sweepConfig.enabled;
+        if (needPresetDerivedFields) {
+            ApplyFractalDerivedFieldsAndSyncHp(view, params, &dirty, haveExplainoSeedOverride, explainoSeedOverride);
+        } else {
+            if (IsExplainoFamily(view.fractal_type)) {
+                UpdateExplainoPolynomial(view, params, &dirty);
+            }
+            SyncViewUiFromHp(view);
+        }
     }
 
     if (validateUiOnly) {
@@ -1211,6 +1324,29 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         std::string captureError;
         DiagnosticsCaptureResult captureResult;
         if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), &captureResult, &captureError)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    if (captureFindingOnly) {
+        ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
+        std::vector<uint32_t> headlessRgba;
+        headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+
+        const char* err = nullptr;
+        RenderStats headlessStats{};
+        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), &headlessStats, &err)) {
+            WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", err ? err : "RenderFractalCUDA failed during headless finding capture.");
+            return 1;
+        }
+
+        std::string findingDir;
+        std::string findingError;
+        const std::string findingGroup = haveFindingGroupArg ? findingGroupArg : "manual_capture";
+        const std::string findingWhy = haveFindingWhyArg ? findingWhyArg : "Headless finding capture.";
+        if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), findingGroup, findingWhy, &findingDir, &findingError)) {
+            WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
             return 1;
         }
         return 0;
@@ -1245,6 +1381,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
+    std::string findingStatus;
     SweepPlayerState sweepState{};
     bool sweepPaused = false;
     bool sweepSingleStep = false;
@@ -1322,6 +1459,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         bool renderOnceAction = false;
         bool resetViewAction = false;
         bool resetAllAction = false;
+        bool loadStateAction = false;
+        bool captureFindingAction = false;
 
         // If schema/UI edits the float surface (center/zoom), keep high-precision state in sync.
         Float2 uiCenterBefore = view.center;
@@ -1339,6 +1478,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                             if (ctrl.binding.path == "fractal.actions.render_once") renderOnceAction = true;
                             if (ctrl.binding.path == "fractal.actions.reset_view") resetViewAction = true;
                             if (ctrl.binding.path == "fractal.actions.reset_all") resetAllAction = true;
+                            if (ctrl.binding.path == "fractal.actions.load_state") loadStateAction = true;
+                            if (ctrl.binding.path == "fractal.actions.capture_finding") captureFindingAction = true;
                         }
                     } else {
                         RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction);
@@ -1381,6 +1522,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ImGui::Separator();
         ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
+        if (!findingStatus.empty()) {
+            ImGui::TextWrapped("%s", findingStatus.c_str());
+        }
 
         if (sweepConfig.enabled) {
             double currentSweepSeed = 0.0;
@@ -1458,10 +1602,26 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             dirty = true;
         }
 
+        if (loadStateAction) {
+            std::string selectedPath;
+            if (PromptOpenFindingStatePath(hwnd, &selectedPath)) {
+                std::string resolvedStatePath;
+                std::string loadError;
+                if (!LoadFindingSelectionIntoRuntime(selectedPath, &view, &params, &render, &resolvedStatePath, &loadError)) {
+                    findingStatus = "Load state failed: " + loadError;
+                } else {
+                    lastPolyKind = params.poly_kind;
+                    lastFractalType = view.fractal_type;
+                    findingStatus = "Loaded finding state: " + resolvedStatePath;
+                    dirty = true;
+                }
+            }
+        }
+
         // Render dispatch (fail-fast, delta-independent):
         // - If auto_refresh is ON, we render every frame.
         // - Otherwise, render on explicit request or any state change (dirty).
-        if (view.auto_refresh || dirty || renderOnceAction) {
+        if (view.auto_refresh || dirty || renderOnceAction || captureFindingAction) {
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, nullptr);
             }
@@ -1480,6 +1640,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 UploadFractalRGBA(rgba.data(), render.resolution.x, render.resolution.y);
             }
             dirty = false;
+        }
+
+        if (captureFindingAction) {
+            std::string findingDir;
+            std::string captureError;
+            if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, stats, rgba.data(), "manual_capture", "Manual viewer capture.", &findingDir, &captureError)) {
+                findingStatus = "Capture finding failed: " + captureError;
+            } else {
+                findingStatus = "Captured finding: " + findingDir;
+            }
         }
 
         // Image window
@@ -1523,7 +1693,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     double worldY = view.center_hp_y + ny * baseOld;
 
                     double factor = pow(1.10, (double)io.MouseWheel);
-                    view.log2_zoom = ClampD(view.log2_zoom + Log2D(factor), Log2D(kMinZoom), kMaxLog2Zoom);
+                    view.log2_zoom = ClampInteractionLog2Zoom(view.log2_zoom + Log2D(factor));
                     double zoomNew = SafeZoomFromLog2(view.log2_zoom);
                     double baseNew = 2.0 / fmax(1e-30, zoomNew);
                     view.center_hp_x = worldX - nx * baseNew * aspect;

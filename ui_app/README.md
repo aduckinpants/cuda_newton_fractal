@@ -20,11 +20,13 @@ cd C:\code\cuda_newton_fractal_clone\ui_app
 .\build_vsdevcmd.cmd
 ```
 
-Default runtime location after build:
+Stable runtime launcher after build:
 
 ```powershell
-D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd
 ```
+
+The build tries to publish `fractal_ui.exe` first. If that file is locked, it falls back to `fractal_ui_dev.exe` and updates `fractal_ui.cmd` plus `fractal_ui_active.txt` to point at the latest successful runtime.
 
 Focused helper tests:
 
@@ -36,14 +38,16 @@ cd C:\code\cuda_newton_fractal_clone\ui_app
 ## Run
 
 ```powershell
-D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd
 ```
 
 Headless validation and diagnostics capture:
 
 ```powershell
-D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui
-D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --capture-diagnostic --fractal-type explaino --explaino-seed 0.75
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --validate-ui
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --capture-diagnostic --fractal-type explaino --explaino-seed 0.75
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --load-state-json D:\salt-fractal\cuda_newton_fractal_clone\findings\manual\state.json --capture-diagnostic
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --capture-finding --finding-group manual_capture --finding-why "Headless review capture."
 ```
 
 Diagnostics bundle output:
@@ -55,7 +59,7 @@ D:\salt-fractal\cuda_newton_fractal_clone\runtime\diagnostics\last
 Live sweep viewer:
 
 ```powershell
-D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --fractal-type explaino --sweep-seed-start 0.70 --sweep-seed-stop 0.80 --sweep-seed-step 0.005 --sweep-dwell-ms 500 --sweep-loop
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --fractal-type explaino --sweep-seed-start 0.70 --sweep-seed-stop 0.80 --sweep-seed-step 0.005 --sweep-dwell-ms 500 --sweep-loop
 ```
 
 Deterministic seed sweep:
@@ -63,6 +67,7 @@ Deterministic seed sweep:
 ```powershell
 cd C:\code\cuda_newton_fractal_clone
 py -3.14 tools\reality_toolkit\scripts\run_fractal_explorer_seed_sweep.py --seed-start 0.70 --seed-stop 0.80 --seed-step 0.02 --out-dir D:\salt-fractal\cuda_newton_fractal_clone\artifacts\seed_sweep_2026-04-05
+py -3.14 tools\reality_toolkit\scripts\run_fractal_explorer_seed_sweep.py --seed-start 0.70 --seed-stop 0.80 --seed-step 0.02 --archive-findings --finding-group explaino_seed_scout
 ```
 
 Publish older repo-local artifacts and logs:
@@ -92,6 +97,7 @@ Notes:
 - Schema `default` values are applied at app startup.
 - `visible_if` currently supports `eq/neq/lt/lte/gt/gte` (where meaningful) and fails-open if a predicate cannot be evaluated.
 - The Explaino family is selectable from schema and the headless CLI, but seed-base input is still CLI-first in this repo.
+- Use `fractal_ui.cmd` for scripted or headless runs so the current active runtime stays stable even when `fractal_ui.exe` is locked.
 
 Notes:
 - Runtime, diagnostics, and sweep outputs now default to `D:\salt-fractal\cuda_newton_fractal_clone\...`.

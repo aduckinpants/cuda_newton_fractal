@@ -18,6 +18,10 @@ double SafeZoomFromLog2(double log2Zoom) {
     return Exp2D(ClampD(log2Zoom, Log2D(1.0e-30), kMaxLog2Zoom));
 }
 
+double ClampInteractionLog2Zoom(double log2Zoom) {
+    return ClampD(log2Zoom, Log2D(kMinZoom), kMaxLog2Zoom);
+}
+
 void SyncViewHpFromUi(ViewState& view) {
     view.center_hp_x = static_cast<double>(view.center.x);
     view.center_hp_y = static_cast<double>(view.center.y);
