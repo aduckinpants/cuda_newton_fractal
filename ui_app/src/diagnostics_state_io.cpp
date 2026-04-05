@@ -1,5 +1,6 @@
 #include "diagnostics_state_io.h"
 
+#include "fractal_family_rules.h"
 #include "json_min.h"
 
 #include <filesystem>
@@ -250,6 +251,21 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.phoenix_p_real = static_cast<float>(phoenixPReal);
         nextParams.phoenix_p_imag = static_cast<float>(phoenixPImag);
         nextParams.multibrot_power = multibrotPower;
+    } else {
+        nextParams.coloring_mode = DefaultColoringModeForFractal(nextView.fractal_type);
+    }
+    if (!IsColoringModeAllowedForFractal(nextView.fractal_type, nextParams.coloring_mode)) {
+        if (outError) {
+            std::string coloringModeName = "unknown";
+            switch (nextParams.coloring_mode) {
+            case ColoringMode::root_basin: coloringModeName = "root_basin"; break;
+            case ColoringMode::iteration_count: coloringModeName = "iteration_count"; break;
+            case ColoringMode::smooth_escape: coloringModeName = "smooth_escape"; break;
+            case ColoringMode::joy_basins: coloringModeName = "joy_basins"; break;
+            }
+            *outError = "coloring_mode " + coloringModeName + " is not allowed for fractal_type " + fractalTypeId;
+        }
+        return false;
     }
     nextParams.max_iter = maxIter;
     nextParams.epsilon = static_cast<float>(epsilon);

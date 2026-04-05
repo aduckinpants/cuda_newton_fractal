@@ -37,7 +37,7 @@ int main() {
     "epsilon": 0.000001,
     "exposure": 1.6,
     "poly_kind": 2,
-    "coloring_mode": "joy_basins",
+    "coloring_mode": "smooth_escape",
     "nova_alpha": 0.55,
     "phoenix_p_real": 0.5667,
     "phoenix_p_imag": -0.125,
@@ -98,7 +98,7 @@ int main() {
             std::cerr << "params poly_kind mismatch\n";
             return 1;
         }
-        if (params.coloring_mode != ColoringMode::joy_basins) {
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
           std::cerr << "params coloring_mode mismatch\n";
           return 1;
         }
@@ -163,6 +163,114 @@ int main() {
         }
         if (error.find("Unknown fractal_type") == std::string::npos) {
             std::cerr << "Unexpected error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "bad_coloring_mode_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "phoenix",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 1200,
+    "epsilon": 0.000001,
+    "exposure": 1.6,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.5667,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected incompatible coloring_mode for phoenix to fail\n";
+            return 1;
+        }
+        if (error.find("not allowed for fractal_type phoenix") == std::string::npos) {
+            std::cerr << "Unexpected invalid-coloring error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "legacy_state_version1_phoenix.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 1,
+  "fractal_type": "phoenix",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 1200,
+    "epsilon": 0.000001,
+    "exposure": 1.6,
+    "poly_kind": 2,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::root_basin;
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected legacy phoenix state to load: " << error << "\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Expected legacy phoenix state to default to smooth_escape\n";
             return 1;
         }
     }

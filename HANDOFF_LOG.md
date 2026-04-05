@@ -1,3 +1,4 @@
 # Handoff Log (append-only)
 
 - `ck:7fc424b0` 2026-04-05 19:06 UTC — Completed runtime launcher fallback slice: build now falls back from locked fractal_ui.exe to fractal_ui_dev.exe and stages fractal_ui.cmd/fractal_ui_active.txt; added finding archive/state load seams plus focused C++ and Python tests; validated with build_tests_vsdevcmd.cmd, pytest on seed_sweep/finding_capture, build_vsdevcmd.cmd fallback path, and fractal_ui.cmd --validate-ui.
+- `ck:e1546f46` 2026-04-05 19:10 UTC — Completed TDD slice for saved-state loader validation: test first proved diagnostics_state_io accepted Phoenix states with incompatible joy_basins coloring; loader now fails fast on family/coloring mismatches and assigns deterministic default coloring for legacy state_version 1 payloads; validated with build_tests_vsdevcmd.cmd, build_vsdevcmd.cmd, and fractal_ui.cmd --validate-ui.
