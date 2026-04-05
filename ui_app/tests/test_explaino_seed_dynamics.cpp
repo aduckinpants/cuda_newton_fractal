@@ -25,12 +25,19 @@ int main() {
             std::cerr << "Expected auto-increment seed dynamics to report a change\n";
             return 1;
         }
-        if (!NearlyEqual(ExplainoSeedCombined(view, params), 3.25)) {
-            std::cerr << "Expected auto-increment to advance the combined seed smoothly\n";
+        // Auto-increment now advances base seed only, leaving drift untouched.
+        // rate=0.5, dt=2.0 => delta=1.0 added to base (2.0 + 1.0 = 3.0)
+        // drift stays at 0.25
+        if (!NearlyEqual(params.explaino_seed, 3.0)) {
+            std::cerr << "Expected auto-increment to advance the base seed by rate*dt\n";
             return 1;
         }
-        if (!NearlyEqual(params.explaino_seed, 3.0) || !NearlyEqual(view.explaino_seed_drift, 0.25f)) {
-            std::cerr << "Expected auto-increment to carry whole-seed overflow into the base seed\n";
+        if (!NearlyEqual(view.explaino_seed_drift, 0.25f)) {
+            std::cerr << "Expected auto-increment to leave drift untouched\n";
+            return 1;
+        }
+        if (!NearlyEqual(ExplainoSeedCombined(view, params), 3.25)) {
+            std::cerr << "Expected combined seed = base + drift\n";
             return 1;
         }
     }
@@ -72,6 +79,33 @@ int main() {
         }
         if (!NearlyEqual(ExplainoSeedCombined(view, params), 0.0)) {
             std::cerr << "Non-finite frame deltas should leave the combined seed unchanged\n";
+            return 1;
+        }
+    }
+
+    // Drift stability: auto-increment must NOT modify explaino_seed_drift
+    // even across many frames (regression for seed-bleed-into-fraction bug).
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderStats stats{};
+
+        view.fractal_type = FractalType::explaino_fp;
+        view.auto_increment_seed = true;
+        view.explaino_seed_rate = 2.0f;
+        params.explaino_seed = 0.0;
+        view.explaino_seed_drift = 0.777f;
+
+        for (int i = 0; i < 100; ++i) {
+            ApplyExplainoSeedDynamics(stats, 0.016, view, params);
+        }
+        if (!NearlyEqual(view.explaino_seed_drift, 0.777f, 1e-6)) {
+            std::cerr << "Drift slider must remain stable during auto-increment (got " << view.explaino_seed_drift << ")\n";
+            return 1;
+        }
+        // Base seed should have advanced: 100 frames * 0.016s * 2.0/s = 3.2
+        if (!NearlyEqual(params.explaino_seed, 3.2, 0.01)) {
+            std::cerr << "Base seed should advance by rate*total_time (got " << params.explaino_seed << ")\n";
             return 1;
         }
     }

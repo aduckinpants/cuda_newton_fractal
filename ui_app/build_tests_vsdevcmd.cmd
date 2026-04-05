@@ -67,6 +67,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\tests\test_ui_schema.cpp ^
+  /Fe:"%TESTROOT%\test_ui_schema.exe"
+if errorlevel 1 exit /b 1
+
 "%TESTROOT%\test_explaino_seed.exe"
 if errorlevel 1 exit /b 1
 
@@ -95,6 +100,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_family_rules.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_ui_schema.exe"
 if errorlevel 1 exit /b 1
 
 echo All helper tests passed.

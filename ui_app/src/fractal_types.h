@@ -124,3 +124,5 @@ bool RenderFractalCUDA(
     uint8_t* outMask,
     RenderStats* outStats,
     const char** outError);
+
+void CleanupFractalCUDA();

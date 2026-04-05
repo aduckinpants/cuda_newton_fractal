@@ -39,15 +39,7 @@
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "Comdlg32.lib")
 
-// Forward declare the CUDA renderer.
-bool RenderFractalCUDA(
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    uint32_t* outRGBA,
-    uint8_t* outMask,
-    RenderStats* outStats,
-    const char** outError);
+// Forward declare the CUDA renderer (declared in fractal_types.h, linked from fractal_renderer.cu).
 
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -1194,6 +1186,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 
+    CleanupFractalCUDA();
     CleanupDeviceD3D();
     DestroyWindow(hwnd);
     UnregisterClass(wc.lpszClassName, wc.hInstance);

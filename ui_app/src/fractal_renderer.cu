@@ -1115,3 +1115,13 @@ bool RenderFractalCUDA(
 
     return true;
 }
+
+void CleanupFractalCUDA() {
+    if (g_cached.d_rgba) { cudaFree(g_cached.d_rgba); g_cached.d_rgba = nullptr; }
+    if (g_cached.d_mask) { cudaFree(g_cached.d_mask); g_cached.d_mask = nullptr; }
+    if (g_cached.d_itersSum) { cudaFree(g_cached.d_itersSum); g_cached.d_itersSum = nullptr; }
+    if (g_cached.d_refOrbit) { cudaFree(g_cached.d_refOrbit); g_cached.d_refOrbit = nullptr; }
+    g_cached.w = 0;
+    g_cached.h = 0;
+    cudaDeviceReset();
+}
