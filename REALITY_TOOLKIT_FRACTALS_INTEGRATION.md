@@ -13,26 +13,39 @@ Two layers matter here:
 
 The local `tools/reality_toolkit` tree in this repo is the start of that fractal extension surface. It should grow by borrowing proven analysis ideas from `nine`, not by pretending the two repos are isolated worlds.
 
-## Hard Constraint: dedicated live-view instance
+## Preferred live-view model
 
-Do **not** reuse `nine`'s active broker/viewer instance when this repo starts doing live-view or broker-fed work.
+Preferred default:
+- use `nine`'s broker/viewer model, including the flex-grid direction, **if** this repo can load sessions into it and unload them again cleanly.
+
+That means the real question is not "shared broker or dedicated broker?" in the abstract.
+The real question is whether this repo can prove a smooth session lifecycle inside the shared viewer:
+- session create registers cleanly
+- session destroy removes cleanly
+- no stale-frame leakage between runs
+- no stomping on in-flight testing
+- no ambiguous ownership of the displayed session
 
 Reasoning:
-- `nine`'s broker stack is a repo-owned runtime surface with always-on assumptions and a default port (`7745`).
-- `nine` has duplicate-instance behavior meant to manage its own broker/viewer lifecycle.
-- `nine`'s tests explicitly start brokers on free ports, which is a strong signal that broker isolation is part of the contract.
-- Reusing the active `nine` broker from this repo risks stomping in-flight testing, stale-frame confusion, and accidental cross-session interference.
+- the flex-grid design is explicitly meant to absorb multiple active sessions into one viewer surface
+- one shared viewer is simpler than multiplying windows if the lifecycle contract is solid
+- `nine` already has the richer broker/viewer QoL surface and broader toolkit context
+- `nine`'s tests and prior bug history also show that session isolation is real engineering work, not something to assume blindly
 
 ## Required shape for future broker adoption here
 
-When broker/live-view work lands in this repo, it should use a **repo-specific** stack:
+When broker/live-view work lands in this repo, the sequence should be:
+1. first try to integrate with `nine`'s shared broker/viewer path
+2. prove smooth load/unload and non-stomping behavior with bounded tests/probes
+3. only fall back to a repo-specific broker instance if that proof fails or if ownership/isolation remains muddy
+
+If fallback is needed, the repo-specific stack should have:
 - dedicated launcher scripts in this repo
 - dedicated process/window identity so it is visually obvious which repo owns the live view
 - dedicated default port or explicit per-repo port configuration
 - dedicated publish/runtime roots under `D:\salt-fractal\cuda_newton_fractal_clone\...`
-- no silent attachment to a broker that was started by `nine`
 
-In short: borrow the **broker model** from `nine`, but do not borrow the **running broker instance**.
+In short: prefer the shared `nine` viewer when it behaves like a clean multi-session surface; otherwise isolate.
 
 ## Analysis guidance
 
@@ -50,4 +63,4 @@ A future full planning/spec turn should be devoted to:
 - a much broader fractal catalog expansion
 - new Explaino family concepts
 - how to use existing salticid operators and CLI tooling to probe those ideas in real time
-- how a dedicated repo-local live-view/broker stack should expose those runs without interfering with `nine`
+- how this repo should prove smooth shared-broker integration with `nine`, and what fallback broker shape is acceptable if that proof fails
