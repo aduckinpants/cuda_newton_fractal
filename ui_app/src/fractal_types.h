@@ -38,6 +38,7 @@ enum class FractalType : int {
     explaino_y = 8,
     explaino_fp = 9,
     explaino_nova = 10,
+    explaino_halley = 11,
 };
 
 enum class CameraBehavior : int {
@@ -68,6 +69,7 @@ struct ViewState {
     float explaino_seed_drift{0.0f};
     bool auto_increment_seed{false};
     float explaino_seed_rate{0.35f};
+    float explaino_phase_strength{1.0f};
 
     CameraBehavior camera_behavior{CameraBehavior::complexity};
     bool auto_dive{false};
@@ -94,6 +96,8 @@ struct KernelParams {
 
     double explaino_seed{0.0};
     float explaino_warp_strength{0.0f};
+    float explaino_root_spread{0.5f};
+    float explaino_damping{1.0f};
     int explaino_root_count{0};
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
 };

@@ -97,5 +97,24 @@ int main() {
         }
     }
 
+    {
+        if (!IsExplainoFamily(FractalType::explaino_halley)) {
+            std::cerr << "Explaino-Halley should be in the Explaino family\n";
+            return 1;
+        }
+        if (!SupportsBasinColoring(FractalType::explaino_halley)) {
+            std::cerr << "Explaino-Halley should support basin coloring\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::explaino_halley)) {
+            std::cerr << "Explaino-Halley should not be escape-time\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_halley) != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-Halley should default to joy_basins\n";
+            return 1;
+        }
+    }
+
     return 0;
 }

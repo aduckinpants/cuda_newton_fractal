@@ -35,6 +35,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_y: return "explaino_y";
         case FractalType::explaino_fp: return "explaino_fp";
         case FractalType::explaino_nova: return "explaino_nova";
+        case FractalType::explaino_halley: return "explaino_halley";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -77,6 +78,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_y") view->fractal_type = FractalType::explaino_y;
         else if (id == "explaino_fp") view->fractal_type = FractalType::explaino_fp;
         else if (id == "explaino_nova") view->fractal_type = FractalType::explaino_nova;
+        else if (id == "explaino_halley") view->fractal_type = FractalType::explaino_halley;
         else return false;
         return true;
     }
@@ -199,6 +201,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     if (path == "fractal.view.explaino_phase") { *outPtr = &view->explaino_phase; return true; }
     if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
     if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
+    if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view->explaino_phase_strength; return true; }
     if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
     if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
     if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
@@ -210,6 +213,8 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     if (path == "fractal.params.color_tint_g") { *outPtr = &params->color_tint_g; return true; }
     if (path == "fractal.params.color_tint_b") { *outPtr = &params->color_tint_b; return true; }
     if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
+    if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }
+    if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
     if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
     if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
     if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }

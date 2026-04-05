@@ -12,14 +12,16 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
     return fractalType == FractalType::explaino ||
         fractalType == FractalType::explaino_y ||
         fractalType == FractalType::explaino_fp ||
-        fractalType == FractalType::explaino_nova;
+        fractalType == FractalType::explaino_nova ||
+        fractalType == FractalType::explaino_halley;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
     return fractalType == FractalType::newton ||
         fractalType == FractalType::explaino ||
         fractalType == FractalType::explaino_y ||
-        fractalType == FractalType::explaino_fp;
+        fractalType == FractalType::explaino_fp ||
+        fractalType == FractalType::explaino_halley;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fractalType) {

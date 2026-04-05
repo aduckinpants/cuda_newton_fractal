@@ -149,6 +149,34 @@ __device__ __forceinline__ void poly_eval_real_coeffs_deg4(const float coeffs[5]
     *outDp = dP;
 }
 
+__device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2(const float coeffs[5], Cx z, Cx* outP, Cx* outDp, Cx* outD2p) {
+    // P(z) = c0 + c1 z + c2 z^2 + c3 z^3 + c4 z^4
+    // P'(z) = c1 + 2 c2 z + 3 c3 z^2 + 4 c4 z^3
+    // P''(z) = 2 c2 + 6 c3 z + 12 c4 z^2
+    Cx z2 = cx_mul(z, z);
+    Cx z3 = cx_mul(z2, z);
+    Cx z4 = cx_mul(z2, z2);
+
+    Cx P{coeffs[0], 0.0f};
+    P = cx_add(P, cx_scale(z, coeffs[1]));
+    P = cx_add(P, cx_scale(z2, coeffs[2]));
+    P = cx_add(P, cx_scale(z3, coeffs[3]));
+    P = cx_add(P, cx_scale(z4, coeffs[4]));
+
+    Cx dP{coeffs[1], 0.0f};
+    dP = cx_add(dP, cx_scale(z, 2.0f * coeffs[2]));
+    dP = cx_add(dP, cx_scale(z2, 3.0f * coeffs[3]));
+    dP = cx_add(dP, cx_scale(z3, 4.0f * coeffs[4]));
+
+    Cx d2P{2.0f * coeffs[2], 0.0f};
+    d2P = cx_add(d2P, cx_scale(z, 6.0f * coeffs[3]));
+    d2P = cx_add(d2P, cx_scale(z2, 12.0f * coeffs[4]));
+
+    *outP = P;
+    *outDp = dP;
+    *outD2p = d2P;
+}
+
 __device__ __forceinline__ int nearest_root_index_unit_roots(Cx z, int n) {
     // For z^n - 1, roots are exp(i * 2pi k / n).
     float angle = atan2f(z.y, z.x);
@@ -360,6 +388,7 @@ __global__ void kernel_render(
     } else if (ft == FractalType::explaino) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
@@ -380,7 +409,7 @@ __global__ void kernel_render(
             if (dAbs2 < 1e-20f) break;
 
             Cx step = cx_div(P, dP);
-            z = cx_sub(z, step);
+            z = cx_sub(z, cx_scale(step, userDamp));
 
             if (!isfinite(z.x) || !isfinite(z.y)) {
                 z = {0.0f, 0.0f};
@@ -392,6 +421,7 @@ __global__ void kernel_render(
     } else if (ft == FractalType::explaino_fp) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
@@ -412,7 +442,7 @@ __global__ void kernel_render(
             Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
 
             float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
-            float damp = 1.0f / (1.0f + stepMag);
+            float damp = userDamp / (1.0f + stepMag);
             z = cx_sub(z, cx_scale(step, damp));
 
             float r2 = cx_abs2(z);
@@ -446,6 +476,7 @@ __global__ void kernel_render(
     } else if (ft == FractalType::explaino_y) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
@@ -482,7 +513,7 @@ __global__ void kernel_render(
             Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
 
             float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
-            float damp = 0.90f / (1.0f + stepMag);
+            float damp = 0.90f * userDamp / (1.0f + stepMag);
             Cx newtonW = cx_sub(zW, cx_scale(step, damp));
 
             float mix = 0.78f;
@@ -560,6 +591,47 @@ __global__ void kernel_render(
                 }
             }
         }
+    } else if (ft == FractalType::explaino_halley) {
+        // Halley's method: z_{n+1} = z - 2 f(z) f'(z) / (2 f'(z)^2 - f(z) f''(z))
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP, d2P;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            // Halley denominator: 2 f'(z)^2 - f(z) f''(z)
+            Cx dp2 = cx_mul(dP, dP);
+            Cx fd2 = cx_mul(P, d2P);
+            Cx denom = cx_sub(cx_scale(dp2, 2.0f), fd2);
+
+            float denomAbs2 = cx_abs2(denom);
+            if (denomAbs2 < 1e-20f) break;
+
+            // Halley numerator: 2 f(z) f'(z)
+            Cx numer = cx_scale(cx_mul(P, dP), 2.0f);
+            Cx step = cx_div(numer, denom);
+            z = cx_sub(z, cx_scale(step, userDamp));
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));

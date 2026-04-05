@@ -25,7 +25,8 @@
             { "id": "explaino", "label": "Explaino" },
             { "id": "explaino_y", "label": "Explaino Y" },
             { "id": "explaino_fp", "label": "Explaino FP" },
-            { "id": "explaino_nova", "label": "Explaino Nova" }
+            { "id": "explaino_nova", "label": "Explaino Nova" },
+            { "id": "explaino_halley", "label": "Explaino Halley" }
           ],
           "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
           "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
@@ -146,7 +147,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           },
           "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
         },
@@ -155,10 +156,11 @@
           "type": "slider_float",
           "label": "Seed Increment Rate",
           "value_type": "float",
-          "min": 0.00001, "max": 2.0, "step": 0.00001, "default": 0.35,
+          "min": 0.001, "max": 5.0, "step": 0.001, "default": 0.35,
+          "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.explaino_seed_rate" },
           "visible_if": { "op": "eq", "path": "fractal.view.auto_increment_seed", "value": true },
-          "help": "Per-second rate for smooth Explaino seed stepping when Auto-Increment Seed is enabled."
+          "help": "Per-second rate for smooth Explaino seed stepping. Logarithmic scale gives more room in the low end. Left/Right arrow keys also scrub with acceleration."
         },
         {
           "id": "multibrot_power",
@@ -194,7 +196,9 @@
           "options": [
             { "id": "1", "label": "1x (Full)" },
             { "id": "2", "label": "2x" },
-            { "id": "4", "label": "4x" }
+            { "id": "4", "label": "4x" },
+            { "id": "8", "label": "8x" },
+            { "id": "16", "label": "16x" }
           ],
           "binding": { "kind": "param", "path": "fractal.lens.downsample" },
           "visible_if": { "op": "eq", "path": "fractal.lens.enabled", "value": true }
@@ -225,7 +229,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           }
         },
         {
@@ -350,7 +354,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           },
           "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
         },
@@ -362,7 +366,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           }
         },
         {
@@ -373,7 +377,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           }
         },
         {
@@ -386,12 +390,54 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+          }
+        },
+        {
+          "id": "explaino_root_spread",
+          "type": "slider_float",
+          "label": "Root Spread",
+          "help": "Controls the radius of generated root placements, independent of warp distortion.",
+          "value_type": "float",
+          "min": 0.0, "max": 3.0, "step": 0.01, "default": 0.5,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_root_spread" },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+          }
+        },
+        {
+          "id": "explaino_phase_strength",
+          "type": "slider_float",
+          "label": "Phase Strength",
+          "help": "Multiplier on phase modulation of root angles. Higher values make the Phase slider more influential.",
+          "value_type": "float",
+          "min": 0.0, "max": 5.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.view.explaino_phase_strength" },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+          }
+        },
+        {
+          "id": "explaino_damping",
+          "type": "slider_float",
+          "label": "Newton Damping",
+          "help": "Multiplier on the Newton step size. Values <1 slow convergence for richer structure; >1 can overshoot.",
+          "value_type": "float",
+          "min": 0.1, "max": 2.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_damping" },
+          "visible_if": {
+            "op": "in",
+            "path": "fractal.view.fractal_type",
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           }
         },
         {
           "id": "explaino_phase",
-          "type": "drag_float",
+          "type": "slider_float",
           "label": "Explaino Phase",
           "value_type": "float",
           "min": -6.283185307179586, "max": 6.283185307179586, "step": 0.01, "default": 0.0,
@@ -399,7 +445,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           }
         },
         {
@@ -412,7 +458,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           },
           "help": "Advanced fractional component of the combined Explaino seed. Usually edit Explaino Seed instead."
         },
@@ -426,7 +472,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
           }
         }
       ]
@@ -453,7 +499,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,explaino,explaino_y,explaino_fp"
+            "value": "newton,explaino,explaino_y,explaino_fp,explaino_halley"
           },
           "help": "Newton and the root-finding Explaino variants support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
         },

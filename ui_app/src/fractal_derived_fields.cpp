@@ -120,8 +120,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     if (view.fractal_type == FractalType::explaino ||
         view.fractal_type == FractalType::explaino_y ||
         view.fractal_type == FractalType::explaino_fp ||
-        view.fractal_type == FractalType::explaino_nova) {
-        params.max_iter = (view.fractal_type == FractalType::explaino) ? 500 :
+        view.fractal_type == FractalType::explaino_nova ||
+        view.fractal_type == FractalType::explaino_halley) {
+        params.max_iter = (view.fractal_type == FractalType::explaino || view.fractal_type == FractalType::explaino_halley) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
@@ -200,15 +201,16 @@ struct ExplainoSeedShape {
     float d;
 };
 
-static ExplainoSeedShape ExplainoShapeForSeed(uint32_t seed, float phase, float spread) {
+static ExplainoSeedShape ExplainoShapeForSeed(uint32_t seed, float phase, float spread, float phaseStrength) {
     const float r0 = Hash01(seed ^ 0x13579bdu);
     const float r1 = Hash01(seed ^ 0x2468aceu);
     const float r2 = Hash01(seed ^ 0xdeadbeefu);
     const float r3 = Hash01(seed ^ 0x9e3779b9u);
 
     const float baseR = 0.85f + 0.95f * spread;
-    const float aAngle = (r0 * 6.2831853f) + 0.35f * std::sin(phase * (0.15f + 0.20f * r2));
-    const float cAngle = (r1 * 6.2831853f) + 0.35f * std::cos(phase * (0.13f + 0.23f * r3));
+    const float ps = 0.35f * phaseStrength;
+    const float aAngle = (r0 * 6.2831853f) + ps * std::sin(phase * (0.15f + 0.20f * r2));
+    const float cAngle = (r1 * 6.2831853f) + ps * std::cos(phase * (0.13f + 0.23f * r3));
 
     ExplainoSeedShape out{};
     out.a = baseR * std::cos(aAngle);
@@ -222,7 +224,8 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     if (view.fractal_type != FractalType::explaino &&
         view.fractal_type != FractalType::explaino_y &&
         view.fractal_type != FractalType::explaino_fp &&
-        view.fractal_type != FractalType::explaino_nova) {
+        view.fractal_type != FractalType::explaino_nova &&
+        view.fractal_type != FractalType::explaino_halley) {
         params.explaino_root_count = 0;
         return;
     }
@@ -240,12 +243,13 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     const uint32_t s0 = static_cast<uint32_t>(seedBase);
     const uint32_t s1 = static_cast<uint32_t>(seedBase + 1);
     const float phase = view.explaino_phase;
-    const float spread = std::fmax(0.0f, std::fmin(1.0f, params.explaino_warp_strength));
+    const float spread = std::fmax(0.0f, std::fmin(3.0f, params.explaino_root_spread));
+    const float phaseStrength = view.explaino_phase_strength;
 
-    ExplainoSeedShape sh0 = ExplainoShapeForSeed(s0, phase, spread);
+    ExplainoSeedShape sh0 = ExplainoShapeForSeed(s0, phase, spread, phaseStrength);
     ExplainoSeedShape sh = sh0;
     if (view.explaino_seed_tween && driftFrac > 0.0f) {
-        ExplainoSeedShape sh1 = ExplainoShapeForSeed(s1, phase, spread);
+        ExplainoSeedShape sh1 = ExplainoShapeForSeed(s1, phase, spread, phaseStrength);
         sh.a = LerpF(sh0.a, sh1.a, driftFrac);
         sh.b = LerpF(sh0.b, sh1.b, driftFrac);
         sh.c = LerpF(sh0.c, sh1.c, driftFrac);
