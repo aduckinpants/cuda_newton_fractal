@@ -59,6 +59,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino:
     case FractalType::explaino_y:
     case FractalType::explaino_fp:
+    case FractalType::explaino_nova:
     default:
         break;
     }
@@ -118,8 +119,10 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
 
     if (view.fractal_type == FractalType::explaino ||
         view.fractal_type == FractalType::explaino_y ||
-        view.fractal_type == FractalType::explaino_fp) {
-        params.max_iter = (view.fractal_type == FractalType::explaino) ? 500 : 650;
+        view.fractal_type == FractalType::explaino_fp ||
+        view.fractal_type == FractalType::explaino_nova) {
+        params.max_iter = (view.fractal_type == FractalType::explaino) ? 500 :
+            (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
         params.poly_kind = PolyKind::custom;
@@ -218,7 +221,8 @@ static ExplainoSeedShape ExplainoShapeForSeed(uint32_t seed, float phase, float 
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {
     if (view.fractal_type != FractalType::explaino &&
         view.fractal_type != FractalType::explaino_y &&
-        view.fractal_type != FractalType::explaino_fp) {
+        view.fractal_type != FractalType::explaino_fp &&
+        view.fractal_type != FractalType::explaino_nova) {
         params.explaino_root_count = 0;
         return;
     }

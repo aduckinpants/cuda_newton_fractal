@@ -94,6 +94,7 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino") { if (outType) *outType = FractalType::explaino; return true; }
     if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
     if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
+    if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
     return false;
 }
 

@@ -12,6 +12,7 @@ All bindings are under `fractal.*`.
 - `fractal.actions.render_once` → action: enqueue one render tick
 - `fractal.actions.load_state` → action: prompt for `state.json` or `finding.json` and load it into runtime state
 - `fractal.actions.capture_finding` → action: archive the current frame/state into the findings tree
+- `fractal.params.nova_alpha` → `KernelParams.nova_alpha` (used by both `nova` and `explaino_nova`)
 
 ## Fractal (kernel parameter pack)
 

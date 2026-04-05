@@ -54,6 +54,35 @@ int main() {
     }
 
     {
+        if (!IsExplainoFamily(FractalType::explaino_nova)) {
+            std::cerr << "Explaino-Nova should stay in the Explaino family surface\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::explaino_nova)) {
+            std::cerr << "Explaino-Nova should be classified as an escape-time family\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::explaino_nova)) {
+            std::cerr << "Explaino-Nova should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_nova) != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Nova should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::explaino_nova, ColoringMode::root_basin) ||
+            IsColoringModeAllowedForFractal(FractalType::explaino_nova, ColoringMode::joy_basins)) {
+            std::cerr << "Explaino-Nova should reject basin coloring modes\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::explaino_nova, ColoringMode::iteration_count) ||
+            !IsColoringModeAllowedForFractal(FractalType::explaino_nova, ColoringMode::smooth_escape)) {
+            std::cerr << "Explaino-Nova should allow escape-time coloring modes\n";
+            return 1;
+        }
+    }
+
+    {
         if (!IsEscapeTimeFamily(FractalType::phoenix)) {
             std::cerr << "Phoenix should stay in the escape-time family\n";
             return 1;

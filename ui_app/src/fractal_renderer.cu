@@ -506,7 +506,7 @@ __global__ void kernel_render(
             pAbs = bestP;
             converged = true;
         }
-    } else if (ft == FractalType::nova) {
+    } else if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
         // Nova (V1): z_{n+1} = z_n - alpha * f(z_n)/f'(z_n) + c
         // Treat as escape-time family for coloring; points that do not escape are interior.
         // Parameterization choice (best judgment): z0=0, c=coord (Mandelbrot-like c-plane). This yields stable, rich structure.

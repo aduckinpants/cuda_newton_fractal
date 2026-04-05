@@ -25,6 +25,7 @@ All bindings live under the `fractal.*` namespace.
 - `fractal.actions.render_once` : action (button)
 - `fractal.actions.load_state` : action (button; opens a saved `state.json` or `finding.json`)
 - `fractal.actions.capture_finding` : action (button; archives the current frame/state into the findings tree)
+- `fractal.view.fractal_type` enum includes `explaino_nova` as the first new Explaino expansion family
 
 ## Fractal (kernel parameter pack)
 

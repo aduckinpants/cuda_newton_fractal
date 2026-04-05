@@ -22,6 +22,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::explaino: return "explaino";
     case FractalType::explaino_y: return "explaino_y";
     case FractalType::explaino_fp: return "explaino_fp";
+    case FractalType::explaino_nova: return "explaino_nova";
     }
     return "unknown";
 }

@@ -114,6 +114,45 @@ int main() {
     {
         ViewState view{};
         KernelParams params{};
+        view.fractal_type = FractalType::explaino_nova;
+        params.explaino_seed = 7.0;
+        params.explaino_warp_strength = 0.99f;
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.nova_alpha = 1.5f;
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Nova defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 300 || !NearlyEqual(params.epsilon, 1.0e-6f) || !NearlyEqual(params.nova_alpha, 0.50f)) {
+            std::cerr << "Explaino-Nova should use Nova-tuned iteration defaults\n";
+            return 1;
+        }
+        if (params.poly_kind != PolyKind::custom) {
+            std::cerr << "Explaino-Nova should force custom polynomial\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Nova should default to smooth_escape\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.0f)) {
+            std::cerr << "Explaino-Nova should start with warp disabled\n";
+            return 1;
+        }
+        if (params.explaino_root_count != 4 || !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Explaino-Nova should still derive the Explaino quartic surface\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
         view.fractal_type = FractalType::julia;
         params.explaino_root_count = 99;
         UpdateExplainoPolynomial(view, params, nullptr);

@@ -37,6 +37,7 @@ enum class FractalType : int {
     explaino = 7,
     explaino_y = 8,
     explaino_fp = 9,
+    explaino_nova = 10,
 };
 
 enum class CameraBehavior : int {

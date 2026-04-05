@@ -233,6 +233,10 @@
             {
               "id": "explaino_fp",
               "label": "Explaino FP"
+            },
+            {
+              "id": "explaino_nova",
+              "label": "Explaino Nova"
             }
           ],
           "binding": {
@@ -300,7 +304,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova"
+            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova"
           }
         },
         {
@@ -318,9 +322,9 @@
             "path": "fractal.params.nova_alpha"
           },
           "visible_if": {
-            "op": "eq",
+            "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "nova"
+            "value": "nova,explaino_nova"
           }
         },
         {
@@ -445,7 +449,7 @@
             "path": "fractal.view.fractal_type",
             "value": "newton,explaino,explaino_y,explaino_fp"
           },
-          "help": "Newton and the Explaino family support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
+          "help": "Newton and the root-finding Explaino variants support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
         },
         {
           "id": "coloring_mode_escape",
@@ -471,7 +475,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "nova,mandelbrot,julia,burning_ship,multibrot,phoenix"
+            "value": "nova,explaino_nova,mandelbrot,julia,burning_ship,multibrot,phoenix"
           },
           "help": "Escape-time fractals use iteration-based coloring."
         },
@@ -581,7 +585,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
         },
         {
@@ -600,7 +604,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
         },
         {
@@ -619,7 +623,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
         },
         {
@@ -635,7 +639,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova"
           }
         }
       ]

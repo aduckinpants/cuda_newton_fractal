@@ -184,6 +184,7 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "explaino") { if (outType) *outType = FractalType::explaino; return true; }
     if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
     if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
+    if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
     return false;
 }
 
@@ -218,6 +219,7 @@ static UISchema BuildSafeModeSchema() {
             {"explaino", "Explaino"},
             {"explaino_y", "Explaino Y"},
             {"explaino_fp", "Explaino FP"},
+            {"explaino_nova", "Explaino Nova"},
         };
         view.controls.push_back(std::move(c));
     }
@@ -586,6 +588,7 @@ struct BindingContext {
             case FractalType::explaino: return "explaino";
             case FractalType::explaino_y: return "explaino_y";
             case FractalType::explaino_fp: return "explaino_fp";
+            case FractalType::explaino_nova: return "explaino_nova";
             }
         }
         if (view && path == "fractal.view.camera_behavior") {
@@ -627,6 +630,7 @@ struct BindingContext {
             else if (id == "explaino") view->fractal_type = FractalType::explaino;
             else if (id == "explaino_y") view->fractal_type = FractalType::explaino_y;
             else if (id == "explaino_fp") view->fractal_type = FractalType::explaino_fp;
+            else if (id == "explaino_nova") view->fractal_type = FractalType::explaino_nova;
             else return false;
             return true;
         }
