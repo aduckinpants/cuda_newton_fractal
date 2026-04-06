@@ -39,6 +39,25 @@ Cx CxMul(Cx left, Cx right) { return {left.x * right.x - left.y * right.y, left.
 Cx CxScale(Cx value, float scale) { return {value.x * scale, value.y * scale}; }
 float CxAbs2(Cx value) { return value.x * value.x + value.y * value.y; }
 float CxAbs(Cx value) { return std::sqrt(CxAbs2(value)); }
+Cx CxAbsComponents(Cx value) { return {std::fabs(value.x), std::fabs(value.y)}; }
+
+Cx CxPowInt(Cx value, int power) {
+    Cx result = value;
+    for (int index = 1; index < power; ++index) {
+        result = CxMul(result, value);
+    }
+    return result;
+}
+
+Cx CxPowRealPrincipal(Cx value, float power) {
+    const float radius2 = CxAbs2(value);
+    if (radius2 <= 1.0e-30f) return {0.0f, 0.0f};
+    const float radius = std::sqrt(radius2);
+    const float theta = std::atan2(value.y, value.x);
+    const float radiusPower = std::pow(radius, power);
+    const float angle = power * theta;
+    return {radiusPower * std::cos(angle), radiusPower * std::sin(angle)};
+}
 
 Cx CxDiv(Cx left, Cx right) {
     const float denom = right.x * right.x + right.y * right.y;
@@ -162,6 +181,18 @@ bool ValidateProbeState(const ProbeState& state, std::string* outError) {
     if (view.fractal_type == FractalType::nova) {
         if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 5.0f) {
             if (outError) *outError = "nova_alpha must be finite and in (0,5]";
+            return false;
+        }
+    }
+    if (view.fractal_type == FractalType::multibrot) {
+        if (!std::isfinite(params.multibrot_power_float) || params.multibrot_power_float < 2.0f || params.multibrot_power_float > 12.0f) {
+            if (outError) *outError = "multibrot_power_float must be finite and in [2,12]";
+            return false;
+        }
+    }
+    if (view.fractal_type == FractalType::multicorn) {
+        if (params.multibrot_power < 2 || params.multibrot_power > 12) {
+            if (outError) *outError = "multibrot_power must be in [2,12]";
             return false;
         }
     }
@@ -520,6 +551,31 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
+    if (ft == FractalType::burning_ship || ft == FractalType::multibrot || ft == FractalType::multicorn) {
+        z = {0.0f, 0.0f};
+        const Cx cConst = coord;
+        const float powerFloat = params.multibrot_power_float;
+        const int powerInt = params.multibrot_power;
+
+        for (; it < maxIter; ++it) {
+            if (ft == FractalType::burning_ship) {
+                const Cx absZ = CxAbsComponents(z);
+                z = CxAdd(CxMul(absZ, absZ), cConst);
+            } else if (ft == FractalType::multibrot) {
+                z = CxAdd(CxPowRealPrincipal(z, powerFloat), cConst);
+            } else {
+                const Cx conjugateZ{z.x, -z.y};
+                z = CxAdd(CxPowInt(conjugateZ, powerInt), cConst);
+            }
+
+            if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
+            if (CxAbs2(z) > 4.0f) { status = FractalProbeSampleStatus::escaped; break; }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, 0.0f, false, params, false);
+        return true;
+    }
+
     if (ft == FractalType::explaino_julia || ft == FractalType::explaino_lambda || ft == FractalType::explaino_rational_escape || ft == FractalType::explaino_rational) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
         if (ft == FractalType::explaino_julia) {
@@ -708,11 +764,14 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "nova",
         "mandelbrot",
         "julia",
+        "burning_ship",
+        "multibrot",
         "explaino",
         "explaino_dual",
         "explaino_mult",
         "explaino_julia",
         "explaino_rational",
+        "multicorn",
         "lambda",
         "explaino_lambda",
         "explaino_rational_escape",

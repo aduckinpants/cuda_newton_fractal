@@ -301,6 +301,59 @@ int main() {
         }
     }
 
+    {
+        const struct ProbeCase {
+            const char* fractal_type;
+            std::vector<FractalProbeOverride> overrides;
+        } cases[] = {
+            {
+                "burning_ship",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("burning_ship")},
+                },
+            },
+            {
+                "multibrot",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("multibrot")},
+                    {"fractal.params.multibrot_power_float", FractalProbeScalar::Number(3.0)},
+                },
+            },
+            {
+                "multicorn",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("multicorn")},
+                    {"fractal.params.multibrot_power", FractalProbeScalar::Number(3.0)},
+                },
+            },
+        };
+
+        for (const ProbeCase& probeCase : cases) {
+            FractalProbeRequest request{};
+            request.request_version = 1;
+            request.request_id = std::string("probe-") + probeCase.fractal_type;
+            request.mode = FractalProbeMode::point_set;
+            request.overrides = probeCase.overrides;
+            request.points.push_back({0.0, 0.0});
+            request.points.push_back({0.25, 0.0});
+
+            FractalProbeResponse response{};
+            std::string error;
+            if (!RunFractalProbeRequest(request, "D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe", &response, &error)) {
+                std::cerr << "Expected point_set probe to run for " << probeCase.fractal_type << ": " << error << "\n";
+                return 1;
+            }
+            if (!response.ok || response.runtime.fractal_type != probeCase.fractal_type) {
+                std::cerr << "Expected successful probe response for " << probeCase.fractal_type << "\n";
+                return 1;
+            }
+            if (response.summary.sample_count != 2 || response.samples.size() != 2) {
+                std::cerr << "Expected two samples for " << probeCase.fractal_type << "\n";
+                return 1;
+            }
+        }
+    }
+
     std::cout << "test_fractal_probe: all passed\n";
     return 0;
 }

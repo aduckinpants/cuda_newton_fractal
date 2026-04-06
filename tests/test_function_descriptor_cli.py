@@ -61,7 +61,10 @@ def test_describe_functions_emits_valid_catalog() -> None:
     option_ids = [option["id"] for option in ft_param["options"]]
     assert "newton" in option_ids
     assert "mandelbrot" in option_ids
-    assert "burning_ship" not in option_ids
+    assert "burning_ship" in option_ids
+    assert "multibrot" in option_ids
+    assert "multicorn" in option_ids
+    assert "phoenix" not in option_ids
 
     # epsilon param should have applicable_when
     eps_param = next(p for p in func["parameters"] if p["path"] == "fractal.params.epsilon")
