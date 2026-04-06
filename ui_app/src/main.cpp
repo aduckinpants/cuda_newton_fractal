@@ -940,7 +940,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             view.explaino_phase = 0.0f;
             view.explaino_seed_drift = 0.0f;
             view.auto_increment_seed = false;
-            view.explaino_seed_rate = 0.35f;
+            view.explaino_seed_rate = 0.05f;
             ApplyFractalViewPresetDefaults(view, &dirty);
 
             // Kernel defaults (per current fractal type)

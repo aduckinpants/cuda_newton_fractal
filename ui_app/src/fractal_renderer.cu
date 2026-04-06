@@ -761,7 +761,7 @@ __global__ void kernel_render(
                 // "Submerged" undertow: preserve faint structure, but keep it dark.
                 float t = (float)it / (float)maxIter;
                 float a = atan2f(z.y, z.x);
-                bool isExplainoFamily = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp);
+                bool isExplainoFamily = IsExplainoFamily(ft);
                 float phase = isExplainoFamily ? view.explaino_phase : 0.0f;
                 float v = 0.5f + 0.5f * sinf(a * 3.0f + t * 6.2831853f + phase);
                 float w = 0.5f + 0.5f * sinf(a * 11.0f + t * 12.5663706f - phase * 0.7f);
@@ -774,7 +774,7 @@ __global__ void kernel_render(
                 if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
                 if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
 
-                bool isExplainoFamily = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp);
+                bool isExplainoFamily = IsExplainoFamily(ft);
                 bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
 
                 if (nRoots > 0 || useCustomRoots) {
@@ -814,7 +814,7 @@ __global__ void kernel_render(
                 if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
                 if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
 
-                bool isExplainoFamily = (ft == FractalType::explaino || ft == FractalType::explaino_y || ft == FractalType::explaino_fp);
+                bool isExplainoFamily = IsExplainoFamily(ft);
                 bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
 
                 if (useCustomRoots) {

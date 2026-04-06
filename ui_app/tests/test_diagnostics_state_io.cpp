@@ -98,7 +98,7 @@ int main() {
           std::cerr << "view auto_increment_seed should default to false when missing from saved state\n";
           return 1;
         }
-        if (!NearlyEqual(view.explaino_seed_rate, 0.35f, 1.0e-6)) {
+        if (!NearlyEqual(view.explaino_seed_rate, 0.05f, 1.0e-6)) {
           std::cerr << "new Explaino seed rate default should survive older saved states\n";
           return 1;
         }

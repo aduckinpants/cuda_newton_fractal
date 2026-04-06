@@ -233,7 +233,11 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     params.poly_kind = PolyKind::custom;
     params.explaino_root_count = 4;
 
-    float drift = view.explaino_seed_drift;
+    // Combine the fractional part of the base seed with the drift slider
+    // so auto-increment produces smooth polynomial tweening instead of
+    // discrete jumps at integer boundaries.
+    double seedFrac = params.explaino_seed - std::floor(params.explaino_seed);
+    float drift = view.explaino_seed_drift + static_cast<float>(seedFrac);
     float driftFloor = std::floor(drift);
     float driftFrac = drift - driftFloor;
     if (!std::isfinite(driftFrac)) driftFrac = 0.0f;

@@ -174,5 +174,74 @@ int main() {
         }
     }
 
+    // Smooth tween regression: when explaino_seed has a fractional component
+    // (e.g. from auto-increment), UpdateExplainoPolynomial must produce
+    // different roots than the integer-seed case. This pins the fix for
+    // the drift-slider-tied-to-increment bug where roots jumped discretely.
+    {
+        ViewState view{};
+        KernelParams paramsA{};
+        KernelParams paramsB{};
+        view.fractal_type = FractalType::explaino;
+        view.explaino_seed_drift = 0.0f;
+        view.explaino_phase = 0.0f;
+        view.explaino_phase_strength = 1.0f;
+
+        // Integer seed = 5.0: roots for seed 5 at fraction 0.0
+        paramsA.explaino_seed = 5.0;
+        paramsA.explaino_root_spread = 0.5f;
+        UpdateExplainoPolynomial(view, paramsA, nullptr);
+        float rootA0x = paramsA.explaino_roots[0].x;
+        float coeffA0 = paramsA.poly_coeffs[0];
+
+        // Fractional seed = 5.4: should tween between seed 5 and 6
+        paramsB.explaino_seed = 5.4;
+        paramsB.explaino_root_spread = 0.5f;
+        UpdateExplainoPolynomial(view, paramsB, nullptr);
+        float rootB0x = paramsB.explaino_roots[0].x;
+        float coeffB0 = paramsB.poly_coeffs[0];
+
+        if (NearlyEqual(rootA0x, rootB0x, 1e-6f)) {
+            std::cerr << "Fractional seed (5.4) must produce different roots than integer seed (5.0) for smooth tween\n";
+            return 1;
+        }
+        if (NearlyEqual(coeffA0, coeffB0, 1e-6f)) {
+            std::cerr << "Polynomial coefficients must differ between integer and fractional seeds\n";
+            return 1;
+        }
+    }
+
+    // Explaino-Halley must get preset defaults (custom poly, basin coloring)
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_halley;
+        params.explaino_seed = 3.0;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Halley defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.poly_kind != PolyKind::custom) {
+            std::cerr << "Explaino-Halley should force custom polynomial\n";
+            return 1;
+        }
+        if (params.max_iter != 500) {
+            std::cerr << "Explaino-Halley should use 500 max_iter (got " << params.max_iter << ")\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-Halley should default to joy_basins\n";
+            return 1;
+        }
+        if (params.explaino_root_count != 4 || !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Explaino-Halley should derive the Explaino quartic\n";
+            return 1;
+        }
+    }
+
     return 0;
 }

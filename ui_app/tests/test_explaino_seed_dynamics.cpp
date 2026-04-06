@@ -110,6 +110,15 @@ int main() {
         }
     }
 
+    // Default seed rate should be 0.05, not 0.35 (too fast for visual use).
+    {
+        ViewState view{};
+        if (!NearlyEqual(view.explaino_seed_rate, 0.05f, 1e-6)) {
+            std::cerr << "Default explaino_seed_rate should be 0.05 (got " << view.explaino_seed_rate << ")\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_explaino_seed_dynamics: all passed\n";
     return 0;
 }

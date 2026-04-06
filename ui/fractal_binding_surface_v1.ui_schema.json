@@ -156,7 +156,7 @@
           "type": "slider_float",
           "label": "Seed Increment Rate",
           "value_type": "float",
-          "min": 0.001, "max": 5.0, "step": 0.001, "default": 0.35,
+          "min": 0.001, "max": 5.0, "step": 0.001, "default": 0.05,
           "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.explaino_seed_rate" },
           "visible_if": { "op": "eq", "path": "fractal.view.auto_increment_seed", "value": true },
