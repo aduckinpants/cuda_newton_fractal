@@ -793,6 +793,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
     std::string findingStatus;
+    std::string lastFindingPath; // last captured/loaded path for copy/open buttons
     SweepPlayerState sweepState{};
     bool sweepPaused = false;
     bool sweepSingleStep = false;
@@ -956,6 +957,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
         if (!findingStatus.empty()) {
             ImGui::TextWrapped("%s", findingStatus.c_str());
+            if (!lastFindingPath.empty()) {
+                if (ImGui::SmallButton("Copy Path")) {
+                    ImGui::SetClipboardText(lastFindingPath.c_str());
+                }
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Open Folder")) {
+                    ShellExecuteA(nullptr, "explore", lastFindingPath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+                }
+            }
         }
 
         if (sweepConfig.enabled) {
@@ -1019,6 +1029,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     lastPolyKind = params.poly_kind;
                     lastFractalType = view.fractal_type;
                     findingStatus = "Loaded finding state: " + resolvedStatePath;
+                    lastFindingPath = resolvedStatePath;
                     dirty = true;
                 }
             }
@@ -1116,6 +1127,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 findingStatus = "Capture finding failed: " + captureError;
             } else {
                 findingStatus = "Captured finding: " + findingDir;
+                lastFindingPath = findingDir;
             }
         }
 
