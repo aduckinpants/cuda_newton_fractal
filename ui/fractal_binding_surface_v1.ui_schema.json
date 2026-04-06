@@ -36,7 +36,8 @@
             { "id": "explaino_rational", "label": "Explaino Rational" },
             { "id": "multicorn", "label": "Multicorn" },
             { "id": "halley", "label": "Halley" },
-            { "id": "collatz", "label": "Collatz" }
+            { "id": "collatz", "label": "Collatz" },
+            { "id": "explaino_collatz", "label": "Explaino Collatz" }
           ],
           "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
           "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."

@@ -20,7 +20,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
     fractalType == FractalType::explaino_transcendental ||
     fractalType == FractalType::explaino_inertial ||
     fractalType == FractalType::explaino_julia ||
-    fractalType == FractalType::explaino_rational;
+    fractalType == FractalType::explaino_rational ||
+    fractalType == FractalType::explaino_collatz;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
@@ -35,6 +36,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType 
     fractalType == FractalType::explaino_transcendental ||
     fractalType == FractalType::explaino_inertial ||
     fractalType == FractalType::explaino_rational ||
+    fractalType == FractalType::explaino_collatz ||
     fractalType == FractalType::halley;
 }
 

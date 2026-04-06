@@ -869,6 +869,58 @@ __global__ void kernel_render(
                 break;
             }
         }
+    } else if (ft == FractalType::explaino_collatz) {
+        // Explaino-Collatz: Newton's method on fixed points of the Collatz map.
+        // g(z) = f(z) - z = (1/4)(2 + 3z - (2+5z)cos(pi*z))
+        // g'(z) = (1/4)(3 - 5*cos(pi*z) + pi*(2+5z)*sin(pi*z))
+        // z_{n+1} = z_n - damping * g(z_n)/g'(z_n)
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        const float kPI = 3.14159265358979323846f;
+
+        for (; it < maxIter; ++it) {
+            float px = kPI * z.x;
+            float py = kPI * z.y;
+            float cpx = cosf(px), spx = sinf(px);
+            float chy = coshf(py), shy = sinhf(py);
+
+            // cos(pi*z) and sin(pi*z) for complex z
+            Cx cospi = {cpx * chy, -spx * shy};
+            Cx sinpi = {spx * chy, cpx * shy};
+
+            // a = (2 + 5z)
+            Cx a = {2.0f + 5.0f * z.x, 5.0f * z.y};
+            Cx ac = cx_mul(a, cospi);
+
+            // g(z) = (1/4)(2 + 3z - (2+5z)*cos(pi*z))
+            Cx g = cx_scale({2.0f + 3.0f * z.x - ac.x, 3.0f * z.y - ac.y}, 0.25f);
+
+            pAbs = cx_abs(g);
+            if (pAbs < eps) break;
+
+            // g'(z) = (1/4)(3 - 5*cos(pi*z) + pi*(2+5z)*sin(pi*z))
+            Cx as = cx_mul(a, sinpi);
+            Cx dg = cx_scale({3.0f - 5.0f * cospi.x + kPI * as.x,
+                              -5.0f * cospi.y + kPI * as.y}, 0.25f);
+
+            float dAbs2 = cx_abs2(dg);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx step = cx_div(g, dg);
+            z = cx_sub(z, cx_scale(step, userDamp));
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));

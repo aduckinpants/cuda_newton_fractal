@@ -248,5 +248,29 @@ int main() {
         }
     }
 
+    // Explaino-Collatz: explaino family + basin coloring + not escape-time
+    {
+        if (!IsExplainoFamily(FractalType::explaino_collatz)) {
+            std::cerr << "Explaino-Collatz should be in the Explaino family\n";
+            return 1;
+        }
+        if (!SupportsBasinColoring(FractalType::explaino_collatz)) {
+            std::cerr << "Explaino-Collatz should support basin coloring\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::explaino_collatz)) {
+            std::cerr << "Explaino-Collatz should not be escape-time\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_collatz) != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-Collatz should default to joy_basins\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::explaino_collatz, ColoringMode::root_basin)) {
+            std::cerr << "Explaino-Collatz should allow root_basin coloring\n";
+            return 1;
+        }
+    }
+
     return 0;
 }

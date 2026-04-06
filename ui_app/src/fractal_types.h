@@ -55,6 +55,7 @@ enum class FractalType : int {
     multicorn = 19,
     halley = 20,
     collatz = 21,
+    explaino_collatz = 22,
 };
 
 enum class CameraBehavior : int {

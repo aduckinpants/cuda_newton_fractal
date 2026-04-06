@@ -43,6 +43,7 @@ UISchema BuildSafeModeSchema() {
             {"multicorn", "Multicorn"},
             {"halley", "Halley"},
             {"collatz", "Collatz"},
+            {"explaino_collatz", "Explaino Collatz"},
         };
         view.controls.push_back(std::move(c));
     }

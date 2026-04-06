@@ -202,6 +202,7 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "multicorn") { if (outType) *outType = FractalType::multicorn; return true; }
     if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
+    if (text == "explaino_collatz") { if (outType) *outType = FractalType::explaino_collatz; return true; }
     return false;
 }
 

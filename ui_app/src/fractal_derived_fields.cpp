@@ -72,6 +72,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_inertial:
     case FractalType::explaino_julia:
     case FractalType::explaino_rational:
+    case FractalType::explaino_collatz:
     case FractalType::collatz:
     default:
         break;
@@ -141,7 +142,8 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_transcendental ||
         view.fractal_type == FractalType::explaino_inertial ||
         view.fractal_type == FractalType::explaino_julia ||
-        view.fractal_type == FractalType::explaino_rational) {
+        view.fractal_type == FractalType::explaino_rational ||
+        view.fractal_type == FractalType::explaino_collatz) {
         params.max_iter = (view.fractal_type == FractalType::explaino ||
             view.fractal_type == FractalType::explaino_halley ||
             view.fractal_type == FractalType::explaino_dual ||
@@ -149,7 +151,8 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
             view.fractal_type == FractalType::explaino_phoenix ||
             view.fractal_type == FractalType::explaino_transcendental ||
             view.fractal_type == FractalType::explaino_inertial ||
-            view.fractal_type == FractalType::explaino_rational) ? 500 :
+            view.fractal_type == FractalType::explaino_rational ||
+            view.fractal_type == FractalType::explaino_collatz) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 :
             (view.fractal_type == FractalType::explaino_julia ? 1200 : 650));
         params.epsilon = 1e-6f;
