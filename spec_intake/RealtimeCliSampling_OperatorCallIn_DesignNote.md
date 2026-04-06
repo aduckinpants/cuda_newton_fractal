@@ -338,6 +338,18 @@ Important constraint:
 - described-parameter metadata for operator sampling must be derived from those
   existing authorities, not become a third editable truth source
 
+### Transpiler bridge direction
+
+Beyond the described-parameter metadata layer, the Salticid transpiler already
+has a working `CoreIR -> C++` backend. A `CoreIR -> CUDA` backend would let any
+Salt operator (or code transpiled from an external language) be compiled to a
+CUDA kernel, registered as a described function in the engine, and callable
+through the same probe contract.
+
+This means: **Salt operator from any arbitrary code, via CUDA**, decoupled from
+the Salticid Python runtime. See the full spec at
+`spec_intake/GenericCudaSamplerBridge_SpecIntake.md`.
+
 ## Seed Motion Model
 
 The operator should be able to probe combined seed motion directly without
@@ -480,11 +492,21 @@ directly:
 - add toolkit adapter script
 - add operator-oriented regression tests
 
-### Phase E — Generic function sampler metadata
+### Phase E — Generic function sampler + transpiler bridge
 
-- define a callable-function descriptor surface for operator sampling
-- expose described parameters and metric metadata from runtime-owned sources
-- adapt fractal sampling to that generic contract as the first provider
+Phase E is now a multi-stage effort. See the detailed spec:
+`spec_intake/GenericCudaSamplerBridge_SpecIntake.md`
+
+Summary of E sub-phases:
+
+- **E1** — `--describe-functions` verb: engine advertises callable functions,
+  derived from UI schema + runtime structs
+- **E2** — generic probe dispatch: refactor runner to use function registry
+  instead of hard-coded fractal dispatch
+- **E3** — Salticid `CoreIR -> CUDA` transpiler backend (cross-repo)
+- **E4** — dynamic function registration from compiled `.cubin`/`.ptx` + descriptor
+- **E5** — Salticid operator adapter: `cuda_sample(fn=..., params=...)` in Salt
+- **E6** — end-to-end transpile-and-run workflow
 
 ## Recommendation
 
