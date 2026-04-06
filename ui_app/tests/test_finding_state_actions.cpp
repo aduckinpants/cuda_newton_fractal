@@ -43,7 +43,7 @@ int main() {
 
         const fs::path statePath = findingDir / "state.json";
         WriteTextFile(statePath, R"({
-  "state_version": 2,
+      "state_version": 3,
   "fractal_type": "explaino_fp",
   "view": {
     "center_x": 999.0,
@@ -55,7 +55,8 @@ int main() {
     "log2_zoom": 3.5,
     "explaino_phase": 0.75,
     "explaino_seed_drift": 0.25,
-    "explaino_seed_tween": true
+        "explaino_seed_tween": true,
+        "explaino_phase_strength": -1.5
   },
   "params": {
     "max_iter": 650,
@@ -69,6 +70,7 @@ int main() {
     "multibrot_power": 3,
     "explaino_seed": 4,
     "explaino_warp_strength": 0.40,
+        "explaino_root_spread": 2.25,
     "explaino_root_count": 99,
     "poly_coeffs": [11, 22, 33, 44, 55]
   },
@@ -143,6 +145,11 @@ int main() {
         }
         if (params.explaino_root_count != 4) {
             std::cerr << "Expected explaino load to recompute four derived roots\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_root_spread, expectedParams.explaino_root_spread, 1.0e-6) ||
+            !NearlyEqual(view.explaino_phase_strength, expectedView.explaino_phase_strength, 1.0e-6)) {
+            std::cerr << "Expected explaino root spread and phase strength to survive finding state load\n";
             return 1;
         }
         if (!PolyCoeffsMatch(params, expectedParams)) {

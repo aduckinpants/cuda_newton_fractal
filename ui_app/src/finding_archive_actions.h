@@ -3,6 +3,7 @@
 #include "diagnostics_capture.h"
 #include "fractal_types.h"
 
+#include <cstddef>
 #include <filesystem>
 #include <string>
 
@@ -40,6 +41,7 @@ bool CaptureAndArchiveFindingBundle(
     const RenderSettings& render,
     const RenderStats& stats,
     const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
     const std::string& group,
     const std::string& why,
     std::string* outFindingDir,

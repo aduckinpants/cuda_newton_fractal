@@ -33,7 +33,7 @@ All bindings live under the `fractal.*` namespace.
 
 - `fractal.params.max_iter` : int, range [1, 5000], step 1, default 500
 - `fractal.params.epsilon` : float, range [1e-12, 1e-2], step 1e-6, default 1e-6
-- `fractal.params.explaino_seed` : double, range [0, 10], step 0.001, Explaino-family only; primary combined seed control surfaced by the host as integer seed base + fractional drift
+- `fractal.params.explaino_seed` : double, range [-10, 10], step 0.001, Explaino-family only; primary combined seed control surfaced by the host as integer seed base + fractional drift
 - `fractal.params.poly_kind` : enum {`z3_minus_1`, `z4_minus_1`, `custom`}, default `z3_minus_1`
 - `fractal.params.poly_coeffs.0..4` : float array (real coefficients), visible only when `poly_kind == custom`
   - Ordering: coefficient `k` multiplies $z^k$.
@@ -45,8 +45,8 @@ All bindings live under the `fractal.*` namespace.
 
 ## Render (host + device)
 
-- `fractal.render.resolution.x` : int, range [64, 4096], step 1, default 1024
-- `fractal.render.resolution.y` : int, range [64, 4096], step 1, default 768
+- `fractal.render.resolution.x` : int, range [64, 4096], step 1, default 2048
+- `fractal.render.resolution.y` : int, range [64, 4096], step 1, default 1536
 - `fractal.render.block_size` : int, range [32, 1024], step 32, default 256 (engine MUST validate/clamp to supported values)
 - `fractal.render.device_id` : int, range [0, 7], step 1, default 0 (optional feature; engine clamps to available devices)
 - `fractal.render.benchmark` : bool, default false

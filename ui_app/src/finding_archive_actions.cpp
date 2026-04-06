@@ -495,6 +495,7 @@ bool CaptureAndArchiveFindingBundle(
     const RenderSettings& render,
     const RenderStats& stats,
     const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
     const std::string& group,
     const std::string& why,
     std::string* outFindingDir,
@@ -503,7 +504,7 @@ bool CaptureAndArchiveFindingBundle(
 
     DiagnosticsCaptureResult capture;
     std::string captureError;
-    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba, &capture, &captureError)) {
+    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba, rgbaPixelCount, &capture, &captureError)) {
         if (outError) *outError = captureError;
         return false;
     }

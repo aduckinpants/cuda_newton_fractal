@@ -1,5 +1,7 @@
 #include "diagnostics_capture.h"
 
+#include "render_capture_guard.h"
+
 #include <Windows.h>
 
 #include <cstdint>
@@ -155,7 +157,8 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_seed_drift\": " << static_cast<double>(view.explaino_seed_drift) << ",\n";
     js << "    \"explaino_seed_tween\": " << (view.explaino_seed_tween ? "true" : "false") << ",\n";
     js << "    \"auto_increment_seed\": " << (view.auto_increment_seed ? "true" : "false") << ",\n";
-    js << "    \"explaino_seed_rate\": " << static_cast<double>(view.explaino_seed_rate) << "\n";
+    js << "    \"explaino_seed_rate\": " << static_cast<double>(view.explaino_seed_rate) << ",\n";
+    js << "    \"explaino_phase_strength\": " << static_cast<double>(view.explaino_phase_strength) << "\n";
     js << "  },\n";
     js << "  \"params\": {\n";
     js << "    \"max_iter\": " << params.max_iter << ",\n";
@@ -174,6 +177,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_seed_b\": " << params.explaino_seed_b << ",\n";
     js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
+    js << "    \"explaino_root_spread\": " << static_cast<double>(params.explaino_root_spread) << ",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     js << "    \"transcendental_func\": \"" << TranscendentalFuncId(params.transcendental_func) << "\",\n";
@@ -214,9 +218,13 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const RenderSettings& render,
     const RenderStats& stats,
     const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
     if (outError) outError->clear();
+    if (!HasExactRenderPixelCount(render, rgbaPixelCount, outError)) {
+        return false;
+    }
 
     std::filesystem::path bundleDir = std::filesystem::path(exeDir) / "diagnostics" / "last";
     bundleDir = bundleDir.lexically_normal();

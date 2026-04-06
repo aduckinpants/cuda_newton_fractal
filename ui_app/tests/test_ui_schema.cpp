@@ -1,5 +1,6 @@
 #include "../src/ui_schema.h"
 #include "../src/json_min.h"
+#include "../src/safe_mode_schema.h"
 #include "../src/schema_binding.h"
 
 #include <filesystem>
@@ -176,6 +177,15 @@ int main() {
         bool foundMultibrotPowerFloat = false;
         bool foundLambdaReal = false;
         bool foundLambdaImag = false;
+        bool foundRenderWidthDefault = false;
+        bool foundRenderHeightDefault = false;
+        bool foundNegativeExplainoSeedRange = false;
+        bool foundNegativeExplainoSeedBRange = false;
+        bool foundNegativePhaseStrengthRange = false;
+        bool foundRootSpreadClampAligned = false;
+        bool foundClusterRadiusClampAligned = false;
+        bool foundClusterRadiusVisibilityFixed = false;
+        bool foundPositiveNovaAlphaMin = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -205,6 +215,33 @@ int main() {
                 if (ctrl.id == "lambda_imag" && ctrl.has_binding && ctrl.binding.path == "fractal.params.lambda_imag") {
                     foundLambdaImag = true;
                 }
+                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                    foundRenderWidthDefault = true;
+                }
+                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
+                    foundRenderHeightDefault = true;
+                }
+                if (ctrl.id == "explaino_seed" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 10.0) {
+                    foundNegativeExplainoSeedRange = true;
+                }
+                if (ctrl.id == "explaino_seed_b" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 10.0) {
+                    foundNegativeExplainoSeedBRange = true;
+                }
+                if (ctrl.id == "explaino_phase_strength" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 20.0) {
+                    foundNegativePhaseStrengthRange = true;
+                }
+                if (ctrl.id == "explaino_root_spread" && ctrl.has_max && ctrl.max == 3.0) {
+                    foundRootSpreadClampAligned = true;
+                }
+                if (ctrl.id == "explaino_cluster_radius" && ctrl.has_max && ctrl.max == 2.0) {
+                    foundClusterRadiusClampAligned = true;
+                }
+                if (ctrl.id == "explaino_cluster_radius" && ctrl.has_visible_if && ctrl.visible_if.op == "in") {
+                    foundClusterRadiusVisibilityFixed = true;
+                }
+                if (ctrl.id == "nova_alpha" && ctrl.has_min && ctrl.min > 0.0) {
+                    foundPositiveNovaAlphaMin = true;
+                }
                 if (ctrl.id == "coloring_mode_newton" && ctrl.has_visible_if &&
                     ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
                     foundDualSeedColoring = true;
@@ -224,12 +261,44 @@ int main() {
             std::cerr << "Did not find non-integer Multibrot power float control in schema\n";
             return 1;
         }
+        if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
+            std::cerr << "Did not find upgraded render resolution defaults in schema\n";
+            return 1;
+        }
+        if (!foundNegativeExplainoSeedRange || !foundNegativeExplainoSeedBRange || !foundNegativePhaseStrengthRange) {
+            std::cerr << "Did not find negative-capable Explaino controls in schema\n";
+            return 1;
+        }
+        if (!foundRootSpreadClampAligned || !foundClusterRadiusClampAligned || !foundClusterRadiusVisibilityFixed || !foundPositiveNovaAlphaMin) {
+            std::cerr << "Did not find engine-aligned Explaino/Nova control limits in schema\n";
+            return 1;
+        }
         if (!foundLambdaReal || !foundLambdaImag) {
             std::cerr << "Did not find Lambda real/imag controls in schema\n";
             return 1;
         }
         if (!foundDualSeedB || !foundDualSeedMix || !foundDualSeedColoring) {
             std::cerr << "Did not find Explaino-DualSeed controls and coloring visibility in schema\n";
+            return 1;
+        }
+    }
+
+    {
+        UISchema safeMode = BuildSafeModeSchema();
+        bool foundRenderWidthDefault = false;
+        bool foundRenderHeightDefault = false;
+        for (const auto& panel : safeMode.panels) {
+            for (const auto& ctrl : panel.controls) {
+                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                    foundRenderWidthDefault = true;
+                }
+                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
+                    foundRenderHeightDefault = true;
+                }
+            }
+        }
+        if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
+            std::cerr << "Safe-mode schema did not inherit upgraded render resolution defaults\n";
             return 1;
         }
     }

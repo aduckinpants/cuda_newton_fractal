@@ -2,6 +2,7 @@
 
 #include "fractal_types.h"
 
+#include <cstddef>
 #include <string>
 
 struct DiagnosticsCaptureResult {
@@ -16,5 +17,6 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const RenderSettings& render,
     const RenderStats& stats,
     const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
     DiagnosticsCaptureResult* outResult,
     std::string* outError);

@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,15 @@ std::vector<std::wstring> ParseWindowsCommandLine(const std::wstring& commandLin
     }
     LocalFree(argv);
     return args;
+}
+
+bool ReadTextFile(const std::filesystem::path& path, std::string* outText) {
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file) return false;
+    std::ostringstream text;
+    text << file.rdbuf();
+    *outText = text.str();
+    return true;
 }
 
 } // namespace
@@ -112,6 +122,50 @@ int main() {
 
         if (identity.finding_id != "235959_999__explaino_nova") {
             std::cerr << "Expected explaino_nova fractal type suffix in finding id\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_runtime";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::explaino_dual;
+        view.explaino_phase_strength = -2.5f;
+        KernelParams params{};
+        params.explaino_seed = -3.0;
+        params.explaino_seed_b = -7.5;
+        params.explaino_root_spread = 1.75f;
+        RenderSettings render{};
+        render.resolution = {64, 48};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff336699u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &capture, &error)) {
+            std::cerr << "Expected diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"explaino_phase_strength\": -2.5") == std::string::npos ||
+            stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist Explaino phase strength and root spread\n";
+            return 1;
+        }
+
+        if (CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size() - 1, &capture, &error)) {
+            std::cerr << "Expected diagnostics capture to reject mismatched pixel counts\n";
+            return 1;
+        }
+        if (error.find("pixel count") == std::string::npos) {
+            std::cerr << "Expected pixel-count validation error for mismatched capture buffer\n";
             return 1;
         }
     }

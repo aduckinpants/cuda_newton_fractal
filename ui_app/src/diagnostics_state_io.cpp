@@ -233,6 +233,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     bool explainoSeedTween = true;
     bool autoIncrementSeed = nextView.auto_increment_seed;
     double explainoSeedRate = nextView.explaino_seed_rate;
+    double explainoPhaseStrength = nextView.explaino_phase_strength;
     if (!GetRequiredNumber(*viewObject, "center_x", &centerX, outError)) return false;
     if (!GetRequiredNumber(*viewObject, "center_y", &centerY, outError)) return false;
     if (!GetRequiredNumber(*viewObject, "zoom", &zoom, outError)) return false;
@@ -245,6 +246,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetRequiredBool(*viewObject, "explaino_seed_tween", &explainoSeedTween, outError)) return false;
     if (!GetOptionalBool(*viewObject, "auto_increment_seed", &autoIncrementSeed, nullptr, outError)) return false;
     if (!GetOptionalNumber(*viewObject, "explaino_seed_rate", &explainoSeedRate, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*viewObject, "explaino_phase_strength", &explainoPhaseStrength, nullptr, outError)) return false;
 
     nextView.center.x = static_cast<float>(centerX);
     nextView.center.y = static_cast<float>(centerY);
@@ -258,6 +260,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextView.explaino_seed_tween = explainoSeedTween;
     nextView.auto_increment_seed = autoIncrementSeed;
     nextView.explaino_seed_rate = static_cast<float>(explainoSeedRate);
+    nextView.explaino_phase_strength = static_cast<float>(explainoPhaseStrength);
 
     int maxIter = 0;
     int rawPolyKind = 0;
@@ -275,6 +278,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoSeedB = nextParams.explaino_seed_b;
     double explainoMix = nextParams.explaino_mix;
     double explainoWarpStrength = 0.0;
+    double explainoRootSpread = nextParams.explaino_root_spread;
     int explainoRootCount = 0;
     const json_min::Value* polyCoeffsArray = nullptr;
     if (!ParseIntField(*paramsObject, "max_iter", &maxIter, outError)) return false;
@@ -295,6 +299,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "explaino_seed_b", &explainoSeedB, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_mix", &explainoMix, nullptr, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "explaino_warp_strength", &explainoWarpStrength, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_root_spread", &explainoRootSpread, nullptr, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
     if (!GetRequiredArray(*paramsObject, "poly_coeffs", &polyCoeffsArray, outError)) return false;
     if (polyCoeffsArray->as_array().size() != 5) {
@@ -348,6 +353,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_seed_b = explainoSeedB;
     nextParams.explaino_mix = static_cast<float>(explainoMix);
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
+    nextParams.explaino_root_spread = static_cast<float>(explainoRootSpread);
     nextParams.explaino_root_count = explainoRootCount;
     if (IsExplainoFamily(nextView.fractal_type)) {
         ExplainoSeedNormalize(nextView, nextParams);

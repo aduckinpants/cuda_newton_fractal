@@ -142,7 +142,7 @@ struct KernelParams {
 };
 
 struct RenderSettings {
-    Int2 resolution{1024, 768};
+    Int2 resolution{2048, 1536};
     int block_size{256};
     int device_id{0};
     bool benchmark{false};

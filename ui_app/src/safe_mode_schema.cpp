@@ -226,7 +226,7 @@ UISchema BuildSafeModeSchema() {
         c.binding.kind = "param";
         c.binding.path = "fractal.render.resolution.x";
         c.has_default = true;
-        c.def.v = 1024.0;
+        c.def.v = 2048.0;
         render.controls.push_back(std::move(c));
     }
     {
@@ -241,7 +241,7 @@ UISchema BuildSafeModeSchema() {
         c.binding.kind = "param";
         c.binding.path = "fractal.render.resolution.y";
         c.has_default = true;
-        c.def.v = 768.0;
+        c.def.v = 1536.0;
         render.controls.push_back(std::move(c));
     }
     s.panels.push_back(std::move(view));

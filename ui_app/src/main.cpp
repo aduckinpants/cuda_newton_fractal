@@ -32,6 +32,7 @@
 #include "function_descriptor.h"
 #include "json_min.h"
 #include "lens_sdf.h"
+#include "render_capture_guard.h"
 #include "runtime_reset.h"
 #include "safe_mode_schema.h"
 #include "schema_binding.h"
@@ -966,7 +967,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         std::string captureError;
         DiagnosticsCaptureResult captureResult;
-        if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), &captureResult, &captureError)) {
+        if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), headlessRgba.size(), &captureResult, &captureError)) {
             return 1;
         }
         return 0;
@@ -988,7 +989,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         std::string findingError;
         const std::string findingGroup = haveFindingGroupArg ? findingGroupArg : "manual_capture";
         const std::string findingWhy = haveFindingWhyArg ? findingWhyArg : "Headless finding capture.";
-        if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), findingGroup, findingWhy, &findingDir, &findingError)) {
+        if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
             WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
             return 1;
         }
@@ -1023,6 +1024,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<uint32_t> rgba;
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
+    RenderedFrameState renderedFrame{};
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
@@ -1302,17 +1304,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             }
         }
 
-        if (captureDiagnosticAction) {
-            rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
-            std::string captureError;
-            DiagnosticsCaptureResult captureResult;
-            if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba.data(), &captureResult, &captureError)) {
-                findingStatus = "Capture diagnostic failed: " + captureError;
-            } else {
-                findingStatus = "Diagnostic captured.";
-            }
-        }
-
         if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
             dirty = true;
         }
@@ -1320,7 +1311,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         // Render dispatch (fail-fast, delta-independent):
         // - If auto_refresh is ON, we render every frame.
         // - Otherwise, render on explicit request or any state change (dirty).
-        if (view.auto_refresh || dirty || renderOnceAction || captureFindingAction) {
+        if (ShouldDispatchRender(view.auto_refresh, dirty, renderOnceAction, captureDiagnosticAction, captureFindingAction)) {
+            InvalidateRenderedFrame(&renderedFrame);
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, nullptr);
             }
@@ -1345,6 +1337,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 ImGui::End();
             } else {
                 stats = newStats;
+                MarkRenderedFrameReady(render, &renderedFrame);
                 UploadFractalRGBA(rgba.data(), render.resolution.x, render.resolution.y);
                 if (lens.enabled && maskPtr) {
                     EnsureMaskTexture(render.resolution.x, render.resolution.y);
@@ -1354,13 +1347,29 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     UploadLensSdfRGBA(lensSdfRgba.data(), render.resolution.x, render.resolution.y);
                 }
             }
-            dirty = false;
+            dirty = !renderedFrame.ready;
+        }
+
+        if (captureDiagnosticAction) {
+            std::string captureError;
+            if (!CanCaptureRenderedFrame(render, rgba.size(), renderedFrame, &captureError)) {
+                findingStatus = "Capture diagnostic failed: " + captureError;
+            } else {
+                DiagnosticsCaptureResult captureResult;
+                if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba.data(), rgba.size(), &captureResult, &captureError)) {
+                    findingStatus = "Capture diagnostic failed: " + captureError;
+                } else {
+                    findingStatus = "Diagnostic captured.";
+                }
+            }
         }
 
         if (captureFindingAction) {
             std::string findingDir;
             std::string captureError;
-            if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, stats, rgba.data(), "manual_capture", "Manual viewer capture.", &findingDir, &captureError)) {
+            if (!CanCaptureRenderedFrame(render, rgba.size(), renderedFrame, &captureError)) {
+                findingStatus = "Capture finding failed: " + captureError;
+            } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, stats, rgba.data(), rgba.size(), "manual_capture", "Manual viewer capture.", &findingDir, &captureError)) {
                 findingStatus = "Capture finding failed: " + captureError;
             } else {
                 findingStatus = "Captured finding: " + findingDir;

@@ -18,7 +18,7 @@ int main() {
         const fs::path statePath = tempRoot / "loaded_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({
-        "state_version": 2,
+        "state_version": 3,
   "fractal_type": "phoenix",
   "view": {
     "center_x": 0.125,
@@ -30,7 +30,8 @@ int main() {
     "log2_zoom": 1.3219280948873624,
     "explaino_phase": 0.75,
     "explaino_seed_drift": 0.125,
-    "explaino_seed_tween": false
+    "explaino_seed_tween": false,
+    "explaino_phase_strength": -2.5
   },
   "params": {
     "max_iter": 1200,
@@ -44,6 +45,7 @@ int main() {
     "multibrot_power": 5,
     "explaino_seed": 4,
     "explaino_warp_strength": 0.3,
+    "explaino_root_spread": 1.75,
     "explaino_root_count": 0,
     "poly_coeffs": [-1, 0, 0, 1, 0]
   },
@@ -86,6 +88,10 @@ int main() {
             std::cerr << "view log2_zoom mismatch\n";
             return 1;
         }
+        if (!NearlyEqual(view.explaino_phase_strength, -2.5f, 1.0e-6)) {
+          std::cerr << "view explaino_phase_strength mismatch\n";
+          return 1;
+        }
         if (view.explaino_seed_tween != false) {
             std::cerr << "view explaino_seed_tween mismatch\n";
             return 1;
@@ -122,12 +128,88 @@ int main() {
           std::cerr << "params multibrot_power mismatch\n";
           return 1;
         }
+        if (!NearlyEqual(params.explaino_root_spread, 1.75f, 1.0e-6)) {
+          std::cerr << "params explaino_root_spread mismatch\n";
+          return 1;
+        }
         if (!NearlyEqual(params.multibrot_power_float, 5.0f, 1.0e-6)) {
           std::cerr << "params multibrot_power_float should fall back to legacy int value\n";
           return 1;
         }
         if (render.resolution.x != 1440 || render.resolution.y != 900 || render.block_size != 512 || render.device_id != 1) {
             std::cerr << "render mismatch\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "negative_explaino_seed_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_dual",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.5,
+    "explaino_seed_drift": 0.25,
+    "explaino_seed_tween": true,
+    "explaino_phase_strength": -1.25
+  },
+  "params": {
+    "max_iter": 650,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": -3.0,
+    "explaino_seed_b": -7.5,
+    "explaino_mix": 0.35,
+    "explaino_warp_strength": 0.2,
+    "explaino_root_spread": 2.25,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected negative Explaino seeds to load: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, -3.0, 1.0e-9) || !NearlyEqual(params.explaino_seed_b, -7.5, 1.0e-9)) {
+            std::cerr << "Expected Explaino seed controls to preserve negative values\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.explaino_phase_strength, -1.25f, 1.0e-6) || !NearlyEqual(params.explaino_root_spread, 2.25f, 1.0e-6)) {
+            std::cerr << "Expected new Explaino state fields to round-trip from state JSON\n";
             return 1;
         }
     }

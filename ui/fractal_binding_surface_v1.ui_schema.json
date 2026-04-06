@@ -308,7 +308,7 @@
           "label": "Nova Alpha",
           "help": "Relaxation factor in z_{n+1} = z_n - a f(z)/f'(z) + c",
           "value_type": "float",
-          "min": 0.0, "max": 5.0, "step": 0.01, "default": 0.5,
+          "min": 0.01, "max": 5.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.params.nova_alpha" },
           "visible_if": {
             "op": "in",
@@ -442,7 +442,7 @@
           "type": "slider_double",
           "label": "Explaino Seed",
           "value_type": "double",
-          "min": 0.0, "max": 10.0, "step": 0.001, "default": 0.0,
+          "min": -10.0, "max": 10.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_seed" },
           "visible_if": {
             "op": "in",
@@ -456,7 +456,7 @@
           "type": "slider_double",
           "label": "Explaino Seed B",
           "value_type": "double",
-          "min": 0.0, "max": 10.0, "step": 0.001, "default": 1.0,
+          "min": -10.0, "max": 10.0, "step": 0.001, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_seed_b" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" },
           "help": "Secondary Explaino seed for DualSeed root-pack blending."
@@ -512,7 +512,7 @@
           "label": "Root Spread",
           "help": "Controls the radius of generated root placements, independent of warp distortion.",
           "value_type": "float",
-          "min": 0.0, "max": 10.0, "step": 0.01, "default": 0.5,
+          "min": 0.0, "max": 3.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.params.explaino_root_spread" },
           "visible_if": {
             "op": "in",
@@ -526,7 +526,7 @@
           "label": "Phase Strength",
           "help": "Multiplier on phase modulation of root angles. Higher values make the Phase slider more influential.",
           "value_type": "float",
-          "min": 0.0, "max": 20.0, "step": 0.01, "default": 1.0,
+          "min": -20.0, "max": 20.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.view.explaino_phase_strength" },
           "visible_if": {
             "op": "in",
@@ -554,9 +554,9 @@
           "label": "Cluster Radius",
           "help": "Distance between paired near-coincident roots. Smaller values produce near-degenerate polynomials that expose solver failure geometry.",
           "value_type": "float",
-          "min": 0.0, "max": 5.0, "step": 0.001, "default": 0.0,
+          "min": 0.0, "max": 2.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_cluster_radius" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_mult,explaino_rational" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_mult,explaino_rational" }
         },
         {
           "id": "momentum_beta",
@@ -715,7 +715,7 @@
           "type": "slider_int",
           "label": "Width",
           "value_type": "int",
-          "min": 64, "max": 4096, "step": 1, "default": 1024,
+          "min": 64, "max": 4096, "step": 1, "default": 2048,
           "binding": { "kind": "param", "path": "fractal.render.resolution.x" }
         },
         {
@@ -723,7 +723,7 @@
           "type": "slider_int",
           "label": "Height",
           "value_type": "int",
-          "min": 64, "max": 4096, "step": 1, "default": 768,
+          "min": 64, "max": 4096, "step": 1, "default": 1536,
           "binding": { "kind": "param", "path": "fractal.render.resolution.y" }
         },
         {

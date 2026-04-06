@@ -83,8 +83,13 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\tests\test_finding_archive_actions.cpp ^
+  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\render_capture_guard.cpp .\tests\test_render_capture_guard.cpp ^
+  /Fe:"%TESTROOT%\test_render_capture_guard.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
@@ -99,7 +104,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
   .\tests\test_ui_schema.cpp ^
   /Fe:"%TESTROOT%\test_ui_schema.exe"
@@ -151,6 +156,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_render_capture_guard.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_probe.exe"
