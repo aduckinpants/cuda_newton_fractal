@@ -342,20 +342,153 @@ std::string DoubleToJson(double value) {
     return ss.str();
 }
 
-void AppendSummaryJson(std::ostringstream& ss, const FractalProbeSummary& summary, int indent) {
+void AppendJsonObject(std::ostringstream& ss,
+    const std::vector<std::pair<std::string, std::string>>& entries,
+    int indent) {
     const std::string pad(static_cast<size_t>(indent), ' ');
-    ss << pad << "\"summary\": {\n";
-    ss << pad << "  \"sample_count\": " << summary.sample_count << ",\n";
-    ss << pad << "  \"mean_iterations\": " << summary.mean_iterations << ",\n";
-    ss << pad << "  \"escape_fraction\": " << summary.escape_fraction << ",\n";
-    ss << pad << "  \"converged_fraction\": " << summary.converged_fraction << ",\n";
-    ss << pad << "  \"nonfinite_fraction\": " << summary.nonfinite_fraction << ",\n";
-    ss << pad << "  \"pole_fraction\": " << summary.pole_fraction << ",\n";
-    ss << pad << "  \"best_sequence_index\": " << summary.best_sequence_index << "\n";
+    ss << "{\n";
+    for (size_t index = 0; index < entries.size(); ++index) {
+        ss << pad << "  \"" << entries[index].first << "\": " << entries[index].second;
+        if (index + 1 < entries.size()) ss << ",";
+        ss << "\n";
+    }
     ss << pad << "}";
 }
 
+void AppendSummaryJson(std::ostringstream& ss,
+    const FractalProbeSummary& summary,
+    const FractalProbeMetricSelection& selection,
+    int indent) {
+    std::vector<std::pair<std::string, std::string>> entries;
+    entries.push_back({"sample_count", std::to_string(summary.sample_count)});
+    if (selection.include_summary_mean_iterations) {
+        entries.push_back({"mean_iterations", DoubleToJson(summary.mean_iterations)});
+    }
+    if (selection.include_summary_escape_fraction) {
+        entries.push_back({"escape_fraction", DoubleToJson(summary.escape_fraction)});
+    }
+    if (selection.include_summary_converged_fraction) {
+        entries.push_back({"converged_fraction", DoubleToJson(summary.converged_fraction)});
+    }
+    if (selection.include_summary_nonfinite_fraction) {
+        entries.push_back({"nonfinite_fraction", DoubleToJson(summary.nonfinite_fraction)});
+    }
+    if (selection.include_summary_pole_fraction) {
+        entries.push_back({"pole_fraction", DoubleToJson(summary.pole_fraction)});
+    }
+    if (selection.include_summary_best_sequence_index) {
+        entries.push_back({"best_sequence_index", std::to_string(summary.best_sequence_index)});
+    }
+
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad << "\"summary\": ";
+    AppendJsonObject(ss, entries, indent);
+}
+
+void AppendSequenceSummaryJson(std::ostringstream& ss,
+    const FractalProbeSequenceResult& result,
+    const FractalProbeMetricSelection& selection,
+    int indent) {
+    std::vector<std::pair<std::string, std::string>> entries;
+    if (selection.include_summary_mean_iterations) {
+        entries.push_back({"mean_iterations", DoubleToJson(result.mean_iterations)});
+    }
+    if (selection.include_summary_escape_fraction) {
+        entries.push_back({"escape_fraction", DoubleToJson(result.escape_fraction)});
+    }
+    if (selection.include_summary_converged_fraction) {
+        entries.push_back({"converged_fraction", DoubleToJson(result.converged_fraction)});
+    }
+    if (selection.include_summary_nonfinite_fraction) {
+        entries.push_back({"nonfinite_fraction", DoubleToJson(result.nonfinite_fraction)});
+    }
+    if (selection.include_summary_pole_fraction) {
+        entries.push_back({"pole_fraction", DoubleToJson(result.pole_fraction)});
+    }
+
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad << "\"summary\": ";
+    AppendJsonObject(ss, entries, indent);
+}
+
+void AppendSampleJson(std::ostringstream& ss,
+    const FractalProbeSample& sample,
+    const FractalProbeMetricSelection& selection,
+    int indent) {
+    std::vector<std::pair<std::string, std::string>> entries;
+    entries.push_back({"sequence_index", std::to_string(sample.sequence_index)});
+    entries.push_back({"grid_x", std::to_string(sample.grid_x)});
+    entries.push_back({"grid_y", std::to_string(sample.grid_y)});
+    entries.push_back({"coord_x", DoubleToJson(sample.coord_x)});
+    entries.push_back({"coord_y", DoubleToJson(sample.coord_y)});
+    if (selection.include_iterations) {
+        entries.push_back({"iterations", std::to_string(sample.iterations)});
+    }
+    if (selection.include_status) {
+        entries.push_back({"status", std::string("\"") + FractalProbeSampleStatusId(sample.status) + "\""});
+    }
+    if (selection.include_final_z) {
+        entries.push_back({"final_z_x", DoubleToJson(sample.final_z_x)});
+        entries.push_back({"final_z_y", DoubleToJson(sample.final_z_y)});
+    }
+    if (selection.include_final_abs2) {
+        entries.push_back({"final_abs2", DoubleToJson(sample.final_abs2)});
+    }
+    if (selection.include_residual) {
+        entries.push_back({"residual", sample.has_residual ? DoubleToJson(sample.residual) : std::string("null")});
+    }
+    if (selection.include_root_index) {
+        entries.push_back({"root_index", sample.has_root_index ? std::to_string(sample.root_index) : std::string("null")});
+    }
+
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad;
+    AppendJsonObject(ss, entries, indent);
+}
+
 } // namespace
+
+FractalProbeMetricSelection BuildFractalProbeMetricSelection(const std::vector<std::string>& metrics) {
+    FractalProbeMetricSelection selection;
+    if (metrics.empty()) return selection;
+
+    selection.include_iterations = false;
+    selection.include_status = false;
+    selection.include_final_z = false;
+    selection.include_final_abs2 = false;
+    selection.include_residual = false;
+    selection.include_root_index = false;
+    selection.include_summary_mean_iterations = false;
+    selection.include_summary_escape_fraction = false;
+    selection.include_summary_converged_fraction = false;
+    selection.include_summary_nonfinite_fraction = false;
+    selection.include_summary_pole_fraction = false;
+    selection.include_summary_best_sequence_index = false;
+    for (const std::string& metric : metrics) {
+        if (metric == "iterations") selection.include_iterations = true;
+        else if (metric == "status") selection.include_status = true;
+        else if (metric == "final_z") selection.include_final_z = true;
+        else if (metric == "final_abs2") selection.include_final_abs2 = true;
+        else if (metric == "residual") selection.include_residual = true;
+        else if (metric == "root_index") selection.include_root_index = true;
+        else if (metric == "summary_mean_iterations") selection.include_summary_mean_iterations = true;
+        else if (metric == "summary_escape_fraction") selection.include_summary_escape_fraction = true;
+        else if (metric == "summary_converged_fraction") selection.include_summary_converged_fraction = true;
+        else if (metric == "summary_nonfinite_fraction") selection.include_summary_nonfinite_fraction = true;
+        else if (metric == "summary_pole_fraction") selection.include_summary_pole_fraction = true;
+        else if (metric == "summary_best_sequence_index") selection.include_summary_best_sequence_index = true;
+    }
+    return selection;
+}
+
+bool FractalProbeSelectionIncludesAnySampleMetrics(const FractalProbeMetricSelection& selection) {
+    return selection.include_iterations ||
+        selection.include_status ||
+        selection.include_final_z ||
+        selection.include_final_abs2 ||
+        selection.include_residual ||
+        selection.include_root_index;
+}
 
 const char* FractalProbeModeId(FractalProbeMode mode) {
     switch (mode) {
@@ -555,7 +688,7 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "    \"fractal_type\": \"" << EscapeJsonString(response.runtime.fractal_type) << "\",\n";
     ss << "    \"device_id\": " << response.runtime.device_id << "\n";
     ss << "  },\n";
-    AppendSummaryJson(ss, response.summary, 2);
+    AppendSummaryJson(ss, response.summary, response.metric_selection, 2);
     ss << ",\n";
     ss << "  \"sequence_results\": [\n";
     for (size_t index = 0; index < response.sequence_results.size(); ++index) {
@@ -569,13 +702,8 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
             ss << "\"" << EscapeJsonString(item.first) << "\": " << ScalarToJson(item.second);
         }
         ss << "},\n";
-        ss << "      \"summary\": {\n";
-        ss << "        \"mean_iterations\": " << result.mean_iterations << ",\n";
-        ss << "        \"escape_fraction\": " << result.escape_fraction << ",\n";
-        ss << "        \"converged_fraction\": " << result.converged_fraction << ",\n";
-        ss << "        \"nonfinite_fraction\": " << result.nonfinite_fraction << ",\n";
-        ss << "        \"pole_fraction\": " << result.pole_fraction << "\n";
-        ss << "      }\n";
+        AppendSequenceSummaryJson(ss, result, response.metric_selection, 6);
+        ss << "\n";
         ss << "    }";
         if (index + 1 < response.sequence_results.size()) ss << ",";
         ss << "\n";
@@ -584,20 +712,7 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "  \"samples\": [\n";
     for (size_t index = 0; index < response.samples.size(); ++index) {
         const FractalProbeSample& sample = response.samples[index];
-        ss << "    {\n";
-        ss << "      \"sequence_index\": " << sample.sequence_index << ",\n";
-        ss << "      \"grid_x\": " << sample.grid_x << ",\n";
-        ss << "      \"grid_y\": " << sample.grid_y << ",\n";
-        ss << "      \"coord_x\": " << sample.coord_x << ",\n";
-        ss << "      \"coord_y\": " << sample.coord_y << ",\n";
-        ss << "      \"iterations\": " << sample.iterations << ",\n";
-        ss << "      \"status\": \"" << FractalProbeSampleStatusId(sample.status) << "\",\n";
-        ss << "      \"final_z_x\": " << sample.final_z_x << ",\n";
-        ss << "      \"final_z_y\": " << sample.final_z_y << ",\n";
-        ss << "      \"final_abs2\": " << sample.final_abs2 << ",\n";
-        ss << "      \"residual\": " << (sample.has_residual ? DoubleToJson(sample.residual) : std::string("null")) << ",\n";
-        ss << "      \"root_index\": " << (sample.has_root_index ? std::to_string(sample.root_index) : std::string("null")) << "\n";
-        ss << "    }";
+        AppendSampleJson(ss, sample, response.metric_selection, 4);
         if (index + 1 < response.samples.size()) ss << ",";
         ss << "\n";
     }

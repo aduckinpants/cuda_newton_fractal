@@ -123,6 +123,21 @@ struct FractalProbeSummary {
     int best_sequence_index{-1};
 };
 
+struct FractalProbeMetricSelection {
+    bool include_iterations{true};
+    bool include_status{true};
+    bool include_final_z{true};
+    bool include_final_abs2{true};
+    bool include_residual{true};
+    bool include_root_index{true};
+    bool include_summary_mean_iterations{true};
+    bool include_summary_escape_fraction{true};
+    bool include_summary_converged_fraction{true};
+    bool include_summary_nonfinite_fraction{true};
+    bool include_summary_pole_fraction{true};
+    bool include_summary_best_sequence_index{true};
+};
+
 struct FractalProbeSequenceResult {
     int sequence_index{0};
     std::vector<std::pair<std::string, FractalProbeScalar>> applied;
@@ -157,6 +172,7 @@ struct FractalProbeResponse {
     bool ok{false};
     FractalProbeRuntimeInfo runtime;
     FractalProbeSummary summary;
+    FractalProbeMetricSelection metric_selection;
     std::vector<FractalProbeSequenceResult> sequence_results;
     std::vector<FractalProbeSample> samples;
     FractalProbeOperatorContext operator_context;
@@ -168,6 +184,9 @@ bool ParseFractalProbeRequestJson(const std::string& text,
     std::string* outError);
 
 std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& response);
+
+FractalProbeMetricSelection BuildFractalProbeMetricSelection(const std::vector<std::string>& metrics);
+bool FractalProbeSelectionIncludesAnySampleMetrics(const FractalProbeMetricSelection& selection);
 
 const char* FractalProbeModeId(FractalProbeMode mode);
 const char* FractalProbeSampleStatusId(FractalProbeSampleStatus status);

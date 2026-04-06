@@ -741,7 +741,9 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
     response.ok = true;
     response.runtime.exe_path = exePath;
     response.runtime.device_id = baseState.render.device_id;
+    response.metric_selection = BuildFractalProbeMetricSelection(request.metrics);
     response.operator_context = request.operator_context;
+    const bool includeSamplePayloads = FractalProbeSelectionIncludesAnySampleMetrics(response.metric_selection);
 
     int globalCount = 0;
     double globalIterationSum = 0.0;
@@ -782,7 +784,9 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
                     outError)) {
                 return false;
             }
-            response.samples.push_back(sample);
+            if (includeSamplePayloads) {
+                response.samples.push_back(sample);
+            }
             AccumulateSummary(sample, &sequenceCount, &sequenceIterationSum, &sequenceEscaped, &sequenceConverged, &sequenceNonfinite, &sequencePole);
             AccumulateSummary(sample, &globalCount, &globalIterationSum, &globalEscaped, &globalConverged, &globalNonfinite, &globalPole);
         }

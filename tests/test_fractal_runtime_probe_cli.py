@@ -45,7 +45,7 @@ def test_probe_cli_supports_stdin_stdout_json() -> None:
             {"x": 0.48, "y": -0.04},
             {"x": 0.52, "y": 0.04},
         ],
-        "metrics": ["iterations", "status", "final_z", "final_abs2", "summary_mean_iterations"],
+        "metrics": ["iterations", "status", "final_z", "final_abs2", "summary_mean_iterations", "summary_best_sequence_index"],
         "operator_context": {
             "source": "salticid",
             "operator": "parameter_probe_scout",
@@ -115,7 +115,14 @@ def test_probe_cli_supports_request_response_files(tmp_path: Path) -> None:
                 },
             ],
         },
-        "metrics": ["iterations", "status", "final_z", "final_abs2", "summary_mean_iterations"],
+        "metrics": [
+            "iterations",
+            "status",
+            "final_z",
+            "final_abs2",
+            "summary_mean_iterations",
+            "summary_best_sequence_index",
+        ],
         "operator_context": {
             "source": "salticid",
             "operator": "parameter_probe_scout",
@@ -181,3 +188,92 @@ def test_probe_cli_emits_json_error_payload_for_invalid_request() -> None:
     assert response["ok"] is False
     assert response["request_id"] == ""
     assert "mystery_field" in response["error"]
+
+
+def test_probe_cli_omits_samples_for_summary_only_metrics() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-summary-only-metrics",
+        "mode": "point_set",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "mandelbrot"},
+        ],
+        "points": [
+            {"x": -0.75, "y": 0.0},
+            {"x": 0.25, "y": 0.0},
+        ],
+        "metrics": ["summary_mean_iterations", "summary_escape_fraction"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    response = json.loads(result.stdout)
+    assert response["ok"] is True
+    assert response["summary"]["sample_count"] == 2
+    assert "mean_iterations" in response["summary"]
+    assert "escape_fraction" in response["summary"]
+    assert "converged_fraction" not in response["summary"]
+    assert "best_sequence_index" not in response["summary"]
+    assert response["samples"] == []
+    assert len(response["sequence_results"]) == 1
+    assert "mean_iterations" in response["sequence_results"][0]["summary"]
+    assert "pole_fraction" not in response["sequence_results"][0]["summary"]
+
+
+def test_probe_cli_omits_unrequested_sample_metrics() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-sample-metric-subset",
+        "mode": "point_set",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "mandelbrot"},
+        ],
+        "points": [
+            {"x": 0.0, "y": 0.0},
+        ],
+        "metrics": ["iterations", "status", "summary_mean_iterations"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    response = json.loads(result.stdout)
+    assert response["ok"] is True
+    assert len(response["samples"]) == 1
+    sample = response["samples"][0]
+    assert "coord_x" in sample and "coord_y" in sample
+    assert "iterations" in sample and "status" in sample
+    assert "final_abs2" not in sample
+    assert "final_z_x" not in sample and "final_z_y" not in sample
+    assert "residual" not in sample and "root_index" not in sample

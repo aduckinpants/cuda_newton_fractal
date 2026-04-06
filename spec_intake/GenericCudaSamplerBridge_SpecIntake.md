@@ -130,7 +130,7 @@ returns a machine-readable catalog of all callable functions:
       ],
       "summary_metrics": [
         "mean_iterations", "escape_fraction", "converged_fraction",
-        "nonfinite_fraction", "pole_fraction"
+        "nonfinite_fraction", "pole_fraction", "best_sequence_index"
       ]
     }
   ]
@@ -143,6 +143,8 @@ Key rules:
   third editable source of truth.
 - Parameter applicability predicates reuse the existing `visible_if` system.
 - Output metrics are declared per function, not globally.
+- Requested metrics should affect payload size; summary-only requests should not
+  force full per-sample JSON blobs back over the CLI seam.
 - Unknown function ids fail fast.
 
 ### Layer 2: Transpiler Bridge (CoreIR -> CUDA)

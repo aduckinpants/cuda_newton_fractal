@@ -170,6 +170,7 @@ FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema) {
     desc.summary_metrics.push_back({"converged_fraction"});
     desc.summary_metrics.push_back({"nonfinite_fraction"});
     desc.summary_metrics.push_back({"pole_fraction"});
+    desc.summary_metrics.push_back({"best_sequence_index"});
 
     return desc;
 }

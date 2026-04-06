@@ -51,7 +51,8 @@ def test_describe_functions_emits_valid_catalog() -> None:
     assert isinstance(func["outputs"], list)
     assert len(func["outputs"]) == 7
     assert isinstance(func["summary_metrics"], list)
-    assert len(func["summary_metrics"]) == 5
+    assert len(func["summary_metrics"]) == 6
+    assert "best_sequence_index" in func["summary_metrics"]
 
     # fractal_type param should be required with enum options
     ft_param = next(p for p in func["parameters"] if p["path"] == "fractal.view.fractal_type")
