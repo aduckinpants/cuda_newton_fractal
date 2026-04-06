@@ -668,6 +668,49 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino_inertial) {
+        // Explaino-Inertial: seeded Newton with previous-step momentum.
+        // z_{n+1} = z_n - damping * f(z_n)/f'(z_n) + beta * (z_{n-1} - z_{n-2})
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float beta = params.momentum_beta;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+        Cx zPrev = z;
+        Cx zPrev2 = z;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dP);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx newtonStep = cx_div(P, dP);
+            Cx momentum = cx_sub(zPrev, zPrev2);
+            Cx zNext = cx_add(cx_sub(z, cx_scale(newtonStep, userDamp)),
+                              cx_scale(momentum, beta));
+            zPrev2 = zPrev;
+            zPrev = z;
+            z = zNext;
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));
@@ -1042,8 +1085,8 @@ bool RenderFractalCUDA(
 
     // Fail-fast validation (no implicit fallback/repair).
     if (view.fractal_type == FractalType::nova) {
-        if (!(params.nova_alpha > 0.0f) || !(params.nova_alpha <= 2.0f) || !std::isfinite(params.nova_alpha)) {
-            if (outError) *outError = "nova_alpha must be in (0,2] and finite";
+        if (!(params.nova_alpha > 0.0f) || !(params.nova_alpha <= 5.0f) || !std::isfinite(params.nova_alpha)) {
+            if (outError) *outError = "nova_alpha must be in (0,5] and finite";
             return false;
         }
     }
@@ -1081,8 +1124,8 @@ bool RenderFractalCUDA(
             if (outError) *outError = "explaino_mix must be finite and in [0,1]";
             return false;
         }
-        if (!std::isfinite(params.explaino_warp_strength) || params.explaino_warp_strength < 0.0f || params.explaino_warp_strength > 1.0f) {
-            if (outError) *outError = "explaino_warp_strength must be finite and in [0,1]";
+        if (!std::isfinite(params.explaino_warp_strength) || params.explaino_warp_strength < 0.0f || params.explaino_warp_strength > 5.0f) {
+            if (outError) *outError = "explaino_warp_strength must be finite and in [0,5]";
             return false;
         }
     }

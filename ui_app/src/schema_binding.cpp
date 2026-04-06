@@ -47,6 +47,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_mult: return "explaino_mult";
         case FractalType::explaino_phoenix: return "explaino_phoenix";
         case FractalType::explaino_transcendental: return "explaino_transcendental";
+        case FractalType::explaino_inertial: return "explaino_inertial";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -101,6 +102,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_mult") view->fractal_type = FractalType::explaino_mult;
         else if (id == "explaino_phoenix") view->fractal_type = FractalType::explaino_phoenix;
         else if (id == "explaino_transcendental") view->fractal_type = FractalType::explaino_transcendental;
+        else if (id == "explaino_inertial") view->fractal_type = FractalType::explaino_inertial;
         else return false;
         return true;
     }
@@ -239,6 +241,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }
     if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
     if (path == "fractal.params.explaino_cluster_radius") { *outPtr = &params->explaino_cluster_radius; return true; }
+    if (path == "fractal.params.momentum_beta") { *outPtr = &params->momentum_beta; return true; }
     if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
     if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
     if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }

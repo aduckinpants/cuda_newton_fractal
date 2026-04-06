@@ -30,7 +30,8 @@
             { "id": "explaino_dual", "label": "Explaino DualSeed" },
             { "id": "explaino_mult", "label": "Explaino Multiplicity" },
             { "id": "explaino_phoenix", "label": "Explaino Phoenix" },
-            { "id": "explaino_transcendental", "label": "Explaino Transcendental" }
+            { "id": "explaino_transcendental", "label": "Explaino Transcendental" },
+            { "id": "explaino_inertial", "label": "Explaino Inertial" }
           ],
           "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
           "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
@@ -151,7 +152,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           },
           "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
         },
@@ -233,7 +234,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -256,7 +257,7 @@
           "label": "Phoenix p (real)",
           "help": "Memory term p in z_{n+1} = z_n^2 + c + p z_{n-1}",
           "value_type": "float",
-          "min": -1.0, "max": 1.0, "step": 0.01, "default": -0.5,
+          "min": -1.0, "max": 1.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.phoenix_p_real" },
           "visible_if": {
             "op": "in",
@@ -381,7 +382,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           },
           "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
         },
@@ -413,7 +414,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -424,7 +425,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -437,7 +438,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -451,7 +452,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -465,7 +466,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -479,7 +480,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -488,9 +489,19 @@
           "label": "Cluster Radius",
           "help": "Distance between paired near-coincident roots. Smaller values produce near-degenerate polynomials that expose solver failure geometry.",
           "value_type": "float",
-          "min": 0.0, "max": 5.0, "step": 0.001, "default": 0.1,
+          "min": 0.0, "max": 5.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_cluster_radius" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_mult" }
+        },
+        {
+          "id": "momentum_beta",
+          "type": "slider_float",
+          "label": "Momentum Beta",
+          "help": "Strength of previous-step momentum. Higher values carry more of the previous Newton step direction forward.",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.momentum_beta" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_inertial" }
         },
         {
           "id": "explaino_phase",
@@ -502,7 +513,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         },
         {
@@ -515,7 +526,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           },
           "help": "Advanced fractional component of the combined Explaino seed. Usually edit Explaino Seed instead."
         },
@@ -529,7 +540,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial"
           }
         }
       ]

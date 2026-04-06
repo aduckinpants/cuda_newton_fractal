@@ -196,6 +196,7 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "explaino_mult") { if (outType) *outType = FractalType::explaino_mult; return true; }
     if (text == "explaino_phoenix") { if (outType) *outType = FractalType::explaino_phoenix; return true; }
     if (text == "explaino_transcendental") { if (outType) *outType = FractalType::explaino_transcendental; return true; }
+    if (text == "explaino_inertial") { if (outType) *outType = FractalType::explaino_inertial; return true; }
     return false;
 }
 

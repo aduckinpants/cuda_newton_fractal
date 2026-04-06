@@ -37,6 +37,7 @@ UISchema BuildSafeModeSchema() {
             {"explaino_mult", "Explaino Multiplicity"},
             {"explaino_phoenix", "Explaino Phoenix"},
             {"explaino_transcendental", "Explaino Transcendental"},
+            {"explaino_inertial", "Explaino Inertial"},
         };
         view.controls.push_back(std::move(c));
     }

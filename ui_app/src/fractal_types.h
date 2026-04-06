@@ -49,6 +49,7 @@ enum class FractalType : int {
     explaino_mult = 13,
     explaino_phoenix = 14,
     explaino_transcendental = 15,
+    explaino_inertial = 16,
 };
 
 enum class CameraBehavior : int {
@@ -90,7 +91,7 @@ struct KernelParams {
     int max_iter{500};
     float epsilon{1e-6f};
     float nova_alpha{0.50f};
-    float phoenix_p_real{-0.50f};
+    float phoenix_p_real{0.0f};
     float phoenix_p_imag{0.0f};
     PolyKind poly_kind{PolyKind::z3_minus_1};
     float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
@@ -110,10 +111,11 @@ struct KernelParams {
     float explaino_warp_strength{0.0f};
     float explaino_root_spread{0.5f};
     float explaino_damping{1.0f};
-    float explaino_cluster_radius{0.1f};
+    float explaino_cluster_radius{0.0f};
     int explaino_root_count{0};
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
     TranscendentalFunc transcendental_func{TranscendentalFunc::f_sin};
+    float momentum_beta{0.0f};
 };
 
 struct RenderSettings {

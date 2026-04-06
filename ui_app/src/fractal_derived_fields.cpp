@@ -65,6 +65,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_mult:
     case FractalType::explaino_phoenix:
     case FractalType::explaino_transcendental:
+    case FractalType::explaino_inertial:
     default:
         break;
     }
@@ -130,13 +131,15 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_dual ||
         view.fractal_type == FractalType::explaino_mult ||
         view.fractal_type == FractalType::explaino_phoenix ||
-        view.fractal_type == FractalType::explaino_transcendental) {
+        view.fractal_type == FractalType::explaino_transcendental ||
+        view.fractal_type == FractalType::explaino_inertial) {
         params.max_iter = (view.fractal_type == FractalType::explaino ||
             view.fractal_type == FractalType::explaino_halley ||
             view.fractal_type == FractalType::explaino_dual ||
             view.fractal_type == FractalType::explaino_mult ||
             view.fractal_type == FractalType::explaino_phoenix ||
-            view.fractal_type == FractalType::explaino_transcendental) ? 500 :
+            view.fractal_type == FractalType::explaino_transcendental ||
+            view.fractal_type == FractalType::explaino_inertial) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
@@ -144,13 +147,22 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.0f;
         params.multibrot_power = 3;
-        params.phoenix_p_real = -0.50f;
+        params.phoenix_p_real = 0.0f;
         params.phoenix_p_imag = 0.0f;
         params.explaino_seed_b = 1.0;
         params.explaino_mix = 0.5f;
         params.explaino_warp_strength = 0.0f;
-        params.explaino_cluster_radius = 0.1f;
+        params.explaino_cluster_radius = 0.0f;
         params.explaino_root_count = 0;
+        params.momentum_beta = 0.0f;
+        // Explaino-Phoenix: use a gentle memory term so basins remain visible.
+        if (view.fractal_type == FractalType::explaino_phoenix) {
+            params.phoenix_p_real = 0.12f;
+        }
+        // Explaino-Inertial: gentle default momentum so structure is visible.
+        if (view.fractal_type == FractalType::explaino_inertial) {
+            params.momentum_beta = 0.15f;
+        }
         if (ioDirty) *ioDirty = true;
         return;
     }

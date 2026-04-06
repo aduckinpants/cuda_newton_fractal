@@ -17,7 +17,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
     fractalType == FractalType::explaino_dual ||
     fractalType == FractalType::explaino_mult ||
     fractalType == FractalType::explaino_phoenix ||
-    fractalType == FractalType::explaino_transcendental;
+    fractalType == FractalType::explaino_transcendental ||
+    fractalType == FractalType::explaino_inertial;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
@@ -29,7 +30,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType 
     fractalType == FractalType::explaino_dual ||
     fractalType == FractalType::explaino_mult ||
     fractalType == FractalType::explaino_phoenix ||
-    fractalType == FractalType::explaino_transcendental;
+    fractalType == FractalType::explaino_transcendental ||
+    fractalType == FractalType::explaino_inertial;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fractalType) {

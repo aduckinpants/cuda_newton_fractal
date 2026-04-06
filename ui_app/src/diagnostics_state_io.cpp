@@ -131,6 +131,7 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino_mult") { if (outType) *outType = FractalType::explaino_mult; return true; }
     if (text == "explaino_phoenix") { if (outType) *outType = FractalType::explaino_phoenix; return true; }
     if (text == "explaino_transcendental") { if (outType) *outType = FractalType::explaino_transcendental; return true; }
+    if (text == "explaino_inertial") { if (outType) *outType = FractalType::explaino_inertial; return true; }
     return false;
 }
 
@@ -361,6 +362,14 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             if (tfStr == "f_sin") nextParams.transcendental_func = TranscendentalFunc::f_sin;
             else if (tfStr == "f_exp_minus_1") nextParams.transcendental_func = TranscendentalFunc::f_exp_minus_1;
             else if (tfStr == "f_cosh") nextParams.transcendental_func = TranscendentalFunc::f_cosh;
+        }
+    }
+
+    // momentum_beta (optional for backward compat)
+    {
+        const json_min::Value* mbVal = paramsObject->get("momentum_beta");
+        if (mbVal && mbVal->is_number()) {
+            nextParams.momentum_beta = static_cast<float>(mbVal->as_number());
         }
     }
 
