@@ -62,6 +62,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_fp:
     case FractalType::explaino_nova:
     case FractalType::explaino_dual:
+    case FractalType::explaino_mult:
     default:
         break;
     }
@@ -124,10 +125,12 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_fp ||
         view.fractal_type == FractalType::explaino_nova ||
         view.fractal_type == FractalType::explaino_halley ||
-        view.fractal_type == FractalType::explaino_dual) {
+        view.fractal_type == FractalType::explaino_dual ||
+        view.fractal_type == FractalType::explaino_mult) {
         params.max_iter = (view.fractal_type == FractalType::explaino ||
             view.fractal_type == FractalType::explaino_halley ||
-            view.fractal_type == FractalType::explaino_dual) ? 500 :
+            view.fractal_type == FractalType::explaino_dual ||
+            view.fractal_type == FractalType::explaino_mult) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
@@ -140,6 +143,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.explaino_seed_b = 1.0;
         params.explaino_mix = 0.5f;
         params.explaino_warp_strength = 0.0f;
+        params.explaino_cluster_radius = 0.1f;
         params.explaino_root_count = 0;
         if (ioDirty) *ioDirty = true;
         return;
@@ -290,26 +294,58 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
         sh = LerpExplainoShape(sh, shB, mix);
     }
 
-    const float a = sh.a;
-    const float b = sh.b;
-    const float c = sh.c;
-    const float d = sh.d;
+    float a = sh.a;
+    float b = sh.b;
+    float c = sh.c;
+    float d = sh.d;
 
-    params.explaino_roots[0] = {a, b};
-    params.explaino_roots[1] = {a, -b};
-    params.explaino_roots[2] = {c, d};
-    params.explaino_roots[3] = {c, -d};
+    if (view.fractal_type == FractalType::explaino_mult) {
+        // Multiplicity mode: cluster roots in pairs around two centers.
+        // Each center gets two near-coincident roots offset by cluster_radius.
+        // This exposes solver failure geometry at near-degenerate polynomials.
+        float cr = ClampF(params.explaino_cluster_radius, 0.0f, 2.0f);
+        float half = cr * 0.5f;
 
-    const float q1 = -2.0f * a;
-    const float q0 = a * a + b * b;
-    const float r1 = -2.0f * c;
-    const float r0 = c * c + d * d;
+        // Center 1: (a, b) — split into two roots offset along the real axis
+        params.explaino_roots[0] = {a + half, b};
+        params.explaino_roots[1] = {a - half, b};
+        // Center 2: (c, d) — split into two roots offset along the imaginary axis
+        params.explaino_roots[2] = {c, d + half};
+        params.explaino_roots[3] = {c, d - half};
+    } else {
+        params.explaino_roots[0] = {a, b};
+        params.explaino_roots[1] = {a, -b};
+        params.explaino_roots[2] = {c, d};
+        params.explaino_roots[3] = {c, -d};
+    }
 
-    params.poly_coeffs[4] = 1.0f;
-    params.poly_coeffs[3] = q1 + r1;
-    params.poly_coeffs[2] = q0 + q1 * r1 + r0;
-    params.poly_coeffs[1] = q0 * r1 + q1 * r0;
-    params.poly_coeffs[0] = q0 * r0;
+    // Compute degree-4 polynomial from the four roots: (z-r0)(z-r1)(z-r2)(z-r3)
+    // Use the actual root positions stored in params.explaino_roots[].
+    {
+        const float r0x = params.explaino_roots[0].x, r0y = params.explaino_roots[0].y;
+        const float r1x = params.explaino_roots[1].x, r1y = params.explaino_roots[1].y;
+        const float r2x = params.explaino_roots[2].x, r2y = params.explaino_roots[2].y;
+        const float r3x = params.explaino_roots[3].x, r3y = params.explaino_roots[3].y;
+
+        // Quadratic factor from roots 0,1: (z - r0)(z - r1) = z^2 - (r0+r1)z + r0*r1
+        // Sum s01 = r0 + r1,  product p01 = r0 * r1
+        const float s01x = r0x + r1x, s01y = r0y + r1y;
+        const float p01x = r0x * r1x - r0y * r1y, p01y = r0x * r1y + r0y * r1x;
+
+        // Quadratic factor from roots 2,3: (z - r2)(z - r3) = z^2 - (r2+r3)z + r2*r3
+        const float s23x = r2x + r3x, s23y = r2y + r3y;
+        const float p23x = r2x * r3x - r2y * r3y, p23y = r2x * r3y + r2y * r3x;
+
+        // (z^2 - s01*z + p01)(z^2 - s23*z + p23)
+        // = z^4 - (s01+s23) z^3 + (p01 + s01*s23 + p23) z^2 - (p01*s23 + s01*p23) z + p01*p23
+        // For real coefficients, take only real parts (imaginary parts cancel for conjugate pairs;
+        // for explaino_mult near-coincident pairs, small imaginary residuals are dropped).
+        params.poly_coeffs[4] = 1.0f;
+        params.poly_coeffs[3] = -(s01x + s23x);
+        params.poly_coeffs[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
+        params.poly_coeffs[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
+        params.poly_coeffs[0] = p01x * p23x - p01y * p23y;
+    }
 
     if (ioDirty) *ioDirty = true;
 }

@@ -329,7 +329,7 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
-    } else if (ft == FractalType::explaino || ft == FractalType::explaino_dual) {
+    } else if (ft == FractalType::explaino || ft == FractalType::explaino_dual || ft == FractalType::explaino_mult) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;

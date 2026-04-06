@@ -23,7 +23,7 @@ if str(_toolkit_root) not in sys.path:
 
 from fractal_explorer.finding_analyzer import analyze_finding, format_report
 from fractal_explorer.finding_charts import generate_all
-from fractal_explorer.paths import findings_root
+from fractal_explorer.paths import analysis_output_root, findings_root
 
 
 def main(args=None):
@@ -65,7 +65,9 @@ def main(args=None):
     if parsed.out_dir:
         out_dir = Path(parsed.out_dir)
     else:
-        out_dir = finding_dir / "analysis"
+        # Default: centralized output under D:\salt-fractal\output\capture_findings\<finding_id>
+        finding_id = finding_dir.name
+        out_dir = analysis_output_root() / finding_id
 
     print(f"Analyzing: {finding_dir}")
     print(f"Output to: {out_dir}")

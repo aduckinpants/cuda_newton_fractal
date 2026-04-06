@@ -29,6 +29,7 @@ void ResetRuntimeStateForCurrentFractal(
     params.explaino_warp_strength = 0.0f;
     params.explaino_root_spread = 0.5f;
     params.explaino_damping = 1.0f;
+    params.explaino_cluster_radius = 0.1f;
     ApplyFractalPresetDefaults(view, params, ioDirty);
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);

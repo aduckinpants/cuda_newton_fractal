@@ -25,6 +25,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::explaino_nova: return "explaino_nova";
     case FractalType::explaino_halley: return "explaino_halley";
     case FractalType::explaino_dual: return "explaino_dual";
+    case FractalType::explaino_mult: return "explaino_mult";
     }
     return "unknown";
 }
@@ -139,6 +140,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
+    js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     js << "    \"poly_coeffs\": [";
     for (int i = 0; i < 5; ++i) {
         if (i > 0) js << ", ";

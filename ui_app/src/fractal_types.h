@@ -40,6 +40,7 @@ enum class FractalType : int {
     explaino_nova = 10,
     explaino_halley = 11,
     explaino_dual = 12,
+    explaino_mult = 13,
 };
 
 enum class CameraBehavior : int {
@@ -101,6 +102,7 @@ struct KernelParams {
     float explaino_warp_strength{0.0f};
     float explaino_root_spread{0.5f};
     float explaino_damping{1.0f};
+    float explaino_cluster_radius{0.1f};
     int explaino_root_count{0};
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
 };

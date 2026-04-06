@@ -35,3 +35,8 @@ def findings_root(repo_root: Path) -> Path:
 def default_seed_sweep_out_dir(repo_root: Path) -> Path:
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     return repo_publish_root(repo_root) / "artifacts" / f"seed_sweep_{stamp}"
+
+
+def analysis_output_root() -> Path:
+    """Centralized output root for captured-finding analysis results."""
+    return publish_root() / "output" / "capture_findings"

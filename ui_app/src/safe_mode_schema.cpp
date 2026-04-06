@@ -34,6 +34,7 @@ UISchema BuildSafeModeSchema() {
             {"explaino_nova", "Explaino Nova"},
             {"explaino_halley", "Explaino Halley"},
             {"explaino_dual", "Explaino DualSeed"},
+            {"explaino_mult", "Explaino Multiplicity"},
         };
         view.controls.push_back(std::move(c));
     }

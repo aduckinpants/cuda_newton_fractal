@@ -193,6 +193,7 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
     if (text == "explaino_halley") { if (outType) *outType = FractalType::explaino_halley; return true; }
     if (text == "explaino_dual") { if (outType) *outType = FractalType::explaino_dual; return true; }
+    if (text == "explaino_mult") { if (outType) *outType = FractalType::explaino_mult; return true; }
     return false;
 }
 

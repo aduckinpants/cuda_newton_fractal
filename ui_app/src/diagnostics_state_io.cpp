@@ -128,6 +128,7 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
     if (text == "explaino_halley") { if (outType) *outType = FractalType::explaino_halley; return true; }
     if (text == "explaino_dual") { if (outType) *outType = FractalType::explaino_dual; return true; }
+    if (text == "explaino_mult") { if (outType) *outType = FractalType::explaino_mult; return true; }
     return false;
 }
 
@@ -343,6 +344,11 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_tint_r = static_cast<float>(colorTintR);
     nextParams.color_tint_g = static_cast<float>(colorTintG);
     nextParams.color_tint_b = static_cast<float>(colorTintB);
+
+    // explaino_cluster_radius (optional for backward compat)
+    double explainoClusterRadius = nextParams.explaino_cluster_radius;
+    if (!GetOptionalNumber(*paramsObject, "explaino_cluster_radius", &explainoClusterRadius, nullptr, outError)) return false;
+    nextParams.explaino_cluster_radius = static_cast<float>(explainoClusterRadius);
 
     for (size_t index = 0; index < 5; ++index) {
         const json_min::Value& coeff = polyCoeffsArray->as_array()[index];
