@@ -33,6 +33,8 @@ struct Cx {
     float y;
 };
 
+constexpr float kPi = 3.14159265358979323846f;
+
 Cx CxAdd(Cx left, Cx right) { return {left.x + right.x, left.y + right.y}; }
 Cx CxSub(Cx left, Cx right) { return {left.x - right.x, left.y - right.y}; }
 Cx CxMul(Cx left, Cx right) { return {left.x * right.x - left.y * right.y, left.x * right.y + left.y * right.x}; }
@@ -59,6 +61,11 @@ Cx CxPowRealPrincipal(Cx value, float power) {
     return {radiusPower * std::cos(angle), radiusPower * std::sin(angle)};
 }
 
+Cx UnitRoot(int index, int count) {
+    const float angle = (2.0f * kPi) * (static_cast<float>(index) / static_cast<float>(std::max(1, count)));
+    return {std::cos(angle), std::sin(angle)};
+}
+
 Cx CxDiv(Cx left, Cx right) {
     const float denom = right.x * right.x + right.y * right.y;
     if (denom == 0.0f) return {0.0f, 0.0f};
@@ -70,6 +77,18 @@ Cx CxRot(Cx value, float angle) {
     const float cs = std::cos(angle);
     const float sn = std::sin(angle);
     return {value.x * cs - value.y * sn, value.x * sn + value.y * cs};
+}
+
+Cx CxCosPi(Cx value) {
+    const float px = kPi * value.x;
+    const float py = kPi * value.y;
+    return {std::cos(px) * std::cosh(py), -std::sin(px) * std::sinh(py)};
+}
+
+Cx CxSinPi(Cx value) {
+    const float px = kPi * value.x;
+    const float py = kPi * value.y;
+    return {std::sin(px) * std::cosh(py), std::cos(px) * std::sinh(py)};
 }
 
 void PolyEvalRealCoeffsDeg4(const float coeffs[5], Cx z, Cx* outP, Cx* outDp) {
@@ -178,9 +197,19 @@ bool ValidateProbeState(const ProbeState& state, std::string* outError) {
         if (outError) *outError = "lambda_real/lambda_imag must be finite and in [-4,4]";
         return false;
     }
-    if (view.fractal_type == FractalType::nova) {
+    if (view.fractal_type == FractalType::nova || view.fractal_type == FractalType::explaino_nova) {
         if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 5.0f) {
             if (outError) *outError = "nova_alpha must be finite and in (0,5]";
+            return false;
+        }
+    }
+    if (view.fractal_type == FractalType::phoenix) {
+        if (!std::isfinite(params.phoenix_p_real) || !std::isfinite(params.phoenix_p_imag)) {
+            if (outError) *outError = "phoenix_p must be finite";
+            return false;
+        }
+        if (std::fabs(params.phoenix_p_real) > 1.0f || std::fabs(params.phoenix_p_imag) > 1.0f) {
+            if (outError) *outError = "phoenix_p_real/imag must be in [-1,1]";
             return false;
         }
     }
@@ -416,6 +445,22 @@ bool ResolveKnownRootIndex(const KernelParams& params, Cx z, int* outRootIndex) 
     return false;
 }
 
+bool SnapToKnownRoot(const KernelParams& params, Cx z, Cx* outRoot) {
+    int rootIndex = -1;
+    if (!ResolveKnownRootIndex(params, z, &rootIndex)) return false;
+    if (params.explaino_root_count > 0) {
+        if (outRoot) *outRoot = {params.explaino_roots[rootIndex].x, params.explaino_roots[rootIndex].y};
+        return true;
+    }
+
+    int nRoots = 0;
+    if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
+    if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+    if (nRoots <= 0) return false;
+    if (outRoot) *outRoot = UnitRoot(rootIndex, nRoots);
+    return true;
+}
+
 void SetFinalSample(FractalProbeSample* outSample,
     int sequenceIndex,
     int gridX,
@@ -508,7 +553,139 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
-    if (ft == FractalType::nova) {
+    if (ft == FractalType::explaino_fp) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+
+            const Cx step = CxAbs2(dP) < 1.0e-20f ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(step)));
+            const float damp = params.explaino_damping / (1.0f + stepMag);
+            z = CxSub(z, CxScale(step, damp));
+
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float scale = 4.0f / std::max(1.0e-12f, std::sqrt(r2));
+                z = CxScale(z, scale);
+            }
+
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged) {
+            Cx snappedRoot{0.0f, 0.0f};
+            if (SnapToKnownRoot(params, z, &snappedRoot)) {
+                z = snappedRoot;
+                status = FractalProbeSampleStatus::converged;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_y) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        float bestP = std::numeric_limits<float>::max();
+        int bestIt = 0;
+        Cx bestZ = z;
+
+        for (; it < maxIter; ++it) {
+            const float localPhase = view.explaino_phase + 0.07f * static_cast<float>(it);
+            const Cx zWarped = ExplainoWarpStartHost(z, explainoSeed(), localPhase, params.explaino_warp_strength * 0.30f);
+
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, zWarped, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < bestP) {
+                bestP = pAbs;
+                bestIt = it;
+                bestZ = zWarped;
+            }
+            if (pAbs < eps) {
+                z = zWarped;
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+
+            const Cx step = CxAbs2(dP) < 1.0e-20f ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(step)));
+            const float damp = 0.90f * params.explaino_damping / (1.0f + stepMag);
+            const Cx newtonWarped = CxSub(zWarped, CxScale(step, damp));
+
+            const float mix = 0.78f;
+            Cx zNext = CxAdd(CxScale(z, 1.0f - mix), CxScale(newtonWarped, mix));
+            const Cx velocity = CxSub(z, zPrev);
+            zNext = CxAdd(zNext, CxScale(velocity, 0.10f));
+            zNext = CxAdd(zNext, CxScale(coord, 0.045f));
+
+            zPrev = z;
+            z = zNext;
+
+            const float r2 = CxAbs2(z);
+            const float scale = 4.0f / std::sqrt(1.0f + r2 * 0.0625f);
+            z = CxScale(z, scale);
+
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged) {
+            z = bestZ;
+            it = bestIt;
+            pAbs = bestP;
+            status = FractalProbeSampleStatus::converged;
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::halley || ft == FractalType::explaino_halley) {
+        z = ft == FractalType::halley
+            ? coord
+            : ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        const float damping = ft == FractalType::halley ? 1.0f : params.explaino_damping;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP, d2P;
+            PolyEvalRealCoeffsDeg4D2(params.poly_coeffs, z, &P, &dP, &d2P);
+
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+
+            const Cx denominator = CxSub(CxScale(CxMul(dP, dP), 2.0f), CxMul(P, d2P));
+            if (CxAbs2(denominator) < 1.0e-20f) break;
+
+            const Cx numerator = CxScale(CxMul(P, dP), 2.0f);
+            z = CxSub(z, CxScale(CxDiv(numerator, denominator), damping));
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
         Cx cConst = coord;
         z = {0.0f, 0.0f};
         for (; it < maxIter; ++it) {
@@ -551,11 +728,44 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
-    if (ft == FractalType::burning_ship || ft == FractalType::multibrot || ft == FractalType::multicorn) {
+    if (ft == FractalType::burning_ship || ft == FractalType::multibrot || ft == FractalType::multicorn ||
+        ft == FractalType::phoenix || ft == FractalType::mcmullen || ft == FractalType::collatz) {
         z = {0.0f, 0.0f};
         const Cx cConst = coord;
         const float powerFloat = params.multibrot_power_float;
         const int powerInt = params.multibrot_power;
+        Cx zPrev{0.0f, 0.0f};
+
+        int mcmullenM = 0;
+        int mcmullenN = 0;
+        float mcmullenLambda = 0.0f;
+        if (ft == FractalType::mcmullen) {
+            switch (params.mcmullen_preset) {
+            case McMullenPreset::z2_z2:
+                mcmullenM = 2;
+                mcmullenN = 2;
+                mcmullenLambda = -0.10f;
+                break;
+            case McMullenPreset::z4_z2:
+                mcmullenM = 4;
+                mcmullenN = 2;
+                mcmullenLambda = -0.05f;
+                break;
+            case McMullenPreset::z3_z2:
+                mcmullenM = 3;
+                mcmullenN = 2;
+                mcmullenLambda = -0.10f;
+                break;
+            default:
+                mcmullenM = 3;
+                mcmullenN = 3;
+                mcmullenLambda = -0.125f;
+                break;
+            }
+            z = coord;
+        } else if (ft == FractalType::collatz) {
+            z = coord;
+        }
 
         for (; it < maxIter; ++it) {
             if (ft == FractalType::burning_ship) {
@@ -563,16 +773,199 @@ bool SamplePoint(const ProbeState& state,
                 z = CxAdd(CxMul(absZ, absZ), cConst);
             } else if (ft == FractalType::multibrot) {
                 z = CxAdd(CxPowRealPrincipal(z, powerFloat), cConst);
-            } else {
+            } else if (ft == FractalType::multicorn) {
                 const Cx conjugateZ{z.x, -z.y};
                 z = CxAdd(CxPowInt(conjugateZ, powerInt), cConst);
+            } else if (ft == FractalType::phoenix) {
+                const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+                const Cx zNext = CxAdd(CxAdd(CxMul(z, z), cConst), CxMul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+            } else if (ft == FractalType::mcmullen) {
+                const float zAbs2 = CxAbs2(z);
+                if (zAbs2 < 1.0e-20f) {
+                    status = FractalProbeSampleStatus::pole;
+                    break;
+                }
+
+                Cx zPow{1.0f, 0.0f};
+                Cx base = z;
+                int power = mcmullenM;
+                while (power > 0) {
+                    if ((power & 1) != 0) zPow = CxMul(zPow, base);
+                    base = CxMul(base, base);
+                    power >>= 1;
+                }
+
+                const Cx zInv{z.x / zAbs2, -z.y / zAbs2};
+                Cx zInvPow{1.0f, 0.0f};
+                base = zInv;
+                power = mcmullenN;
+                while (power > 0) {
+                    if ((power & 1) != 0) zInvPow = CxMul(zInvPow, base);
+                    base = CxMul(base, base);
+                    power >>= 1;
+                }
+
+                z = CxAdd(zPow, CxScale(zInvPow, mcmullenLambda));
+            } else {
+                const Cx cosPi = CxCosPi(z);
+                const Cx linear{2.0f + 5.0f * z.x, 5.0f * z.y};
+                const Cx affine{2.0f + 7.0f * z.x, 7.0f * z.y};
+                z = CxScale(CxSub(affine, CxMul(linear, cosPi)), 0.25f);
             }
 
-            if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
-            if (CxAbs2(z) > 4.0f) { status = FractalProbeSampleStatus::escaped; break; }
+            if (!IsFiniteCx(z) || !IsFiniteCx(zPrev)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+
+            const float escapeRadius2 = (ft == FractalType::mcmullen || ft == FractalType::collatz) ? 10000.0f : 4.0f;
+            if (CxAbs2(z) > escapeRadius2) {
+                status = FractalProbeSampleStatus::escaped;
+                break;
+            }
         }
 
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, 0.0f, false, params, false);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_phoenix) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            if (CxAbs2(dP) < 1.0e-20f) break;
+
+            const Cx zNext = CxAdd(CxSub(z, CxScale(CxDiv(P, dP), params.explaino_damping)), CxMul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_transcendental) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+
+        for (; it < maxIter; ++it) {
+            Cx F, dF;
+            if (params.transcendental_func == TranscendentalFunc::f_sin) {
+                const float sx = std::sin(z.x);
+                const float cx = std::cos(z.x);
+                const float shy = std::sinh(z.y);
+                const float chy = std::cosh(z.y);
+                F = {sx * chy, cx * shy};
+                dF = {cx * chy, -sx * shy};
+            } else if (params.transcendental_func == TranscendentalFunc::f_exp_minus_1) {
+                const float ex = std::exp(z.x);
+                const float cy = std::cos(z.y);
+                const float sy = std::sin(z.y);
+                F = {ex * cy - 1.0f, ex * sy};
+                dF = {ex * cy, ex * sy};
+            } else {
+                const float chx = std::cosh(z.x);
+                const float shx = std::sinh(z.x);
+                const float cy = std::cos(z.y);
+                const float sy = std::sin(z.y);
+                F = {chx * cy, shx * sy};
+                dF = {shx * cy, chx * sy};
+            }
+
+            pAbs = CxAbs(F);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            if (CxAbs2(dF) < 1.0e-20f) break;
+
+            z = CxSub(z, CxScale(CxDiv(F, dF), params.explaino_damping));
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_inertial) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        Cx zPrev2 = z;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            if (CxAbs2(dP) < 1.0e-20f) break;
+
+            const Cx momentum = CxSub(zPrev, zPrev2);
+            const Cx zNext = CxAdd(CxSub(z, CxScale(CxDiv(P, dP), params.explaino_damping)), CxScale(momentum, params.momentum_beta));
+            zPrev2 = zPrev;
+            zPrev = z;
+            z = zNext;
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_collatz) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+
+        for (; it < maxIter; ++it) {
+            const Cx cosPi = CxCosPi(z);
+            const Cx sinPi = CxSinPi(z);
+            const Cx linear{2.0f + 5.0f * z.x, 5.0f * z.y};
+            const Cx g = CxScale({2.0f + 3.0f * z.x, 3.0f * z.y}, 0.25f);
+            const Cx ac = CxMul(linear, cosPi);
+            const Cx fixedPointResidual = CxSub(g, CxScale(ac, 0.25f));
+
+            pAbs = CxAbs(fixedPointResidual);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+
+            const Cx as = CxMul(linear, sinPi);
+            const Cx derivative = CxScale({3.0f - 5.0f * cosPi.x + kPi * as.x,
+                                           -5.0f * cosPi.y + kPi * as.y}, 0.25f);
+            if (CxAbs2(derivative) < 1.0e-20f) break;
+
+            z = CxSub(z, CxScale(CxDiv(fixedPointResidual, derivative), params.explaino_damping));
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
         return true;
     }
 
@@ -766,12 +1159,24 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "julia",
         "burning_ship",
         "multibrot",
+        "phoenix",
         "explaino",
+        "explaino_y",
+        "explaino_fp",
+        "explaino_nova",
+        "explaino_halley",
         "explaino_dual",
         "explaino_mult",
+        "explaino_phoenix",
+        "explaino_transcendental",
+        "explaino_inertial",
         "explaino_julia",
         "explaino_rational",
         "multicorn",
+        "halley",
+        "collatz",
+        "explaino_collatz",
+        "mcmullen",
         "lambda",
         "explaino_lambda",
         "explaino_rational_escape",

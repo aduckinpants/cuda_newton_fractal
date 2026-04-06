@@ -307,6 +307,12 @@ int main() {
             std::vector<FractalProbeOverride> overrides;
         } cases[] = {
             {
+                "halley",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("halley")},
+                },
+            },
+            {
                 "burning_ship",
                 {
                     {"fractal.view.fractal_type", FractalProbeScalar::String("burning_ship")},
@@ -320,10 +326,76 @@ int main() {
                 },
             },
             {
+                "phoenix",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("phoenix")},
+                },
+            },
+            {
                 "multicorn",
                 {
                     {"fractal.view.fractal_type", FractalProbeScalar::String("multicorn")},
                     {"fractal.params.multibrot_power", FractalProbeScalar::Number(3.0)},
+                },
+            },
+            {
+                "collatz",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("collatz")},
+                },
+            },
+            {
+                "mcmullen",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("mcmullen")},
+                },
+            },
+            {
+                "explaino_y",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_y")},
+                },
+            },
+            {
+                "explaino_fp",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_fp")},
+                },
+            },
+            {
+                "explaino_nova",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_nova")},
+                },
+            },
+            {
+                "explaino_halley",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_halley")},
+                },
+            },
+            {
+                "explaino_phoenix",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_phoenix")},
+                },
+            },
+            {
+                "explaino_transcendental",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_transcendental")},
+                },
+            },
+            {
+                "explaino_inertial",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_inertial")},
+                },
+            },
+            {
+                "explaino_collatz",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_collatz")},
                 },
             },
         };
@@ -334,7 +406,7 @@ int main() {
             request.request_id = std::string("probe-") + probeCase.fractal_type;
             request.mode = FractalProbeMode::point_set;
             request.overrides = probeCase.overrides;
-            request.points.push_back({0.0, 0.0});
+            request.points.push_back({0.125, 0.0});
             request.points.push_back({0.25, 0.0});
 
             FractalProbeResponse response{};
