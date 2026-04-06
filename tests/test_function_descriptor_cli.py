@@ -58,7 +58,10 @@ def test_describe_functions_emits_valid_catalog() -> None:
     ft_param = next(p for p in func["parameters"] if p["path"] == "fractal.view.fractal_type")
     assert ft_param["type"] == "enum"
     assert ft_param.get("required") is True
-    assert len(ft_param["options"]) >= 20
+    option_ids = [option["id"] for option in ft_param["options"]]
+    assert "newton" in option_ids
+    assert "mandelbrot" in option_ids
+    assert "burning_ship" not in option_ids
 
     # epsilon param should have applicable_when
     eps_param = next(p for p in func["parameters"] if p["path"] == "fractal.params.epsilon")

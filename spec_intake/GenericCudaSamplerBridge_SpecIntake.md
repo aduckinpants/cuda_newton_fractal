@@ -145,6 +145,9 @@ Key rules:
 - Output metrics are declared per function, not globally.
 - Requested metrics should affect payload size; summary-only requests should not
   force full per-sample JSON blobs back over the CLI seam.
+- Built-in enum domains should only advertise values the function can actually
+  execute. Unsupported fractal families remain in the UI schema, but they must
+  be filtered out of `fractal.sample` until probe sampling supports them.
 - Unknown function ids fail fast.
 
 ### Layer 2: Transpiler Bridge (CoreIR -> CUDA)

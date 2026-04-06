@@ -702,6 +702,27 @@ std::string CurrentFractalTypeId(const ProbeState& state) {
 
 } // namespace
 
+bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId) {
+    static const char* const supported[] = {
+        "newton",
+        "nova",
+        "mandelbrot",
+        "julia",
+        "explaino",
+        "explaino_dual",
+        "explaino_mult",
+        "explaino_julia",
+        "explaino_rational",
+        "lambda",
+        "explaino_lambda",
+        "explaino_rational_escape",
+    };
+    for (const char* candidate : supported) {
+        if (fractalTypeId == candidate) return true;
+    }
+    return false;
+}
+
 bool RunFractalProbeRequest(const FractalProbeRequest& request,
     const std::string& exePath,
     FractalProbeResponse* outResponse,

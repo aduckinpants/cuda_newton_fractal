@@ -1,9 +1,78 @@
 #include "function_descriptor.h"
+#include "fractal_probe_runner.h"
 
+#include <cctype>
 #include <iomanip>
 #include <sstream>
+#include <vector>
 
 namespace {
+
+std::string TrimAscii(const std::string& value) {
+    size_t start = 0;
+    while (start < value.size() && std::isspace(static_cast<unsigned char>(value[start])) != 0) {
+        ++start;
+    }
+    size_t end = value.size();
+    while (end > start && std::isspace(static_cast<unsigned char>(value[end - 1])) != 0) {
+        --end;
+    }
+    return value.substr(start, end - start);
+}
+
+std::vector<std::string> SplitCsvValues(const std::string& text) {
+    std::vector<std::string> values;
+    size_t start = 0;
+    while (start <= text.size()) {
+        const size_t comma = text.find(',', start);
+        const size_t end = (comma == std::string::npos) ? text.size() : comma;
+        const std::string item = TrimAscii(text.substr(start, end - start));
+        if (!item.empty()) values.push_back(item);
+        if (comma == std::string::npos) break;
+        start = comma + 1;
+    }
+    return values;
+}
+
+std::string JoinCsvValues(const std::vector<std::string>& values) {
+    std::ostringstream out;
+    for (size_t index = 0; index < values.size(); ++index) {
+        if (index > 0) out << ",";
+        out << values[index];
+    }
+    return out.str();
+}
+
+std::vector<UISchemaOption> FilterProbeSupportedFractalTypeOptions(const std::vector<UISchemaOption>& options) {
+    std::vector<UISchemaOption> filtered;
+    for (const auto& option : options) {
+        if (!IsProbeSamplingImplementedForFractalTypeId(option.id)) continue;
+        filtered.push_back(option);
+    }
+    return filtered;
+}
+
+bool FilterFractalTypePredicate(UISchemaPredicate* ioPredicate) {
+    if (!ioPredicate) return true;
+    if (ioPredicate->path != "fractal.view.fractal_type") return true;
+
+    std::vector<std::string> values = SplitCsvValues(ioPredicate->value);
+    if (values.empty()) return true;
+
+    std::vector<std::string> filtered;
+    for (const std::string& value : values) {
+        if (IsProbeSamplingImplementedForFractalTypeId(value)) {
+            filtered.push_back(value);
+        }
+    }
+    if (filtered.empty()) return false;
+
+    if (ioPredicate->op == "eq" && filtered.size() > 1) {
+        ioPredicate->op = "in";
+    }
+    ioPredicate->value = JoinCsvValues(filtered);
+    return true;
+}
 
 void EmitJsonString(std::ostringstream& out, const std::string& value) {
     out << '"';
@@ -135,13 +204,18 @@ FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema) {
             if (control.has_default) { param.has_default = true; param.default_value = control.def; }
             param.options = control.options;
             if (control.has_visible_if) {
+                UISchemaPredicate filteredPredicate = control.visible_if;
+                if (!FilterFractalTypePredicate(&filteredPredicate)) {
+                    continue;
+                }
                 param.has_applicable_when = true;
-                param.applicable_when = control.visible_if;
+                param.applicable_when = filteredPredicate;
             }
 
             // fractal_type is required; all others are optional
             if (param.path == "fractal.view.fractal_type") {
                 param.required = true;
+                param.options = FilterProbeSupportedFractalTypeOptions(param.options);
             }
 
             desc.parameters.push_back(std::move(param));
