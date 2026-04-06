@@ -1,4 +1,5 @@
 #include "../src/explaino_seed.h"
+#include "../src/explaino_seed_curve.h"
 #include "../src/fractal_derived_fields.h"
 
 #include <cmath>
@@ -276,13 +277,22 @@ int main() {
         UpdateExplainoPolynomial(viewB, paramsB, nullptr);
         UpdateExplainoPolynomial(viewTween, paramsTween, nullptr);
 
-        // Tween at seed 5.25 should linearly interpolate at t=0.25 between
-        // seed-5 and seed-6 shapes (smooth motion, not chaotic hash).
+        // Tween at seed 5.25 should use the wedge-area CDF H(t) as the
+        // interpolation curve — smooth, monotone, nonlinear.
+        // H(0.25) is the normalized pocket area at t=0.25.
+        const float ht = static_cast<float>(ExplainoWedgeTween(0.25));
         const float expectedRoot0X = paramsA.explaino_roots[0].x +
+            (paramsB.explaino_roots[0].x - paramsA.explaino_roots[0].x) * ht;
+        const float rawLinearRoot0X = paramsA.explaino_roots[0].x +
             (paramsB.explaino_roots[0].x - paramsA.explaino_roots[0].x) * 0.25f;
 
         if (!NearlyEqual(paramsTween.explaino_roots[0].x, expectedRoot0X, 1e-5f)) {
-            std::cerr << "Explaino seed tween should use smooth linear drift fraction\n";
+            std::cerr << "Explaino seed tween should follow wedge-area CDF H(t)\n";
+            return 1;
+        }
+        // Confirm it's genuinely nonlinear (H(0.25) != 0.25)
+        if (NearlyEqual(paramsTween.explaino_roots[0].x, rawLinearRoot0X, 1e-5f)) {
+            std::cerr << "Explaino seed tween must NOT be raw linear drift\n";
             return 1;
         }
     }

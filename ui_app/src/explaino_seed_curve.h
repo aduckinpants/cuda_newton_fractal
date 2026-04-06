@@ -20,6 +20,18 @@ EXPLAINO_SEED_CURVE_HD inline double ExplainoWedgeTotalArea() {
     return ExplainoWedgeCumulativeRaw(x1);
 }
 
+// H(t) = A(t*D) / A(D) for t in [0,1] -> smooth monotone S-curve tween.
+// This is the wedge-area CDF: the normalized integral of (pi*x*(1-x) - x)
+// over the pocket [0, D] where D = 1 - 1/pi.
+EXPLAINO_SEED_CURVE_HD inline double ExplainoWedgeTween(double t) {
+    if (t <= 0.0) return 0.0;
+    if (t >= 1.0) return 1.0;
+    const double p = 3.141592653589793;
+    const double D = 1.0 - 1.0 / p;
+    const double xw = t * D;
+    return ExplainoWedgeCumulativeRaw(xw) / ExplainoWedgeTotalArea();
+}
+
 EXPLAINO_SEED_CURVE_HD inline double ExplainoAreaFractionToX(double u) {
     const double p = 3.141592653589793;
     const double x1 = 1.0 - 1.0 / p;

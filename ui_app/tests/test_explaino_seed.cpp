@@ -64,5 +64,32 @@ int main() {
         }
     }
 
+    // ExplainoWedgeTween: smooth monotone S-curve from wedge area CDF.
+    {
+        // Boundary conditions
+        if (!NearlyEqual(ExplainoWedgeTween(0.0), 0.0)) {
+            std::cerr << "ExplainoWedgeTween(0) must be 0\n";
+            return 1;
+        }
+        if (!NearlyEqual(ExplainoWedgeTween(1.0), 1.0)) {
+            std::cerr << "ExplainoWedgeTween(1) must be 1\n";
+            return 1;
+        }
+        // Monotone: H(0.25) < H(0.5) < H(0.75)
+        double h25 = ExplainoWedgeTween(0.25);
+        double h50 = ExplainoWedgeTween(0.50);
+        double h75 = ExplainoWedgeTween(0.75);
+        if (!(h25 > 0.0 && h25 < h50 && h50 < h75 && h75 < 1.0)) {
+            std::cerr << "ExplainoWedgeTween must be strictly monotone on (0,1)\n";
+            return 1;
+        }
+        // Nonlinear: H(0.25) should NOT equal 0.25 (S-curve easing)
+        // Note: H(0.5) = 0.5 by symmetry of the pocket integrand, so test at 0.25
+        if (NearlyEqual(h25, 0.25, 1.0e-6)) {
+            std::cerr << "ExplainoWedgeTween(0.25) must differ from raw linear 0.25\n";
+            return 1;
+        }
+    }
+
     return 0;
 }
