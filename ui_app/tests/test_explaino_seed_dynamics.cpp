@@ -25,15 +25,14 @@ int main() {
             std::cerr << "Expected auto-increment seed dynamics to report a change\n";
             return 1;
         }
-        // Auto-increment now advances base seed only, leaving drift untouched.
-        // rate=0.5, dt=2.0 => delta=1.0 added to base (2.0 + 1.0 = 3.0)
-        // drift stays at 0.25
+        // Combined-seed transport: rate=0.5, dt=2.0 => delta=1.0.
+        // 2.25 -> 3.25, so base carries to 3 and drift stays at 0.25.
         if (!NearlyEqual(params.explaino_seed, 3.0)) {
-            std::cerr << "Expected auto-increment to advance the base seed by rate*dt\n";
+            std::cerr << "Expected auto-increment to carry whole-seed overflow into the base\n";
             return 1;
         }
         if (!NearlyEqual(view.explaino_seed_drift, 0.25f)) {
-            std::cerr << "Expected auto-increment to leave drift untouched\n";
+            std::cerr << "Expected auto-increment to preserve the fractional carry after whole-seed normalization\n";
             return 1;
         }
         if (!NearlyEqual(ExplainoSeedCombined(view, params), 3.25)) {
@@ -83,8 +82,10 @@ int main() {
         }
     }
 
-    // Drift stability: auto-increment must NOT modify explaino_seed_drift
-    // even across many frames (regression for seed-bleed-into-fraction bug).
+    // Combined seed must advance through the normalized split/base seam.
+    // This pins the regression where auto-increment wrote straight into
+    // params.explaino_seed, bypassing ExplainoSeedSetCombined and causing
+    // wild transport through the viewer.
     {
         ViewState view{};
         KernelParams params{};
@@ -99,13 +100,12 @@ int main() {
         for (int i = 0; i < 100; ++i) {
             ApplyExplainoSeedDynamics(stats, 0.016, view, params);
         }
-        if (!NearlyEqual(view.explaino_seed_drift, 0.777f, 1e-6)) {
-            std::cerr << "Drift slider must remain stable during auto-increment (got " << view.explaino_seed_drift << ")\n";
+        if (!NearlyEqual(ExplainoSeedCombined(view, params), 3.977, 0.01)) {
+            std::cerr << "Combined seed should advance smoothly through time (got " << ExplainoSeedCombined(view, params) << ")\n";
             return 1;
         }
-        // Base seed should have advanced: 100 frames * 0.016s * 2.0/s = 3.2
-        if (!NearlyEqual(params.explaino_seed, 3.2, 0.01)) {
-            std::cerr << "Base seed should advance by rate*total_time (got " << params.explaino_seed << ")\n";
+        if (!NearlyEqual(params.explaino_seed, 3.0, 1e-6) || !NearlyEqual(view.explaino_seed_drift, 0.977f, 0.01)) {
+            std::cerr << "Normalized seed split should be base=3 drift~=0.977 (got base=" << params.explaino_seed << ", drift=" << view.explaino_seed_drift << ")\n";
             return 1;
         }
     }

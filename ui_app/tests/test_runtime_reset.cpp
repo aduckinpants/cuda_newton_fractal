@@ -1,0 +1,64 @@
+#include "../src/runtime_reset.h"
+
+#include <iostream>
+
+static bool NearlyEqual(float a, float b, float eps = 1.0e-6f) {
+    float d = a - b;
+    return d < eps && d > -eps;
+}
+
+int main() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    bool dirty = false;
+
+    view.fractal_type = FractalType::explaino_halley;
+    view.explaino_phase = 2.0f;
+    view.explaino_seed_drift = 0.75f;
+    view.auto_increment_seed = true;
+    view.explaino_seed_rate = 1.25f;
+    view.explaino_phase_strength = 3.0f;
+    params.explaino_seed = 9.0;
+    params.explaino_warp_strength = 0.9f;
+    params.explaino_root_spread = 2.25f;
+    params.explaino_damping = 0.4f;
+    render.resolution = {2048, 1024};
+    render.block_size = 512;
+    render.device_id = 3;
+    render.benchmark = true;
+    lens.enabled = true;
+    lens.downsample = 16;
+
+    ResetRuntimeStateForCurrentFractal(view, params, render, lens, &dirty);
+
+    if (!dirty) {
+        std::cerr << "Reset should mark dirty\n";
+        return 1;
+    }
+    if (!NearlyEqual(view.explaino_phase, 0.0f) || !NearlyEqual(view.explaino_seed_drift, 0.0f)) {
+        std::cerr << "Reset should clear explaino phase/drift\n";
+        return 1;
+    }
+    if (view.auto_increment_seed || !NearlyEqual(view.explaino_seed_rate, 0.05f) || !NearlyEqual(view.explaino_phase_strength, 1.0f)) {
+        std::cerr << "Reset should restore explaino transport defaults\n";
+        return 1;
+    }
+    if (!NearlyEqual(static_cast<float>(params.explaino_seed), 0.0f) || !NearlyEqual(params.explaino_warp_strength, 0.0f) ||
+        !NearlyEqual(params.explaino_root_spread, 0.5f) || !NearlyEqual(params.explaino_damping, 1.0f)) {
+        std::cerr << "Reset should restore explaino param defaults\n";
+        return 1;
+    }
+    if (render.resolution.x != 1024 || render.resolution.y != 768 || render.block_size != 256 || render.device_id != 0 || render.benchmark) {
+        std::cerr << "Reset should restore render defaults\n";
+        return 1;
+    }
+    if (lens.enabled || lens.downsample != 2) {
+        std::cerr << "Reset should restore lens defaults\n";
+        return 1;
+    }
+
+    std::cout << "test_runtime_reset: all passed\n";
+    return 0;
+}

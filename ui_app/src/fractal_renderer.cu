@@ -901,10 +901,7 @@ __global__ void kernel_render(
     outRGBA[py * width + px] = rgba;
 
     if (outMask) {
-        // Iteration-count grayscale for a useful visual mask.
-        // Normalized by max_iter so the full range is visible.
-        float t = (maxIter > 0) ? (float)it / (float)maxIter : 0.0f;
-        outMask[py * width + px] = (uint8_t)(fminf(1.0f, t) * 255.0f);
+        outMask[py * width + px] = converged ? 255 : 0;
     }
 }
 

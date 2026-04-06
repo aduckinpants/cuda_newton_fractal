@@ -27,6 +27,8 @@
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "json_min.h"
+#include "lens_sdf.h"
+#include "runtime_reset.h"
 #include "safe_mode_schema.h"
 #include "schema_binding.h"
 #include "schema_startup_policy.h"
@@ -51,6 +53,9 @@ static ID3D11ShaderResourceView* g_fractalSRV = nullptr;
 
 static ID3D11Texture2D* g_maskTexture = nullptr;
 static ID3D11ShaderResourceView* g_maskSRV = nullptr;
+
+static ID3D11Texture2D* g_lensSdfTexture = nullptr;
+static ID3D11ShaderResourceView* g_lensSdfSRV = nullptr;
 
 static void CleanupRenderTarget() {
     if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
@@ -198,6 +203,8 @@ static void CreateRenderTarget() {
 
 static void CleanupDeviceD3D() {
     CleanupRenderTarget();
+    if (g_lensSdfSRV) { g_lensSdfSRV->Release(); g_lensSdfSRV = nullptr; }
+    if (g_lensSdfTexture) { g_lensSdfTexture->Release(); g_lensSdfTexture = nullptr; }
     if (g_maskSRV) { g_maskSRV->Release(); g_maskSRV = nullptr; }
     if (g_maskTexture) { g_maskTexture->Release(); g_maskTexture = nullptr; }
     if (g_fractalSRV) { g_fractalSRV->Release(); g_fractalSRV = nullptr; }
@@ -335,6 +342,49 @@ static void UploadMaskAsRGBA(const uint8_t* mask, int width, int height) {
             }
         }
         g_pd3dDeviceContext->Unmap(g_maskTexture, 0);
+    }
+}
+
+static void EnsureLensSdfTexture(int width, int height) {
+    if (width <= 0 || height <= 0) return;
+
+    D3D11_TEXTURE2D_DESC desc{};
+    if (g_lensSdfTexture) {
+        g_lensSdfTexture->GetDesc(&desc);
+        if ((int)desc.Width == width && (int)desc.Height == height) return;
+
+        g_lensSdfSRV->Release();
+        g_lensSdfSRV = nullptr;
+        g_lensSdfTexture->Release();
+        g_lensSdfTexture = nullptr;
+    }
+
+    desc.Width = (UINT)width;
+    desc.Height = (UINT)height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    g_pd3dDevice->CreateTexture2D(&desc, nullptr, &g_lensSdfTexture);
+    g_pd3dDevice->CreateShaderResourceView(g_lensSdfTexture, nullptr, &g_lensSdfSRV);
+}
+
+static void UploadLensSdfRGBA(const uint32_t* rgba, int width, int height) {
+    if (!rgba || !g_lensSdfTexture) return;
+
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    if (SUCCEEDED(g_pd3dDeviceContext->Map(g_lensSdfTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+        const uint8_t* src = reinterpret_cast<const uint8_t*>(rgba);
+        uint8_t* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+        size_t rowBytes = (size_t)width * 4;
+        for (int y = 0; y < height; ++y) {
+            memcpy(dst + (size_t)mapped.RowPitch * (size_t)y, src + rowBytes * (size_t)y, rowBytes);
+        }
+        g_pd3dDeviceContext->Unmap(g_lensSdfTexture, 0);
     }
 }
 
@@ -713,6 +763,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     std::vector<uint32_t> rgba;
     std::vector<uint8_t> maskBuffer;
+    std::vector<uint32_t> lensSdfRgba;
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
@@ -930,37 +981,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
 
         if (resetAllAction) {
-            // View defaults
-            view.auto_refresh = true;
-            view.camera_behavior = CameraBehavior::complexity;
-            view.auto_dive = false;
-            view.dive_speed = 1.0f;
-            view.explaino_alive = false;
-            view.explaino_seed_tween = true;
-            view.explaino_phase = 0.0f;
-            view.explaino_seed_drift = 0.0f;
-            view.auto_increment_seed = false;
-            view.explaino_seed_rate = 0.05f;
-            ApplyFractalViewPresetDefaults(view, &dirty);
-
-            // Kernel defaults (per current fractal type)
-            params.explaino_seed = 0.0;
-            params.explaino_warp_strength = 0.0f;
-            ApplyFractalPresetDefaults(view, params, &dirty);
-            if (IsExplainoFamily(view.fractal_type)) {
-                UpdateExplainoPolynomial(view, params, nullptr);
-            }
-            SyncViewHpFromUi(view);
+            ResetRuntimeStateForCurrentFractal(view, params, render, lens, &dirty);
             lastPolyKind = params.poly_kind;
             lastFractalType = view.fractal_type;
-
-            // Render defaults
-            render.resolution = {1024, 768};
-            render.block_size = 256;
-            render.device_id = 0;
-            render.benchmark = false;
-
-            dirty = true;
         }
 
         if (loadStateAction) {
@@ -980,12 +1003,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
 
         if (nextSeedAction && IsExplainoFamily(view.fractal_type)) {
-            params.explaino_seed += 1.0;
+            ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + 1.0);
             UpdateExplainoPolynomial(view, params, nullptr);
             dirty = true;
         }
         if (prevSeedAction && IsExplainoFamily(view.fractal_type)) {
-            params.explaino_seed -= 1.0;
+            ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) - 1.0);
             UpdateExplainoPolynomial(view, params, nullptr);
             dirty = true;
         }
@@ -1004,7 +1027,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 float rate = fmaxf(0.001f, view.explaino_seed_rate);
                 double delta = (double)(t * rate) * (double)io.DeltaTime;
                 if (left) delta = -delta;
-                params.explaino_seed += delta;
+                ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
                 UpdateExplainoPolynomial(view, params, nullptr);
                 dirty = true;
             } else {
@@ -1056,6 +1079,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 if (lens.enabled && maskPtr) {
                     EnsureMaskTexture(render.resolution.x, render.resolution.y);
                     UploadMaskAsRGBA(maskPtr, render.resolution.x, render.resolution.y);
+                    EnsureLensSdfTexture(render.resolution.x, render.resolution.y);
+                    ComputeSignedDistanceSdfChamfer(maskPtr, render.resolution.x, render.resolution.y, 48.0f, lensSdfRgba);
+                    UploadLensSdfRGBA(lensSdfRgba.data(), render.resolution.x, render.resolution.y);
                 }
             }
             dirty = false;
@@ -1158,6 +1184,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             }
             ImVec2 maskSize((float)render.resolution.x * scale, (float)render.resolution.y * scale);
             ImGui::Image((ImTextureID)g_maskSRV, maskSize);
+            ImGui::End();
+        }
+
+        if (lens.enabled && g_lensSdfSRV) {
+            ImGui::Begin("Lens SDF");
+            ImVec2 avail = ImGui::GetContentRegionAvail();
+            float scale = 1.0f;
+            if (render.resolution.x > 0 && render.resolution.y > 0) {
+                float sx = avail.x / (float)render.resolution.x;
+                float sy = avail.y / (float)render.resolution.y;
+                scale = (sx < sy) ? sx : sy;
+                if (scale <= 0.0f) scale = 1.0f;
+            }
+            ImVec2 sdfSize((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+            ImGui::Image((ImTextureID)g_lensSdfSRV, sdfSize);
             ImGui::End();
         }
 

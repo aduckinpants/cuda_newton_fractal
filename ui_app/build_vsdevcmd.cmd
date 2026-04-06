@@ -45,7 +45,7 @@ REM Compile app + ImGui sources
 cl /nologo /EHsc /MD /std:c++17 /O2 ^
   /I"%IMGUI%" /I"%IMGUI%\backends" ^
   /I"%CUDA_PATH%\include" ^
-  /c .\src\main.cpp .\src\json_min.cpp .\src\ui_schema.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\explaino_seed_dynamics.cpp .\src\fractal_derived_fields.cpp .\src\diagnostics_capture.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\finding_archive_actions.cpp .\src\schema_startup_policy.cpp .\src\sweep_player.cpp .\src\safe_mode_schema.cpp .\src\schema_binding.cpp ^
+  /c .\src\main.cpp .\src\json_min.cpp .\src\ui_schema.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\explaino_seed_dynamics.cpp .\src\fractal_derived_fields.cpp .\src\diagnostics_capture.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\finding_archive_actions.cpp .\src\schema_startup_policy.cpp .\src\sweep_player.cpp .\src\safe_mode_schema.cpp .\src\schema_binding.cpp .\src\lens_sdf.cpp .\src\runtime_reset.cpp ^
   "%IMGUI%\imgui.cpp" "%IMGUI%\imgui_draw.cpp" "%IMGUI%\imgui_tables.cpp" "%IMGUI%\imgui_widgets.cpp" ^
   "%IMGUI%\backends\imgui_impl_win32.cpp" "%IMGUI%\backends\imgui_impl_dx11.cpp" ^
   /Fo"%BUILDROOT%\\"
@@ -98,7 +98,7 @@ exit /b 0
 
 :link_runtime
 link /nologo /SUBSYSTEM:WINDOWS /OUT:"%~1" ^
-  "%BUILDROOT%\main.obj" "%BUILDROOT%\json_min.obj" "%BUILDROOT%\ui_schema.obj" "%BUILDROOT%\view_hp_sync.obj" "%BUILDROOT%\explaino_seed.obj" "%BUILDROOT%\explaino_seed_dynamics.obj" "%BUILDROOT%\fractal_derived_fields.obj" "%BUILDROOT%\diagnostics_capture.obj" "%BUILDROOT%\diagnostics_state_io.obj" "%BUILDROOT%\finding_state_actions.obj" "%BUILDROOT%\finding_archive_actions.obj" "%BUILDROOT%\schema_startup_policy.obj" "%BUILDROOT%\sweep_player.obj" "%BUILDROOT%\safe_mode_schema.obj" "%BUILDROOT%\schema_binding.obj" ^
+  "%BUILDROOT%\main.obj" "%BUILDROOT%\json_min.obj" "%BUILDROOT%\ui_schema.obj" "%BUILDROOT%\view_hp_sync.obj" "%BUILDROOT%\explaino_seed.obj" "%BUILDROOT%\explaino_seed_dynamics.obj" "%BUILDROOT%\fractal_derived_fields.obj" "%BUILDROOT%\diagnostics_capture.obj" "%BUILDROOT%\diagnostics_state_io.obj" "%BUILDROOT%\finding_state_actions.obj" "%BUILDROOT%\finding_archive_actions.obj" "%BUILDROOT%\schema_startup_policy.obj" "%BUILDROOT%\sweep_player.obj" "%BUILDROOT%\safe_mode_schema.obj" "%BUILDROOT%\schema_binding.obj" "%BUILDROOT%\lens_sdf.obj" "%BUILDROOT%\runtime_reset.obj" ^
   "%BUILDROOT%\imgui.obj" "%BUILDROOT%\imgui_draw.obj" "%BUILDROOT%\imgui_tables.obj" "%BUILDROOT%\imgui_widgets.obj" ^
   "%BUILDROOT%\imgui_impl_win32.obj" "%BUILDROOT%\imgui_impl_dx11.obj" "%BUILDROOT%\fractal_renderer.obj" ^
   /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib ^

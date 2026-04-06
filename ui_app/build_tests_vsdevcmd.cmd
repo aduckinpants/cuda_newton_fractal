@@ -33,6 +33,16 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\tests\test_runtime_reset.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_reset.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\lens_sdf.cpp .\tests\test_lens_sdf.cpp ^
+  /Fe:"%TESTROOT%\test_lens_sdf.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\sweep_player.cpp .\tests\test_sweep_player.cpp ^
   /Fe:"%TESTROOT%\test_sweep_player.exe"
 if errorlevel 1 exit /b 1
@@ -43,7 +53,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\diagnostics_state_io.cpp .\tests\test_diagnostics_state_io.cpp ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 
@@ -79,6 +89,12 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_derived_fields.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_runtime_reset.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_lens_sdf.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_sweep_player.exe"

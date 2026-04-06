@@ -1,5 +1,6 @@
 #include "diagnostics_state_io.h"
 
+#include "explaino_seed.h"
 #include "fractal_family_rules.h"
 #include "json_min.h"
 
@@ -314,6 +315,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_seed = explainoSeed;
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_count = explainoRootCount;
+    if (IsExplainoFamily(nextView.fractal_type)) {
+        ExplainoSeedNormalize(nextView, nextParams);
+    }
 
     // Color grading (v3+, optional for backward compat)
     double colorSaturation = nextParams.color_saturation;

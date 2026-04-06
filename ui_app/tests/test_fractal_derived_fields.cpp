@@ -1,3 +1,4 @@
+#include "../src/explaino_seed.h"
 #include "../src/fractal_derived_fields.h"
 
 #include <cmath>
@@ -174,39 +175,44 @@ int main() {
         }
     }
 
-    // Smooth tween regression: when explaino_seed has a fractional component
-    // (e.g. from auto-increment), UpdateExplainoPolynomial must produce
-    // different roots than the integer-seed case. This pins the fix for
-    // the drift-slider-tied-to-increment bug where roots jumped discretely.
+    // Normalized-seed regression: the host polynomial update should depend on
+    // the split combined seed surface (base + drift), not on raw fractional
+    // writes into params.explaino_seed.
     {
-        ViewState view{};
+        ViewState viewA{};
+        ViewState viewB{};
         KernelParams paramsA{};
         KernelParams paramsB{};
-        view.fractal_type = FractalType::explaino;
-        view.explaino_seed_drift = 0.0f;
-        view.explaino_phase = 0.0f;
-        view.explaino_phase_strength = 1.0f;
+        viewA.fractal_type = FractalType::explaino;
+        viewB.fractal_type = FractalType::explaino;
+        viewA.explaino_phase = 0.0f;
+        viewB.explaino_phase = 0.0f;
+        viewA.explaino_phase_strength = 1.0f;
+        viewB.explaino_phase_strength = 1.0f;
 
-        // Integer seed = 5.0: roots for seed 5 at fraction 0.0
         paramsA.explaino_seed = 5.0;
+        viewA.explaino_seed_drift = 0.4f;
         paramsA.explaino_root_spread = 0.5f;
-        UpdateExplainoPolynomial(view, paramsA, nullptr);
+        UpdateExplainoPolynomial(viewA, paramsA, nullptr);
         float rootA0x = paramsA.explaino_roots[0].x;
         float coeffA0 = paramsA.poly_coeffs[0];
 
-        // Fractional seed = 5.4: should tween between seed 5 and 6
-        paramsB.explaino_seed = 5.4;
+        ExplainoSeedSetCombined(viewB, paramsB, 5.4);
         paramsB.explaino_root_spread = 0.5f;
-        UpdateExplainoPolynomial(view, paramsB, nullptr);
+        UpdateExplainoPolynomial(viewB, paramsB, nullptr);
         float rootB0x = paramsB.explaino_roots[0].x;
         float coeffB0 = paramsB.poly_coeffs[0];
 
-        if (NearlyEqual(rootA0x, rootB0x, 1e-6f)) {
-            std::cerr << "Fractional seed (5.4) must produce different roots than integer seed (5.0) for smooth tween\n";
+        if (!NearlyEqual(rootA0x, rootB0x, 1e-6f)) {
+            std::cerr << "Equivalent combined seed splits must produce identical roots\n";
             return 1;
         }
-        if (NearlyEqual(coeffA0, coeffB0, 1e-6f)) {
-            std::cerr << "Polynomial coefficients must differ between integer and fractional seeds\n";
+        if (!NearlyEqual(coeffA0, coeffB0, 1e-6f)) {
+            std::cerr << "Equivalent combined seed splits must produce identical coefficients\n";
+            return 1;
+        }
+        if (!NearlyEqual((float)paramsB.explaino_seed, 5.0f) || !NearlyEqual(viewB.explaino_seed_drift, 0.4f, 1e-6f)) {
+            std::cerr << "ExplainoSeedSetCombined should normalize 5.4 into base=5 drift=0.4\n";
             return 1;
         }
     }
