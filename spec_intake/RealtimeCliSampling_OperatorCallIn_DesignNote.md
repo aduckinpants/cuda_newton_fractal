@@ -52,6 +52,9 @@ We want a seam where a Salticid operator can do this loop:
    diagnostics `state.json` formatting precision.
 7. The CLI should be callable either directly by `fractal_ui.exe` or through a
    small Python toolkit wrapper that Salticid can treat as a stable adapter.
+8. The long-term seam should generalize from fractal sampling to fast,
+  accurate sampling of any described engine function, not just fractal
+  kernels.
 
 ## Non-Goals (V1)
 
@@ -295,6 +298,46 @@ the chance of a second source of truth.
 
 Unknown binding paths must fail.
 
+## Longer-Term Generalization
+
+V1 is still fractal-first, because that is the existing runtime authority and
+the fastest path to outside matching.
+
+That should not become the terminal abstraction.
+
+The longer-term direction is to treat the CUDA engine as a fast, accurate,
+semi-arbitrary function sampler service that Salticid can call on demand.
+
+That implies a broader metadata surface than raw `fractal.view.*` and
+`fractal.params.*` paths.
+
+Recommended direction:
+
+- keep the current binding-path vocabulary as the V1 concrete provider for
+  fractal sampling
+- add a described-parameter metadata layer, similar in spirit to the AST UI
+  metadata exposure, so callable functions can advertise:
+  - function id
+  - parameter ids and types
+  - valid ranges / enum domains
+  - sample-domain semantics
+  - available output metrics
+- treat fractal sampling as one implementation of that more general callable
+  function-sampler contract
+
+This lets Salticid grow toward a caller that asks for:
+
+- "sample function X over domain Y with parameter vector Z"
+
+rather than hard-coding a fractal-only worldview into both repos.
+
+Important constraint:
+
+- schema JSON remains the UI authority
+- runtime structs remain the execution authority
+- described-parameter metadata for operator sampling must be derived from those
+  existing authorities, not become a third editable truth source
+
 ## Seed Motion Model
 
 The operator should be able to probe combined seed motion directly without
@@ -436,6 +479,12 @@ directly:
 - add `sequence_grid`
 - add toolkit adapter script
 - add operator-oriented regression tests
+
+### Phase E — Generic function sampler metadata
+
+- define a callable-function descriptor surface for operator sampling
+- expose described parameters and metric metadata from runtime-owned sources
+- adapt fractal sampling to that generic contract as the first provider
 
 ## Recommendation
 

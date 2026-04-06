@@ -8,11 +8,12 @@
 
 #include <cstdlib>
 #include <cstdio>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
 #include <cmath>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 
 #include "imgui.h"
@@ -26,6 +27,8 @@
 #include "explaino_seed_dynamics.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
+#include "fractal_probe_contract.h"
+#include "fractal_probe_runner.h"
 #include "json_min.h"
 #include "lens_sdf.h"
 #include "runtime_reset.h"
@@ -62,11 +65,17 @@ static ID3D11ShaderResourceView* g_lensSdfSRV = nullptr;
 static void CleanupRenderTarget() {
     if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
 }
-static std::string GetExeDir() {
+
+static std::string GetExePath() {
     char buf[MAX_PATH] = {};
     DWORD n = GetModuleFileNameA(nullptr, buf, (DWORD)sizeof(buf));
     if (n == 0 || n >= sizeof(buf)) return std::string();
-    std::string path(buf);
+    return std::string(buf);
+}
+
+static std::string GetExeDir() {
+    std::string path = GetExePath();
+    if (path.empty()) return std::string();
     size_t pos = path.find_last_of("\\/");
     if (pos == std::string::npos) return std::string();
     path.resize(pos);
@@ -440,6 +449,77 @@ static std::string ReadTextFile(const char* path) {
     return ss.str();
 }
 
+static bool TryReadTextFileExact(const std::string& path, std::string* outText, std::string* outError) {
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file) {
+        if (outError) *outError = "Failed to open sample request file: " + path;
+        return false;
+    }
+    std::ostringstream text;
+    text << file.rdbuf();
+    if (!file.good() && !file.eof()) {
+        if (outError) *outError = "Failed to read sample request file: " + path;
+        return false;
+    }
+    if (outText) *outText = text.str();
+    return true;
+}
+
+static bool ReadStdinText(std::string* outText, std::string* outError) {
+    std::ostringstream text;
+    text << std::cin.rdbuf();
+    if (!std::cin.good() && !std::cin.eof()) {
+        if (outError) *outError = "Failed to read sample request from stdin";
+        return false;
+    }
+    if (outText) *outText = text.str();
+    return true;
+}
+
+static bool WriteTextFileExact(const std::string& path, const std::string& text, std::string* outError) {
+    std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!file) {
+        if (outError) *outError = "Failed to open sample response file for write: " + path;
+        return false;
+    }
+    file.write(text.data(), static_cast<std::streamsize>(text.size()));
+    if (!file.good()) {
+        if (outError) *outError = "Failed to write sample response file: " + path;
+        return false;
+    }
+    return true;
+}
+
+static FractalProbeResponse BuildProbeErrorResponse(const std::string& requestId,
+    const std::string& exePath,
+    const FractalProbeOperatorContext& operatorContext,
+    const std::string& error) {
+    FractalProbeResponse response;
+    response.request_id = requestId;
+    response.ok = false;
+    response.runtime.exe_path = exePath;
+    response.operator_context = operatorContext;
+    response.error = error;
+    return response;
+}
+
+static bool EmitProbeResponse(const std::string& responseJson,
+    bool toStdout,
+    const std::string& responsePath,
+    std::string* outError) {
+    if (toStdout) {
+        if (std::fwrite(responseJson.data(), 1, responseJson.size(), stdout) != responseJson.size()) {
+            if (outError) *outError = "Failed to write sample response to stdout";
+            return false;
+        }
+        std::fflush(stdout);
+    }
+    if (!responsePath.empty()) {
+        if (!WriteTextFileExact(responsePath, responseJson, outError)) return false;
+    }
+    return true;
+}
+
 static inline float ClampF(float v, float lo, float hi) {
     if (v < lo) return lo;
     if (v > hi) return hi;
@@ -472,6 +552,77 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     const bool validateUiOnly = HasArg(args, "--validate-ui");
     const bool captureDiagnosticOnly = HasArg(args, "--capture-diagnostic");
     const bool captureFindingOnly = HasArg(args, "--capture-finding");
+    const bool sampleRequestStdin = HasArg(args, "--sample-request-stdin");
+    const bool sampleResponseStdout = HasArg(args, "--sample-response-stdout");
+    std::string sampleRequestJsonPath;
+    const bool haveSampleRequestJson = TryGetArgValue(args, "--sample-request-json", &sampleRequestJsonPath);
+    if (HasArg(args, "--sample-request-json") && !haveSampleRequestJson) {
+        return 1;
+    }
+    std::string sampleResponseJsonPath;
+    const bool haveSampleResponseJson = TryGetArgValue(args, "--sample-response-json", &sampleResponseJsonPath);
+    if (HasArg(args, "--sample-response-json") && !haveSampleResponseJson) {
+        return 1;
+    }
+    const int sampleRequestSourceCount = (sampleRequestStdin ? 1 : 0) + (haveSampleRequestJson ? 1 : 0);
+    const bool anySampleModeArg = sampleRequestSourceCount > 0 || sampleResponseStdout || haveSampleResponseJson;
+    const std::string exePath = GetExePath();
+
+    if (anySampleModeArg) {
+        std::string error;
+        std::string requestText;
+        FractalProbeRequest request;
+        bool haveParsedRequest = false;
+
+        if (sampleRequestSourceCount != 1) {
+            error = "sample mode requires exactly one request source";
+        } else if (!sampleResponseStdout && !haveSampleResponseJson) {
+            error = "sample mode requires at least one response sink";
+        } else if (validateUiOnly || captureDiagnosticOnly || captureFindingOnly) {
+            error = "sample mode is mutually exclusive with --validate-ui, --capture-diagnostic, and --capture-finding";
+        } else if (!(sampleRequestStdin
+                ? ReadStdinText(&requestText, &error)
+                : TryReadTextFileExact(sampleRequestJsonPath, &requestText, &error))) {
+        } else if (!ParseFractalProbeRequestJson(requestText, &request, &error)) {
+        } else {
+            haveParsedRequest = true;
+            FractalProbeResponse response;
+            if (!RunFractalProbeRequest(request, exePath, &response, &error)) {
+                response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, error);
+            }
+            const std::string responseJson = SerializeFractalProbeResponseJson(response);
+            std::string emitError;
+            if (!EmitProbeResponse(responseJson,
+                    sampleResponseStdout,
+                    haveSampleResponseJson ? sampleResponseJsonPath : std::string(),
+                    &emitError)) {
+                std::fprintf(stderr, "%s\n", emitError.c_str());
+                return 1;
+            }
+            return response.ok ? 0 : 1;
+        }
+
+        FractalProbeResponse response = BuildProbeErrorResponse(
+            haveParsedRequest ? request.request_id : std::string(),
+            exePath,
+            haveParsedRequest ? request.operator_context : FractalProbeOperatorContext{},
+            error);
+        const std::string responseJson = SerializeFractalProbeResponseJson(response);
+        std::string emitError;
+        if ((sampleResponseStdout || haveSampleResponseJson) &&
+            EmitProbeResponse(responseJson,
+                sampleResponseStdout,
+                haveSampleResponseJson ? sampleResponseJsonPath : std::string(),
+                &emitError)) {
+            return 1;
+        }
+        if (!emitError.empty()) {
+            std::fprintf(stderr, "%s\n", emitError.c_str());
+        }
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+
     if (captureDiagnosticOnly && captureFindingOnly) {
         return 1;
     }
