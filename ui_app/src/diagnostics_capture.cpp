@@ -23,6 +23,8 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::explaino_y: return "explaino_y";
     case FractalType::explaino_fp: return "explaino_fp";
     case FractalType::explaino_nova: return "explaino_nova";
+    case FractalType::explaino_halley: return "explaino_halley";
+    case FractalType::explaino_dual: return "explaino_dual";
     }
     return "unknown";
 }
@@ -133,6 +135,8 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";
     js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
     js << "    \"explaino_seed\": " << params.explaino_seed << ",\n";
+    js << "    \"explaino_seed_b\": " << params.explaino_seed_b << ",\n";
+    js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
     js << "    \"poly_coeffs\": [";

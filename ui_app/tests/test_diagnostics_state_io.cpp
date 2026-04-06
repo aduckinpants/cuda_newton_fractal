@@ -196,6 +196,79 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "dual_seed_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "explaino_dual",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0.25,
+    "explaino_seed_drift": 0.4,
+    "explaino_seed_tween": true,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.05
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": -0.5,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 4,
+    "explaino_seed_b": 9.5,
+    "explaino_mix": 0.35,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 1]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected dual-seed state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::explaino_dual) {
+            std::cerr << "Expected explaino_dual fractal type to round-trip\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, 4.0, 1.0e-9) || !NearlyEqual(params.explaino_seed_b, 9.5, 1.0e-9)) {
+            std::cerr << "Expected dual-seed endpoints to round-trip from saved state\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_mix, 0.35f, 1.0e-6)) {
+            std::cerr << "Expected dual-seed mix to round-trip from saved state\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "bad_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

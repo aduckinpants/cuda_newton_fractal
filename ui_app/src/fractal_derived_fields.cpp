@@ -60,6 +60,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_y:
     case FractalType::explaino_fp:
     case FractalType::explaino_nova:
+    case FractalType::explaino_dual:
     default:
         break;
     }
@@ -121,8 +122,11 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_y ||
         view.fractal_type == FractalType::explaino_fp ||
         view.fractal_type == FractalType::explaino_nova ||
-        view.fractal_type == FractalType::explaino_halley) {
-        params.max_iter = (view.fractal_type == FractalType::explaino || view.fractal_type == FractalType::explaino_halley) ? 500 :
+        view.fractal_type == FractalType::explaino_halley ||
+        view.fractal_type == FractalType::explaino_dual) {
+        params.max_iter = (view.fractal_type == FractalType::explaino ||
+            view.fractal_type == FractalType::explaino_halley ||
+            view.fractal_type == FractalType::explaino_dual) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
@@ -132,6 +136,8 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.multibrot_power = 3;
         params.phoenix_p_real = -0.50f;
         params.phoenix_p_imag = 0.0f;
+        params.explaino_seed_b = 1.0;
+        params.explaino_mix = 0.5f;
         params.explaino_warp_strength = 0.0f;
         params.explaino_root_count = 0;
         if (ioDirty) *ioDirty = true;
@@ -201,6 +207,15 @@ struct ExplainoSeedShape {
     float d;
 };
 
+static ExplainoSeedShape LerpExplainoShape(const ExplainoSeedShape& left, const ExplainoSeedShape& right, float mix) {
+    ExplainoSeedShape out{};
+    out.a = LerpF(left.a, right.a, mix);
+    out.b = LerpF(left.b, right.b, mix);
+    out.c = LerpF(left.c, right.c, mix);
+    out.d = LerpF(left.d, right.d, mix);
+    return out;
+}
+
 static ExplainoSeedShape ExplainoShapeForSeed(uint32_t seed, float phase, float spread, float phaseStrength) {
     const float r0 = Hash01(seed ^ 0x13579bdu);
     const float r1 = Hash01(seed ^ 0x2468aceu);
@@ -220,12 +235,29 @@ static ExplainoSeedShape ExplainoShapeForSeed(uint32_t seed, float phase, float 
     return out;
 }
 
+static ExplainoSeedShape ExplainoShapeForCombinedSeed(double combinedSeed, bool seedTween, float phase, float spread, float phaseStrength) {
+    if (!std::isfinite(combinedSeed)) combinedSeed = 0.0;
+
+    const double seedFloor = std::floor(combinedSeed);
+    float driftFrac = static_cast<float>(combinedSeed - seedFloor);
+    if (!std::isfinite(driftFrac)) driftFrac = 0.0f;
+    driftFrac = ClampF(driftFrac, 0.0f, 1.0f);
+
+    const int seedBase = static_cast<int>(seedFloor);
+    const uint32_t s0 = static_cast<uint32_t>(seedBase);
+    const uint32_t s1 = static_cast<uint32_t>(seedBase + 1);
+
+    ExplainoSeedShape shape0 = ExplainoShapeForSeed(s0, phase, spread, phaseStrength);
+    if (!seedTween || driftFrac <= 0.0f) {
+        return shape0;
+    }
+
+    ExplainoSeedShape shape1 = ExplainoShapeForSeed(s1, phase, spread, phaseStrength);
+    return LerpExplainoShape(shape0, shape1, driftFrac);
+}
+
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {
-    if (view.fractal_type != FractalType::explaino &&
-        view.fractal_type != FractalType::explaino_y &&
-        view.fractal_type != FractalType::explaino_fp &&
-        view.fractal_type != FractalType::explaino_nova &&
-        view.fractal_type != FractalType::explaino_halley) {
+    if (!IsExplainoFamily(view.fractal_type)) {
         params.explaino_root_count = 0;
         return;
     }
@@ -233,27 +265,27 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     params.poly_kind = PolyKind::custom;
     params.explaino_root_count = 4;
 
-    float drift = view.explaino_seed_drift;
-    float driftFloor = std::floor(drift);
-    float driftFrac = drift - driftFloor;
-    if (!std::isfinite(driftFrac)) driftFrac = 0.0f;
-    driftFrac = ClampF(driftFrac, 0.0f, 1.0f);
-
-    int seedBase = static_cast<int>(params.explaino_seed) + static_cast<int>(driftFloor);
-    const uint32_t s0 = static_cast<uint32_t>(seedBase);
-    const uint32_t s1 = static_cast<uint32_t>(seedBase + 1);
     const float phase = view.explaino_phase;
     const float spread = std::fmax(0.0f, std::fmin(3.0f, params.explaino_root_spread));
     const float phaseStrength = view.explaino_phase_strength;
 
-    ExplainoSeedShape sh0 = ExplainoShapeForSeed(s0, phase, spread, phaseStrength);
-    ExplainoSeedShape sh = sh0;
-    if (view.explaino_seed_tween && driftFrac > 0.0f) {
-        ExplainoSeedShape sh1 = ExplainoShapeForSeed(s1, phase, spread, phaseStrength);
-        sh.a = LerpF(sh0.a, sh1.a, driftFrac);
-        sh.b = LerpF(sh0.b, sh1.b, driftFrac);
-        sh.c = LerpF(sh0.c, sh1.c, driftFrac);
-        sh.d = LerpF(sh0.d, sh1.d, driftFrac);
+    ExplainoSeedShape sh = ExplainoShapeForCombinedSeed(
+        ExplainoSeedCombined(view, params),
+        view.explaino_seed_tween,
+        phase,
+        spread,
+        phaseStrength);
+    if (view.fractal_type == FractalType::explaino_dual) {
+        float mix = params.explaino_mix;
+        if (!std::isfinite(mix)) mix = 0.5f;
+        mix = ClampF(mix, 0.0f, 1.0f);
+        ExplainoSeedShape shB = ExplainoShapeForCombinedSeed(
+            params.explaino_seed_b,
+            view.explaino_seed_tween,
+            phase,
+            spread,
+            phaseStrength);
+        sh = LerpExplainoShape(sh, shB, mix);
     }
 
     const float a = sh.a;

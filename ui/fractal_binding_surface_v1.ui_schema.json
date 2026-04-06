@@ -26,7 +26,8 @@
             { "id": "explaino_y", "label": "Explaino Y" },
             { "id": "explaino_fp", "label": "Explaino FP" },
             { "id": "explaino_nova", "label": "Explaino Nova" },
-            { "id": "explaino_halley", "label": "Explaino Halley" }
+            { "id": "explaino_halley", "label": "Explaino Halley" },
+            { "id": "explaino_dual", "label": "Explaino DualSeed" }
           ],
           "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
           "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
@@ -147,7 +148,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           },
           "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
         },
@@ -229,7 +230,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "newton,nova,explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -354,9 +355,29 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           },
           "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
+        },
+        {
+          "id": "explaino_seed_b",
+          "type": "slider_double",
+          "label": "Explaino Seed B",
+          "value_type": "double",
+          "min": 0.0, "max": 10.0, "step": 0.001, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_seed_b" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" },
+          "help": "Secondary Explaino seed for DualSeed root-pack blending."
+        },
+        {
+          "id": "explaino_mix",
+          "type": "slider_float",
+          "label": "Explaino Mix",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_mix" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" },
+          "help": "Blend between the primary Explaino seed surface and the secondary seed surface."
         },
         {
           "id": "prev_seed",
@@ -366,7 +387,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -377,7 +398,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -390,7 +411,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -404,7 +425,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -418,7 +439,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -432,7 +453,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         },
         {
@@ -458,7 +479,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           },
           "help": "Advanced fractional component of the combined Explaino seed. Usually edit Explaino Seed instead."
         },
@@ -472,7 +493,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual"
           }
         }
       ]

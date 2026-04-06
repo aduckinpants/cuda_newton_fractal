@@ -116,5 +116,24 @@ int main() {
         }
     }
 
+    {
+        if (!IsExplainoFamily(FractalType::explaino_dual)) {
+            std::cerr << "Explaino-DualSeed should be in the Explaino family\n";
+            return 1;
+        }
+        if (!SupportsBasinColoring(FractalType::explaino_dual)) {
+            std::cerr << "Explaino-DualSeed should support basin coloring\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::explaino_dual)) {
+            std::cerr << "Explaino-DualSeed should not be escape-time\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_dual) != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-DualSeed should default to joy_basins\n";
+            return 1;
+        }
+    }
+
     return 0;
 }

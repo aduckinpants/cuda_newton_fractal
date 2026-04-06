@@ -24,6 +24,8 @@ void ResetRuntimeStateForCurrentFractal(
     ApplyFractalViewPresetDefaults(view, ioDirty);
 
     params.explaino_seed = 0.0;
+    params.explaino_seed_b = 1.0;
+    params.explaino_mix = 0.5f;
     params.explaino_warp_strength = 0.0f;
     params.explaino_root_spread = 0.5f;
     params.explaino_damping = 1.0f;

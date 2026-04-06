@@ -154,6 +154,45 @@ int main() {
     {
         ViewState view{};
         KernelParams params{};
+        view.fractal_type = FractalType::explaino_dual;
+        params.explaino_seed = 2.0;
+        params.explaino_seed_b = 9.0;
+        params.explaino_mix = 0.25f;
+        params.explaino_warp_strength = 0.99f;
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-DualSeed defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 500 || params.poly_kind != PolyKind::custom) {
+            std::cerr << "Explaino-DualSeed should use custom polynomial root-finding defaults\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-DualSeed should default to joy_basins\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.0f)) {
+            std::cerr << "Explaino-DualSeed should start with warp disabled\n";
+            return 1;
+        }
+        if (!NearlyEqual((float)params.explaino_seed_b, 1.0f) || !NearlyEqual(params.explaino_mix, 0.5f)) {
+            std::cerr << "Explaino-DualSeed should reset to deterministic seed_b/mix defaults\n";
+            return 1;
+        }
+        if (params.explaino_root_count != 4 || !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Explaino-DualSeed should derive the Explaino quartic surface\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
         view.fractal_type = FractalType::julia;
         params.explaino_root_count = 99;
         UpdateExplainoPolynomial(view, params, nullptr);
@@ -213,6 +252,51 @@ int main() {
         }
         if (!NearlyEqual((float)paramsB.explaino_seed, 5.0f) || !NearlyEqual(viewB.explaino_seed_drift, 0.4f, 1e-6f)) {
             std::cerr << "ExplainoSeedSetCombined should normalize 5.4 into base=5 drift=0.4\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState viewSeedA{};
+        ViewState viewSeedB{};
+        ViewState viewDual{};
+        KernelParams paramsSeedA{};
+        KernelParams paramsSeedB{};
+        KernelParams paramsDual{};
+
+        viewSeedA.fractal_type = FractalType::explaino;
+        viewSeedB.fractal_type = FractalType::explaino;
+        viewDual.fractal_type = FractalType::explaino_dual;
+
+        ExplainoSeedSetCombined(viewSeedA, paramsSeedA, 2.25);
+        ExplainoSeedSetCombined(viewSeedB, paramsSeedB, 7.75);
+        ExplainoSeedSetCombined(viewDual, paramsDual, 2.25);
+        paramsDual.explaino_seed_b = 7.75;
+
+        UpdateExplainoPolynomial(viewSeedA, paramsSeedA, nullptr);
+        UpdateExplainoPolynomial(viewSeedB, paramsSeedB, nullptr);
+
+        paramsDual.explaino_mix = 0.0f;
+        UpdateExplainoPolynomial(viewDual, paramsDual, nullptr);
+        if (!NearlyEqual(paramsDual.explaino_roots[0].x, paramsSeedA.explaino_roots[0].x, 1e-6f) ||
+            !NearlyEqual(paramsDual.explaino_roots[2].y, paramsSeedA.explaino_roots[2].y, 1e-6f)) {
+            std::cerr << "Explaino-DualSeed mix=0 should match the primary Explaino seed surface\n";
+            return 1;
+        }
+
+        paramsDual.explaino_mix = 1.0f;
+        UpdateExplainoPolynomial(viewDual, paramsDual, nullptr);
+        if (!NearlyEqual(paramsDual.explaino_roots[0].x, paramsSeedB.explaino_roots[0].x, 1e-6f) ||
+            !NearlyEqual(paramsDual.explaino_roots[2].y, paramsSeedB.explaino_roots[2].y, 1e-6f)) {
+            std::cerr << "Explaino-DualSeed mix=1 should match the secondary Explaino seed surface\n";
+            return 1;
+        }
+
+        paramsDual.explaino_mix = 0.5f;
+        UpdateExplainoPolynomial(viewDual, paramsDual, nullptr);
+        if (NearlyEqual(paramsDual.explaino_roots[0].x, paramsSeedA.explaino_roots[0].x, 1e-6f) ||
+            NearlyEqual(paramsDual.explaino_roots[0].x, paramsSeedB.explaino_roots[0].x, 1e-6f)) {
+            std::cerr << "Explaino-DualSeed mix=0.5 should blend away from either endpoint seed surface\n";
             return 1;
         }
     }

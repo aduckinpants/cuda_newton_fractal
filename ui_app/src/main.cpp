@@ -191,6 +191,8 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
     if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
     if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
+    if (text == "explaino_halley") { if (outType) *outType = FractalType::explaino_halley; return true; }
+    if (text == "explaino_dual") { if (outType) *outType = FractalType::explaino_dual; return true; }
     return false;
 }
 
@@ -475,6 +477,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         return 1;
     }
 
+    double explainoSeedBOverride = 0.0;
+    const bool haveExplainoSeedBOverride = TryParseDoubleArg(args, "--explaino-seed-b", &explainoSeedBOverride);
+    if (HasArg(args, "--explaino-seed-b") && !haveExplainoSeedBOverride) {
+        return 1;
+    }
+
+    double explainoMixOverride = 0.0;
+    const bool haveExplainoMixOverride = TryParseDoubleArg(args, "--explaino-mix", &explainoMixOverride);
+    if (HasArg(args, "--explaino-mix") && !haveExplainoMixOverride) {
+        return 1;
+    }
+
     double explainoPhaseOverride = 0.0;
     const bool haveExplainoPhaseOverride = TryParseDoubleArg(args, "--explaino-phase", &explainoPhaseOverride);
     if (HasArg(args, "--explaino-phase") && !haveExplainoPhaseOverride) {
@@ -679,9 +693,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         if (haveWidthOverride) render.resolution.x = widthOverride;
         if (haveHeightOverride) render.resolution.y = heightOverride;
-        if (haveExplainoPhaseOverride) view.explaino_phase = (float)explainoPhaseOverride;
-        if (haveExplainoSeedDriftOverride) view.explaino_seed_drift = (float)explainoSeedDriftOverride;
-        if (haveExplainoWarpOverride) params.explaino_warp_strength = (float)explainoWarpOverride;
         if (sweepConfig.enabled) view.auto_refresh = true;
 
         const bool needPresetDerivedFields = !loadedState || haveCliFractalType || haveExplainoSeedOverride || sweepConfig.enabled;
@@ -692,6 +703,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 UpdateExplainoPolynomial(view, params, &dirty);
             }
             SyncViewUiFromHp(view);
+        }
+
+        if (haveExplainoSeedOverride) ExplainoSeedSetCombined(view, params, explainoSeedOverride);
+        if (haveExplainoPhaseOverride) view.explaino_phase = (float)explainoPhaseOverride;
+        if (haveExplainoSeedDriftOverride) view.explaino_seed_drift = (float)explainoSeedDriftOverride;
+        if (haveExplainoSeedBOverride) params.explaino_seed_b = explainoSeedBOverride;
+        if (haveExplainoMixOverride) params.explaino_mix = (float)explainoMixOverride;
+        if (haveExplainoWarpOverride) params.explaino_warp_strength = (float)explainoWarpOverride;
+        if (IsExplainoFamily(view.fractal_type)) {
+            UpdateExplainoPolynomial(view, params, &dirty);
         }
     }
 

@@ -99,6 +99,8 @@ int main() {
 
             // Verify the seed rate control has logarithmic=true
             bool foundLogRate = false;
+            bool foundDualSeedB = false;
+            bool foundDualSeedMix = false;
             for (const auto& panel : result.schema.panels) {
                 for (const auto& ctrl : panel.controls) {
                     if (ctrl.id == "explaino_seed_rate") {
@@ -115,10 +117,20 @@ int main() {
                             return 1;
                         }
                     }
+                    if (ctrl.id == "explaino_seed_b") {
+                        foundDualSeedB = true;
+                    }
+                    if (ctrl.id == "explaino_mix") {
+                        foundDualSeedMix = true;
+                    }
                 }
             }
             if (!foundLogRate) {
                 std::cerr << "Did not find explaino_seed_rate control in schema\n";
+                return 1;
+            }
+            if (!foundDualSeedB || !foundDualSeedMix) {
+                std::cerr << "Did not find Explaino-DualSeed controls in schema\n";
                 return 1;
             }
         }

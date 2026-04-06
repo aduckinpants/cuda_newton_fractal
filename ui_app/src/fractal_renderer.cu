@@ -385,7 +385,7 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
-    } else if (ft == FractalType::explaino) {
+    } else if (ft == FractalType::explaino || ft == FractalType::explaino_dual) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
@@ -1032,9 +1032,17 @@ bool RenderFractalCUDA(
             return false;
         }
     }
-    if (view.fractal_type == FractalType::explaino || view.fractal_type == FractalType::explaino_y || view.fractal_type == FractalType::explaino_fp) {
+    if (IsExplainoFamily(view.fractal_type)) {
         if (!std::isfinite(params.explaino_seed)) {
             if (outError) *outError = "explaino_seed must be finite";
+            return false;
+        }
+        if (!std::isfinite(params.explaino_seed_b)) {
+            if (outError) *outError = "explaino_seed_b must be finite";
+            return false;
+        }
+        if (!std::isfinite(params.explaino_mix) || params.explaino_mix < 0.0f || params.explaino_mix > 1.0f) {
+            if (outError) *outError = "explaino_mix must be finite and in [0,1]";
             return false;
         }
         if (!std::isfinite(params.explaino_warp_strength) || params.explaino_warp_strength < 0.0f || params.explaino_warp_strength > 1.0f) {

@@ -126,6 +126,8 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
     if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
     if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
+    if (text == "explaino_halley") { if (outType) *outType = FractalType::explaino_halley; return true; }
+    if (text == "explaino_dual") { if (outType) *outType = FractalType::explaino_dual; return true; }
     return false;
 }
 
@@ -253,6 +255,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double phoenixPImag = 0.0;
     int multibrotPower = 0;
     double explainoSeed = 0.0;
+    double explainoSeedB = nextParams.explaino_seed_b;
+    double explainoMix = nextParams.explaino_mix;
     double explainoWarpStrength = 0.0;
     int explainoRootCount = 0;
     const json_min::Value* polyCoeffsArray = nullptr;
@@ -268,6 +272,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
     }
     if (!GetRequiredNumber(*paramsObject, "explaino_seed", &explainoSeed, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_seed_b", &explainoSeedB, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_mix", &explainoMix, nullptr, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "explaino_warp_strength", &explainoWarpStrength, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
     if (!GetRequiredArray(*paramsObject, "poly_coeffs", &polyCoeffsArray, outError)) return false;
@@ -313,6 +319,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.epsilon = static_cast<float>(epsilon);
     nextParams.exposure = static_cast<float>(exposure);
     nextParams.explaino_seed = explainoSeed;
+    nextParams.explaino_seed_b = explainoSeedB;
+    nextParams.explaino_mix = static_cast<float>(explainoMix);
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_count = explainoRootCount;
     if (IsExplainoFamily(nextView.fractal_type)) {

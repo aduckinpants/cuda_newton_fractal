@@ -59,6 +59,30 @@ int main() {
         return 1;
     }
 
+    {
+        ViewState dualView{};
+        KernelParams dualParams{};
+        RenderSettings dualRender{};
+        LensSettings dualLens{};
+        bool dualDirty = false;
+
+        dualView.fractal_type = FractalType::explaino_dual;
+        dualParams.explaino_seed = 3.0;
+        dualParams.explaino_seed_b = 8.0;
+        dualParams.explaino_mix = 0.9f;
+
+        ResetRuntimeStateForCurrentFractal(dualView, dualParams, dualRender, dualLens, &dualDirty);
+
+        if (!dualDirty) {
+            std::cerr << "Dual-seed reset should mark dirty\n";
+            return 1;
+        }
+        if (!NearlyEqual(static_cast<float>(dualParams.explaino_seed_b), 1.0f) || !NearlyEqual(dualParams.explaino_mix, 0.5f)) {
+            std::cerr << "Dual-seed reset should restore deterministic seed_b/mix defaults\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_runtime_reset: all passed\n";
     return 0;
 }
