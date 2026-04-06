@@ -208,31 +208,40 @@ function was built-in or transpiled.
 
 ## Phased Staging
 
-### Phase E1 — Describe surface for built-in fractal sampler
+### Phase E1 — Describe surface for built-in fractal sampler — DONE
 
 **Goal**: Engine can tell callers what it can sample and what parameters it takes.
 
-- Add `--describe-functions` CLI verb to `fractal_ui.exe`.
-- Generate function descriptor JSON from existing UI schema + runtime structs at
+- [x] Add `--describe-functions` CLI verb to `fractal_ui.exe`.
+- [x] Add `--describe-functions-json <path>` for file output.
+- [x] Generate function descriptor JSON from existing UI schema + runtime structs at
   startup (no new source of truth).
-- The fractal sampler is the first (and initially only) described function.
-- Headless test: parse the descriptor, validate it matches the UI schema.
-- Exit criteria: `fractal_ui.exe --describe-functions` emits valid JSON that a
+- [x] The fractal sampler is the first (and initially only) described function.
+- [x] Headless test: parse the descriptor, validate it matches the UI schema.
+- [x] Exit criteria: `fractal_ui.exe --describe-functions` emits valid JSON that a
   Salticid adapter could consume to auto-construct probe requests.
 
-### Phase E2 — Generic probe dispatch
+Implementation: `function_descriptor.h/.cpp`, `test_function_descriptor.cpp`,
+`test_function_descriptor_cli.py`.
+
+### Phase E2 — Generic probe dispatch — DONE
 
 **Goal**: The probe runner can dispatch to any described function, not just
 hard-coded fractal families.
 
-- Refactor `fractal_probe_runner.cpp` to use a function registry instead of a
-  switch on `fractal_type`.
-- Register the existing fractal sampler as the first provider in that registry.
-- The probe request gains a `function_id` field (default: `"fractal.sample"`
+- [ ] Refactor `fractal_probe_runner.cpp` to use a function registry instead of a
+  switch on `fractal_type`. (Deferred to E4 — V1 validates function_id but
+  dispatches through existing fractal path.)
+- [x] Register the existing fractal sampler as the first provider in that registry.
+- [x] The probe request gains a `function_id` field (default: `"fractal.sample"`
   for backward compatibility).
-- Unknown function ids fail fast.
-- Exit criteria: existing probe CLI tests still pass with `function_id`
+- [x] Unknown function ids fail fast.
+- [x] Exit criteria: existing probe CLI tests still pass with `function_id`
   defaulting to `"fractal.sample"`.
+
+Implementation: `fractal_probe_contract.h/.cpp` (function_id field + parsing),
+`fractal_probe_runner.cpp` (validation + echo), `test_function_descriptor.cpp`
+and `test_function_descriptor_cli.py` (native + Python regression tests).
 
 ### Phase E3 — Transpiler CUDA backend (Salticid side)
 

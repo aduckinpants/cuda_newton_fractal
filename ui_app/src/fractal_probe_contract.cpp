@@ -400,7 +400,7 @@ bool ParseFractalProbeRequestJson(const std::string& text,
 
     const json_min::Object& root = parsed.value.as_object();
     if (!RejectUnknownKeys(root,
-            {"request_version", "request_id", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context"},
+            {"request_version", "request_id", "function_id", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context"},
             "request",
             outError)) return false;
 
@@ -411,6 +411,20 @@ bool ParseFractalProbeRequestJson(const std::string& text,
         return false;
     }
     if (!GetRequiredString(root, "request_id", &request.request_id, outError)) return false;
+
+    // function_id is optional; defaults to "fractal.sample" for backward compat.
+    {
+        auto fidIt = root.find("function_id");
+        if (fidIt != root.end()) {
+            if (!fidIt->second.is_string()) {
+                if (outError) *outError = "function_id must be a string";
+                return false;
+            }
+            request.function_id = fidIt->second.as_string();
+        } else {
+            request.function_id = "fractal.sample";
+        }
+    }
 
     std::string modeText;
     if (!GetRequiredString(root, "mode", &modeText, outError)) return false;
@@ -532,6 +546,9 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "{\n";
     ss << "  \"response_version\": " << response.response_version << ",\n";
     ss << "  \"request_id\": \"" << EscapeJsonString(response.request_id) << "\",\n";
+    if (!response.function_id.empty()) {
+        ss << "  \"function_id\": \"" << EscapeJsonString(response.function_id) << "\",\n";
+    }
     ss << "  \"ok\": " << (response.ok ? "true" : "false") << ",\n";
     ss << "  \"runtime\": {\n";
     ss << "    \"exe_path\": \"" << EscapeJsonString(response.runtime.exe_path) << "\",\n";

@@ -500,9 +500,12 @@ Phase E is now a multi-stage effort. See the detailed spec:
 Summary of E sub-phases:
 
 - **E1** — `--describe-functions` verb: engine advertises callable functions,
-  derived from UI schema + runtime structs
-- **E2** — generic probe dispatch: refactor runner to use function registry
-  instead of hard-coded fractal dispatch
+  derived from UI schema + runtime structs — **DONE** (function_descriptor.h/.cpp,
+  `--describe-functions` and `--describe-functions-json` CLI verbs, native + Python
+  regression tests)
+- **E2** — generic probe dispatch: `function_id` field in probe request/response,
+  function registry validation, backward-compatible default — **DONE**
+  (fractal_probe_contract + runner updated, native + Python regression tests)
 - **E3** — Salticid `CoreIR -> CUDA` transpiler backend (cross-repo)
 - **E4** — dynamic function registration from compiled `.cubin`/`.ptx` + descriptor
 - **E5** — Salticid operator adapter: `cuda_sample(fn=..., params=...)` in Salt

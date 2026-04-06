@@ -94,6 +94,7 @@ struct FractalProbeOperatorContext {
 struct FractalProbeRequest {
     int request_version{0};
     std::string request_id;
+    std::string function_id; // default: "fractal.sample"; unknown ids fail fast
     FractalProbeMode mode{FractalProbeMode::point_set};
     std::string base_state_load_path;
     std::vector<FractalProbeOverride> overrides;
@@ -152,6 +153,7 @@ struct FractalProbeSample {
 struct FractalProbeResponse {
     int response_version{1};
     std::string request_id;
+    std::string function_id; // echoes back the resolved function_id
     bool ok{false};
     FractalProbeRuntimeInfo runtime;
     FractalProbeSummary summary;

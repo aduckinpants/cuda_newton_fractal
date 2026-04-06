@@ -29,6 +29,7 @@
 #include "fractal_family_rules.h"
 #include "fractal_probe_contract.h"
 #include "fractal_probe_runner.h"
+#include "function_descriptor.h"
 #include "json_min.h"
 #include "lens_sdf.h"
 #include "runtime_reset.h"
@@ -554,6 +555,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     const bool captureFindingOnly = HasArg(args, "--capture-finding");
     const bool sampleRequestStdin = HasArg(args, "--sample-request-stdin");
     const bool sampleResponseStdout = HasArg(args, "--sample-response-stdout");
+    const bool describeFunctions = HasArg(args, "--describe-functions");
+    std::string describeFunctionsJsonPath;
+    const bool haveDescribeFunctionsJson = TryGetArgValue(args, "--describe-functions-json", &describeFunctionsJsonPath);
+    if (HasArg(args, "--describe-functions-json") && !haveDescribeFunctionsJson) {
+        return 1;
+    }
     std::string sampleRequestJsonPath;
     const bool haveSampleRequestJson = TryGetArgValue(args, "--sample-request-json", &sampleRequestJsonPath);
     if (HasArg(args, "--sample-request-json") && !haveSampleRequestJson) {
@@ -621,6 +628,54 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
+    }
+
+    // --describe-functions / --describe-functions-json: emit the engine
+    // function catalog derived from the UI schema, then exit.
+    if (describeFunctions || haveDescribeFunctionsJson) {
+        if (validateUiOnly || captureDiagnosticOnly || captureFindingOnly || anySampleModeArg) {
+            std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
+            return 1;
+        }
+
+        std::string exeDir = GetExeDir();
+        std::vector<std::string> schemaCandidates;
+        schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
+        schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
+        schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
+
+        UISchema descSchema;
+        bool descSchemaLoaded = false;
+        for (const auto& cand : schemaCandidates) {
+            std::string text = ReadTextFile(cand.c_str());
+            if (text.empty()) continue;
+            auto pr = json_min::Parse(text);
+            if (!pr.error.empty()) continue;
+            auto lr = LoadUISchemaFromJson(pr.value);
+            if (!lr.error.empty()) continue;
+            descSchema = std::move(lr.schema);
+            descSchemaLoaded = true;
+            break;
+        }
+        if (!descSchemaLoaded) {
+            std::fprintf(stderr, "Failed to load UI schema for --describe-functions\n");
+            return 1;
+        }
+
+        EngineFunctionCatalog catalog = BuildEngineCatalog(descSchema);
+        std::string catalogJson = SerializeEngineCatalogJson(catalog);
+
+        if (describeFunctions) {
+            std::cout << catalogJson;
+        }
+        if (haveDescribeFunctionsJson) {
+            std::string writeError;
+            if (!WriteTextFileExact(describeFunctionsJsonPath, catalogJson, &writeError)) {
+                std::fprintf(stderr, "%s\n", writeError.c_str());
+                return 1;
+            }
+        }
+        return 0;
     }
 
     if (captureDiagnosticOnly && captureFindingOnly) {

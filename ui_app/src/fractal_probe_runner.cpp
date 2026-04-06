@@ -712,6 +712,13 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
         return false;
     }
 
+    // Validate function_id. Only "fractal.sample" is registered in V1.
+    const std::string resolvedFunctionId = request.function_id.empty() ? "fractal.sample" : request.function_id;
+    if (resolvedFunctionId != "fractal.sample") {
+        if (outError) *outError = "Unknown function_id: " + resolvedFunctionId;
+        return false;
+    }
+
     ProbeState baseState;
     if (!BuildBaseState(request, &baseState, outError)) return false;
 
@@ -730,6 +737,7 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
 
     FractalProbeResponse response;
     response.request_id = request.request_id;
+    response.function_id = resolvedFunctionId;
     response.ok = true;
     response.runtime.exe_path = exePath;
     response.runtime.device_id = baseState.render.device_id;
