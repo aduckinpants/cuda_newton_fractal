@@ -26,6 +26,12 @@ enum class ColoringMode : int {
     joy_basins = 3,
 };
 
+enum class TranscendentalFunc : int {
+    f_sin = 0,
+    f_exp_minus_1 = 1,
+    f_cosh = 2,
+};
+
 enum class FractalType : int {
     newton = 0,
     nova = 1,
@@ -41,6 +47,8 @@ enum class FractalType : int {
     explaino_halley = 11,
     explaino_dual = 12,
     explaino_mult = 13,
+    explaino_phoenix = 14,
+    explaino_transcendental = 15,
 };
 
 enum class CameraBehavior : int {
@@ -105,6 +113,7 @@ struct KernelParams {
     float explaino_cluster_radius{0.1f};
     int explaino_root_count{0};
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+    TranscendentalFunc transcendental_func{TranscendentalFunc::f_sin};
 };
 
 struct RenderSettings {

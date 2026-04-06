@@ -576,6 +576,98 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino_phoenix) {
+        // Explaino-Phoenix: seeded Newton with previous-z memory term.
+        // z_{n+1} = z_n - damping * f(z_n)/f'(z_n) + p * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+        Cx zPrev = z;
+        Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dP);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx step = cx_div(P, dP);
+            Cx zNext = cx_add(cx_sub(z, cx_scale(step, userDamp)), cx_mul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino_transcendental) {
+        // Explaino-Transcendental: seeded Newton applied to transcendental functions.
+        // sin(z): f=sin(z), f'=cos(z)
+        // exp(z)-1: f=exp(z)-1, f'=exp(z)
+        // cosh(z): f=cosh(z), f'=sinh(z)
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        TranscendentalFunc tf = params.transcendental_func;
+
+        for (; it < maxIter; ++it) {
+            Cx F, dF;
+
+            if (tf == TranscendentalFunc::f_sin) {
+                // sin(z) = sin(x)cosh(y) + i cos(x)sinh(y)
+                float sx = sinf(z.x), cx_ = cosf(z.x);
+                float shy = sinhf(z.y), chy = coshf(z.y);
+                F = {sx * chy, cx_ * shy};
+                dF = {cx_ * chy, -sx * shy};
+            } else if (tf == TranscendentalFunc::f_exp_minus_1) {
+                // exp(z)-1 = exp(x)(cos(y) + i sin(y)) - 1
+                float ex = expf(z.x);
+                float cy_ = cosf(z.y), sy_ = sinf(z.y);
+                F = {ex * cy_ - 1.0f, ex * sy_};
+                dF = {ex * cy_, ex * sy_};
+            } else {
+                // cosh(z) = cosh(x)cos(y) + i sinh(x)sin(y)
+                float chx = coshf(z.x), shx = sinhf(z.x);
+                float cy_ = cosf(z.y), sy_ = sinf(z.y);
+                F = {chx * cy_, shx * sy_};
+                dF = {shx * cy_, chx * sy_};
+            }
+
+            pAbs = cx_abs(F);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dF);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx step = cx_div(F, dF);
+            z = cx_sub(z, cx_scale(step, userDamp));
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));

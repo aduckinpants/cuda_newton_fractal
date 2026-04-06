@@ -121,6 +121,26 @@ def _write_sidecar(path: Path, *, finding_id: str, why: str, repro_command: str,
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def _write_field_notes_template(path: Path, *, finding_id: str) -> None:
+    lines = [
+        f"# Field Notes: {finding_id}",
+        "",
+        "## What caught my eye",
+        "",
+        "(describe what you saw that made you stop and capture this)",
+        "",
+        "## Observations",
+        "",
+        "- ",
+        "",
+        "## Follow-up ideas",
+        "",
+        "- ",
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def archive_finding_bundle(
     *,
     diagnostics_dir: Path,
@@ -176,4 +196,8 @@ def archive_finding_bundle(
         fractal_type=metadata["fractal_type"],
     )
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+    field_notes_path = output_dir / "field-notes.md"
+    _write_field_notes_template(field_notes_path, finding_id=finding_id)
+
     return output_dir

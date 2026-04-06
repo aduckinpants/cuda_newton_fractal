@@ -49,6 +49,7 @@ def main() -> int:
                 "frame_png": str(output_dir / "frame.png"),
                 "state_json": str(output_dir / "state.json"),
                 "sidecar": str(output_dir / "finding.md"),
+                "field_notes": str(output_dir / "field-notes.md"),
             },
             indent=2,
         )

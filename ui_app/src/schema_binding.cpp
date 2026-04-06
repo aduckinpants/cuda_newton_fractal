@@ -14,6 +14,13 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case PolyKind::custom: return "custom";
         }
     }
+    if (params && path == "fractal.params.transcendental_func") {
+        switch (params->transcendental_func) {
+        case TranscendentalFunc::f_sin: return "f_sin";
+        case TranscendentalFunc::f_exp_minus_1: return "f_exp_minus_1";
+        case TranscendentalFunc::f_cosh: return "f_cosh";
+        }
+    }
     if (params && path == "fractal.params.coloring_mode") {
         switch (params->coloring_mode) {
         case ColoringMode::root_basin: return "root_basin";
@@ -38,6 +45,8 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_halley: return "explaino_halley";
         case FractalType::explaino_dual: return "explaino_dual";
         case FractalType::explaino_mult: return "explaino_mult";
+        case FractalType::explaino_phoenix: return "explaino_phoenix";
+        case FractalType::explaino_transcendental: return "explaino_transcendental";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -57,6 +66,13 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         if (id == "z3_minus_1") params->poly_kind = PolyKind::z3_minus_1;
         else if (id == "z4_minus_1") params->poly_kind = PolyKind::z4_minus_1;
         else if (id == "custom") params->poly_kind = PolyKind::custom;
+        else return false;
+        return true;
+    }
+    if (params && path == "fractal.params.transcendental_func") {
+        if (id == "f_sin") params->transcendental_func = TranscendentalFunc::f_sin;
+        else if (id == "f_exp_minus_1") params->transcendental_func = TranscendentalFunc::f_exp_minus_1;
+        else if (id == "f_cosh") params->transcendental_func = TranscendentalFunc::f_cosh;
         else return false;
         return true;
     }
@@ -83,6 +99,8 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_halley") view->fractal_type = FractalType::explaino_halley;
         else if (id == "explaino_dual") view->fractal_type = FractalType::explaino_dual;
         else if (id == "explaino_mult") view->fractal_type = FractalType::explaino_mult;
+        else if (id == "explaino_phoenix") view->fractal_type = FractalType::explaino_phoenix;
+        else if (id == "explaino_transcendental") view->fractal_type = FractalType::explaino_transcendental;
         else return false;
         return true;
     }
@@ -410,7 +428,7 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
                 }
             } else if (c.value_type == "enum") {
                 if (!(b.path == "fractal.view.fractal_type" || b.path == "fractal.view.camera_behavior" || b.path == "fractal.params.poly_kind" ||
-                      b.path == "fractal.params.coloring_mode")) {
+                      b.path == "fractal.params.coloring_mode" || b.path == "fractal.params.transcendental_func")) {
                     if (outError) *outError = "Unknown enum binding path: " + b.path + " (control: " + c.id + ")";
                     return false;
                 }

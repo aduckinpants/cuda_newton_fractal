@@ -63,6 +63,8 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_nova:
     case FractalType::explaino_dual:
     case FractalType::explaino_mult:
+    case FractalType::explaino_phoenix:
+    case FractalType::explaino_transcendental:
     default:
         break;
     }
@@ -126,11 +128,15 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_nova ||
         view.fractal_type == FractalType::explaino_halley ||
         view.fractal_type == FractalType::explaino_dual ||
-        view.fractal_type == FractalType::explaino_mult) {
+        view.fractal_type == FractalType::explaino_mult ||
+        view.fractal_type == FractalType::explaino_phoenix ||
+        view.fractal_type == FractalType::explaino_transcendental) {
         params.max_iter = (view.fractal_type == FractalType::explaino ||
             view.fractal_type == FractalType::explaino_halley ||
             view.fractal_type == FractalType::explaino_dual ||
-            view.fractal_type == FractalType::explaino_mult) ? 500 :
+            view.fractal_type == FractalType::explaino_mult ||
+            view.fractal_type == FractalType::explaino_phoenix ||
+            view.fractal_type == FractalType::explaino_transcendental) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;

@@ -129,6 +129,8 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino_halley") { if (outType) *outType = FractalType::explaino_halley; return true; }
     if (text == "explaino_dual") { if (outType) *outType = FractalType::explaino_dual; return true; }
     if (text == "explaino_mult") { if (outType) *outType = FractalType::explaino_mult; return true; }
+    if (text == "explaino_phoenix") { if (outType) *outType = FractalType::explaino_phoenix; return true; }
+    if (text == "explaino_transcendental") { if (outType) *outType = FractalType::explaino_transcendental; return true; }
     return false;
 }
 
@@ -349,6 +351,18 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoClusterRadius = nextParams.explaino_cluster_radius;
     if (!GetOptionalNumber(*paramsObject, "explaino_cluster_radius", &explainoClusterRadius, nullptr, outError)) return false;
     nextParams.explaino_cluster_radius = static_cast<float>(explainoClusterRadius);
+
+    // transcendental_func (optional for backward compat)
+    {
+        std::string tfStr;
+        const json_min::Value* tfVal = paramsObject->get("transcendental_func");
+        if (tfVal && tfVal->is_string()) {
+            tfStr = tfVal->as_string();
+            if (tfStr == "f_sin") nextParams.transcendental_func = TranscendentalFunc::f_sin;
+            else if (tfStr == "f_exp_minus_1") nextParams.transcendental_func = TranscendentalFunc::f_exp_minus_1;
+            else if (tfStr == "f_cosh") nextParams.transcendental_func = TranscendentalFunc::f_cosh;
+        }
+    }
 
     for (size_t index = 0; index < 5; ++index) {
         const json_min::Value& coeff = polyCoeffsArray->as_array()[index];

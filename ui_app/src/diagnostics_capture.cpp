@@ -26,6 +26,8 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::explaino_halley: return "explaino_halley";
     case FractalType::explaino_dual: return "explaino_dual";
     case FractalType::explaino_mult: return "explaino_mult";
+    case FractalType::explaino_phoenix: return "explaino_phoenix";
+    case FractalType::explaino_transcendental: return "explaino_transcendental";
     }
     return "unknown";
 }
@@ -36,6 +38,15 @@ const char* ColoringModeId(ColoringMode coloringMode) {
     case ColoringMode::iteration_count: return "iteration_count";
     case ColoringMode::smooth_escape: return "smooth_escape";
     case ColoringMode::joy_basins: return "joy_basins";
+    }
+    return "unknown";
+}
+
+const char* TranscendentalFuncId(TranscendentalFunc func) {
+    switch (func) {
+    case TranscendentalFunc::f_sin: return "f_sin";
+    case TranscendentalFunc::f_exp_minus_1: return "f_exp_minus_1";
+    case TranscendentalFunc::f_cosh: return "f_cosh";
     }
     return "unknown";
 }
@@ -141,6 +152,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
+    js << "    \"transcendental_func\": \"" << TranscendentalFuncId(params.transcendental_func) << "\",\n";
     js << "    \"poly_coeffs\": [";
     for (int i = 0; i < 5; ++i) {
         if (i > 0) js << ", ";
