@@ -1,5 +1,4 @@
 #include "../src/explaino_seed.h"
-#include "../src/explaino_seed_curve.h"
 #include "../src/fractal_derived_fields.h"
 
 #include <cmath>
@@ -277,18 +276,13 @@ int main() {
         UpdateExplainoPolynomial(viewB, paramsB, nullptr);
         UpdateExplainoPolynomial(viewTween, paramsTween, nullptr);
 
-        const float tweenT = static_cast<float>(LogisticAreaUToSeed(5.25));
+        // Tween at seed 5.25 should linearly interpolate at t=0.25 between
+        // seed-5 and seed-6 shapes (smooth motion, not chaotic hash).
         const float expectedRoot0X = paramsA.explaino_roots[0].x +
-            (paramsB.explaino_roots[0].x - paramsA.explaino_roots[0].x) * tweenT;
-        const float rawLinearRoot0X = paramsA.explaino_roots[0].x +
             (paramsB.explaino_roots[0].x - paramsA.explaino_roots[0].x) * 0.25f;
 
         if (!NearlyEqual(paramsTween.explaino_roots[0].x, expectedRoot0X, 1e-5f)) {
-            std::cerr << "Explaino seed tween should follow LogisticAreaUToSeed instead of raw fractional lerp\n";
-            return 1;
-        }
-        if (NearlyEqual(paramsTween.explaino_roots[0].x, rawLinearRoot0X, 1e-5f)) {
-            std::cerr << "Explaino seed tween should not use raw fractional drift directly\n";
+            std::cerr << "Explaino seed tween should use smooth linear drift fraction\n";
             return 1;
         }
     }
