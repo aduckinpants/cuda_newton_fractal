@@ -2,7 +2,7 @@
 
 This is the interactive UI front-end for the CUDA Newton fractal demo.
 
-The UI is schema-driven: it loads the canonical ImGuiSpec JSON schema at startup and generates the control surface from `panels[]/controls[]` + bindings.
+The UI is schema-driven: it loads one checked-in JSON schema at startup and generates the control surface from `panels[]/controls[]` + bindings.
 
 ## One-time setup (Dear ImGui)
 
@@ -82,17 +82,15 @@ pwsh -File .\tools\publish_repo_artifacts.ps1 -Label cleanup
 
 At startup, the app loads:
 
-- `..\ui\fractal_binding_surface_v1.ui_schema.canonical.json` (relative to `ui_app`)  
-	Published runtime path: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
-	Source path: `C:\code\cuda_newton_fractal_clone\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
+- `..\ui\fractal_binding_surface_v1.ui_schema.json` (relative to `ui_app`)  
+	Published runtime path: `D:\salt-fractal\cuda_newton_fractal_clone\runtime\ui\fractal_binding_surface_v1.ui_schema.json`
+	Source path: `C:\code\cuda_newton_fractal_clone\ui\fractal_binding_surface_v1.ui_schema.json`
 
 To tweak the UI without changing code:
 
-1) Edit the non-canonical schema (recommended):
+1) Edit the schema:
 	- `C:\code\cuda_newton_fractal_clone\ui\fractal_binding_surface_v1.ui_schema.json`
-2) Re-canonicalize/validate:
-	- `python C:\artifacts\imgui_spec\validate_schema.py --in C:\code\cuda_newton_fractal_clone\ui\fractal_binding_surface_v1.ui_schema.json --out C:\code\cuda_newton_fractal_clone\ui\fractal_binding_surface_v1.ui_schema.canonical.json`
-3) Relaunch `fractal_ui.exe`
+2) Rebuild or relaunch `fractal_ui.exe`
 
 Notes:
 - Schema `default` values are applied at app startup.

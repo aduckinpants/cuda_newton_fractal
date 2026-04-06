@@ -92,8 +92,10 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
 if errorlevel 1 exit /b 1
 
-cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\tests\test_ui_schema.cpp ^
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_ui_schema.cpp ^
   /Fe:"%TESTROOT%\test_ui_schema.exe"
 if errorlevel 1 exit /b 1
 

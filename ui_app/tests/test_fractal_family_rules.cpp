@@ -296,6 +296,30 @@ int main() {
         }
     }
 
+    // Lambda: not explaino + escape-time + no basin coloring
+    {
+        if (IsExplainoFamily(FractalType::lambda_map)) {
+            std::cerr << "Lambda should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::lambda_map)) {
+            std::cerr << "Lambda should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::lambda_map)) {
+            std::cerr << "Lambda should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::lambda_map) != ColoringMode::smooth_escape) {
+            std::cerr << "Lambda should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::lambda_map, ColoringMode::joy_basins)) {
+            std::cerr << "Lambda should reject joy_basins coloring\n";
+            return 1;
+        }
+    }
+
     // ComputeAutoMaxIter tests
     {
         // At zoom 0 (no zoom): basin type gets base 150

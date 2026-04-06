@@ -55,6 +55,10 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         center = {-0.3f, 0.0f};
         zoom = 1.5f;
         break;
+    case FractalType::lambda_map:
+        center = {0.5f, 0.0f};
+        zoom = 4.5f;
+        break;
     case FractalType::phoenix:
         center = {0.36f, -0.1f};
         zoom = 2.8f;
@@ -102,6 +106,11 @@ void SetPolyPreset(KernelParams& params) {
 }
 
 void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, bool* ioDirty) {
+    params.multibrot_power = 3;
+    params.multibrot_power_float = 3.0f;
+    params.lambda_real = 2.9685855f;
+    params.lambda_imag = -0.27446103f;
+
     if (view.fractal_type == FractalType::newton) {
         params.max_iter = 500;
         params.epsilon = 1e-6f;
@@ -191,6 +200,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.5f;
         params.multibrot_power = 2;  // Classic Tricorn
+        params.multibrot_power_float = 2.0f;
         if (ioDirty) *ioDirty = true;
         return;
     }
@@ -251,6 +261,16 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.4f;
         params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::lambda_map) {
+        params.max_iter = 1200;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.4f;
+        params.lambda_real = 2.9685855f;
+        params.lambda_imag = -0.27446103f;
         if (ioDirty) *ioDirty = true;
         return;
     }

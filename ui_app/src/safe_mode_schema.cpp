@@ -45,6 +45,7 @@ UISchema BuildSafeModeSchema() {
             {"collatz", "Collatz"},
             {"explaino_collatz", "Explaino Collatz"},
             {"mcmullen", "McMullen"},
+            {"lambda", "Lambda"},
         };
         view.controls.push_back(std::move(c));
     }

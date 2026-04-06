@@ -63,6 +63,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::collatz: return "collatz";
         case FractalType::explaino_collatz: return "explaino_collatz";
         case FractalType::mcmullen: return "mcmullen";
+        case FractalType::lambda_map: return "lambda";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -133,6 +134,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "collatz") view->fractal_type = FractalType::collatz;
         else if (id == "explaino_collatz") view->fractal_type = FractalType::explaino_collatz;
         else if (id == "mcmullen") view->fractal_type = FractalType::mcmullen;
+        else if (id == "lambda") view->fractal_type = FractalType::lambda_map;
         else return false;
         return true;
     }
@@ -260,7 +262,10 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
     if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
     if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
+    if (path == "fractal.params.lambda_real") { *outPtr = &params->lambda_real; return true; }
+    if (path == "fractal.params.lambda_imag") { *outPtr = &params->lambda_imag; return true; }
     if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
+    if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
     if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
     if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
     if (path == "fractal.params.color_tint_r") { *outPtr = &params->color_tint_r; return true; }
@@ -461,8 +466,40 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
                     return false;
                 }
             } else if (c.value_type == "enum") {
-                if (!(b.path == "fractal.view.fractal_type" || b.path == "fractal.view.camera_behavior" || b.path == "fractal.params.poly_kind" ||
-                      b.path == "fractal.params.coloring_mode" || b.path == "fractal.params.transcendental_func")) {
+                if (!ctx.GetEnumId(b.path).empty()) {
+                    continue;
+                }
+
+                ViewState viewCopy{};
+                KernelParams paramsCopy{};
+                RenderSettings renderCopy{};
+                LensSettings lensCopy{};
+                BindingContext probe = ctx;
+                if (ctx.view) {
+                    viewCopy = *ctx.view;
+                    probe.view = &viewCopy;
+                }
+                if (ctx.params) {
+                    paramsCopy = *ctx.params;
+                    probe.params = &paramsCopy;
+                }
+                if (ctx.render) {
+                    renderCopy = *ctx.render;
+                    probe.render = &renderCopy;
+                }
+                if (ctx.lens) {
+                    lensCopy = *ctx.lens;
+                    probe.lens = &lensCopy;
+                }
+
+                bool enumPathSupported = false;
+                for (const auto& option : c.options) {
+                    if (probe.SetEnumId(b.path, option.id)) {
+                        enumPathSupported = true;
+                        break;
+                    }
+                }
+                if (!enumPathSupported) {
                     if (outError) *outError = "Unknown enum binding path: " + b.path + " (control: " + c.id + ")";
                     return false;
                 }

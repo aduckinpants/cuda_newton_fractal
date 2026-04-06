@@ -139,6 +139,7 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
     if (text == "explaino_collatz") { if (outType) *outType = FractalType::explaino_collatz; return true; }
     if (text == "mcmullen") { if (outType) *outType = FractalType::mcmullen; return true; }
+    if (text == "lambda") { if (outType) *outType = FractalType::lambda_map; return true; }
     return false;
 }
 
@@ -265,6 +266,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double phoenixPReal = 0.0;
     double phoenixPImag = 0.0;
     int multibrotPower = 0;
+    double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
+    double lambdaReal = static_cast<double>(nextParams.lambda_real);
+    double lambdaImag = static_cast<double>(nextParams.lambda_imag);
     double explainoSeed = 0.0;
     double explainoSeedB = nextParams.explaino_seed_b;
     double explainoMix = nextParams.explaino_mix;
@@ -281,6 +285,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_real", &phoenixPReal, outError)) return false;
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_imag", &phoenixPImag, outError)) return false;
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
     }
     if (!GetRequiredNumber(*paramsObject, "explaino_seed", &explainoSeed, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_seed_b", &explainoSeedB, nullptr, outError)) return false;
@@ -310,8 +317,14 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.phoenix_p_real = static_cast<float>(phoenixPReal);
         nextParams.phoenix_p_imag = static_cast<float>(phoenixPImag);
         nextParams.multibrot_power = multibrotPower;
+        nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
+        nextParams.lambda_real = static_cast<float>(lambdaReal);
+        nextParams.lambda_imag = static_cast<float>(lambdaImag);
     } else {
         nextParams.coloring_mode = DefaultColoringModeForFractal(nextView.fractal_type);
+    }
+    if (stateVersion >= 2 && !paramsObject->get("multibrot_power_float")) {
+        nextParams.multibrot_power_float = static_cast<float>(nextParams.multibrot_power);
     }
     if (!IsColoringModeAllowedForFractal(nextView.fractal_type, nextParams.coloring_mode)) {
         if (outError) {

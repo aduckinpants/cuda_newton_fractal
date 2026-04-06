@@ -122,8 +122,146 @@ int main() {
           std::cerr << "params multibrot_power mismatch\n";
           return 1;
         }
+        if (!NearlyEqual(params.multibrot_power_float, 5.0f, 1.0e-6)) {
+          std::cerr << "params multibrot_power_float should fall back to legacy int value\n";
+          return 1;
+        }
         if (render.resolution.x != 1440 || render.resolution.y != 900 || render.block_size != 512 || render.device_id != 1) {
             std::cerr << "render mismatch\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "multibrot_float_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "multibrot",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": false
+  },
+  "params": {
+    "max_iter": 1000,
+    "epsilon": 0.000001,
+    "exposure": 1.4,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 2.5,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected non-integer multibrot state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::multibrot) {
+            std::cerr << "Expected multibrot fractal type to load\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.multibrot_power_float, 2.5f, 1.0e-6)) {
+            std::cerr << "Expected multibrot_power_float to round-trip from saved state\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "lambda_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "lambda",
+  "view": {
+    "center_x": 0.5,
+    "center_y": 0.0,
+    "zoom": 2.0,
+    "rotation_degrees": 0,
+    "center_hp_x": 0.5,
+    "center_hp_y": 0.0,
+    "log2_zoom": 1.0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": false
+  },
+  "params": {
+    "max_iter": 1200,
+    "epsilon": 0.000001,
+    "exposure": 1.4,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 1.0,
+    "lambda_imag": 0.25,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected lambda state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::lambda_map) {
+            std::cerr << "Expected lambda fractal type to round-trip\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.lambda_real, 1.0f, 1.0e-6) || !NearlyEqual(params.lambda_imag, 0.25f, 1.0e-6)) {
+            std::cerr << "Expected lambda_real/lambda_imag to round-trip from saved state\n";
             return 1;
         }
     }

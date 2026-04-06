@@ -36,6 +36,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::collatz: return "collatz";
     case FractalType::explaino_collatz: return "explaino_collatz";
     case FractalType::mcmullen: return "mcmullen";
+    case FractalType::lambda_map: return "lambda";
     }
     return "unknown";
 }
@@ -164,6 +165,9 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"phoenix_p_real\": " << static_cast<double>(params.phoenix_p_real) << ",\n";
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";
     js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
+    js << "    \"multibrot_power_float\": " << static_cast<double>(params.multibrot_power_float) << ",\n";
+    js << "    \"lambda_real\": " << static_cast<double>(params.lambda_real) << ",\n";
+    js << "    \"lambda_imag\": " << static_cast<double>(params.lambda_imag) << ",\n";
     js << "    \"explaino_seed\": " << params.explaino_seed << ",\n";
     js << "    \"explaino_seed_b\": " << params.explaino_seed_b << ",\n";
     js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";

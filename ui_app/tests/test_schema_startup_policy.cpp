@@ -5,7 +5,7 @@
 int main() {
     {
         SchemaStartupFailureResult result = ResolveSchemaBindingFailure(
-            "D:/salt-fractal/cuda_newton_fractal_clone/runtime/ui/fractal_binding_surface_v1.ui_schema.canonical.json",
+            "D:/salt-fractal/cuda_newton_fractal_clone/runtime/ui/fractal_binding_surface_v1.ui_schema.json",
             "Unknown action binding path: fractal.actions.bad_path (control: bad_button)");
 
         if (!result.enter_safe_mode) {
@@ -20,7 +20,7 @@ int main() {
             std::cerr << "Expected binding error details missing\n";
             return 1;
         }
-        if (result.warning.find("fractal_binding_surface_v1.ui_schema.canonical.json") == std::string::npos) {
+        if (result.warning.find("fractal_binding_surface_v1.ui_schema.json") == std::string::npos) {
             std::cerr << "Expected schema path missing from warning\n";
             return 1;
         }

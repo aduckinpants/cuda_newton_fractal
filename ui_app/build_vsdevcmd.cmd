@@ -69,10 +69,10 @@ del "%LINK_LOG%" >NUL 2>NUL
 
 REM Stage schema beside the published runtime so the external exe can validate and render without touching the repo tree.
 if not exist "%OUTROOT%\ui" mkdir "%OUTROOT%\ui"
-if exist ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json (
-  copy /Y ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json "%OUTROOT%\ui\fractal_binding_surface_v1.ui_schema.canonical.json" >NUL
+if exist ..\ui\fractal_binding_surface_v1.ui_schema.json (
+  copy /Y ..\ui\fractal_binding_surface_v1.ui_schema.json "%OUTROOT%\ui\fractal_binding_surface_v1.ui_schema.json" >NUL
 ) else (
-  echo WARNING: canonical schema missing at ..\ui\fractal_binding_surface_v1.ui_schema.canonical.json
+  echo WARNING: schema missing at ..\ui\fractal_binding_surface_v1.ui_schema.json
 )
 
 copy /Y .\fractal_ui_launcher_template.cmd "%OUTROOT%\fractal_ui.cmd" >NUL

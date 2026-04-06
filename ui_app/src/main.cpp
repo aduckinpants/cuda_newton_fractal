@@ -204,6 +204,7 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
     if (text == "explaino_collatz") { if (outType) *outType = FractalType::explaino_collatz; return true; }
     if (text == "mcmullen") { if (outType) *outType = FractalType::mcmullen; return true; }
+    if (text == "lambda") { if (outType) *outType = FractalType::lambda_map; return true; }
     return false;
 }
 
@@ -512,6 +513,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         return 1;
     }
 
+    double lambdaRealOverride = 0.0;
+    const bool haveLambdaRealOverride = TryParseDoubleArg(args, "--lambda-real", &lambdaRealOverride);
+    if (HasArg(args, "--lambda-real") && !haveLambdaRealOverride) {
+        return 1;
+    }
+
+    double lambdaImagOverride = 0.0;
+    const bool haveLambdaImagOverride = TryParseDoubleArg(args, "--lambda-imag", &lambdaImagOverride);
+    if (HasArg(args, "--lambda-imag") && !haveLambdaImagOverride) {
+        return 1;
+    }
+
     double explainoSeedDriftOverride = 0.0;
     const bool haveExplainoSeedDriftOverride = TryParseDoubleArg(args, "--explaino-seed-drift", &explainoSeedDriftOverride);
     if (HasArg(args, "--explaino-seed-drift") && !haveExplainoSeedDriftOverride) {
@@ -598,8 +611,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     LensSettings lens{};
     bool dirty = true;
 
-    // Schema load policy (short-term unblock):
-    // - Prefer exe-relative canonical schema (treat canonical JSON as an artifact)
+    // Schema load policy:
+    // - Use one checked-in schema file for both repo and published runtime paths
     // - If missing/invalid while editing, keep the app running with a built-in Safe Mode UI
     std::string schemaPath;
     std::string schemaWarning; // non-empty => Safe Mode UI active
@@ -608,9 +621,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     std::string exeDir = GetExeDir();
     std::vector<std::string> schemaCandidates;
-    schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.canonical.json"));
-    schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.canonical.json"));
-    schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.canonical.json");
+    schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
+    schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
+    schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
 
     for (const auto& cand : schemaCandidates) {
         std::string text = ReadTextFile(cand.c_str());
@@ -722,6 +735,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (haveExplainoSeedBOverride) params.explaino_seed_b = explainoSeedBOverride;
         if (haveExplainoMixOverride) params.explaino_mix = (float)explainoMixOverride;
         if (haveExplainoWarpOverride) params.explaino_warp_strength = (float)explainoWarpOverride;
+        if (haveLambdaRealOverride) params.lambda_real = (float)lambdaRealOverride;
+        if (haveLambdaImagOverride) params.lambda_imag = (float)lambdaImagOverride;
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, &dirty);
         }

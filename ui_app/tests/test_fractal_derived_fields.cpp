@@ -69,6 +69,26 @@ int main() {
     {
         ViewState view{};
         KernelParams params{};
+        view.fractal_type = FractalType::lambda_map;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Lambda defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200 || params.coloring_mode != ColoringMode::smooth_escape || !NearlyEqual(params.exposure, 1.4f)) {
+            std::cerr << "Lambda param preset should use escape-time defaults\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.lambda_real, 2.9685855f) || !NearlyEqual(params.lambda_imag, -0.27446103f)) {
+            std::cerr << "Lambda should default to deterministic lambda_real/lambda_imag\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
         view.fractal_type = FractalType::phoenix;
         bool dirty = false;
         ApplyFractalPresetDefaults(view, params, &dirty);

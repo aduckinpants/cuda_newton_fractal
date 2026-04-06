@@ -38,7 +38,8 @@
             { "id": "halley", "label": "Halley" },
             { "id": "collatz", "label": "Collatz" },
             { "id": "explaino_collatz", "label": "Explaino Collatz" },
-            { "id": "mcmullen", "label": "McMullen" }
+            { "id": "mcmullen", "label": "McMullen" },
+            { "id": "lambda", "label": "Lambda" }
           ],
           "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
           "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
@@ -175,14 +176,24 @@
           "help": "Per-second rate for smooth Explaino seed stepping. Logarithmic scale gives more room in the low end. Left/Right arrow keys also scrub with acceleration."
         },
         {
-          "id": "multibrot_power",
-          "type": "slider_int",
+          "id": "multibrot_power_float",
+          "type": "slider_float",
           "label": "Multibrot Power",
+          "value_type": "float",
+          "min": 2.0, "max": 12.0, "step": 0.01, "default": 3.0,
+          "binding": { "kind": "param", "path": "fractal.params.multibrot_power_float" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" },
+          "help": "Real exponent p in z_{n+1} = z_n^p + c using the principal branch, with 0^p defined as 0 for p > 0."
+        },
+        {
+          "id": "multicorn_power",
+          "type": "slider_int",
+          "label": "Multicorn Power",
           "value_type": "int",
-          "min": 2, "max": 8, "step": 1, "default": 3,
+          "min": 2, "max": 12, "step": 1, "default": 2,
           "binding": { "kind": "param", "path": "fractal.params.multibrot_power" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot,multicorn" },
-          "help": "Exponent p in z_{n+1} = z_n^p + c (used only when Fractal Type = Multibrot)."
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multicorn" },
+          "help": "Integer exponent p in z_{n+1} = conj(z_n)^p + c."
         },
         {
           "id": "mcmullen_preset",
@@ -191,14 +202,34 @@
           "value_type": "enum",
           "default": "z3_z3",
           "options": [
-            { "id": "z3_z3", "label": "z\u00b3 + \u03bb/z\u00b3" },
-            { "id": "z2_z2", "label": "z\u00b2 + \u03bb/z\u00b2" },
-            { "id": "z4_z2", "label": "z\u2074 + \u03bb/z\u00b2" },
-            { "id": "z3_z2", "label": "z\u00b3 + \u03bb/z\u00b2" }
+            { "id": "z3_z3", "label": "z^3 + lambda/z^3" },
+            { "id": "z2_z2", "label": "z^2 + lambda/z^2" },
+            { "id": "z4_z2", "label": "z^4 + lambda/z^2" },
+            { "id": "z3_z2", "label": "z^3 + lambda/z^2" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.mcmullen_preset" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "mcmullen" },
           "help": "Select the (m, n, lambda) preset for the McMullen rational map z^m + lambda/z^n."
+        },
+        {
+          "id": "lambda_real",
+          "type": "drag_float",
+          "label": "Lambda Real",
+          "value_type": "float",
+          "min": -4.0, "max": 4.0, "step": 0.01, "default": 2.9685855,
+          "binding": { "kind": "param", "path": "fractal.params.lambda_real" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "lambda" },
+          "help": "Real part of the complex lambda parameter in z_{n+1} = lambda z_n (1 - z_n)."
+        },
+        {
+          "id": "lambda_imag",
+          "type": "drag_float",
+          "label": "Lambda Imag",
+          "value_type": "float",
+          "min": -4.0, "max": 4.0, "step": 0.01, "default": -0.27446103,
+          "binding": { "kind": "param", "path": "fractal.params.lambda_imag" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "lambda" },
+          "help": "Imaginary part of the complex lambda parameter in z_{n+1} = lambda z_n (1 - z_n)."
         }
       ]
     },
@@ -618,7 +649,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "nova,explaino_nova,mandelbrot,julia,burning_ship,multibrot,phoenix,explaino_julia,multicorn,collatz,mcmullen"
+            "value": "nova,explaino_nova,mandelbrot,julia,burning_ship,multibrot,phoenix,explaino_julia,multicorn,collatz,mcmullen,lambda"
           },
           "help": "Escape-time fractals use iteration-based coloring."
         },

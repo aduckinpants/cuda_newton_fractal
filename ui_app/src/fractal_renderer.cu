@@ -237,6 +237,18 @@ __device__ __forceinline__ Cx cx_pow_int(Cx z, int p) {
     return r;
 }
 
+__device__ __forceinline__ Cx cx_pow_real_principal(Cx z, float p) {
+    float r2 = cx_abs2(z);
+    if (r2 <= 1.0e-30f) {
+        return {0.0f, 0.0f};
+    }
+    float r = sqrtf(r2);
+    float theta = atan2f(z.y, z.x);
+    float rp = powf(r, p);
+    float angle = p * theta;
+    return {rp * cosf(angle), rp * sinf(angle)};
+}
+
 __device__ __forceinline__ Cxd cxd_add(Cxd a, Cxd b) { return {a.x + b.x, a.y + b.y}; }
 __device__ __forceinline__ Cxd cxd_sub(Cxd a, Cxd b) { return {a.x - b.x, a.y - b.y}; }
 __device__ __forceinline__ Cxd cxd_mul(Cxd a, Cxd b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
@@ -1049,12 +1061,15 @@ __global__ void kernel_render(
             } else if (ft == FractalType::julia) {
                 z = coord;
                 cConst = {-0.7f, 0.27015f};
+            } else if (ft == FractalType::lambda_map) {
+                z = coord;
             } else {
                 z = {0.0f, 0.0f};
                 cConst = coord;
             }
 
-            int p = params.multibrot_power;
+            float pf = params.multibrot_power_float;
+            Cx lambdaConst{params.lambda_real, params.lambda_imag};
 
             if (ft != FractalType::phoenix) {
                 float r2 = 0.0f;
@@ -1064,8 +1079,11 @@ __global__ void kernel_render(
                         Cx z2 = cx_mul(a, a);
                         z = cx_add(z2, cConst);
                     } else if (ft == FractalType::multibrot) {
-                        Cx zp = cx_pow_int(z, p);
+                        Cx zp = cx_pow_real_principal(z, pf);
                         z = cx_add(zp, cConst);
+                    } else if (ft == FractalType::lambda_map) {
+                        Cx oneMinusZ{1.0f - z.x, -z.y};
+                        z = cx_mul(lambdaConst, cx_mul(z, oneMinusZ));
                     } else {
                         // Mandelbrot / Julia default to z^2 + c
                         Cx z2 = cx_mul(z, z);
@@ -1201,8 +1219,8 @@ __global__ void kernel_render(
             float log_zn = logf(fmaxf(mag, 1e-12f));
 
             float denom = logf(2.0f);
-            int p = params.multibrot_power;
-            if (ft == FractalType::multibrot && p > 1) denom = logf((float)p);
+            float pf = params.multibrot_power_float;
+            if (ft == FractalType::multibrot && pf > 1.0f) denom = logf(pf);
 
             float nu = (float)it + 1.0f - logf(fmaxf(log_zn / denom, 1e-12f)) / denom;
 
@@ -1368,9 +1386,29 @@ bool RenderFractalCUDA(
             return false;
         }
     }
-    if (view.fractal_type == FractalType::multibrot || view.fractal_type == FractalType::multicorn) {
+    if (view.fractal_type == FractalType::multibrot) {
+        if (!std::isfinite(params.multibrot_power_float)) {
+            if (outError) *outError = "multibrot_power_float must be finite";
+            return false;
+        }
+        if (params.multibrot_power_float < 2.0f || params.multibrot_power_float > 12.0f) {
+            if (outError) *outError = "multibrot_power_float must be in [2,12]";
+            return false;
+        }
+    }
+    if (view.fractal_type == FractalType::multicorn) {
         if (params.multibrot_power < 2 || params.multibrot_power > 12) {
             if (outError) *outError = "multibrot_power must be in [2,12]";
+            return false;
+        }
+    }
+    if (view.fractal_type == FractalType::lambda_map) {
+        if (!std::isfinite(params.lambda_real) || !std::isfinite(params.lambda_imag)) {
+            if (outError) *outError = "lambda_real/lambda_imag must be finite";
+            return false;
+        }
+        if (fabs(params.lambda_real) > 4.0f || fabs(params.lambda_imag) > 4.0f) {
+            if (outError) *outError = "lambda_real/lambda_imag must be in [-4,4]";
             return false;
         }
     }

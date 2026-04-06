@@ -64,6 +64,7 @@ enum class FractalType : int {
     collatz = 21,
     explaino_collatz = 22,
     mcmullen = 23,
+    lambda_map = 24,
 };
 
 enum class CameraBehavior : int {
@@ -112,6 +113,9 @@ struct KernelParams {
     PolyKind poly_kind{PolyKind::z3_minus_1};
     float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
     int multibrot_power{3};
+    float multibrot_power_float{3.0f};
+    float lambda_real{2.9685855f};
+    float lambda_imag{-0.27446103f};
     ColoringMode coloring_mode{ColoringMode::root_basin};
     float exposure{1.0f};
 
