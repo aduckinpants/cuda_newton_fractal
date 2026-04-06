@@ -38,12 +38,13 @@ __device__ __forceinline__ float hash01_u32(unsigned int x) {
 
 __device__ __forceinline__ Cx explaino_warp_start(Cx coord, double seed, float phase, float strength) {
     float s = fmaxf(0.0f, fminf(1.0f, strength));
+    if (s <= 0.0f) return coord;
     unsigned long long bits = (unsigned long long)__double_as_longlong(seed);
     unsigned int u = (unsigned int)(bits ^ (bits >> 32));
     float a0 = hash01_u32(u ^ 0x1234567u);
     float a1 = hash01_u32(u ^ 0x89abcdefu);
 
-    float rot = (a0 * 2.0f - 1.0f) * 3.1415926f;
+    float rot = s * (a0 * 2.0f - 1.0f) * 3.1415926f;
     Cx z = cx_rot(coord, rot);
 
     float freq = 2.0f + 6.0f * a1;
