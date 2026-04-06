@@ -56,8 +56,13 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         zoom = 1.5f;
         break;
     case FractalType::lambda_map:
+    case FractalType::explaino_lambda:
         center = {0.5f, 0.0f};
         zoom = 4.5f;
+        break;
+    case FractalType::explaino_rational_escape:
+        center = {0.0f, 0.0f};
+        zoom = 1.8f;
         break;
     case FractalType::phoenix:
         center = {0.36f, -0.1f};
@@ -153,7 +158,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_inertial ||
         view.fractal_type == FractalType::explaino_julia ||
         view.fractal_type == FractalType::explaino_rational ||
-        view.fractal_type == FractalType::explaino_collatz) {
+        view.fractal_type == FractalType::explaino_collatz ||
+        view.fractal_type == FractalType::explaino_lambda ||
+        view.fractal_type == FractalType::explaino_rational_escape) {
         params.max_iter = (view.fractal_type == FractalType::explaino ||
             view.fractal_type == FractalType::explaino_halley ||
             view.fractal_type == FractalType::explaino_dual ||
@@ -164,7 +171,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
             view.fractal_type == FractalType::explaino_rational ||
             view.fractal_type == FractalType::explaino_collatz) ? 500 :
             (view.fractal_type == FractalType::explaino_nova ? 300 :
-            (view.fractal_type == FractalType::explaino_julia ? 1200 : 650));
+            ((view.fractal_type == FractalType::explaino_julia || view.fractal_type == FractalType::explaino_lambda || view.fractal_type == FractalType::explaino_rational_escape) ? 1200 : 650));
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
         params.poly_kind = PolyKind::custom;
@@ -190,6 +197,14 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         // Explaino-Rational: give a default rational perturbation so the pole is visible.
         if (view.fractal_type == FractalType::explaino_rational) {
             params.explaino_cluster_radius = 0.1f;
+        }
+        // Explaino-Lambda: Lambda-tuned exposure for escape-time logistic dynamics.
+        if (view.fractal_type == FractalType::explaino_lambda) {
+            params.exposure = 1.4f;
+        }
+        // Explaino-Rational-Escape: tuned exposure for Laurent-polynomial escape dynamics.
+        if (view.fractal_type == FractalType::explaino_rational_escape) {
+            params.exposure = 1.2f;
         }
         if (ioDirty) *ioDirty = true;
         return;

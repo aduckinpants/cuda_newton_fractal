@@ -46,6 +46,8 @@ UISchema BuildSafeModeSchema() {
             {"explaino_collatz", "Explaino Collatz"},
             {"mcmullen", "McMullen"},
             {"lambda", "Lambda"},
+            {"explaino_lambda", "Explaino Lambda"},
+            {"explaino_rational_escape", "Explaino Rational Escape"},
         };
         view.controls.push_back(std::move(c));
     }

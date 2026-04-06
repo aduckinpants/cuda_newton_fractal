@@ -58,6 +58,8 @@ const char* FractalTypeSlug(FractalType fractalType) {
     case FractalType::explaino_collatz: return "explaino_collatz";
     case FractalType::mcmullen: return "mcmullen";
     case FractalType::lambda_map: return "lambda";
+    case FractalType::explaino_lambda: return "explaino_lambda";
+    case FractalType::explaino_rational_escape: return "explaino_rational_escape";
     }
     return "unknown";
 }

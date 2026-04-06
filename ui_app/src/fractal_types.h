@@ -65,6 +65,8 @@ enum class FractalType : int {
     explaino_collatz = 22,
     mcmullen = 23,
     lambda_map = 24,
+    explaino_lambda = 25,
+    explaino_rational_escape = 26,
 };
 
 enum class CameraBehavior : int {

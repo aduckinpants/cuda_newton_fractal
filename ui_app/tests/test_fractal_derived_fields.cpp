@@ -86,6 +86,80 @@ int main() {
         }
     }
 
+    // Explaino-Lambda defaults
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_lambda;
+        params.explaino_seed = 7.0;
+        params.explaino_warp_strength = 0.99f;
+        params.coloring_mode = ColoringMode::joy_basins;  // Will be overridden
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Lambda defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200) {
+            std::cerr << "Explaino-Lambda should use Lambda-tuned max_iter (1200)\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Lambda should default to smooth_escape\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.exposure, 1.4f)) {
+            std::cerr << "Explaino-Lambda should use Lambda-tuned exposure (1.4)\n";
+            return 1;
+        }
+        if (params.poly_kind != PolyKind::custom) {
+            std::cerr << "Explaino-Lambda should force custom polynomial\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.lambda_real, 2.9685855f) || !NearlyEqual(params.lambda_imag, -0.27446103f)) {
+            std::cerr << "Explaino-Lambda should default to deterministic lambda_real/lambda_imag\n";
+            return 1;
+        }
+    }
+
+    // Explaino-Rational-Escape defaults
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_rational_escape;
+        params.explaino_seed = 7.0;
+        params.explaino_warp_strength = 0.99f;
+        params.coloring_mode = ColoringMode::joy_basins;  // Will be overridden
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Rational-Escape defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200) {
+            std::cerr << "Explaino-Rational-Escape should use tuned max_iter (1200), got " << params.max_iter << "\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Rational-Escape should default to smooth_escape\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.exposure, 1.2f)) {
+            std::cerr << "Explaino-Rational-Escape should use tuned exposure (1.2)\n";
+            return 1;
+        }
+        if (params.poly_kind != PolyKind::custom) {
+            std::cerr << "Explaino-Rational-Escape should force custom polynomial\n";
+            return 1;
+        }
+    }
+
     {
         ViewState view{};
         KernelParams params{};

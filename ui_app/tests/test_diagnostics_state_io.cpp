@@ -266,6 +266,148 @@ int main() {
         }
     }
 
+    // Explaino-Lambda state round-trip
+    {
+        const fs::path statePath = tempRoot / "explaino_lambda_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "explaino_lambda",
+  "view": {
+    "center_x": 0.5,
+    "center_y": 0.0,
+    "zoom": 4.5,
+    "rotation_degrees": 0,
+    "center_hp_x": 0.5,
+    "center_hp_y": 0.0,
+    "log2_zoom": 2.17,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 1200,
+    "epsilon": 0.000001,
+    "exposure": 1.4,
+    "poly_kind": 2,
+    "coloring_mode": "smooth_escape",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "lambda_real": 2.0,
+    "lambda_imag": -0.5,
+    "explaino_seed": 3.5,
+    "explaino_warp_strength": 0.2,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected explaino_lambda state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::explaino_lambda) {
+            std::cerr << "Expected explaino_lambda fractal type to round-trip\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.lambda_real, 2.0f, 1.0e-6) || !NearlyEqual(params.lambda_imag, -0.5f, 1.0e-6)) {
+            std::cerr << "Expected lambda_real/lambda_imag to round-trip from explaino_lambda state\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Expected explaino_lambda to use smooth_escape coloring\n";
+            return 1;
+        }
+    }
+
+    // Explaino-Rational-Escape state round-trip
+    {
+        const fs::path statePath = tempRoot / "explaino_rational_escape_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "explaino_rational_escape",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.8,
+    "rotation_degrees": 0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.85,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 1200,
+    "epsilon": 0.000001,
+    "exposure": 1.2,
+    "poly_kind": 2,
+    "coloring_mode": "smooth_escape",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 4.2,
+    "explaino_warp_strength": 0.3,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected explaino_rational_escape state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::explaino_rational_escape) {
+            std::cerr << "Expected explaino_rational_escape fractal type to round-trip\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, 4.0, 1.0e-6) || !NearlyEqual(view.explaino_seed_drift, 0.2f, 1.0e-4)) {
+            std::cerr << "Expected explaino_seed/drift to round-trip from explaino_rational_escape state\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Expected explaino_rational_escape to use smooth_escape coloring\n";
+            return 1;
+        }
+    }
+
     {
         const fs::path statePath = tempRoot / "seed_motion_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);

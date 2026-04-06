@@ -320,6 +320,66 @@ int main() {
         }
     }
 
+    // Explaino-Lambda: explaino family + escape-time + no basin coloring
+    {
+        if (!IsExplainoFamily(FractalType::explaino_lambda)) {
+            std::cerr << "Explaino-Lambda should be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::explaino_lambda)) {
+            std::cerr << "Explaino-Lambda should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::explaino_lambda)) {
+            std::cerr << "Explaino-Lambda should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_lambda) != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Lambda should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::explaino_lambda, ColoringMode::root_basin) ||
+            IsColoringModeAllowedForFractal(FractalType::explaino_lambda, ColoringMode::joy_basins)) {
+            std::cerr << "Explaino-Lambda should reject basin coloring modes\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::explaino_lambda, ColoringMode::iteration_count) ||
+            !IsColoringModeAllowedForFractal(FractalType::explaino_lambda, ColoringMode::smooth_escape)) {
+            std::cerr << "Explaino-Lambda should allow escape-time coloring modes\n";
+            return 1;
+        }
+    }
+
+    // Explaino-Rational-Escape: explaino family + escape-time + no basin coloring
+    {
+        if (!IsExplainoFamily(FractalType::explaino_rational_escape)) {
+            std::cerr << "Explaino-Rational-Escape should be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::explaino_rational_escape)) {
+            std::cerr << "Explaino-Rational-Escape should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::explaino_rational_escape)) {
+            std::cerr << "Explaino-Rational-Escape should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_rational_escape) != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Rational-Escape should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::explaino_rational_escape, ColoringMode::root_basin) ||
+            IsColoringModeAllowedForFractal(FractalType::explaino_rational_escape, ColoringMode::joy_basins)) {
+            std::cerr << "Explaino-Rational-Escape should reject basin coloring modes\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::explaino_rational_escape, ColoringMode::iteration_count) ||
+            !IsColoringModeAllowedForFractal(FractalType::explaino_rational_escape, ColoringMode::smooth_escape)) {
+            std::cerr << "Explaino-Rational-Escape should allow escape-time coloring modes\n";
+            return 1;
+        }
+    }
+
     // ComputeAutoMaxIter tests
     {
         // At zoom 0 (no zoom): basin type gets base 150

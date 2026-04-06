@@ -749,6 +749,72 @@ __global__ void kernel_render(
                 break;
             }
         }
+    } else if (ft == FractalType::explaino_lambda) {
+        // Explaino-Lambda bridge: escape-time logistic map with warp start.
+        // z_{n+1} = lambda * z * (1 - z), seeded z from explaino polynomial surface.
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        Cx lambdaC{params.lambda_real, params.lambda_imag};
+
+        for (; it < maxIter; ++it) {
+            Cx oneMinusZ{1.0f - z.x, -z.y};
+            z = cx_mul(lambdaC, cx_mul(z, oneMinusZ));
+
+            if (cx_abs2(z) > 4.0f) {
+                escaped = true;
+                break;
+            }
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                escaped = true;
+                break;
+            }
+        }
+    } else if (ft == FractalType::explaino_rational_escape) {
+        // Explaino-Rational-Escape: escape-time iteration of Laurent polynomial P(z)/z^3.
+        // z_{n+1} = P(z) / z^3 where P is the deg-4 seed polynomial.
+        // Decomposes to: c0/z^3 + c1/z^2 + c2/z + c3 + c4*z (mixed positive/negative powers).
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        float coeffs[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+
+        for (; it < maxIter; ++it) {
+            float zAbs2 = cx_abs2(z);
+            if (zAbs2 < 1e-20f) {
+                // At pole: treat as escaped (division by zero)
+                escaped = true;
+                break;
+            }
+
+            // Evaluate P(z)
+            Cx P, dP;
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            // Compute z^3 = z * z * z
+            Cx z2 = cx_mul(z, z);
+            Cx z3 = cx_mul(z2, z);
+
+            // z_{n+1} = P(z) / z^3
+            z = cx_div(P, z3);
+
+            if (cx_abs2(z) > 10000.0f) {
+                escaped = true;
+                break;
+            }
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                escaped = true;
+                break;
+            }
+        }
     } else if (ft == FractalType::explaino_rational) {
         // Explaino-Rational: Newton on f(z) = P(z) + cluster_radius/z.
         // The rational perturbation adds a pole at the origin, producing dust/web geometry.
@@ -1402,7 +1468,7 @@ bool RenderFractalCUDA(
             return false;
         }
     }
-    if (view.fractal_type == FractalType::lambda_map) {
+    if (view.fractal_type == FractalType::lambda_map || view.fractal_type == FractalType::explaino_lambda) {
         if (!std::isfinite(params.lambda_real) || !std::isfinite(params.lambda_imag)) {
             if (outError) *outError = "lambda_real/lambda_imag must be finite";
             return false;
