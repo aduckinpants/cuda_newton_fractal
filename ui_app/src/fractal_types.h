@@ -50,6 +50,10 @@ enum class FractalType : int {
     explaino_phoenix = 14,
     explaino_transcendental = 15,
     explaino_inertial = 16,
+    explaino_julia = 17,
+    explaino_rational = 18,
+    multicorn = 19,
+    halley = 20,
 };
 
 enum class CameraBehavior : int {

@@ -132,6 +132,10 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino_phoenix") { if (outType) *outType = FractalType::explaino_phoenix; return true; }
     if (text == "explaino_transcendental") { if (outType) *outType = FractalType::explaino_transcendental; return true; }
     if (text == "explaino_inertial") { if (outType) *outType = FractalType::explaino_inertial; return true; }
+    if (text == "explaino_julia") { if (outType) *outType = FractalType::explaino_julia; return true; }
+    if (text == "explaino_rational") { if (outType) *outType = FractalType::explaino_rational; return true; }
+    if (text == "multicorn") { if (outType) *outType = FractalType::multicorn; return true; }
+    if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
     return false;
 }
 

@@ -711,6 +711,131 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::explaino_julia) {
+        // Explaino-Julia bridge: escape-time z^2+c with warp start and seeded Julia constant.
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        // Julia constant c from the first seeded root (falls back to classic if no roots).
+        Cx cJ = (params.explaino_root_count > 0)
+            ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
+            : Cx{-0.7f, 0.27015f};
+
+        for (; it < maxIter; ++it) {
+            Cx z2 = cx_mul(z, z);
+            z = cx_add(z2, cJ);
+
+            if (cx_abs2(z) > 4.0f) {
+                escaped = true;
+                break;
+            }
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                escaped = true;
+                break;
+            }
+        }
+    } else if (ft == FractalType::explaino_rational) {
+        // Explaino-Rational: Newton on f(z) = P(z) + cluster_radius/z.
+        // The rational perturbation adds a pole at the origin, producing dust/web geometry.
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float ratAlpha = params.explaino_cluster_radius;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        z = explaino_warp_start(coord, seed, phase, strength);
+
+        for (; it < maxIter; ++it) {
+            float zAbs2 = cx_abs2(z);
+            if (zAbs2 < 1e-20f) break; // at pole, bail
+
+            Cx P, dP;
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+
+            // f(z) = P(z) + alpha/z
+            Cx zInv = cx_div({1.0f, 0.0f}, z);
+            Cx F = cx_add(P, cx_scale(zInv, ratAlpha));
+            // f'(z) = P'(z) - alpha/z^2
+            Cx zInv2 = cx_mul(zInv, zInv);
+            Cx dF = cx_sub(dP, cx_scale(zInv2, ratAlpha));
+
+            pAbs = cx_abs(F);
+            if (pAbs < eps) break;
+
+            float dAbs2 = cx_abs2(dF);
+            if (dAbs2 < 1e-20f) break;
+
+            Cx step = cx_div(F, dF);
+            z = cx_sub(z, cx_scale(step, userDamp));
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
+    } else if (ft == FractalType::multicorn) {
+        // Multicorn/Tricorn: z_{n+1} = conj(z)^p + c, escape-time family.
+        z = {0.0f, 0.0f};
+        cConst = coord;
+        int p = params.multibrot_power;
+
+        for (; it < maxIter; ++it) {
+            // Conjugate z: negate imaginary part.
+            Cx zBar = {z.x, -z.y};
+            Cx zp = cx_pow_int(zBar, p);
+            z = cx_add(zp, cConst);
+
+            if (cx_abs2(z) > 4.0f) {
+                escaped = true;
+                break;
+            }
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                escaped = true;
+                break;
+            }
+        }
+    } else if (ft == FractalType::halley) {
+        // Standalone Halley's method on standard polynomials (poly_kind/poly_coeffs).
+        z = coord;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP, d2P;
+            float coeffs[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+            poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
+
+            pAbs = cx_abs(P);
+            if (pAbs < eps) break;
+
+            // Halley denominator: 2 f'(z)^2 - f(z) f''(z)
+            Cx dp2 = cx_mul(dP, dP);
+            Cx fd2 = cx_mul(P, d2P);
+            Cx denom = cx_sub(cx_scale(dp2, 2.0f), fd2);
+
+            float denomAbs2 = cx_abs2(denom);
+            if (denomAbs2 < 1e-20f) break;
+
+            // Halley numerator: 2 f(z) f'(z)
+            Cx numer = cx_scale(cx_mul(P, dP), 2.0f);
+            Cx step = cx_div(numer, denom);
+            z = cx_sub(z, step);
+
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                break;
+            }
+        }
+
+        converged = (pAbs < eps);
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));
@@ -1105,7 +1230,7 @@ bool RenderFractalCUDA(
             return false;
         }
     }
-    if (view.fractal_type == FractalType::multibrot) {
+    if (view.fractal_type == FractalType::multibrot || view.fractal_type == FractalType::multicorn) {
         if (params.multibrot_power < 2 || params.multibrot_power > 12) {
             if (outError) *outError = "multibrot_power must be in [2,12]";
             return false;

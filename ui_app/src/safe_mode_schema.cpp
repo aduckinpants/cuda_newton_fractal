@@ -38,6 +38,10 @@ UISchema BuildSafeModeSchema() {
             {"explaino_phoenix", "Explaino Phoenix"},
             {"explaino_transcendental", "Explaino Transcendental"},
             {"explaino_inertial", "Explaino Inertial"},
+            {"explaino_julia", "Explaino Julia"},
+            {"explaino_rational", "Explaino Rational"},
+            {"multicorn", "Multicorn"},
+            {"halley", "Halley"},
         };
         view.controls.push_back(std::move(c));
     }

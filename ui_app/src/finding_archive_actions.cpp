@@ -50,6 +50,10 @@ const char* FractalTypeSlug(FractalType fractalType) {
     case FractalType::explaino_phoenix: return "explaino_phoenix";
     case FractalType::explaino_transcendental: return "explaino_transcendental";
     case FractalType::explaino_inertial: return "explaino_inertial";
+    case FractalType::explaino_julia: return "explaino_julia";
+    case FractalType::explaino_rational: return "explaino_rational";
+    case FractalType::multicorn: return "multicorn";
+    case FractalType::halley: return "halley";
     }
     return "unknown";
 }

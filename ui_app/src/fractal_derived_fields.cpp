@@ -51,6 +51,10 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         center = {-0.15f, 0.75f};
         zoom = 4.5f;
         break;
+    case FractalType::multicorn:
+        center = {-0.3f, 0.0f};
+        zoom = 1.5f;
+        break;
     case FractalType::phoenix:
         center = {0.36f, -0.1f};
         zoom = 2.8f;
@@ -66,6 +70,8 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_phoenix:
     case FractalType::explaino_transcendental:
     case FractalType::explaino_inertial:
+    case FractalType::explaino_julia:
+    case FractalType::explaino_rational:
     default:
         break;
     }
@@ -132,15 +138,19 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         view.fractal_type == FractalType::explaino_mult ||
         view.fractal_type == FractalType::explaino_phoenix ||
         view.fractal_type == FractalType::explaino_transcendental ||
-        view.fractal_type == FractalType::explaino_inertial) {
+        view.fractal_type == FractalType::explaino_inertial ||
+        view.fractal_type == FractalType::explaino_julia ||
+        view.fractal_type == FractalType::explaino_rational) {
         params.max_iter = (view.fractal_type == FractalType::explaino ||
             view.fractal_type == FractalType::explaino_halley ||
             view.fractal_type == FractalType::explaino_dual ||
             view.fractal_type == FractalType::explaino_mult ||
             view.fractal_type == FractalType::explaino_phoenix ||
             view.fractal_type == FractalType::explaino_transcendental ||
-            view.fractal_type == FractalType::explaino_inertial) ? 500 :
-            (view.fractal_type == FractalType::explaino_nova ? 300 : 650);
+            view.fractal_type == FractalType::explaino_inertial ||
+            view.fractal_type == FractalType::explaino_rational) ? 500 :
+            (view.fractal_type == FractalType::explaino_nova ? 300 :
+            (view.fractal_type == FractalType::explaino_julia ? 1200 : 650));
         params.epsilon = 1e-6f;
         params.nova_alpha = 0.50f;
         params.poly_kind = PolyKind::custom;
@@ -163,6 +173,30 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         if (view.fractal_type == FractalType::explaino_inertial) {
             params.momentum_beta = 0.15f;
         }
+        // Explaino-Rational: give a default rational perturbation so the pole is visible.
+        if (view.fractal_type == FractalType::explaino_rational) {
+            params.explaino_cluster_radius = 0.1f;
+        }
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::multicorn) {
+        params.max_iter = 1200;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.5f;
+        params.multibrot_power = 2;  // Classic Tricorn
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::halley) {
+        params.max_iter = 500;
+        params.epsilon = 1e-6f;
+        params.poly_kind = PolyKind::z3_minus_1;
+        SetPolyPreset(params);
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.0f;
         if (ioDirty) *ioDirty = true;
         return;
     }

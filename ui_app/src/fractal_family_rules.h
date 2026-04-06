@@ -18,7 +18,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
     fractalType == FractalType::explaino_mult ||
     fractalType == FractalType::explaino_phoenix ||
     fractalType == FractalType::explaino_transcendental ||
-    fractalType == FractalType::explaino_inertial;
+    fractalType == FractalType::explaino_inertial ||
+    fractalType == FractalType::explaino_julia ||
+    fractalType == FractalType::explaino_rational;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
@@ -31,7 +33,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType 
     fractalType == FractalType::explaino_mult ||
     fractalType == FractalType::explaino_phoenix ||
     fractalType == FractalType::explaino_transcendental ||
-    fractalType == FractalType::explaino_inertial;
+    fractalType == FractalType::explaino_inertial ||
+    fractalType == FractalType::explaino_rational ||
+    fractalType == FractalType::halley;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fractalType) {
@@ -41,7 +45,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
         fractalType == FractalType::burning_ship ||
         fractalType == FractalType::multibrot ||
         fractalType == FractalType::phoenix ||
-        fractalType == FractalType::explaino_nova;
+        fractalType == FractalType::explaino_nova ||
+        fractalType == FractalType::explaino_julia ||
+        fractalType == FractalType::multicorn;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(FractalType fractalType, ColoringMode mode) {
