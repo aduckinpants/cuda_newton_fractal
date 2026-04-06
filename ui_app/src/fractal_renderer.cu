@@ -1,5 +1,6 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
+#include "explaino_seed_curve.h"
 
 #include <cuda_runtime.h>
 #include <math_constants.h>
@@ -33,64 +34,6 @@ __device__ __forceinline__ float hash01_u32(unsigned int x) {
     x *= 0x846ca68bU;
     x ^= x >> 16;
     return (float)(x & 0x00ffffffU) / (float)0x01000000U;
-}
-
-__device__ __forceinline__ double WedgeCumulativeRaw(double x) {
-    const double p = 3.141592653589793;
-    return (p - 1.0) * x * x * 0.5 - p * x * x * x / 3.0;
-}
-
-__device__ __forceinline__ double WedgeTotalArea() {
-    const double p = 3.141592653589793;
-    double x1 = 1.0 - 1.0 / p;
-    return WedgeCumulativeRaw(x1);
-}
-
-__device__ __forceinline__ double AreaFractionToX(double u) {
-    const double p = 3.141592653589793;
-    double x1 = 1.0 - 1.0 / p;
-    if (u <= 0.0) return 0.0;
-    if (u >= 1.0) return x1;
-    double target = u * WedgeTotalArea();
-    double lo = 0.0;
-    double hi = x1;
-    for (int i = 0; i < 60; ++i) {
-        double mid = 0.5 * (lo + hi);
-        double val = WedgeCumulativeRaw(mid);
-        if (val < target) lo = mid; else hi = mid;
-    }
-    return 0.5 * (lo + hi);
-}
-
-__device__ __forceinline__ unsigned long long splitmix64_ull(unsigned long long z) {
-    z += 0x9e3779b97f4a7c15ULL;
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-    z = z ^ (z >> 31);
-    return z;
-}
-
-__device__ __forceinline__ unsigned long long HashLogisticOrbit(double x0, int iters) {
-    unsigned long long acc = 0x9e3779b97f4a7c15ULL;
-    double x = x0;
-    const double p = 3.141592653589793;
-    for (int i = 0; i < iters; ++i) {
-        x = p * x * (1.0 - x);
-        unsigned long long bits = (unsigned long long)__double_as_longlong(x);
-        acc = splitmix64_ull(acc ^ bits);
-    }
-    return acc;
-}
-
-__device__ __forceinline__ double LogisticAreaUToSeed(double s) {
-    double u = s - floor(s);
-    if (u < 0.0) u += 1.0;
-    if (u >= 1.0) u = nextafter(1.0, 0.0);
-
-    double x = AreaFractionToX(u);
-    unsigned long long h = HashLogisticOrbit(x, 12);
-    const double denom = 18446744073709551615.0;
-    return (double)h / denom;
 }
 
 __device__ __forceinline__ Cx explaino_warp_start(Cx coord, double seed, float phase, float strength) {

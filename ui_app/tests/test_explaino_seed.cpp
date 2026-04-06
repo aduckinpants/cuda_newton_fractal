@@ -1,4 +1,5 @@
 #include "../src/explaino_seed.h"
+#include "../src/explaino_seed_curve.h"
 
 #include <cmath>
 #include <iostream>
@@ -44,6 +45,21 @@ int main() {
         ExplainoSeedNormalize(view, params);
         if (!NearlyEqual(params.explaino_seed, 6.0) || !NearlyEqual(view.explaino_seed_drift, 0.75f)) {
             std::cerr << "ExplainoSeedNormalize carry failed\n";
+            return 1;
+        }
+    }
+
+    {
+        if (!NearlyEqual(LogisticAreaUToSeed(0.25), 0.942416285139079, 1.0e-12)) {
+            std::cerr << "LogisticAreaUToSeed(0.25) regression failed\n";
+            return 1;
+        }
+        if (!NearlyEqual(LogisticAreaUToSeed(5.25), LogisticAreaUToSeed(0.25), 1.0e-12)) {
+            std::cerr << "LogisticAreaUToSeed should depend only on the fractional seed component\n";
+            return 1;
+        }
+        if (NearlyEqual(LogisticAreaUToSeed(0.25), 0.25, 1.0e-6)) {
+            std::cerr << "LogisticAreaUToSeed should not collapse to raw linear fractional drift\n";
             return 1;
         }
     }

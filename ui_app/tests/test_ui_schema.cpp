@@ -101,6 +101,7 @@ int main() {
             bool foundLogRate = false;
             bool foundDualSeedB = false;
             bool foundDualSeedMix = false;
+            bool foundDualSeedColoring = false;
             for (const auto& panel : result.schema.panels) {
                 for (const auto& ctrl : panel.controls) {
                     if (ctrl.id == "explaino_seed_rate") {
@@ -123,14 +124,19 @@ int main() {
                     if (ctrl.id == "explaino_mix") {
                         foundDualSeedMix = true;
                     }
+                    if (ctrl.id == "coloring_mode_newton" && ctrl.has_visible_if) {
+                        if (ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
+                            foundDualSeedColoring = true;
+                        }
+                    }
                 }
             }
             if (!foundLogRate) {
                 std::cerr << "Did not find explaino_seed_rate control in schema\n";
                 return 1;
             }
-            if (!foundDualSeedB || !foundDualSeedMix) {
-                std::cerr << "Did not find Explaino-DualSeed controls in schema\n";
+            if (!foundDualSeedB || !foundDualSeedMix || !foundDualSeedColoring) {
+                std::cerr << "Did not find Explaino-DualSeed controls and coloring visibility in schema\n";
                 return 1;
             }
         }

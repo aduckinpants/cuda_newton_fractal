@@ -1,4 +1,5 @@
 #include "../src/explaino_seed.h"
+#include "../src/explaino_seed_curve.h"
 #include "../src/fractal_derived_fields.h"
 
 #include <cmath>
@@ -252,6 +253,42 @@ int main() {
         }
         if (!NearlyEqual((float)paramsB.explaino_seed, 5.0f) || !NearlyEqual(viewB.explaino_seed_drift, 0.4f, 1e-6f)) {
             std::cerr << "ExplainoSeedSetCombined should normalize 5.4 into base=5 drift=0.4\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState viewA{};
+        ViewState viewB{};
+        ViewState viewTween{};
+        KernelParams paramsA{};
+        KernelParams paramsB{};
+        KernelParams paramsTween{};
+
+        viewA.fractal_type = FractalType::explaino;
+        viewB.fractal_type = FractalType::explaino;
+        viewTween.fractal_type = FractalType::explaino;
+
+        ExplainoSeedSetCombined(viewA, paramsA, 5.0);
+        ExplainoSeedSetCombined(viewB, paramsB, 6.0);
+        ExplainoSeedSetCombined(viewTween, paramsTween, 5.25);
+
+        UpdateExplainoPolynomial(viewA, paramsA, nullptr);
+        UpdateExplainoPolynomial(viewB, paramsB, nullptr);
+        UpdateExplainoPolynomial(viewTween, paramsTween, nullptr);
+
+        const float tweenT = static_cast<float>(LogisticAreaUToSeed(5.25));
+        const float expectedRoot0X = paramsA.explaino_roots[0].x +
+            (paramsB.explaino_roots[0].x - paramsA.explaino_roots[0].x) * tweenT;
+        const float rawLinearRoot0X = paramsA.explaino_roots[0].x +
+            (paramsB.explaino_roots[0].x - paramsA.explaino_roots[0].x) * 0.25f;
+
+        if (!NearlyEqual(paramsTween.explaino_roots[0].x, expectedRoot0X, 1e-5f)) {
+            std::cerr << "Explaino seed tween should follow LogisticAreaUToSeed instead of raw fractional lerp\n";
+            return 1;
+        }
+        if (NearlyEqual(paramsTween.explaino_roots[0].x, rawLinearRoot0X, 1e-5f)) {
+            std::cerr << "Explaino seed tween should not use raw fractional drift directly\n";
             return 1;
         }
     }

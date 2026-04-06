@@ -1,6 +1,7 @@
 #include "fractal_derived_fields.h"
 
 #include "explaino_seed.h"
+#include "explaino_seed_curve.h"
 #include "fractal_family_rules.h"
 #include "view_hp_sync.h"
 
@@ -253,7 +254,10 @@ static ExplainoSeedShape ExplainoShapeForCombinedSeed(double combinedSeed, bool 
     }
 
     ExplainoSeedShape shape1 = ExplainoShapeForSeed(s1, phase, spread, phaseStrength);
-    return LerpExplainoShape(shape0, shape1, driftFrac);
+    float tweenFrac = static_cast<float>(LogisticAreaUToSeed(combinedSeed));
+    if (!std::isfinite(tweenFrac)) tweenFrac = driftFrac;
+    tweenFrac = ClampF(tweenFrac, 0.0f, 1.0f);
+    return LerpExplainoShape(shape0, shape1, tweenFrac);
 }
 
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {

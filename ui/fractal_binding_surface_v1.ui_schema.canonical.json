@@ -520,7 +520,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,explaino,explaino_y,explaino_fp,explaino_halley"
+            "value": "newton,explaino,explaino_y,explaino_fp,explaino_halley,explaino_dual"
           },
           "help": "Newton and the root-finding Explaino variants support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
         },
