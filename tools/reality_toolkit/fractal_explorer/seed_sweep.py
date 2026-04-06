@@ -28,16 +28,25 @@ def build_seed_values(
     explicit_seeds: Sequence[float] | None = None,
 ) -> list[float]:
     if explicit_seeds is not None:
-        return [float(seed) for seed in explicit_seeds]
+        values = [float(seed) for seed in explicit_seeds]
+        if not values:
+            raise ValueError("explicit_seeds must not be empty")
+        if not all(math.isfinite(seed) for seed in values):
+            raise ValueError("explicit seeds must be finite")
+        return values
 
     if seed_start is None or seed_stop is None or seed_step is None:
         raise ValueError("seed_start, seed_stop, and seed_step are required when explicit_seeds is not provided")
+    if not math.isfinite(seed_start) or not math.isfinite(seed_stop) or not math.isfinite(seed_step):
+        raise ValueError("seed_start, seed_stop, and seed_step must be finite")
     if seed_step == 0:
         raise ValueError("seed_step must be non-zero")
 
     start = Decimal(str(seed_start))
     stop = Decimal(str(seed_stop))
     step = Decimal(str(seed_step))
+    if (stop > start and step < 0) or (stop < start and step > 0):
+        raise ValueError("seed_step direction does not reach stop")
 
     values: list[float] = []
     current = start
@@ -49,6 +58,8 @@ def build_seed_values(
         while current >= stop:
             values.append(float(current))
             current += step
+    if not values:
+        raise ValueError("seed sweep produced no values")
     return values
 
 

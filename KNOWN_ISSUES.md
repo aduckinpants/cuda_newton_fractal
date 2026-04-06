@@ -134,11 +134,11 @@ Headless `--capture-diagnostic` always writes to `runtime/diagnostics/last/`. Co
 
 ---
 
-## P2 — Sweep mode combined-seed fix not fully validated
+## P2 — Sweep mode combined-seed fix live validation completed
 
-**Status:** partially addressed (code patched, helper tests green, sweep-mode not visually re-verified)
+**Status:** resolved (helper tests green and live sweep regression now covers motion plus Space-pause behavior)
 **Area:** sweep viewer
 
-The sweep-mode seed path was patched to use `ExplainoSeedSetCombined()` and pause/step controls were added, but the fix has not been visually confirmed in a live sweep session since the build succeeded.
+The sweep-mode seed path now has both focused headless coverage and a live runtime regression. `ui_app/tests/test_viewer_sweep.cpp` pins combined-seed application plus pause/step semantics, and `tests/test_fractal_runtime_sweep_pause.py` verifies that the live viewer image changes while the sweep is running and becomes stable after a Space-key pause.
 
-**File:** `ui_app/src/main.cpp` — sweep block
+**Files:** `ui_app/src/main.cpp`, `ui_app/src/viewer_sweep.cpp`, `tests/test_fractal_runtime_sweep_pause.py`

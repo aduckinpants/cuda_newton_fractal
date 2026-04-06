@@ -30,6 +30,44 @@ int main() {
     {
         SweepPlayerConfig config{};
         config.enabled = true;
+        config.seed_start = 0.80;
+        config.seed_stop = 0.70;
+        config.seed_step = -0.05;
+
+        std::vector<double> seeds;
+        std::string error;
+        if (!BuildSweepSeedList(config, &seeds, &error)) {
+            std::cerr << "Descending BuildSweepSeedList failed: " << error << "\n";
+            return 1;
+        }
+        if (seeds.size() != 3 || !NearlyEqual(seeds[0], 0.80) || !NearlyEqual(seeds[1], 0.75) || !NearlyEqual(seeds[2], 0.70)) {
+            std::cerr << "Descending sweep seeds were not inclusive or ordered correctly\n";
+            return 1;
+        }
+    }
+
+    {
+        SweepPlayerConfig config{};
+        config.enabled = true;
+        config.seed_start = 0.80;
+        config.seed_stop = 0.70;
+        config.seed_step = 0.05;
+
+        std::vector<double> seeds;
+        std::string error;
+        if (BuildSweepSeedList(config, &seeds, &error)) {
+            std::cerr << "BuildSweepSeedList should reject a seed-step direction that never reaches stop\n";
+            return 1;
+        }
+        if (error.find("direction") == std::string::npos) {
+            std::cerr << "Direction mismatch error message was not surfaced\n";
+            return 1;
+        }
+    }
+
+    {
+        SweepPlayerConfig config{};
+        config.enabled = true;
         config.seed_start = 0.70;
         config.seed_stop = 0.80;
         config.seed_step = 0.05;

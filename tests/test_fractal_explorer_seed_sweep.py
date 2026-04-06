@@ -14,6 +14,10 @@ def test_build_seed_values_inclusive_step_range() -> None:
     assert build_seed_values(seed_start=0.70, seed_stop=0.80, seed_step=0.02) == [0.70, 0.72, 0.74, 0.76, 0.78, 0.80]
 
 
+def test_build_seed_values_supports_descending_ranges() -> None:
+    assert build_seed_values(seed_start=0.80, seed_stop=0.70, seed_step=-0.05) == [0.80, 0.75, 0.70]
+
+
 def test_build_seed_values_uses_explicit_seeds() -> None:
     assert build_seed_values(explicit_seeds=[0.745, 0.755, 0.775]) == [0.745, 0.755, 0.775]
 
@@ -25,6 +29,24 @@ def test_build_seed_values_rejects_zero_step() -> None:
         assert "non-zero" in str(exc)
     else:
         raise AssertionError("Expected zero seed_step to raise ValueError")
+
+
+def test_build_seed_values_rejects_direction_mismatch() -> None:
+    try:
+        build_seed_values(seed_start=0.80, seed_stop=0.70, seed_step=0.05)
+    except ValueError as exc:
+        assert "direction" in str(exc)
+    else:
+        raise AssertionError("Expected mismatched seed_step direction to raise ValueError")
+
+
+def test_build_seed_values_rejects_empty_explicit_seed_list() -> None:
+    try:
+        build_seed_values(explicit_seeds=[])
+    except ValueError as exc:
+        assert "must not be empty" in str(exc)
+    else:
+        raise AssertionError("Expected empty explicit_seeds to raise ValueError")
 
 
 def test_format_seed_label_uses_fixed_precision() -> None:

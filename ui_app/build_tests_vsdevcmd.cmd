@@ -43,6 +43,16 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\viewer_shutdown.cpp .\tests\test_viewer_shutdown.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_shutdown.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\sweep_player.cpp .\src\viewer_sweep.cpp .\tests\test_viewer_sweep.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_sweep.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\sweep_player.cpp .\tests\test_sweep_player.cpp ^
   /Fe:"%TESTROOT%\test_sweep_player.exe"
 if errorlevel 1 exit /b 1
@@ -95,6 +105,12 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_lens_sdf.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_viewer_shutdown.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_viewer_sweep.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_sweep_player.exe"

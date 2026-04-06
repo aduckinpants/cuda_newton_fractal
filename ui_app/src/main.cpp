@@ -34,6 +34,8 @@
 #include "schema_startup_policy.h"
 #include "sweep_player.h"
 #include "ui_schema.h"
+#include "viewer_shutdown.h"
+#include "viewer_sweep.h"
 #include "view_hp_sync.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -391,7 +393,9 @@ static void UploadLensSdfRGBA(const uint32_t* rgba, int width, int height) {
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) return true;
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) {
+        return true;
+    }
 
     switch (msg) {
     case WM_SIZE:
@@ -797,9 +801,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ZeroMemory(&msg, sizeof(msg));
 
     while (msg.message != WM_QUIT) {
+        bool quitRequested = false;
         while (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE)) {
+            if (NoteQuitMessage(msg, &quitRequested)) {
+                break;
+            }
             TranslateMessage(&msg);
             DispatchMessage(&msg);
+        }
+
+        if (ShouldExitUiLoop(quitRequested)) {
+            break;
         }
 
         ImGui_ImplDX11_NewFrame();
@@ -810,20 +822,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
                 sweepPaused = !sweepPaused;
             }
-            bool sweepChanged = false;
-            if (!sweepPaused || sweepSingleStep) {
-                double deltaSeconds = sweepSingleStep ? sweepConfig.dwell_seconds : (double)io.DeltaTime;
-                if (!AdvanceSweepPlayer(sweepConfig, deltaSeconds, &sweepState, &sweepChanged)) {
-                    sweepChanged = false;
-                }
-            }
-            if (sweepChanged) {
-                double currentSweepSeed = 0.0;
-                if (SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
-                    ExplainoSeedSetCombined(view, params, currentSweepSeed);
-                    UpdateExplainoPolynomial(view, params, nullptr);
-                    dirty = true;
-                }
+            bool sweepDirty = false;
+            if (ApplySweepPlayback(sweepConfig, sweepPaused, sweepSingleStep, (double)io.DeltaTime, &sweepState, &view, &params, &sweepDirty)) {
+                if (sweepDirty) dirty = true;
             }
             sweepSingleStep = false;
         }
@@ -1229,7 +1230,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     CleanupFractalCUDA();
     CleanupDeviceD3D();
-    DestroyWindow(hwnd);
+    if (IsWindow(hwnd)) {
+        DestroyWindow(hwnd);
+    }
     UnregisterClass(wc.lpszClassName, wc.hInstance);
 
     return 0;
