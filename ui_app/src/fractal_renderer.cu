@@ -836,6 +836,39 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::collatz) {
+        // Collatz fractal: smooth complex extension of the Collatz conjecture.
+        // f(z) = (1/4)(2 + 7z - (2+5z)cos(pi*z))
+        z = coord;
+        const float kPI = 3.14159265358979323846f;
+
+        for (; it < maxIter; ++it) {
+            // cos(pi*z) for complex z = x+iy:
+            // cos(pi*(x+iy)) = cos(pi*x)*cosh(pi*y) - i*sin(pi*x)*sinh(pi*y)
+            float px = kPI * z.x;
+            float py = kPI * z.y;
+            float cpx = cosf(px), spx = sinf(px);
+            float chy = coshf(py), shy = sinhf(py);
+            Cx cospi = {cpx * chy, -spx * shy};
+
+            // (2 + 5z)
+            Cx a = {2.0f + 5.0f * z.x, 5.0f * z.y};
+            // (2 + 5z)*cos(pi*z)
+            Cx ac = cx_mul(a, cospi);
+            // 2 + 7z
+            Cx b = {2.0f + 7.0f * z.x, 7.0f * z.y};
+            // f(z) = (1/4)(b - ac)
+            z = cx_scale(cx_sub(b, ac), 0.25f);
+
+            if (cx_abs2(z) > 10000.0f) {
+                escaped = true;
+                break;
+            }
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                escaped = true;
+                break;
+            }
+        }
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));

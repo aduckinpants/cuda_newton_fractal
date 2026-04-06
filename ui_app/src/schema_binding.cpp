@@ -52,6 +52,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_rational: return "explaino_rational";
         case FractalType::multicorn: return "multicorn";
         case FractalType::halley: return "halley";
+        case FractalType::collatz: return "collatz";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -111,6 +112,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_rational") view->fractal_type = FractalType::explaino_rational;
         else if (id == "multicorn") view->fractal_type = FractalType::multicorn;
         else if (id == "halley") view->fractal_type = FractalType::halley;
+        else if (id == "collatz") view->fractal_type = FractalType::collatz;
         else return false;
         return true;
     }

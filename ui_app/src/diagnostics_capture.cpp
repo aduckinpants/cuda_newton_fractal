@@ -33,6 +33,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::explaino_rational: return "explaino_rational";
     case FractalType::multicorn: return "multicorn";
     case FractalType::halley: return "halley";
+    case FractalType::collatz: return "collatz";
     }
     return "unknown";
 }

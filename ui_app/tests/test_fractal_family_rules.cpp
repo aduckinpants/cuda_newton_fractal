@@ -224,5 +224,29 @@ int main() {
         }
     }
 
+    // Collatz: not explaino + escape-time + no basin coloring
+    {
+        if (IsExplainoFamily(FractalType::collatz)) {
+            std::cerr << "Collatz should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::collatz)) {
+            std::cerr << "Collatz should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::collatz)) {
+            std::cerr << "Collatz should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::collatz) != ColoringMode::smooth_escape) {
+            std::cerr << "Collatz should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::collatz, ColoringMode::joy_basins)) {
+            std::cerr << "Collatz should reject joy_basins coloring\n";
+            return 1;
+        }
+    }
+
     return 0;
 }

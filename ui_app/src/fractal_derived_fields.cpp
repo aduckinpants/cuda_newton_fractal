@@ -72,6 +72,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_inertial:
     case FractalType::explaino_julia:
     case FractalType::explaino_rational:
+    case FractalType::collatz:
     default:
         break;
     }
@@ -246,6 +247,14 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.4f;
         params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::collatz) {
+        params.max_iter = 200;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.0f;
         if (ioDirty) *ioDirty = true;
         return;
     }

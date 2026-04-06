@@ -47,7 +47,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
         fractalType == FractalType::phoenix ||
         fractalType == FractalType::explaino_nova ||
         fractalType == FractalType::explaino_julia ||
-        fractalType == FractalType::multicorn;
+        fractalType == FractalType::multicorn ||
+        fractalType == FractalType::collatz;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(FractalType fractalType, ColoringMode mode) {
