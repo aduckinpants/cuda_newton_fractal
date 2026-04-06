@@ -35,6 +35,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::halley: return "halley";
     case FractalType::collatz: return "collatz";
     case FractalType::explaino_collatz: return "explaino_collatz";
+    case FractalType::mcmullen: return "mcmullen";
     }
     return "unknown";
 }
@@ -54,6 +55,16 @@ const char* TranscendentalFuncId(TranscendentalFunc func) {
     case TranscendentalFunc::f_sin: return "f_sin";
     case TranscendentalFunc::f_exp_minus_1: return "f_exp_minus_1";
     case TranscendentalFunc::f_cosh: return "f_cosh";
+    }
+    return "unknown";
+}
+
+const char* McMullenPresetId(McMullenPreset preset) {
+    switch (preset) {
+    case McMullenPreset::z3_z3: return "z3_z3";
+    case McMullenPreset::z2_z2: return "z2_z2";
+    case McMullenPreset::z4_z2: return "z4_z2";
+    case McMullenPreset::z3_z2: return "z3_z2";
     }
     return "unknown";
 }
@@ -161,6 +172,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     js << "    \"transcendental_func\": \"" << TranscendentalFuncId(params.transcendental_func) << "\",\n";
     js << "    \"momentum_beta\": " << static_cast<double>(params.momentum_beta) << ",\n";
+    js << "    \"mcmullen_preset\": \"" << McMullenPresetId(params.mcmullen_preset) << "\",\n";
     js << "    \"poly_coeffs\": [";
     for (int i = 0; i < 5; ++i) {
         if (i > 0) js << ", ";

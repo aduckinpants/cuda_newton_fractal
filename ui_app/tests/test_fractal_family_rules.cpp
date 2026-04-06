@@ -272,5 +272,75 @@ int main() {
         }
     }
 
+    // McMullen: not explaino + escape-time + no basin coloring
+    {
+        if (IsExplainoFamily(FractalType::mcmullen)) {
+            std::cerr << "McMullen should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::mcmullen)) {
+            std::cerr << "McMullen should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::mcmullen)) {
+            std::cerr << "McMullen should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::mcmullen) != ColoringMode::smooth_escape) {
+            std::cerr << "McMullen should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::mcmullen, ColoringMode::joy_basins)) {
+            std::cerr << "McMullen should reject joy_basins coloring\n";
+            return 1;
+        }
+    }
+
+    // ComputeAutoMaxIter tests
+    {
+        // At zoom 0 (no zoom): basin type gets base 150
+        int iters = ComputeAutoMaxIter(0.0, FractalType::newton);
+        if (iters != 150) {
+            std::cerr << "Auto max iter for newton at zoom 0 should be 150, got " << iters << "\n";
+            return 1;
+        }
+
+        // At zoom 0: escape type gets base 200
+        iters = ComputeAutoMaxIter(0.0, FractalType::mandelbrot);
+        if (iters != 200) {
+            std::cerr << "Auto max iter for mandelbrot at zoom 0 should be 200, got " << iters << "\n";
+            return 1;
+        }
+
+        // At zoom 0: collatz gets base 300
+        iters = ComputeAutoMaxIter(0.0, FractalType::collatz);
+        if (iters != 300) {
+            std::cerr << "Auto max iter for collatz at zoom 0 should be 300, got " << iters << "\n";
+            return 1;
+        }
+
+        // Deeper zoom increases iterations
+        int shallow = ComputeAutoMaxIter(-2.0, FractalType::mandelbrot);
+        int deep = ComputeAutoMaxIter(-20.0, FractalType::mandelbrot);
+        if (deep <= shallow) {
+            std::cerr << "Deeper zoom should produce more iterations\n";
+            return 1;
+        }
+
+        // Clamped to 5000 max
+        iters = ComputeAutoMaxIter(-200.0, FractalType::mandelbrot);
+        if (iters != 5000) {
+            std::cerr << "Auto max iter should clamp to 5000, got " << iters << "\n";
+            return 1;
+        }
+
+        // Clamped to 100 min (shouldn't happen at positive values, but test the floor)
+        iters = ComputeAutoMaxIter(0.0, FractalType::newton);
+        if (iters < 100) {
+            std::cerr << "Auto max iter should be at least 100, got " << iters << "\n";
+            return 1;
+        }
+    }
+
     return 0;
 }

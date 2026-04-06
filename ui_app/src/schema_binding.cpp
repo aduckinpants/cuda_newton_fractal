@@ -21,6 +21,14 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case TranscendentalFunc::f_cosh: return "f_cosh";
         }
     }
+    if (params && path == "fractal.params.mcmullen_preset") {
+        switch (params->mcmullen_preset) {
+        case McMullenPreset::z3_z3: return "z3_z3";
+        case McMullenPreset::z2_z2: return "z2_z2";
+        case McMullenPreset::z4_z2: return "z4_z2";
+        case McMullenPreset::z3_z2: return "z3_z2";
+        }
+    }
     if (params && path == "fractal.params.coloring_mode") {
         switch (params->coloring_mode) {
         case ColoringMode::root_basin: return "root_basin";
@@ -54,6 +62,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::halley: return "halley";
         case FractalType::collatz: return "collatz";
         case FractalType::explaino_collatz: return "explaino_collatz";
+        case FractalType::mcmullen: return "mcmullen";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -80,6 +89,14 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         if (id == "f_sin") params->transcendental_func = TranscendentalFunc::f_sin;
         else if (id == "f_exp_minus_1") params->transcendental_func = TranscendentalFunc::f_exp_minus_1;
         else if (id == "f_cosh") params->transcendental_func = TranscendentalFunc::f_cosh;
+        else return false;
+        return true;
+    }
+    if (params && path == "fractal.params.mcmullen_preset") {
+        if (id == "z3_z3") params->mcmullen_preset = McMullenPreset::z3_z3;
+        else if (id == "z2_z2") params->mcmullen_preset = McMullenPreset::z2_z2;
+        else if (id == "z4_z2") params->mcmullen_preset = McMullenPreset::z4_z2;
+        else if (id == "z3_z2") params->mcmullen_preset = McMullenPreset::z3_z2;
         else return false;
         return true;
     }
@@ -115,6 +132,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "halley") view->fractal_type = FractalType::halley;
         else if (id == "collatz") view->fractal_type = FractalType::collatz;
         else if (id == "explaino_collatz") view->fractal_type = FractalType::explaino_collatz;
+        else if (id == "mcmullen") view->fractal_type = FractalType::mcmullen;
         else return false;
         return true;
     }
@@ -285,6 +303,7 @@ bool BindingContext::BindBool(const std::string& path, bool** outPtr) {
     if (!view || !render) return false;
     if (path == "fractal.view.auto_refresh") { *outPtr = &view->auto_refresh; return true; }
     if (path == "fractal.view.auto_dive") { *outPtr = &view->auto_dive; return true; }
+    if (path == "fractal.view.auto_max_iter") { *outPtr = &view->auto_max_iter; return true; }
     if (path == "fractal.view.explaino_alive") { *outPtr = &view->explaino_alive; return true; }
     if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
     if (path == "fractal.view.auto_increment_seed") { *outPtr = &view->auto_increment_seed; return true; }

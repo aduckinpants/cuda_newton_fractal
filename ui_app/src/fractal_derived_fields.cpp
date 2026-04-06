@@ -74,6 +74,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_rational:
     case FractalType::explaino_collatz:
     case FractalType::collatz:
+    case FractalType::mcmullen:
     default:
         break;
     }
@@ -258,6 +259,15 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         params.max_iter = 200;
         params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.0f;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::mcmullen) {
+        params.max_iter = 500;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.2f;
+        params.mcmullen_preset = McMullenPreset::z3_z3;
         if (ioDirty) *ioDirty = true;
         return;
     }

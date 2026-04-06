@@ -32,6 +32,13 @@ enum class TranscendentalFunc : int {
     f_cosh = 2,
 };
 
+enum class McMullenPreset : int {
+    z3_z3 = 0,   // z^3 + lambda/z^3, lambda=-0.125
+    z2_z2 = 1,   // z^2 + lambda/z^2, lambda=-0.10
+    z4_z2 = 2,   // z^4 + lambda/z^2, lambda=-0.05
+    z3_z2 = 3,   // z^3 + lambda/z^2, lambda=-0.10
+};
+
 enum class FractalType : int {
     newton = 0,
     nova = 1,
@@ -56,6 +63,7 @@ enum class FractalType : int {
     halley = 20,
     collatz = 21,
     explaino_collatz = 22,
+    mcmullen = 23,
 };
 
 enum class CameraBehavior : int {
@@ -87,6 +95,8 @@ struct ViewState {
     bool auto_increment_seed{false};
     float explaino_seed_rate{0.05f};
     float explaino_phase_strength{1.0f};
+
+    bool auto_max_iter{false};
 
     CameraBehavior camera_behavior{CameraBehavior::complexity};
     bool auto_dive{false};
@@ -122,6 +132,7 @@ struct KernelParams {
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
     TranscendentalFunc transcendental_func{TranscendentalFunc::f_sin};
     float momentum_beta{0.0f};
+    McMullenPreset mcmullen_preset{McMullenPreset::z3_z3};
 };
 
 struct RenderSettings {

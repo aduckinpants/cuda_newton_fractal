@@ -203,6 +203,7 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
     if (text == "explaino_collatz") { if (outType) *outType = FractalType::explaino_collatz; return true; }
+    if (text == "mcmullen") { if (outType) *outType = FractalType::mcmullen; return true; }
     return false;
 }
 
@@ -1099,6 +1100,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (view.auto_refresh || dirty || renderOnceAction || captureFindingAction) {
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, nullptr);
+            }
+            if (view.auto_max_iter) {
+                params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
             }
             rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
             EnsureFractalTexture(render.resolution.x, render.resolution.y);

@@ -50,7 +50,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
         fractalType == FractalType::explaino_nova ||
         fractalType == FractalType::explaino_julia ||
         fractalType == FractalType::multicorn ||
-        fractalType == FractalType::collatz;
+        fractalType == FractalType::collatz ||
+        fractalType == FractalType::mcmullen;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(FractalType fractalType, ColoringMode mode) {
@@ -60,6 +61,24 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(Fr
 
 FRACTAL_FAMILY_RULES_HD inline constexpr ColoringMode DefaultColoringModeForFractal(FractalType fractalType) {
     return SupportsBasinColoring(fractalType) ? ColoringMode::joy_basins : ColoringMode::smooth_escape;
+}
+
+// Auto max-iter: scale iterations with zoom depth and fractal family.
+// Escape-time fractals need more iterations at depth; basin types less so.
+inline int ComputeAutoMaxIter(double log2_zoom, FractalType fractalType) {
+    double depth = log2_zoom < 0.0 ? -log2_zoom : log2_zoom;
+    int base, scale;
+    if (fractalType == FractalType::collatz || fractalType == FractalType::explaino_collatz) {
+        base = 300; scale = 80;
+    } else if (IsEscapeTimeFamily(fractalType)) {
+        base = 200; scale = 50;
+    } else {
+        base = 150; scale = 30;
+    }
+    int result = base + static_cast<int>(scale * depth);
+    if (result < 100) result = 100;
+    if (result > 5000) result = 5000;
+    return result;
 }
 
 #undef FRACTAL_FAMILY_RULES_HD

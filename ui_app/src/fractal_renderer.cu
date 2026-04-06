@@ -836,6 +836,59 @@ __global__ void kernel_render(
         }
 
         converged = (pAbs < eps);
+    } else if (ft == FractalType::mcmullen) {
+        // McMullen rational map: z_{n+1} = z^m + lambda/z^n
+        // Preset-driven (m, n, lambda) tuples.
+        int mm, nn;
+        float lam;
+        switch (params.mcmullen_preset) {
+        case McMullenPreset::z2_z2: mm = 2; nn = 2; lam = -0.10f; break;
+        case McMullenPreset::z4_z2: mm = 4; nn = 2; lam = -0.05f; break;
+        case McMullenPreset::z3_z2: mm = 3; nn = 2; lam = -0.10f; break;
+        default:                    mm = 3; nn = 3; lam = -0.125f; break;
+        }
+
+        z = coord;
+
+        for (; it < maxIter; ++it) {
+            // z^mm via repeated squaring for small integer powers
+            Cx zpow = {1.0f, 0.0f};
+            Cx base = z;
+            int p = mm;
+            while (p > 0) {
+                if (p & 1) zpow = cx_mul(zpow, base);
+                base = cx_mul(base, base);
+                p >>= 1;
+            }
+
+            // 1/z^nn
+            float zabs2 = cx_abs2(z);
+            if (zabs2 < 1e-20f) {
+                escaped = true;
+                break;
+            }
+            Cx zinv = {z.x / zabs2, -z.y / zabs2};
+            Cx zinvpow = {1.0f, 0.0f};
+            base = zinv;
+            p = nn;
+            while (p > 0) {
+                if (p & 1) zinvpow = cx_mul(zinvpow, base);
+                base = cx_mul(base, base);
+                p >>= 1;
+            }
+
+            // z = z^m + lambda/z^n
+            z = cx_add(zpow, cx_scale(zinvpow, lam));
+
+            if (cx_abs2(z) > 10000.0f) {
+                escaped = true;
+                break;
+            }
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                escaped = true;
+                break;
+            }
+        }
     } else if (ft == FractalType::collatz) {
         // Collatz fractal: smooth complex extension of the Collatz conjecture.
         // f(z) = (1/4)(2 + 7z - (2+5z)cos(pi*z))

@@ -138,6 +138,7 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
     if (text == "explaino_collatz") { if (outType) *outType = FractalType::explaino_collatz; return true; }
+    if (text == "mcmullen") { if (outType) *outType = FractalType::mcmullen; return true; }
     return false;
 }
 
@@ -376,6 +377,18 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         const json_min::Value* mbVal = paramsObject->get("momentum_beta");
         if (mbVal && mbVal->is_number()) {
             nextParams.momentum_beta = static_cast<float>(mbVal->as_number());
+        }
+    }
+
+    // mcmullen_preset (optional for backward compat)
+    {
+        const json_min::Value* mpVal = paramsObject->get("mcmullen_preset");
+        if (mpVal && mpVal->is_string()) {
+            std::string mpStr = mpVal->as_string();
+            if (mpStr == "z3_z3") nextParams.mcmullen_preset = McMullenPreset::z3_z3;
+            else if (mpStr == "z2_z2") nextParams.mcmullen_preset = McMullenPreset::z2_z2;
+            else if (mpStr == "z4_z2") nextParams.mcmullen_preset = McMullenPreset::z4_z2;
+            else if (mpStr == "z3_z2") nextParams.mcmullen_preset = McMullenPreset::z3_z2;
         }
     }
 
