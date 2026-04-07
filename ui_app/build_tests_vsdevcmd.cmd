@@ -23,6 +23,16 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\tests\test_json_min.cpp ^
+  /Fe:"%TESTROOT%\test_json_min.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\viewport_interaction.cpp .\tests\test_viewport_interaction.cpp ^
+  /Fe:"%TESTROOT%\test_viewport_interaction.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\tests\test_explaino_seed.cpp ^
   /Fe:"%TESTROOT%\test_explaino_seed.exe"
 if errorlevel 1 exit /b 1
@@ -185,6 +195,12 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_cli_args.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_json_min.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_viewport_interaction.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_seed.exe"

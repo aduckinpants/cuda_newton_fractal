@@ -44,6 +44,7 @@
 #include "viewer_render_pacing.h"
 #include "viewer_shutdown.h"
 #include "viewer_sweep.h"
+#include "viewport_interaction.h"
 #include "view_hp_sync.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -375,31 +376,10 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-static inline float ClampF(float v, float lo, float hi) {
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
-}
-
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
-    if (!view.auto_dive) return;
-    if (view.camera_behavior == CameraBehavior::manual || view.camera_behavior == CameraBehavior::off) return;
-
-    // Quick-stabilization pass (per informal spec feedback):
-    // "Default behavior should be a simple center-zoom".
-    // Per-frame deltas only; scaled only by dive_speed.
-    float speed = fmaxf(0.0f, view.dive_speed);
-    if (speed <= 0.0f) return;
-
-    // Small, observable per-frame zoom-in toward the current view center.
-    // Keep this intentionally simple and always non-zero.
-    // A too-low max-zoom clamp looks like a "stall" once reached.
-    double zoomFactor = 1.0 + 0.002 * (double)speed;
-    double dlog2 = Log2D(zoomFactor);
-    // No arbitrary max zoom; clamp only to keep the exponent finite.
-    view.log2_zoom = ClampInteractionLog2Zoom(view.log2_zoom + dlog2);
-    SyncViewUiFromHp(view);
-    if (ioDirty) *ioDirty = true;
+    if (ApplyAutoDiveStep(view)) {
+        if (ioDirty) *ioDirty = true;
+    }
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
@@ -1249,26 +1229,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 // Mouse wheel zoom around cursor.
                 if (io.MouseWheel != 0.0f && size.x > 0.0f && size.y > 0.0f) {
                     ImVec2 mp = ImGui::GetMousePos();
-                    float u = (mp.x - rectMin.x) / size.x;
-                    float v = (mp.y - rectMin.y) / size.y;
-                    u = ClampF(u, 0.0f, 1.0f);
-                    v = ClampF(v, 0.0f, 1.0f);
-
+                    float u = ClampF((mp.x - rectMin.x) / size.x, 0.0f, 1.0f);
+                    float v = ClampF((mp.y - rectMin.y) / size.y, 0.0f, 1.0f);
                     double aspect = (render.resolution.y > 0) ? (double)render.resolution.x / (double)render.resolution.y : 1.0;
-                    double zoomOld = SafeZoomFromLog2(view.log2_zoom);
-                    double baseOld = 2.0 / fmax(1e-30, zoomOld);
-                    double nx = ((double)u - 0.5) * 2.0;
-                    double ny = ((double)v - 0.5) * 2.0;
 
-                    double worldX = view.center_hp_x + nx * baseOld * aspect;
-                    double worldY = view.center_hp_y + ny * baseOld;
-
-                    double factor = pow(1.10, (double)io.MouseWheel);
-                    view.log2_zoom = ClampInteractionLog2Zoom(view.log2_zoom + Log2D(factor));
-                    double zoomNew = SafeZoomFromLog2(view.log2_zoom);
-                    double baseNew = 2.0 / fmax(1e-30, zoomNew);
-                    view.center_hp_x = worldX - nx * baseNew * aspect;
-                    view.center_hp_y = worldY - ny * baseNew;
+                    auto zr = ComputeZoomAroundCursor(
+                        view.center_hp_x, view.center_hp_y, view.log2_zoom,
+                        u, v, io.MouseWheel, aspect);
+                    view.center_hp_x = zr.new_center_hp_x;
+                    view.center_hp_y = zr.new_center_hp_y;
+                    view.log2_zoom = zr.new_log2_zoom;
                     SyncViewUiFromHp(view);
                     dirty = true;
                     interactionChanged = true;
@@ -1279,16 +1249,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     ImVec2 dpx = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
                     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
 
-                    double aspect = (render.resolution.y > 0) ? (double)render.resolution.x / (double)render.resolution.y : 1.0;
-                    double zoomNow = SafeZoomFromLog2(view.log2_zoom);
-                    double base = 2.0 / fmax(1e-30, zoomNow);
-
-                    double dxWorld = ((double)dpx.x / (double)render.resolution.x) * 2.0 * base * aspect;
-                    double dyWorld = ((double)dpx.y / (double)render.resolution.y) * 2.0 * base;
-
-                    // "Grab" semantics: dragging right moves content right.
-                    view.center_hp_x -= dxWorld;
-                    view.center_hp_y -= dyWorld;
+                    auto pr = ComputeDragPan(
+                        view.center_hp_x, view.center_hp_y, view.log2_zoom,
+                        dpx.x, dpx.y, render.resolution.x, render.resolution.y);
+                    view.center_hp_x = pr.new_center_hp_x;
+                    view.center_hp_y = pr.new_center_hp_y;
                     SyncViewUiFromHp(view);
                     dirty = true;
                     interactionChanged = true;

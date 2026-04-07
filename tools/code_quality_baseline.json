@@ -1,0 +1,346 @@
+{
+  "score": 59,
+  "file_stats": {
+    "ui_app\\src\\cli_args.cpp": {
+      "lines": 78,
+      "function_count": 5,
+      "max_fn_lines": 36
+    },
+    "ui_app\\src\\diagnostics_capture.cpp": {
+      "lines": 264,
+      "function_count": 7,
+      "max_fn_lines": 73
+    },
+    "ui_app\\src\\diagnostics_state_io.cpp": {
+      "lines": 513,
+      "function_count": 13,
+      "max_fn_lines": 33
+    },
+    "ui_app\\src\\explaino_seed.cpp": {
+      "lines": 50,
+      "function_count": 5,
+      "max_fn_lines": 28
+    },
+    "ui_app\\src\\explaino_seed_dynamics.cpp": {
+      "lines": 30,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\finding_archive_actions.cpp": {
+      "lines": 544,
+      "function_count": 22,
+      "max_fn_lines": 35
+    },
+    "ui_app\\src\\finding_state_actions.cpp": {
+      "lines": 42,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\fractal_derived_fields.cpp": {
+      "lines": 509,
+      "function_count": 11,
+      "max_fn_lines": 230
+    },
+    "ui_app\\src\\fractal_probe_contract.cpp": {
+      "lines": 728,
+      "function_count": 11,
+      "max_fn_lines": 53
+    },
+    "ui_app\\src\\fractal_probe_runner.cpp": {
+      "lines": 1119,
+      "function_count": 18,
+      "max_fn_lines": 38
+    },
+    "ui_app\\src\\function_descriptor.cpp": {
+      "lines": 311,
+      "function_count": 12,
+      "max_fn_lines": 69
+    },
+    "ui_app\\src\\headless_modes.cpp": {
+      "lines": 192,
+      "function_count": 5,
+      "max_fn_lines": 58
+    },
+    "ui_app\\src\\json_min.cpp": {
+      "lines": 301,
+      "function_count": 8,
+      "max_fn_lines": 77
+    },
+    "ui_app\\src\\lens_sdf.cpp": {
+      "lines": 123,
+      "function_count": 3,
+      "max_fn_lines": 23
+    },
+    "ui_app\\src\\main.cpp": {
+      "lines": 1326,
+      "function_count": 22,
+      "max_fn_lines": 941
+    },
+    "ui_app\\src\\render_capture_guard.cpp": {
+      "lines": 61,
+      "function_count": 4,
+      "max_fn_lines": 12
+    },
+    "ui_app\\src\\runtime_reset.cpp": {
+      "lines": 52,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\safe_mode_schema.cpp": {
+      "lines": 300,
+      "function_count": 1,
+      "max_fn_lines": 297
+    },
+    "ui_app\\src\\sample_tier_resolver.cpp": {
+      "lines": 87,
+      "function_count": 2,
+      "max_fn_lines": 21
+    },
+    "ui_app\\src\\schema_binding.cpp": {
+      "lines": 832,
+      "function_count": 15,
+      "max_fn_lines": 284
+    },
+    "ui_app\\src\\schema_startup_policy.cpp": {
+      "lines": 13,
+      "function_count": 1,
+      "max_fn_lines": 11
+    },
+    "ui_app\\src\\sweep_player.cpp": {
+      "lines": 103,
+      "function_count": 4,
+      "max_fn_lines": 42
+    },
+    "ui_app\\src\\ui_schema.cpp": {
+      "lines": 208,
+      "function_count": 5,
+      "max_fn_lines": 175
+    },
+    "ui_app\\src\\view_hp_sync.cpp": {
+      "lines": 37,
+      "function_count": 7,
+      "max_fn_lines": 7
+    },
+    "ui_app\\src\\viewer_render_pacing.cpp": {
+      "lines": 146,
+      "function_count": 8,
+      "max_fn_lines": 9
+    },
+    "ui_app\\src\\viewer_shutdown.cpp": {
+      "lines": 11,
+      "function_count": 2,
+      "max_fn_lines": 5
+    },
+    "ui_app\\src\\viewer_sweep.cpp": {
+      "lines": 36,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\viewport_interaction.cpp": {
+      "lines": 59,
+      "function_count": 1,
+      "max_fn_lines": 13
+    },
+    "ui_app\\src\\fractal_renderer.cu": {
+      "lines": 1418,
+      "function_count": 14,
+      "max_fn_lines": 41
+    },
+    "ui_app\\src\\basin_coloring.h": {
+      "lines": 95,
+      "function_count": 5,
+      "max_fn_lines": 14
+    },
+    "ui_app\\src\\cli_args.h": {
+      "lines": 13,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\diagnostics_capture.h": {
+      "lines": 22,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\diagnostics_state_io.h": {
+      "lines": 21,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\escape_time_coloring.h": {
+      "lines": 138,
+      "function_count": 6,
+      "max_fn_lines": 27
+    },
+    "ui_app\\src\\escape_time_direct_formulas.h": {
+      "lines": 174,
+      "function_count": 11,
+      "max_fn_lines": 17
+    },
+    "ui_app\\src\\escape_time_specialized_formulas.h": {
+      "lines": 138,
+      "function_count": 11,
+      "max_fn_lines": 13
+    },
+    "ui_app\\src\\explaino_collatz_formulas.h": {
+      "lines": 150,
+      "function_count": 9,
+      "max_fn_lines": 11
+    },
+    "ui_app\\src\\explaino_seed.h": {
+      "lines": 14,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\explaino_seed_curve.h": {
+      "lines": 91,
+      "function_count": 8,
+      "max_fn_lines": 17
+    },
+    "ui_app\\src\\explaino_seed_dynamics.h": {
+      "lines": 8,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\finding_archive_actions.h": {
+      "lines": 50,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\finding_state_actions.h": {
+      "lines": 12,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\fractal_derived_fields.h": {
+      "lines": 15,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\fractal_family_rules.h": {
+      "lines": 104,
+      "function_count": 8,
+      "max_fn_lines": 19
+    },
+    "ui_app\\src\\fractal_probe_contract.h": {
+      "lines": 192,
+      "function_count": 3,
+      "max_fn_lines": 6
+    },
+    "ui_app\\src\\fractal_probe_runner.h": {
+      "lines": 12,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\fractal_runtime_validation.h": {
+      "lines": 88,
+      "function_count": 3,
+      "max_fn_lines": 4
+    },
+    "ui_app\\src\\fractal_types.h": {
+      "lines": 217,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\function_descriptor.h": {
+      "lines": 70,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\headless_modes.h": {
+      "lines": 43,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\json_min.h": {
+      "lines": 47,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\lens_sdf.h": {
+      "lines": 20,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\perturbation_reference_orbit.h": {
+      "lines": 96,
+      "function_count": 2,
+      "max_fn_lines": 4
+    },
+    "ui_app\\src\\polynomial_eval_real_coeffs.h": {
+      "lines": 80,
+      "function_count": 4,
+      "max_fn_lines": 21
+    },
+    "ui_app\\src\\render_capture_guard.h": {
+      "lines": 30,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\runtime_reset.h": {
+      "lines": 10,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\safe_mode_schema.h": {
+      "lines": 5,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\sample_tier_resolver.h": {
+      "lines": 15,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\schema_binding.h": {
+      "lines": 33,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\schema_startup_policy.h": {
+      "lines": 10,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\sweep_player.h": {
+      "lines": 25,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\ui_schema.h": {
+      "lines": 81,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\ui_schema_grouping.h": {
+      "lines": 54,
+      "function_count": 5,
+      "max_fn_lines": 12
+    },
+    "ui_app\\src\\view_hp_sync.h": {
+      "lines": 18,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\viewer_render_pacing.h": {
+      "lines": 38,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\viewer_shutdown.h": {
+      "lines": 6,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\viewer_sweep.h": {
+      "lines": 13,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\viewport_interaction.h": {
+      "lines": 52,
+      "function_count": 1,
+      "max_fn_lines": 5
+    }
+  },
+  "updated": "2026-04-07"
+}

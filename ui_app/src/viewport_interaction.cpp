@@ -1,0 +1,58 @@
+#include "viewport_interaction.h"
+
+#include <cmath>
+
+bool ApplyAutoDiveStep(ViewState& view) {
+    if (!view.auto_dive) return false;
+    if (view.camera_behavior == CameraBehavior::manual || view.camera_behavior == CameraBehavior::off) return false;
+
+    float speed = fmaxf(0.0f, view.dive_speed);
+    if (speed <= 0.0f) return false;
+
+    double zoomFactor = 1.0 + 0.002 * (double)speed;
+    double dlog2 = Log2D(zoomFactor);
+    view.log2_zoom = ClampInteractionLog2Zoom(view.log2_zoom + dlog2);
+    SyncViewUiFromHp(view);
+    return true;
+}
+
+ZoomAroundCursorResult ComputeZoomAroundCursor(
+    double center_hp_x, double center_hp_y, double log2_zoom,
+    float cursor_u, float cursor_v, float mouse_wheel, double aspect) {
+
+    double zoomOld = SafeZoomFromLog2(log2_zoom);
+    double baseOld = 2.0 / fmax(1e-30, zoomOld);
+    double nx = ((double)cursor_u - 0.5) * 2.0;
+    double ny = ((double)cursor_v - 0.5) * 2.0;
+
+    double worldX = center_hp_x + nx * baseOld * aspect;
+    double worldY = center_hp_y + ny * baseOld;
+
+    double factor = pow(1.10, (double)mouse_wheel);
+    double newLog2Zoom = ClampInteractionLog2Zoom(log2_zoom + Log2D(factor));
+    double zoomNew = SafeZoomFromLog2(newLog2Zoom);
+    double baseNew = 2.0 / fmax(1e-30, zoomNew);
+
+    ZoomAroundCursorResult r;
+    r.new_center_hp_x = worldX - nx * baseNew * aspect;
+    r.new_center_hp_y = worldY - ny * baseNew;
+    r.new_log2_zoom = newLog2Zoom;
+    return r;
+}
+
+DragPanResult ComputeDragPan(
+    double center_hp_x, double center_hp_y, double log2_zoom,
+    float drag_dx, float drag_dy, int resolution_x, int resolution_y) {
+
+    double aspect = (resolution_y > 0) ? (double)resolution_x / (double)resolution_y : 1.0;
+    double zoomNow = SafeZoomFromLog2(log2_zoom);
+    double base = 2.0 / fmax(1e-30, zoomNow);
+
+    double dxWorld = ((double)drag_dx / (double)resolution_x) * 2.0 * base * aspect;
+    double dyWorld = ((double)drag_dy / (double)resolution_y) * 2.0 * base;
+
+    DragPanResult r;
+    r.new_center_hp_x = center_hp_x - dxWorld;
+    r.new_center_hp_y = center_hp_y - dyWorld;
+    return r;
+}
