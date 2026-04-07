@@ -128,6 +128,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_basin_coloring.cpp ^
+  /Fe:"%TESTROOT%\test_basin_coloring.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_escape_time_direct_formulas.cpp ^
   /Fe:"%TESTROOT%\test_escape_time_direct_formulas.exe"
 if errorlevel 1 exit /b 1
@@ -220,6 +225,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_polynomial_eval_real_coeffs.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_basin_coloring.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_escape_time_direct_formulas.exe"

@@ -1,5 +1,6 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
+#include "basin_coloring.h"
 #include "escape_time_direct_formulas.h"
 #include "escape_time_coloring.h"
 #include "explaino_collatz_formulas.h"
@@ -130,89 +131,9 @@ __device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2_d(const float coef
     PolyEvalRealCoeffsDeg4D2(coeffs, z, outP, outDp, outD2p);
 }
 
-__device__ __forceinline__ int nearest_root_index_unit_roots(Cx z, int n) {
-    // For z^n - 1, roots are exp(i * 2pi k / n).
-    float angle = atan2f(z.y, z.x);
-    float t = (angle + CUDART_PI_F) / (2.0f * CUDART_PI_F); // [0,1)
-    int k = (int)floorf(t * n + 0.5f) % n;
-    if (k < 0) k += n;
-    return k;
-}
-
 __device__ __forceinline__ Cx unit_root_k(int k, int n) {
     float a = (2.0f * CUDART_PI_F) * ((float)k / (float)max(1, n));
     return {cosf(a), sinf(a)};
-}
-
-__device__ __forceinline__ int nearest_root_index_list(Cx z, const Float2* roots, int n) {
-    int best = 0;
-    float bestD2 = 1.0e30f;
-    for (int i = 0; i < n; ++i) {
-        float dx = z.x - roots[i].x;
-        float dy = z.y - roots[i].y;
-        float d2 = dx * dx + dy * dy;
-        if (d2 < bestD2) {
-            bestD2 = d2;
-            best = i;
-        }
-    }
-    return best;
-}
-
-// Double-precision root identification (coloring needs float result, but location matching benefits from double).
-__device__ __forceinline__ int nearest_root_index_unit_roots_d(Cxd z, int n) {
-    double angle = atan2(z.y, z.x);
-    double t = (angle + 3.141592653589793) / (2.0 * 3.141592653589793);
-    int k = (int)floor(t * n + 0.5) % n;
-    if (k < 0) k += n;
-    return k;
-}
-
-__device__ __forceinline__ int nearest_root_index_list_d(Cxd z, const Float2* roots, int n) {
-    int best = 0;
-    double bestD2 = 1.0e30;
-    for (int i = 0; i < n; ++i) {
-        double dx = z.x - (double)roots[i].x;
-        double dy = z.y - (double)roots[i].y;
-        double d2 = dx * dx + dy * dy;
-        if (d2 < bestD2) {
-            bestD2 = d2;
-            best = i;
-        }
-    }
-    return best;
-}
-
-__device__ __forceinline__ uchar4 palette_root(int idx, int n) {
-    // Simple distinct palette (wrap)
-    const uchar4 colors[8] = {
-        {255, 64, 64, 255},
-        {64, 255, 64, 255},
-        {64, 128, 255, 255},
-        {255, 255, 64, 255},
-        {255, 64, 255, 255},
-        {64, 255, 255, 255},
-        {255, 128, 64, 255},
-        {192, 192, 192, 255},
-    };
-    return colors[idx % 8];
-}
-
-__device__ __forceinline__ uchar4 palette_joy_root(int idx, int n) {
-    // Warm, happy palette tuned for "many success pits".
-    // Keep it simple and distinct per root.
-    const uchar4 warm[8] = {
-        {255, 140, 80, 255},
-        {255, 205, 70, 255},
-        {255, 90, 90, 255},
-        {255, 130, 200, 255},
-        {255, 165, 90, 255},
-        {255, 95, 190, 255},
-        {255, 185, 95, 255},
-        {255, 235, 170, 255},
-    };
-    (void)n;
-    return warm[idx % 8];
 }
 
 __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; }
@@ -422,24 +343,22 @@ __global__ void kernel_render(
             converged = (pAbs < eps);
         }
         if (!converged) {
-            int nRoots = 0;
-            if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
-            if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
             if (useFP64) {
                 Cxd zd = {(double)z.x, (double)z.y};
                 if (nRoots > 0) {
-                    int idx = nearest_root_index_unit_roots_d(zd, nRoots);
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
                     z = unit_root_k(idx, nRoots);
                 } else if (params.explaino_root_count > 0) {
-                    int idx = nearest_root_index_list_d(zd, params.explaino_roots, params.explaino_root_count);
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
                     z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
                 }
             } else {
                 if (nRoots > 0) {
-                    int idx = nearest_root_index_unit_roots(z, nRoots);
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
                     z = unit_root_k(idx, nRoots);
                 } else if (params.explaino_root_count > 0) {
-                    int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
                     z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
                 }
             }
@@ -1192,17 +1111,15 @@ __global__ void kernel_render(
                 unsigned char b = (unsigned char)(18.0f + 34.0f * v + 14.0f * w);
                 color = {r, g, b, 255};
             } else {
-                int nRoots = 0;
-                if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
-                if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+                int nRoots = ResolvePolynomialRootCount(params.poly_kind);
 
                 bool isExplainoFamily = IsExplainoFamily(ft);
                 bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
 
                 if (nRoots > 0 || useCustomRoots) {
-                    int idx = useCustomRoots ? nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count)
-                                             : nearest_root_index_unit_roots(z, nRoots);
-                    uchar4 base = palette_joy_root(idx, nRoots);
+                    int idx = useCustomRoots ? NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count)
+                                             : NearestRootIndexUnitRoots(z, nRoots);
+                    uchar4 base = PaletteJoyRoot<uchar4>(idx);
 
                     // Brightness: faster convergence => brighter, but never gloomy.
                     float u = (float)it / (float)maxIter;
@@ -1232,19 +1149,17 @@ __global__ void kernel_render(
             if (!converged) {
                 color = {0, 0, 0, 255};
             } else if (mode == ColoringMode::root_basin) {
-                int nRoots = 0;
-                if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
-                if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
+                int nRoots = ResolvePolynomialRootCount(params.poly_kind);
 
                 bool isExplainoFamily = IsExplainoFamily(ft);
                 bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
 
                 if (useCustomRoots) {
-                    int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
-                    color = palette_root(idx, params.explaino_root_count);
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    color = PaletteRoot<uchar4>(idx);
                 } else if (nRoots > 0) {
-                    int idx = nearest_root_index_unit_roots(z, nRoots);
-                    color = palette_root(idx, nRoots);
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    color = PaletteRoot<uchar4>(idx);
                 } else {
                     // Invalid: root identity not defined.
                     color = errorColor;

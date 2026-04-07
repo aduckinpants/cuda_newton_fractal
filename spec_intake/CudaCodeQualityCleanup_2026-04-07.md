@@ -144,6 +144,19 @@ Important contract preserved:
 - second-derivative evaluation remains explicit for Halley-style callers
 - the renderer still uses local forwarding names where that avoids broad call-site churn in the current slice
 
+### 3.8 Basin coloring helpers
+
+Landed:
+- `ui_app/src/basin_coloring.h`
+
+Purpose:
+- move basin root-count resolution, root-index lookup, and root palettes out of `fractal_renderer.cu`
+
+Important contract preserved:
+- custom-root and unit-root lookup rules stay unchanged for both float and double paths
+- the existing unit-root index convention is preserved exactly, even though it is phase-shifted relative to the mathematical root order
+- unit-root reconstruction still stays local to the renderer in this slice
+
 ## 4) Next Cleanup Slices
 
 ### Slice D — Common complex helper convergence pass
@@ -165,7 +178,7 @@ Exit criteria:
 
 The best next bounded cleanup slice is:
 
-1. isolate one remaining renderer-local complex helper seam after the shared probe/renderer math extractions
+1. extract the shared Explaino warp-start helper that is still duplicated across probe and renderer
 2. keep the slice to a single helper plus caller rewrites
 3. validate with helper + viewer builds
 4. checkpoint immediately
