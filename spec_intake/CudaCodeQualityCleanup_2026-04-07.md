@@ -105,16 +105,20 @@ Important contract preserved:
 - the reference orbit still keys off `center_hp_x/y` and `max_iter`
 - Julia keeps the existing reference-`z0` plus fixed-constant orbit contract
 
+### 3.5 Escape-time coloring extraction
+
+Landed:
+- `ui_app/src/escape_time_coloring.h`
+
+Purpose:
+- move escape-time palette selection and final color grading out of `kernel_render`
+
+Important contract preserved:
+- escape-time basin modes still fail visibly with the magenta error color
+- the smooth-escape cyclic palette stays unchanged, including the multibrot-power denominator path
+- exposure, tint, saturation, and contrast still apply after the base color is chosen
+
 ## 4) Next Cleanup Slices
-
-### Slice C — Escape-time coloring extraction
-
-Target:
-- isolate smooth-escape color smoothing and palette logic from the kernel monolith into named helpers with narrower responsibilities
-
-Exit criteria:
-- no palette change
-- reduced branching density inside `kernel_render`
 
 ### Slice D — Common complex helper convergence pass
 
@@ -135,7 +139,7 @@ Exit criteria:
 
 The best next bounded cleanup slice is:
 
-1. isolate escape-time coloring helpers from `kernel_render`
-2. leave perturbation cache plumbing and specialized-family logic alone for that slice
+1. extract one shared complex-math/helper seam that is still duplicated across renderer and probe
+2. keep the slice to a single helper plus caller rewrites
 3. validate with helper + viewer builds
 4. checkpoint immediately

@@ -1,6 +1,7 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
 #include "escape_time_direct_formulas.h"
+#include "escape_time_coloring.h"
 #include "escape_time_specialized_formulas.h"
 #include "fractal_runtime_validation.h"
 #include "explaino_seed_curve.h"
@@ -290,50 +291,6 @@ __device__ __forceinline__ uchar4 palette_joy_root(int idx, int n) {
     };
     (void)n;
     return warm[idx % 8];
-}
-
-__device__ __forceinline__ uchar4 mul_rgb(uchar4 c, float s) {
-    s = fmaxf(0.0f, fminf(1.5f, s));
-    int r = (int)roundf((float)c.x * s);
-    int g = (int)roundf((float)c.y * s);
-    int b = (int)roundf((float)c.z * s);
-    r = max(0, min(255, r));
-    g = max(0, min(255, g));
-    b = max(0, min(255, b));
-    return {(unsigned char)r, (unsigned char)g, (unsigned char)b, 255};
-}
-
-__device__ __forceinline__ unsigned char tone_map(unsigned char v, float exposure) {
-    float x = (v / 255.0f) * exposure;
-    x = 1.0f - expf(-x);
-    return (unsigned char)(fminf(1.0f, x) * 255.0f);
-}
-
-__device__ __forceinline__ uchar4 apply_exposure(uchar4 c, float exposure) {
-    float e = fmaxf(0.0f, exposure);
-    return {tone_map(c.x, e), tone_map(c.y, e), tone_map(c.z, e), 255};
-}
-
-__device__ __forceinline__ uchar4 tint_rgb(uchar4 c, float tr, float tg, float tb) {
-    return {(unsigned char)fminf(255.0f, fmaxf(0.0f, (float)c.x * tr)),
-            (unsigned char)fminf(255.0f, fmaxf(0.0f, (float)c.y * tg)),
-            (unsigned char)fminf(255.0f, fmaxf(0.0f, (float)c.z * tb)),
-            c.w};
-}
-
-__device__ __forceinline__ uchar4 saturate_rgb(uchar4 c, float sat) {
-    float lum = 0.299f * (float)c.x + 0.587f * (float)c.y + 0.114f * (float)c.z;
-    return {(unsigned char)fminf(255.0f, fmaxf(0.0f, lum + sat * ((float)c.x - lum))),
-            (unsigned char)fminf(255.0f, fmaxf(0.0f, lum + sat * ((float)c.y - lum))),
-            (unsigned char)fminf(255.0f, fmaxf(0.0f, lum + sat * ((float)c.z - lum))),
-            c.w};
-}
-
-__device__ __forceinline__ uchar4 contrast_rgb(uchar4 c, float con) {
-    return {(unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.x - 128.0f))),
-            (unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.y - 128.0f))),
-            (unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.z - 128.0f))),
-            c.w};
 }
 
 __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; }
@@ -1367,7 +1324,7 @@ __global__ void kernel_render(
                     float a = atan2f(z.y, z.x);
                     float stripe = 0.5f + 0.5f * sinf((float)it * 0.35f + a * 3.0f + phase);
 
-                    uchar4 c0 = mul_rgb(base, bright);
+                    uchar4 c0 = EscapeTimeColorMulRgb(base, bright);
                     float glow = 0.30f * edge + 0.12f * stripe;
                     int rr = (int)c0.x + (int)(glow * 255.0f);
                     int gg = (int)c0.y + (int)(glow * 210.0f);
@@ -1418,59 +1375,10 @@ __global__ void kernel_render(
         }
     } else {
         // Escape-time coloring.
-        if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
-            // Invalid: basin coloring is not valid for escape-time modes.
-            // Fail-fast: show error color even for interior points.
-            color = errorColor;
-        } else if (!escaped) {
-            color = {0, 0, 0, 255};
-        } else if (mode == ColoringMode::iteration_count) {
-            float t = (float)it / (float)maxIter;
-            unsigned char v = (unsigned char)(fminf(1.0f, t) * 255.0f);
-            color = {64, v, (unsigned char)(255 - v), 255};
-        } else if (mode == ColoringMode::smooth_escape) {
-            // Cyclic multi-stop palette for escape-time fractals.
-            float mag = cx_abs(z);
-            float log_zn = logf(fmaxf(mag, 1e-12f));
-
-            float denom = logf(2.0f);
-            float pf = params.multibrot_power_float;
-            if (ft == FractalType::multibrot && pf > 1.0f) denom = logf(pf);
-
-            float nu = (float)it + 1.0f - logf(fmaxf(log_zn / denom, 1e-12f)) / denom;
-
-            // Map to a cycling band index rather than a linear 0-1 ramp.
-            float band = nu * 0.025f; // period ~40 iterations
-            float frac = band - floorf(band);
-
-            // 5-stop palette: deep blue -> cyan -> gold -> orange -> deep blue
-            // Each stop is a (r,g,b) triple in [0,1].
-            const float stops[6][3] = {
-                {0.00f, 0.03f, 0.20f},  // deep navy
-                {0.05f, 0.35f, 0.65f},  // ocean blue
-                {0.10f, 0.75f, 0.85f},  // cyan
-                {0.95f, 0.85f, 0.25f},  // gold
-                {0.90f, 0.45f, 0.10f},  // burnt orange
-                {0.00f, 0.03f, 0.20f},  // wrap to deep navy
-            };
-            float u5 = frac * 5.0f;
-            int seg = (int)u5;
-            if (seg > 4) seg = 4;
-            float segT = u5 - (float)seg;
-            float rf = stops[seg][0] + (stops[seg+1][0] - stops[seg][0]) * segT;
-            float gf = stops[seg][1] + (stops[seg+1][1] - stops[seg][1]) * segT;
-            float bf = stops[seg][2] + (stops[seg+1][2] - stops[seg][2]) * segT;
-
-            color = {(unsigned char)(fminf(1.0f, rf) * 255.0f),
-                     (unsigned char)(fminf(1.0f, gf) * 255.0f),
-                     (unsigned char)(fminf(1.0f, bf) * 255.0f), 255};
-        }
+        color = MakeEscapeTimeBaseColor<uchar4>(ft, mode, escaped, it, maxIter, z, params);
     }
 
-    color = apply_exposure(color, params.exposure);
-    color = tint_rgb(color, params.color_tint_r, params.color_tint_g, params.color_tint_b);
-    color = saturate_rgb(color, params.color_saturation);
-    color = contrast_rgb(color, params.color_contrast);
+    color = ApplyFractalColorGrading(color, params);
 
     uint32_t rgba = (uint32_t)color.x | ((uint32_t)color.y << 8) | ((uint32_t)color.z << 16) | ((uint32_t)color.w << 24);
     outRGBA[py * width + px] = rgba;
