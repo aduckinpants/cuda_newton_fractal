@@ -1,299 +1,171 @@
 #include "safe_mode_schema.h"
 
+namespace {
+
+UISchemaBinding MakeBinding(const char* kind, const char* path) {
+    UISchemaBinding binding;
+    binding.kind = kind;
+    binding.path = path;
+    return binding;
+}
+
+UISchemaControl MakeParamControl(
+    const char* id,
+    const char* type,
+    const char* label,
+    const char* value_type,
+    const char* path,
+    const json_min::Value& default_value) {
+    UISchemaControl control;
+    control.id = id;
+    control.type = type;
+    control.label = label;
+    control.value_type = value_type;
+    control.has_binding = true;
+    control.binding = MakeBinding("param", path);
+    control.has_default = true;
+    control.def = default_value;
+    return control;
+}
+
+UISchemaControl MakeRangedParamControl(
+    const char* id,
+    const char* type,
+    const char* label,
+    const char* value_type,
+    double min,
+    double max,
+    double step,
+    const char* path,
+    const json_min::Value& default_value) {
+    UISchemaControl control = MakeParamControl(id, type, label, value_type, path, default_value);
+    control.min = min;
+    control.max = max;
+    control.step = step;
+    control.has_min = true;
+    control.has_max = true;
+    control.has_step = true;
+    return control;
+}
+
+UISchemaControl MakeActionControl(const char* id, const char* label, const char* path) {
+    UISchemaControl control;
+    control.id = id;
+    control.type = "button";
+    control.label = label;
+    control.has_binding = true;
+    control.binding = MakeBinding("action", path);
+    return control;
+}
+
+std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
+    return {
+        {"explaino", "Explaino", "Common"},
+        {"nova", "Nova", "Common"},
+        {"mandelbrot", "Mandelbrot", "Common"},
+        {"julia", "Julia", "Common"},
+        {"burning_ship", "Burning Ship", "Common"},
+        {"phoenix", "Phoenix", "Common"},
+        {"newton", "Newton", "Root-Finding"},
+        {"halley", "Halley", "Root-Finding"},
+        {"multibrot", "Multibrot", "Escape-Time"},
+        {"spider", "Spider", "Escape-Time"},
+        {"celtic_mandelbrot", "Celtic Mandelbrot", "Escape-Time"},
+        {"perpendicular_burning_ship", "Perpendicular Burning Ship", "Escape-Time"},
+        {"multicorn", "Multicorn", "Escape-Time"},
+        {"collatz", "Collatz", "Escape-Time"},
+        {"mcmullen", "McMullen", "Escape-Time"},
+        {"lambda", "Lambda", "Escape-Time"},
+        {"explaino_y", "Explaino Y", "Explaino"},
+        {"explaino_fp", "Explaino FP", "Explaino"},
+        {"explaino_nova", "Explaino Nova", "Explaino"},
+        {"explaino_halley", "Explaino Halley", "Explaino"},
+        {"explaino_dual", "Explaino DualSeed", "Explaino"},
+        {"explaino_mult", "Explaino Multiplicity", "Explaino"},
+        {"explaino_phoenix", "Explaino Phoenix", "Explaino"},
+        {"explaino_transcendental", "Explaino Transcendental", "Explaino"},
+        {"explaino_inertial", "Explaino Inertial", "Explaino"},
+        {"explaino_julia", "Explaino Julia", "Explaino"},
+        {"explaino_rational", "Explaino Rational", "Explaino"},
+        {"explaino_collatz", "Explaino Collatz", "Explaino"},
+        {"explaino_lambda", "Explaino Lambda", "Explaino"},
+        {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
+    };
+}
+
+UISchemaControl BuildSafeModeFractalTypeControl() {
+    UISchemaControl control = MakeParamControl(
+        "fractal_type",
+        "combo",
+        "Fractal Type",
+        "enum",
+        "fractal.view.fractal_type",
+        json_min::Value{std::string("explaino")});
+    control.options = BuildSafeModeFractalTypeOptions();
+    return control;
+}
+
+UISchemaPanel BuildSafeModeViewPanel() {
+    UISchemaPanel panel;
+    panel.id = "view";
+    panel.label = "View (Safe Mode)";
+    panel.order = 10;
+    panel.has_order = true;
+    panel.controls = {
+        BuildSafeModeFractalTypeControl(),
+        MakeRangedParamControl("center_x", "drag_float", "Center X", "float", -2.0, 2.0, 0.001, "fractal.view.center.x", json_min::Value{0.0}),
+        MakeRangedParamControl("center_y", "drag_float", "Center Y", "float", -2.0, 2.0, 0.001, "fractal.view.center.y", json_min::Value{0.0}),
+        MakeRangedParamControl("zoom", "drag_float", "Zoom", "float", 1.0e-12, 1.0e12, 0.01, "fractal.view.zoom", json_min::Value{1.0}),
+        MakeRangedParamControl("rotation_deg", "drag_float", "Rotation (deg)", "float", -180.0, 180.0, 0.1, "fractal.view.rotation", json_min::Value{0.0}),
+        MakeParamControl("auto_refresh", "checkbox", "Continuous Render", "bool", "fractal.view.auto_refresh", json_min::Value{false}),
+        MakeActionControl("render_once", "Render Once", "fractal.actions.render_once"),
+        MakeActionControl("reset_view", "Reset View", "fractal.actions.reset_view"),
+        MakeActionControl("reset_all", "Reset All", "fractal.actions.reset_all"),
+        MakeActionControl("load_state", "Load Finding State", "fractal.actions.load_state"),
+        MakeActionControl("capture_finding", "Capture Finding", "fractal.actions.capture_finding"),
+    };
+    return panel;
+}
+
+UISchemaPanel BuildSafeModeFractalPanel() {
+    UISchemaPanel panel;
+    panel.id = "fractal";
+    panel.label = "Fractal (Safe Mode)";
+    panel.order = 20;
+    panel.has_order = true;
+    panel.controls = {
+        MakeRangedParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
+        MakeRangedParamControl("exposure", "slider_float", "Exposure", "float", 0.1, 5.0, 0.01, "fractal.params.exposure", json_min::Value{1.0}),
+    };
+    return panel;
+}
+
+UISchemaPanel BuildSafeModeRenderPanel() {
+    UISchemaPanel panel;
+    panel.id = "render";
+    panel.label = "Render (Safe Mode)";
+    panel.order = 30;
+    panel.has_order = true;
+    panel.controls = {
+        MakeRangedParamControl("width", "slider_int", "Width", "int", 64.0, 4096.0, 1.0, "fractal.render.resolution.x", json_min::Value{1024.0}),
+        MakeRangedParamControl("height", "slider_int", "Height", "int", 64.0, 4096.0, 1.0, "fractal.render.resolution.y", json_min::Value{768.0}),
+        MakeRangedParamControl("interaction_debounce_ms", "slider_int", "Interaction Debounce (ms)", "int", 0.0, 1000.0, 10.0, "fractal.render.interaction_debounce_ms", json_min::Value{200.0}),
+        MakeRangedParamControl("preview_target_fps", "slider_float", "Preview Target FPS", "float", 5.0, 120.0, 1.0, "fractal.render.preview_target_fps", json_min::Value{30.0}),
+        MakeRangedParamControl("preview_min_scale", "slider_float", "Preview Min Scale", "float", 0.25, 1.0, 0.05, "fractal.render.preview_min_scale", json_min::Value{0.5}),
+    };
+    return panel;
+}
+
+} // namespace
+
 UISchema BuildSafeModeSchema() {
-    UISchema s;
-    s.schema_version = "1";
-    s.name_space = "fractal";
-    UISchemaPanel view;
-    view.id = "view";
-    view.label = "View (Safe Mode)";
-    view.order = 10;
-    view.has_order = true;
-    {
-        UISchemaControl c;
-        c.id = "fractal_type";
-        c.type = "combo";
-        c.label = "Fractal Type";
-        c.value_type = "enum";
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.view.fractal_type";
-        c.has_default = true;
-        c.def.v = std::string("explaino");
-        c.options = {
-            {"explaino", "Explaino", "Common"},
-            {"nova", "Nova", "Common"},
-            {"mandelbrot", "Mandelbrot", "Common"},
-            {"julia", "Julia", "Common"},
-            {"burning_ship", "Burning Ship", "Common"},
-            {"phoenix", "Phoenix", "Common"},
-            {"newton", "Newton", "Root-Finding"},
-            {"halley", "Halley", "Root-Finding"},
-            {"multibrot", "Multibrot", "Escape-Time"},
-            {"spider", "Spider", "Escape-Time"},
-            {"celtic_mandelbrot", "Celtic Mandelbrot", "Escape-Time"},
-            {"perpendicular_burning_ship", "Perpendicular Burning Ship", "Escape-Time"},
-            {"multicorn", "Multicorn", "Escape-Time"},
-            {"collatz", "Collatz", "Escape-Time"},
-            {"mcmullen", "McMullen", "Escape-Time"},
-            {"lambda", "Lambda", "Escape-Time"},
-            {"explaino_y", "Explaino Y", "Explaino"},
-            {"explaino_fp", "Explaino FP", "Explaino"},
-            {"explaino_nova", "Explaino Nova", "Explaino"},
-            {"explaino_halley", "Explaino Halley", "Explaino"},
-            {"explaino_dual", "Explaino DualSeed", "Explaino"},
-            {"explaino_mult", "Explaino Multiplicity", "Explaino"},
-            {"explaino_phoenix", "Explaino Phoenix", "Explaino"},
-            {"explaino_transcendental", "Explaino Transcendental", "Explaino"},
-            {"explaino_inertial", "Explaino Inertial", "Explaino"},
-            {"explaino_julia", "Explaino Julia", "Explaino"},
-            {"explaino_rational", "Explaino Rational", "Explaino"},
-            {"explaino_collatz", "Explaino Collatz", "Explaino"},
-            {"explaino_lambda", "Explaino Lambda", "Explaino"},
-            {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
-        };
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "center_x";
-        c.type = "drag_float";
-        c.label = "Center X";
-        c.value_type = "float";
-        c.min = -2.0; c.max = 2.0; c.step = 0.001;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.view.center.x";
-        c.has_default = true;
-        c.def.v = 0.0;
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "center_y";
-        c.type = "drag_float";
-        c.label = "Center Y";
-        c.value_type = "float";
-        c.min = -2.0; c.max = 2.0; c.step = 0.001;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.view.center.y";
-        c.has_default = true;
-        c.def.v = 0.0;
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "zoom";
-        c.type = "drag_float";
-        c.label = "Zoom";
-        c.value_type = "float";
-        c.min = 1.0e-12; c.max = 1.0e12; c.step = 0.01;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.view.zoom";
-        c.has_default = true;
-        c.def.v = 1.0;
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "rotation_deg";
-        c.type = "drag_float";
-        c.label = "Rotation (deg)";
-        c.value_type = "float";
-        c.min = -180.0; c.max = 180.0; c.step = 0.1;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.view.rotation";
-        c.has_default = true;
-        c.def.v = 0.0;
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "auto_refresh";
-        c.type = "checkbox";
-        c.label = "Continuous Render";
-        c.value_type = "bool";
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.view.auto_refresh";
-        c.has_default = true;
-        c.def.v = false;
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "render_once";
-        c.type = "button";
-        c.label = "Render Once";
-        c.has_binding = true;
-        c.binding.kind = "action";
-        c.binding.path = "fractal.actions.render_once";
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "reset_view";
-        c.type = "button";
-        c.label = "Reset View";
-        c.has_binding = true;
-        c.binding.kind = "action";
-        c.binding.path = "fractal.actions.reset_view";
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "reset_all";
-        c.type = "button";
-        c.label = "Reset All";
-        c.has_binding = true;
-        c.binding.kind = "action";
-        c.binding.path = "fractal.actions.reset_all";
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "load_state";
-        c.type = "button";
-        c.label = "Load Finding State";
-        c.has_binding = true;
-        c.binding.kind = "action";
-        c.binding.path = "fractal.actions.load_state";
-        view.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "capture_finding";
-        c.type = "button";
-        c.label = "Capture Finding";
-        c.has_binding = true;
-        c.binding.kind = "action";
-        c.binding.path = "fractal.actions.capture_finding";
-        view.controls.push_back(std::move(c));
-    }
-    UISchemaPanel fractal;
-    fractal.id = "fractal";
-    fractal.label = "Fractal (Safe Mode)";
-    fractal.order = 20;
-    fractal.has_order = true;
-    {
-        UISchemaControl c;
-        c.id = "max_iter";
-        c.type = "slider_int";
-        c.label = "Max Iterations";
-        c.value_type = "int";
-        c.min = 1; c.max = 5000; c.step = 1;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.params.max_iter";
-        c.has_default = true;
-        c.def.v = 500.0;
-        fractal.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "exposure";
-        c.type = "slider_float";
-        c.label = "Exposure";
-        c.value_type = "float";
-        c.min = 0.1; c.max = 5.0; c.step = 0.01;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.params.exposure";
-        c.has_default = true;
-        c.def.v = 1.0;
-        fractal.controls.push_back(std::move(c));
-    }
-    UISchemaPanel render;
-    render.id = "render";
-    render.label = "Render (Safe Mode)";
-    render.order = 30;
-    render.has_order = true;
-    {
-        UISchemaControl c;
-        c.id = "width";
-        c.type = "slider_int";
-        c.label = "Width";
-        c.value_type = "int";
-        c.min = 64; c.max = 4096; c.step = 1;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.render.resolution.x";
-        c.has_default = true;
-        c.def.v = 1024.0;
-        render.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "height";
-        c.type = "slider_int";
-        c.label = "Height";
-        c.value_type = "int";
-        c.min = 64; c.max = 4096; c.step = 1;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.render.resolution.y";
-        c.has_default = true;
-        c.def.v = 768.0;
-        render.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "interaction_debounce_ms";
-        c.type = "slider_int";
-        c.label = "Interaction Debounce (ms)";
-        c.value_type = "int";
-        c.min = 0; c.max = 1000; c.step = 10;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.render.interaction_debounce_ms";
-        c.has_default = true;
-        c.def.v = 200.0;
-        render.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "preview_target_fps";
-        c.type = "slider_float";
-        c.label = "Preview Target FPS";
-        c.value_type = "float";
-        c.min = 5.0; c.max = 120.0; c.step = 1.0;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.render.preview_target_fps";
-        c.has_default = true;
-        c.def.v = 30.0;
-        render.controls.push_back(std::move(c));
-    }
-    {
-        UISchemaControl c;
-        c.id = "preview_min_scale";
-        c.type = "slider_float";
-        c.label = "Preview Min Scale";
-        c.value_type = "float";
-        c.min = 0.25; c.max = 1.0; c.step = 0.05;
-        c.has_min = c.has_max = c.has_step = true;
-        c.has_binding = true;
-        c.binding.kind = "param";
-        c.binding.path = "fractal.render.preview_min_scale";
-        c.has_default = true;
-        c.def.v = 0.5;
-        render.controls.push_back(std::move(c));
-    }
-    s.panels.push_back(std::move(view));
-    s.panels.push_back(std::move(fractal));
-    s.panels.push_back(std::move(render));
-    return s;
+    UISchema schema;
+    schema.schema_version = "1";
+    schema.name_space = "fractal";
+    schema.panels = {
+        BuildSafeModeViewPanel(),
+        BuildSafeModeFractalPanel(),
+        BuildSafeModeRenderPanel(),
+    };
+    return schema;
 }

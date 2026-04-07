@@ -1,5 +1,6 @@
 #include "../src/explaino_seed.h"
 #include "../src/explaino_seed_curve.h"
+#include "../src/fractal_family_rules.h"
 #include "../src/fractal_derived_fields.h"
 
 #include <cmath>
@@ -85,6 +86,36 @@ int main() {
         ApplyFractalPresetDefaults(view, params, nullptr);
         if (params.coloring_mode != ColoringMode::smooth_escape) {
             std::cerr << "Nova should default to smooth_escape, not basin coloring\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::newton;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Newton defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 500 || !NearlyEqual(params.epsilon, 1.0e-6f) || !NearlyEqual(params.nova_alpha, 0.50f)) {
+            std::cerr << "Newton should use root-finding iteration defaults\n";
+            return 1;
+        }
+        if (params.poly_kind != PolyKind::z3_minus_1) {
+            std::cerr << "Newton should default to the z^3-1 preset polynomial\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.poly_coeffs[0], -1.0f) || !NearlyEqual(params.poly_coeffs[3], 1.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 0.0f)) {
+            std::cerr << "Newton should apply the z^3-1 coefficient preset\n";
+            return 1;
+        }
+        if (params.coloring_mode != DefaultColoringModeForFractal(view.fractal_type) || !NearlyEqual(params.exposure, 1.0f) ||
+            !NearlyEqual(params.phoenix_p_real, -0.50f) || !NearlyEqual(params.phoenix_p_imag, 0.0f)) {
+            std::cerr << "Newton should use the expected root-finding coloring and Phoenix defaults\n";
             return 1;
         }
     }
@@ -251,6 +282,27 @@ int main() {
         ApplyFractalPresetDefaults(view, params, &dirty);
         if (params.max_iter != 1200 || !NearlyEqual(params.phoenix_p_real, 0.5667f) || !NearlyEqual(params.exposure, 1.6f)) {
             std::cerr << "Phoenix param preset should have tuned p_real, max_iter, and exposure\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::mcmullen;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "McMullen defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 500 || !NearlyEqual(params.exposure, 1.2f) ||
+            params.coloring_mode != DefaultColoringModeForFractal(view.fractal_type)) {
+            std::cerr << "McMullen should use the tuned iteration, exposure, and coloring defaults\n";
+            return 1;
+        }
+        if (params.mcmullen_preset != McMullenPreset::z3_z3) {
+            std::cerr << "McMullen should default to the z3_z3 preset\n";
             return 1;
         }
     }

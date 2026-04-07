@@ -91,6 +91,24 @@ bool LoadAndValidateSchemaFile(const std::filesystem::path& path) {
     return true;
 }
 
+const UISchemaPanel* FindPanelById(const UISchema& schema, const char* id) {
+    for (const auto& panel : schema.panels) {
+        if (panel.id == id) {
+            return &panel;
+        }
+    }
+    return nullptr;
+}
+
+const UISchemaControl* FindControlById(const UISchemaPanel& panel, const char* id) {
+    for (const auto& control : panel.controls) {
+        if (control.id == id) {
+            return &control;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace
 
 int main() {
@@ -400,6 +418,9 @@ int main() {
 
     {
         UISchema safeMode = BuildSafeModeSchema();
+        const UISchemaPanel* viewPanel = FindPanelById(safeMode, "view");
+        const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+        const UISchemaPanel* renderPanel = FindPanelById(safeMode, "render");
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
         bool foundFractalTypeCommonGroup = false;
@@ -414,6 +435,54 @@ int main() {
         bool foundPreviewTargetFpsDefault = false;
         bool foundPreviewMinScaleDefault = false;
         bool foundContinuousRenderDefaultFalse = false;
+
+        if (!viewPanel || viewPanel->label != "View (Safe Mode)" || !viewPanel->has_order || viewPanel->order != 10 ||
+            viewPanel->controls.size() != 11) {
+            std::cerr << "Safe-mode schema did not expose the expected view panel shape\n";
+            return 1;
+        }
+        if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
+            fractalPanel->controls.size() != 2) {
+            std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
+            return 1;
+        }
+        if (!renderPanel || renderPanel->label != "Render (Safe Mode)" || !renderPanel->has_order || renderPanel->order != 30 ||
+            renderPanel->controls.size() != 5) {
+            std::cerr << "Safe-mode schema did not expose the expected render panel shape\n";
+            return 1;
+        }
+
+        const UISchemaControl* renderOnce = FindControlById(*viewPanel, "render_once");
+        const UISchemaControl* resetView = FindControlById(*viewPanel, "reset_view");
+        const UISchemaControl* resetAll = FindControlById(*viewPanel, "reset_all");
+        const UISchemaControl* loadState = FindControlById(*viewPanel, "load_state");
+        const UISchemaControl* captureFinding = FindControlById(*viewPanel, "capture_finding");
+        if (!renderOnce || renderOnce->type != "button" || !renderOnce->has_binding || renderOnce->binding.kind != "action" ||
+            renderOnce->binding.path != "fractal.actions.render_once") {
+            std::cerr << "Safe-mode schema did not bind render_once to the expected action path\n";
+            return 1;
+        }
+        if (!resetView || resetView->type != "button" || !resetView->has_binding || resetView->binding.kind != "action" ||
+            resetView->binding.path != "fractal.actions.reset_view") {
+            std::cerr << "Safe-mode schema did not bind reset_view to the expected action path\n";
+            return 1;
+        }
+        if (!resetAll || resetAll->type != "button" || !resetAll->has_binding || resetAll->binding.kind != "action" ||
+            resetAll->binding.path != "fractal.actions.reset_all") {
+            std::cerr << "Safe-mode schema did not bind reset_all to the expected action path\n";
+            return 1;
+        }
+        if (!loadState || loadState->type != "button" || !loadState->has_binding || loadState->binding.kind != "action" ||
+            loadState->binding.path != "fractal.actions.load_state") {
+            std::cerr << "Safe-mode schema did not bind load_state to the expected action path\n";
+            return 1;
+        }
+        if (!captureFinding || captureFinding->type != "button" || !captureFinding->has_binding ||
+            captureFinding->binding.kind != "action" || captureFinding->binding.path != "fractal.actions.capture_finding") {
+            std::cerr << "Safe-mode schema did not bind capture_finding to the expected action path\n";
+            return 1;
+        }
+
         for (const auto& panel : safeMode.panels) {
             for (const auto& ctrl : panel.controls) {
                 if (ctrl.id == "fractal_type") {

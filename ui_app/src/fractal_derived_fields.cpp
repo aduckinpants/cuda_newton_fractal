@@ -124,235 +124,203 @@ void SetPolyPreset(KernelParams& params) {
     }
 }
 
-void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, bool* ioDirty) {
+static void MarkDirty(bool* ioDirty) {
+    if (ioDirty) *ioDirty = true;
+}
+
+static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.multibrot_power = 3;
     params.multibrot_power_float = 3.0f;
     params.lambda_real = 2.9685855f;
     params.lambda_imag = -0.27446103f;
+}
 
-    if (view.fractal_type == FractalType::newton) {
-        params.max_iter = 500;
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.poly_kind = PolyKind::z3_minus_1;
-        SetPolyPreset(params);
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.0f;
-        params.multibrot_power = 3;
-        params.phoenix_p_real = -0.50f;
-        params.phoenix_p_imag = 0.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::nova) {
-        params.max_iter = 300;
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.poly_kind = PolyKind::z3_minus_1;
-        SetPolyPreset(params);
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.0f;
-        params.multibrot_power = 3;
-        params.phoenix_p_real = -0.50f;
-        params.phoenix_p_imag = 0.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::explaino ||
-        view.fractal_type == FractalType::explaino_y ||
-        view.fractal_type == FractalType::explaino_fp ||
-        view.fractal_type == FractalType::explaino_nova ||
-        view.fractal_type == FractalType::explaino_halley ||
-        view.fractal_type == FractalType::explaino_dual ||
-        view.fractal_type == FractalType::explaino_mult ||
-        view.fractal_type == FractalType::explaino_phoenix ||
-        view.fractal_type == FractalType::explaino_transcendental ||
-        view.fractal_type == FractalType::explaino_inertial ||
-        view.fractal_type == FractalType::explaino_julia ||
-        view.fractal_type == FractalType::explaino_rational ||
-        view.fractal_type == FractalType::explaino_collatz ||
-        view.fractal_type == FractalType::explaino_lambda ||
-        view.fractal_type == FractalType::explaino_rational_escape) {
-        params.max_iter = (view.fractal_type == FractalType::explaino ||
-            view.fractal_type == FractalType::explaino_halley ||
-            view.fractal_type == FractalType::explaino_dual ||
-            view.fractal_type == FractalType::explaino_mult ||
-            view.fractal_type == FractalType::explaino_phoenix ||
-            view.fractal_type == FractalType::explaino_transcendental ||
-            view.fractal_type == FractalType::explaino_inertial ||
-            view.fractal_type == FractalType::explaino_rational ||
-            view.fractal_type == FractalType::explaino_collatz) ? 500 :
-            (view.fractal_type == FractalType::explaino_nova ? 300 :
-            ((view.fractal_type == FractalType::explaino_julia || view.fractal_type == FractalType::explaino_lambda || view.fractal_type == FractalType::explaino_rational_escape) ? 1200 : 650));
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.poly_kind = PolyKind::custom;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.0f;
-        params.multibrot_power = 3;
-        params.phoenix_p_real = 0.0f;
-        params.phoenix_p_imag = 0.0f;
-        params.explaino_seed_b = 1.0;
-        params.explaino_mix = 0.5f;
-        params.explaino_warp_strength = 0.0f;
-        params.explaino_cluster_radius = 0.0f;
-        params.explaino_root_count = 0;
-        params.momentum_beta = 0.0f;
-        // Explaino-Phoenix: use a gentle memory term so basins remain visible.
-        if (view.fractal_type == FractalType::explaino_phoenix) {
-            params.phoenix_p_real = 0.12f;
-        }
-        // Explaino-Inertial: gentle default momentum so structure is visible.
-        if (view.fractal_type == FractalType::explaino_inertial) {
-            params.momentum_beta = 0.15f;
-        }
-        // Explaino-Rational: give a default rational perturbation so the pole is visible.
-        if (view.fractal_type == FractalType::explaino_rational) {
-            params.explaino_cluster_radius = 0.1f;
-        }
-        // Explaino-Lambda: Lambda-tuned exposure for escape-time logistic dynamics.
-        if (view.fractal_type == FractalType::explaino_lambda) {
-            params.exposure = 1.4f;
-        }
-        // Explaino-Rational-Escape: tuned exposure for Laurent-polynomial escape dynamics.
-        if (view.fractal_type == FractalType::explaino_rational_escape) {
-            params.exposure = 1.2f;
-        }
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::multicorn) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.5f;
-        params.multibrot_power = 2;  // Classic Tricorn
-        params.multibrot_power_float = 2.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::halley) {
-        params.max_iter = 500;
-        params.epsilon = 1e-6f;
-        params.poly_kind = PolyKind::z3_minus_1;
-        SetPolyPreset(params);
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::phoenix) {
-        params.max_iter = 1200;
-        params.epsilon = 1e-6f;
-        params.nova_alpha = 0.50f;
-        params.phoenix_p_real = 0.5667f;
-        params.phoenix_p_imag = 0.0f;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.6f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::mandelbrot) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.5f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::spider) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.5f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::celtic_mandelbrot) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.5f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::perpendicular_burning_ship) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.5f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::burning_ship) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.5f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::julia) {
-        params.max_iter = 1000;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.4f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::multibrot) {
-        params.max_iter = 1000;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.4f;
-        params.multibrot_power = 3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::lambda_map) {
-        params.max_iter = 1200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.4f;
-        params.lambda_real = 2.9685855f;
-        params.lambda_imag = -0.27446103f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::collatz) {
-        params.max_iter = 200;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.0f;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    if (view.fractal_type == FractalType::mcmullen) {
-        params.max_iter = 500;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
-        params.exposure = 1.2f;
-        params.mcmullen_preset = McMullenPreset::z3_z3;
-        if (ioDirty) *ioDirty = true;
-        return;
-    }
-
-    params.max_iter = 800;
-    params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = fractalType == FractalType::nova ? 300 : 500;
+    params.epsilon = 1e-6f;
+    params.nova_alpha = 0.50f;
+    params.poly_kind = PolyKind::z3_minus_1;
+    SetPolyPreset(params);
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
     params.exposure = 1.0f;
-    params.multibrot_power = 3;
-    if (ioDirty) *ioDirty = true;
+    params.phoenix_p_real = -0.50f;
+    params.phoenix_p_imag = 0.0f;
+}
+
+static bool IsExplainoPresetFractal(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino:
+    case FractalType::explaino_y:
+    case FractalType::explaino_fp:
+    case FractalType::explaino_nova:
+    case FractalType::explaino_halley:
+    case FractalType::explaino_dual:
+    case FractalType::explaino_mult:
+    case FractalType::explaino_phoenix:
+    case FractalType::explaino_transcendental:
+    case FractalType::explaino_inertial:
+    case FractalType::explaino_julia:
+    case FractalType::explaino_rational:
+    case FractalType::explaino_collatz:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_rational_escape:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static int DefaultExplainoMaxIter(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino:
+    case FractalType::explaino_halley:
+    case FractalType::explaino_dual:
+    case FractalType::explaino_mult:
+    case FractalType::explaino_phoenix:
+    case FractalType::explaino_transcendental:
+    case FractalType::explaino_inertial:
+    case FractalType::explaino_rational:
+    case FractalType::explaino_collatz:
+        return 500;
+    case FractalType::explaino_nova:
+        return 300;
+    case FractalType::explaino_julia:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_rational_escape:
+        return 1200;
+    default:
+        return 650;
+    }
+}
+
+static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = DefaultExplainoMaxIter(fractalType);
+    params.epsilon = 1e-6f;
+    params.nova_alpha = 0.50f;
+    params.poly_kind = PolyKind::custom;
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.exposure = 1.0f;
+    params.phoenix_p_real = 0.0f;
+    params.phoenix_p_imag = 0.0f;
+    params.explaino_seed_b = 1.0;
+    params.explaino_mix = 0.5f;
+    params.explaino_warp_strength = 0.0f;
+    params.explaino_cluster_radius = 0.0f;
+    params.explaino_root_count = 0;
+    params.momentum_beta = 0.0f;
+
+    if (fractalType == FractalType::explaino_phoenix) {
+        params.phoenix_p_real = 0.12f;
+    }
+    if (fractalType == FractalType::explaino_inertial) {
+        params.momentum_beta = 0.15f;
+    }
+    if (fractalType == FractalType::explaino_rational) {
+        params.explaino_cluster_radius = 0.1f;
+    }
+    if (fractalType == FractalType::explaino_lambda) {
+        params.exposure = 1.4f;
+    }
+    if (fractalType == FractalType::explaino_rational_escape) {
+        params.exposure = 1.2f;
+    }
+}
+
+static void ApplyEscapeTimePresetDefaults(FractalType fractalType, KernelParams& params, int maxIter, float exposure) {
+    params.max_iter = maxIter;
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.exposure = exposure;
+}
+
+static void ApplyHalleyPresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = 500;
+    params.epsilon = 1e-6f;
+    params.poly_kind = PolyKind::z3_minus_1;
+    SetPolyPreset(params);
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.exposure = 1.0f;
+}
+
+static void ApplyPhoenixPresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = 1200;
+    params.epsilon = 1e-6f;
+    params.nova_alpha = 0.50f;
+    params.phoenix_p_real = 0.5667f;
+    params.phoenix_p_imag = 0.0f;
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.exposure = 1.6f;
+}
+
+static void ApplyLambdaPresetDefaults(FractalType fractalType, KernelParams& params) {
+    ApplyEscapeTimePresetDefaults(fractalType, params, 1200, 1.4f);
+    params.lambda_real = 2.9685855f;
+    params.lambda_imag = -0.27446103f;
+}
+
+static void ApplyCollatzPresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = 200;
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.exposure = 1.0f;
+}
+
+static void ApplyMcMullenPresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = 500;
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.exposure = 1.2f;
+    params.mcmullen_preset = McMullenPreset::z3_z3;
+}
+
+void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, bool* ioDirty) {
+    ApplyCommonPresetDefaults(params);
+
+    switch (view.fractal_type) {
+    case FractalType::newton:
+    case FractalType::nova:
+        ApplyNewtonLikePresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::multicorn:
+        ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);
+        params.multibrot_power = 2;
+        params.multibrot_power_float = 2.0f;
+        break;
+    case FractalType::halley:
+        ApplyHalleyPresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::phoenix:
+        ApplyPhoenixPresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::mandelbrot:
+    case FractalType::spider:
+    case FractalType::celtic_mandelbrot:
+    case FractalType::perpendicular_burning_ship:
+    case FractalType::burning_ship:
+        ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);
+        break;
+    case FractalType::julia:
+    case FractalType::multibrot:
+        ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1000, 1.4f);
+        break;
+    case FractalType::lambda_map:
+        ApplyLambdaPresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::collatz:
+        ApplyCollatzPresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::mcmullen:
+        ApplyMcMullenPresetDefaults(view.fractal_type, params);
+        break;
+    default:
+        if (IsExplainoPresetFractal(view.fractal_type)) {
+            ApplyExplainoPresetDefaults(view.fractal_type, params);
+            break;
+        }
+        params.max_iter = 800;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.0f;
+        break;
+    }
+
+    MarkDirty(ioDirty);
 }
 
 struct ExplainoSeedShape {
