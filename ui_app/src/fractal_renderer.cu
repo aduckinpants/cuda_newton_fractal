@@ -2,6 +2,7 @@
 #include "fractal_family_rules.h"
 #include "escape_time_direct_formulas.h"
 #include "escape_time_coloring.h"
+#include "explaino_collatz_formulas.h"
 #include "escape_time_specialized_formulas.h"
 #include "fractal_runtime_validation.h"
 #include "explaino_seed_curve.h"
@@ -1142,26 +1143,10 @@ __global__ void kernel_render(
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
-            const double kPI = 3.14159265358979323846;
             for (; it < maxIter; ++it) {
-                double px = kPI * zd.x;
-                double py = kPI * zd.y;
-                double cpx = cos(px), spx = sin(px);
-                double chy = cosh(py), shy = sinh(py);
-                Cxd cospi = {cpx * chy, -spx * shy};
-                Cxd sinpi = {spx * chy, cpx * shy};
-                Cxd a = {2.0 + 5.0 * zd.x, 5.0 * zd.y};
-                Cxd ac = cxd_mul(a, cospi);
-                Cxd g = cxd_scale({2.0 + 3.0 * zd.x - ac.x, 3.0 * zd.y - ac.y}, 0.25);
-                pAbsD = cxd_abs(g);
-                if (pAbsD < epsD) break;
-                Cxd as = cxd_mul(a, sinpi);
-                Cxd dg = cxd_scale({3.0 - 5.0 * cospi.x + kPI * as.x,
-                                    -5.0 * cospi.y + kPI * as.y}, 0.25);
-                double dAbs2 = cxd_abs2(dg);
-                if (dAbs2 < 1e-30) break;
-                Cxd step = cxd_div(g, dg);
-                zd = cxd_sub(zd, cxd_scale(step, dampD));
+                const ExplainoCollatzStepResult stepResult = StepExplainoCollatzNewton(dampD, epsD, &zd, &pAbsD);
+                if (stepResult == ExplainoCollatzStepResult::converged) break;
+                if (stepResult == ExplainoCollatzStepResult::degenerate) break;
                 if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
             z = {(float)zd.x, (float)zd.y};
@@ -1169,26 +1154,10 @@ __global__ void kernel_render(
             converged = (pAbsD < epsD);
         } else {
             z = explaino_warp_start(coord, seed, phase, strength);
-            const float kPI = 3.14159265358979323846f;
             for (; it < maxIter; ++it) {
-                float px = kPI * z.x;
-                float py = kPI * z.y;
-                float cpx = cosf(px), spx = sinf(px);
-                float chy = coshf(py), shy = sinhf(py);
-                Cx cospi = {cpx * chy, -spx * shy};
-                Cx sinpi = {spx * chy, cpx * shy};
-                Cx a = {2.0f + 5.0f * z.x, 5.0f * z.y};
-                Cx ac = cx_mul(a, cospi);
-                Cx g = cx_scale({2.0f + 3.0f * z.x - ac.x, 3.0f * z.y - ac.y}, 0.25f);
-                pAbs = cx_abs(g);
-                if (pAbs < eps) break;
-                Cx as = cx_mul(a, sinpi);
-                Cx dg = cx_scale({3.0f - 5.0f * cospi.x + kPI * as.x,
-                                  -5.0f * cospi.y + kPI * as.y}, 0.25f);
-                float dAbs2 = cx_abs2(dg);
-                if (dAbs2 < 1e-20f) break;
-                Cx step = cx_div(g, dg);
-                z = cx_sub(z, cx_scale(step, userDamp));
+                const ExplainoCollatzStepResult stepResult = StepExplainoCollatzNewton(userDamp, eps, &z, &pAbs);
+                if (stepResult == ExplainoCollatzStepResult::converged) break;
+                if (stepResult == ExplainoCollatzStepResult::degenerate) break;
                 if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
             }
             converged = (pAbs < eps);

@@ -118,6 +118,19 @@ Important contract preserved:
 - the smooth-escape cyclic palette stays unchanged, including the multibrot-power denominator path
 - exposure, tint, saturation, and contrast still apply after the base color is chosen
 
+### 3.6 Shared Explaino-Collatz formulas
+
+Landed:
+- `ui_app/src/explaino_collatz_formulas.h`
+
+Purpose:
+- unify the Explaino-Collatz fixed-point residual, derivative, and Newton-step math used by the CUDA renderer and CPU probe path
+
+Important contract preserved:
+- the fixed point at `z=0` remains unchanged
+- the float and double paths keep their previous derivative-degeneracy thresholds
+- warp start, damping control, and non-finite handling stay in the callers
+
 ## 4) Next Cleanup Slices
 
 ### Slice D — Common complex helper convergence pass
@@ -139,7 +152,7 @@ Exit criteria:
 
 The best next bounded cleanup slice is:
 
-1. extract one shared complex-math/helper seam that is still duplicated across renderer and probe
+1. extract shared polynomial-evaluation helpers that are still duplicated across renderer and probe
 2. keep the slice to a single helper plus caller rewrites
 3. validate with helper + viewer builds
 4. checkpoint immediately

@@ -3,6 +3,7 @@
 #include "explaino_seed.h"
 #include "explaino_seed_curve.h"
 #include "diagnostics_state_io.h"
+#include "explaino_collatz_formulas.h"
 #include "finding_state_actions.h"
 #include "fractal_derived_fields.h"
 #include "escape_time_direct_formulas.h"
@@ -80,18 +81,6 @@ Cx CxRot(Cx value, float angle) {
     const float cs = std::cos(angle);
     const float sn = std::sin(angle);
     return {value.x * cs - value.y * sn, value.x * sn + value.y * cs};
-}
-
-Cx CxCosPi(Cx value) {
-    const float px = kPi * value.x;
-    const float py = kPi * value.y;
-    return {std::cos(px) * std::cosh(py), -std::sin(px) * std::sinh(py)};
-}
-
-Cx CxSinPi(Cx value) {
-    const float px = kPi * value.x;
-    const float py = kPi * value.y;
-    return {std::sin(px) * std::cosh(py), std::cos(px) * std::sinh(py)};
 }
 
 void PolyEvalRealCoeffsDeg4(const float coeffs[5], Cx z, Cx* outP, Cx* outDp) {
@@ -810,25 +799,12 @@ bool SamplePoint(const ProbeState& state,
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
 
         for (; it < maxIter; ++it) {
-            const Cx cosPi = CxCosPi(z);
-            const Cx sinPi = CxSinPi(z);
-            const Cx linear{2.0f + 5.0f * z.x, 5.0f * z.y};
-            const Cx g = CxScale({2.0f + 3.0f * z.x, 3.0f * z.y}, 0.25f);
-            const Cx ac = CxMul(linear, cosPi);
-            const Cx fixedPointResidual = CxSub(g, CxScale(ac, 0.25f));
-
-            pAbs = CxAbs(fixedPointResidual);
-            if (pAbs < eps) {
+            const ExplainoCollatzStepResult stepResult = StepExplainoCollatzNewton(params.explaino_damping, eps, &z, &pAbs);
+            if (stepResult == ExplainoCollatzStepResult::converged) {
                 status = FractalProbeSampleStatus::converged;
                 break;
             }
-
-            const Cx as = CxMul(linear, sinPi);
-            const Cx derivative = CxScale({3.0f - 5.0f * cosPi.x + kPi * as.x,
-                                           -5.0f * cosPi.y + kPi * as.y}, 0.25f);
-            if (CxAbs2(derivative) < 1.0e-20f) break;
-
-            z = CxSub(z, CxScale(CxDiv(fixedPointResidual, derivative), params.explaino_damping));
+            if (stepResult == ExplainoCollatzStepResult::degenerate) break;
             if (!IsFiniteCx(z)) {
                 status = FractalProbeSampleStatus::nonfinite;
                 break;
