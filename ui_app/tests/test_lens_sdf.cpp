@@ -42,6 +42,24 @@ int main() {
         return 1;
     }
 
+    {
+        std::vector<uint8_t> allOutside(static_cast<size_t>(w) * static_cast<size_t>(h), 0);
+        std::vector<uint8_t> allInside(static_cast<size_t>(w) * static_cast<size_t>(h), 255);
+        std::vector<uint32_t> outsideRgba;
+        std::vector<uint32_t> insideRgba;
+        ComputeSignedDistanceSdfChamfer(allOutside.data(), w, h, 8.0f, outsideRgba);
+        ComputeSignedDistanceSdfChamfer(allInside.data(), w, h, 8.0f, insideRgba);
+        if (outsideRgba.size() != static_cast<size_t>(w) * static_cast<size_t>(h) ||
+            insideRgba.size() != static_cast<size_t>(w) * static_cast<size_t>(h)) {
+            std::cerr << "Uniform-mask SDF output should still match the input size\n";
+            return 1;
+        }
+        if (outsideRgba[0] == insideRgba[0]) {
+            std::cerr << "Uniform inside and uniform outside masks should not collapse to the same SDF visualization\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_lens_sdf: all passed\n";
     return 0;
 }

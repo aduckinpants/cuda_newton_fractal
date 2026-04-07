@@ -41,6 +41,9 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::lambda_map: return "lambda";
     case FractalType::explaino_lambda: return "explaino_lambda";
     case FractalType::explaino_rational_escape: return "explaino_rational_escape";
+    case FractalType::spider: return "spider";
+    case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
+    case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
     }
     return "unknown";
 }
@@ -199,6 +202,9 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "  \"render\": {\n";
     js << "    \"width\": " << render.resolution.x << ",\n";
     js << "    \"height\": " << render.resolution.y << ",\n";
+    js << "    \"interaction_debounce_ms\": " << render.interaction_debounce_ms << ",\n";
+    js << "    \"preview_target_fps\": " << static_cast<double>(render.preview_target_fps) << ",\n";
+    js << "    \"preview_min_scale\": " << static_cast<double>(render.preview_min_scale) << ",\n";
     js << "    \"block_size\": " << render.block_size << ",\n";
     js << "    \"device_id\": " << render.device_id << "\n";
     js << "  },\n";

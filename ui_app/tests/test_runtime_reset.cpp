@@ -58,6 +58,10 @@ int main() {
         std::cerr << "Reset should restore render defaults\n";
         return 1;
     }
+    if (render.interaction_debounce_ms != 200 || !NearlyEqual(render.preview_target_fps, 30.0f) || !NearlyEqual(render.preview_min_scale, 0.5f)) {
+        std::cerr << "Reset should restore adaptive preview pacing defaults\n";
+        return 1;
+    }
     if (lens.enabled || lens.downsample != 2) {
         std::cerr << "Reset should restore lens defaults\n";
         return 1;

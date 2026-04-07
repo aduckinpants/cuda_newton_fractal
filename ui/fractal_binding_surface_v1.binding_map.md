@@ -39,6 +39,9 @@ All bindings are under `fractal.*`.
 - `fractal.render.block_size` → `RenderSettings.block_size` (int; engine validates/clamps)
 - `fractal.render.device_id` → `RenderSettings.device_id` (int, optional; engine clamps)
 - `fractal.render.benchmark` → `RenderSettings.benchmark` (bool)
+- `fractal.render.interaction_debounce_ms` → `RenderSettings.interaction_debounce_ms` (int)
+- `fractal.render.preview_target_fps` → `RenderSettings.preview_target_fps` (float)
+- `fractal.render.preview_min_scale` → `RenderSettings.preview_min_scale` (float)
 
 
 ## Camera Behavior (View)

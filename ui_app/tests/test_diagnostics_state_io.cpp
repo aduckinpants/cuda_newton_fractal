@@ -54,7 +54,10 @@ int main() {
     "width": 1440,
     "height": 900,
     "block_size": 512,
-    "device_id": 1
+    "device_id": 1,
+    "interaction_debounce_ms": 420,
+    "preview_target_fps": 24.0,
+    "preview_min_scale": 0.4
   },
   "stats": {
     "last_render_ms": 0,
@@ -144,6 +147,10 @@ int main() {
         if (render.resolution.x != 1440 || render.resolution.y != 900 || render.block_size != 512 || render.device_id != 1) {
             std::cerr << "render mismatch\n";
             return 1;
+        }
+        if (render.interaction_debounce_ms != 420 || !NearlyEqual(render.preview_target_fps, 24.0f, 1.0e-6) || !NearlyEqual(render.preview_min_scale, 0.4f, 1.0e-6)) {
+          std::cerr << "render adaptive preview pacing mismatch\n";
+          return 1;
         }
     }
 
@@ -1052,6 +1059,10 @@ int main() {
         if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
             std::cerr << "V2 backward compat grading load failed: " << error << "\n";
             return 1;
+        }
+        if (r.interaction_debounce_ms != 200 || !NearlyEqual(r.preview_target_fps, 30.0f, 0.01) || !NearlyEqual(r.preview_min_scale, 0.5f, 0.01)) {
+          std::cerr << "v2 render pacing controls should fall back to defaults when missing\n";
+          return 1;
         }
         // Should get struct defaults when fields are missing
         if (!NearlyEqual(p.color_saturation, 1.15, 0.01)) { std::cerr << "v2 color_saturation should be default 1.15\n"; return 1; }

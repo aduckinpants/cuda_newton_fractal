@@ -733,10 +733,11 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
-    if (ft == FractalType::burning_ship || ft == FractalType::multibrot || ft == FractalType::multicorn ||
+    if (ft == FractalType::burning_ship || ft == FractalType::spider || ft == FractalType::celtic_mandelbrot ||
+        ft == FractalType::perpendicular_burning_ship || ft == FractalType::multibrot || ft == FractalType::multicorn ||
         ft == FractalType::phoenix || ft == FractalType::mcmullen || ft == FractalType::collatz) {
         z = {0.0f, 0.0f};
-        const Cx cConst = coord;
+        Cx cConst = coord;
         const float powerFloat = params.multibrot_power_float;
         const int powerInt = params.multibrot_power;
         Cx zPrev{0.0f, 0.0f};
@@ -773,7 +774,16 @@ bool SamplePoint(const ProbeState& state,
         }
 
         for (; it < maxIter; ++it) {
-            if (ft == FractalType::burning_ship) {
+            if (ft == FractalType::spider) {
+                z = CxAdd(CxMul(z, z), cConst);
+                cConst = CxAdd(CxScale(cConst, 0.5f), z);
+            } else if (ft == FractalType::celtic_mandelbrot) {
+                const Cx z2{std::fabs(z.x * z.x - z.y * z.y), 2.0f * z.x * z.y};
+                z = CxAdd(z2, cConst);
+            } else if (ft == FractalType::perpendicular_burning_ship) {
+                const Cx z2{z.x * z.x - z.y * z.y, 2.0f * std::fabs(z.x) * z.y};
+                z = CxAdd(z2, cConst);
+            } else if (ft == FractalType::burning_ship) {
                 const Cx absZ = CxAbsComponents(z);
                 z = CxAdd(CxMul(absZ, absZ), cConst);
             } else if (ft == FractalType::multibrot) {
@@ -1185,6 +1195,9 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "lambda",
         "explaino_lambda",
         "explaino_rational_escape",
+        "spider",
+        "celtic_mandelbrot",
+        "perpendicular_burning_ship",
     };
     for (const char* candidate : supported) {
         if (fractalTypeId == candidate) return true;

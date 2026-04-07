@@ -48,6 +48,14 @@ int main() {
             std::cerr << "Newton should default to joy_basins\n";
             return 1;
         }
+        if (!LensMaskInsideForFractal(FractalType::newton, true, false)) {
+            std::cerr << "Newton lens mask should treat converged pixels as inside\n";
+            return 1;
+        }
+        if (LensMaskInsideForFractal(FractalType::newton, false, false)) {
+            std::cerr << "Newton lens mask should reject non-converged pixels\n";
+            return 1;
+        }
     }
 
     {
@@ -109,6 +117,14 @@ int main() {
         }
         if (DefaultColoringModeForFractal(FractalType::phoenix) != ColoringMode::smooth_escape) {
             std::cerr << "Phoenix should default to smooth_escape\n";
+            return 1;
+        }
+        if (!LensMaskInsideForFractal(FractalType::phoenix, false, false)) {
+            std::cerr << "Phoenix lens mask should treat bounded pixels as inside\n";
+            return 1;
+        }
+        if (LensMaskInsideForFractal(FractalType::phoenix, false, true)) {
+            std::cerr << "Phoenix lens mask should reject escaped pixels\n";
             return 1;
         }
     }
@@ -212,6 +228,63 @@ int main() {
         }
         if (DefaultColoringModeForFractal(FractalType::multicorn) != ColoringMode::smooth_escape) {
             std::cerr << "Multicorn should default to smooth_escape\n";
+            return 1;
+        }
+    }
+
+    {
+        if (IsExplainoFamily(FractalType::spider)) {
+            std::cerr << "Spider should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::spider)) {
+            std::cerr << "Spider should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::spider)) {
+            std::cerr << "Spider should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::spider) != ColoringMode::smooth_escape) {
+            std::cerr << "Spider should default to smooth_escape\n";
+            return 1;
+        }
+    }
+
+    {
+        if (IsExplainoFamily(FractalType::celtic_mandelbrot)) {
+            std::cerr << "Celtic Mandelbrot should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::celtic_mandelbrot)) {
+            std::cerr << "Celtic Mandelbrot should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::celtic_mandelbrot)) {
+            std::cerr << "Celtic Mandelbrot should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::celtic_mandelbrot) != ColoringMode::smooth_escape) {
+            std::cerr << "Celtic Mandelbrot should default to smooth_escape\n";
+            return 1;
+        }
+    }
+
+    {
+        if (IsExplainoFamily(FractalType::perpendicular_burning_ship)) {
+            std::cerr << "Perpendicular Burning Ship should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::perpendicular_burning_ship)) {
+            std::cerr << "Perpendicular Burning Ship should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::perpendicular_burning_ship)) {
+            std::cerr << "Perpendicular Burning Ship should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::perpendicular_burning_ship) != ColoringMode::smooth_escape) {
+            std::cerr << "Perpendicular Burning Ship should default to smooth_escape\n";
             return 1;
         }
     }
@@ -362,6 +435,10 @@ int main() {
         if (!IsColoringModeAllowedForFractal(FractalType::explaino_lambda, ColoringMode::iteration_count) ||
             !IsColoringModeAllowedForFractal(FractalType::explaino_lambda, ColoringMode::smooth_escape)) {
             std::cerr << "Explaino-Lambda should allow escape-time coloring modes\n";
+            return 1;
+        }
+        if (!LensMaskInsideForFractal(FractalType::explaino_lambda, false, false)) {
+            std::cerr << "Explaino-Lambda lens mask should treat non-escaped pixels as inside\n";
             return 1;
         }
     }

@@ -45,6 +45,36 @@ int main() {
 
     {
         ViewState view{};
+        view.fractal_type = FractalType::spider;
+        ApplyFractalViewPresetDefaults(view, nullptr);
+        if (!NearlyEqual(view.center.x, -0.12f) || !NearlyEqual(view.center.y, 0.75f) || !NearlyEqual(view.zoom, 4.0f)) {
+            std::cerr << "Spider view preset should land on a tuned web region\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        view.fractal_type = FractalType::celtic_mandelbrot;
+        ApplyFractalViewPresetDefaults(view, nullptr);
+        if (!NearlyEqual(view.center.x, -0.45f) || !NearlyEqual(view.center.y, 0.42f) || !NearlyEqual(view.zoom, 3.2f)) {
+            std::cerr << "Celtic Mandelbrot view preset should land on a tuned Celtic lobe\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        view.fractal_type = FractalType::perpendicular_burning_ship;
+        ApplyFractalViewPresetDefaults(view, nullptr);
+        if (!NearlyEqual(view.center.x, -1.785f) || !NearlyEqual(view.center.y, -0.012f) || !NearlyEqual(view.zoom, 18.0f)) {
+            std::cerr << "Perpendicular Burning Ship view preset should land on a tuned ship variant region\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
         KernelParams params{};
         view.fractal_type = FractalType::nova;
         ApplyFractalViewPresetDefaults(view, nullptr);
@@ -67,6 +97,54 @@ int main() {
         ApplyFractalPresetDefaults(view, params, &dirty);
         if (params.max_iter != 1200 || !NearlyEqual(params.exposure, 1.5f)) {
             std::cerr << "Mandelbrot param preset should have tuned max_iter and exposure\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::spider;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Spider defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200 || params.coloring_mode != ColoringMode::smooth_escape || !NearlyEqual(params.exposure, 1.5f)) {
+            std::cerr << "Spider param preset should use escape-time defaults\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::celtic_mandelbrot;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Celtic Mandelbrot defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200 || params.coloring_mode != ColoringMode::smooth_escape || !NearlyEqual(params.exposure, 1.5f)) {
+            std::cerr << "Celtic Mandelbrot param preset should use escape-time defaults\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::perpendicular_burning_ship;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Perpendicular Burning Ship defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200 || params.coloring_mode != ColoringMode::smooth_escape || !NearlyEqual(params.exposure, 1.5f)) {
+            std::cerr << "Perpendicular Burning Ship param preset should use escape-time defaults\n";
             return 1;
         }
     }

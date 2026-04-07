@@ -67,6 +67,9 @@ enum class FractalType : int {
     lambda_map = 24,
     explaino_lambda = 25,
     explaino_rational_escape = 26,
+    spider = 27,
+    celtic_mandelbrot = 28,
+    perpendicular_burning_ship = 29,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -179,10 +182,13 @@ struct KernelParams {
 };
 
 struct RenderSettings {
-    Int2 resolution{2048, 1536};
+    Int2 resolution{1024, 768};
     int block_size{256};
     int device_id{0};
     bool benchmark{false};
+    int interaction_debounce_ms{200};
+    float preview_target_fps{30.0f};
+    float preview_min_scale{0.50f};
     SampleTier sample_tier{SampleTier::tier_auto};
     ResolvedEvalMode resolved_eval{};  // filled by resolver before dispatch
 };

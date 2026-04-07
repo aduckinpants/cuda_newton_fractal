@@ -157,8 +157,11 @@ int main() {
         }
         if (stateJson.find("\"explaino_phase_strength\": -2.5") == std::string::npos ||
             stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos ||
-            stateJson.find("\"auto_max_iter\": true") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist Explaino phase strength, root spread, and auto_max_iter\n";
+            stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
+            stateJson.find("\"interaction_debounce_ms\": 200") == std::string::npos ||
+            stateJson.find("\"preview_target_fps\": 30") == std::string::npos ||
+            stateJson.find("\"preview_min_scale\": 0.5") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist Explaino phase strength, root spread, auto_max_iter, and adaptive preview pacing fields\n";
             return 1;
         }
 
@@ -168,6 +171,25 @@ int main() {
         }
         if (error.find("pixel count") == std::string::npos) {
             std::cerr << "Expected pixel-count validation error for mismatched capture buffer\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {1536, 1024};
+        render.block_size = 128;
+        render.device_id = 2;
+        render.preview_target_fps = 48.0f;
+
+        const RenderSettings captureRender = BuildFindingArchiveCaptureRender(render);
+        if (captureRender.resolution.x != 4096 || captureRender.resolution.y != 4096) {
+            std::cerr << "Expected finding archive capture to force a 4k square frame\n";
+            return 1;
+        }
+        if (captureRender.block_size != render.block_size || captureRender.device_id != render.device_id ||
+            captureRender.preview_target_fps != render.preview_target_fps) {
+            std::cerr << "Expected 4k finding archive render to preserve the non-resolution render settings\n";
             return 1;
         }
     }

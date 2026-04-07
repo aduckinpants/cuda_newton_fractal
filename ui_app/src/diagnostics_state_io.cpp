@@ -142,6 +142,9 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "lambda") { if (outType) *outType = FractalType::lambda_map; return true; }
     if (text == "explaino_lambda") { if (outType) *outType = FractalType::explaino_lambda; return true; }
     if (text == "explaino_rational_escape") { if (outType) *outType = FractalType::explaino_rational_escape; return true; }
+    if (text == "spider") { if (outType) *outType = FractalType::spider; return true; }
+    if (text == "celtic_mandelbrot") { if (outType) *outType = FractalType::celtic_mandelbrot; return true; }
+    if (text == "perpendicular_burning_ship") { if (outType) *outType = FractalType::perpendicular_burning_ship; return true; }
     return false;
 }
 
@@ -429,14 +432,23 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     int height = 0;
     int blockSize = 0;
     int deviceId = 0;
+    double interactionDebounceMs = static_cast<double>(nextRender.interaction_debounce_ms);
+    double previewTargetFps = nextRender.preview_target_fps;
+    double previewMinScale = nextRender.preview_min_scale;
     if (!ParseIntField(*renderObject, "width", &width, outError)) return false;
     if (!ParseIntField(*renderObject, "height", &height, outError)) return false;
     if (!ParseIntField(*renderObject, "block_size", &blockSize, outError)) return false;
     if (!ParseIntField(*renderObject, "device_id", &deviceId, outError)) return false;
+    if (!GetOptionalNumber(*renderObject, "interaction_debounce_ms", &interactionDebounceMs, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*renderObject, "preview_target_fps", &previewTargetFps, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*renderObject, "preview_min_scale", &previewMinScale, nullptr, outError)) return false;
     nextRender.resolution.x = width;
     nextRender.resolution.y = height;
     nextRender.block_size = blockSize;
     nextRender.device_id = deviceId;
+    nextRender.interaction_debounce_ms = static_cast<int>(interactionDebounceMs);
+    nextRender.preview_target_fps = static_cast<float>(previewTargetFps);
+    nextRender.preview_min_scale = static_cast<float>(previewMinScale);
 
     *ioView = nextView;
     *ioParams = nextParams;

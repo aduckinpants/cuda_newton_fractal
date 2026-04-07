@@ -45,11 +45,14 @@ All bindings live under the `fractal.*` namespace.
 
 ## Render (host + device)
 
-- `fractal.render.resolution.x` : int, range [64, 4096], step 1, default 2048
-- `fractal.render.resolution.y` : int, range [64, 4096], step 1, default 1536
+- `fractal.render.resolution.x` : int, range [64, 4096], step 1, default 1024
+- `fractal.render.resolution.y` : int, range [64, 4096], step 1, default 768
 - `fractal.render.block_size` : int, range [32, 1024], step 32, default 256 (engine MUST validate/clamp to supported values)
 - `fractal.render.device_id` : int, range [0, 7], step 1, default 0 (optional feature; engine clamps to available devices)
 - `fractal.render.benchmark` : bool, default false
+- `fractal.render.interaction_debounce_ms` : int, default 200; adaptive preview settle window after the last interaction
+- `fractal.render.preview_target_fps` : float, default 30; adaptive preview target while panning/zooming/editing
+- `fractal.render.preview_min_scale` : float, default 0.5; minimum adaptive preview scale relative to Width/Height
 
 
 ## Camera Behavior (View)

@@ -56,7 +56,16 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
     fractalType == FractalType::mcmullen ||
     fractalType == FractalType::lambda_map ||
     fractalType == FractalType::explaino_lambda ||
-    fractalType == FractalType::explaino_rational_escape;
+        fractalType == FractalType::explaino_rational_escape ||
+        fractalType == FractalType::spider ||
+        fractalType == FractalType::celtic_mandelbrot ||
+        fractalType == FractalType::perpendicular_burning_ship;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool LensMaskInsideForFractal(FractalType fractalType, bool converged, bool escaped) {
+    if (SupportsBasinColoring(fractalType)) return converged;
+    if (IsEscapeTimeFamily(fractalType)) return !escaped;
+    return false;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(FractalType fractalType, ColoringMode mode) {

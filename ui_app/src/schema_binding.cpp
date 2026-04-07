@@ -1,6 +1,7 @@
 #include "schema_binding.h"
 #include "explaino_seed.h"
 #include "imgui.h"
+#include "ui_schema_grouping.h"
 
 #include <cmath>
 #include <string>
@@ -66,6 +67,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::lambda_map: return "lambda";
         case FractalType::explaino_lambda: return "explaino_lambda";
         case FractalType::explaino_rational_escape: return "explaino_rational_escape";
+        case FractalType::spider: return "spider";
+        case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
+        case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
         }
     }
     if (view && path == "fractal.view.camera_behavior") {
@@ -146,6 +150,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "lambda") view->fractal_type = FractalType::lambda_map;
         else if (id == "explaino_lambda") view->fractal_type = FractalType::explaino_lambda;
         else if (id == "explaino_rational_escape") view->fractal_type = FractalType::explaino_rational_escape;
+        else if (id == "spider") view->fractal_type = FractalType::spider;
+        else if (id == "celtic_mandelbrot") view->fractal_type = FractalType::celtic_mandelbrot;
+        else if (id == "perpendicular_burning_ship") view->fractal_type = FractalType::perpendicular_burning_ship;
         else return false;
         return true;
     }
@@ -266,40 +273,47 @@ bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
 }
 
 bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
-    if (!view || !params) return false;
-    if (path == "fractal.view.center.x") { *outPtr = &view->center.x; return true; }
-    if (path == "fractal.view.center.y") { *outPtr = &view->center.y; return true; }
-    if (path == "fractal.view.zoom") { *outPtr = &view->zoom; return true; }
-    if (path == "fractal.view.rotation") { *outPtr = &view->rotation_degrees; return true; }
-    if (path == "fractal.view.dive_speed") { *outPtr = &view->dive_speed; return true; }
-    if (path == "fractal.view.explaino_phase") { *outPtr = &view->explaino_phase; return true; }
-    if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
-    if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
-    if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view->explaino_phase_strength; return true; }
-    if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
-    if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
-    if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
-    if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
-    if (path == "fractal.params.lambda_real") { *outPtr = &params->lambda_real; return true; }
-    if (path == "fractal.params.lambda_imag") { *outPtr = &params->lambda_imag; return true; }
-    if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
-    if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
-    if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
-    if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
-    if (path == "fractal.params.color_tint_r") { *outPtr = &params->color_tint_r; return true; }
-    if (path == "fractal.params.color_tint_g") { *outPtr = &params->color_tint_g; return true; }
-    if (path == "fractal.params.color_tint_b") { *outPtr = &params->color_tint_b; return true; }
-    if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
-    if (path == "fractal.params.explaino_mix") { *outPtr = &params->explaino_mix; return true; }
-    if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }
-    if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
-    if (path == "fractal.params.explaino_cluster_radius") { *outPtr = &params->explaino_cluster_radius; return true; }
-    if (path == "fractal.params.momentum_beta") { *outPtr = &params->momentum_beta; return true; }
-    if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
-    if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
-    if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
-    if (path == "fractal.params.poly_coeffs.3") { *outPtr = &params->poly_coeffs[3]; return true; }
-    if (path == "fractal.params.poly_coeffs.4") { *outPtr = &params->poly_coeffs[4]; return true; }
+    if (view) {
+        if (path == "fractal.view.center.x") { *outPtr = &view->center.x; return true; }
+        if (path == "fractal.view.center.y") { *outPtr = &view->center.y; return true; }
+        if (path == "fractal.view.zoom") { *outPtr = &view->zoom; return true; }
+        if (path == "fractal.view.rotation") { *outPtr = &view->rotation_degrees; return true; }
+        if (path == "fractal.view.dive_speed") { *outPtr = &view->dive_speed; return true; }
+        if (path == "fractal.view.explaino_phase") { *outPtr = &view->explaino_phase; return true; }
+        if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
+        if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
+        if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view->explaino_phase_strength; return true; }
+    }
+    if (params) {
+        if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
+        if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
+        if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
+        if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
+        if (path == "fractal.params.lambda_real") { *outPtr = &params->lambda_real; return true; }
+        if (path == "fractal.params.lambda_imag") { *outPtr = &params->lambda_imag; return true; }
+        if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
+        if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
+        if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
+        if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
+        if (path == "fractal.params.color_tint_r") { *outPtr = &params->color_tint_r; return true; }
+        if (path == "fractal.params.color_tint_g") { *outPtr = &params->color_tint_g; return true; }
+        if (path == "fractal.params.color_tint_b") { *outPtr = &params->color_tint_b; return true; }
+        if (path == "fractal.params.explaino_warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
+        if (path == "fractal.params.explaino_mix") { *outPtr = &params->explaino_mix; return true; }
+        if (path == "fractal.params.explaino_root_spread") { *outPtr = &params->explaino_root_spread; return true; }
+        if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
+        if (path == "fractal.params.explaino_cluster_radius") { *outPtr = &params->explaino_cluster_radius; return true; }
+        if (path == "fractal.params.momentum_beta") { *outPtr = &params->momentum_beta; return true; }
+        if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
+        if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
+        if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
+        if (path == "fractal.params.poly_coeffs.3") { *outPtr = &params->poly_coeffs[3]; return true; }
+        if (path == "fractal.params.poly_coeffs.4") { *outPtr = &params->poly_coeffs[4]; return true; }
+    }
+    if (render) {
+        if (path == "fractal.render.preview_target_fps") { *outPtr = &render->preview_target_fps; return true; }
+        if (path == "fractal.render.preview_min_scale") { *outPtr = &render->preview_min_scale; return true; }
+    }
     return false;
 }
 
@@ -311,13 +325,17 @@ bool BindingContext::BindDouble(const std::string& path, double** outPtr) {
 }
 
 bool BindingContext::BindInt(const std::string& path, int** outPtr) {
-    if (!params || !render) return false;
-    if (path == "fractal.params.max_iter") { *outPtr = &params->max_iter; return true; }
-    if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
-    if (path == "fractal.render.resolution.x") { *outPtr = &render->resolution.x; return true; }
-    if (path == "fractal.render.resolution.y") { *outPtr = &render->resolution.y; return true; }
-    if (path == "fractal.render.block_size") { *outPtr = &render->block_size; return true; }
-    if (path == "fractal.render.device_id") { *outPtr = &render->device_id; return true; }
+    if (params) {
+        if (path == "fractal.params.max_iter") { *outPtr = &params->max_iter; return true; }
+        if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
+    }
+    if (render) {
+        if (path == "fractal.render.resolution.x") { *outPtr = &render->resolution.x; return true; }
+        if (path == "fractal.render.resolution.y") { *outPtr = &render->resolution.y; return true; }
+        if (path == "fractal.render.block_size") { *outPtr = &render->block_size; return true; }
+        if (path == "fractal.render.device_id") { *outPtr = &render->device_id; return true; }
+        if (path == "fractal.render.interaction_debounce_ms") { *outPtr = &render->interaction_debounce_ms; return true; }
+    }
     if (lens && path == "fractal.lens.downsample") { *outPtr = &lens->downsample; return true; }
     return false;
 }
@@ -527,7 +545,7 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
     return true;
 }
 
-bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce) {
+bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted) {
     if (c.has_visible_if) {
         if (!ctx.EvalVisibleIf(c.visible_if)) return false;
     }
@@ -560,6 +578,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
             return false;
         }
         if (ImGui::Button(c.label.c_str())) {
+            if (ioInteracted) *ioInteracted = true;
             if (b.path == "fractal.actions.render_once") {
                 if (ioRenderOnce) *ioRenderOnce = true;
             }
@@ -583,6 +602,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
         }
         bool changed = ImGui::Checkbox(c.label.c_str(), ptr);
         if (changed && ioDirty) *ioDirty = true;
+        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
         ImGui::PopID();
         return changed;
     }
@@ -606,6 +626,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
             changed = ImGui::DragInt(c.label.c_str(), ptr, speed, minV, maxV);
         }
         if (changed && ioDirty) *ioDirty = true;
+        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
         ImGui::PopID();
         return changed;
     }
@@ -630,6 +651,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
             changed = ImGui::DragFloat(c.label.c_str(), ptr, speed, minV, maxV, "%.3f", flags);
         }
         if (changed && ioDirty) *ioDirty = true;
+        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
         ImGui::PopID();
         return changed;
     }
@@ -662,6 +684,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
                 ExplainoSeedSetCombined(*ctx.view, *ctx.params, displayed);
                 if (ioDirty) *ioDirty = true;
             }
+            if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
             ImGui::PopID();
             return changed;
         }
@@ -676,6 +699,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
         bool typedChanged = ImGui::InputDouble("##val", ptr, 0.0, 0.0, valueFormat);
         if (typedChanged) changed = true;
         if (changed && ioDirty) *ioDirty = true;
+        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
         ImGui::PopID();
         return changed;
     }
@@ -715,12 +739,71 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
                     } catch (...) {}
                 }
             }
+            if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
             ImGui::PopID();
             return changed;
         }
 
         // Enum combos
         std::string cur = ctx.GetEnumId(b.path);
+        if (HasGroupedOptions(c)) {
+            const std::vector<std::string> groups = CollectOptionGroups(c);
+            if (groups.size() > 1) {
+                std::string curGroup = OptionGroupForId(c, cur);
+                if (curGroup.empty()) curGroup = groups.front();
+
+                int groupIndex = 0;
+                for (int i = 0; i < (int)groups.size(); i++) {
+                    if (groups[i] == curGroup) {
+                        groupIndex = i;
+                        break;
+                    }
+                }
+
+                std::vector<const char*> groupLabels;
+                groupLabels.reserve(groups.size());
+                for (const auto& group : groups) groupLabels.push_back(group.c_str());
+
+                bool changed = false;
+                bool groupInteracted = false;
+                if (!groupLabels.empty() && ImGui::Combo("Category", &groupIndex, groupLabels.data(), (int)groupLabels.size())) {
+                    groupInteracted = true;
+                    const std::vector<const UISchemaOption*> groupedOptions = OptionsForGroup(c, groups[groupIndex]);
+                    if (!groupedOptions.empty()) {
+                        changed = ctx.SetEnumId(b.path, groupedOptions.front()->id);
+                        if (changed && ioDirty) *ioDirty = true;
+                        cur = groupedOptions.front()->id;
+                    }
+                }
+                groupInteracted = groupInteracted || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit();
+
+                const std::vector<const UISchemaOption*> groupedOptions = OptionsForGroup(c, groups[groupIndex]);
+                int curIndex = 0;
+                for (int i = 0; i < (int)groupedOptions.size(); i++) {
+                    if (groupedOptions[i]->id == cur) {
+                        curIndex = i;
+                        break;
+                    }
+                }
+
+                std::vector<const char*> labels;
+                labels.reserve(groupedOptions.size());
+                for (const UISchemaOption* option : groupedOptions) labels.push_back(option->label.c_str());
+
+                bool valueChanged = false;
+                if (!labels.empty() && ImGui::Combo(c.label.c_str(), &curIndex, labels.data(), (int)labels.size())) {
+                    if (curIndex >= 0 && curIndex < (int)groupedOptions.size()) {
+                        valueChanged = ctx.SetEnumId(b.path, groupedOptions[curIndex]->id);
+                        if (valueChanged && ioDirty) *ioDirty = true;
+                    }
+                }
+                const bool valueInteracted = valueChanged || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit();
+                if ((changed || valueChanged || groupInteracted || valueInteracted) && ioInteracted) *ioInteracted = true;
+                ImGui::PopID();
+                return changed || valueChanged;
+            }
+        }
+
         int curIndex = 0;
         for (int i = 0; i < (int)c.options.size(); i++) {
             if (c.options[i].id == cur) { curIndex = i; break; }
@@ -737,6 +820,7 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
                 if (changed && ioDirty) *ioDirty = true;
             }
         }
+        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
         ImGui::PopID();
         return changed;
     }

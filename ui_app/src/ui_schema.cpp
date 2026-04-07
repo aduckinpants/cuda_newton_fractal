@@ -136,6 +136,7 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
                     if (!opt.is_object()) continue;
                     UISchemaOption o;
                     if (!get_string(opt, "id", o.id) || !get_string(opt, "label", o.label)) continue;
+                    get_string(opt, "group", o.group);
                     ctrl.options.push_back(std::move(o));
                 }
             }

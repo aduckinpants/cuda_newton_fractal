@@ -49,6 +49,18 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         center = {-1.762f, -0.028f};
         zoom = 25.0f;
         break;
+    case FractalType::spider:
+        center = {-0.12f, 0.75f};
+        zoom = 4.0f;
+        break;
+    case FractalType::celtic_mandelbrot:
+        center = {-0.45f, 0.42f};
+        zoom = 3.2f;
+        break;
+    case FractalType::perpendicular_burning_ship:
+        center = {-1.785f, -0.012f};
+        zoom = 18.0f;
+        break;
     case FractalType::multibrot:
         center = {-0.15f, 0.75f};
         zoom = 4.5f;
@@ -247,6 +259,33 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     }
 
     if (view.fractal_type == FractalType::mandelbrot) {
+        params.max_iter = 1200;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.5f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::spider) {
+        params.max_iter = 1200;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.5f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::celtic_mandelbrot) {
+        params.max_iter = 1200;
+        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        params.exposure = 1.5f;
+        params.multibrot_power = 3;
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
+    if (view.fractal_type == FractalType::perpendicular_burning_ship) {
         params.max_iter = 1200;
         params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
         params.exposure = 1.5f;

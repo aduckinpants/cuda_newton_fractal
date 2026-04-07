@@ -21,33 +21,36 @@ UISchema BuildSafeModeSchema() {
         c.has_default = true;
         c.def.v = std::string("newton");
         c.options = {
-            {"newton", "Newton"},
-            {"nova", "Nova"},
-            {"mandelbrot", "Mandelbrot"},
-            {"julia", "Julia"},
-            {"burning_ship", "Burning Ship"},
-            {"multibrot", "Multibrot"},
-            {"phoenix", "Phoenix"},
-            {"explaino", "Explaino"},
-            {"explaino_y", "Explaino Y"},
-            {"explaino_fp", "Explaino FP"},
-            {"explaino_nova", "Explaino Nova"},
-            {"explaino_halley", "Explaino Halley"},
-            {"explaino_dual", "Explaino DualSeed"},
-            {"explaino_mult", "Explaino Multiplicity"},
-            {"explaino_phoenix", "Explaino Phoenix"},
-            {"explaino_transcendental", "Explaino Transcendental"},
-            {"explaino_inertial", "Explaino Inertial"},
-            {"explaino_julia", "Explaino Julia"},
-            {"explaino_rational", "Explaino Rational"},
-            {"multicorn", "Multicorn"},
-            {"halley", "Halley"},
-            {"collatz", "Collatz"},
-            {"explaino_collatz", "Explaino Collatz"},
-            {"mcmullen", "McMullen"},
-            {"lambda", "Lambda"},
-            {"explaino_lambda", "Explaino Lambda"},
-            {"explaino_rational_escape", "Explaino Rational Escape"},
+            {"explaino", "Explaino", "Common"},
+            {"nova", "Nova", "Common"},
+            {"mandelbrot", "Mandelbrot", "Common"},
+            {"julia", "Julia", "Common"},
+            {"burning_ship", "Burning Ship", "Common"},
+            {"phoenix", "Phoenix", "Common"},
+            {"newton", "Newton", "Root-Finding"},
+            {"halley", "Halley", "Root-Finding"},
+            {"multibrot", "Multibrot", "Escape-Time"},
+            {"spider", "Spider", "Escape-Time"},
+            {"celtic_mandelbrot", "Celtic Mandelbrot", "Escape-Time"},
+            {"perpendicular_burning_ship", "Perpendicular Burning Ship", "Escape-Time"},
+            {"multicorn", "Multicorn", "Escape-Time"},
+            {"collatz", "Collatz", "Escape-Time"},
+            {"mcmullen", "McMullen", "Escape-Time"},
+            {"lambda", "Lambda", "Escape-Time"},
+            {"explaino_y", "Explaino Y", "Explaino"},
+            {"explaino_fp", "Explaino FP", "Explaino"},
+            {"explaino_nova", "Explaino Nova", "Explaino"},
+            {"explaino_halley", "Explaino Halley", "Explaino"},
+            {"explaino_dual", "Explaino DualSeed", "Explaino"},
+            {"explaino_mult", "Explaino Multiplicity", "Explaino"},
+            {"explaino_phoenix", "Explaino Phoenix", "Explaino"},
+            {"explaino_transcendental", "Explaino Transcendental", "Explaino"},
+            {"explaino_inertial", "Explaino Inertial", "Explaino"},
+            {"explaino_julia", "Explaino Julia", "Explaino"},
+            {"explaino_rational", "Explaino Rational", "Explaino"},
+            {"explaino_collatz", "Explaino Collatz", "Explaino"},
+            {"explaino_lambda", "Explaino Lambda", "Explaino"},
+            {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
         };
         view.controls.push_back(std::move(c));
     }
@@ -226,7 +229,7 @@ UISchema BuildSafeModeSchema() {
         c.binding.kind = "param";
         c.binding.path = "fractal.render.resolution.x";
         c.has_default = true;
-        c.def.v = 2048.0;
+        c.def.v = 1024.0;
         render.controls.push_back(std::move(c));
     }
     {
@@ -241,7 +244,52 @@ UISchema BuildSafeModeSchema() {
         c.binding.kind = "param";
         c.binding.path = "fractal.render.resolution.y";
         c.has_default = true;
-        c.def.v = 1536.0;
+        c.def.v = 768.0;
+        render.controls.push_back(std::move(c));
+    }
+    {
+        UISchemaControl c;
+        c.id = "interaction_debounce_ms";
+        c.type = "slider_int";
+        c.label = "Interaction Debounce (ms)";
+        c.value_type = "int";
+        c.min = 0; c.max = 1000; c.step = 10;
+        c.has_min = c.has_max = c.has_step = true;
+        c.has_binding = true;
+        c.binding.kind = "param";
+        c.binding.path = "fractal.render.interaction_debounce_ms";
+        c.has_default = true;
+        c.def.v = 200.0;
+        render.controls.push_back(std::move(c));
+    }
+    {
+        UISchemaControl c;
+        c.id = "preview_target_fps";
+        c.type = "slider_float";
+        c.label = "Preview Target FPS";
+        c.value_type = "float";
+        c.min = 5.0; c.max = 120.0; c.step = 1.0;
+        c.has_min = c.has_max = c.has_step = true;
+        c.has_binding = true;
+        c.binding.kind = "param";
+        c.binding.path = "fractal.render.preview_target_fps";
+        c.has_default = true;
+        c.def.v = 30.0;
+        render.controls.push_back(std::move(c));
+    }
+    {
+        UISchemaControl c;
+        c.id = "preview_min_scale";
+        c.type = "slider_float";
+        c.label = "Preview Min Scale";
+        c.value_type = "float";
+        c.min = 0.25; c.max = 1.0; c.step = 0.05;
+        c.has_min = c.has_max = c.has_step = true;
+        c.has_binding = true;
+        c.binding.kind = "param";
+        c.binding.path = "fractal.render.preview_min_scale";
+        c.has_default = true;
+        c.def.v = 0.5;
         render.controls.push_back(std::move(c));
     }
     s.panels.push_back(std::move(view));

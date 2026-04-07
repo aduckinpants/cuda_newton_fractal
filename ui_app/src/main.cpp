@@ -219,6 +219,9 @@ static bool TryParseFractalTypeArg(const std::vector<std::string>& args, Fractal
     if (text == "lambda") { if (outType) *outType = FractalType::lambda_map; return true; }
     if (text == "explaino_lambda") { if (outType) *outType = FractalType::explaino_lambda; return true; }
     if (text == "explaino_rational_escape") { if (outType) *outType = FractalType::explaino_rational_escape; return true; }
+    if (text == "spider") { if (outType) *outType = FractalType::spider; return true; }
+    if (text == "celtic_mandelbrot") { if (outType) *outType = FractalType::celtic_mandelbrot; return true; }
+    if (text == "perpendicular_burning_ship") { if (outType) *outType = FractalType::perpendicular_burning_ship; return true; }
     return false;
 }
 
@@ -984,12 +987,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     if (captureFindingOnly) {
         ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
+        RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
         std::vector<uint32_t> headlessRgba;
-        headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+        headlessRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
 
         const char* err = nullptr;
         RenderStats headlessStats{};
-        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+        if (!RenderFractalCUDA(view, params, findingRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
             WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", err ? err : "RenderFractalCUDA failed during headless finding capture.");
             return 1;
         }
@@ -998,7 +1002,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         std::string findingError;
         const std::string findingGroup = haveFindingGroupArg ? findingGroupArg : "manual_capture";
         const std::string findingWhy = haveFindingWhyArg ? findingWhyArg : "Headless finding capture.";
-        if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
+        if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats, headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
             WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
             return 1;
         }
@@ -1034,7 +1038,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
     RenderedFrameState renderedFrame{};
-    ViewerRenderPacingConfig renderPacingConfig{};
     ViewerRenderPacingState renderPacingState{};
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
@@ -1163,9 +1166,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                         prevWasSeedButton = isSeedButton;
                     } else {
                         prevWasSeedButton = false;
-                        const bool dirtyBeforeControl = dirty;
-                        RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction);
-                        if (!dirtyBeforeControl && dirty) {
+                        bool controlInteracted = false;
+                        RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction, &controlInteracted);
+                        if (controlInteracted) {
                             interactionChanged = true;
                         }
                     }
@@ -1207,6 +1210,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ImGui::Separator();
         ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
+        ImGui::Text("Target render: %d x %d", render.resolution.x, render.resolution.y);
+        {
+            int liveWidth = renderedFrame.ready ? renderedFrame.width : render.resolution.x;
+            int liveHeight = renderedFrame.ready ? renderedFrame.height : render.resolution.y;
+            const int liveWidthMax = (render.resolution.x > liveWidth) ? render.resolution.x : liveWidth;
+            const int liveHeightMax = (render.resolution.y > liveHeight) ? render.resolution.y : liveHeight;
+            ImGui::BeginDisabled();
+            ImGui::SliderInt("Live Width", &liveWidth, 64, liveWidthMax);
+            ImGui::SliderInt("Live Height", &liveHeight, 64, liveHeightMax);
+            ImGui::EndDisabled();
+        }
         if (renderedFrame.ready && (renderedFrame.width != render.resolution.x || renderedFrame.height != render.resolution.y)) {
             ImGui::Text("Interactive preview: %d x %d -> settle to %d x %d",
                 renderedFrame.width,
@@ -1340,6 +1354,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (interactionChanged) {
             NoteViewerInteraction(&renderPacingState);
         }
+        const ViewerRenderPacingConfig renderPacingConfig = BuildViewerRenderPacingConfig(render);
         const ViewerRenderPacingDecision renderPacing = AdvanceViewerRenderPacing(
             render,
             stats,
@@ -1396,11 +1411,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         if (captureDiagnosticAction) {
             std::string captureError;
-            if (!CanCaptureRenderedFrame(render, rgba.size(), renderedFrame, &captureError)) {
+            RenderSettings captureRender = render;
+            captureRender.resolution = {renderedFrame.width, renderedFrame.height};
+            if (!CanCaptureRenderedFrame(captureRender, rgba.size(), renderedFrame, &captureError)) {
                 findingStatus = "Capture diagnostic failed: " + captureError;
             } else {
                 DiagnosticsCaptureResult captureResult;
-                if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba.data(), rgba.size(), &captureResult, &captureError)) {
+                if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats, rgba.data(), rgba.size(), &captureResult, &captureError)) {
                     findingStatus = "Capture diagnostic failed: " + captureError;
                 } else {
                     findingStatus = "Diagnostic captured.";
@@ -1411,9 +1428,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (captureFindingAction) {
             std::string findingDir;
             std::string captureError;
-            if (!CanCaptureRenderedFrame(render, rgba.size(), renderedFrame, &captureError)) {
-                findingStatus = "Capture finding failed: " + captureError;
-            } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, render, stats, rgba.data(), rgba.size(), "manual_capture", "Manual viewer capture.", &findingDir, &captureError)) {
+            if (IsExplainoFamily(view.fractal_type)) {
+                UpdateExplainoPolynomial(view, params, nullptr);
+            }
+            if (view.auto_max_iter) {
+                params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+            }
+            RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
+            std::vector<uint32_t> findingRgba;
+            findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
+            const char* err = nullptr;
+            RenderStats findingStats{};
+            if (!RenderFractalCUDA(view, params, findingRender, findingRgba.data(), nullptr, &findingStats, &err)) {
+                findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
+            } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats, findingRgba.data(), findingRgba.size(), "manual_capture", "Manual viewer capture.", &findingDir, &captureError)) {
                 findingStatus = "Capture finding failed: " + captureError;
             } else {
                 findingStatus = "Captured finding: " + findingDir;

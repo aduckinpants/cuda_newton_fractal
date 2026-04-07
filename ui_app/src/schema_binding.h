@@ -29,4 +29,4 @@ struct BindingContext {
 bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty);
 void ApplySchemaDefaults(const UISchema& schema, BindingContext& ctx, bool* ioDirty);
 bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::string* outError);
-bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce);
+bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);

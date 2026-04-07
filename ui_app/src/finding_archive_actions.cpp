@@ -10,6 +10,8 @@
 
 namespace {
 
+constexpr int kFindingArchiveCaptureResolution = 4096;
+
 std::string SanitizeFindingLabel(const std::string& text) {
     std::string cleaned;
     cleaned.reserve(text.size());
@@ -60,6 +62,9 @@ const char* FractalTypeSlug(FractalType fractalType) {
     case FractalType::lambda_map: return "lambda";
     case FractalType::explaino_lambda: return "explaino_lambda";
     case FractalType::explaino_rational_escape: return "explaino_rational_escape";
+    case FractalType::spider: return "spider";
+    case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
+    case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
     }
     return "unknown";
 }
@@ -486,6 +491,12 @@ FindingArchiveIdentity BuildUniqueFindingIdentity(
     result.finding_id = candidateId;
     result.output_dir = candidateDir;
     return result;
+}
+
+RenderSettings BuildFindingArchiveCaptureRender(const RenderSettings& render) {
+    RenderSettings captureRender = render;
+    captureRender.resolution = {kFindingArchiveCaptureResolution, kFindingArchiveCaptureResolution};
+    return captureRender;
 }
 
 bool CaptureAndArchiveFindingBundle(

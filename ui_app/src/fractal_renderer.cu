@@ -1454,7 +1454,17 @@ __global__ void kernel_render(
                 Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
                 double r2 = 0.0;
                 for (; it < maxIter; ++it) {
-                    if (ft == FractalType::burning_ship) {
+                    if (ft == FractalType::spider) {
+                        Cxd z2 = cxd_mul(zd, zd);
+                        zd = cxd_add(z2, cConstD);
+                        cConstD = cxd_add(cxd_scale(cConstD, 0.5), zd);
+                    } else if (ft == FractalType::celtic_mandelbrot) {
+                        Cxd z2{fabs(zd.x * zd.x - zd.y * zd.y), 2.0 * zd.x * zd.y};
+                        zd = cxd_add(z2, cConstD);
+                    } else if (ft == FractalType::perpendicular_burning_ship) {
+                        Cxd z2{zd.x * zd.x - zd.y * zd.y, 2.0 * fabs(zd.x) * zd.y};
+                        zd = cxd_add(z2, cConstD);
+                    } else if (ft == FractalType::burning_ship) {
                         Cxd a = cxd_abs_components(zd);
                         Cxd z2 = cxd_mul(a, a);
                         zd = cxd_add(z2, cConstD);
@@ -1497,7 +1507,17 @@ __global__ void kernel_render(
             if (ft != FractalType::phoenix) {
                 float r2 = 0.0f;
                 for (; it < maxIter; ++it) {
-                    if (ft == FractalType::burning_ship) {
+                    if (ft == FractalType::spider) {
+                        Cx z2 = cx_mul(z, z);
+                        z = cx_add(z2, cConst);
+                        cConst = cx_add(cx_scale(cConst, 0.5f), z);
+                    } else if (ft == FractalType::celtic_mandelbrot) {
+                        Cx z2{fabsf(z.x * z.x - z.y * z.y), 2.0f * z.x * z.y};
+                        z = cx_add(z2, cConst);
+                    } else if (ft == FractalType::perpendicular_burning_ship) {
+                        Cx z2{z.x * z.x - z.y * z.y, 2.0f * fabsf(z.x) * z.y};
+                        z = cx_add(z2, cConst);
+                    } else if (ft == FractalType::burning_ship) {
                         Cx a = cx_abs_components(z);
                         Cx z2 = cx_mul(a, a);
                         z = cx_add(z2, cConst);
@@ -1684,7 +1704,7 @@ __global__ void kernel_render(
     outRGBA[py * width + px] = rgba;
 
     if (outMask) {
-        outMask[py * width + px] = converged ? 255 : 0;
+        outMask[py * width + px] = LensMaskInsideForFractal(ft, converged, escaped) ? 255 : 0;
     }
 }
 

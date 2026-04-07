@@ -24,6 +24,8 @@ std::filesystem::path FindRepoRootContainingArchiveScript(const std::filesystem:
 
 std::filesystem::path FindRepoRootFromRuntimeMetadata(const std::filesystem::path& runtimeDir);
 
+RenderSettings BuildFindingArchiveCaptureRender(const RenderSettings& render);
+
 std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& pythonLauncher,
     const std::filesystem::path& scriptPath,

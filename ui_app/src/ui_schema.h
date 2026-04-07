@@ -14,6 +14,7 @@ struct UISchemaPredicate {
 struct UISchemaOption {
     std::string id;
     std::string label;
+    std::string group;
 };
 
 struct UISchemaBinding {
