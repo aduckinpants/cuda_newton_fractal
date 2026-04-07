@@ -1,5 +1,6 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
+#include "escape_time_direct_formulas.h"
 #include "explaino_seed_curve.h"
 #include "sample_tier_resolver.h"
 
@@ -330,45 +331,6 @@ __device__ __forceinline__ uchar4 contrast_rgb(uchar4 c, float con) {
             (unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.y - 128.0f))),
             (unsigned char)fminf(255.0f, fmaxf(0.0f, 128.0f + con * ((float)c.z - 128.0f))),
             c.w};
-}
-
-__device__ __forceinline__ Cx cx_abs_components(Cx a) {
-    return {fabsf(a.x), fabsf(a.y)};
-}
-
-__device__ __forceinline__ Cxd cxd_abs_components(Cxd a) {
-    return {fabs(a.x), fabs(a.y)};
-}
-
-__device__ __forceinline__ Cx cx_pow_int(Cx z, int p) {
-    // Integer power >= 2.
-    Cx r = z;
-    for (int i = 1; i < p; ++i) r = cx_mul(r, z);
-    return r;
-}
-
-__device__ __forceinline__ Cx cx_pow_real_principal(Cx z, float p) {
-    float r2 = cx_abs2(z);
-    if (r2 <= 1.0e-30f) {
-        return {0.0f, 0.0f};
-    }
-    float r = sqrtf(r2);
-    float theta = atan2f(z.y, z.x);
-    float rp = powf(r, p);
-    float angle = p * theta;
-    return {rp * cosf(angle), rp * sinf(angle)};
-}
-
-__device__ __forceinline__ Cxd cxd_pow_real_principal(Cxd z, double p) {
-    double r2 = cxd_abs2(z);
-    if (r2 <= 1.0e-300) {
-        return {0.0, 0.0};
-    }
-    double r = sqrt(r2);
-    double theta = atan2(z.y, z.x);
-    double rp = pow(r, p);
-    double angle = p * theta;
-    return {rp * cos(angle), rp * sin(angle)};
 }
 
 __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; }
@@ -1120,22 +1082,19 @@ __global__ void kernel_render(
             converged = (pAbs < eps);
         }
     } else if (ft == FractalType::multicorn) {
-        // Multicorn/Tricorn: z_{n+1} = conj(z)^p + c, escape-time family.
-        z = {0.0f, 0.0f};
-        cConst = coord;
-        int p = params.multibrot_power;
+        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
+        const Cx lambdaConst{params.lambda_real, params.lambda_imag};
+        const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
 
         for (; it < maxIter; ++it) {
-            // Conjugate z: negate imaginary part.
-            Cx zBar = {z.x, -z.y};
-            Cx zp = cx_pow_int(zBar, p);
-            z = cx_add(zp, cConst);
+            StepEscapeTimeDirectState(ft, params.multibrot_power_float, params.multibrot_power, lambdaConst, phoenixP, &state);
+            z = state.z;
 
-            if (cx_abs2(z) > 4.0f) {
+            if (cx_abs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
                 escaped = true;
                 break;
             }
-            if (!isfinite(z.x) || !isfinite(z.y)) {
+            if (!isfinite(state.z.x) || !isfinite(state.z.y) || !isfinite(state.z_prev.x) || !isfinite(state.z_prev.y)) {
                 escaped = true;
                 break;
             }
@@ -1380,170 +1339,43 @@ __global__ void kernel_render(
                 z = {(float)zcur.x, (float)zcur.y};
             }
         } else {
-            // Standard escape-time iteration.
-            // Mandelbrot/BurningShip/Multibrot use z0=0, c=coord.
-            // Julia uses z0=coord, c=fixed.
-            if (ft == FractalType::phoenix) {
-                // Phoenix (V1): z_{n+1} = z_n^2 + c + p * z_{n-1}
-                // Parameterization choice: c = coord (c-plane), z0 = 0, z_{-1} = 0.
-                if (useFP64) {
-                    Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
-                    Cxd zPrevD{0.0, 0.0};
-                    Cxd zd{0.0, 0.0};
-                    Cxd cConstD = coordD;
+            // Standard direct escape-time iteration shared with the probe sampler.
+            if (useFP64) {
+                EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD);
+                const double powerFloat = (double)params.multibrot_power_float;
+                const Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
+                const Cxd phoenixPD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
 
-                    double r2 = 0.0;
-                    for (; it < maxIter; ++it) {
-                        Cxd z2 = cxd_mul(zd, zd);
-                        Cxd mem = cxd_mul(pConstD, zPrevD);
-                        Cxd zNext = cxd_add(cxd_add(z2, cConstD), mem);
-                        zPrevD = zd;
-                        zd = zNext;
-
-                        r2 = cxd_abs2(zd);
-                        if (r2 > 4.0) {
-                            escaped = true;
-                            break;
-                        }
-                        if (!isfinite(zd.x) || !isfinite(zd.y) || !isfinite(zPrevD.x) || !isfinite(zPrevD.y)) {
-                            escaped = true;
-                            break;
-                        }
-                    }
-                    z = {(float)zd.x, (float)zd.y};
-                } else {
-                    Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
-                    Cx zPrev{0.0f, 0.0f};
-                    z = {0.0f, 0.0f};
-                    cConst = coord;
-
-                    float r2 = 0.0f;
-                    for (; it < maxIter; ++it) {
-                        Cx z2 = cx_mul(z, z);
-                        Cx mem = cx_mul(pConst, zPrev);
-                        Cx zNext = cx_add(cx_add(z2, cConst), mem);
-                        zPrev = z;
-                        z = zNext;
-
-                        r2 = cx_abs2(z);
-                        if (r2 > 4.0f) {
-                            escaped = true;
-                            break;
-                        }
-                        if (!isfinite(z.x) || !isfinite(z.y) || !isfinite(zPrev.x) || !isfinite(zPrev.y)) {
-                            escaped = true;
-                            break;
-                        }
-                    }
-                }
-            } else if (useFP64) {
-                Cxd zd{0.0, 0.0};
-                Cxd cConstD{0.0, 0.0};
-
-                if (ft == FractalType::julia) {
-                    zd = coordD;
-                    cConstD = {-0.7, 0.27015};
-                } else if (ft == FractalType::lambda_map) {
-                    zd = coordD;
-                } else {
-                    zd = {0.0, 0.0};
-                    cConstD = coordD;
-                }
-
-                double pfD = (double)params.multibrot_power_float;
-                Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
-                double r2 = 0.0;
                 for (; it < maxIter; ++it) {
-                    if (ft == FractalType::spider) {
-                        Cxd z2 = cxd_mul(zd, zd);
-                        zd = cxd_add(z2, cConstD);
-                        cConstD = cxd_add(cxd_scale(cConstD, 0.5), zd);
-                    } else if (ft == FractalType::celtic_mandelbrot) {
-                        Cxd z2{fabs(zd.x * zd.x - zd.y * zd.y), 2.0 * zd.x * zd.y};
-                        zd = cxd_add(z2, cConstD);
-                    } else if (ft == FractalType::perpendicular_burning_ship) {
-                        Cxd z2{zd.x * zd.x - zd.y * zd.y, 2.0 * fabs(zd.x) * zd.y};
-                        zd = cxd_add(z2, cConstD);
-                    } else if (ft == FractalType::burning_ship) {
-                        Cxd a = cxd_abs_components(zd);
-                        Cxd z2 = cxd_mul(a, a);
-                        zd = cxd_add(z2, cConstD);
-                    } else if (ft == FractalType::multibrot) {
-                        Cxd zp = cxd_pow_real_principal(zd, pfD);
-                        zd = cxd_add(zp, cConstD);
-                    } else if (ft == FractalType::lambda_map) {
-                        Cxd oneMinusZ{1.0 - zd.x, -zd.y};
-                        zd = cxd_mul(lambdaConstD, cxd_mul(zd, oneMinusZ));
-                    } else {
-                        Cxd z2 = cxd_mul(zd, zd);
-                        zd = cxd_add(z2, cConstD);
-                    }
-
-                    r2 = cxd_abs2(zd);
-                    if (r2 > 4.0) {
+                    StepEscapeTimeDirectState(ft, powerFloat, params.multibrot_power, lambdaConstD, phoenixPD, &state);
+                    if (cxd_abs2(state.z) > DirectEscapeTimeRadiusSquared<double>()) {
                         escaped = true;
                         break;
                     }
-
-                    if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                    if (!isfinite(state.z.x) || !isfinite(state.z.y) || !isfinite(state.z_prev.x) || !isfinite(state.z_prev.y)) {
                         escaped = true;
                         break;
                     }
                 }
-                z = {(float)zd.x, (float)zd.y};
-            } else if (ft == FractalType::julia) {
-                z = coord;
-                cConst = {-0.7f, 0.27015f};
-            } else if (ft == FractalType::lambda_map) {
-                z = coord;
+                z = {(float)state.z.x, (float)state.z.y};
             } else {
-                z = {0.0f, 0.0f};
-                cConst = coord;
-            }
+                EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
+                const float powerFloat = params.multibrot_power_float;
+                const Cx lambdaConst{params.lambda_real, params.lambda_imag};
+                const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
 
-            float pf = params.multibrot_power_float;
-            Cx lambdaConst{params.lambda_real, params.lambda_imag};
-
-            if (ft != FractalType::phoenix) {
-                float r2 = 0.0f;
                 for (; it < maxIter; ++it) {
-                    if (ft == FractalType::spider) {
-                        Cx z2 = cx_mul(z, z);
-                        z = cx_add(z2, cConst);
-                        cConst = cx_add(cx_scale(cConst, 0.5f), z);
-                    } else if (ft == FractalType::celtic_mandelbrot) {
-                        Cx z2{fabsf(z.x * z.x - z.y * z.y), 2.0f * z.x * z.y};
-                        z = cx_add(z2, cConst);
-                    } else if (ft == FractalType::perpendicular_burning_ship) {
-                        Cx z2{z.x * z.x - z.y * z.y, 2.0f * fabsf(z.x) * z.y};
-                        z = cx_add(z2, cConst);
-                    } else if (ft == FractalType::burning_ship) {
-                        Cx a = cx_abs_components(z);
-                        Cx z2 = cx_mul(a, a);
-                        z = cx_add(z2, cConst);
-                    } else if (ft == FractalType::multibrot) {
-                        Cx zp = cx_pow_real_principal(z, pf);
-                        z = cx_add(zp, cConst);
-                    } else if (ft == FractalType::lambda_map) {
-                        Cx oneMinusZ{1.0f - z.x, -z.y};
-                        z = cx_mul(lambdaConst, cx_mul(z, oneMinusZ));
-                    } else {
-                        // Mandelbrot / Julia default to z^2 + c
-                        Cx z2 = cx_mul(z, z);
-                        z = cx_add(z2, cConst);
-                    }
-
-                    r2 = cx_abs2(z);
-                    if (r2 > 4.0f) {
+                    StepEscapeTimeDirectState(ft, powerFloat, params.multibrot_power, lambdaConst, phoenixP, &state);
+                    if (cx_abs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
                         escaped = true;
                         break;
                     }
-
-                    if (!isfinite(z.x) || !isfinite(z.y)) {
+                    if (!isfinite(state.z.x) || !isfinite(state.z.y) || !isfinite(state.z_prev.x) || !isfinite(state.z_prev.y)) {
                         escaped = true;
                         break;
                     }
                 }
+                z = state.z;
             }
         }
     }

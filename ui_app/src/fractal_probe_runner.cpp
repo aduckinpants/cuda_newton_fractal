@@ -5,6 +5,7 @@
 #include "diagnostics_state_io.h"
 #include "finding_state_actions.h"
 #include "fractal_derived_fields.h"
+#include "escape_time_direct_formulas.h"
 #include "fractal_family_rules.h"
 #include "runtime_reset.h"
 #include "schema_binding.h"
@@ -707,40 +708,33 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
-    if (ft == FractalType::mandelbrot || ft == FractalType::julia || ft == FractalType::lambda_map) {
-        Cx cConst{0.0f, 0.0f};
-        if (ft == FractalType::mandelbrot) {
-            z = {0.0f, 0.0f};
-            cConst = coord;
-        } else if (ft == FractalType::julia) {
-            z = coord;
-            cConst = {-0.7f, 0.27015f};
-        } else {
-            z = coord;
-        }
+    if (UsesSharedEscapeTimeDirectFormula(ft)) {
+        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
+        const float powerFloat = params.multibrot_power_float;
+        const int powerInt = params.multibrot_power;
         const Cx lambdaConst{params.lambda_real, params.lambda_imag};
+        const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
+
         for (; it < maxIter; ++it) {
-            if (ft == FractalType::lambda_map) {
-                const Cx oneMinusZ{1.0f - z.x, -z.y};
-                z = CxMul(lambdaConst, CxMul(z, oneMinusZ));
-            } else {
-                z = CxAdd(CxMul(z, z), cConst);
+            StepEscapeTimeDirectState(ft, powerFloat, powerInt, lambdaConst, phoenixP, &state);
+            z = state.z;
+            if (!IsFiniteCx(state.z) || !IsFiniteCx(state.z_prev)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
             }
-            if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
-            if (CxAbs2(z) > 4.0f) { status = FractalProbeSampleStatus::escaped; break; }
+            if (CxAbs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
+                status = FractalProbeSampleStatus::escaped;
+                break;
+            }
         }
+
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, 0.0f, false, params, false);
         return true;
     }
 
-    if (ft == FractalType::burning_ship || ft == FractalType::spider || ft == FractalType::celtic_mandelbrot ||
-        ft == FractalType::perpendicular_burning_ship || ft == FractalType::multibrot || ft == FractalType::multicorn ||
-        ft == FractalType::phoenix || ft == FractalType::mcmullen || ft == FractalType::collatz) {
+    if (ft == FractalType::mcmullen || ft == FractalType::collatz) {
         z = {0.0f, 0.0f};
         Cx cConst = coord;
-        const float powerFloat = params.multibrot_power_float;
-        const int powerInt = params.multibrot_power;
-        Cx zPrev{0.0f, 0.0f};
 
         int mcmullenM = 0;
         int mcmullenN = 0;
@@ -774,29 +768,7 @@ bool SamplePoint(const ProbeState& state,
         }
 
         for (; it < maxIter; ++it) {
-            if (ft == FractalType::spider) {
-                z = CxAdd(CxMul(z, z), cConst);
-                cConst = CxAdd(CxScale(cConst, 0.5f), z);
-            } else if (ft == FractalType::celtic_mandelbrot) {
-                const Cx z2{std::fabs(z.x * z.x - z.y * z.y), 2.0f * z.x * z.y};
-                z = CxAdd(z2, cConst);
-            } else if (ft == FractalType::perpendicular_burning_ship) {
-                const Cx z2{z.x * z.x - z.y * z.y, 2.0f * std::fabs(z.x) * z.y};
-                z = CxAdd(z2, cConst);
-            } else if (ft == FractalType::burning_ship) {
-                const Cx absZ = CxAbsComponents(z);
-                z = CxAdd(CxMul(absZ, absZ), cConst);
-            } else if (ft == FractalType::multibrot) {
-                z = CxAdd(CxPowRealPrincipal(z, powerFloat), cConst);
-            } else if (ft == FractalType::multicorn) {
-                const Cx conjugateZ{z.x, -z.y};
-                z = CxAdd(CxPowInt(conjugateZ, powerInt), cConst);
-            } else if (ft == FractalType::phoenix) {
-                const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
-                const Cx zNext = CxAdd(CxAdd(CxMul(z, z), cConst), CxMul(pConst, zPrev));
-                zPrev = z;
-                z = zNext;
-            } else if (ft == FractalType::mcmullen) {
+            if (ft == FractalType::mcmullen) {
                 const float zAbs2 = CxAbs2(z);
                 if (zAbs2 < 1.0e-20f) {
                     status = FractalProbeSampleStatus::pole;
@@ -830,7 +802,7 @@ bool SamplePoint(const ProbeState& state,
                 z = CxScale(CxSub(affine, CxMul(linear, cosPi)), 0.25f);
             }
 
-            if (!IsFiniteCx(z) || !IsFiniteCx(zPrev)) {
+            if (!IsFiniteCx(z)) {
                 status = FractalProbeSampleStatus::nonfinite;
                 break;
             }
