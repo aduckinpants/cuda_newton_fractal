@@ -612,6 +612,145 @@ static void DispatchRenderFrame(
     dirtyOut = !renderedFrame.ready;
 }
 
+static void ApplyFractalTypeAndPolyCoherence(ViewState& view, KernelParams& params, bool& dirty,
+                                              FractalType& lastFractalType, PolyKind& lastPolyKind) {
+    if (view.fractal_type != lastFractalType) {
+        lastFractalType = view.fractal_type;
+        ApplyFractalViewPresetDefaults(view, &dirty);
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (IsExplainoFamily(view.fractal_type)) {
+            UpdateExplainoPolynomial(view, params, nullptr);
+        }
+        SyncViewHpFromUi(view);
+    }
+    if (params.poly_kind != lastPolyKind) {
+        lastPolyKind = params.poly_kind;
+        if (params.poly_kind != PolyKind::custom) {
+            SetPolyPreset(params);
+            dirty = true;
+        }
+    }
+}
+
+static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& render,
+                              const RenderedFrameState& renderedFrame, const ViewState& view,
+                              const std::string& findingStatus, const std::string& lastFindingPath) {
+    ImGui::Separator();
+    ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
+    ImGui::Text("Target render: %d x %d", render.resolution.x, render.resolution.y);
+    {
+        int liveWidth = renderedFrame.ready ? renderedFrame.width : render.resolution.x;
+        int liveHeight = renderedFrame.ready ? renderedFrame.height : render.resolution.y;
+        const int liveWidthMax = (render.resolution.x > liveWidth) ? render.resolution.x : liveWidth;
+        const int liveHeightMax = (render.resolution.y > liveHeight) ? render.resolution.y : liveHeight;
+        ImGui::BeginDisabled();
+        ImGui::SliderInt("Live Width", &liveWidth, 64, liveWidthMax);
+        ImGui::SliderInt("Live Height", &liveHeight, 64, liveHeightMax);
+        ImGui::EndDisabled();
+    }
+    if (renderedFrame.ready && (renderedFrame.width != render.resolution.x || renderedFrame.height != render.resolution.y)) {
+        ImGui::Text("Interactive preview: %d x %d -> settle to %d x %d",
+            renderedFrame.width, renderedFrame.height, render.resolution.x, render.resolution.y);
+    }
+    if (!findingStatus.empty()) {
+        ImGui::TextWrapped("%s", findingStatus.c_str());
+        if (!lastFindingPath.empty()) {
+            if (ImGui::SmallButton("Copy Path")) {
+                ImGui::SetClipboardText(lastFindingPath.c_str());
+            }
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Open Folder")) {
+                ShellExecuteA(nullptr, "explore", lastFindingPath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            }
+        }
+    }
+    const double zhp = SafeZoomFromLog2(view.log2_zoom);
+    ImGui::Text("HP zoom: 2^(%.3f) ~= %.3e", view.log2_zoom, zhp);
+}
+
+static void RenderSweepControls(const SweepConfig& config, SweepPlayerState& sweepState,
+                                bool& sweepPaused, bool& sweepSingleStep,
+                                ViewState& view, KernelParams& params, bool& dirty) {
+    if (!config.enabled) return;
+    double currentSweepSeed = 0.0;
+    if (!SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) return;
+    ImGui::Text("Sweep: %d/%d  seed %.6f%s",
+        sweepState.current_index + 1,
+        (int)sweepState.seeds.size(),
+        currentSweepSeed,
+        sweepState.finished ? "  [done]" : (sweepPaused ? "  [paused]" : (config.loop ? "  [loop]" : "")));
+    ImGui::Text("Sweep dwell: %.0f ms", config.dwell_seconds * 1000.0);
+    ImGui::Text("Combined seed: %.6f", ExplainoSeedCombined(view, params));
+    if (ImGui::Button(sweepPaused ? "Resume Sweep" : "Pause Sweep")) {
+        sweepPaused = !sweepPaused;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Step Sweep")) {
+        sweepPaused = true;
+        sweepSingleStep = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Restart Sweep")) {
+        std::string sweepError;
+        if (InitializeSweepPlayer(config, &sweepState, &sweepError) && SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
+            ExplainoSeedSetCombined(view, params, currentSweepSeed);
+            UpdateExplainoPolynomial(view, params, nullptr);
+            dirty = true;
+        }
+    }
+    ImGui::TextUnformatted("Space toggles sweep pause.");
+}
+
+static void DispatchUiActions(HWND hwnd,
+                              bool resetViewAction, bool resetAllAction, bool loadStateAction,
+                              bool nextSeedAction, bool prevSeedAction,
+                              ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
+                              bool& dirty, bool& interactionChanged,
+                              PolyKind& lastPolyKind, FractalType& lastFractalType,
+                              std::string& findingStatus, std::string& lastFindingPath) {
+    if (resetViewAction) {
+        ApplyFractalViewPresetDefaults(view, &dirty);
+        SyncViewHpFromUi(view);
+        dirty = true;
+        interactionChanged = true;
+    }
+    if (resetAllAction) {
+        ResetRuntimeStateForCurrentFractal(view, params, render, lens, &dirty);
+        lastPolyKind = params.poly_kind;
+        lastFractalType = view.fractal_type;
+        interactionChanged = true;
+    }
+    if (loadStateAction) {
+        std::string selectedPath;
+        if (PromptOpenFindingStatePath(hwnd, &selectedPath)) {
+            std::string resolvedStatePath;
+            std::string loadError;
+            if (!LoadFindingSelectionIntoRuntime(selectedPath, &view, &params, &render, &resolvedStatePath, &loadError)) {
+                findingStatus = "Load state failed: " + loadError;
+            } else {
+                lastPolyKind = params.poly_kind;
+                lastFractalType = view.fractal_type;
+                findingStatus = "Loaded finding state: " + resolvedStatePath;
+                lastFindingPath = resolvedStatePath;
+                dirty = true;
+                interactionChanged = true;
+            }
+        }
+    }
+    if (nextSeedAction && IsExplainoFamily(view.fractal_type)) {
+        ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + 1.0);
+        UpdateExplainoPolynomial(view, params, nullptr);
+        dirty = true;
+        interactionChanged = true;
+    }
+    if (prevSeedAction && IsExplainoFamily(view.fractal_type)) {
+        ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) - 1.0);
+        UpdateExplainoPolynomial(view, params, nullptr);
+        dirty = true;
+        interactionChanged = true;
+    }
+}
+
 static void ApplyArrowKeySeedScrub(const ImGuiIO& io, ViewState& view, KernelParams& params,
                                     float& seedScrubAccel, bool& dirty, bool& interactionChanged) {
     if (!IsExplainoFamily(view.fractal_type)) return;
@@ -916,141 +1055,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             }
         }
 
-        // Apply per-fractal presets immediately when the user changes fractal type.
-        if (view.fractal_type != lastFractalType) {
-            lastFractalType = view.fractal_type;
-            ApplyFractalViewPresetDefaults(view, &dirty);
-            ApplyFractalPresetDefaults(view, params, &dirty);
-            if (IsExplainoFamily(view.fractal_type)) {
-                UpdateExplainoPolynomial(view, params, nullptr);
-            }
-            SyncViewHpFromUi(view);
-        }
+        ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
 
-        // Keep presets coherent when schema-driven poly changes happen.
-        if (params.poly_kind != lastPolyKind) {
-            lastPolyKind = params.poly_kind;
-            if (params.poly_kind != PolyKind::custom) {
-                SetPolyPreset(params);
-                dirty = true;
-            }
-        }
+        RenderStatusPanel(stats, render, renderedFrame, view, findingStatus, lastFindingPath);
 
-        ImGui::Separator();
-        ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
-        ImGui::Text("Target render: %d x %d", render.resolution.x, render.resolution.y);
-        {
-            int liveWidth = renderedFrame.ready ? renderedFrame.width : render.resolution.x;
-            int liveHeight = renderedFrame.ready ? renderedFrame.height : render.resolution.y;
-            const int liveWidthMax = (render.resolution.x > liveWidth) ? render.resolution.x : liveWidth;
-            const int liveHeightMax = (render.resolution.y > liveHeight) ? render.resolution.y : liveHeight;
-            ImGui::BeginDisabled();
-            ImGui::SliderInt("Live Width", &liveWidth, 64, liveWidthMax);
-            ImGui::SliderInt("Live Height", &liveHeight, 64, liveHeightMax);
-            ImGui::EndDisabled();
-        }
-        if (renderedFrame.ready && (renderedFrame.width != render.resolution.x || renderedFrame.height != render.resolution.y)) {
-            ImGui::Text("Interactive preview: %d x %d -> settle to %d x %d",
-                renderedFrame.width,
-                renderedFrame.height,
-                render.resolution.x,
-                render.resolution.y);
-        }
-        if (!findingStatus.empty()) {
-            ImGui::TextWrapped("%s", findingStatus.c_str());
-            if (!lastFindingPath.empty()) {
-                if (ImGui::SmallButton("Copy Path")) {
-                    ImGui::SetClipboardText(lastFindingPath.c_str());
-                }
-                ImGui::SameLine();
-                if (ImGui::SmallButton("Open Folder")) {
-                    ShellExecuteA(nullptr, "explore", lastFindingPath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-                }
-            }
-        }
-
-        if (cli.sweep_config.enabled) {
-            double currentSweepSeed = 0.0;
-            if (SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
-                ImGui::Text("Sweep: %d/%d  seed %.6f%s",
-                    sweepState.current_index + 1,
-                    (int)sweepState.seeds.size(),
-                    currentSweepSeed,
-                    sweepState.finished ? "  [done]" : (sweepPaused ? "  [paused]" : (cli.sweep_config.loop ? "  [loop]" : "")));
-                ImGui::Text("Sweep dwell: %.0f ms", cli.sweep_config.dwell_seconds * 1000.0);
-                ImGui::Text("Combined seed: %.6f", ExplainoSeedCombined(view, params));
-                if (ImGui::Button(sweepPaused ? "Resume Sweep" : "Pause Sweep")) {
-                    sweepPaused = !sweepPaused;
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Step Sweep")) {
-                    sweepPaused = true;
-                    sweepSingleStep = true;
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Restart Sweep")) {
-                    std::string sweepError;
-                    if (InitializeSweepPlayer(cli.sweep_config, &sweepState, &sweepError) && SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
-                        ExplainoSeedSetCombined(view, params, currentSweepSeed);
-                        UpdateExplainoPolynomial(view, params, nullptr);
-                        dirty = true;
-                    }
-                }
-                ImGui::TextUnformatted("Space toggles sweep pause.");
-            }
-        }
-
-        {
-            const double zhp = SafeZoomFromLog2(view.log2_zoom);
-            ImGui::Text("HP zoom: 2^(%.3f) ~= %.3e", view.log2_zoom, zhp);
-        }
+        RenderSweepControls(cli.sweep_config, sweepState, sweepPaused, sweepSingleStep, view, params, dirty);
 
         ImGui::End();
 
-        if (resetViewAction) {
-            ApplyFractalViewPresetDefaults(view, &dirty);
-            SyncViewHpFromUi(view);
-            dirty = true;
-            interactionChanged = true;
-        }
-
-        if (resetAllAction) {
-            ResetRuntimeStateForCurrentFractal(view, params, render, lens, &dirty);
-            lastPolyKind = params.poly_kind;
-            lastFractalType = view.fractal_type;
-            interactionChanged = true;
-        }
-
-        if (loadStateAction) {
-            std::string selectedPath;
-            if (PromptOpenFindingStatePath(hwnd, &selectedPath)) {
-                std::string resolvedStatePath;
-                std::string loadError;
-                if (!LoadFindingSelectionIntoRuntime(selectedPath, &view, &params, &render, &resolvedStatePath, &loadError)) {
-                    findingStatus = "Load state failed: " + loadError;
-                } else {
-                    lastPolyKind = params.poly_kind;
-                    lastFractalType = view.fractal_type;
-                    findingStatus = "Loaded finding state: " + resolvedStatePath;
-                    lastFindingPath = resolvedStatePath;
-                    dirty = true;
-                    interactionChanged = true;
-                }
-            }
-        }
-
-        if (nextSeedAction && IsExplainoFamily(view.fractal_type)) {
-            ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + 1.0);
-            UpdateExplainoPolynomial(view, params, nullptr);
-            dirty = true;
-            interactionChanged = true;
-        }
-        if (prevSeedAction && IsExplainoFamily(view.fractal_type)) {
-            ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) - 1.0);
-            UpdateExplainoPolynomial(view, params, nullptr);
-            dirty = true;
-            interactionChanged = true;
-        }
+        DispatchUiActions(hwnd, resetViewAction, resetAllAction, loadStateAction,
+            nextSeedAction, prevSeedAction, view, params, render, lens,
+            dirty, interactionChanged, lastPolyKind, lastFractalType,
+            findingStatus, lastFindingPath);
 
         ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, interactionChanged);
 
