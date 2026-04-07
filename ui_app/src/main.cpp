@@ -20,6 +20,7 @@
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx11.h"
 
+#include "cli_args.h"
 #include "diagnostics_capture.h"
 #include "finding_archive_actions.h"
 #include "finding_state_actions.h"
@@ -30,6 +31,7 @@
 #include "fractal_probe_contract.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
+#include "headless_modes.h"
 #include "json_min.h"
 #include "lens_sdf.h"
 #include "render_capture_guard.h"
@@ -149,80 +151,6 @@ static bool PromptOpenFindingStatePath(HWND owner, std::string* outPath) {
     if (!GetOpenFileNameA(&dialog)) return false;
     if (outPath) *outPath = buffer;
     return true;
-}
-
-static bool HasArg(const std::vector<std::string>& args, const char* flag) {
-    for (const auto& arg : args) {
-        if (arg == flag) return true;
-    }
-    return false;
-}
-
-static bool TryGetArgValue(const std::vector<std::string>& args, const char* flag, std::string* outValue) {
-    for (size_t i = 0; i + 1 < args.size(); ++i) {
-        if (args[i] == flag) {
-            if (outValue) *outValue = args[i + 1];
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool TryParseDoubleArg(const std::vector<std::string>& args, const char* flag, double* outValue) {
-    std::string text;
-    if (!TryGetArgValue(args, flag, &text)) return false;
-    char* end = nullptr;
-    double value = std::strtod(text.c_str(), &end);
-    if (!end || *end != '\0') return false;
-    if (outValue) *outValue = value;
-    return true;
-}
-
-static bool TryParseIntArg(const std::vector<std::string>& args, const char* flag, int* outValue) {
-    std::string text;
-    if (!TryGetArgValue(args, flag, &text)) return false;
-    char* end = nullptr;
-    long value = std::strtol(text.c_str(), &end, 10);
-    if (!end || *end != '\0') return false;
-    if (outValue) *outValue = (int)value;
-    return true;
-}
-
-static bool TryParseFractalTypeArg(const std::vector<std::string>& args, FractalType* outType) {
-    std::string text;
-    if (!TryGetArgValue(args, "--fractal-type", &text)) return false;
-
-    if (text == "newton") { if (outType) *outType = FractalType::newton; return true; }
-    if (text == "nova") { if (outType) *outType = FractalType::nova; return true; }
-    if (text == "mandelbrot") { if (outType) *outType = FractalType::mandelbrot; return true; }
-    if (text == "julia") { if (outType) *outType = FractalType::julia; return true; }
-    if (text == "burning_ship") { if (outType) *outType = FractalType::burning_ship; return true; }
-    if (text == "multibrot") { if (outType) *outType = FractalType::multibrot; return true; }
-    if (text == "phoenix") { if (outType) *outType = FractalType::phoenix; return true; }
-    if (text == "explaino") { if (outType) *outType = FractalType::explaino; return true; }
-    if (text == "explaino_y") { if (outType) *outType = FractalType::explaino_y; return true; }
-    if (text == "explaino_fp") { if (outType) *outType = FractalType::explaino_fp; return true; }
-    if (text == "explaino_nova") { if (outType) *outType = FractalType::explaino_nova; return true; }
-    if (text == "explaino_halley") { if (outType) *outType = FractalType::explaino_halley; return true; }
-    if (text == "explaino_dual") { if (outType) *outType = FractalType::explaino_dual; return true; }
-    if (text == "explaino_mult") { if (outType) *outType = FractalType::explaino_mult; return true; }
-    if (text == "explaino_phoenix") { if (outType) *outType = FractalType::explaino_phoenix; return true; }
-    if (text == "explaino_transcendental") { if (outType) *outType = FractalType::explaino_transcendental; return true; }
-    if (text == "explaino_inertial") { if (outType) *outType = FractalType::explaino_inertial; return true; }
-    if (text == "explaino_julia") { if (outType) *outType = FractalType::explaino_julia; return true; }
-    if (text == "explaino_rational") { if (outType) *outType = FractalType::explaino_rational; return true; }
-    if (text == "multicorn") { if (outType) *outType = FractalType::multicorn; return true; }
-    if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
-    if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
-    if (text == "explaino_collatz") { if (outType) *outType = FractalType::explaino_collatz; return true; }
-    if (text == "mcmullen") { if (outType) *outType = FractalType::mcmullen; return true; }
-    if (text == "lambda") { if (outType) *outType = FractalType::lambda_map; return true; }
-    if (text == "explaino_lambda") { if (outType) *outType = FractalType::explaino_lambda; return true; }
-    if (text == "explaino_rational_escape") { if (outType) *outType = FractalType::explaino_rational_escape; return true; }
-    if (text == "spider") { if (outType) *outType = FractalType::spider; return true; }
-    if (text == "celtic_mandelbrot") { if (outType) *outType = FractalType::celtic_mandelbrot; return true; }
-    if (text == "perpendicular_burning_ship") { if (outType) *outType = FractalType::perpendicular_burning_ship; return true; }
-    return false;
 }
 
 static void CreateRenderTarget() {
@@ -447,85 +375,6 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-static std::string ReadTextFile(const char* path) {
-    std::ifstream f(path, std::ios::in | std::ios::binary);
-    if (!f) return {};
-    std::ostringstream ss;
-    ss << f.rdbuf();
-    return ss.str();
-}
-
-static bool TryReadTextFileExact(const std::string& path, std::string* outText, std::string* outError) {
-    std::ifstream file(path, std::ios::in | std::ios::binary);
-    if (!file) {
-        if (outError) *outError = "Failed to open sample request file: " + path;
-        return false;
-    }
-    std::ostringstream text;
-    text << file.rdbuf();
-    if (!file.good() && !file.eof()) {
-        if (outError) *outError = "Failed to read sample request file: " + path;
-        return false;
-    }
-    if (outText) *outText = text.str();
-    return true;
-}
-
-static bool ReadStdinText(std::string* outText, std::string* outError) {
-    std::ostringstream text;
-    text << std::cin.rdbuf();
-    if (!std::cin.good() && !std::cin.eof()) {
-        if (outError) *outError = "Failed to read sample request from stdin";
-        return false;
-    }
-    if (outText) *outText = text.str();
-    return true;
-}
-
-static bool WriteTextFileExact(const std::string& path, const std::string& text, std::string* outError) {
-    std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!file) {
-        if (outError) *outError = "Failed to open sample response file for write: " + path;
-        return false;
-    }
-    file.write(text.data(), static_cast<std::streamsize>(text.size()));
-    if (!file.good()) {
-        if (outError) *outError = "Failed to write sample response file: " + path;
-        return false;
-    }
-    return true;
-}
-
-static FractalProbeResponse BuildProbeErrorResponse(const std::string& requestId,
-    const std::string& exePath,
-    const FractalProbeOperatorContext& operatorContext,
-    const std::string& error) {
-    FractalProbeResponse response;
-    response.request_id = requestId;
-    response.ok = false;
-    response.runtime.exe_path = exePath;
-    response.operator_context = operatorContext;
-    response.error = error;
-    return response;
-}
-
-static bool EmitProbeResponse(const std::string& responseJson,
-    bool toStdout,
-    const std::string& responsePath,
-    std::string* outError) {
-    if (toStdout) {
-        if (std::fwrite(responseJson.data(), 1, responseJson.size(), stdout) != responseJson.size()) {
-            if (outError) *outError = "Failed to write sample response to stdout";
-            return false;
-        }
-        std::fflush(stdout);
-    }
-    if (!responsePath.empty()) {
-        if (!WriteTextFileExact(responsePath, responseJson, outError)) return false;
-    }
-    return true;
-}
-
 static inline float ClampF(float v, float lo, float hi) {
     if (v < lo) return lo;
     if (v > hi) return hi;
@@ -581,58 +430,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     const std::string exePath = GetExePath();
 
     if (anySampleModeArg) {
-        std::string error;
-        std::string requestText;
-        FractalProbeRequest request;
-        bool haveParsedRequest = false;
-
-        if (sampleRequestSourceCount != 1) {
-            error = "sample mode requires exactly one request source";
-        } else if (!sampleResponseStdout && !haveSampleResponseJson) {
-            error = "sample mode requires at least one response sink";
-        } else if (validateUiOnly || captureDiagnosticOnly || captureFindingOnly) {
-            error = "sample mode is mutually exclusive with --validate-ui, --capture-diagnostic, and --capture-finding";
-        } else if (!(sampleRequestStdin
-                ? ReadStdinText(&requestText, &error)
-                : TryReadTextFileExact(sampleRequestJsonPath, &requestText, &error))) {
-        } else if (!ParseFractalProbeRequestJson(requestText, &request, &error)) {
-        } else {
-            haveParsedRequest = true;
-            FractalProbeResponse response;
-            if (!RunFractalProbeRequest(request, exePath, &response, &error)) {
-                response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, error);
-            }
-            const std::string responseJson = SerializeFractalProbeResponseJson(response);
-            std::string emitError;
-            if (!EmitProbeResponse(responseJson,
-                    sampleResponseStdout,
-                    haveSampleResponseJson ? sampleResponseJsonPath : std::string(),
-                    &emitError)) {
-                std::fprintf(stderr, "%s\n", emitError.c_str());
-                return 1;
-            }
-            return response.ok ? 0 : 1;
-        }
-
-        FractalProbeResponse response = BuildProbeErrorResponse(
-            haveParsedRequest ? request.request_id : std::string(),
-            exePath,
-            haveParsedRequest ? request.operator_context : FractalProbeOperatorContext{},
-            error);
-        const std::string responseJson = SerializeFractalProbeResponseJson(response);
-        std::string emitError;
-        if ((sampleResponseStdout || haveSampleResponseJson) &&
-            EmitProbeResponse(responseJson,
-                sampleResponseStdout,
-                haveSampleResponseJson ? sampleResponseJsonPath : std::string(),
-                &emitError)) {
-            return 1;
-        }
-        if (!emitError.empty()) {
-            std::fprintf(stderr, "%s\n", emitError.c_str());
-        }
-        std::fprintf(stderr, "%s\n", error.c_str());
-        return 1;
+        SampleModeArgs sma;
+        sma.request_stdin = sampleRequestStdin;
+        sma.response_stdout = sampleResponseStdout;
+        sma.request_json_path = haveSampleRequestJson ? sampleRequestJsonPath : std::string();
+        sma.response_json_path = haveSampleResponseJson ? sampleResponseJsonPath : std::string();
+        sma.conflict_validate_ui = validateUiOnly;
+        sma.conflict_capture_diagnostic = captureDiagnosticOnly;
+        sma.conflict_capture_finding = captureFindingOnly;
+        return RunSampleMode(sma, exePath);
     }
 
     // --describe-functions / --describe-functions-json: emit the engine
@@ -648,39 +454,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
         schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
         schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
-
-        UISchema descSchema;
-        bool descSchemaLoaded = false;
-        for (const auto& cand : schemaCandidates) {
-            std::string text = ReadTextFile(cand.c_str());
-            if (text.empty()) continue;
-            auto pr = json_min::Parse(text);
-            if (!pr.error.empty()) continue;
-            auto lr = LoadUISchemaFromJson(pr.value);
-            if (!lr.error.empty()) continue;
-            descSchema = std::move(lr.schema);
-            descSchemaLoaded = true;
-            break;
-        }
-        if (!descSchemaLoaded) {
-            std::fprintf(stderr, "Failed to load UI schema for --describe-functions\n");
-            return 1;
-        }
-
-        EngineFunctionCatalog catalog = BuildEngineCatalog(descSchema);
-        std::string catalogJson = SerializeEngineCatalogJson(catalog);
-
-        if (describeFunctions) {
-            std::cout << catalogJson;
-        }
-        if (haveDescribeFunctionsJson) {
-            std::string writeError;
-            if (!WriteTextFileExact(describeFunctionsJsonPath, catalogJson, &writeError)) {
-                std::fprintf(stderr, "%s\n", writeError.c_str());
-                return 1;
-            }
-        }
-        return 0;
+        return RunDescribeFunctionsMode(describeFunctions, haveDescribeFunctionsJson ? describeFunctionsJsonPath : std::string(), schemaCandidates);
     }
 
     if (captureDiagnosticOnly && captureFindingOnly) {

@@ -18,6 +18,11 @@ set TESTROOT=%SALT_FRACTAL_ROOT%\cuda_newton_fractal_clone\build_tests
 if not exist "%TESTROOT%" mkdir "%TESTROOT%"
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\cli_args.cpp .\tests\test_cli_args.cpp ^
+  /Fe:"%TESTROOT%\test_cli_args.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\tests\test_explaino_seed.cpp ^
   /Fe:"%TESTROOT%\test_explaino_seed.exe"
 if errorlevel 1 exit /b 1
@@ -155,6 +160,12 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_fractal_probe_coverage.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp .\src\headless_modes.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_headless_modes.cpp ^
+  /Fe:"%TESTROOT%\test_headless_modes.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_fractal_family_rules.cpp ^
   /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
@@ -171,6 +182,9 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_function_descriptor.cpp ^
   /Fe:"%TESTROOT%\test_function_descriptor.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_cli_args.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_seed.exe"
@@ -299,6 +313,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_probe_coverage.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_headless_modes.exe"
 if errorlevel 1 exit /b 1
 
 echo All helper tests passed.
