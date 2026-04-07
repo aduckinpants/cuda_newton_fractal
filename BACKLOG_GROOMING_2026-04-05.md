@@ -1,5 +1,10 @@
 # Backlog Grooming — 2026-04-05
 
+> **SUPERSEDED** — This snapshot predates the 87-commit `working/salt-fractal-sweep-viewer` branch.
+> Most items below are now **completed** (Nova repair, Explaino family expansion, Lambda, non-integer Multibrot,
+> transcendental Newton presets, common-fractal wave, startup defaults, CUDA code-quality extraction).
+> See `DEFERRED_THREADS.md` for current forward planning and `spec_intake/_STATUS.md` for per-spec status.
+
 ## Current Facts
 - The shipped catalog currently includes `newton`, `nova`, `mandelbrot`, `julia`, `burning_ship`, `multibrot`, `phoenix`, `explaino`, `explaino_y`, and `explaino_fp`.
 - Nova is the current top technical blocker because its escape-time iteration contract is mismatched with its preset defaults, schema messaging, and renderer coloring dispatch.

@@ -87,6 +87,9 @@ def test_describe_functions_emits_valid_catalog() -> None:
         "lambda",
         "explaino_lambda",
         "explaino_rational_escape",
+        "spider",
+        "celtic_mandelbrot",
+        "perpendicular_burning_ship",
     }
 
     # epsilon param should have applicable_when

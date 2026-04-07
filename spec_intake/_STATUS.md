@@ -1,0 +1,53 @@
+# Spec Intake — Status Index
+
+Last updated: 2026-04-07 (merge prep for `working/salt-fractal-sweep-viewer`)
+
+## Implemented
+
+These specs are fully landed on the branch with tests, schema bindings, and probe coverage.
+
+| Spec | Summary | Key Commits |
+|------|---------|-------------|
+| ExplainoFamilyExpansion_V1 | explaino_nova, explaino_dual, explaino_lambda, explaino_rational_escape | multiple |
+| NonIntegerMultibrot_V1 | multibrot_power_float with [2,12] domain | landed 2026-04-06 |
+| NovaFractal_V1 | Nova escape-time contract (coloring bug fixed) | Nova repair slice |
+| PhoenixFractal_V1 | Phoenix with single preset (p=0.5667) | early branch |
+| TranscendentalNewtonPresets_V1 | sin, exp-1, cosh Newton presets | early branch |
+| FractalCatalog_WaveTwo | Lambda, Explaino-Lambda, Explaino-Rational-Escape | wave-two commits |
+| FractalTypeDropdown_and_MultiFractalKernel | Multi-fractal kernel routing + grouped selector | schema extraction |
+| GenericCudaSamplerBridge | Probe sampling API for all 27 types | probe/pipeline commits |
+| RealtimeCliSampling_OperatorCallIn | Headless --sample-request-stdin/stdout contract | headless mode extraction |
+| LambdaQuadraticConjugacy_DesignNote | Lambda kept as FractalType::lambda_map (reserved word) | Lambda commits |
+| CommonFractalCatalog_Deferred_2026-04-06 | Wave 1: Spider, Celtic MB, Perpendicular BS | common-fractal wave |
+| No_Implicit_Fallback_General_Directive | Fail-fast for unknown bindings/enums/params | adopted throughout |
+
+## Deferred — Future Fractal Toolkit Branch
+
+These are planned for a dedicated fractal-toolkit branch, not this merge.
+
+| Spec | Summary | Notes |
+|------|---------|-------|
+| FractalCatalog_AdvancedAdditions | Lyapunov, attractors, IFS, distance estimators, Mandelbulb | Needs architecture changes (CUDA refactor gate) |
+| Color_Pipeline_TunePass_Directive | Escape-time smoothing, exposure refinement | Future polish phase |
+| VisualTuning_PostProcess | Sharpen, bloom, depth-of-field | Spec-only; do not implement yet |
+| Camera_Depth_UILayout_Notes | Dive-depth tuning, camera behavior stubs | Documented in KNOWN_ISSUES |
+
+## Research / Hypothesis — Deferred to Nine
+
+These are research artifacts managed from the `nine` repo.
+
+| Spec | Summary | Notes |
+|------|---------|-------|
+| ExplainoJoy_6Plus1_HypothesisLadder | 6+1 morphology hypothesis, FITS invariance | Needs experimental validation |
+| FitsSolutionSpacePlayback_DesignNote | FITS replay as solved state-space artifact | Next phase after invariance study |
+| ExplainoDesignSpace_DeepDive | Observation + family axes for Explaino work | Informs future expansion |
+
+## Planning Reference — Completed / Historical
+
+These specs served their planning purpose and are retained as context.
+
+| Spec | Summary | Notes |
+|------|---------|-------|
+| ViewerHost_Backport_FeatureMatrix | Surgical backport plan from stale branch | Completed; see SEED_REFACTOR_RECONCILIATION |
+| CudaCodeQualityCleanup_2026-04-07 | Active ratchet plan; consult code_quality_audit | Partially complete (score 95→ongoing) |
+| SlimeCppStructuralAnalysis_MainlinePrework | Mainline salticid-cuda analysis | Out of scope for this repo |

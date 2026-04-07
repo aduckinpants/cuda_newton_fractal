@@ -5,28 +5,13 @@ Priority tiers: **P0** (blocks demo quality), **P1** (materially degrades experi
 
 ---
 
-## P0 — Nova violates its own escape-time contract
+## ~~P0 — Nova violates its own escape-time contract~~ RESOLVED
 
-**Status:** open
-**Area:** renderer / presets / schema
+**Status:** fixed (common-fractal wave + Nova repair slice)
 
-Nova is visibly wrong because the shipped code mixes two incompatible contracts:
-- The iteration loop implements Nova as an escape-time hybrid (`z = z - alpha * f(z)/f'(z) + c`, `z0 = 0`, `c = coord`, escape radius 2).
-- The preset layer still defaults Nova to `joy_basins` coloring.
-- The renderer still routes Nova through the root-finding coloring branch instead of the escape-time coloring branch.
-- The schema help text and visibility rules still describe Nova as basin-colored alongside Newton and the Explaino family.
-
-Result:
-- Nova does not present like a proper escape-time fractal.
-- The default UI state lands on a misleading coloring mode.
-- Renderer comments and actual branch structure disagree, which makes future work riskier.
-
-Required fix shape:
-1. Treat Nova as escape-time everywhere: presets, schema visibility/help text, and renderer coloring dispatch.
-2. Add focused headless tests for Nova preset defaults and coloring validity.
-3. Re-capture diagnostics for Nova after the fix to choose a better default view and exposure.
-
-**Files:** `ui_app/src/fractal_renderer.cu`, `ui_app/src/fractal_derived_fields.cpp`, `ui/fractal_binding_surface_v1.ui_schema*.json`
+Nova now correctly treated as escape-time everywhere: presets, schema visibility, renderer coloring dispatch.
+Focused headless tests added for Nova defaults and coloring validity.
+Probe coverage confirms Nova is sampleable and escape-time classified.
 
 ---
 
@@ -142,3 +127,14 @@ Headless `--capture-diagnostic` always writes to `runtime/diagnostics/last/`. Co
 The sweep-mode seed path now has both focused headless coverage and a live runtime regression. `ui_app/tests/test_viewer_sweep.cpp` pins combined-seed application plus pause/step semantics, and `tests/test_fractal_runtime_sweep_pause.py` verifies that the live viewer image changes while the sweep is running and becomes stable after a Space-key pause.
 
 **Files:** `ui_app/src/main.cpp`, `ui_app/src/viewer_sweep.cpp`, `tests/test_fractal_runtime_sweep_pause.py`
+
+---
+
+## P2 — Live GUI sweep regression test is fragile
+
+**Status:** open (not a code bug; test environment sensitivity)
+**Area:** testing
+
+`tests/test_fractal_runtime_sweep_pause.py::test_runtime_sweep_changes_live_view_and_space_pauses_it` intermittently fails because the pixel-diff threshold (>1.0) requires visible frame change within 0.8 seconds. On slow GPU init, minimized windows, or RDP sessions the diff can be below threshold without indicating a real bug. The headless sweep coverage in `test_viewer_sweep.cpp` is the reliable contract test.
+
+Not a merge blocker. Future stabilization could use a retry loop or lower threshold.
