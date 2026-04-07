@@ -97,6 +97,13 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_schema_startup_policy.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_schema_binding.cpp ^
+  /Fe:"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
@@ -240,6 +247,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_schema_startup_policy.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_schema_binding.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_finding_archive_actions.exe"

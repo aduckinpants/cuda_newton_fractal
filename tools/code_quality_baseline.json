@@ -1,5 +1,5 @@
 {
-  "score": 69,
+  "score": 76,
   "file_stats": {
     "ui_app\\src\\cli_args.cpp": {
       "lines": 78,
@@ -97,9 +97,9 @@
       "max_fn_lines": 21
     },
     "ui_app\\src\\schema_binding.cpp": {
-      "lines": 832,
-      "function_count": 15,
-      "max_fn_lines": 284
+      "lines": 995,
+      "function_count": 27,
+      "max_fn_lines": 83
     },
     "ui_app\\src\\schema_startup_policy.cpp": {
       "lines": 13,

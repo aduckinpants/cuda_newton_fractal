@@ -23,6 +23,7 @@
     "render_capture_guard",
     "runtime_reset",
     "sample_tier_resolver",
+    "schema_binding",
     "schema_startup_policy",
     "sweep_player",
     "ui_schema",

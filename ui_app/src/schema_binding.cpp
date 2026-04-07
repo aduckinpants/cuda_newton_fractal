@@ -353,95 +353,209 @@ bool BindingContext::BindBool(const std::string& path, bool** outPtr) {
     return false;
 }
 
+namespace {
+
+bool ApplyBoolSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
+    bool* value = nullptr;
+    if (!ctx.BindBool(control.binding.path, &value) || !value) return false;
+
+    bool newValue = *value;
+    if (control.def.is_bool()) newValue = control.def.as_bool();
+    else if (control.def.is_number()) newValue = (control.def.as_number() != 0.0);
+    else if (control.def.is_string()) newValue = (control.def.as_string() == "true" || control.def.as_string() == "1");
+    else return false;
+
+    if (*value == newValue) return false;
+    *value = newValue;
+    if (ioDirty) *ioDirty = true;
+    return true;
+}
+
+bool ApplyIntSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
+    int* value = nullptr;
+    if (!ctx.BindInt(control.binding.path, &value) || !value) return false;
+
+    int newValue = *value;
+    if (control.def.is_number()) newValue = static_cast<int>(control.def.as_number());
+    else if (control.def.is_string()) {
+        try {
+            newValue = std::stoi(control.def.as_string());
+        } catch (...) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    if (*value == newValue) return false;
+    *value = newValue;
+    if (ioDirty) *ioDirty = true;
+    return true;
+}
+
+bool ApplyFloatSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
+    float* value = nullptr;
+    if (!ctx.BindFloat(control.binding.path, &value) || !value) return false;
+
+    float newValue = *value;
+    if (control.def.is_number()) newValue = static_cast<float>(control.def.as_number());
+    else if (control.def.is_string()) {
+        try {
+            newValue = static_cast<float>(std::stod(control.def.as_string()));
+        } catch (...) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    if (*value == newValue) return false;
+    *value = newValue;
+    if (ioDirty) *ioDirty = true;
+    return true;
+}
+
+bool ApplyDoubleSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
+    double* value = nullptr;
+    if (!ctx.BindDouble(control.binding.path, &value) || !value) return false;
+
+    double newValue = *value;
+    if (control.def.is_number()) newValue = control.def.as_number();
+    else if (control.def.is_string()) {
+        try {
+            newValue = std::stod(control.def.as_string());
+        } catch (...) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    if (control.binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+        if (ExplainoSeedCombined(*ctx.view, *ctx.params) == newValue) return false;
+        ExplainoSeedSetCombined(*ctx.view, *ctx.params, newValue);
+        if (ioDirty) *ioDirty = true;
+        return true;
+    }
+
+    if (*value == newValue) return false;
+    *value = newValue;
+    if (ioDirty) *ioDirty = true;
+    return true;
+}
+
+bool ApplyEnumSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
+    if (!control.def.is_string()) return false;
+
+    const std::string currentValue = ctx.GetEnumId(control.binding.path);
+    const std::string& wantedValue = control.def.as_string();
+    if (currentValue == wantedValue) return false;
+
+    const bool applied = ctx.SetEnumId(control.binding.path, wantedValue);
+    if (applied && ioDirty) *ioDirty = true;
+    return applied;
+}
+
+bool IsKnownActionBindingPath(const std::string& path) {
+    return path == "fractal.actions.render_once" ||
+        path == "fractal.actions.reset_view" ||
+        path == "fractal.actions.reset_all" ||
+        path == "fractal.actions.load_state" ||
+        path == "fractal.actions.capture_finding" ||
+        path == "fractal.actions.capture_diagnostic" ||
+        path == "fractal.actions.next_seed" ||
+        path == "fractal.actions.prev_seed";
+}
+
+bool ValidateEnumBindingPath(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
+    if (!ctx.GetEnumId(control.binding.path).empty()) {
+        return true;
+    }
+
+    ViewState viewCopy{};
+    KernelParams paramsCopy{};
+    RenderSettings renderCopy{};
+    LensSettings lensCopy{};
+    BindingContext probe = ctx;
+    if (ctx.view) {
+        viewCopy = *ctx.view;
+        probe.view = &viewCopy;
+    }
+    if (ctx.params) {
+        paramsCopy = *ctx.params;
+        probe.params = &paramsCopy;
+    }
+    if (ctx.render) {
+        renderCopy = *ctx.render;
+        probe.render = &renderCopy;
+    }
+    if (ctx.lens) {
+        lensCopy = *ctx.lens;
+        probe.lens = &lensCopy;
+    }
+
+    for (const auto& option : control.options) {
+        if (probe.SetEnumId(control.binding.path, option.id)) {
+            return true;
+        }
+    }
+
+    if (outError) {
+        *outError = "Unknown enum binding path: " + control.binding.path + " (control: " + control.id + ")";
+    }
+    return false;
+}
+
+bool ValidateParamBinding(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
+    const std::string& path = control.binding.path;
+    if (control.value_type == "bool") {
+        bool* value = nullptr;
+        if (!ctx.BindBool(path, &value) || !value) {
+            if (outError) *outError = "Bind failed for bool path: " + path + " (control: " + control.id + ")";
+            return false;
+        }
+        return true;
+    }
+    if (control.value_type == "int") {
+        int* value = nullptr;
+        if (!ctx.BindInt(path, &value) || !value) {
+            if (outError) *outError = "Bind failed for int path: " + path + " (control: " + control.id + ")";
+            return false;
+        }
+        return true;
+    }
+    if (control.value_type == "float") {
+        float* value = nullptr;
+        if (!ctx.BindFloat(path, &value) || !value) {
+            if (outError) *outError = "Bind failed for float path: " + path + " (control: " + control.id + ")";
+            return false;
+        }
+        return true;
+    }
+    if (control.value_type == "double") {
+        double* value = nullptr;
+        if (!ctx.BindDouble(path, &value) || !value) {
+            if (outError) *outError = "Bind failed for double path: " + path + " (control: " + control.id + ")";
+            return false;
+        }
+        return true;
+    }
+    if (control.value_type == "enum") {
+        return ValidateEnumBindingPath(control, ctx, outError);
+    }
+    return true;
+}
+
+} // namespace
+
 bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty) {
     if (!c.has_binding || c.binding.kind != "param" || !c.has_default) return false;
 
-    const std::string& path = c.binding.path;
-
-    if (c.value_type == "bool") {
-        bool* ptr = nullptr;
-        if (!ctx.BindBool(path, &ptr) || !ptr) return false;
-        bool newV = *ptr;
-        if (c.def.is_bool()) newV = c.def.as_bool();
-        else if (c.def.is_number()) newV = (c.def.as_number() != 0.0);
-        else if (c.def.is_string()) newV = (c.def.as_string() == "true" || c.def.as_string() == "1");
-        else return false;
-        if (*ptr != newV) {
-            *ptr = newV;
-            if (ioDirty) *ioDirty = true;
-            return true;
-        }
-        return false;
-    }
-
-    if (c.value_type == "int") {
-        int* ptr = nullptr;
-        if (!ctx.BindInt(path, &ptr) || !ptr) return false;
-        int newV = *ptr;
-        if (c.def.is_number()) newV = (int)c.def.as_number();
-        else if (c.def.is_string()) {
-            try { newV = std::stoi(c.def.as_string()); } catch (...) { return false; }
-        } else return false;
-        if (*ptr != newV) {
-            *ptr = newV;
-            if (ioDirty) *ioDirty = true;
-            return true;
-        }
-        return false;
-    }
-
-    if (c.value_type == "float") {
-        float* ptr = nullptr;
-        if (!ctx.BindFloat(path, &ptr) || !ptr) return false;
-        float newV = *ptr;
-        if (c.def.is_number()) newV = (float)c.def.as_number();
-        else if (c.def.is_string()) {
-            try { newV = (float)std::stod(c.def.as_string()); } catch (...) { return false; }
-        } else return false;
-        if (*ptr != newV) {
-            *ptr = newV;
-            if (ioDirty) *ioDirty = true;
-            return true;
-        }
-        return false;
-    }
-
-    if (c.value_type == "double") {
-        double* ptr = nullptr;
-        if (!ctx.BindDouble(path, &ptr) || !ptr) return false;
-        double newV = *ptr;
-        if (c.def.is_number()) newV = c.def.as_number();
-        else if (c.def.is_string()) {
-            try { newV = std::stod(c.def.as_string()); } catch (...) { return false; }
-        } else return false;
-        if (path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
-            if (ExplainoSeedCombined(*ctx.view, *ctx.params) != newV) {
-                ExplainoSeedSetCombined(*ctx.view, *ctx.params, newV);
-                if (ioDirty) *ioDirty = true;
-                return true;
-            }
-            return false;
-        }
-        if (*ptr != newV) {
-            *ptr = newV;
-            if (ioDirty) *ioDirty = true;
-            return true;
-        }
-        return false;
-    }
-
-    if (c.value_type == "enum") {
-        if (!c.def.is_string()) return false;
-        std::string cur = ctx.GetEnumId(path);
-        const std::string& want = c.def.as_string();
-        if (cur != want) {
-            bool ok = ctx.SetEnumId(path, want);
-            if (ok && ioDirty) *ioDirty = true;
-            return ok;
-        }
-        return false;
-    }
-
+    if (c.value_type == "bool") return ApplyBoolSchemaDefault(c, ctx, ioDirty);
+    if (c.value_type == "int") return ApplyIntSchemaDefault(c, ctx, ioDirty);
+    if (c.value_type == "float") return ApplyFloatSchemaDefault(c, ctx, ioDirty);
+    if (c.value_type == "double") return ApplyDoubleSchemaDefault(c, ctx, ioDirty);
+    if (c.value_type == "enum") return ApplyEnumSchemaDefault(c, ctx, ioDirty);
     return false;
 }
 
@@ -465,7 +579,7 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
             }
 
             if (b.kind == "action") {
-                if (!(b.path == "fractal.actions.render_once" || b.path == "fractal.actions.reset_view" || b.path == "fractal.actions.reset_all" || b.path == "fractal.actions.load_state" || b.path == "fractal.actions.capture_finding" || b.path == "fractal.actions.capture_diagnostic" || b.path == "fractal.actions.next_seed" || b.path == "fractal.actions.prev_seed")) {
+                if (!IsKnownActionBindingPath(b.path)) {
                     if (outError) *outError = "Unknown action binding path: " + b.path + " (control: " + c.id + ")";
                     return false;
                 }
@@ -477,73 +591,366 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
                 return false;
             }
 
-            if (c.value_type == "bool") {
-                bool* ptr = nullptr;
-                if (!ctx.BindBool(b.path, &ptr) || !ptr) {
-                    if (outError) *outError = "Bind failed for bool path: " + b.path + " (control: " + c.id + ")";
-                    return false;
-                }
-            } else if (c.value_type == "int") {
-                int* ptr = nullptr;
-                if (!ctx.BindInt(b.path, &ptr) || !ptr) {
-                    if (outError) *outError = "Bind failed for int path: " + b.path + " (control: " + c.id + ")";
-                    return false;
-                }
-            } else if (c.value_type == "float") {
-                float* ptr = nullptr;
-                if (!ctx.BindFloat(b.path, &ptr) || !ptr) {
-                    if (outError) *outError = "Bind failed for float path: " + b.path + " (control: " + c.id + ")";
-                    return false;
-                }
-            } else if (c.value_type == "double") {
-                double* ptr = nullptr;
-                if (!ctx.BindDouble(b.path, &ptr) || !ptr) {
-                    if (outError) *outError = "Bind failed for double path: " + b.path + " (control: " + c.id + ")";
-                    return false;
-                }
-            } else if (c.value_type == "enum") {
-                if (!ctx.GetEnumId(b.path).empty()) {
-                    continue;
-                }
-
-                ViewState viewCopy{};
-                KernelParams paramsCopy{};
-                RenderSettings renderCopy{};
-                LensSettings lensCopy{};
-                BindingContext probe = ctx;
-                if (ctx.view) {
-                    viewCopy = *ctx.view;
-                    probe.view = &viewCopy;
-                }
-                if (ctx.params) {
-                    paramsCopy = *ctx.params;
-                    probe.params = &paramsCopy;
-                }
-                if (ctx.render) {
-                    renderCopy = *ctx.render;
-                    probe.render = &renderCopy;
-                }
-                if (ctx.lens) {
-                    lensCopy = *ctx.lens;
-                    probe.lens = &lensCopy;
-                }
-
-                bool enumPathSupported = false;
-                for (const auto& option : c.options) {
-                    if (probe.SetEnumId(b.path, option.id)) {
-                        enumPathSupported = true;
-                        break;
-                    }
-                }
-                if (!enumPathSupported) {
-                    if (outError) *outError = "Unknown enum binding path: " + b.path + " (control: " + c.id + ")";
-                    return false;
-                }
+            if (!ValidateParamBinding(c, ctx, outError)) {
+                return false;
             }
         }
     }
     return true;
 }
+
+namespace {
+
+void MarkDirtyIfChanged(bool changed, bool* ioDirty) {
+    if (changed && ioDirty) *ioDirty = true;
+}
+
+void MarkCurrentItemInteraction(bool changed, bool* ioInteracted) {
+    if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) {
+        *ioInteracted = true;
+    }
+}
+
+void RenderControlHelp(const UISchemaControl& control) {
+    if (!control.has_help) {
+        return;
+    }
+
+    ImGui::TextDisabled("?");
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(300.0f);
+        ImGui::TextUnformatted(control.help.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+}
+
+bool RenderDiagnosticLabel(const UISchemaControl& control, const char* detail) {
+    ImGui::TextDisabled("%s (%s)", control.label.c_str(), detail);
+    return false;
+}
+
+bool RenderActionControl(
+    const UISchemaControl& control,
+    const UISchemaBinding& binding,
+    bool* ioRenderOnce,
+    bool* ioInteracted) {
+    if (binding.kind != "action") {
+        return RenderDiagnosticLabel(control, "bad action binding");
+    }
+
+    if (ImGui::Button(control.label.c_str())) {
+        if (ioInteracted) *ioInteracted = true;
+        if (binding.path == "fractal.actions.render_once" && ioRenderOnce) {
+            *ioRenderOnce = true;
+        }
+    }
+    return true;
+}
+
+bool RenderCheckboxControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    bool* value = nullptr;
+    if (!ctx.BindBool(binding.path, &value) || !value) {
+        return RenderDiagnosticLabel(control, "bind failed");
+    }
+
+    const bool changed = ImGui::Checkbox(control.label.c_str(), value);
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderIntControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    int* value = nullptr;
+    if (!ctx.BindInt(binding.path, &value) || !value) {
+        return RenderDiagnosticLabel(control, "bind failed");
+    }
+
+    const int minValue = control.has_min ? static_cast<int>(control.min) : 0;
+    const int maxValue = control.has_max ? static_cast<int>(control.max) : 100;
+
+    bool changed = false;
+    if (control.type == "slider_int") {
+        changed = ImGui::SliderInt(control.label.c_str(), value, minValue, maxValue);
+    } else {
+        const float speed = control.has_step ? static_cast<float>(control.step) : 1.0f;
+        changed = ImGui::DragInt(control.label.c_str(), value, speed, minValue, maxValue);
+    }
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderFloatControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    float* value = nullptr;
+    if (!ctx.BindFloat(binding.path, &value) || !value) {
+        return RenderDiagnosticLabel(control, "bind failed");
+    }
+
+    const float minValue = control.has_min ? static_cast<float>(control.min) : 0.0f;
+    const float maxValue = control.has_max ? static_cast<float>(control.max) : 1.0f;
+    const float speed = control.has_step ? static_cast<float>(control.step) : 0.01f;
+    const ImGuiSliderFlags flags = control.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
+
+    bool changed = false;
+    if (control.type == "slider_float") {
+        changed = ImGui::SliderFloat(control.label.c_str(), value, minValue, maxValue, "%.5f", flags);
+    } else {
+        changed = ImGui::DragFloat(control.label.c_str(), value, speed, minValue, maxValue, "%.3f", flags);
+    }
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderExplainoSeedDoubleControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    double minValue,
+    double maxValue,
+    double speed,
+    const char* valueFormat,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    double displayed = ExplainoSeedCombined(*ctx.view, *ctx.params);
+    bool changed = false;
+    if (control.type == "slider_double") {
+        changed = ImGui::SliderScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, &minValue, &maxValue, valueFormat);
+    } else {
+        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speed), &minValue, &maxValue, valueFormat);
+    }
+    ImGui::SameLine();
+    const bool typedChanged = ImGui::InputDouble("##val", &displayed, 0.0, 0.0, valueFormat);
+    if (typedChanged) changed = true;
+    if (changed) {
+        ExplainoSeedSetCombined(*ctx.view, *ctx.params, displayed);
+    }
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderDoubleControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    double* value = nullptr;
+    if (!ctx.BindDouble(binding.path, &value) || !value) {
+        return RenderDiagnosticLabel(control, "bind failed");
+    }
+
+    const double minValue = control.has_min ? control.min : 0.0;
+    const double maxValue = control.has_max ? control.max : 1.0;
+    const double speed = control.has_step ? control.step : 0.001;
+    const char* valueFormat = "%.6f";
+
+    if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+        return RenderExplainoSeedDoubleControl(control, ctx, minValue, maxValue, speed, valueFormat, ioDirty, ioInteracted);
+    }
+
+    bool changed = false;
+    if (control.type == "slider_double") {
+        changed = ImGui::SliderScalar(control.label.c_str(), ImGuiDataType_Double, value, &minValue, &maxValue, valueFormat);
+    } else {
+        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, value, static_cast<float>(speed), &minValue, &maxValue, valueFormat);
+    }
+    ImGui::SameLine();
+    const bool typedChanged = ImGui::InputDouble("##val", value, 0.0, 0.0, valueFormat);
+    if (typedChanged) changed = true;
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderIntComboControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    int* value = nullptr;
+    if (!ctx.BindInt(binding.path, &value) || !value) {
+        return RenderDiagnosticLabel(control, "bind failed");
+    }
+
+    int currentIndex = 0;
+    for (int index = 0; index < static_cast<int>(control.options.size()); ++index) {
+        try {
+            const int optionValue = std::stoi(control.options[index].id);
+            if (optionValue == *value) {
+                currentIndex = index;
+                break;
+            }
+        } catch (...) {
+        }
+    }
+
+    std::vector<const char*> labels;
+    labels.reserve(control.options.size());
+    for (const auto& option : control.options) {
+        labels.push_back(option.label.c_str());
+    }
+
+    bool changed = false;
+    if (!labels.empty() && ImGui::Combo(control.label.c_str(), &currentIndex, labels.data(), static_cast<int>(labels.size()))) {
+        if (currentIndex >= 0 && currentIndex < static_cast<int>(control.options.size())) {
+            try {
+                const int newValue = std::stoi(control.options[currentIndex].id);
+                if (newValue != *value) {
+                    *value = newValue;
+                    changed = true;
+                }
+            } catch (...) {
+            }
+        }
+    }
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderGroupedEnumComboControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    const std::string& currentId,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    const std::vector<std::string> groups = CollectOptionGroups(control);
+    if (groups.size() <= 1) {
+        return false;
+    }
+
+    std::string currentGroup = OptionGroupForId(control, currentId);
+    if (currentGroup.empty()) {
+        currentGroup = groups.front();
+    }
+
+    int groupIndex = 0;
+    for (int index = 0; index < static_cast<int>(groups.size()); ++index) {
+        if (groups[index] == currentGroup) {
+            groupIndex = index;
+            break;
+        }
+    }
+
+    std::vector<const char*> groupLabels;
+    groupLabels.reserve(groups.size());
+    for (const auto& group : groups) {
+        groupLabels.push_back(group.c_str());
+    }
+
+    std::string selectedId = currentId;
+    bool groupChanged = false;
+    bool groupInteracted = false;
+    if (!groupLabels.empty() && ImGui::Combo("Category", &groupIndex, groupLabels.data(), static_cast<int>(groupLabels.size()))) {
+        groupInteracted = true;
+        const std::vector<const UISchemaOption*> groupedOptions = OptionsForGroup(control, groups[groupIndex]);
+        if (!groupedOptions.empty()) {
+            groupChanged = ctx.SetEnumId(binding.path, groupedOptions.front()->id);
+            MarkDirtyIfChanged(groupChanged, ioDirty);
+            selectedId = groupedOptions.front()->id;
+        }
+    }
+    groupInteracted = groupInteracted || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit();
+
+    const std::vector<const UISchemaOption*> groupedOptions = OptionsForGroup(control, groups[groupIndex]);
+    int currentIndex = 0;
+    for (int index = 0; index < static_cast<int>(groupedOptions.size()); ++index) {
+        if (groupedOptions[index]->id == selectedId) {
+            currentIndex = index;
+            break;
+        }
+    }
+
+    std::vector<const char*> labels;
+    labels.reserve(groupedOptions.size());
+    for (const UISchemaOption* option : groupedOptions) {
+        labels.push_back(option->label.c_str());
+    }
+
+    bool valueChanged = false;
+    if (!labels.empty() && ImGui::Combo(control.label.c_str(), &currentIndex, labels.data(), static_cast<int>(labels.size()))) {
+        if (currentIndex >= 0 && currentIndex < static_cast<int>(groupedOptions.size())) {
+            valueChanged = ctx.SetEnumId(binding.path, groupedOptions[currentIndex]->id);
+            MarkDirtyIfChanged(valueChanged, ioDirty);
+        }
+    }
+    const bool valueInteracted = valueChanged || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit();
+    if ((groupChanged || valueChanged || groupInteracted || valueInteracted) && ioInteracted) {
+        *ioInteracted = true;
+    }
+    return groupChanged || valueChanged;
+}
+
+bool RenderEnumComboControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    const std::string currentId = ctx.GetEnumId(binding.path);
+    if (HasGroupedOptions(control) && RenderGroupedEnumComboControl(control, ctx, binding, currentId, ioDirty, ioInteracted)) {
+        return true;
+    }
+
+    int currentIndex = 0;
+    for (int index = 0; index < static_cast<int>(control.options.size()); ++index) {
+        if (control.options[index].id == currentId) {
+            currentIndex = index;
+            break;
+        }
+    }
+
+    std::vector<const char*> labels;
+    labels.reserve(control.options.size());
+    for (const auto& option : control.options) {
+        labels.push_back(option.label.c_str());
+    }
+
+    bool changed = false;
+    if (!labels.empty() && ImGui::Combo(control.label.c_str(), &currentIndex, labels.data(), static_cast<int>(labels.size()))) {
+        if (currentIndex >= 0 && currentIndex < static_cast<int>(control.options.size())) {
+            changed = ctx.SetEnumId(binding.path, control.options[currentIndex].id);
+        }
+    }
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
+bool RenderComboControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    if (control.value_type == "int") {
+        return RenderIntComboControl(control, ctx, binding, ioDirty, ioInteracted);
+    }
+    return RenderEnumComboControl(control, ctx, binding, ioDirty, ioInteracted);
+}
+
+} // namespace
 
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted) {
     if (c.has_visible_if) {
@@ -552,280 +959,36 @@ bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool
 
     ImGui::PushID(c.id.c_str());
 
-    if (c.has_help) {
-        ImGui::TextDisabled("?");
-        if (ImGui::IsItemHovered()) {
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(300.0f);
-            ImGui::TextUnformatted(c.help.c_str());
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
-        ImGui::SameLine();
-    }
+    RenderControlHelp(c);
 
     if (!c.has_binding) {
-        ImGui::TextDisabled("%s (UNBOUND)", c.label.c_str());
+        RenderDiagnosticLabel(c, "UNBOUND");
         ImGui::PopID();
         return false;
     }
 
     const auto& b = c.binding;
+
+    bool result = false;
     if (c.type == "button") {
-        if (b.kind != "action") {
-            ImGui::TextDisabled("%s (bad action binding)", c.label.c_str());
-            ImGui::PopID();
-            return false;
-        }
-        if (ImGui::Button(c.label.c_str())) {
-            if (ioInteracted) *ioInteracted = true;
-            if (b.path == "fractal.actions.render_once") {
-                if (ioRenderOnce) *ioRenderOnce = true;
-            }
-        }
-        ImGui::PopID();
-        return true;
+        result = RenderActionControl(c, b, ioRenderOnce, ioInteracted);
+    } else if (b.kind != "param") {
+        result = RenderDiagnosticLabel(c, "bad param binding");
+    } else if (c.type == "checkbox") {
+        result = RenderCheckboxControl(c, ctx, b, ioDirty, ioInteracted);
+    } else if (c.type == "slider_int" || c.type == "drag_int") {
+        result = RenderIntControl(c, ctx, b, ioDirty, ioInteracted);
+    } else if (c.type == "slider_float" || c.type == "drag_float") {
+        result = RenderFloatControl(c, ctx, b, ioDirty, ioInteracted);
+    } else if (c.type == "slider_double" || c.type == "drag_double") {
+        result = RenderDoubleControl(c, ctx, b, ioDirty, ioInteracted);
+    } else if (c.type == "combo") {
+        result = RenderComboControl(c, ctx, b, ioDirty, ioInteracted);
+    } else {
+        ImGui::TextDisabled("%s (unsupported control type: %s)", c.label.c_str(), c.type.c_str());
+        result = false;
     }
 
-    if (b.kind != "param") {
-        ImGui::TextDisabled("%s (bad param binding)", c.label.c_str());
-        ImGui::PopID();
-        return false;
-    }
-
-    if (c.type == "checkbox") {
-        bool* ptr = nullptr;
-        if (!ctx.BindBool(b.path, &ptr) || !ptr) {
-            ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
-            ImGui::PopID();
-            return false;
-        }
-        bool changed = ImGui::Checkbox(c.label.c_str(), ptr);
-        if (changed && ioDirty) *ioDirty = true;
-        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-        ImGui::PopID();
-        return changed;
-    }
-
-    if (c.type == "slider_int" || c.type == "drag_int") {
-        int* ptr = nullptr;
-        if (!ctx.BindInt(b.path, &ptr) || !ptr) {
-            ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
-            ImGui::PopID();
-            return false;
-        }
-
-        int minV = c.has_min ? (int)c.min : 0;
-        int maxV = c.has_max ? (int)c.max : 100;
-
-        bool changed = false;
-        if (c.type == "slider_int") {
-            changed = ImGui::SliderInt(c.label.c_str(), ptr, minV, maxV);
-        } else {
-            float speed = c.has_step ? (float)c.step : 1.0f;
-            changed = ImGui::DragInt(c.label.c_str(), ptr, speed, minV, maxV);
-        }
-        if (changed && ioDirty) *ioDirty = true;
-        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-        ImGui::PopID();
-        return changed;
-    }
-
-    if (c.type == "slider_float" || c.type == "drag_float") {
-        float* ptr = nullptr;
-        if (!ctx.BindFloat(b.path, &ptr) || !ptr) {
-            ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
-            ImGui::PopID();
-            return false;
-        }
-
-        float minV = c.has_min ? (float)c.min : 0.0f;
-        float maxV = c.has_max ? (float)c.max : 1.0f;
-        float speed = c.has_step ? (float)c.step : 0.01f;
-
-        bool changed = false;
-        ImGuiSliderFlags flags = c.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
-        if (c.type == "slider_float") {
-            changed = ImGui::SliderFloat(c.label.c_str(), ptr, minV, maxV, "%.5f", flags);
-        } else {
-            changed = ImGui::DragFloat(c.label.c_str(), ptr, speed, minV, maxV, "%.3f", flags);
-        }
-        if (changed && ioDirty) *ioDirty = true;
-        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-        ImGui::PopID();
-        return changed;
-    }
-
-    if (c.type == "slider_double" || c.type == "drag_double") {
-        double* ptr = nullptr;
-        if (!ctx.BindDouble(b.path, &ptr) || !ptr) {
-            ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
-            ImGui::PopID();
-            return false;
-        }
-
-        double minV = c.has_min ? c.min : 0.0;
-        double maxV = c.has_max ? c.max : 1.0;
-        double speedD = c.has_step ? c.step : 0.001;
-        const char* valueFormat = "%.6f";
-
-        if (b.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
-            double displayed = ExplainoSeedCombined(*ctx.view, *ctx.params);
-            bool changed = false;
-            if (c.type == "slider_double") {
-                changed = ImGui::SliderScalar(c.label.c_str(), ImGuiDataType_Double, &displayed, &minV, &maxV, valueFormat);
-            } else {
-                changed = ImGui::DragScalar(c.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speedD), &minV, &maxV, valueFormat);
-            }
-            ImGui::SameLine();
-            bool typedChanged = ImGui::InputDouble("##val", &displayed, 0.0, 0.0, valueFormat);
-            if (typedChanged) changed = true;
-            if (changed) {
-                ExplainoSeedSetCombined(*ctx.view, *ctx.params, displayed);
-                if (ioDirty) *ioDirty = true;
-            }
-            if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-            ImGui::PopID();
-            return changed;
-        }
-
-        bool changed = false;
-        if (c.type == "slider_double") {
-            changed = ImGui::SliderScalar(c.label.c_str(), ImGuiDataType_Double, ptr, &minV, &maxV, valueFormat);
-        } else {
-            changed = ImGui::DragScalar(c.label.c_str(), ImGuiDataType_Double, ptr, static_cast<float>(speedD), &minV, &maxV, valueFormat);
-        }
-        ImGui::SameLine();
-        bool typedChanged = ImGui::InputDouble("##val", ptr, 0.0, 0.0, valueFormat);
-        if (typedChanged) changed = true;
-        if (changed && ioDirty) *ioDirty = true;
-        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-        ImGui::PopID();
-        return changed;
-    }
-
-    if (c.type == "combo") {
-        // Int-valued combos: option ids are integer strings
-        if (c.value_type == "int") {
-            int* ptr = nullptr;
-            if (!ctx.BindInt(b.path, &ptr) || !ptr) {
-                ImGui::TextDisabled("%s (bind failed)", c.label.c_str());
-                ImGui::PopID();
-                return false;
-            }
-
-            int curIndex = 0;
-            for (int i = 0; i < (int)c.options.size(); i++) {
-                try {
-                    int optV = std::stoi(c.options[i].id);
-                    if (optV == *ptr) { curIndex = i; break; }
-                } catch (...) {}
-            }
-
-            std::vector<const char*> labels;
-            labels.reserve(c.options.size());
-            for (const auto& o : c.options) labels.push_back(o.label.c_str());
-
-            bool changed = false;
-            if (!labels.empty() && ImGui::Combo(c.label.c_str(), &curIndex, labels.data(), (int)labels.size())) {
-                if (curIndex >= 0 && curIndex < (int)c.options.size()) {
-                    try {
-                        int newV = std::stoi(c.options[curIndex].id);
-                        if (newV != *ptr) {
-                            *ptr = newV;
-                            changed = true;
-                            if (ioDirty) *ioDirty = true;
-                        }
-                    } catch (...) {}
-                }
-            }
-            if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-            ImGui::PopID();
-            return changed;
-        }
-
-        // Enum combos
-        std::string cur = ctx.GetEnumId(b.path);
-        if (HasGroupedOptions(c)) {
-            const std::vector<std::string> groups = CollectOptionGroups(c);
-            if (groups.size() > 1) {
-                std::string curGroup = OptionGroupForId(c, cur);
-                if (curGroup.empty()) curGroup = groups.front();
-
-                int groupIndex = 0;
-                for (int i = 0; i < (int)groups.size(); i++) {
-                    if (groups[i] == curGroup) {
-                        groupIndex = i;
-                        break;
-                    }
-                }
-
-                std::vector<const char*> groupLabels;
-                groupLabels.reserve(groups.size());
-                for (const auto& group : groups) groupLabels.push_back(group.c_str());
-
-                bool changed = false;
-                bool groupInteracted = false;
-                if (!groupLabels.empty() && ImGui::Combo("Category", &groupIndex, groupLabels.data(), (int)groupLabels.size())) {
-                    groupInteracted = true;
-                    const std::vector<const UISchemaOption*> groupedOptions = OptionsForGroup(c, groups[groupIndex]);
-                    if (!groupedOptions.empty()) {
-                        changed = ctx.SetEnumId(b.path, groupedOptions.front()->id);
-                        if (changed && ioDirty) *ioDirty = true;
-                        cur = groupedOptions.front()->id;
-                    }
-                }
-                groupInteracted = groupInteracted || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit();
-
-                const std::vector<const UISchemaOption*> groupedOptions = OptionsForGroup(c, groups[groupIndex]);
-                int curIndex = 0;
-                for (int i = 0; i < (int)groupedOptions.size(); i++) {
-                    if (groupedOptions[i]->id == cur) {
-                        curIndex = i;
-                        break;
-                    }
-                }
-
-                std::vector<const char*> labels;
-                labels.reserve(groupedOptions.size());
-                for (const UISchemaOption* option : groupedOptions) labels.push_back(option->label.c_str());
-
-                bool valueChanged = false;
-                if (!labels.empty() && ImGui::Combo(c.label.c_str(), &curIndex, labels.data(), (int)labels.size())) {
-                    if (curIndex >= 0 && curIndex < (int)groupedOptions.size()) {
-                        valueChanged = ctx.SetEnumId(b.path, groupedOptions[curIndex]->id);
-                        if (valueChanged && ioDirty) *ioDirty = true;
-                    }
-                }
-                const bool valueInteracted = valueChanged || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit();
-                if ((changed || valueChanged || groupInteracted || valueInteracted) && ioInteracted) *ioInteracted = true;
-                ImGui::PopID();
-                return changed || valueChanged;
-            }
-        }
-
-        int curIndex = 0;
-        for (int i = 0; i < (int)c.options.size(); i++) {
-            if (c.options[i].id == cur) { curIndex = i; break; }
-        }
-
-        std::vector<const char*> labels;
-        labels.reserve(c.options.size());
-        for (const auto& o : c.options) labels.push_back(o.label.c_str());
-
-        bool changed = false;
-        if (!labels.empty() && ImGui::Combo(c.label.c_str(), &curIndex, labels.data(), (int)labels.size())) {
-            if (curIndex >= 0 && curIndex < (int)c.options.size()) {
-                changed = ctx.SetEnumId(b.path, c.options[curIndex].id);
-                if (changed && ioDirty) *ioDirty = true;
-            }
-        }
-        if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) *ioInteracted = true;
-        ImGui::PopID();
-        return changed;
-    }
-
-    ImGui::TextDisabled("%s (unsupported control type: %s)", c.label.c_str(), c.type.c_str());
     ImGui::PopID();
-    return false;
+    return result;
 }
