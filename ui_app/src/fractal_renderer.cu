@@ -4,6 +4,7 @@
 #include "escape_time_specialized_formulas.h"
 #include "fractal_runtime_validation.h"
 #include "explaino_seed_curve.h"
+#include "perturbation_reference_orbit.h"
 #include "sample_tier_resolver.h"
 
 #include <cuda_runtime.h>
@@ -1491,9 +1492,7 @@ struct CachedBuffers {
     // Host-side ref-orbit cache to avoid rebuilding/uploading every frame.
     std::vector<double2> hostRefOrbit;
     bool hostRefValid = false;
-    FractalType hostRefType = FractalType::newton;
-    double2 hostRefC0 = make_double2(0.0, 0.0);
-    int hostRefLen = 0;
+    PerturbationReferenceOrbitCacheKey hostRefKey{};
 };
 
 CachedBuffers g_cached;
@@ -1515,9 +1514,7 @@ bool ensure_buffers(int w, int h, const char** outError) {
     g_cached.refOrbitLen = 0;
     g_cached.hostRefOrbit.clear();
     g_cached.hostRefValid = false;
-    g_cached.hostRefType = FractalType::newton;
-    g_cached.hostRefC0 = make_double2(0.0, 0.0);
-    g_cached.hostRefLen = 0;
+    g_cached.hostRefKey = {};
 
     size_t bytes = (size_t)w * (size_t)h * sizeof(uint32_t);
     if (cudaMalloc(&g_cached.d_rgba, bytes) != cudaSuccess) {
@@ -1600,47 +1597,17 @@ bool RenderFractalCUDA(
     resolvedRender.resolved_eval = ResolveSampleEvalMode(
         view.fractal_type, render.sample_tier, view.log2_zoom);
 
-    // Perturbation deep zoom (Mandelbrot/Julia): build and upload a double-precision reference orbit.
-    // This is enabled only at high zoom to extend effective precision.
-    const double kPerturbZoomThreshold = 1.0e10;
-    const double kPerturbLog2Threshold = log(kPerturbZoomThreshold) / log(2.0);
-    const bool wantPerturb = (view.fractal_type == FractalType::mandelbrot || view.fractal_type == FractalType::julia) && (view.log2_zoom >= kPerturbLog2Threshold);
-    double2 refC0 = make_double2((double)view.center_hp_x, (double)view.center_hp_y);
-    int refLen = 0;
+    const PerturbationReferenceOrbitRequest perturbRequest = ResolvePerturbationReferenceOrbitRequest(view, params);
+    const bool wantPerturb = perturbRequest.enabled;
+    const double2 refC0 = make_double2(perturbRequest.refCx, perturbRequest.refCy);
+    const int refLen = perturbRequest.refLen;
     if (wantPerturb) {
-        refLen = max(1, params.max_iter) + 1;
         if (!ensure_ref_orbit(refLen, outError)) return false;
 
-        const bool sameKey =
-            g_cached.hostRefValid &&
-            g_cached.hostRefType == view.fractal_type &&
-            g_cached.hostRefLen == refLen &&
-            g_cached.hostRefC0.x == refC0.x &&
-            g_cached.hostRefC0.y == refC0.y;
+        const bool sameKey = g_cached.hostRefValid && MatchesPerturbationReferenceOrbitCacheKey(g_cached.hostRefKey, perturbRequest);
 
         if (!sameKey) {
-            g_cached.hostRefOrbit.resize((size_t)refLen);
-
-            double zx = 0.0;
-            double zy = 0.0;
-            double cx = refC0.x;
-            double cy = refC0.y;
-
-            if (view.fractal_type == FractalType::julia) {
-                zx = refC0.x;
-                zy = refC0.y;
-                cx = -0.7;
-                cy = 0.27015;
-            }
-
-            g_cached.hostRefOrbit[0] = make_double2(zx, zy);
-            for (int i = 0; i < refLen - 1; ++i) {
-                double nx = zx * zx - zy * zy + cx;
-                double ny = 2.0 * zx * zy + cy;
-                zx = nx;
-                zy = ny;
-                g_cached.hostRefOrbit[i + 1] = make_double2(zx, zy);
-            }
+            BuildPerturbationReferenceOrbit(perturbRequest, &g_cached.hostRefOrbit);
 
             if (cudaMemcpy(g_cached.d_refOrbit, g_cached.hostRefOrbit.data(), (size_t)refLen * sizeof(double2), cudaMemcpyHostToDevice) != cudaSuccess) {
                 if (outError) *outError = "cudaMemcpy failed for ref orbit";
@@ -1648,9 +1615,7 @@ bool RenderFractalCUDA(
             }
 
             g_cached.hostRefValid = true;
-            g_cached.hostRefType = view.fractal_type;
-            g_cached.hostRefC0 = refC0;
-            g_cached.hostRefLen = refLen;
+            g_cached.hostRefKey = MakePerturbationReferenceOrbitCacheKey(perturbRequest);
         }
     }
 

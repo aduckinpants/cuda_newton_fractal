@@ -76,27 +76,36 @@ Purpose:
 Important drift fixed:
 - `explaino_nova` now shares the same `nova_alpha` validation contract in both paths
 
+### 3.3 Specialized escape-time helper extraction
+
+Landed:
+- `ui_app/src/escape_time_specialized_formulas.h`
+
+Purpose:
+- unify the specialized McMullen and Collatz escape-time loops used by the CUDA renderer and CPU probe path
+
+Coverage now includes:
+- McMullen
+- Collatz
+
+Important contract preserved:
+- McMullen pole handling stays explicit in the probe path
+- both paths share the `10000` specialized escape-radius contract
+
+### 3.4 Perturbation reference-orbit extraction
+
+Landed:
+- `ui_app/src/perturbation_reference_orbit.h`
+
+Purpose:
+- move host-side perturbation enablement, cache-key matching, and reference-orbit generation out of `RenderFractalCUDA(...)`
+
+Important contract preserved:
+- perturbation stays limited to deep-zoom Mandelbrot and Julia
+- the reference orbit still keys off `center_hp_x/y` and `max_iter`
+- Julia keeps the existing reference-`z0` plus fixed-constant orbit contract
+
 ## 4) Next Cleanup Slices
-
-### Slice A — Specialized escape-time helper extraction
-
-Target:
-- extract McMullen and Collatz specialized loops into dedicated helpers instead of leaving them inline in the renderer monolith and probe sampler
-
-Exit criteria:
-- focused helper test(s)
-- renderer/probe call the helper(s)
-- no behavior changes for specialized families
-
-### Slice B — Perturbation/reference-orbit extraction
-
-Target:
-- move host reference-orbit generation and cache key logic out of `RenderFractalCUDA(...)`
-
-Exit criteria:
-- render entrypoint gets smaller
-- perturbation enablement stays explicit and unchanged
-- cache/state handling is easier to reason about in isolation
 
 ### Slice C — Escape-time coloring extraction
 
@@ -126,7 +135,7 @@ Exit criteria:
 
 The best next bounded cleanup slice is:
 
-1. extract specialized McMullen/Collatz helpers
-2. leave perturbation and coloring alone for that slice
+1. isolate escape-time coloring helpers from `kernel_render`
+2. leave perturbation cache plumbing and specialized-family logic alone for that slice
 3. validate with helper + viewer builds
 4. checkpoint immediately
