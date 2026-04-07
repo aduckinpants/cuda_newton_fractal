@@ -72,9 +72,9 @@
       "max_fn_lines": 23
     },
     "ui_app\\src\\main.cpp": {
-      "lines": 1326,
+      "lines": 1176,
       "function_count": 22,
-      "max_fn_lines": 941
+      "max_fn_lines": 790
     },
     "ui_app\\src\\render_capture_guard.cpp": {
       "lines": 61,
@@ -120,6 +120,11 @@
       "lines": 37,
       "function_count": 7,
       "max_fn_lines": 7
+    },
+    "ui_app\\src\\viewer_cli.cpp": {
+      "lines": 101,
+      "function_count": 4,
+      "max_fn_lines": 76
     },
     "ui_app\\src\\viewer_render_pacing.cpp": {
       "lines": 146,
@@ -318,6 +323,11 @@
     },
     "ui_app\\src\\view_hp_sync.h": {
       "lines": 18,
+      "function_count": 0,
+      "max_fn_lines": 0
+    },
+    "ui_app\\src\\viewer_cli.h": {
+      "lines": 91,
       "function_count": 0,
       "max_fn_lines": 0
     },

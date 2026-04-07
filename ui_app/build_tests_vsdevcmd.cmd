@@ -23,6 +23,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\cli_args.cpp .\src\viewer_cli.cpp .\tests\test_viewer_cli.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_cli.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\tests\test_json_min.cpp ^
   /Fe:"%TESTROOT%\test_json_min.exe"
 if errorlevel 1 exit /b 1
@@ -202,6 +207,9 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_cli_args.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_viewer_cli.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_json_min.exe"

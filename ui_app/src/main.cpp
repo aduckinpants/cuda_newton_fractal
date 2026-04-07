@@ -21,6 +21,7 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "cli_args.h"
+#include "viewer_cli.h"
 #include "diagnostics_capture.h"
 #include "finding_archive_actions.h"
 #include "finding_state_actions.h"
@@ -384,190 +385,39 @@ static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<std::string> args = GetCommandLineArgsUtf8();
-    const bool validateUiOnly = HasArg(args, "--validate-ui");
-    const bool captureDiagnosticOnly = HasArg(args, "--capture-diagnostic");
-    const bool captureFindingOnly = HasArg(args, "--capture-finding");
-    const bool sampleRequestStdin = HasArg(args, "--sample-request-stdin");
-    const bool sampleResponseStdout = HasArg(args, "--sample-response-stdout");
-    const bool describeFunctions = HasArg(args, "--describe-functions");
-    std::string describeFunctionsJsonPath;
-    const bool haveDescribeFunctionsJson = TryGetArgValue(args, "--describe-functions-json", &describeFunctionsJsonPath);
-    if (HasArg(args, "--describe-functions-json") && !haveDescribeFunctionsJson) {
-        return 1;
-    }
-    std::string sampleRequestJsonPath;
-    const bool haveSampleRequestJson = TryGetArgValue(args, "--sample-request-json", &sampleRequestJsonPath);
-    if (HasArg(args, "--sample-request-json") && !haveSampleRequestJson) {
-        return 1;
-    }
-    std::string sampleResponseJsonPath;
-    const bool haveSampleResponseJson = TryGetArgValue(args, "--sample-response-json", &sampleResponseJsonPath);
-    if (HasArg(args, "--sample-response-json") && !haveSampleResponseJson) {
-        return 1;
-    }
-    const int sampleRequestSourceCount = (sampleRequestStdin ? 1 : 0) + (haveSampleRequestJson ? 1 : 0);
-    const bool anySampleModeArg = sampleRequestSourceCount > 0 || sampleResponseStdout || haveSampleResponseJson;
+    ViewerCliArgs cli{};
+    { int rc = ParseViewerCli(args, &cli); if (rc != 0) return rc; }
     const std::string exePath = GetExePath();
 
-    if (anySampleModeArg) {
+    if (cli.any_sample_mode_arg) {
         SampleModeArgs sma;
-        sma.request_stdin = sampleRequestStdin;
-        sma.response_stdout = sampleResponseStdout;
-        sma.request_json_path = haveSampleRequestJson ? sampleRequestJsonPath : std::string();
-        sma.response_json_path = haveSampleResponseJson ? sampleResponseJsonPath : std::string();
-        sma.conflict_validate_ui = validateUiOnly;
-        sma.conflict_capture_diagnostic = captureDiagnosticOnly;
-        sma.conflict_capture_finding = captureFindingOnly;
+        sma.request_stdin = cli.sample_request_stdin;
+        sma.response_stdout = cli.sample_response_stdout;
+        sma.request_json_path = cli.have_sample_request_json ? cli.sample_request_json_path : std::string();
+        sma.response_json_path = cli.have_sample_response_json ? cli.sample_response_json_path : std::string();
+        sma.conflict_validate_ui = cli.validate_ui_only;
+        sma.conflict_capture_diagnostic = cli.capture_diagnostic_only;
+        sma.conflict_capture_finding = cli.capture_finding_only;
         return RunSampleMode(sma, exePath);
     }
 
-    // --describe-functions / --describe-functions-json: emit the engine
-    // function catalog derived from the UI schema, then exit.
-    if (describeFunctions || haveDescribeFunctionsJson) {
-        if (validateUiOnly || captureDiagnosticOnly || captureFindingOnly || anySampleModeArg) {
+    if (cli.describe_functions || cli.have_describe_functions_json) {
+        if (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
             return 1;
         }
-
         std::string exeDir = GetExeDir();
         std::vector<std::string> schemaCandidates;
         schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
         schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
         schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
-        return RunDescribeFunctionsMode(describeFunctions, haveDescribeFunctionsJson ? describeFunctionsJsonPath : std::string(), schemaCandidates);
+        return RunDescribeFunctionsMode(cli.describe_functions, cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(), schemaCandidates);
     }
 
-    if (captureDiagnosticOnly && captureFindingOnly) {
+    if (cli.capture_diagnostic_only && cli.capture_finding_only) {
         return 1;
     }
-    if (validateUiOnly && (captureDiagnosticOnly || captureFindingOnly)) {
-        return 1;
-    }
-
-    FractalType cliFractalType = FractalType::newton;
-    const bool haveCliFractalType = TryParseFractalTypeArg(args, &cliFractalType);
-    if (HasArg(args, "--fractal-type") && !haveCliFractalType) {
-        return 1;
-    }
-
-    double explainoSeedOverride = 0.0;
-    const bool haveExplainoSeedOverride = TryParseDoubleArg(args, "--explaino-seed", &explainoSeedOverride);
-    if (HasArg(args, "--explaino-seed") && !haveExplainoSeedOverride) {
-        return 1;
-    }
-
-    double explainoSeedBOverride = 0.0;
-    const bool haveExplainoSeedBOverride = TryParseDoubleArg(args, "--explaino-seed-b", &explainoSeedBOverride);
-    if (HasArg(args, "--explaino-seed-b") && !haveExplainoSeedBOverride) {
-        return 1;
-    }
-
-    double explainoMixOverride = 0.0;
-    const bool haveExplainoMixOverride = TryParseDoubleArg(args, "--explaino-mix", &explainoMixOverride);
-    if (HasArg(args, "--explaino-mix") && !haveExplainoMixOverride) {
-        return 1;
-    }
-
-    double explainoPhaseOverride = 0.0;
-    const bool haveExplainoPhaseOverride = TryParseDoubleArg(args, "--explaino-phase", &explainoPhaseOverride);
-    if (HasArg(args, "--explaino-phase") && !haveExplainoPhaseOverride) {
-        return 1;
-    }
-
-    double explainoWarpOverride = 0.0;
-    const bool haveExplainoWarpOverride = TryParseDoubleArg(args, "--explaino-warp-strength", &explainoWarpOverride);
-    if (HasArg(args, "--explaino-warp-strength") && !haveExplainoWarpOverride) {
-        return 1;
-    }
-
-    double lambdaRealOverride = 0.0;
-    const bool haveLambdaRealOverride = TryParseDoubleArg(args, "--lambda-real", &lambdaRealOverride);
-    if (HasArg(args, "--lambda-real") && !haveLambdaRealOverride) {
-        return 1;
-    }
-
-    double lambdaImagOverride = 0.0;
-    const bool haveLambdaImagOverride = TryParseDoubleArg(args, "--lambda-imag", &lambdaImagOverride);
-    if (HasArg(args, "--lambda-imag") && !haveLambdaImagOverride) {
-        return 1;
-    }
-
-    double explainoSeedDriftOverride = 0.0;
-    const bool haveExplainoSeedDriftOverride = TryParseDoubleArg(args, "--explaino-seed-drift", &explainoSeedDriftOverride);
-    if (HasArg(args, "--explaino-seed-drift") && !haveExplainoSeedDriftOverride) {
-        return 1;
-    }
-
-    int widthOverride = 0;
-    const bool haveWidthOverride = TryParseIntArg(args, "--width", &widthOverride);
-    if (HasArg(args, "--width") && !haveWidthOverride) {
-        return 1;
-    }
-
-    int heightOverride = 0;
-    const bool haveHeightOverride = TryParseIntArg(args, "--height", &heightOverride);
-    if (HasArg(args, "--height") && !haveHeightOverride) {
-        return 1;
-    }
-
-    std::string loadStateSelection;
-    const bool haveLoadStateSelection = TryGetArgValue(args, "--load-state-json", &loadStateSelection);
-    if (HasArg(args, "--load-state-json") && !haveLoadStateSelection) {
-        return 1;
-    }
-
-    std::string findingGroupArg;
-    const bool haveFindingGroupArg = TryGetArgValue(args, "--finding-group", &findingGroupArg);
-    if (HasArg(args, "--finding-group") && !haveFindingGroupArg) {
-        return 1;
-    }
-
-    std::string findingWhyArg;
-    const bool haveFindingWhyArg = TryGetArgValue(args, "--finding-why", &findingWhyArg);
-    if (HasArg(args, "--finding-why") && !haveFindingWhyArg) {
-        return 1;
-    }
-
-    double sweepSeedStart = 0.0;
-    const bool haveSweepSeedStart = TryParseDoubleArg(args, "--sweep-seed-start", &sweepSeedStart);
-    if (HasArg(args, "--sweep-seed-start") && !haveSweepSeedStart) {
-        return 1;
-    }
-
-    double sweepSeedStop = 0.0;
-    const bool haveSweepSeedStop = TryParseDoubleArg(args, "--sweep-seed-stop", &sweepSeedStop);
-    if (HasArg(args, "--sweep-seed-stop") && !haveSweepSeedStop) {
-        return 1;
-    }
-
-    double sweepSeedStep = 0.0;
-    const bool haveSweepSeedStep = TryParseDoubleArg(args, "--sweep-seed-step", &sweepSeedStep);
-    if (HasArg(args, "--sweep-seed-step") && !haveSweepSeedStep) {
-        return 1;
-    }
-
-    int sweepDwellMs = 450;
-    const bool haveSweepDwellMs = TryParseIntArg(args, "--sweep-dwell-ms", &sweepDwellMs);
-    if (HasArg(args, "--sweep-dwell-ms") && !haveSweepDwellMs) {
-        return 1;
-    }
-
-    const bool sweepLoop = HasArg(args, "--sweep-loop");
-    const bool haveAnySweepArg = haveSweepSeedStart || haveSweepSeedStop || haveSweepSeedStep || haveSweepDwellMs || sweepLoop;
-    SweepPlayerConfig sweepConfig{};
-    if (haveAnySweepArg) {
-        if (!(haveSweepSeedStart && haveSweepSeedStop && haveSweepSeedStep)) {
-            return 1;
-        }
-        sweepConfig.enabled = true;
-        sweepConfig.seed_start = sweepSeedStart;
-        sweepConfig.seed_stop = sweepSeedStop;
-        sweepConfig.seed_step = sweepSeedStep;
-        sweepConfig.dwell_seconds = (double)sweepDwellMs / 1000.0;
-        sweepConfig.loop = sweepLoop;
-    }
-
-    if ((haveWidthOverride && widthOverride <= 0) || (haveHeightOverride && heightOverride <= 0)) {
+    if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) {
         return 1;
     }
 
@@ -632,7 +482,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     {
         std::string bindError;
         if (!ValidateSchemaBindings(uiSchema, initBind, &bindError)) {
-            SchemaStartupFailureResult failure = ResolveSchemaBindingFailure(schemaPath, bindError, validateUiOnly);
+            SchemaStartupFailureResult failure = ResolveSchemaBindingFailure(schemaPath, bindError, cli.validate_ui_only);
             if (!failure.enter_safe_mode) {
                 return 1;
             }
@@ -654,40 +504,40 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             SetPolyPreset(params);
         }
 
-        if (haveLoadStateSelection) {
+        if (cli.have_load_state_json) {
             std::string loadError;
             std::string loadedStatePath;
-            if (!LoadFindingSelectionIntoRuntime(loadStateSelection, &view, &params, &render, &loadedStatePath, &loadError)) {
+            if (!LoadFindingSelectionIntoRuntime(cli.load_state_json, &view, &params, &render, &loadedStatePath, &loadError)) {
                 return 1;
             }
             loadedState = true;
             dirty = true;
         }
 
-        if (haveCliFractalType) {
-            view.fractal_type = cliFractalType;
+        if (cli.have_fractal_type) {
+            view.fractal_type = cli.fractal_type;
             ApplyFractalViewPresetDefaults(view, &dirty);
             dirty = true;
-        } else if (haveExplainoSeedOverride) {
+        } else if (cli.have_explaino_seed) {
             view.fractal_type = FractalType::explaino;
             ApplyFractalViewPresetDefaults(view, &dirty);
             dirty = true;
-        } else if (sweepConfig.enabled) {
+        } else if (cli.sweep_config.enabled) {
             view.fractal_type = FractalType::explaino;
             ApplyFractalViewPresetDefaults(view, &dirty);
             dirty = true;
         }
 
-        if (sweepConfig.enabled && !IsExplainoFamily(view.fractal_type)) {
+        if (cli.sweep_config.enabled && !IsExplainoFamily(view.fractal_type)) {
             return 1;
         }
 
-        if (haveWidthOverride) render.resolution.x = widthOverride;
-        if (haveHeightOverride) render.resolution.y = heightOverride;
+        if (cli.have_width) render.resolution.x = cli.width;
+        if (cli.have_height) render.resolution.y = cli.height;
 
-        const bool needPresetDerivedFields = !loadedState || haveCliFractalType || haveExplainoSeedOverride || sweepConfig.enabled;
+        const bool needPresetDerivedFields = !loadedState || cli.have_fractal_type || cli.have_explaino_seed || cli.sweep_config.enabled;
         if (needPresetDerivedFields) {
-            ApplyFractalDerivedFieldsAndSyncHp(view, params, &dirty, haveExplainoSeedOverride, explainoSeedOverride);
+            ApplyFractalDerivedFieldsAndSyncHp(view, params, &dirty, cli.have_explaino_seed, cli.explaino_seed);
         } else {
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, &dirty);
@@ -695,20 +545,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             SyncViewUiFromHp(view);
         }
 
-        if (haveExplainoSeedOverride) ExplainoSeedSetCombined(view, params, explainoSeedOverride);
-        if (haveExplainoPhaseOverride) view.explaino_phase = (float)explainoPhaseOverride;
-        if (haveExplainoSeedDriftOverride) view.explaino_seed_drift = (float)explainoSeedDriftOverride;
-        if (haveExplainoSeedBOverride) params.explaino_seed_b = explainoSeedBOverride;
-        if (haveExplainoMixOverride) params.explaino_mix = (float)explainoMixOverride;
-        if (haveExplainoWarpOverride) params.explaino_warp_strength = (float)explainoWarpOverride;
-        if (haveLambdaRealOverride) params.lambda_real = (float)lambdaRealOverride;
-        if (haveLambdaImagOverride) params.lambda_imag = (float)lambdaImagOverride;
+        if (cli.have_explaino_seed) ExplainoSeedSetCombined(view, params, cli.explaino_seed);
+        if (cli.have_explaino_phase) view.explaino_phase = (float)cli.explaino_phase;
+        if (cli.have_explaino_seed_drift) view.explaino_seed_drift = (float)cli.explaino_seed_drift;
+        if (cli.have_explaino_seed_b) params.explaino_seed_b = cli.explaino_seed_b;
+        if (cli.have_explaino_mix) params.explaino_mix = (float)cli.explaino_mix;
+        if (cli.have_explaino_warp_strength) params.explaino_warp_strength = (float)cli.explaino_warp_strength;
+        if (cli.have_lambda_real) params.lambda_real = (float)cli.lambda_real;
+        if (cli.have_lambda_imag) params.lambda_imag = (float)cli.lambda_imag;
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, &dirty);
         }
     }
 
-    if (captureDiagnosticOnly || captureFindingOnly) {
+    if (cli.capture_diagnostic_only || cli.capture_finding_only) {
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, &dirty);
         }
@@ -717,11 +567,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
     }
 
-    if (validateUiOnly) {
+    if (cli.validate_ui_only) {
         return 0;
     }
 
-    if (captureDiagnosticOnly) {
+    if (cli.capture_diagnostic_only) {
         std::vector<uint32_t> headlessRgba;
         headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
 
@@ -739,7 +589,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         return 0;
     }
 
-    if (captureFindingOnly) {
+    if (cli.capture_finding_only) {
         ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
         RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
         std::vector<uint32_t> headlessRgba;
@@ -754,8 +604,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         std::string findingDir;
         std::string findingError;
-        const std::string findingGroup = haveFindingGroupArg ? findingGroupArg : "manual_capture";
-        const std::string findingWhy = haveFindingWhyArg ? findingWhyArg : "Headless finding capture.";
+        const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
+        const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
         if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats, headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
             WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
             return 1;
@@ -802,9 +652,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sweepPaused = false;
     bool sweepSingleStep = false;
     float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
-    if (sweepConfig.enabled) {
+    if (cli.sweep_config.enabled) {
         std::string sweepError;
-        if (!InitializeSweepPlayer(sweepConfig, &sweepState, &sweepError)) {
+        if (!InitializeSweepPlayer(cli.sweep_config, &sweepState, &sweepError)) {
             CleanupDeviceD3D();
             DestroyWindow(hwnd);
             UnregisterClass(wc.lpszClassName, wc.hInstance);
@@ -844,12 +694,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        if (sweepConfig.enabled) {
+        if (cli.sweep_config.enabled) {
             if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
                 sweepPaused = !sweepPaused;
             }
             bool sweepDirty = false;
-            if (ApplySweepPlayback(sweepConfig, sweepPaused, sweepSingleStep, (double)io.DeltaTime, &sweepState, &view, &params, &sweepDirty)) {
+            if (ApplySweepPlayback(cli.sweep_config, sweepPaused, sweepSingleStep, (double)io.DeltaTime, &sweepState, &view, &params, &sweepDirty)) {
                 if (sweepDirty) dirty = true;
             }
             sweepSingleStep = false;
@@ -995,15 +845,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             }
         }
 
-        if (sweepConfig.enabled) {
+        if (cli.sweep_config.enabled) {
             double currentSweepSeed = 0.0;
             if (SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
                 ImGui::Text("Sweep: %d/%d  seed %.6f%s",
                     sweepState.current_index + 1,
                     (int)sweepState.seeds.size(),
                     currentSweepSeed,
-                    sweepState.finished ? "  [done]" : (sweepPaused ? "  [paused]" : (sweepConfig.loop ? "  [loop]" : "")));
-                ImGui::Text("Sweep dwell: %.0f ms", sweepConfig.dwell_seconds * 1000.0);
+                    sweepState.finished ? "  [done]" : (sweepPaused ? "  [paused]" : (cli.sweep_config.loop ? "  [loop]" : "")));
+                ImGui::Text("Sweep dwell: %.0f ms", cli.sweep_config.dwell_seconds * 1000.0);
                 ImGui::Text("Combined seed: %.6f", ExplainoSeedCombined(view, params));
                 if (ImGui::Button(sweepPaused ? "Resume Sweep" : "Pause Sweep")) {
                     sweepPaused = !sweepPaused;
@@ -1016,7 +866,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 ImGui::SameLine();
                 if (ImGui::Button("Restart Sweep")) {
                     std::string sweepError;
-                    if (InitializeSweepPlayer(sweepConfig, &sweepState, &sweepError) && SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
+                    if (InitializeSweepPlayer(cli.sweep_config, &sweepState, &sweepError) && SweepPlayerCurrentSeed(sweepState, &currentSweepSeed)) {
                         ExplainoSeedSetCombined(view, params, currentSweepSeed);
                         UpdateExplainoPolynomial(view, params, nullptr);
                         dirty = true;
