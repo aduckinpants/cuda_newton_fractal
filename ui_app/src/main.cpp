@@ -22,6 +22,7 @@
 
 #include "cli_args.h"
 #include "viewer_cli.h"
+#include "viewer_schema_load.h"
 #include "viewer_state_init.h"
 #include "diagnostics_capture.h"
 #include "finding_archive_actions.h"
@@ -378,6 +379,259 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+// --- Headless capture helpers ---
+
+static int RunHeadlessDiagnosticCapture(
+    const std::string& exeDir, const ViewState& view,
+    const KernelParams& params, const RenderSettings& render) {
+    std::vector<uint32_t> headlessRgba;
+    headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+    const char* err = nullptr;
+    RenderStats headlessStats{};
+    if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+        return 1;
+    }
+    std::string captureError;
+    DiagnosticsCaptureResult captureResult;
+    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats,
+            headlessRgba.data(), headlessRgba.size(), &captureResult, &captureError)) {
+        return 1;
+    }
+    return 0;
+}
+
+static int RunHeadlessFindingCapture(
+    const std::string& exeDir, const ViewerCliArgs& cli,
+    const ViewState& view, const KernelParams& params, const RenderSettings& render) {
+    ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
+    RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
+    std::vector<uint32_t> headlessRgba;
+    headlessRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
+    const char* err = nullptr;
+    RenderStats headlessStats{};
+    if (!RenderFractalCUDA(view, params, findingRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+        WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
+            err ? err : "RenderFractalCUDA failed during headless finding capture.");
+        return 1;
+    }
+    std::string findingDir;
+    std::string findingError;
+    const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
+    const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
+    if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats,
+            headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
+        WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
+            findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
+        return 1;
+    }
+    return 0;
+}
+
+// --- In-loop capture helpers ---
+
+static void RunInLoopDiagnosticCapture(
+    const std::string& exeDir, const ViewState& view, const KernelParams& params,
+    const RenderSettings& render, const RenderStats& stats,
+    const std::vector<uint32_t>& rgba, const RenderedFrameState& renderedFrame,
+    std::string& findingStatus) {
+    std::string captureError;
+    RenderSettings captureRender = render;
+    captureRender.resolution = {renderedFrame.width, renderedFrame.height};
+    if (!CanCaptureRenderedFrame(captureRender, rgba.size(), renderedFrame, &captureError)) {
+        findingStatus = "Capture diagnostic failed: " + captureError;
+    } else {
+        DiagnosticsCaptureResult captureResult;
+        if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats,
+                rgba.data(), rgba.size(), &captureResult, &captureError)) {
+            findingStatus = "Capture diagnostic failed: " + captureError;
+        } else {
+            findingStatus = "Diagnostic captured.";
+        }
+    }
+}
+
+static void RunInLoopFindingCapture(
+    const std::string& exeDir, ViewState& view, KernelParams& params,
+    const RenderSettings& render, std::string& findingStatus, std::string& lastFindingPath) {
+    std::string findingDir;
+    std::string captureError;
+    if (IsExplainoFamily(view.fractal_type)) {
+        UpdateExplainoPolynomial(view, params, nullptr);
+    }
+    if (view.auto_max_iter) {
+        params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+    }
+    RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
+    std::vector<uint32_t> findingRgba;
+    findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
+    const char* err = nullptr;
+    RenderStats findingStats{};
+    if (!RenderFractalCUDA(view, params, findingRender, findingRgba.data(), nullptr, &findingStats, &err)) {
+        findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
+    } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
+            findingRgba.data(), findingRgba.size(), "manual_capture", "Manual viewer capture.",
+            &findingDir, &captureError)) {
+        findingStatus = "Capture finding failed: " + captureError;
+    } else {
+        findingStatus = "Captured finding: " + findingDir;
+        lastFindingPath = findingDir;
+    }
+}
+
+// --- Image window helpers ---
+
+static void RenderFractalViewport(
+    const ImGuiIO& io, const RenderSettings& render,
+    ViewState& view, bool& dirty, bool& interactionChanged) {
+    ImGui::Begin("Fractal");
+    if (g_fractalSRV) {
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+        float scale = 1.0f;
+        if (render.resolution.x > 0 && render.resolution.y > 0) {
+            float sx = avail.x / (float)render.resolution.x;
+            float sy = avail.y / (float)render.resolution.y;
+            scale = (sx < sy) ? sx : sy;
+            if (scale <= 0.0f) scale = 1.0f;
+        }
+        ImVec2 size((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+
+        ImGui::InvisibleButton("##viewport", size, ImGuiButtonFlags_MouseButtonLeft);
+        ImVec2 rectMin = ImGui::GetItemRectMin();
+        ImVec2 rectMax = ImGui::GetItemRectMax();
+        ImGui::GetWindowDrawList()->AddImage((ImTextureID)g_fractalSRV, rectMin, rectMax);
+
+        bool hovered = ImGui::IsItemHovered();
+        bool active = ImGui::IsItemActive();
+
+        if (hovered) {
+            if (io.MouseWheel != 0.0f && size.x > 0.0f && size.y > 0.0f) {
+                ImVec2 mp = ImGui::GetMousePos();
+                float u = ClampF((mp.x - rectMin.x) / size.x, 0.0f, 1.0f);
+                float v = ClampF((mp.y - rectMin.y) / size.y, 0.0f, 1.0f);
+                double aspect = (render.resolution.y > 0) ? (double)render.resolution.x / (double)render.resolution.y : 1.0;
+
+                auto zr = ComputeZoomAroundCursor(
+                    view.center_hp_x, view.center_hp_y, view.log2_zoom,
+                    u, v, io.MouseWheel, aspect);
+                view.center_hp_x = zr.new_center_hp_x;
+                view.center_hp_y = zr.new_center_hp_y;
+                view.log2_zoom = zr.new_log2_zoom;
+                SyncViewUiFromHp(view);
+                dirty = true;
+                interactionChanged = true;
+            }
+
+            if (active && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && render.resolution.x > 0 && render.resolution.y > 0) {
+                ImVec2 dpx = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+                ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
+
+                auto pr = ComputeDragPan(
+                    view.center_hp_x, view.center_hp_y, view.log2_zoom,
+                    dpx.x, dpx.y, render.resolution.x, render.resolution.y);
+                view.center_hp_x = pr.new_center_hp_x;
+                view.center_hp_y = pr.new_center_hp_y;
+                SyncViewUiFromHp(view);
+                dirty = true;
+                interactionChanged = true;
+            }
+        }
+    } else {
+        ImGui::TextUnformatted("No texture yet. Enable Continuous Render or click Render Once.");
+    }
+    ImGui::End();
+}
+
+static void RenderAuxImageWindow(const char* title, ID3D11ShaderResourceView* srv, const RenderSettings& render) {
+    if (!srv) return;
+    ImGui::Begin(title);
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    float scale = 1.0f;
+    if (render.resolution.x > 0 && render.resolution.y > 0) {
+        float sx = avail.x / (float)render.resolution.x;
+        float sy = avail.y / (float)render.resolution.y;
+        scale = (sx < sy) ? sx : sy;
+        if (scale <= 0.0f) scale = 1.0f;
+    }
+    ImVec2 size((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+    ImGui::Image((ImTextureID)srv, size);
+    ImGui::End();
+}
+
+// --- Render dispatch helper ---
+
+static void DispatchRenderFrame(
+    ViewState& view, KernelParams& params, const RenderSettings& render,
+    const LensSettings& lens, const ViewerRenderPacingDecision& renderPacing,
+    bool forceFullQuality, bool autoRefresh, bool dirty,
+    bool renderOnce, bool captureDiag, bool captureFinding,
+    std::vector<uint32_t>& rgba, std::vector<uint8_t>& maskBuffer,
+    std::vector<uint32_t>& lensSdfRgba,
+    RenderedFrameState& renderedFrame, RenderStats& stats, bool& dirtyOut) {
+
+    if (!ShouldDispatchRender(autoRefresh, dirty, renderOnce, captureDiag, captureFinding, renderPacing.full_quality_due))
+        return;
+
+    InvalidateRenderedFrame(&renderedFrame);
+    if (IsExplainoFamily(view.fractal_type)) {
+        UpdateExplainoPolynomial(view, params, nullptr);
+    }
+    if (view.auto_max_iter) {
+        params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+    }
+    RenderSettings dispatchRender = render;
+    if (renderPacing.preview_active && !forceFullQuality) {
+        dispatchRender.resolution = renderPacing.render_resolution;
+    }
+    rgba.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
+    EnsureFractalTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
+
+    uint8_t* maskPtr = nullptr;
+    if (lens.enabled) {
+        maskBuffer.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
+        maskPtr = maskBuffer.data();
+    }
+
+    const char* err = nullptr;
+    RenderStats newStats{};
+    if (!RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err)) {
+        ImGui::Begin("CUDA Error");
+        ImGui::TextWrapped("Render failed: %s", err ? err : "unknown error");
+        ImGui::End();
+    } else {
+        stats = newStats;
+        MarkRenderedFrameReady(dispatchRender, &renderedFrame);
+        UploadFractalRGBA(rgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
+        if (lens.enabled && maskPtr) {
+            EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
+            UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
+            EnsureLensSdfTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
+            ComputeSignedDistanceSdfChamfer(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y, 48.0f, lensSdfRgba);
+            UploadLensSdfRGBA(lensSdfRgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
+        }
+    }
+    dirtyOut = !renderedFrame.ready;
+}
+
+static void ApplyArrowKeySeedScrub(const ImGuiIO& io, ViewState& view, KernelParams& params,
+                                    float& seedScrubAccel, bool& dirty, bool& interactionChanged) {
+    if (!IsExplainoFamily(view.fractal_type)) return;
+    bool left = ImGui::IsKeyDown(ImGuiKey_LeftArrow);
+    bool right = ImGui::IsKeyDown(ImGuiKey_RightArrow);
+    if (left || right) {
+        seedScrubAccel = fminf(seedScrubAccel + io.DeltaTime * 2.0f, 1.0f);
+        float t = seedScrubAccel * seedScrubAccel * seedScrubAccel;
+        float rate = fmaxf(0.001f, view.explaino_seed_rate);
+        double delta = (double)(t * rate) * (double)io.DeltaTime;
+        if (left) delta = -delta;
+        ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
+        UpdateExplainoPolynomial(view, params, nullptr);
+        dirty = true;
+        interactionChanged = true;
+    } else {
+        seedScrubAccel = 0.0f;
+    }
+}
+
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     if (ApplyAutoDiveStep(view)) {
         if (ioDirty) *ioDirty = true;
@@ -432,69 +686,23 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     // Schema load policy:
     // - Use one checked-in schema file for both repo and published runtime paths
     // - If missing/invalid while editing, keep the app running with a built-in Safe Mode UI
-    std::string schemaPath;
-    std::string schemaWarning; // non-empty => Safe Mode UI active
-    UISchema uiSchema;
-    bool schemaFromFile = false;
-
     std::string exeDir = GetExeDir();
     std::vector<std::string> schemaCandidates;
     schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
     schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
     schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
 
-    for (const auto& cand : schemaCandidates) {
-        std::string text = ReadTextFile(cand.c_str());
-        if (text.empty()) continue;
-        auto pr = json_min::Parse(text);
-        if (!pr.error.empty()) {
-            schemaPath = cand;
-            schemaWarning = "Schema JSON parse error (entering Safe Mode):\n" + cand + "\n" + pr.error;
-            break;
-        }
-        auto lr = LoadUISchemaFromJson(pr.value);
-        if (!lr.error.empty()) {
-            schemaPath = cand;
-            schemaWarning = "Schema decode error (entering Safe Mode):\n" + cand + "\n" + lr.error;
-            break;
-        }
-        uiSchema = std::move(lr.schema);
-        schemaPath = cand;
-        schemaFromFile = true;
-        break;
-    }
-
-    if (!schemaFromFile) {
-        if (schemaPath.empty()) schemaPath = schemaCandidates[0];
-        if (schemaWarning.empty()) {
-            schemaWarning = std::string("Schema missing/unreadable (entering Safe Mode). Tried:\n")
-                + "  " + schemaCandidates[0] + "\n"
-                + "  " + schemaCandidates[1] + "\n"
-                + "  " + schemaCandidates[2];
-        }
-        uiSchema = BuildSafeModeSchema();
-    }
-
     BindingContext initBind;
     initBind.view = &view;
     initBind.params = &params;
     initBind.render = &render;
     initBind.lens = &lens;
-    {
-        std::string bindError;
-        if (!ValidateSchemaBindings(uiSchema, initBind, &bindError)) {
-            SchemaStartupFailureResult failure = ResolveSchemaBindingFailure(schemaPath, bindError, cli.validate_ui_only);
-            if (!failure.enter_safe_mode) {
-                return 1;
-            }
-            schemaWarning = failure.warning;
-            uiSchema = BuildSafeModeSchema();
-            std::string safeBindError;
-            if (!ValidateSchemaBindings(uiSchema, initBind, &safeBindError)) {
-                return 1;
-            }
-        }
-    }
+
+    SchemaLoadResult schemaResult = LoadAndValidateViewerSchema(schemaCandidates, initBind, cli.validate_ui_only);
+    if (schemaResult.fatal_error) return 1;
+    UISchema uiSchema = std::move(schemaResult.schema);
+    std::string schemaPath = std::move(schemaResult.path);
+    std::string schemaWarning = std::move(schemaResult.warning);
 
     {
         ApplySchemaDefaults(uiSchema, initBind, &dirty);
@@ -522,45 +730,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     }
 
     if (cli.capture_diagnostic_only) {
-        std::vector<uint32_t> headlessRgba;
-        headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
-
-        const char* err = nullptr;
-        RenderStats headlessStats{};
-        if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), nullptr, &headlessStats, &err)) {
-            return 1;
-        }
-
-        std::string captureError;
-        DiagnosticsCaptureResult captureResult;
-        if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats, headlessRgba.data(), headlessRgba.size(), &captureResult, &captureError)) {
-            return 1;
-        }
-        return 0;
+        return RunHeadlessDiagnosticCapture(exeDir, view, params, render);
     }
 
     if (cli.capture_finding_only) {
-        ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
-        RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
-        std::vector<uint32_t> headlessRgba;
-        headlessRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
-
-        const char* err = nullptr;
-        RenderStats headlessStats{};
-        if (!RenderFractalCUDA(view, params, findingRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
-            WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", err ? err : "RenderFractalCUDA failed during headless finding capture.");
-            return 1;
-        }
-
-        std::string findingDir;
-        std::string findingError;
-        const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
-        const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
-        if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats, headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
-            WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt", findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
-            return 1;
-        }
-        return 0;
+        return RunHeadlessFindingCapture(exeDir, cli, view, params, render);
     }
 
     WNDCLASSEX wc = {sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, hInstance, nullptr, nullptr, nullptr, nullptr, _T("FractalUI"), nullptr};
@@ -878,28 +1052,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             interactionChanged = true;
         }
 
-        // Arrow-key seed scrubber with short acceleration ramp.
-        // Holding Left/Right smoothly advances the seed; acceleration builds
-        // over ~0.5s from a slow crawl to the configured seed rate.
-        if (IsExplainoFamily(view.fractal_type)) {
-            bool left = ImGui::IsKeyDown(ImGuiKey_LeftArrow);
-            bool right = ImGui::IsKeyDown(ImGuiKey_RightArrow);
-            if (left || right) {
-                // Ramp from 0 to 1 over ~0.5s (acceleration window)
-                seedScrubAccel = fminf(seedScrubAccel + io.DeltaTime * 2.0f, 1.0f);
-                // Nonlinear curve: slow start, fast finish (cubic ease-in)
-                float t = seedScrubAccel * seedScrubAccel * seedScrubAccel;
-                float rate = fmaxf(0.001f, view.explaino_seed_rate);
-                double delta = (double)(t * rate) * (double)io.DeltaTime;
-                if (left) delta = -delta;
-                ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
-                UpdateExplainoPolynomial(view, params, nullptr);
-                dirty = true;
-                interactionChanged = true;
-            } else {
-                seedScrubAccel = 0.0f;
-            }
-        }
+        ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, interactionChanged);
 
         if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
             dirty = true;
@@ -916,183 +1069,25 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             renderPacingConfig,
             &renderPacingState);
 
-        // Render dispatch (fail-fast, delta-independent):
-        // - Continuous render keeps repainting even when the state is clean.
-        // - Otherwise, render on explicit request, state changes, or a settle-to-full-quality request.
         const bool forceFullQualityRender = renderOnceAction || captureDiagnosticAction || captureFindingAction || renderPacing.full_quality_due;
-        if (ShouldDispatchRender(view.auto_refresh, dirty, renderOnceAction, captureDiagnosticAction, captureFindingAction, renderPacing.full_quality_due)) {
-            InvalidateRenderedFrame(&renderedFrame);
-            if (IsExplainoFamily(view.fractal_type)) {
-                UpdateExplainoPolynomial(view, params, nullptr);
-            }
-            if (view.auto_max_iter) {
-                params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
-            }
-            RenderSettings dispatchRender = render;
-            if (renderPacing.preview_active && !forceFullQualityRender) {
-                dispatchRender.resolution = renderPacing.render_resolution;
-            }
-            rgba.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
-            EnsureFractalTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
-
-            uint8_t* maskPtr = nullptr;
-            if (lens.enabled) {
-                maskBuffer.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
-                maskPtr = maskBuffer.data();
-            }
-
-            const char* err = nullptr;
-            RenderStats newStats{};
-            if (!RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err)) {
-                // Show error pane
-                ImGui::Begin("CUDA Error");
-                ImGui::TextWrapped("Render failed: %s", err ? err : "unknown error");
-                ImGui::End();
-            } else {
-                stats = newStats;
-                MarkRenderedFrameReady(dispatchRender, &renderedFrame);
-                UploadFractalRGBA(rgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
-                if (lens.enabled && maskPtr) {
-                    EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
-                    UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
-                    EnsureLensSdfTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
-                    ComputeSignedDistanceSdfChamfer(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y, 48.0f, lensSdfRgba);
-                    UploadLensSdfRGBA(lensSdfRgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
-                }
-            }
-            dirty = !renderedFrame.ready;
-        }
+        DispatchRenderFrame(view, params, render, lens, renderPacing,
+            forceFullQualityRender, view.auto_refresh, dirty,
+            renderOnceAction, captureDiagnosticAction, captureFindingAction,
+            rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
 
         if (captureDiagnosticAction) {
-            std::string captureError;
-            RenderSettings captureRender = render;
-            captureRender.resolution = {renderedFrame.width, renderedFrame.height};
-            if (!CanCaptureRenderedFrame(captureRender, rgba.size(), renderedFrame, &captureError)) {
-                findingStatus = "Capture diagnostic failed: " + captureError;
-            } else {
-                DiagnosticsCaptureResult captureResult;
-                if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats, rgba.data(), rgba.size(), &captureResult, &captureError)) {
-                    findingStatus = "Capture diagnostic failed: " + captureError;
-                } else {
-                    findingStatus = "Diagnostic captured.";
-                }
-            }
+            RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, findingStatus);
         }
 
         if (captureFindingAction) {
-            std::string findingDir;
-            std::string captureError;
-            if (IsExplainoFamily(view.fractal_type)) {
-                UpdateExplainoPolynomial(view, params, nullptr);
-            }
-            if (view.auto_max_iter) {
-                params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
-            }
-            RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
-            std::vector<uint32_t> findingRgba;
-            findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
-            const char* err = nullptr;
-            RenderStats findingStats{};
-            if (!RenderFractalCUDA(view, params, findingRender, findingRgba.data(), nullptr, &findingStats, &err)) {
-                findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
-            } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats, findingRgba.data(), findingRgba.size(), "manual_capture", "Manual viewer capture.", &findingDir, &captureError)) {
-                findingStatus = "Capture finding failed: " + captureError;
-            } else {
-                findingStatus = "Captured finding: " + findingDir;
-                lastFindingPath = findingDir;
-            }
+            RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath);
         }
 
-        // Image window
-        ImGui::Begin("Fractal");
-        if (g_fractalSRV) {
-            ImVec2 avail = ImGui::GetContentRegionAvail();
-            float scale = 1.0f;
-            if (render.resolution.x > 0 && render.resolution.y > 0) {
-                float sx = avail.x / (float)render.resolution.x;
-                float sy = avail.y / (float)render.resolution.y;
-                scale = (sx < sy) ? sx : sy;
-                if (scale <= 0.0f) scale = 1.0f;
-            }
-            ImVec2 size((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+        RenderFractalViewport(io, render, view, dirty, interactionChanged);
 
-            // Use an InvisibleButton for reliable mouse capture (prevents window dragging while panning).
-            ImGui::InvisibleButton("##viewport", size, ImGuiButtonFlags_MouseButtonLeft);
-            ImVec2 rectMin = ImGui::GetItemRectMin();
-            ImVec2 rectMax = ImGui::GetItemRectMax();
-            ImGui::GetWindowDrawList()->AddImage((ImTextureID)g_fractalSRV, rectMin, rectMax);
-
-            bool hovered = ImGui::IsItemHovered();
-            bool active = ImGui::IsItemActive();
-
-            if (hovered) {
-                // Mouse wheel zoom around cursor.
-                if (io.MouseWheel != 0.0f && size.x > 0.0f && size.y > 0.0f) {
-                    ImVec2 mp = ImGui::GetMousePos();
-                    float u = ClampF((mp.x - rectMin.x) / size.x, 0.0f, 1.0f);
-                    float v = ClampF((mp.y - rectMin.y) / size.y, 0.0f, 1.0f);
-                    double aspect = (render.resolution.y > 0) ? (double)render.resolution.x / (double)render.resolution.y : 1.0;
-
-                    auto zr = ComputeZoomAroundCursor(
-                        view.center_hp_x, view.center_hp_y, view.log2_zoom,
-                        u, v, io.MouseWheel, aspect);
-                    view.center_hp_x = zr.new_center_hp_x;
-                    view.center_hp_y = zr.new_center_hp_y;
-                    view.log2_zoom = zr.new_log2_zoom;
-                    SyncViewUiFromHp(view);
-                    dirty = true;
-                    interactionChanged = true;
-                }
-
-                // Drag pan.
-                if (active && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && render.resolution.x > 0 && render.resolution.y > 0) {
-                    ImVec2 dpx = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
-                    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
-
-                    auto pr = ComputeDragPan(
-                        view.center_hp_x, view.center_hp_y, view.log2_zoom,
-                        dpx.x, dpx.y, render.resolution.x, render.resolution.y);
-                    view.center_hp_x = pr.new_center_hp_x;
-                    view.center_hp_y = pr.new_center_hp_y;
-                    SyncViewUiFromHp(view);
-                    dirty = true;
-                    interactionChanged = true;
-                }
-            }
-        } else {
-            ImGui::TextUnformatted("No texture yet. Enable Continuous Render or click Render Once.");
-        }
-        ImGui::End();
-
-        // Mask window (lens pipeline)
-        if (lens.enabled && g_maskSRV) {
-            ImGui::Begin("Mask");
-            ImVec2 avail = ImGui::GetContentRegionAvail();
-            float scale = 1.0f;
-            if (render.resolution.x > 0 && render.resolution.y > 0) {
-                float sx = avail.x / (float)render.resolution.x;
-                float sy = avail.y / (float)render.resolution.y;
-                scale = (sx < sy) ? sx : sy;
-                if (scale <= 0.0f) scale = 1.0f;
-            }
-            ImVec2 maskSize((float)render.resolution.x * scale, (float)render.resolution.y * scale);
-            ImGui::Image((ImTextureID)g_maskSRV, maskSize);
-            ImGui::End();
-        }
-
-        if (lens.enabled && g_lensSdfSRV) {
-            ImGui::Begin("Lens SDF");
-            ImVec2 avail = ImGui::GetContentRegionAvail();
-            float scale = 1.0f;
-            if (render.resolution.x > 0 && render.resolution.y > 0) {
-                float sx = avail.x / (float)render.resolution.x;
-                float sy = avail.y / (float)render.resolution.y;
-                scale = (sx < sy) ? sx : sy;
-                if (scale <= 0.0f) scale = 1.0f;
-            }
-            ImVec2 sdfSize((float)render.resolution.x * scale, (float)render.resolution.y * scale);
-            ImGui::Image((ImTextureID)g_lensSdfSRV, sdfSize);
-            ImGui::End();
+        if (lens.enabled) {
+            RenderAuxImageWindow("Mask", g_maskSRV, render);
+            RenderAuxImageWindow("Lens SDF", g_lensSdfSRV, render);
         }
 
         // Camera behavior loop (per-frame deltas scaled only by dive_speed; no dt semantics).

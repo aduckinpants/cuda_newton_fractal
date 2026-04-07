@@ -32,6 +32,13 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_viewer_state_init.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_viewer_schema_load.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_schema_load.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\tests\test_json_min.cpp ^
   /Fe:"%TESTROOT%\test_json_min.exe"
@@ -218,6 +225,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_viewer_state_init.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_viewer_schema_load.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_json_min.exe"
