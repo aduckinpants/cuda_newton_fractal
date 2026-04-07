@@ -118,7 +118,7 @@ struct ViewState {
     Float2 center{0.0f, 0.0f};
     float zoom{1.0f};
     float rotation_degrees{0.0f};
-    bool auto_refresh{true};
+    bool auto_refresh{false};
 
     // High-precision view state used by the renderer and input updates.
     // The float fields above remain as the schema/UI binding surface.

@@ -21,7 +21,7 @@ All bindings live under the `fractal.*` namespace.
 - `fractal.view.center.y` : float, range [-2, 2], step 0.001, default 0.0
 - `fractal.view.zoom` : float, range [1e-12, 1e12], step 0.01, default 1.0
 - `fractal.view.rotation` : float degrees, range [-180, 180], step 0.1, default 0.0 (optional feature; binding exists, engine may ignore)
-- `fractal.view.auto_refresh` : bool, default true
+- `fractal.view.auto_refresh` : bool, default false; continuously dispatches frames even when no state changed
 - `fractal.view.auto_increment_seed` : bool, default false; Explaino-family only; advances the combined Explaino seed continuously through the existing drift+tween seam
 - `fractal.view.explaino_seed_rate` : float, default 0.35; Explaino-family only; visible when auto-increment is enabled
 - `fractal.actions.render_once` : action (button)

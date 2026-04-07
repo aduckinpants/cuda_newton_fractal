@@ -10,7 +10,7 @@ void ResetRuntimeStateForCurrentFractal(
     RenderSettings& render,
     LensSettings& lens,
     bool* ioDirty) {
-    view.auto_refresh = true;
+    view.auto_refresh = false;
     view.camera_behavior = CameraBehavior::complexity;
     view.auto_dive = false;
     view.dive_speed = 1.0f;

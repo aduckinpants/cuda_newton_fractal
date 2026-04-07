@@ -179,6 +179,7 @@ int main() {
         bool foundLambdaImag = false;
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
+        bool foundContinuousRenderDefaultFalse = false;
         bool foundNegativeExplainoSeedRange = false;
         bool foundNegativeExplainoSeedBRange = false;
         bool foundNegativePhaseStrengthRange = false;
@@ -220,6 +221,9 @@ int main() {
                 }
                 if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
                     foundRenderHeightDefault = true;
+                }
+                if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
+                    foundContinuousRenderDefaultFalse = true;
                 }
                 if (ctrl.id == "explaino_seed" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 10.0) {
                     foundNegativeExplainoSeedRange = true;
@@ -265,6 +269,10 @@ int main() {
             std::cerr << "Did not find upgraded render resolution defaults in schema\n";
             return 1;
         }
+        if (!foundContinuousRenderDefaultFalse) {
+            std::cerr << "Did not find continuous-render control with a disabled-by-default schema value\n";
+            return 1;
+        }
         if (!foundNegativeExplainoSeedRange || !foundNegativeExplainoSeedBRange || !foundNegativePhaseStrengthRange) {
             std::cerr << "Did not find negative-capable Explaino controls in schema\n";
             return 1;
@@ -287,6 +295,7 @@ int main() {
         UISchema safeMode = BuildSafeModeSchema();
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
+        bool foundContinuousRenderDefaultFalse = false;
         for (const auto& panel : safeMode.panels) {
             for (const auto& ctrl : panel.controls) {
                 if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
@@ -295,10 +304,17 @@ int main() {
                 if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
                     foundRenderHeightDefault = true;
                 }
+                if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
+                    foundContinuousRenderDefaultFalse = true;
+                }
             }
         }
         if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
             std::cerr << "Safe-mode schema did not inherit upgraded render resolution defaults\n";
+            return 1;
+        }
+        if (!foundContinuousRenderDefaultFalse) {
+            std::cerr << "Safe-mode schema did not expose the disabled-by-default continuous-render control\n";
             return 1;
         }
     }

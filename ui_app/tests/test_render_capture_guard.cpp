@@ -4,15 +4,16 @@
 
 int main() {
     {
-        if (ShouldDispatchRender(false, false, false, false, false)) {
+        if (ShouldDispatchRender(false, false, false, false, false, false)) {
             std::cerr << "Expected no render dispatch when nothing requested\n";
             return 1;
         }
-        if (!ShouldDispatchRender(true, false, false, false, false) ||
-            !ShouldDispatchRender(false, true, false, false, false) ||
-            !ShouldDispatchRender(false, false, true, false, false) ||
-            !ShouldDispatchRender(false, false, false, true, false) ||
-            !ShouldDispatchRender(false, false, false, false, true)) {
+        if (!ShouldDispatchRender(true, false, false, false, false, false) ||
+            !ShouldDispatchRender(false, true, false, false, false, false) ||
+            !ShouldDispatchRender(false, false, true, false, false, false) ||
+            !ShouldDispatchRender(false, false, false, true, false, false) ||
+            !ShouldDispatchRender(false, false, false, false, true, false) ||
+            !ShouldDispatchRender(false, false, false, false, false, true)) {
             std::cerr << "Expected render dispatch for each explicit trigger\n";
             return 1;
         }

@@ -39,6 +39,7 @@
 #include "schema_startup_policy.h"
 #include "sweep_player.h"
 #include "ui_schema.h"
+#include "viewer_render_pacing.h"
 #include "viewer_shutdown.h"
 #include "viewer_sweep.h"
 #include "view_hp_sync.h"
@@ -926,7 +927,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         if (haveWidthOverride) render.resolution.x = widthOverride;
         if (haveHeightOverride) render.resolution.y = heightOverride;
-        if (sweepConfig.enabled) view.auto_refresh = true;
 
         const bool needPresetDerivedFields = !loadedState || haveCliFractalType || haveExplainoSeedOverride || sweepConfig.enabled;
         if (needPresetDerivedFields) {
@@ -1034,6 +1034,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
     RenderedFrameState renderedFrame{};
+    ViewerRenderPacingConfig renderPacingConfig{};
+    ViewerRenderPacingState renderPacingState{};
     rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     PolyKind lastPolyKind = params.poly_kind;
     FractalType lastFractalType = view.fractal_type;
@@ -1120,6 +1122,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         bool captureDiagnosticAction = false;
         bool nextSeedAction = false;
         bool prevSeedAction = false;
+        bool interactionChanged = false;
 
         // If schema/UI edits the float surface (center/zoom), keep high-precision state in sync.
         Float2 uiCenterBefore = view.center;
@@ -1160,7 +1163,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                         prevWasSeedButton = isSeedButton;
                     } else {
                         prevWasSeedButton = false;
+                        const bool dirtyBeforeControl = dirty;
                         RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction);
+                        if (!dirtyBeforeControl && dirty) {
+                            interactionChanged = true;
+                        }
                     }
                 }
             }
@@ -1200,6 +1207,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         ImGui::Separator();
         ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
+        if (renderedFrame.ready && (renderedFrame.width != render.resolution.x || renderedFrame.height != render.resolution.y)) {
+            ImGui::Text("Interactive preview: %d x %d -> settle to %d x %d",
+                renderedFrame.width,
+                renderedFrame.height,
+                render.resolution.x,
+                render.resolution.y);
+        }
         if (!findingStatus.empty()) {
             ImGui::TextWrapped("%s", findingStatus.c_str());
             if (!lastFindingPath.empty()) {
@@ -1255,12 +1269,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             ApplyFractalViewPresetDefaults(view, &dirty);
             SyncViewHpFromUi(view);
             dirty = true;
+            interactionChanged = true;
         }
 
         if (resetAllAction) {
             ResetRuntimeStateForCurrentFractal(view, params, render, lens, &dirty);
             lastPolyKind = params.poly_kind;
             lastFractalType = view.fractal_type;
+            interactionChanged = true;
         }
 
         if (loadStateAction) {
@@ -1276,6 +1292,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     findingStatus = "Loaded finding state: " + resolvedStatePath;
                     lastFindingPath = resolvedStatePath;
                     dirty = true;
+                    interactionChanged = true;
                 }
             }
         }
@@ -1284,11 +1301,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + 1.0);
             UpdateExplainoPolynomial(view, params, nullptr);
             dirty = true;
+            interactionChanged = true;
         }
         if (prevSeedAction && IsExplainoFamily(view.fractal_type)) {
             ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) - 1.0);
             UpdateExplainoPolynomial(view, params, nullptr);
             dirty = true;
+            interactionChanged = true;
         }
 
         // Arrow-key seed scrubber with short acceleration ramp.
@@ -1308,6 +1327,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
                 UpdateExplainoPolynomial(view, params, nullptr);
                 dirty = true;
+                interactionChanged = true;
             } else {
                 seedScrubAccel = 0.0f;
             }
@@ -1317,10 +1337,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             dirty = true;
         }
 
+        if (interactionChanged) {
+            NoteViewerInteraction(&renderPacingState);
+        }
+        const ViewerRenderPacingDecision renderPacing = AdvanceViewerRenderPacing(
+            render,
+            stats,
+            (double)io.DeltaTime,
+            renderPacingConfig,
+            &renderPacingState);
+
         // Render dispatch (fail-fast, delta-independent):
-        // - If auto_refresh is ON, we render every frame.
-        // - Otherwise, render on explicit request or any state change (dirty).
-        if (ShouldDispatchRender(view.auto_refresh, dirty, renderOnceAction, captureDiagnosticAction, captureFindingAction)) {
+        // - Continuous render keeps repainting even when the state is clean.
+        // - Otherwise, render on explicit request, state changes, or a settle-to-full-quality request.
+        const bool forceFullQualityRender = renderOnceAction || captureDiagnosticAction || captureFindingAction || renderPacing.full_quality_due;
+        if (ShouldDispatchRender(view.auto_refresh, dirty, renderOnceAction, captureDiagnosticAction, captureFindingAction, renderPacing.full_quality_due)) {
             InvalidateRenderedFrame(&renderedFrame);
             if (IsExplainoFamily(view.fractal_type)) {
                 UpdateExplainoPolynomial(view, params, nullptr);
@@ -1328,32 +1359,36 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             if (view.auto_max_iter) {
                 params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
             }
-            rgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
-            EnsureFractalTexture(render.resolution.x, render.resolution.y);
+            RenderSettings dispatchRender = render;
+            if (renderPacing.preview_active && !forceFullQualityRender) {
+                dispatchRender.resolution = renderPacing.render_resolution;
+            }
+            rgba.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
+            EnsureFractalTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
 
             uint8_t* maskPtr = nullptr;
             if (lens.enabled) {
-                maskBuffer.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+                maskBuffer.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
                 maskPtr = maskBuffer.data();
             }
 
             const char* err = nullptr;
             RenderStats newStats{};
-            if (!RenderFractalCUDA(view, params, render, rgba.data(), maskPtr, &newStats, &err)) {
+            if (!RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err)) {
                 // Show error pane
                 ImGui::Begin("CUDA Error");
                 ImGui::TextWrapped("Render failed: %s", err ? err : "unknown error");
                 ImGui::End();
             } else {
                 stats = newStats;
-                MarkRenderedFrameReady(render, &renderedFrame);
-                UploadFractalRGBA(rgba.data(), render.resolution.x, render.resolution.y);
+                MarkRenderedFrameReady(dispatchRender, &renderedFrame);
+                UploadFractalRGBA(rgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
                 if (lens.enabled && maskPtr) {
-                    EnsureMaskTexture(render.resolution.x, render.resolution.y);
-                    UploadMaskAsRGBA(maskPtr, render.resolution.x, render.resolution.y);
-                    EnsureLensSdfTexture(render.resolution.x, render.resolution.y);
-                    ComputeSignedDistanceSdfChamfer(maskPtr, render.resolution.x, render.resolution.y, 48.0f, lensSdfRgba);
-                    UploadLensSdfRGBA(lensSdfRgba.data(), render.resolution.x, render.resolution.y);
+                    EnsureMaskTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
+                    UploadMaskAsRGBA(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y);
+                    EnsureLensSdfTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
+                    ComputeSignedDistanceSdfChamfer(maskPtr, dispatchRender.resolution.x, dispatchRender.resolution.y, 48.0f, lensSdfRgba);
+                    UploadLensSdfRGBA(lensSdfRgba.data(), dispatchRender.resolution.x, dispatchRender.resolution.y);
                 }
             }
             dirty = !renderedFrame.ready;
@@ -1434,6 +1469,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     view.center_hp_y = worldY - ny * baseNew;
                     SyncViewUiFromHp(view);
                     dirty = true;
+                    interactionChanged = true;
                 }
 
                 // Drag pan.
@@ -1453,10 +1489,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                     view.center_hp_y -= dyWorld;
                     SyncViewUiFromHp(view);
                     dirty = true;
+                    interactionChanged = true;
                 }
             }
         } else {
-            ImGui::TextUnformatted("No texture yet. Toggle auto-refresh or click Render Once.");
+            ImGui::TextUnformatted("No texture yet. Enable Continuous Render or click Render Once.");
         }
         ImGui::End();
 
@@ -1494,12 +1531,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         // Camera behavior loop (per-frame deltas scaled only by dive_speed; no dt semantics).
         // This runs after UI, so changing behavior updates immediately.
         ApplyAutoDivePerFrame(view, &dirty);
-
-        // Auto-refresh must be enabled for auto-dive to be observable.
-        if (view.auto_dive && !view.auto_refresh) {
-            view.auto_refresh = true;
-            dirty = true;
-        }
 
         // Render frame
         ImGui::Render();

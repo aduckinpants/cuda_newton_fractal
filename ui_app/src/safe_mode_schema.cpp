@@ -115,13 +115,13 @@ UISchema BuildSafeModeSchema() {
         UISchemaControl c;
         c.id = "auto_refresh";
         c.type = "checkbox";
-        c.label = "Auto-refresh";
+        c.label = "Continuous Render";
         c.value_type = "bool";
         c.has_binding = true;
         c.binding.kind = "param";
         c.binding.path = "fractal.view.auto_refresh";
         c.has_default = true;
-        c.def.v = true;
+        c.def.v = false;
         view.controls.push_back(std::move(c));
     }
     {

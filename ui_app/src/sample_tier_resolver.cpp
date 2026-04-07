@@ -1,6 +1,32 @@
 #include "sample_tier_resolver.h"
 #include "fractal_family_rules.h"
 
+namespace {
+
+double AutoStandardThresholdLog2(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::julia:
+    case FractalType::explaino_julia:
+        return 16.0;
+    case FractalType::mandelbrot:
+    case FractalType::burning_ship:
+    case FractalType::multibrot:
+    case FractalType::phoenix:
+    case FractalType::multicorn:
+    case FractalType::mcmullen:
+    case FractalType::lambda_map:
+    case FractalType::collatz:
+    case FractalType::explaino_lambda:
+    case FractalType::explaino_phoenix:
+    case FractalType::explaino_rational_escape:
+        return 18.0;
+    default:
+        return 20.0;
+    }
+}
+
+} // namespace
+
 uint32_t GetSampleTierSupport(FractalType ft) {
     // Every family supports fast (float32 direct) — that is the existing path.
     uint32_t flags = kSupport_Fast;
@@ -45,9 +71,11 @@ ResolvedEvalMode ResolveSampleEvalMode(
 
     // tier_auto: select based on zoom depth.
     // At moderate zoom, float32 is sufficient and faster.
-    // At deep zoom (log2_zoom > 20, roughly 10^6x), switch to float64.
+    // Escape-time families need to promote earlier than Newton-family paths,
+    // especially Julia and Mandelbrot exploration views where smear becomes
+    // visible before the old one-size-fits-all threshold.
     if (requestedTier == SampleTier::tier_auto) {
-        if ((support & kSupport_Standard) && log2Zoom > 20.0) {
+        if ((support & kSupport_Standard) && log2Zoom > AutoStandardThresholdLog2(fractalType)) {
             return {NumericBackend::float64, IterationStrategy::direct};
         }
         return {NumericBackend::float32, IterationStrategy::direct};

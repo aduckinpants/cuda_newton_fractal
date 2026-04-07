@@ -9,12 +9,13 @@ std::size_t ExpectedRenderPixelCount(const RenderSettings& render) {
 
 } // namespace
 
-bool ShouldDispatchRender(bool autoRefresh,
+bool ShouldDispatchRender(bool continuousRender,
     bool dirty,
     bool renderOnceRequested,
     bool captureDiagnosticRequested,
-    bool captureFindingRequested) {
-    return autoRefresh || dirty || renderOnceRequested || captureDiagnosticRequested || captureFindingRequested;
+    bool captureFindingRequested,
+    bool fullQualityRequested) {
+    return continuousRender || dirty || renderOnceRequested || captureDiagnosticRequested || captureFindingRequested || fullQualityRequested;
 }
 
 void InvalidateRenderedFrame(RenderedFrameState* ioState) {

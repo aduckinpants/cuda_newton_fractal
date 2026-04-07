@@ -37,6 +37,10 @@ int main() {
         std::cerr << "Reset should mark dirty\n";
         return 1;
     }
+    if (view.auto_refresh) {
+        std::cerr << "Reset should leave continuous render disabled by default\n";
+        return 1;
+    }
     if (!NearlyEqual(view.explaino_phase, 0.0f) || !NearlyEqual(view.explaino_seed_drift, 0.0f)) {
         std::cerr << "Reset should clear explaino phase/drift\n";
         return 1;

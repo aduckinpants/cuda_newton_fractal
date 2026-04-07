@@ -11,11 +11,12 @@ struct RenderedFrameState {
     int height{0};
 };
 
-bool ShouldDispatchRender(bool autoRefresh,
+bool ShouldDispatchRender(bool continuousRender,
     bool dirty,
     bool renderOnceRequested,
     bool captureDiagnosticRequested,
-    bool captureFindingRequested);
+    bool captureFindingRequested,
+    bool fullQualityRequested);
 
 void InvalidateRenderedFrame(RenderedFrameState* ioState);
 

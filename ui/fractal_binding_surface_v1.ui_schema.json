@@ -114,9 +114,9 @@
         {
           "id": "auto_refresh",
           "type": "checkbox",
-          "label": "Auto-refresh",
+          "label": "Continuous Render",
           "value_type": "bool",
-          "default": true,
+          "default": false,
           "binding": { "kind": "param", "path": "fractal.view.auto_refresh" }
         },
         {

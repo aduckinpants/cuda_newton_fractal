@@ -53,6 +53,16 @@ static void test_auto_boundary_exactly_20() {
     CHECK(r.backend == NumericBackend::float32, "auto at zoom=20 boundary should stay float32");
 }
 
+static void test_mandelbrot_auto_upgrades_before_20() {
+    auto r = ResolveSampleEvalMode(FractalType::mandelbrot, SampleTier::tier_auto, 18.6);
+    CHECK(r.backend == NumericBackend::float64, "mandelbrot auto should upgrade before the old global threshold");
+}
+
+static void test_julia_auto_upgrades_before_20() {
+    auto r = ResolveSampleEvalMode(FractalType::julia, SampleTier::tier_auto, 17.0);
+    CHECK(r.backend == NumericBackend::float64, "julia auto should upgrade before the old global threshold");
+}
+
 static void test_escape_time_also_gets_standard() {
     uint32_t flags = GetSampleTierSupport(FractalType::mandelbrot);
     CHECK(flags & kSupport_Standard, "mandelbrot should also support standard");
@@ -66,6 +76,8 @@ int main() {
     test_auto_shallow_stays_float32();
     test_auto_deep_upgrades_to_float64();
     test_auto_boundary_exactly_20();
+    test_mandelbrot_auto_upgrades_before_20();
+    test_julia_auto_upgrades_before_20();
     test_escape_time_also_gets_standard();
 
     if (g_fail) {
