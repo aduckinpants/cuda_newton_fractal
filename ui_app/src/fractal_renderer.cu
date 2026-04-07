@@ -677,9 +677,12 @@ __global__ void kernel_render(
                 pAbsD = cxd_abs(P);
                 if (pAbsD < epsD) { converged = true; break; }
                 double dAbs2 = cxd_abs2(dP);
-                if (dAbs2 < 1e-30) break;
-                Cxd step = cxd_div(P, dP);
-                zd = cxd_add(cxd_sub(zd, cxd_scale(step, alphaD)), cConstD);
+                // Nova: when derivative is zero, skip Newton step but still apply +c.
+                if (dAbs2 >= 1e-30) {
+                    Cxd step = cxd_div(P, dP);
+                    zd = cxd_sub(zd, cxd_scale(step, alphaD));
+                }
+                zd = cxd_add(zd, cConstD);
                 if (!isfinite(zd.x) || !isfinite(zd.y)) { escaped = true; break; }
                 if (cxd_abs2(zd) > 4.0) { escaped = true; break; }
             }
@@ -695,9 +698,12 @@ __global__ void kernel_render(
                 pAbs = cx_abs(P);
                 if (pAbs < eps) { converged = true; break; }
                 float dAbs2 = cx_abs2(dP);
-                if (dAbs2 < 1e-20f) break;
-                Cx step = cx_div(P, dP);
-                z = cx_add(cx_sub(z, cx_scale(step, alpha)), cConst);
+                // Nova: when derivative is zero, skip Newton step but still apply +c.
+                if (dAbs2 >= 1e-20f) {
+                    Cx step = cx_div(P, dP);
+                    z = cx_sub(z, cx_scale(step, alpha));
+                }
+                z = cx_add(z, cConst);
                 if (!isfinite(z.x) || !isfinite(z.y)) { escaped = true; break; }
                 if (cx_abs2(z) > 4.0f) { escaped = true; break; }
             }
