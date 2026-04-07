@@ -244,6 +244,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetRequiredNumber(*viewObject, "explaino_phase", &explainoPhase, outError)) return false;
     if (!GetRequiredNumber(*viewObject, "explaino_seed_drift", &explainoSeedDrift, outError)) return false;
     if (!GetRequiredBool(*viewObject, "explaino_seed_tween", &explainoSeedTween, outError)) return false;
+    bool autoMaxIter = DefaultAutoMaxIterForFractal(nextView.fractal_type);
+    if (!GetOptionalBool(*viewObject, "auto_max_iter", &autoMaxIter, nullptr, outError)) return false;
     if (!GetOptionalBool(*viewObject, "auto_increment_seed", &autoIncrementSeed, nullptr, outError)) return false;
     if (!GetOptionalNumber(*viewObject, "explaino_seed_rate", &explainoSeedRate, nullptr, outError)) return false;
     if (!GetOptionalNumber(*viewObject, "explaino_phase_strength", &explainoPhaseStrength, nullptr, outError)) return false;
@@ -258,6 +260,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextView.explaino_phase = static_cast<float>(explainoPhase);
     nextView.explaino_seed_drift = static_cast<float>(explainoSeedDrift);
     nextView.explaino_seed_tween = explainoSeedTween;
+    nextView.auto_max_iter = autoMaxIter;
     nextView.auto_increment_seed = autoIncrementSeed;
     nextView.explaino_seed_rate = static_cast<float>(explainoSeedRate);
     nextView.explaino_phase_strength = static_cast<float>(explainoPhaseStrength);

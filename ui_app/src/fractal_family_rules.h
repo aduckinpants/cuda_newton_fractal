@@ -68,6 +68,10 @@ FRACTAL_FAMILY_RULES_HD inline constexpr ColoringMode DefaultColoringModeForFrac
     return SupportsBasinColoring(fractalType) ? ColoringMode::joy_basins : ColoringMode::smooth_escape;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool DefaultAutoMaxIterForFractal(FractalType fractalType) {
+    return fractalType == FractalType::nova || fractalType == FractalType::explaino_nova;
+}
+
 // Auto max-iter: scale iterations with zoom depth and fractal family.
 // Escape-time fractals need more iterations at depth; basin types less so.
 inline int ComputeAutoMaxIter(double log2_zoom, FractalType fractalType) {
@@ -75,6 +79,8 @@ inline int ComputeAutoMaxIter(double log2_zoom, FractalType fractalType) {
     int base, scale;
     if (fractalType == FractalType::collatz || fractalType == FractalType::explaino_collatz) {
         base = 300; scale = 80;
+    } else if (fractalType == FractalType::nova || fractalType == FractalType::explaino_nova) {
+        base = 400; scale = 120;
     } else if (IsEscapeTimeFamily(fractalType)) {
         base = 200; scale = 50;
     } else {

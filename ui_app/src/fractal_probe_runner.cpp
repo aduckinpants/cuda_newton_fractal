@@ -380,6 +380,9 @@ bool ApplyOverridesWithFractalTypeFirst(const std::vector<FractalProbeOverride>&
         ExplainoSeedNormalize(ioState->view, ioState->params);
         UpdateExplainoPolynomial(ioState->view, ioState->params, nullptr);
     }
+    if (ioState->view.auto_max_iter) {
+        ioState->params.max_iter = ComputeAutoMaxIter(ioState->view.log2_zoom, ioState->view.fractal_type);
+    }
     return true;
 }
 
@@ -693,8 +696,10 @@ bool SamplePoint(const ProbeState& state,
             PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
             pAbs = CxAbs(P);
             if (pAbs < eps) { status = FractalProbeSampleStatus::converged; break; }
-            if (CxAbs2(dP) < 1.0e-20f) break;
-            z = CxAdd(CxSub(z, CxScale(CxDiv(P, dP), params.nova_alpha)), cConst);
+            if (CxAbs2(dP) >= 1.0e-20f) {
+                z = CxSub(z, CxScale(CxDiv(P, dP), params.nova_alpha));
+            }
+            z = CxAdd(z, cConst);
             if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
             if (CxAbs2(z) > 4.0f) { status = FractalProbeSampleStatus::escaped; break; }
         }

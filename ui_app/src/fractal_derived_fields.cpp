@@ -34,6 +34,8 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     Float2 center = {0.0f, 0.0f};
     float zoom = 1.0f;
 
+    view.auto_max_iter = DefaultAutoMaxIterForFractal(view.fractal_type);
+
     switch (view.fractal_type) {
     case FractalType::mandelbrot:
         center = {-0.745f, 0.186f};

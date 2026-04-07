@@ -951,6 +951,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
     }
 
+    if (captureDiagnosticOnly || captureFindingOnly) {
+        if (IsExplainoFamily(view.fractal_type)) {
+            UpdateExplainoPolynomial(view, params, &dirty);
+        }
+        if (view.auto_max_iter) {
+            params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+        }
+    }
+
     if (validateUiOnly) {
         return 0;
     }

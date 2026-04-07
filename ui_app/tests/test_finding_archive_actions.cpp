@@ -133,6 +133,7 @@ int main() {
         ViewState view{};
         view.fractal_type = FractalType::explaino_dual;
         view.explaino_phase_strength = -2.5f;
+        view.auto_max_iter = true;
         KernelParams params{};
         params.explaino_seed = -3.0;
         params.explaino_seed_b = -7.5;
@@ -155,8 +156,9 @@ int main() {
             return 1;
         }
         if (stateJson.find("\"explaino_phase_strength\": -2.5") == std::string::npos ||
-            stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist Explaino phase strength and root spread\n";
+            stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos ||
+            stateJson.find("\"auto_max_iter\": true") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist Explaino phase strength, root spread, and auto_max_iter\n";
             return 1;
         }
 

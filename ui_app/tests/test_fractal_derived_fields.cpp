@@ -47,6 +47,11 @@ int main() {
         ViewState view{};
         KernelParams params{};
         view.fractal_type = FractalType::nova;
+        ApplyFractalViewPresetDefaults(view, nullptr);
+        if (!view.auto_max_iter) {
+            std::cerr << "Nova should default auto_max_iter on for zoomed escape-time views\n";
+            return 1;
+        }
         ApplyFractalPresetDefaults(view, params, nullptr);
         if (params.coloring_mode != ColoringMode::smooth_escape) {
             std::cerr << "Nova should default to smooth_escape, not basin coloring\n";
@@ -211,6 +216,11 @@ int main() {
         ViewState view{};
         KernelParams params{};
         view.fractal_type = FractalType::explaino_nova;
+        ApplyFractalViewPresetDefaults(view, nullptr);
+        if (!view.auto_max_iter) {
+            std::cerr << "Explaino-Nova should default auto_max_iter on for zoomed escape-time views\n";
+            return 1;
+        }
         params.explaino_seed = 7.0;
         params.explaino_warp_strength = 0.99f;
         params.coloring_mode = ColoringMode::joy_basins;

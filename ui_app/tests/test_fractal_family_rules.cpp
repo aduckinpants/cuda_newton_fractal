@@ -29,6 +29,14 @@ int main() {
             std::cerr << "Nova should allow iteration_count and smooth_escape\n";
             return 1;
         }
+        if (!DefaultAutoMaxIterForFractal(FractalType::nova)) {
+            std::cerr << "Nova should default auto_max_iter on\n";
+            return 1;
+        }
+        if (ComputeAutoMaxIter(10.0, FractalType::nova) != 1600) {
+            std::cerr << "Nova auto max-iter curve should be tuned for medium-depth escape-time zooms\n";
+            return 1;
+        }
     }
 
     {
@@ -78,6 +86,14 @@ int main() {
         if (!IsColoringModeAllowedForFractal(FractalType::explaino_nova, ColoringMode::iteration_count) ||
             !IsColoringModeAllowedForFractal(FractalType::explaino_nova, ColoringMode::smooth_escape)) {
             std::cerr << "Explaino-Nova should allow escape-time coloring modes\n";
+            return 1;
+        }
+        if (!DefaultAutoMaxIterForFractal(FractalType::explaino_nova)) {
+            std::cerr << "Explaino-Nova should default auto_max_iter on\n";
+            return 1;
+        }
+        if (ComputeAutoMaxIter(10.0, FractalType::explaino_nova) != 1600) {
+            std::cerr << "Explaino-Nova auto max-iter curve should match Nova\n";
             return 1;
         }
     }

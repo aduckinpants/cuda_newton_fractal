@@ -31,6 +31,7 @@ int main() {
     "explaino_phase": 0.75,
     "explaino_seed_drift": 0.125,
     "explaino_seed_tween": false,
+    "auto_max_iter": true,
     "explaino_phase_strength": -2.5
   },
   "params": {
@@ -95,6 +96,10 @@ int main() {
         if (view.explaino_seed_tween != false) {
             std::cerr << "view explaino_seed_tween mismatch\n";
             return 1;
+        }
+        if (!view.auto_max_iter) {
+          std::cerr << "view auto_max_iter should load from saved state when present\n";
+          return 1;
         }
         if (view.explaino_alive) {
           std::cerr << "view explaino_alive should default to false when missing from saved state\n";
@@ -210,6 +215,74 @@ int main() {
         }
         if (!NearlyEqual(view.explaino_phase_strength, -1.25f, 1.0e-6) || !NearlyEqual(params.explaino_root_spread, 2.25f, 1.0e-6)) {
             std::cerr << "Expected new Explaino state fields to round-trip from state JSON\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "legacy_explaino_nova_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_nova",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 300,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "smooth_escape",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 0.0,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_spread": 0.5,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected legacy Explaino-Nova state to load: " << error << "\n";
+            return 1;
+        }
+        if (!view.auto_max_iter) {
+            std::cerr << "Legacy Explaino-Nova states should default auto_max_iter on when the field is missing\n";
             return 1;
         }
     }

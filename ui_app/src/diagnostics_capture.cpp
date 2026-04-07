@@ -156,6 +156,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_phase\": " << static_cast<double>(view.explaino_phase) << ",\n";
     js << "    \"explaino_seed_drift\": " << static_cast<double>(view.explaino_seed_drift) << ",\n";
     js << "    \"explaino_seed_tween\": " << (view.explaino_seed_tween ? "true" : "false") << ",\n";
+    js << "    \"auto_max_iter\": " << (view.auto_max_iter ? "true" : "false") << ",\n";
     js << "    \"auto_increment_seed\": " << (view.auto_increment_seed ? "true" : "false") << ",\n";
     js << "    \"explaino_seed_rate\": " << static_cast<double>(view.explaino_seed_rate) << ",\n";
     js << "    \"explaino_phase_strength\": " << static_cast<double>(view.explaino_phase_strength) << "\n";
