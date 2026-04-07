@@ -7,6 +7,7 @@
 #include "fractal_runtime_validation.h"
 #include "explaino_seed_curve.h"
 #include "perturbation_reference_orbit.h"
+#include "polynomial_eval_real_coeffs.h"
 #include "sample_tier_resolver.h"
 
 #include <cuda_runtime.h>
@@ -114,99 +115,19 @@ __device__ __forceinline__ Cxd cxd_div(Cxd a, Cxd b) {
 }
 
 __device__ __forceinline__ void poly_eval_real_coeffs_deg4(const float coeffs[5], Cx z, Cx* outP, Cx* outDp) {
-    // P(z) = c0 + c1 z + c2 z^2 + c3 z^3 + c4 z^4
-    // P'(z) = c1 + 2 c2 z + 3 c3 z^2 + 4 c4 z^3
-    Cx z2 = cx_mul(z, z);
-    Cx z3 = cx_mul(z2, z);
-    Cx z4 = cx_mul(z2, z2);
-
-    Cx P{coeffs[0], 0.0f};
-    P = cx_add(P, cx_scale(z, coeffs[1]));
-    P = cx_add(P, cx_scale(z2, coeffs[2]));
-    P = cx_add(P, cx_scale(z3, coeffs[3]));
-    P = cx_add(P, cx_scale(z4, coeffs[4]));
-
-    Cx dP{coeffs[1], 0.0f};
-    dP = cx_add(dP, cx_scale(z, 2.0f * coeffs[2]));
-    dP = cx_add(dP, cx_scale(z2, 3.0f * coeffs[3]));
-    dP = cx_add(dP, cx_scale(z3, 4.0f * coeffs[4]));
-
-    *outP = P;
-    *outDp = dP;
+    PolyEvalRealCoeffsDeg4(coeffs, z, outP, outDp);
 }
 
 __device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2(const float coeffs[5], Cx z, Cx* outP, Cx* outDp, Cx* outD2p) {
-    // P(z) = c0 + c1 z + c2 z^2 + c3 z^3 + c4 z^4
-    // P'(z) = c1 + 2 c2 z + 3 c3 z^2 + 4 c4 z^3
-    // P''(z) = 2 c2 + 6 c3 z + 12 c4 z^2
-    Cx z2 = cx_mul(z, z);
-    Cx z3 = cx_mul(z2, z);
-    Cx z4 = cx_mul(z2, z2);
-
-    Cx P{coeffs[0], 0.0f};
-    P = cx_add(P, cx_scale(z, coeffs[1]));
-    P = cx_add(P, cx_scale(z2, coeffs[2]));
-    P = cx_add(P, cx_scale(z3, coeffs[3]));
-    P = cx_add(P, cx_scale(z4, coeffs[4]));
-
-    Cx dP{coeffs[1], 0.0f};
-    dP = cx_add(dP, cx_scale(z, 2.0f * coeffs[2]));
-    dP = cx_add(dP, cx_scale(z2, 3.0f * coeffs[3]));
-    dP = cx_add(dP, cx_scale(z3, 4.0f * coeffs[4]));
-
-    Cx d2P{2.0f * coeffs[2], 0.0f};
-    d2P = cx_add(d2P, cx_scale(z, 6.0f * coeffs[3]));
-    d2P = cx_add(d2P, cx_scale(z2, 12.0f * coeffs[4]));
-
-    *outP = P;
-    *outDp = dP;
-    *outD2p = d2P;
+    PolyEvalRealCoeffsDeg4D2(coeffs, z, outP, outDp, outD2p);
 }
 
-// Double-precision polynomial evaluation (Phase A: standard precision tier).
 __device__ __forceinline__ void poly_eval_real_coeffs_deg4_d(const float coeffs[5], Cxd z, Cxd* outP, Cxd* outDp) {
-    Cxd z2 = cxd_mul(z, z);
-    Cxd z3 = cxd_mul(z2, z);
-    Cxd z4 = cxd_mul(z2, z2);
-
-    Cxd P{(double)coeffs[0], 0.0};
-    P = cxd_add(P, cxd_scale(z, (double)coeffs[1]));
-    P = cxd_add(P, cxd_scale(z2, (double)coeffs[2]));
-    P = cxd_add(P, cxd_scale(z3, (double)coeffs[3]));
-    P = cxd_add(P, cxd_scale(z4, (double)coeffs[4]));
-
-    Cxd dP{(double)coeffs[1], 0.0};
-    dP = cxd_add(dP, cxd_scale(z, 2.0 * (double)coeffs[2]));
-    dP = cxd_add(dP, cxd_scale(z2, 3.0 * (double)coeffs[3]));
-    dP = cxd_add(dP, cxd_scale(z3, 4.0 * (double)coeffs[4]));
-
-    *outP = P;
-    *outDp = dP;
+    PolyEvalRealCoeffsDeg4(coeffs, z, outP, outDp);
 }
 
 __device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2_d(const float coeffs[5], Cxd z, Cxd* outP, Cxd* outDp, Cxd* outD2p) {
-    Cxd z2 = cxd_mul(z, z);
-    Cxd z3 = cxd_mul(z2, z);
-    Cxd z4 = cxd_mul(z2, z2);
-
-    Cxd P{(double)coeffs[0], 0.0};
-    P = cxd_add(P, cxd_scale(z, (double)coeffs[1]));
-    P = cxd_add(P, cxd_scale(z2, (double)coeffs[2]));
-    P = cxd_add(P, cxd_scale(z3, (double)coeffs[3]));
-    P = cxd_add(P, cxd_scale(z4, (double)coeffs[4]));
-
-    Cxd dP{(double)coeffs[1], 0.0};
-    dP = cxd_add(dP, cxd_scale(z, 2.0 * (double)coeffs[2]));
-    dP = cxd_add(dP, cxd_scale(z2, 3.0 * (double)coeffs[3]));
-    dP = cxd_add(dP, cxd_scale(z3, 4.0 * (double)coeffs[4]));
-
-    Cxd d2P{2.0 * (double)coeffs[2], 0.0};
-    d2P = cxd_add(d2P, cxd_scale(z, 6.0 * (double)coeffs[3]));
-    d2P = cxd_add(d2P, cxd_scale(z2, 12.0 * (double)coeffs[4]));
-
-    *outP = P;
-    *outDp = dP;
-    *outD2p = d2P;
+    PolyEvalRealCoeffsDeg4D2(coeffs, z, outP, outDp, outD2p);
 }
 
 __device__ __forceinline__ int nearest_root_index_unit_roots(Cx z, int n) {

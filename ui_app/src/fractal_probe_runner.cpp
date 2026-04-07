@@ -9,6 +9,7 @@
 #include "escape_time_direct_formulas.h"
 #include "escape_time_specialized_formulas.h"
 #include "fractal_family_rules.h"
+#include "polynomial_eval_real_coeffs.h"
 #include "fractal_runtime_validation.h"
 #include "runtime_reset.h"
 #include "schema_binding.h"
@@ -81,51 +82,6 @@ Cx CxRot(Cx value, float angle) {
     const float cs = std::cos(angle);
     const float sn = std::sin(angle);
     return {value.x * cs - value.y * sn, value.x * sn + value.y * cs};
-}
-
-void PolyEvalRealCoeffsDeg4(const float coeffs[5], Cx z, Cx* outP, Cx* outDp) {
-    const Cx z2 = CxMul(z, z);
-    const Cx z3 = CxMul(z2, z);
-    const Cx z4 = CxMul(z2, z2);
-
-    Cx P{coeffs[0], 0.0f};
-    P = CxAdd(P, CxScale(z, coeffs[1]));
-    P = CxAdd(P, CxScale(z2, coeffs[2]));
-    P = CxAdd(P, CxScale(z3, coeffs[3]));
-    P = CxAdd(P, CxScale(z4, coeffs[4]));
-
-    Cx dP{coeffs[1], 0.0f};
-    dP = CxAdd(dP, CxScale(z, 2.0f * coeffs[2]));
-    dP = CxAdd(dP, CxScale(z2, 3.0f * coeffs[3]));
-    dP = CxAdd(dP, CxScale(z3, 4.0f * coeffs[4]));
-
-    if (outP) *outP = P;
-    if (outDp) *outDp = dP;
-}
-
-void PolyEvalRealCoeffsDeg4D2(const float coeffs[5], Cx z, Cx* outP, Cx* outDp, Cx* outD2p) {
-    const Cx z2 = CxMul(z, z);
-    const Cx z3 = CxMul(z2, z);
-    const Cx z4 = CxMul(z2, z2);
-
-    Cx P{coeffs[0], 0.0f};
-    P = CxAdd(P, CxScale(z, coeffs[1]));
-    P = CxAdd(P, CxScale(z2, coeffs[2]));
-    P = CxAdd(P, CxScale(z3, coeffs[3]));
-    P = CxAdd(P, CxScale(z4, coeffs[4]));
-
-    Cx dP{coeffs[1], 0.0f};
-    dP = CxAdd(dP, CxScale(z, 2.0f * coeffs[2]));
-    dP = CxAdd(dP, CxScale(z2, 3.0f * coeffs[3]));
-    dP = CxAdd(dP, CxScale(z3, 4.0f * coeffs[4]));
-
-    Cx d2P{2.0f * coeffs[2], 0.0f};
-    d2P = CxAdd(d2P, CxScale(z, 6.0f * coeffs[3]));
-    d2P = CxAdd(d2P, CxScale(z2, 12.0f * coeffs[4]));
-
-    if (outP) *outP = P;
-    if (outDp) *outDp = dP;
-    if (outD2p) *outD2p = d2P;
 }
 
 float Hash01Host(uint32_t x) {

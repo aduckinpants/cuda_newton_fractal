@@ -131,6 +131,19 @@ Important contract preserved:
 - the float and double paths keep their previous derivative-degeneracy thresholds
 - warp start, damping control, and non-finite handling stay in the callers
 
+### 3.7 Shared polynomial evaluation helpers
+
+Landed:
+- `ui_app/src/polynomial_eval_real_coeffs.h`
+
+Purpose:
+- unify the repeated real-coefficient degree-4 polynomial evaluation logic used by the CUDA renderer and CPU probe path
+
+Important contract preserved:
+- float and double polynomial evaluation share the same coefficient layout and derivative formulas
+- second-derivative evaluation remains explicit for Halley-style callers
+- the renderer still uses local forwarding names where that avoids broad call-site churn in the current slice
+
 ## 4) Next Cleanup Slices
 
 ### Slice D — Common complex helper convergence pass
@@ -152,7 +165,7 @@ Exit criteria:
 
 The best next bounded cleanup slice is:
 
-1. extract shared polynomial-evaluation helpers that are still duplicated across renderer and probe
+1. isolate one remaining renderer-local complex helper seam after the shared probe/renderer math extractions
 2. keep the slice to a single helper plus caller rewrites
 3. validate with helper + viewer builds
 4. checkpoint immediately
