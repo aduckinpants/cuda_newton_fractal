@@ -6,6 +6,7 @@
 #include "finding_state_actions.h"
 #include "fractal_derived_fields.h"
 #include "escape_time_direct_formulas.h"
+#include "escape_time_specialized_formulas.h"
 #include "fractal_family_rules.h"
 #include "fractal_runtime_validation.h"
 #include "runtime_reset.h"
@@ -670,74 +671,19 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
-    if (ft == FractalType::mcmullen || ft == FractalType::collatz) {
+    if (UsesSpecializedEscapeTimeFormula(ft)) {
         z = {0.0f, 0.0f};
-        Cx cConst = coord;
-
-        int mcmullenM = 0;
-        int mcmullenN = 0;
-        float mcmullenLambda = 0.0f;
-        if (ft == FractalType::mcmullen) {
-            switch (params.mcmullen_preset) {
-            case McMullenPreset::z2_z2:
-                mcmullenM = 2;
-                mcmullenN = 2;
-                mcmullenLambda = -0.10f;
-                break;
-            case McMullenPreset::z4_z2:
-                mcmullenM = 4;
-                mcmullenN = 2;
-                mcmullenLambda = -0.05f;
-                break;
-            case McMullenPreset::z3_z2:
-                mcmullenM = 3;
-                mcmullenN = 2;
-                mcmullenLambda = -0.10f;
-                break;
-            default:
-                mcmullenM = 3;
-                mcmullenN = 3;
-                mcmullenLambda = -0.125f;
-                break;
-            }
-            z = coord;
-        } else if (ft == FractalType::collatz) {
-            z = coord;
-        }
+        const McMullenPresetConfig mcmullenConfig = ResolveMcMullenPresetConfig(params.mcmullen_preset);
+        z = coord;
 
         for (; it < maxIter; ++it) {
             if (ft == FractalType::mcmullen) {
-                const float zAbs2 = CxAbs2(z);
-                if (zAbs2 < 1.0e-20f) {
+                if (StepMcMullenEscapeState(mcmullenConfig, &z) == SpecializedEscapeStepResult::pole) {
                     status = FractalProbeSampleStatus::pole;
                     break;
                 }
-
-                Cx zPow{1.0f, 0.0f};
-                Cx base = z;
-                int power = mcmullenM;
-                while (power > 0) {
-                    if ((power & 1) != 0) zPow = CxMul(zPow, base);
-                    base = CxMul(base, base);
-                    power >>= 1;
-                }
-
-                const Cx zInv{z.x / zAbs2, -z.y / zAbs2};
-                Cx zInvPow{1.0f, 0.0f};
-                base = zInv;
-                power = mcmullenN;
-                while (power > 0) {
-                    if ((power & 1) != 0) zInvPow = CxMul(zInvPow, base);
-                    base = CxMul(base, base);
-                    power >>= 1;
-                }
-
-                z = CxAdd(zPow, CxScale(zInvPow, mcmullenLambda));
             } else {
-                const Cx cosPi = CxCosPi(z);
-                const Cx linear{2.0f + 5.0f * z.x, 5.0f * z.y};
-                const Cx affine{2.0f + 7.0f * z.x, 7.0f * z.y};
-                z = CxScale(CxSub(affine, CxMul(linear, cosPi)), 0.25f);
+                StepCollatzEscapeState(&z);
             }
 
             if (!IsFiniteCx(z)) {
@@ -745,8 +691,7 @@ bool SamplePoint(const ProbeState& state,
                 break;
             }
 
-            const float escapeRadius2 = (ft == FractalType::mcmullen || ft == FractalType::collatz) ? 10000.0f : 4.0f;
-            if (CxAbs2(z) > escapeRadius2) {
+            if (CxAbs2(z) > SpecializedEscapeRadiusSquared()) {
                 status = FractalProbeSampleStatus::escaped;
                 break;
             }

@@ -1,6 +1,7 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
 #include "escape_time_direct_formulas.h"
+#include "escape_time_specialized_formulas.h"
 #include "fractal_runtime_validation.h"
 #include "explaino_seed_curve.h"
 #include "sample_tier_resolver.h"
@@ -1148,84 +1149,21 @@ __global__ void kernel_render(
             }
             converged = (pAbs < eps);
         }
-    } else if (ft == FractalType::mcmullen) {
-        // McMullen rational map: z_{n+1} = z^m + lambda/z^n
-        // Preset-driven (m, n, lambda) tuples.
-        int mm, nn;
-        float lam;
-        switch (params.mcmullen_preset) {
-        case McMullenPreset::z2_z2: mm = 2; nn = 2; lam = -0.10f; break;
-        case McMullenPreset::z4_z2: mm = 4; nn = 2; lam = -0.05f; break;
-        case McMullenPreset::z3_z2: mm = 3; nn = 2; lam = -0.10f; break;
-        default:                    mm = 3; nn = 3; lam = -0.125f; break;
-        }
-
+    } else if (UsesSpecializedEscapeTimeFormula(ft)) {
         z = coord;
+        const McMullenPresetConfig mcmullenConfig = ResolveMcMullenPresetConfig(params.mcmullen_preset);
 
         for (; it < maxIter; ++it) {
-            // z^mm via repeated squaring for small integer powers
-            Cx zpow = {1.0f, 0.0f};
-            Cx base = z;
-            int p = mm;
-            while (p > 0) {
-                if (p & 1) zpow = cx_mul(zpow, base);
-                base = cx_mul(base, base);
-                p >>= 1;
+            if (ft == FractalType::mcmullen) {
+                if (StepMcMullenEscapeState(mcmullenConfig, &z) == SpecializedEscapeStepResult::pole) {
+                    escaped = true;
+                    break;
+                }
+            } else {
+                StepCollatzEscapeState(&z);
             }
 
-            // 1/z^nn
-            float zabs2 = cx_abs2(z);
-            if (zabs2 < 1e-20f) {
-                escaped = true;
-                break;
-            }
-            Cx zinv = {z.x / zabs2, -z.y / zabs2};
-            Cx zinvpow = {1.0f, 0.0f};
-            base = zinv;
-            p = nn;
-            while (p > 0) {
-                if (p & 1) zinvpow = cx_mul(zinvpow, base);
-                base = cx_mul(base, base);
-                p >>= 1;
-            }
-
-            // z = z^m + lambda/z^n
-            z = cx_add(zpow, cx_scale(zinvpow, lam));
-
-            if (cx_abs2(z) > 10000.0f) {
-                escaped = true;
-                break;
-            }
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                escaped = true;
-                break;
-            }
-        }
-    } else if (ft == FractalType::collatz) {
-        // Collatz fractal: smooth complex extension of the Collatz conjecture.
-        // f(z) = (1/4)(2 + 7z - (2+5z)cos(pi*z))
-        z = coord;
-        const float kPI = 3.14159265358979323846f;
-
-        for (; it < maxIter; ++it) {
-            // cos(pi*z) for complex z = x+iy:
-            // cos(pi*(x+iy)) = cos(pi*x)*cosh(pi*y) - i*sin(pi*x)*sinh(pi*y)
-            float px = kPI * z.x;
-            float py = kPI * z.y;
-            float cpx = cosf(px), spx = sinf(px);
-            float chy = coshf(py), shy = sinhf(py);
-            Cx cospi = {cpx * chy, -spx * shy};
-
-            // (2 + 5z)
-            Cx a = {2.0f + 5.0f * z.x, 5.0f * z.y};
-            // (2 + 5z)*cos(pi*z)
-            Cx ac = cx_mul(a, cospi);
-            // 2 + 7z
-            Cx b = {2.0f + 7.0f * z.x, 7.0f * z.y};
-            // f(z) = (1/4)(b - ac)
-            z = cx_scale(cx_sub(b, ac), 0.25f);
-
-            if (cx_abs2(z) > 10000.0f) {
+            if (cx_abs2(z) > SpecializedEscapeRadiusSquared()) {
                 escaped = true;
                 break;
             }

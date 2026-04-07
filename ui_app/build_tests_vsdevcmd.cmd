@@ -103,6 +103,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_escape_time_specialized_formulas.cpp ^
+  /Fe:"%TESTROOT%\test_escape_time_specialized_formulas.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_escape_time_direct_formulas.cpp ^
   /Fe:"%TESTROOT%\test_escape_time_direct_formulas.exe"
 if errorlevel 1 exit /b 1
@@ -180,6 +185,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_runtime_validation.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_escape_time_specialized_formulas.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_escape_time_direct_formulas.exe"
