@@ -174,11 +174,45 @@
           "type": "slider_float",
           "label": "Seed Increment Rate",
           "value_type": "float",
-          "min": 0.001, "max": 5.0, "step": 0.001, "default": 0.05,
+          "min": 0.0001, "max": 5.0, "step": 0.0001, "default": 0.001,
           "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.explaino_seed_rate" },
           "visible_if": { "op": "eq", "path": "fractal.view.auto_increment_seed", "value": true },
           "help": "Per-second rate for smooth Explaino seed stepping. Logarithmic scale gives more room in the low end. Left/Right arrow keys also scrub with acceleration."
+        },
+        {
+          "id": "param_anim_target",
+          "type": "combo",
+          "label": "Animate Parameter",
+          "value_type": "enum",
+          "default": "none",
+          "options": [
+            { "id": "none", "label": "None" },
+            { "id": "seed", "label": "Seed" },
+            { "id": "damping", "label": "Damping" },
+            { "id": "warp_strength", "label": "Warp Strength" },
+            { "id": "root_spread", "label": "Root Spread" },
+            { "id": "mix", "label": "Mix" },
+            { "id": "nova_alpha", "label": "Nova Alpha" },
+            { "id": "phoenix_p_real", "label": "Phoenix P (Real)" },
+            { "id": "multibrot_power", "label": "Multibrot Power" },
+            { "id": "lambda_real", "label": "Lambda (Real)" },
+            { "id": "momentum_beta", "label": "Momentum Beta" },
+            { "id": "explaino_phase", "label": "Explaino Phase" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.view.param_anim_target" },
+          "help": "Select a math parameter to auto-increment each frame. The rate slider below controls the speed."
+        },
+        {
+          "id": "param_anim_rate",
+          "type": "slider_float",
+          "label": "Animation Rate",
+          "value_type": "float",
+          "min": 0.0001, "max": 5.0, "step": 0.0001, "default": 0.001,
+          "logarithmic": true,
+          "binding": { "kind": "param", "path": "fractal.view.param_anim_rate" },
+          "visible_if": { "op": "neq", "path": "fractal.view.param_anim_target", "value": "none" },
+          "help": "Per-second rate for the selected parameter animation."
         },
         {
           "id": "multibrot_power_float",
@@ -629,7 +663,9 @@
             { "id": "root_basin", "label": "Root Basins (Root-Finding)" },
             { "id": "joy_basins", "label": "Joy Basins (All paths succeed)" },
             { "id": "iteration_count", "label": "Iteration Count" },
-            { "id": "smooth_escape", "label": "Smooth Escape" }
+            { "id": "smooth_escape", "label": "Smooth Escape" },
+            { "id": "phase", "label": "Phase (Hue Wheel)" },
+            { "id": "iteration_bands", "label": "Iteration Bands" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
           "visible_if": {
@@ -648,7 +684,9 @@
           "default": "smooth_escape",
           "options": [
             { "id": "iteration_count", "label": "Iteration Count" },
-            { "id": "smooth_escape", "label": "Smooth Escape" }
+            { "id": "smooth_escape", "label": "Smooth Escape" },
+            { "id": "phase", "label": "Phase (Hue Wheel)" },
+            { "id": "iteration_bands", "label": "Iteration Bands" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
           "visible_if": {

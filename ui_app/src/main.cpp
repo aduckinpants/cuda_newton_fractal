@@ -29,6 +29,7 @@
 #include "finding_state_actions.h"
 #include "explaino_seed.h"
 #include "explaino_seed_dynamics.h"
+#include "param_anim_dynamics.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "fractal_probe_contract.h"
@@ -70,6 +71,9 @@ static ID3D11ShaderResourceView* g_maskSRV = nullptr;
 
 static ID3D11Texture2D* g_lensSdfTexture = nullptr;
 static ID3D11ShaderResourceView* g_lensSdfSRV = nullptr;
+
+// Tracks the viewport's available pixel dimensions for adaptive-resolution settle.
+static Int2 g_viewportPixels{0, 0};
 
 static void CleanupRenderTarget() {
     if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
@@ -486,6 +490,10 @@ static void RenderFractalViewport(
     ImGui::Begin("Fractal");
     if (g_fractalSRV) {
         ImVec2 avail = ImGui::GetContentRegionAvail();
+        // Track viewport pixel dimensions for adaptive-resolution settle.
+        if (avail.x >= 64.0f && avail.y >= 64.0f) {
+            g_viewportPixels = {(int)avail.x, (int)avail.y};
+        }
         float scale = 1.0f;
         if (render.resolution.x > 0 && render.resolution.y > 0) {
             float sx = avail.x / (float)render.resolution.x;
@@ -581,6 +589,9 @@ static void DispatchRenderFrame(
     RenderSettings dispatchRender = render;
     if (renderPacing.preview_active && !forceFullQuality) {
         dispatchRender.resolution = renderPacing.render_resolution;
+    } else if (forceFullQuality && g_viewportPixels.x >= 64 && g_viewportPixels.y >= 64) {
+        // Settle to viewport pixel dimensions for full-quality render.
+        dispatchRender.resolution = g_viewportPixels;
     }
     rgba.resize((size_t)dispatchRender.resolution.x * (size_t)dispatchRender.resolution.y);
     EnsureFractalTexture(dispatchRender.resolution.x, dispatchRender.resolution.y);
@@ -783,6 +794,10 @@ static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& re
     }
     const double zhp = SafeZoomFromLog2(view.log2_zoom);
     ImGui::Text("HP zoom: 2^(%.3f) ~= %.3e", view.log2_zoom, zhp);
+    const char* backendStr = (stats.resolved_eval.backend == NumericBackend::float64) ? "float64" : "float32";
+    const char* tierLabel = (render.sample_tier == SampleTier::tier_auto) ? "auto" :
+                            (render.sample_tier == SampleTier::fast) ? "fast" : "standard";
+    ImGui::Text("Precision: %s -> %s", tierLabel, backendStr);
 }
 
 static void RenderSweepControls(const SweepConfig& config, SweepPlayerState& sweepState,
@@ -876,7 +891,8 @@ static void ApplyArrowKeySeedScrub(const ImGuiIO& io, ViewState& view, KernelPar
     if (left || right) {
         seedScrubAccel = fminf(seedScrubAccel + io.DeltaTime * 2.0f, 1.0f);
         float t = seedScrubAccel * seedScrubAccel * seedScrubAccel;
-        float rate = fmaxf(0.001f, view.explaino_seed_rate);
+        bool shift = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
+        float rate = shift ? 1.0f : fmaxf(0.0001f, view.explaino_seed_rate);
         double delta = (double)(t * rate) * (double)io.DeltaTime;
         if (left) delta = -delta;
         ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
@@ -1108,6 +1124,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
 
         if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
+            dirty = true;
+        }
+        if (ApplyParamAnimDynamics(io.DeltaTime, view, params)) {
             dirty = true;
         }
 

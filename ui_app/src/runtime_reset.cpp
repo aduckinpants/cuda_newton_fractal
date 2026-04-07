@@ -19,7 +19,7 @@ void ResetRuntimeStateForCurrentFractal(
     view.explaino_phase = 0.0f;
     view.explaino_seed_drift = 0.0f;
     view.auto_increment_seed = false;
-    view.explaino_seed_rate = 0.05f;
+    view.explaino_seed_rate = 0.001f;
     view.explaino_phase_strength = 1.0f;
     ApplyFractalViewPresetDefaults(view, ioDirty);
 

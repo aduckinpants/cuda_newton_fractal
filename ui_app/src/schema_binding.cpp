@@ -36,6 +36,8 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case ColoringMode::iteration_count: return "iteration_count";
         case ColoringMode::smooth_escape: return "smooth_escape";
         case ColoringMode::joy_basins: return "joy_basins";
+        case ColoringMode::phase: return "phase";
+        case ColoringMode::iteration_bands: return "iteration_bands";
         }
     }
     if (view && path == "fractal.view.fractal_type") {
@@ -88,6 +90,22 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case SampleTier::standard: return "standard";
         }
     }
+    if (view && path == "fractal.view.param_anim_target") {
+        switch (view->param_anim_target) {
+        case ParamAnimTarget::none: return "none";
+        case ParamAnimTarget::seed: return "seed";
+        case ParamAnimTarget::damping: return "damping";
+        case ParamAnimTarget::warp_strength: return "warp_strength";
+        case ParamAnimTarget::root_spread: return "root_spread";
+        case ParamAnimTarget::mix: return "mix";
+        case ParamAnimTarget::nova_alpha: return "nova_alpha";
+        case ParamAnimTarget::phoenix_p_real: return "phoenix_p_real";
+        case ParamAnimTarget::multibrot_power: return "multibrot_power";
+        case ParamAnimTarget::lambda_real: return "lambda_real";
+        case ParamAnimTarget::momentum_beta: return "momentum_beta";
+        case ParamAnimTarget::explaino_phase: return "explaino_phase";
+        }
+    }
     return {};
 }
 
@@ -119,6 +137,8 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "iteration_count") params->coloring_mode = ColoringMode::iteration_count;
         else if (id == "smooth_escape") params->coloring_mode = ColoringMode::smooth_escape;
         else if (id == "joy_basins") params->coloring_mode = ColoringMode::joy_basins;
+        else if (id == "phase") params->coloring_mode = ColoringMode::phase;
+        else if (id == "iteration_bands") params->coloring_mode = ColoringMode::iteration_bands;
         else return false;
         return true;
     }
@@ -169,6 +189,22 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         if (id == "tier_auto") render->sample_tier = SampleTier::tier_auto;
         else if (id == "fast") render->sample_tier = SampleTier::fast;
         else if (id == "standard") render->sample_tier = SampleTier::standard;
+        else return false;
+        return true;
+    }
+    if (view && path == "fractal.view.param_anim_target") {
+        if (id == "none") view->param_anim_target = ParamAnimTarget::none;
+        else if (id == "seed") view->param_anim_target = ParamAnimTarget::seed;
+        else if (id == "damping") view->param_anim_target = ParamAnimTarget::damping;
+        else if (id == "warp_strength") view->param_anim_target = ParamAnimTarget::warp_strength;
+        else if (id == "root_spread") view->param_anim_target = ParamAnimTarget::root_spread;
+        else if (id == "mix") view->param_anim_target = ParamAnimTarget::mix;
+        else if (id == "nova_alpha") view->param_anim_target = ParamAnimTarget::nova_alpha;
+        else if (id == "phoenix_p_real") view->param_anim_target = ParamAnimTarget::phoenix_p_real;
+        else if (id == "multibrot_power") view->param_anim_target = ParamAnimTarget::multibrot_power;
+        else if (id == "lambda_real") view->param_anim_target = ParamAnimTarget::lambda_real;
+        else if (id == "momentum_beta") view->param_anim_target = ParamAnimTarget::momentum_beta;
+        else if (id == "explaino_phase") view->param_anim_target = ParamAnimTarget::explaino_phase;
         else return false;
         return true;
     }
@@ -283,6 +319,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.view.explaino_seed_drift") { *outPtr = &view->explaino_seed_drift; return true; }
         if (path == "fractal.view.explaino_seed_rate") { *outPtr = &view->explaino_seed_rate; return true; }
         if (path == "fractal.view.explaino_phase_strength") { *outPtr = &view->explaino_phase_strength; return true; }
+        if (path == "fractal.view.param_anim_rate") { *outPtr = &view->param_anim_rate; return true; }
     }
     if (params) {
         if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }

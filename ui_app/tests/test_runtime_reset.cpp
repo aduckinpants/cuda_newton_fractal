@@ -53,7 +53,7 @@ int main() {
         std::cerr << "Reset should clear explaino phase/drift\n";
         return 1;
     }
-    if (view.auto_increment_seed || !NearlyEqual(view.explaino_seed_rate, 0.05f) || !NearlyEqual(view.explaino_phase_strength, 1.0f)) {
+    if (view.auto_increment_seed || !NearlyEqual(view.explaino_seed_rate, 0.001f) || !NearlyEqual(view.explaino_phase_strength, 1.0f)) {
         std::cerr << "Reset should restore explaino transport defaults\n";
         return 1;
     }

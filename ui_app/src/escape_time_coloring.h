@@ -73,6 +73,53 @@ ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorAbs(Complex value) {
     return sqrtf(value.x * value.x + value.y * value.y);
 }
 
+// HSV to RGB (h in [0,1], s in [0,1], v in [0,1]).
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color HsvToRgb(float h, float s, float v) {
+    h = h - floorf(h);  // wrap to [0,1]
+    float c = v * s;
+    float x = c * (1.0f - fabsf(fmodf(h * 6.0f, 2.0f) - 1.0f));
+    float m = v - c;
+    float r, g, b;
+    int sector = static_cast<int>(h * 6.0f);
+    switch (sector % 6) {
+    case 0: r = c; g = x; b = 0; break;
+    case 1: r = x; g = c; b = 0; break;
+    case 2: r = 0; g = c; b = x; break;
+    case 3: r = 0; g = x; b = c; break;
+    case 4: r = x; g = 0; b = c; break;
+    default: r = c; g = 0; b = x; break;
+    }
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(r + m, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(g + m, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(b + m, 0.0f, 1.0f) * 255.0f),
+        255);
+}
+
+// Cyclic iteration-band palette (8 distinct hues).
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter) {
+    const float palette[8][3] = {
+        {0.05f, 0.15f, 0.45f},
+        {0.10f, 0.50f, 0.70f},
+        {0.15f, 0.75f, 0.55f},
+        {0.65f, 0.85f, 0.20f},
+        {0.95f, 0.75f, 0.15f},
+        {0.90f, 0.40f, 0.10f},
+        {0.70f, 0.15f, 0.30f},
+        {0.40f, 0.10f, 0.55f},
+    };
+    int idx = iteration % 8;
+    float t = static_cast<float>(iteration) / static_cast<float>(maxIter);
+    float bright = 1.0f - 0.4f * t;
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(palette[idx][0] * bright, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(palette[idx][1] * bright, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(palette[idx][2] * bright, 0.0f, 1.0f) * 255.0f),
+        255);
+}
+
 template <typename Color, typename Complex>
 ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     FractalType fractalType,
@@ -87,6 +134,18 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     const Color errorColor = EscapeTimeColorMake<Color>(255, 0, 255, 255);
     if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
         return errorColor;
+    }
+
+    if (mode == ColoringMode::phase) {
+        float angle = atan2f(z.y, z.x);
+        float h = (angle + 3.14159265f) / (2.0f * 3.14159265f);
+        float v = escaped ? 0.85f : 0.25f;
+        return HsvToRgb<Color>(h, 0.9f, v);
+    }
+
+    if (mode == ColoringMode::iteration_bands) {
+        if (!escaped) return EscapeTimeColorMake<Color>(0, 0, 0, 255);
+        return IterationBandColor<Color>(iteration, maxIter);
     }
 
     if (!escaped) {

@@ -367,7 +367,15 @@ if errorlevel 1 exit /b 1
 "%TESTROOT%\test_fractal_probe_coverage.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\explaino_seed.cpp .\src\param_anim_dynamics.cpp .\tests\test_param_anim_dynamics.cpp ^
+  /Fe:"%TESTROOT%\test_param_anim_dynamics.exe"
+if errorlevel 1 exit /b 1
+
 "%TESTROOT%\test_headless_modes.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_param_anim_dynamics.exe"
 if errorlevel 1 exit /b 1
 
 echo All helper tests passed.

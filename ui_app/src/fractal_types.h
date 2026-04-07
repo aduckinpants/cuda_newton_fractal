@@ -24,6 +24,8 @@ enum class ColoringMode : int {
     iteration_count = 1,
     smooth_escape = 2,
     joy_basins = 3,
+    phase = 4,
+    iteration_bands = 5,
 };
 
 enum class TranscendentalFunc : int {
@@ -117,6 +119,21 @@ enum class CameraBehavior : int {
     off = 4,
 };
 
+enum class ParamAnimTarget : int {
+    none = 0,
+    seed = 1,
+    damping = 2,
+    warp_strength = 3,
+    root_spread = 4,
+    mix = 5,
+    nova_alpha = 6,
+    phoenix_p_real = 7,
+    multibrot_power = 8,
+    lambda_real = 9,
+    momentum_beta = 10,
+    explaino_phase = 11,
+};
+
 struct ViewState {
     Float2 center{0.0f, 0.0f};
     float zoom{1.0f};
@@ -136,8 +153,11 @@ struct ViewState {
     float explaino_phase{0.0f};
     float explaino_seed_drift{0.0f};
     bool auto_increment_seed{false};
-    float explaino_seed_rate{0.05f};
+    float explaino_seed_rate{0.001f};
     float explaino_phase_strength{1.0f};
+
+    ParamAnimTarget param_anim_target{ParamAnimTarget::none};
+    float param_anim_rate{0.001f};
 
     bool auto_max_iter{false};
 
@@ -202,6 +222,7 @@ struct RenderStats {
     float last_render_ms{0.0f};
     int last_iters_avg{0};
     int last_device_id{0};
+    ResolvedEvalMode resolved_eval{};
 };
 
 bool RenderFractalCUDA(

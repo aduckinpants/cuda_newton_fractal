@@ -1176,6 +1176,13 @@ __global__ void kernel_render(
                 unsigned char r = (unsigned char)(t * 255.0f);
                 unsigned char g = (unsigned char)(sqrtf(t) * 255.0f);
                 color = {r, g, (unsigned char)(255 - r), 255};
+            } else if (mode == ColoringMode::phase) {
+                float angle = atan2f(z.y, z.x);
+                float h = (angle + 3.14159265f) / (2.0f * 3.14159265f);
+                float v = converged ? 0.85f : 0.25f;
+                color = HsvToRgb<uchar4>(h, 0.9f, v);
+            } else if (mode == ColoringMode::iteration_bands) {
+                color = IterationBandColor<uchar4>(it, maxIter);
             }
         }
     } else {
@@ -1401,6 +1408,7 @@ bool RenderFractalCUDA(
         outStats->last_device_id = dev;
         outStats->last_iters_avg = (w > 0 && h > 0) ? (itersSum / (w * h)) : 0;
         if (!render.benchmark) outStats->last_render_ms = 0.0f;
+        outStats->resolved_eval = resolvedRender.resolved_eval;
     }
 
     return true;
