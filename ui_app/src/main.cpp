@@ -632,6 +632,123 @@ static void ApplyFractalTypeAndPolyCoherence(ViewState& view, KernelParams& para
     }
 }
 
+static bool InitializeSweepIfEnabled(const SweepConfig& config, SweepPlayerState& sweepState,
+                                     ViewState& view, KernelParams& params, bool& dirty) {
+    if (!config.enabled) return true;
+    std::string sweepError;
+    if (!InitializeSweepPlayer(config, &sweepState, &sweepError)) return false;
+    double initialSweepSeed = 0.0;
+    if (!SweepPlayerCurrentSeed(sweepState, &initialSweepSeed)) return false;
+    ExplainoSeedSetCombined(view, params, initialSweepSeed);
+    UpdateExplainoPolynomial(view, params, nullptr);
+    dirty = true;
+    return true;
+}
+
+static std::vector<std::string> BuildSchemaCandidates(const std::string& exeDir) {
+    std::vector<std::string> candidates;
+    candidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
+    candidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
+    candidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
+    return candidates;
+}
+
+struct UiActionFlags {
+    bool renderOnce = false;
+    bool resetView = false;
+    bool resetAll = false;
+    bool loadState = false;
+    bool captureFinding = false;
+    bool captureDiagnostic = false;
+    bool nextSeed = false;
+    bool prevSeed = false;
+    bool interactionChanged = false;
+};
+
+static UiActionFlags RenderSchemaPanels(const UISchema& schema, BindingContext& bind, bool& dirty) {
+    UiActionFlags a;
+    for (const auto& panel : schema.panels) {
+        if (ImGui::CollapsingHeader(panel.label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+            bool prevWasSeedButton = false;
+            for (const auto& ctrl : panel.controls) {
+                if (ctrl.type == "button" && ctrl.has_binding && ctrl.binding.kind == "action") {
+                    if (ctrl.has_visible_if && !bind.EvalVisibleIf(ctrl.visible_if)) {
+                        prevWasSeedButton = false;
+                        continue;
+                    }
+                    bool isSeedButton = (ctrl.binding.path == "fractal.actions.prev_seed" ||
+                                         ctrl.binding.path == "fractal.actions.next_seed");
+                    if (isSeedButton && prevWasSeedButton) {
+                        ImGui::SameLine();
+                    }
+                    ImGui::PushID(ctrl.id.c_str());
+                    bool pressed = ImGui::Button(ctrl.label.c_str());
+                    ImGui::PopID();
+                    if (pressed) {
+                        if (ctrl.binding.path == "fractal.actions.render_once") a.renderOnce = true;
+                        if (ctrl.binding.path == "fractal.actions.reset_view") a.resetView = true;
+                        if (ctrl.binding.path == "fractal.actions.reset_all") a.resetAll = true;
+                        if (ctrl.binding.path == "fractal.actions.load_state") a.loadState = true;
+                        if (ctrl.binding.path == "fractal.actions.capture_finding") a.captureFinding = true;
+                        if (ctrl.binding.path == "fractal.actions.capture_diagnostic") a.captureDiagnostic = true;
+                        if (ctrl.binding.path == "fractal.actions.next_seed") a.nextSeed = true;
+                        if (ctrl.binding.path == "fractal.actions.prev_seed") a.prevSeed = true;
+                    }
+                    prevWasSeedButton = isSeedButton;
+                } else {
+                    prevWasSeedButton = false;
+                    bool controlInteracted = false;
+                    RenderControlFromSchema(ctrl, bind, &dirty, &a.renderOnce, &controlInteracted);
+                    if (controlInteracted) {
+                        a.interactionChanged = true;
+                    }
+                }
+            }
+        }
+    }
+    return a;
+}
+
+static UiActionFlags RenderControlsWindow(
+        const UISchema& schema, const std::string& schemaWarning, const std::string& schemaPath,
+        ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
+        const RenderStats& stats, const RenderedFrameState& renderedFrame,
+        const std::string& findingStatus, const std::string& lastFindingPath,
+        const SweepConfig& sweepConfig, SweepPlayerState& sweepState,
+        bool& sweepPaused, bool& sweepSingleStep,
+        FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
+    ImGui::Begin("Controls");
+    if (!schemaWarning.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "UI Safe Mode (schema issue)");
+        ImGui::TextWrapped("%s", schemaWarning.c_str());
+        ImGui::TextWrapped("Schema path: %s", schemaPath.c_str());
+        ImGui::Separator();
+    }
+    BindingContext bind;
+    bind.view = &view;
+    bind.params = &params;
+    bind.render = &render;
+    bind.lens = &lens;
+    Float2 uiCenterBefore = view.center;
+    float uiZoomBefore = view.zoom;
+    UiActionFlags actions = RenderSchemaPanels(schema, bind, dirty);
+    if (view.center.x != uiCenterBefore.x || view.center.y != uiCenterBefore.y || view.zoom != uiZoomBefore) {
+        SyncViewHpFromUi(view);
+    }
+    if (IsEscapeTimeFamily(view.fractal_type)) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("Note: escape-time fractals use iteration-based coloring.");
+        if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
+            ImGui::TextWrapped("Root-basin coloring is for Newton and the Explaino family. Choose 'iteration_count' or 'smooth_escape' for escape-time modes.");
+        }
+    }
+    ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
+    RenderStatusPanel(stats, render, renderedFrame, view, findingStatus, lastFindingPath);
+    RenderSweepControls(sweepConfig, sweepState, sweepPaused, sweepSingleStep, view, params, dirty);
+    ImGui::End();
+    return actions;
+}
+
 static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& render,
                               const RenderedFrameState& renderedFrame, const ViewState& view,
                               const std::string& findingStatus, const std::string& lastFindingPath) {
@@ -771,6 +888,76 @@ static void ApplyArrowKeySeedScrub(const ImGuiIO& io, ViewState& view, KernelPar
     }
 }
 
+static void ApplySweepPlaybackPerFrame(const SweepConfig& config, float deltaTime,
+                                       bool& sweepPaused, bool& sweepSingleStep,
+                                       SweepPlayerState& sweepState,
+                                       ViewState& view, KernelParams& params, bool& dirty) {
+    if (!config.enabled) return;
+    if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+        sweepPaused = !sweepPaused;
+    }
+    bool sweepDirty = false;
+    if (ApplySweepPlayback(config, sweepPaused, sweepSingleStep, (double)deltaTime, &sweepState, &view, &params, &sweepDirty)) {
+        if (sweepDirty) dirty = true;
+    }
+    sweepSingleStep = false;
+}
+
+static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
+    if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
+    if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    return true;
+}
+
+static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
+                                    ViewState& view, KernelParams& params, RenderSettings& render, bool& dirty) {
+    if (cli.capture_diagnostic_only || cli.capture_finding_only) {
+        if (IsExplainoFamily(view.fractal_type)) {
+            UpdateExplainoPolynomial(view, params, &dirty);
+        }
+        if (view.auto_max_iter) {
+            params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+        }
+    }
+    if (cli.validate_ui_only) return 0;
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render);
+    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render);
+    return -1;
+}
+
+static void ShutdownViewer(HWND hwnd, const WNDCLASSEX& wc) {
+    ImGui_ImplDX11_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+    CleanupFractalCUDA();
+    CleanupDeviceD3D();
+    if (IsWindow(hwnd)) {
+        DestroyWindow(hwnd);
+    }
+    UnregisterClass(wc.lpszClassName, wc.hInstance);
+}
+
+static void PresentFrame() {
+    ImGui::Render();
+    const float clear_color_with_alpha[4] = {0.08f, 0.08f, 0.10f, 1.00f};
+    g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
+    g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    g_pSwapChain->Present(1, 0);
+}
+
+static SampleModeArgs BuildSampleModeArgs(const ViewerCliArgs& cli) {
+    SampleModeArgs sma;
+    sma.request_stdin = cli.sample_request_stdin;
+    sma.response_stdout = cli.sample_response_stdout;
+    sma.request_json_path = cli.have_sample_request_json ? cli.sample_request_json_path : std::string();
+    sma.response_json_path = cli.have_sample_response_json ? cli.sample_response_json_path : std::string();
+    sma.conflict_validate_ui = cli.validate_ui_only;
+    sma.conflict_capture_diagnostic = cli.capture_diagnostic_only;
+    sma.conflict_capture_finding = cli.capture_finding_only;
+    return sma;
+}
+
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     if (ApplyAutoDiveStep(view)) {
         if (ioDirty) *ioDirty = true;
@@ -784,15 +971,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     const std::string exePath = GetExePath();
 
     if (cli.any_sample_mode_arg) {
-        SampleModeArgs sma;
-        sma.request_stdin = cli.sample_request_stdin;
-        sma.response_stdout = cli.sample_response_stdout;
-        sma.request_json_path = cli.have_sample_request_json ? cli.sample_request_json_path : std::string();
-        sma.response_json_path = cli.have_sample_response_json ? cli.sample_response_json_path : std::string();
-        sma.conflict_validate_ui = cli.validate_ui_only;
-        sma.conflict_capture_diagnostic = cli.capture_diagnostic_only;
-        sma.conflict_capture_finding = cli.capture_finding_only;
-        return RunSampleMode(sma, exePath);
+        return RunSampleMode(BuildSampleModeArgs(cli), exePath);
     }
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
@@ -801,19 +980,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             return 1;
         }
         std::string exeDir = GetExeDir();
-        std::vector<std::string> schemaCandidates;
-        schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
-        schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
-        schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
-        return RunDescribeFunctionsMode(cli.describe_functions, cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(), schemaCandidates);
+        return RunDescribeFunctionsMode(cli.describe_functions, cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(), BuildSchemaCandidates(exeDir));
     }
 
-    if (cli.capture_diagnostic_only && cli.capture_finding_only) {
-        return 1;
-    }
-    if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) {
-        return 1;
-    }
+    if (!ValidateCliConflicts(cli)) return 1;
 
     ViewState view{};
     KernelParams params{};
@@ -826,10 +996,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     // - Use one checked-in schema file for both repo and published runtime paths
     // - If missing/invalid while editing, keep the app running with a built-in Safe Mode UI
     std::string exeDir = GetExeDir();
-    std::vector<std::string> schemaCandidates;
-    schemaCandidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
-    schemaCandidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
-    schemaCandidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
+    std::vector<std::string> schemaCandidates = BuildSchemaCandidates(exeDir);
 
     BindingContext initBind;
     initBind.view = &view;
@@ -855,26 +1022,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (initRc != 0) return initRc;
     }
 
-    if (cli.capture_diagnostic_only || cli.capture_finding_only) {
-        if (IsExplainoFamily(view.fractal_type)) {
-            UpdateExplainoPolynomial(view, params, &dirty);
-        }
-        if (view.auto_max_iter) {
-            params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
-        }
-    }
-
-    if (cli.validate_ui_only) {
-        return 0;
-    }
-
-    if (cli.capture_diagnostic_only) {
-        return RunHeadlessDiagnosticCapture(exeDir, view, params, render);
-    }
-
-    if (cli.capture_finding_only) {
-        return RunHeadlessFindingCapture(exeDir, cli, view, params, render);
-    }
+    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty);
+      if (headless >= 0) return headless; }
 
     WNDCLASSEX wc = {sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, hInstance, nullptr, nullptr, nullptr, nullptr, _T("FractalUI"), nullptr};
     RegisterClassEx(&wc);
@@ -915,25 +1064,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sweepPaused = false;
     bool sweepSingleStep = false;
     float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
-    if (cli.sweep_config.enabled) {
-        std::string sweepError;
-        if (!InitializeSweepPlayer(cli.sweep_config, &sweepState, &sweepError)) {
-            CleanupDeviceD3D();
-            DestroyWindow(hwnd);
-            UnregisterClass(wc.lpszClassName, wc.hInstance);
-            return 1;
-        }
-
-        double initialSweepSeed = 0.0;
-        if (!SweepPlayerCurrentSeed(sweepState, &initialSweepSeed)) {
-            CleanupDeviceD3D();
-            DestroyWindow(hwnd);
-            UnregisterClass(wc.lpszClassName, wc.hInstance);
-            return 1;
-        }
-        ExplainoSeedSetCombined(view, params, initialSweepSeed);
-        UpdateExplainoPolynomial(view, params, nullptr);
-        dirty = true;
+    if (!InitializeSweepIfEnabled(cli.sweep_config, sweepState, view, params, dirty)) {
+        CleanupDeviceD3D();
+        DestroyWindow(hwnd);
+        UnregisterClass(wc.lpszClassName, wc.hInstance);
+        return 1;
     }
 
     MSG msg;
@@ -957,124 +1092,26 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        if (cli.sweep_config.enabled) {
-            if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
-                sweepPaused = !sweepPaused;
-            }
-            bool sweepDirty = false;
-            if (ApplySweepPlayback(cli.sweep_config, sweepPaused, sweepSingleStep, (double)io.DeltaTime, &sweepState, &view, &params, &sweepDirty)) {
-                if (sweepDirty) dirty = true;
-            }
-            sweepSingleStep = false;
-        }
+        ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
 
-        // Controls window
-        ImGui::Begin("Controls");
+        UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
+            view, params, render, lens, stats, renderedFrame,
+            findingStatus, lastFindingPath,
+            cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
+            lastFractalType, lastPolyKind, dirty);
 
-        if (!schemaWarning.empty()) {
-            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "UI Safe Mode (schema issue)");
-            ImGui::TextWrapped("%s", schemaWarning.c_str());
-            ImGui::TextWrapped("Schema path: %s", schemaPath.c_str());
-            ImGui::Separator();
-        }
-
-        BindingContext bind;
-        bind.view = &view;
-        bind.params = &params;
-        bind.render = &render;
-        bind.lens = &lens;
-
-        bool renderOnceAction = false;
-        bool resetViewAction = false;
-        bool resetAllAction = false;
-        bool loadStateAction = false;
-        bool captureFindingAction = false;
-        bool captureDiagnosticAction = false;
-        bool nextSeedAction = false;
-        bool prevSeedAction = false;
-        bool interactionChanged = false;
-
-        // If schema/UI edits the float surface (center/zoom), keep high-precision state in sync.
-        Float2 uiCenterBefore = view.center;
-        float uiZoomBefore = view.zoom;
-
-        for (const auto& panel : uiSchema.panels) {
-            if (ImGui::CollapsingHeader(panel.label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-                bool prevWasSeedButton = false;
-                for (const auto& ctrl : panel.controls) {
-                    // Hook extra actions without expanding the schema model yet.
-                    if (ctrl.type == "button" && ctrl.has_binding && ctrl.binding.kind == "action") {
-                        // Evaluate visibility predicates for action buttons too.
-                        if (ctrl.has_visible_if && !bind.EvalVisibleIf(ctrl.visible_if)) {
-                            prevWasSeedButton = false;
-                            continue;
-                        }
-
-                        // Place prev/next seed buttons on the same line.
-                        bool isSeedButton = (ctrl.binding.path == "fractal.actions.prev_seed" ||
-                                             ctrl.binding.path == "fractal.actions.next_seed");
-                        if (isSeedButton && prevWasSeedButton) {
-                            ImGui::SameLine();
-                        }
-
-                        ImGui::PushID(ctrl.id.c_str());
-                        bool pressed = ImGui::Button(ctrl.label.c_str());
-                        ImGui::PopID();
-                        if (pressed) {
-                            if (ctrl.binding.path == "fractal.actions.render_once") renderOnceAction = true;
-                            if (ctrl.binding.path == "fractal.actions.reset_view") resetViewAction = true;
-                            if (ctrl.binding.path == "fractal.actions.reset_all") resetAllAction = true;
-                            if (ctrl.binding.path == "fractal.actions.load_state") loadStateAction = true;
-                            if (ctrl.binding.path == "fractal.actions.capture_finding") captureFindingAction = true;
-                            if (ctrl.binding.path == "fractal.actions.capture_diagnostic") captureDiagnosticAction = true;
-                            if (ctrl.binding.path == "fractal.actions.next_seed") nextSeedAction = true;
-                            if (ctrl.binding.path == "fractal.actions.prev_seed") prevSeedAction = true;
-                        }
-                        prevWasSeedButton = isSeedButton;
-                    } else {
-                        prevWasSeedButton = false;
-                        bool controlInteracted = false;
-                        RenderControlFromSchema(ctrl, bind, &dirty, &renderOnceAction, &controlInteracted);
-                        if (controlInteracted) {
-                            interactionChanged = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (view.center.x != uiCenterBefore.x || view.center.y != uiCenterBefore.y || view.zoom != uiZoomBefore) {
-            SyncViewHpFromUi(view);
-        }
-
-        if (IsEscapeTimeFamily(view.fractal_type)) {
-            ImGui::Spacing();
-            ImGui::TextWrapped("Note: escape-time fractals use iteration-based coloring.");
-            if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
-                ImGui::TextWrapped("Root-basin coloring is for Newton and the Explaino family. Choose 'iteration_count' or 'smooth_escape' for escape-time modes.");
-            }
-        }
-
-        ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
-
-        RenderStatusPanel(stats, render, renderedFrame, view, findingStatus, lastFindingPath);
-
-        RenderSweepControls(cli.sweep_config, sweepState, sweepPaused, sweepSingleStep, view, params, dirty);
-
-        ImGui::End();
-
-        DispatchUiActions(hwnd, resetViewAction, resetAllAction, loadStateAction,
-            nextSeedAction, prevSeedAction, view, params, render, lens,
-            dirty, interactionChanged, lastPolyKind, lastFractalType,
+        DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
+            actions.nextSeed, actions.prevSeed, view, params, render, lens,
+            dirty, actions.interactionChanged, lastPolyKind, lastFractalType,
             findingStatus, lastFindingPath);
 
-        ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, interactionChanged);
+        ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
 
         if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
             dirty = true;
         }
 
-        if (interactionChanged) {
+        if (actions.interactionChanged) {
             NoteViewerInteraction(&renderPacingState);
         }
         const ViewerRenderPacingConfig renderPacingConfig = BuildViewerRenderPacingConfig(render);
@@ -1085,21 +1122,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             renderPacingConfig,
             &renderPacingState);
 
-        const bool forceFullQualityRender = renderOnceAction || captureDiagnosticAction || captureFindingAction || renderPacing.full_quality_due;
+        const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
         DispatchRenderFrame(view, params, render, lens, renderPacing,
             forceFullQualityRender, view.auto_refresh, dirty,
-            renderOnceAction, captureDiagnosticAction, captureFindingAction,
+            actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
             rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
 
-        if (captureDiagnosticAction) {
+        if (actions.captureDiagnostic) {
             RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, findingStatus);
         }
 
-        if (captureFindingAction) {
+        if (actions.captureFinding) {
             RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath);
         }
 
-        RenderFractalViewport(io, render, view, dirty, interactionChanged);
+        RenderFractalViewport(io, render, view, dirty, actions.interactionChanged);
 
         if (lens.enabled) {
             RenderAuxImageWindow("Mask", g_maskSRV, render);
@@ -1110,27 +1147,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         // This runs after UI, so changing behavior updates immediately.
         ApplyAutoDivePerFrame(view, &dirty);
 
-        // Render frame
-        ImGui::Render();
-
-        const float clear_color_with_alpha[4] = {0.08f, 0.08f, 0.10f, 1.00f};
-        g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
-        g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-        g_pSwapChain->Present(1, 0);
+        PresentFrame();
     }
 
-    ImGui_ImplDX11_Shutdown();
-    ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
-
-    CleanupFractalCUDA();
-    CleanupDeviceD3D();
-    if (IsWindow(hwnd)) {
-        DestroyWindow(hwnd);
-    }
-    UnregisterClass(wc.lpszClassName, wc.hInstance);
-
+    ShutdownViewer(hwnd, wc);
     return 0;
 }
