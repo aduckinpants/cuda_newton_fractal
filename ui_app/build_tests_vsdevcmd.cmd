@@ -173,5 +173,13 @@ if errorlevel 1 exit /b 1
 "%TESTROOT%\test_function_descriptor.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\sample_tier_resolver.cpp .\tests\test_sample_tier_resolver.cpp ^
+  /Fe:"%TESTROOT%\test_sample_tier_resolver.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_sample_tier_resolver.exe"
+if errorlevel 1 exit /b 1
+
 echo All helper tests passed.
 exit /b 0

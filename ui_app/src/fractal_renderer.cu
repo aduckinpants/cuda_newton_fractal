@@ -1,6 +1,7 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
 #include "explaino_seed_curve.h"
+#include "sample_tier_resolver.h"
 
 #include <cuda_runtime.h>
 #include <math_constants.h>
@@ -58,6 +59,29 @@ __device__ __forceinline__ Cx explaino_warp_start(Cx coord, double seed, float p
     return z;
 }
 
+__device__ __forceinline__ Cxd explaino_warp_start_d(Cxd coord, double seed, float phase, float strength) {
+    double s = fmax(0.0, fmin(1.0, (double)strength));
+    if (s <= 0.0) return coord;
+    unsigned long long bits = (unsigned long long)__double_as_longlong(seed);
+    unsigned int u = (unsigned int)(bits ^ (bits >> 32));
+    double a0 = (double)hash01_u32(u ^ 0x1234567u);
+    double a1 = (double)hash01_u32(u ^ 0x89abcdefu);
+
+    double rot = s * (a0 * 2.0 - 1.0) * 3.141592653589793;
+    double cs = cos(rot), sn = sin(rot);
+    Cxd z = {coord.x * cs - coord.y * sn, coord.x * sn + coord.y * cs};
+
+    double freq = 2.0 + 6.0 * a1;
+    double k = 0.10 + 0.35 * a0;
+    z.x += s * k * sin(z.y * freq + (double)phase);
+    z.y += s * k * sin(z.x * freq - (double)phase);
+
+    Cxd z2{z.x * z.x - z.y * z.y, 2.0 * z.x * z.y};
+    double push = s * (0.06 + 0.10 * a1);
+    z = {z.x + z2.x * push, z.y + z2.y * push};
+    return z;
+}
+
 __device__ __forceinline__ Cx cx_add(Cx a, Cx b) { return {a.x + b.x, a.y + b.y}; }
 __device__ __forceinline__ Cx cx_sub(Cx a, Cx b) { return {a.x - b.x, a.y - b.y}; }
 __device__ __forceinline__ Cx cx_mul(Cx a, Cx b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
@@ -68,6 +92,18 @@ __device__ __forceinline__ Cx cx_div(Cx a, Cx b) {
     // a / b
     float denom = b.x * b.x + b.y * b.y;
     if (denom == 0.0f) return {0.0f, 0.0f};
+    return {(a.x * b.x + a.y * b.y) / denom, (a.y * b.x - a.x * b.y) / denom};
+}
+
+__device__ __forceinline__ Cxd cxd_add(Cxd a, Cxd b) { return {a.x + b.x, a.y + b.y}; }
+__device__ __forceinline__ Cxd cxd_sub(Cxd a, Cxd b) { return {a.x - b.x, a.y - b.y}; }
+__device__ __forceinline__ Cxd cxd_mul(Cxd a, Cxd b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
+__device__ __forceinline__ Cxd cxd_scale(Cxd a, double s) { return {a.x * s, a.y * s}; }
+__device__ __forceinline__ double cxd_abs2(Cxd a) { return a.x * a.x + a.y * a.y; }
+__device__ __forceinline__ double cxd_abs(Cxd a) { return sqrt(cxd_abs2(a)); }
+__device__ __forceinline__ Cxd cxd_div(Cxd a, Cxd b) {
+    double denom = b.x * b.x + b.y * b.y;
+    if (denom == 0.0) return {0.0, 0.0};
     return {(a.x * b.x + a.y * b.y) / denom, (a.y * b.x - a.x * b.y) / denom};
 }
 
@@ -121,6 +157,52 @@ __device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2(const float coeffs
     *outD2p = d2P;
 }
 
+// Double-precision polynomial evaluation (Phase A: standard precision tier).
+__device__ __forceinline__ void poly_eval_real_coeffs_deg4_d(const float coeffs[5], Cxd z, Cxd* outP, Cxd* outDp) {
+    Cxd z2 = cxd_mul(z, z);
+    Cxd z3 = cxd_mul(z2, z);
+    Cxd z4 = cxd_mul(z2, z2);
+
+    Cxd P{(double)coeffs[0], 0.0};
+    P = cxd_add(P, cxd_scale(z, (double)coeffs[1]));
+    P = cxd_add(P, cxd_scale(z2, (double)coeffs[2]));
+    P = cxd_add(P, cxd_scale(z3, (double)coeffs[3]));
+    P = cxd_add(P, cxd_scale(z4, (double)coeffs[4]));
+
+    Cxd dP{(double)coeffs[1], 0.0};
+    dP = cxd_add(dP, cxd_scale(z, 2.0 * (double)coeffs[2]));
+    dP = cxd_add(dP, cxd_scale(z2, 3.0 * (double)coeffs[3]));
+    dP = cxd_add(dP, cxd_scale(z3, 4.0 * (double)coeffs[4]));
+
+    *outP = P;
+    *outDp = dP;
+}
+
+__device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2_d(const float coeffs[5], Cxd z, Cxd* outP, Cxd* outDp, Cxd* outD2p) {
+    Cxd z2 = cxd_mul(z, z);
+    Cxd z3 = cxd_mul(z2, z);
+    Cxd z4 = cxd_mul(z2, z2);
+
+    Cxd P{(double)coeffs[0], 0.0};
+    P = cxd_add(P, cxd_scale(z, (double)coeffs[1]));
+    P = cxd_add(P, cxd_scale(z2, (double)coeffs[2]));
+    P = cxd_add(P, cxd_scale(z3, (double)coeffs[3]));
+    P = cxd_add(P, cxd_scale(z4, (double)coeffs[4]));
+
+    Cxd dP{(double)coeffs[1], 0.0};
+    dP = cxd_add(dP, cxd_scale(z, 2.0 * (double)coeffs[2]));
+    dP = cxd_add(dP, cxd_scale(z2, 3.0 * (double)coeffs[3]));
+    dP = cxd_add(dP, cxd_scale(z3, 4.0 * (double)coeffs[4]));
+
+    Cxd d2P{2.0 * (double)coeffs[2], 0.0};
+    d2P = cxd_add(d2P, cxd_scale(z, 6.0 * (double)coeffs[3]));
+    d2P = cxd_add(d2P, cxd_scale(z2, 12.0 * (double)coeffs[4]));
+
+    *outP = P;
+    *outDp = dP;
+    *outD2p = d2P;
+}
+
 __device__ __forceinline__ int nearest_root_index_unit_roots(Cx z, int n) {
     // For z^n - 1, roots are exp(i * 2pi k / n).
     float angle = atan2f(z.y, z.x);
@@ -142,6 +224,30 @@ __device__ __forceinline__ int nearest_root_index_list(Cx z, const Float2* roots
         float dx = z.x - roots[i].x;
         float dy = z.y - roots[i].y;
         float d2 = dx * dx + dy * dy;
+        if (d2 < bestD2) {
+            bestD2 = d2;
+            best = i;
+        }
+    }
+    return best;
+}
+
+// Double-precision root identification (coloring needs float result, but location matching benefits from double).
+__device__ __forceinline__ int nearest_root_index_unit_roots_d(Cxd z, int n) {
+    double angle = atan2(z.y, z.x);
+    double t = (angle + 3.141592653589793) / (2.0 * 3.141592653589793);
+    int k = (int)floor(t * n + 0.5) % n;
+    if (k < 0) k += n;
+    return k;
+}
+
+__device__ __forceinline__ int nearest_root_index_list_d(Cxd z, const Float2* roots, int n) {
+    int best = 0;
+    double bestD2 = 1.0e30;
+    for (int i = 0; i < n; ++i) {
+        double dx = z.x - (double)roots[i].x;
+        double dy = z.y - (double)roots[i].y;
+        double d2 = dx * dx + dy * dy;
         if (d2 < bestD2) {
             bestD2 = d2;
             best = i;
@@ -249,11 +355,6 @@ __device__ __forceinline__ Cx cx_pow_real_principal(Cx z, float p) {
     return {rp * cosf(angle), rp * sinf(angle)};
 }
 
-__device__ __forceinline__ Cxd cxd_add(Cxd a, Cxd b) { return {a.x + b.x, a.y + b.y}; }
-__device__ __forceinline__ Cxd cxd_sub(Cxd a, Cxd b) { return {a.x - b.x, a.y - b.y}; }
-__device__ __forceinline__ Cxd cxd_mul(Cxd a, Cxd b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
-__device__ __forceinline__ Cxd cxd_scale(Cxd a, double s) { return {a.x * s, a.y * s}; }
-__device__ __forceinline__ double cxd_abs2(Cxd a) { return a.x * a.x + a.y * a.y; }
 __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; }
 
 __global__ void kernel_render(
@@ -301,8 +402,12 @@ __global__ void kernel_render(
     Cxd coordD{x, y};
     Cx coord{(float)x, (float)y};
 
+    // Precision tier dispatch: resolved eval mode determines arithmetic width.
+    bool useFP64 = (render.resolved_eval.backend == NumericBackend::float64);
+
     int maxIter = max(1, params.max_iter);
     float eps = fmaxf(1e-12f, params.epsilon);
+    double epsD = fmax(1.0e-14, (double)params.epsilon);
 
     int it = 0;
     float pAbs = 0.0f;
@@ -314,118 +419,169 @@ __global__ void kernel_render(
 
     FractalType ft = view.fractal_type;
     if (ft == FractalType::newton) {
-        z = coord;
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP;
-
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
-
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dP);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx step = cx_div(P, dP);
-            z = cx_sub(z, step);
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = coordD;
+            double pAbsD = 0.0;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(P, dP);
+                zd = cxd_sub(zd, step);
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = coord;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                if (dAbs2 < 1e-20f) break;
+                Cx step = cx_div(P, dP);
+                z = cx_sub(z, step);
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::explaino || ft == FractalType::explaino_dual || ft == FractalType::explaino_mult) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP;
-
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dP);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx step = cx_div(P, dP);
-            z = cx_sub(z, cx_scale(step, userDamp));
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(P, dP);
+                zd = cxd_sub(zd, cxd_scale(step, dampD));
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                if (dAbs2 < 1e-20f) break;
+                Cx step = cx_div(P, dP);
+                z = cx_sub(z, cx_scale(step, userDamp));
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::explaino_fp) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP;
-
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dP);
-            Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
-
-            float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
-            float damp = userDamp / (1.0f + stepMag);
-            z = cx_sub(z, cx_scale(step, damp));
-
-            float r2 = cx_abs2(z);
-            if (r2 > 16.0f) {
-                float r = sqrtf(r2);
-                float s = 4.0f / fmaxf(1e-12f, r);
-                z = cx_scale(z, s);
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd step = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(step)));
+                double damp = dampD / (1.0 + stepMag);
+                zd = cxd_sub(zd, cxd_scale(step, damp));
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+                float damp = userDamp / (1.0f + stepMag);
+                z = cx_sub(z, cx_scale(step, damp));
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
             }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
         if (!converged) {
             int nRoots = 0;
             if (params.poly_kind == PolyKind::z3_minus_1) nRoots = 3;
             if (params.poly_kind == PolyKind::z4_minus_1) nRoots = 4;
-
-            if (nRoots > 0) {
-                int idx = nearest_root_index_unit_roots(z, nRoots);
-                z = unit_root_k(idx, nRoots);
-            } else if (params.explaino_root_count > 0) {
-                int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
-                z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = nearest_root_index_unit_roots_d(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = nearest_root_index_list_d(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = nearest_root_index_unit_roots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = nearest_root_index_list(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
             }
             converged = true;
         }
@@ -501,50 +657,49 @@ __global__ void kernel_render(
         }
     } else if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
         // Nova (V1): z_{n+1} = z_n - alpha * f(z_n)/f'(z_n) + c
-        // Treat as escape-time family for coloring; points that do not escape are interior.
-        // Parameterization choice (best judgment): z0=0, c=coord (Mandelbrot-like c-plane). This yields stable, rich structure.
         z = {0.0f, 0.0f};
         cConst = coord;
 
         float alpha = params.nova_alpha;
-        // Device-side safety: avoid NaN propagation if host validation is bypassed.
         if (!(alpha > 0.0f) || !(alpha <= 2.0f) || !isfinite(alpha)) {
             escaped = true;
-        } else {
+        } else if (useFP64) {
+            Cxd zd = {0.0, 0.0};
+            Cxd cConstD = coordD;
+            double alphaD = (double)alpha;
+            double pAbsD = 0.0;
             for (; it < maxIter; ++it) {
-                Cx P, dP;
-
+                Cxd P, dP;
                 float coeffs[5];
                 #pragma unroll
                 for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
-
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) { converged = true; break; }
+                double dAbs2 = cxd_abs2(dP);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(P, dP);
+                zd = cxd_add(cxd_sub(zd, cxd_scale(step, alphaD)), cConstD);
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { escaped = true; break; }
+                if (cxd_abs2(zd) > 4.0) { escaped = true; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+        } else {
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; k++) coeffs[k] = params.poly_coeffs[k];
                 poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
                 pAbs = cx_abs(P);
-                if (pAbs < eps) {
-                    converged = true;
-                    break;
-                }
-
+                if (pAbs < eps) { converged = true; break; }
                 float dAbs2 = cx_abs2(dP);
-                if (dAbs2 < 1e-20f) {
-                    // Derivative too small: treat as non-convergent and stop.
-                    break;
-                }
-
+                if (dAbs2 < 1e-20f) break;
                 Cx step = cx_div(P, dP);
-                // z = z - alpha*step + c
                 z = cx_add(cx_sub(z, cx_scale(step, alpha)), cConst);
-
-                if (!isfinite(z.x) || !isfinite(z.y)) {
-                    escaped = true;
-                    break;
-                }
-
-                if (cx_abs2(z) > 4.0f) {
-                    escaped = true;
-                    break;
-                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { escaped = true; break; }
+                if (cx_abs2(z) > 4.0f) { escaped = true; break; }
             }
         }
     } else if (ft == FractalType::explaino_halley) {
@@ -554,40 +709,53 @@ __global__ void kernel_render(
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP, d2P;
-
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-
-            poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            // Halley denominator: 2 f'(z)^2 - f(z) f''(z)
-            Cx dp2 = cx_mul(dP, dP);
-            Cx fd2 = cx_mul(P, d2P);
-            Cx denom = cx_sub(cx_scale(dp2, 2.0f), fd2);
-
-            float denomAbs2 = cx_abs2(denom);
-            if (denomAbs2 < 1e-20f) break;
-
-            // Halley numerator: 2 f(z) f'(z)
-            Cx numer = cx_scale(cx_mul(P, dP), 2.0f);
-            Cx step = cx_div(numer, denom);
-            z = cx_sub(z, cx_scale(step, userDamp));
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP, d2P;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d2_d(coeffs, zd, &P, &dP, &d2P);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                Cxd dp2 = cxd_mul(dP, dP);
+                Cxd fd2 = cxd_mul(P, d2P);
+                Cxd denom = cxd_sub(cxd_scale(dp2, 2.0), fd2);
+                double denomAbs2 = cxd_abs2(denom);
+                if (denomAbs2 < 1e-30) break;
+                Cxd numer = cxd_scale(cxd_mul(P, dP), 2.0);
+                Cxd step = cxd_div(numer, denom);
+                zd = cxd_sub(zd, cxd_scale(step, dampD));
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                Cx P, dP, d2P;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                Cx dp2 = cx_mul(dP, dP);
+                Cx fd2 = cx_mul(P, d2P);
+                Cx denom = cx_sub(cx_scale(dp2, 2.0f), fd2);
+                float denomAbs2 = cx_abs2(denom);
+                if (denomAbs2 < 1e-20f) break;
+                Cx numer = cx_scale(cx_mul(P, dP), 2.0f);
+                Cx step = cx_div(numer, denom);
+                z = cx_sub(z, cx_scale(step, userDamp));
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::explaino_phoenix) {
         // Explaino-Phoenix: seeded Newton with previous-z memory term.
         // z_{n+1} = z_n - damping * f(z_n)/f'(z_n) + p * z_{n-1}
@@ -596,133 +764,187 @@ __global__ void kernel_render(
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-        Cx zPrev = z;
-        Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP;
-
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dP);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx step = cx_div(P, dP);
-            Cx zNext = cx_add(cx_sub(z, cx_scale(step, userDamp)), cx_mul(pConst, zPrev));
-            zPrev = z;
-            z = zNext;
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(P, dP);
+                Cxd zNext = cxd_add(cxd_sub(zd, cxd_scale(step, dampD)), cxd_mul(pConstD, zPrevD));
+                zPrevD = zd;
+                zd = zNext;
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                if (dAbs2 < 1e-20f) break;
+                Cx step = cx_div(P, dP);
+                Cx zNext = cx_add(cx_sub(z, cx_scale(step, userDamp)), cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
-        // sin(z): f=sin(z), f'=cos(z)
-        // exp(z)-1: f=exp(z)-1, f'=exp(z)
-        // cosh(z): f=cosh(z), f'=sinh(z)
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
 
         TranscendentalFunc tf = params.transcendental_func;
-
-        for (; it < maxIter; ++it) {
-            Cx F, dF;
-
-            if (tf == TranscendentalFunc::f_sin) {
-                // sin(z) = sin(x)cosh(y) + i cos(x)sinh(y)
-                float sx = sinf(z.x), cx_ = cosf(z.x);
-                float shy = sinhf(z.y), chy = coshf(z.y);
-                F = {sx * chy, cx_ * shy};
-                dF = {cx_ * chy, -sx * shy};
-            } else if (tf == TranscendentalFunc::f_exp_minus_1) {
-                // exp(z)-1 = exp(x)(cos(y) + i sin(y)) - 1
-                float ex = expf(z.x);
-                float cy_ = cosf(z.y), sy_ = sinf(z.y);
-                F = {ex * cy_ - 1.0f, ex * sy_};
-                dF = {ex * cy_, ex * sy_};
-            } else {
-                // cosh(z) = cosh(x)cos(y) + i sinh(x)sin(y)
-                float chx = coshf(z.x), shx = sinhf(z.x);
-                float cy_ = cosf(z.y), sy_ = sinf(z.y);
-                F = {chx * cy_, shx * sy_};
-                dF = {shx * cy_, chx * sy_};
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            for (; it < maxIter; ++it) {
+                Cxd F, dF;
+                if (tf == TranscendentalFunc::f_sin) {
+                    double sx = sin(zd.x), cx_ = cos(zd.x);
+                    double shy = sinh(zd.y), chy = cosh(zd.y);
+                    F = {sx * chy, cx_ * shy};
+                    dF = {cx_ * chy, -sx * shy};
+                } else if (tf == TranscendentalFunc::f_exp_minus_1) {
+                    double ex = exp(zd.x);
+                    double cy_ = cos(zd.y), sy_ = sin(zd.y);
+                    F = {ex * cy_ - 1.0, ex * sy_};
+                    dF = {ex * cy_, ex * sy_};
+                } else {
+                    double chx = cosh(zd.x), shx = sinh(zd.x);
+                    double cy_ = cos(zd.y), sy_ = sin(zd.y);
+                    F = {chx * cy_, shx * sy_};
+                    dF = {shx * cy_, chx * sy_};
+                }
+                pAbsD = cxd_abs(F);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dF);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(F, dF);
+                zd = cxd_sub(zd, cxd_scale(step, dampD));
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
-
-            pAbs = cx_abs(F);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dF);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx step = cx_div(F, dF);
-            z = cx_sub(z, cx_scale(step, userDamp));
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                Cx F, dF;
+                if (tf == TranscendentalFunc::f_sin) {
+                    float sx = sinf(z.x), cx_ = cosf(z.x);
+                    float shy = sinhf(z.y), chy = coshf(z.y);
+                    F = {sx * chy, cx_ * shy};
+                    dF = {cx_ * chy, -sx * shy};
+                } else if (tf == TranscendentalFunc::f_exp_minus_1) {
+                    float ex = expf(z.x);
+                    float cy_ = cosf(z.y), sy_ = sinf(z.y);
+                    F = {ex * cy_ - 1.0f, ex * sy_};
+                    dF = {ex * cy_, ex * sy_};
+                } else {
+                    float chx = coshf(z.x), shx = sinhf(z.x);
+                    float cy_ = cosf(z.y), sy_ = sinf(z.y);
+                    F = {chx * cy_, shx * sy_};
+                    dF = {shx * cy_, chx * sy_};
+                }
+                pAbs = cx_abs(F);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dF);
+                if (dAbs2 < 1e-20f) break;
+                Cx step = cx_div(F, dF);
+                z = cx_sub(z, cx_scale(step, userDamp));
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
             }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::explaino_inertial) {
         // Explaino-Inertial: seeded Newton with previous-step momentum.
-        // z_{n+1} = z_n - damping * f(z_n)/f'(z_n) + beta * (z_{n-1} - z_{n-2})
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         float beta = params.momentum_beta;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-        Cx zPrev = z;
-        Cx zPrev2 = z;
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP;
-
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dP);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx newtonStep = cx_div(P, dP);
-            Cx momentum = cx_sub(zPrev, zPrev2);
-            Cx zNext = cx_add(cx_sub(z, cx_scale(newtonStep, userDamp)),
-                              cx_scale(momentum, beta));
-            zPrev2 = zPrev;
-            zPrev = z;
-            z = zNext;
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd zPrev2D = zd;
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double betaD = (double)beta;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                if (dAbs2 < 1e-30) break;
+                Cxd newtonStep = cxd_div(P, dP);
+                Cxd momentum = cxd_sub(zPrevD, zPrev2D);
+                Cxd zNext = cxd_add(cxd_sub(zd, cxd_scale(newtonStep, dampD)),
+                                    cxd_scale(momentum, betaD));
+                zPrev2D = zPrevD;
+                zPrevD = zd;
+                zd = zNext;
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx zPrev2 = z;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                if (dAbs2 < 1e-20f) break;
+                Cx newtonStep = cx_div(P, dP);
+                Cx momentum = cx_sub(zPrev, zPrev2);
+                Cx zNext = cx_add(cx_sub(z, cx_scale(newtonStep, userDamp)),
+                                  cx_scale(momentum, beta));
+                zPrev2 = zPrev;
+                zPrev = z;
+                z = zNext;
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::explaino_julia) {
         // Explaino-Julia bridge: escape-time z^2+c with warp start and seeded Julia constant.
         float phase = view.explaino_phase;
@@ -817,48 +1039,64 @@ __global__ void kernel_render(
         }
     } else if (ft == FractalType::explaino_rational) {
         // Explaino-Rational: Newton on f(z) = P(z) + cluster_radius/z.
-        // The rational perturbation adds a pole at the origin, producing dust/web geometry.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         float ratAlpha = params.explaino_cluster_radius;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
-
-        for (; it < maxIter; ++it) {
-            float zAbs2 = cx_abs2(z);
-            if (zAbs2 < 1e-20f) break; // at pole, bail
-
-            Cx P, dP;
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-            poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
-
-            // f(z) = P(z) + alpha/z
-            Cx zInv = cx_div({1.0f, 0.0f}, z);
-            Cx F = cx_add(P, cx_scale(zInv, ratAlpha));
-            // f'(z) = P'(z) - alpha/z^2
-            Cx zInv2 = cx_mul(zInv, zInv);
-            Cx dF = cx_sub(dP, cx_scale(zInv2, ratAlpha));
-
-            pAbs = cx_abs(F);
-            if (pAbs < eps) break;
-
-            float dAbs2 = cx_abs2(dF);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx step = cx_div(F, dF);
-            z = cx_sub(z, cx_scale(step, userDamp));
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double ratAlphaD = (double)ratAlpha;
+            for (; it < maxIter; ++it) {
+                double zAbs2 = cxd_abs2(zd);
+                if (zAbs2 < 1e-30) break;
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                Cxd zInv = cxd_div({1.0, 0.0}, zd);
+                Cxd F = cxd_add(P, cxd_scale(zInv, ratAlphaD));
+                Cxd zInv2 = cxd_mul(zInv, zInv);
+                Cxd dF = cxd_sub(dP, cxd_scale(zInv2, ratAlphaD));
+                pAbsD = cxd_abs(F);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dF);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(F, dF);
+                zd = cxd_sub(zd, cxd_scale(step, dampD));
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            for (; it < maxIter; ++it) {
+                float zAbs2 = cx_abs2(z);
+                if (zAbs2 < 1e-20f) break;
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                Cx zInv = cx_div({1.0f, 0.0f}, z);
+                Cx F = cx_add(P, cx_scale(zInv, ratAlpha));
+                Cx zInv2 = cx_mul(zInv, zInv);
+                Cx dF = cx_sub(dP, cx_scale(zInv2, ratAlpha));
+                pAbs = cx_abs(F);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dF);
+                if (dAbs2 < 1e-20f) break;
+                Cx step = cx_div(F, dF);
+                z = cx_sub(z, cx_scale(step, userDamp));
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::multicorn) {
         // Multicorn/Tricorn: z_{n+1} = conj(z)^p + c, escape-time family.
         z = {0.0f, 0.0f};
@@ -881,39 +1119,53 @@ __global__ void kernel_render(
             }
         }
     } else if (ft == FractalType::halley) {
-        // Standalone Halley's method on standard polynomials (poly_kind/poly_coeffs).
-        z = coord;
-
-        for (; it < maxIter; ++it) {
-            Cx P, dP, d2P;
-            float coeffs[5];
-            #pragma unroll
-            for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
-            poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
-
-            pAbs = cx_abs(P);
-            if (pAbs < eps) break;
-
-            // Halley denominator: 2 f'(z)^2 - f(z) f''(z)
-            Cx dp2 = cx_mul(dP, dP);
-            Cx fd2 = cx_mul(P, d2P);
-            Cx denom = cx_sub(cx_scale(dp2, 2.0f), fd2);
-
-            float denomAbs2 = cx_abs2(denom);
-            if (denomAbs2 < 1e-20f) break;
-
-            // Halley numerator: 2 f(z) f'(z)
-            Cx numer = cx_scale(cx_mul(P, dP), 2.0f);
-            Cx step = cx_div(numer, denom);
-            z = cx_sub(z, step);
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        // Standalone Halley's method on standard polynomials.
+        if (useFP64) {
+            Cxd zd = coordD;
+            double pAbsD = 0.0;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP, d2P;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d2_d(coeffs, zd, &P, &dP, &d2P);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                Cxd dp2 = cxd_mul(dP, dP);
+                Cxd fd2 = cxd_mul(P, d2P);
+                Cxd denom = cxd_sub(cxd_scale(dp2, 2.0), fd2);
+                double denomAbs2 = cxd_abs2(denom);
+                if (denomAbs2 < 1e-30) break;
+                Cxd numer = cxd_scale(cxd_mul(P, dP), 2.0);
+                Cxd step = cxd_div(numer, denom);
+                zd = cxd_sub(zd, step);
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = coord;
+            for (; it < maxIter; ++it) {
+                Cx P, dP, d2P;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                Cx dp2 = cx_mul(dP, dP);
+                Cx fd2 = cx_mul(P, d2P);
+                Cx denom = cx_sub(cx_scale(dp2, 2.0f), fd2);
+                float denomAbs2 = cx_abs2(denom);
+                if (denomAbs2 < 1e-20f) break;
+                Cx numer = cx_scale(cx_mul(P, dP), 2.0f);
+                Cx step = cx_div(numer, denom);
+                z = cx_sub(z, step);
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else if (ft == FractalType::mcmullen) {
         // McMullen rational map: z_{n+1} = z^m + lambda/z^n
         // Preset-driven (m, n, lambda) tuples.
@@ -1002,56 +1254,67 @@ __global__ void kernel_render(
         }
     } else if (ft == FractalType::explaino_collatz) {
         // Explaino-Collatz: Newton's method on fixed points of the Collatz map.
-        // g(z) = f(z) - z = (1/4)(2 + 3z - (2+5z)cos(pi*z))
-        // g'(z) = (1/4)(3 - 5*cos(pi*z) + pi*(2+5z)*sin(pi*z))
-        // z_{n+1} = z_n - damping * g(z_n)/g'(z_n)
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
 
-        const float kPI = 3.14159265358979323846f;
-
-        for (; it < maxIter; ++it) {
-            float px = kPI * z.x;
-            float py = kPI * z.y;
-            float cpx = cosf(px), spx = sinf(px);
-            float chy = coshf(py), shy = sinhf(py);
-
-            // cos(pi*z) and sin(pi*z) for complex z
-            Cx cospi = {cpx * chy, -spx * shy};
-            Cx sinpi = {spx * chy, cpx * shy};
-
-            // a = (2 + 5z)
-            Cx a = {2.0f + 5.0f * z.x, 5.0f * z.y};
-            Cx ac = cx_mul(a, cospi);
-
-            // g(z) = (1/4)(2 + 3z - (2+5z)*cos(pi*z))
-            Cx g = cx_scale({2.0f + 3.0f * z.x - ac.x, 3.0f * z.y - ac.y}, 0.25f);
-
-            pAbs = cx_abs(g);
-            if (pAbs < eps) break;
-
-            // g'(z) = (1/4)(3 - 5*cos(pi*z) + pi*(2+5z)*sin(pi*z))
-            Cx as = cx_mul(a, sinpi);
-            Cx dg = cx_scale({3.0f - 5.0f * cospi.x + kPI * as.x,
-                              -5.0f * cospi.y + kPI * as.y}, 0.25f);
-
-            float dAbs2 = cx_abs2(dg);
-            if (dAbs2 < 1e-20f) break;
-
-            Cx step = cx_div(g, dg);
-            z = cx_sub(z, cx_scale(step, userDamp));
-
-            if (!isfinite(z.x) || !isfinite(z.y)) {
-                z = {0.0f, 0.0f};
-                break;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            const double kPI = 3.14159265358979323846;
+            for (; it < maxIter; ++it) {
+                double px = kPI * zd.x;
+                double py = kPI * zd.y;
+                double cpx = cos(px), spx = sin(px);
+                double chy = cosh(py), shy = sinh(py);
+                Cxd cospi = {cpx * chy, -spx * shy};
+                Cxd sinpi = {spx * chy, cpx * shy};
+                Cxd a = {2.0 + 5.0 * zd.x, 5.0 * zd.y};
+                Cxd ac = cxd_mul(a, cospi);
+                Cxd g = cxd_scale({2.0 + 3.0 * zd.x - ac.x, 3.0 * zd.y - ac.y}, 0.25);
+                pAbsD = cxd_abs(g);
+                if (pAbsD < epsD) break;
+                Cxd as = cxd_mul(a, sinpi);
+                Cxd dg = cxd_scale({3.0 - 5.0 * cospi.x + kPI * as.x,
+                                    -5.0 * cospi.y + kPI * as.y}, 0.25);
+                double dAbs2 = cxd_abs2(dg);
+                if (dAbs2 < 1e-30) break;
+                Cxd step = cxd_div(g, dg);
+                zd = cxd_sub(zd, cxd_scale(step, dampD));
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            const float kPI = 3.14159265358979323846f;
+            for (; it < maxIter; ++it) {
+                float px = kPI * z.x;
+                float py = kPI * z.y;
+                float cpx = cosf(px), spx = sinf(px);
+                float chy = coshf(py), shy = sinhf(py);
+                Cx cospi = {cpx * chy, -spx * shy};
+                Cx sinpi = {spx * chy, cpx * shy};
+                Cx a = {2.0f + 5.0f * z.x, 5.0f * z.y};
+                Cx ac = cx_mul(a, cospi);
+                Cx g = cx_scale({2.0f + 3.0f * z.x - ac.x, 3.0f * z.y - ac.y}, 0.25f);
+                pAbs = cx_abs(g);
+                if (pAbs < eps) break;
+                Cx as = cx_mul(a, sinpi);
+                Cx dg = cx_scale({3.0f - 5.0f * cospi.x + kPI * as.x,
+                                  -5.0f * cospi.y + kPI * as.y}, 0.25f);
+                float dAbs2 = cx_abs2(dg);
+                if (dAbs2 < 1e-20f) break;
+                Cx step = cx_div(g, dg);
+                z = cx_sub(z, cx_scale(step, userDamp));
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
         }
-
-        converged = (pAbs < eps);
     } else {
         // Escape-time family.
         bool canPerturb = (refOrbit != nullptr) && (refLen >= (maxIter + 1));
@@ -1511,6 +1774,11 @@ bool RenderFractalCUDA(
 
     if (!ensure_buffers(w, h, outError)) return false;
 
+    // Resolve the sample tier into a concrete (backend, strategy) pair.
+    RenderSettings resolvedRender = render;
+    resolvedRender.resolved_eval = ResolveSampleEvalMode(
+        view.fractal_type, render.sample_tier, view.log2_zoom);
+
     // Perturbation deep zoom (Mandelbrot/Julia): build and upload a double-precision reference orbit.
     // This is enabled only at high zoom to extend effective precision.
     const double kPerturbZoomThreshold = 1.0e10;
@@ -1596,7 +1864,7 @@ bool RenderFractalCUDA(
         h,
         view,
         params,
-        render,
+        resolvedRender,
         wantPerturb ? g_cached.d_refOrbit : nullptr,
         refLen,
         refC0,

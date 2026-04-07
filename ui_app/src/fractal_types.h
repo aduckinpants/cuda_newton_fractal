@@ -69,6 +69,43 @@ enum class FractalType : int {
     explaino_rational_escape = 26,
 };
 
+// --- Precision tier model (two-axis: backend x strategy) ---
+// Public presets (API / schema surface).
+enum class SampleTier : int {
+    tier_auto = 0,  // resolve based on zoom depth + family support
+    fast = 1,       // Float32 + Direct
+    standard = 2,   // Float64 + Direct
+    // deep = 3,    // Float64 + Perturbation (Phase B)
+    // ultra = 4,   // DoubleDouble + Perturbation (Phase C)
+};
+
+// Internal numeric backend (resolved, not user-facing).
+enum class NumericBackend : int {
+    float32 = 0,
+    float64 = 1,
+    // double_double = 2,  // Phase C
+};
+
+// Internal iteration strategy (resolved, not user-facing).
+enum class IterationStrategy : int {
+    direct = 0,
+    // perturbation = 1,  // Phase B
+};
+
+// Resolved evaluation mode passed through to the kernel.
+struct ResolvedEvalMode {
+    NumericBackend backend{NumericBackend::float32};
+    IterationStrategy strategy{IterationStrategy::direct};
+};
+
+// Per-family support flags — not every family supports every tier.
+enum SampleTierSupport : uint32_t {
+    kSupport_Fast     = 1u << 0,
+    kSupport_Standard = 1u << 1,
+    // kSupport_Deep  = 1u << 2,  // Phase B
+    // kSupport_Ultra = 1u << 3,  // Phase C
+};
+
 enum class CameraBehavior : int {
     manual = 0,
     complexity = 1,
@@ -146,6 +183,8 @@ struct RenderSettings {
     int block_size{256};
     int device_id{0};
     bool benchmark{false};
+    SampleTier sample_tier{SampleTier::tier_auto};
+    ResolvedEvalMode resolved_eval{};  // filled by resolver before dispatch
 };
 
 struct LensSettings {
