@@ -157,6 +157,20 @@ Important contract preserved:
 - the existing unit-root index convention is preserved exactly, even though it is phase-shifted relative to the mathematical root order
 - unit-root reconstruction still stays local to the renderer in this slice
 
+### 3.8.1 Newton regression hardening after basin-helper extraction
+
+Landed:
+- `ui_app/tests/test_newton_basin_regression.cu`
+- `ui_app/tests/test_fractal_probe.cpp` (extended Newton known-roots coverage)
+
+Purpose:
+- protect the canonical `z^3 - 1` Newton basin contract with probe-level and renderer-level rails after the basin helper extraction exposed an exact-root index regression
+
+Important contract preserved:
+- the probe path still reports root indices `[2, 0, 1]` for the canonical roots `(1,0)`, `(-0.5,+sqrt(3)/2)`, and `(-0.5,-sqrt(3)/2)`
+- the renderer fast-tier `root_basin` colors at those exact roots stay blue, red, and green after grading
+- the shared basin helper now preserves the existing phase-shifted unit-root convention at exact canonical roots for both float and double inputs
+
 ## 4) Next Cleanup Slices
 
 ### Slice D — Common complex helper convergence pass

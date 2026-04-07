@@ -457,6 +457,58 @@ int main() {
         }
     }
 
+    {
+        const struct ExpectedRoot {
+            double x;
+            double y;
+            int rootIndex;
+        } expected[] = {
+            {1.0, 0.0, 2},
+            {-0.5, 0.8660254037844386, 0},
+            {-0.5, -0.8660254037844386, 1},
+        };
+
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "probe-newton-known-roots";
+        request.mode = FractalProbeMode::point_set;
+        request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("newton")});
+        for (const auto& item : expected) {
+            request.points.push_back({item.x, item.y});
+        }
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "probe.exe", &response, &error)) {
+            std::cerr << "Expected Newton known-roots probe to run: " << error << "\n";
+            return 1;
+        }
+        if (!response.ok || response.runtime.fractal_type != "newton") {
+            std::cerr << "Expected successful probe response for newton known roots\n";
+            return 1;
+        }
+        if (response.summary.sample_count != 3 || response.samples.size() != 3) {
+            std::cerr << "Expected three Newton known-root samples\n";
+            return 1;
+        }
+
+        for (size_t index = 0; index < response.samples.size(); ++index) {
+            const FractalProbeSample& sample = response.samples[index];
+            if (sample.status != FractalProbeSampleStatus::converged) {
+                std::cerr << "Newton known-root sample should converge at index " << index << "\n";
+                return 1;
+            }
+            if (!sample.has_root_index || sample.root_index != expected[index].rootIndex) {
+                std::cerr << "Newton known-root sample should preserve root_index at index " << index << "\n";
+                return 1;
+            }
+            if (!NearlyEqual(sample.final_z_x, expected[index].x) || !NearlyEqual(sample.final_z_y, expected[index].y)) {
+                std::cerr << "Newton known-root sample should preserve final_z at index " << index << "\n";
+                return 1;
+            }
+        }
+    }
+
     std::cout << "test_fractal_probe: all passed\n";
     return 0;
 }

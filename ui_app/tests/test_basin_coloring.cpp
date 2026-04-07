@@ -42,6 +42,16 @@ int main() {
         return 1;
     }
 
+    if (NearestRootIndexUnitRoots(Cx{1.0f, 0.0f}, 3) != 2 ||
+        NearestRootIndexUnitRoots(Cx{-0.5f, 0.8660254f}, 3) != 0 ||
+        NearestRootIndexUnitRoots(Cx{-0.5f, -0.8660254f}, 3) != 1 ||
+        NearestRootIndexUnitRoots(Cxd{1.0, 0.0}, 3) != 2 ||
+        NearestRootIndexUnitRoots(Cxd{-0.5, 0.8660254037844386}, 3) != 0 ||
+        NearestRootIndexUnitRoots(Cxd{-0.5, -0.8660254037844386}, 3) != 1) {
+        std::cerr << "Basin helper should preserve exact z^3-1 root indexing for float and double paths\n";
+        return 1;
+    }
+
     const Float2 roots[3]{{1.0f, 0.0f}, {0.0f, 1.0f}, {-1.0f, 0.0f}};
     if (NearestRootIndexList(Cx{0.1f, 0.9f}, roots, 3) != 1 ||
         NearestRootIndexList(Cxd{-0.8, 0.1}, roots, 3) != 2) {

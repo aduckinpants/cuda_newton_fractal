@@ -14,14 +14,36 @@ BASIN_COLORING_HD inline constexpr int ResolvePolynomialRootCount(PolyKind polyK
     return polyKind == PolyKind::z3_minus_1 ? 3 : (polyKind == PolyKind::z4_minus_1 ? 4 : 0);
 }
 
-template <typename Complex>
-BASIN_COLORING_HD inline int NearestRootIndexUnitRoots(Complex z, int n) {
-    const double pi = 3.14159265358979323846;
-    const double angle = atan2((double)z.y, (double)z.x);
-    const double t = (angle + pi) / (2.0 * pi);
-    int k = (int)floor(t * n + 0.5) % n;
+template <typename Scalar>
+BASIN_COLORING_HD inline int NearestRootIndexUnitRootsImpl(Scalar x, Scalar y, int n);
+
+template <>
+BASIN_COLORING_HD inline int NearestRootIndexUnitRootsImpl<float>(float x, float y, int n) {
+    const float pi = 3.14159265358979323846f;
+    const float twoPi = 2.0f * pi;
+    float angle = atan2f(y, x);
+    if (angle < 0.0f) angle += twoPi;
+    const int naturalIndex = (int)floorf((angle / twoPi) * n + 0.5f) % n;
+    int k = (naturalIndex + ((n + 1) / 2)) % n;
     if (k < 0) k += n;
     return k;
+}
+
+template <>
+BASIN_COLORING_HD inline int NearestRootIndexUnitRootsImpl<double>(double x, double y, int n) {
+    const double pi = 3.14159265358979323846;
+    const double twoPi = 2.0 * pi;
+    double angle = atan2(y, x);
+    if (angle < 0.0) angle += twoPi;
+    const int naturalIndex = (int)floor((angle / twoPi) * n + 0.5) % n;
+    int k = (naturalIndex + ((n + 1) / 2)) % n;
+    if (k < 0) k += n;
+    return k;
+}
+
+template <typename Complex>
+BASIN_COLORING_HD inline int NearestRootIndexUnitRoots(Complex z, int n) {
+    return NearestRootIndexUnitRootsImpl<decltype(z.x)>(z.x, z.y, n);
 }
 
 template <typename Complex>
