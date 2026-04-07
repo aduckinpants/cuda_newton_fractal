@@ -28,6 +28,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\cli_args.cpp .\src\viewer_cli.cpp .\src\viewer_state_init.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_viewer_state_init.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_state_init.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\tests\test_json_min.cpp ^
   /Fe:"%TESTROOT%\test_json_min.exe"
 if errorlevel 1 exit /b 1
@@ -210,6 +215,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_viewer_cli.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_viewer_state_init.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_json_min.exe"

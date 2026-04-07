@@ -1,0 +1,272 @@
+#include "../src/viewer_state_init.h"
+#include "../src/viewer_cli.h"
+#include "../src/fractal_types.h"
+#include "../src/fractal_family_rules.h"
+
+// Stub: LoadFindingSelectionIntoRuntime is not exercised by these tests
+// (all test cases leave cli.have_load_state_json = false).  Providing
+// a link stub avoids pulling in the heavy JSON/IO dependency chain.
+#include "../src/finding_state_actions.h"
+bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParams*,
+    RenderSettings*, std::string*, std::string*) { return false; }
+
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+static int gPass = 0, gFail = 0;
+#define CHECK(name, cond) do { if (cond) { ++gPass; printf("  PASS: %s\n", name); } \
+    else { ++gFail; printf("  FAIL: %s  (%s:%d)\n", name, __FILE__, __LINE__); } } while(0)
+
+// --- Defaults (no CLI overrides) ---
+
+static void TestDefaultsNoChange() {
+    ViewerCliArgs cli{};
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("DefaultsNoChange_ReturnCode", rc == 0);
+    CHECK("DefaultsNoChange_FractalType", view.fractal_type == FractalType::explaino);
+    CHECK("DefaultsNoChange_Width", render.resolution.x == 800);
+    CHECK("DefaultsNoChange_Height", render.resolution.y == 600);
+}
+
+// --- Fractal type override ---
+
+static void TestFractalTypeOverride() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::mandelbrot;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("FractalTypeOverride_ReturnCode", rc == 0);
+    CHECK("FractalTypeOverride_Type", view.fractal_type == FractalType::mandelbrot);
+    CHECK("FractalTypeOverride_Dirty", dirty == true);
+}
+
+// --- Explaino seed implies explaino fractal type ---
+
+static void TestExplainoSeedImpliesExplaino() {
+    ViewerCliArgs cli{};
+    cli.have_explaino_seed = true;
+    cli.explaino_seed = 5.0;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("ExplainoSeedImplies_ReturnCode", rc == 0);
+    CHECK("ExplainoSeedImplies_Type", view.fractal_type == FractalType::explaino);
+    CHECK("ExplainoSeedImplies_Dirty", dirty == true);
+}
+
+// --- Sweep implies explaino ---
+
+static void TestSweepImpliesExplaino() {
+    ViewerCliArgs cli{};
+    cli.sweep_config.enabled = true;
+    cli.sweep_config.seed_start = 1.0;
+    cli.sweep_config.seed_stop = 10.0;
+    cli.sweep_config.seed_step = 1.0;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("SweepImpliesExplaino_ReturnCode", rc == 0);
+    CHECK("SweepImpliesExplaino_Type", IsExplainoFamily(view.fractal_type));
+}
+
+// --- Sweep with non-explaino type fails ---
+
+static void TestSweepNonExplainoFails() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::mandelbrot;
+    cli.sweep_config.enabled = true;
+    cli.sweep_config.seed_start = 1.0;
+    cli.sweep_config.seed_stop = 10.0;
+    cli.sweep_config.seed_step = 1.0;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("SweepNonExplaino_Fails", rc != 0);
+}
+
+// --- Resolution overrides ---
+
+static void TestResolutionOverrides() {
+    ViewerCliArgs cli{};
+    cli.have_width = true;
+    cli.width = 1920;
+    cli.have_height = true;
+    cli.height = 1080;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("ResolutionOverrides_ReturnCode", rc == 0);
+    CHECK("ResolutionOverrides_Width", render.resolution.x == 1920);
+    CHECK("ResolutionOverrides_Height", render.resolution.y == 1080);
+}
+
+// --- Explaino phase override ---
+
+static void TestExplainoPhaseOverride() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::explaino;
+    cli.have_explaino_phase = true;
+    cli.explaino_phase = 2.5;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("ExplainoPhase_ReturnCode", rc == 0);
+    CHECK("ExplainoPhase_Value", std::fabs(view.explaino_phase - 2.5f) < 0.001f);
+}
+
+// --- Explaino seed drift override ---
+
+static void TestExplainoSeedDriftOverride() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::explaino;
+    cli.have_explaino_seed_drift = true;
+    cli.explaino_seed_drift = 0.01;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("ExplainoSeedDrift_ReturnCode", rc == 0);
+    CHECK("ExplainoSeedDrift_Value", std::fabs(view.explaino_seed_drift - 0.01f) < 0.001f);
+}
+
+// --- Lambda overrides ---
+
+static void TestLambdaOverrides() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::lambda_map;
+    cli.have_lambda_real = true;
+    cli.lambda_real = 1.5;
+    cli.have_lambda_imag = true;
+    cli.lambda_imag = -0.3;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("Lambda_ReturnCode", rc == 0);
+    CHECK("Lambda_Real", std::fabs(params.lambda_real - 1.5f) < 0.001f);
+    CHECK("Lambda_Imag", std::fabs(params.lambda_imag - (-0.3f)) < 0.001f);
+}
+
+// --- Explaino seed_b and mix overrides ---
+
+static void TestExplainoSeedBAndMix() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::explaino;
+    cli.have_explaino_seed_b = true;
+    cli.explaino_seed_b = 3.14;
+    cli.have_explaino_mix = true;
+    cli.explaino_mix = 0.75;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("SeedBAndMix_ReturnCode", rc == 0);
+    CHECK("SeedBAndMix_SeedB", std::fabs(params.explaino_seed_b - 3.14) < 0.001);
+    CHECK("SeedBAndMix_Mix", std::fabs(params.explaino_mix - 0.75f) < 0.001f);
+}
+
+// --- Warp strength override ---
+
+static void TestWarpStrengthOverride() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::explaino;
+    cli.have_explaino_warp_strength = true;
+    cli.explaino_warp_strength = 2.0;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("WarpStrength_ReturnCode", rc == 0);
+    CHECK("WarpStrength_Value", std::fabs(params.explaino_warp_strength - 2.0f) < 0.001f);
+}
+
+// --- Explicit fractal type takes priority over explaino seed ---
+
+static void TestFractalTypeTakesPriority() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::explaino_halley;
+    cli.have_explaino_seed = true;
+    cli.explaino_seed = 5.0;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
+    CHECK("FractalTypePriority_ReturnCode", rc == 0);
+    CHECK("FractalTypePriority_Type", view.fractal_type == FractalType::explaino_halley);
+}
+
+// --- Null dirty pointer is safe ---
+
+static void TestNullDirtyPointer() {
+    ViewerCliArgs cli{};
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::burning_ship;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    int rc = ApplyCliOverrides(cli, view, params, render, nullptr);
+    CHECK("NullDirtyPtr_ReturnCode", rc == 0);
+    CHECK("NullDirtyPtr_Type", view.fractal_type == FractalType::burning_ship);
+}
+
+int main() {
+    TestDefaultsNoChange();
+    TestFractalTypeOverride();
+    TestExplainoSeedImpliesExplaino();
+    TestSweepImpliesExplaino();
+    TestSweepNonExplainoFails();
+    TestResolutionOverrides();
+    TestExplainoPhaseOverride();
+    TestExplainoSeedDriftOverride();
+    TestLambdaOverrides();
+    TestExplainoSeedBAndMix();
+    TestWarpStrengthOverride();
+    TestFractalTypeTakesPriority();
+    TestNullDirtyPointer();
+    printf("test_viewer_state_init: %d passed, %d failed\n", gPass, gFail);
+    return gFail > 0 ? 1 : 0;
+}
