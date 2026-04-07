@@ -129,7 +129,7 @@ struct ViewState {
     double center_hp_y{0.0};
     double log2_zoom{0.0};
 
-    FractalType fractal_type{FractalType::newton};
+    FractalType fractal_type{FractalType::explaino};
 
     bool explaino_alive{false};
     bool explaino_seed_tween{true};

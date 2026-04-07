@@ -8,6 +8,14 @@ static bool NearlyEqual(float a, float b, float eps = 1.0e-6f) {
 }
 
 int main() {
+    {
+        ViewState startupView{};
+        if (startupView.fractal_type != FractalType::explaino) {
+            std::cerr << "Fresh runtime state should default startup fractal selection to Explaino\n";
+            return 1;
+        }
+    }
+
     ViewState view{};
     KernelParams params{};
     RenderSettings render{};

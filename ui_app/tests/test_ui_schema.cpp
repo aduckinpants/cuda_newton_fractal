@@ -241,6 +241,7 @@ int main() {
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
+        bool foundFractalTypeDefaultExplaino = false;
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
         bool foundInteractionDebounceDefault = false;
@@ -284,6 +285,9 @@ int main() {
                     foundLambdaImag = true;
                 }
                 if (ctrl.id == "fractal_type") {
+                    if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino") {
+                        foundFractalTypeDefaultExplaino = true;
+                    }
                     for (const auto& option : ctrl.options) {
                         if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
@@ -380,6 +384,10 @@ int main() {
             std::cerr << "Did not find grouped fractal selector categories in schema\n";
             return 1;
         }
+        if (!foundFractalTypeDefaultExplaino) {
+            std::cerr << "Did not find Explaino as the canonical startup fractal default in schema\n";
+            return 1;
+        }
         if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";
             return 1;
@@ -401,6 +409,7 @@ int main() {
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
+        bool foundFractalTypeDefaultExplaino = false;
         bool foundInteractionDebounceDefault = false;
         bool foundPreviewTargetFpsDefault = false;
         bool foundPreviewMinScaleDefault = false;
@@ -408,6 +417,9 @@ int main() {
         for (const auto& panel : safeMode.panels) {
             for (const auto& ctrl : panel.controls) {
                 if (ctrl.id == "fractal_type") {
+                    if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino") {
+                        foundFractalTypeDefaultExplaino = true;
+                    }
                     for (const auto& option : ctrl.options) {
                         if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
@@ -448,6 +460,10 @@ int main() {
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup || !foundFractalTypeExplainoGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories\n";
+            return 1;
+        }
+        if (!foundFractalTypeDefaultExplaino) {
+            std::cerr << "Safe-mode schema did not default startup fractal selection to Explaino\n";
             return 1;
         }
         if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {

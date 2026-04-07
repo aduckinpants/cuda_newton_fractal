@@ -13,7 +13,7 @@
           "label": "Fractal Type",
           "value_type": "enum",
           "order": 1,
-          "default": "newton",
+          "default": "explaino",
           "options": [
             { "id": "explaino", "label": "Explaino", "group": "Common" },
             { "id": "nova", "label": "Nova", "group": "Common" },

@@ -19,7 +19,7 @@ UISchema BuildSafeModeSchema() {
         c.binding.kind = "param";
         c.binding.path = "fractal.view.fractal_type";
         c.has_default = true;
-        c.def.v = std::string("newton");
+        c.def.v = std::string("explaino");
         c.options = {
             {"explaino", "Explaino", "Common"},
             {"nova", "Nova", "Common"},
