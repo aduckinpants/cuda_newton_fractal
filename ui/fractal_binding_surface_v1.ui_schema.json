@@ -758,6 +758,19 @@
           "binding": { "kind": "param", "path": "fractal.render.benchmark" }
         },
         {
+          "id": "sample_tier",
+          "type": "combo",
+          "label": "Precision Tier",
+          "value_type": "enum",
+          "default": "tier_auto",
+          "options": [
+            { "id": "tier_auto", "label": "Auto (zoom-based)" },
+            { "id": "fast", "label": "Fast (float32)" },
+            { "id": "standard", "label": "Standard (float64)" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.render.sample_tier" }
+        },
+        {
           "id": "capture_diagnostic",
           "type": "button",
           "label": "Capture Diagnostic",

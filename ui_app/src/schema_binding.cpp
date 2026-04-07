@@ -77,6 +77,13 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case CameraBehavior::off: return "off";
         }
     }
+    if (render && path == "fractal.render.sample_tier") {
+        switch (render->sample_tier) {
+        case SampleTier::tier_auto: return "tier_auto";
+        case SampleTier::fast: return "fast";
+        case SampleTier::standard: return "standard";
+        }
+    }
     return {};
 }
 
@@ -148,6 +155,13 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "orbit") view->camera_behavior = CameraBehavior::orbit;
         else if (id == "entropy") view->camera_behavior = CameraBehavior::entropy;
         else if (id == "off") view->camera_behavior = CameraBehavior::off;
+        else return false;
+        return true;
+    }
+    if (render && path == "fractal.render.sample_tier") {
+        if (id == "tier_auto") render->sample_tier = SampleTier::tier_auto;
+        else if (id == "fast") render->sample_tier = SampleTier::fast;
+        else if (id == "standard") render->sample_tier = SampleTier::standard;
         else return false;
         return true;
     }
