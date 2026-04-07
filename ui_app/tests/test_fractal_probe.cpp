@@ -426,6 +426,37 @@ int main() {
         }
     }
 
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "probe-nova-zero-derivative";
+        request.mode = FractalProbeMode::point_set;
+        request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("nova")});
+        request.points.push_back({0.125, 0.0});
+        request.points.push_back({0.25, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe", &response, &error)) {
+            std::cerr << "Expected Nova point_set probe to run: " << error << "\n";
+            return 1;
+        }
+        if (!response.ok || response.runtime.fractal_type != "nova") {
+            std::cerr << "Expected successful probe response for nova\n";
+            return 1;
+        }
+        if (response.summary.sample_count != 2 || response.samples.size() != 2) {
+            std::cerr << "Expected two samples for nova\n";
+            return 1;
+        }
+        for (const FractalProbeSample& sample : response.samples) {
+            if (sample.iterations <= 0) {
+                std::cerr << "Nova probe should advance beyond iteration 0 when z starts at a zero-derivative point\n";
+                return 1;
+            }
+        }
+    }
+
     std::cout << "test_fractal_probe: all passed\n";
     return 0;
 }
