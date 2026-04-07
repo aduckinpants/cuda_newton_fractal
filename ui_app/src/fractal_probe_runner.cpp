@@ -7,6 +7,7 @@
 #include "fractal_derived_fields.h"
 #include "escape_time_direct_formulas.h"
 #include "fractal_family_rules.h"
+#include "fractal_runtime_validation.h"
 #include "runtime_reset.h"
 #include "schema_binding.h"
 #include "view_hp_sync.h"
@@ -177,70 +178,7 @@ bool IsViewUiPath(const std::string& path) {
 }
 
 bool ValidateProbeState(const ProbeState& state, std::string* outError) {
-    const ViewState& view = state.view;
-    const KernelParams& params = state.params;
-
-    if (params.max_iter <= 0) {
-        if (outError) *outError = "max_iter must be > 0";
-        return false;
-    }
-    if (!std::isfinite(params.epsilon) || params.epsilon <= 0.0f) {
-        if (outError) *outError = "epsilon must be finite and > 0";
-        return false;
-    }
-    if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
-        if (outError) *outError = "selected coloring_mode is not valid for fractal_type";
-        return false;
-    }
-    if ((view.fractal_type == FractalType::lambda_map || view.fractal_type == FractalType::explaino_lambda) &&
-        (!std::isfinite(params.lambda_real) || !std::isfinite(params.lambda_imag) ||
-         std::fabs(params.lambda_real) > 4.0f || std::fabs(params.lambda_imag) > 4.0f)) {
-        if (outError) *outError = "lambda_real/lambda_imag must be finite and in [-4,4]";
-        return false;
-    }
-    if (view.fractal_type == FractalType::nova || view.fractal_type == FractalType::explaino_nova) {
-        if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 5.0f) {
-            if (outError) *outError = "nova_alpha must be finite and in (0,5]";
-            return false;
-        }
-    }
-    if (view.fractal_type == FractalType::phoenix) {
-        if (!std::isfinite(params.phoenix_p_real) || !std::isfinite(params.phoenix_p_imag)) {
-            if (outError) *outError = "phoenix_p must be finite";
-            return false;
-        }
-        if (std::fabs(params.phoenix_p_real) > 1.0f || std::fabs(params.phoenix_p_imag) > 1.0f) {
-            if (outError) *outError = "phoenix_p_real/imag must be in [-1,1]";
-            return false;
-        }
-    }
-    if (view.fractal_type == FractalType::multibrot) {
-        if (!std::isfinite(params.multibrot_power_float) || params.multibrot_power_float < 2.0f || params.multibrot_power_float > 12.0f) {
-            if (outError) *outError = "multibrot_power_float must be finite and in [2,12]";
-            return false;
-        }
-    }
-    if (view.fractal_type == FractalType::multicorn) {
-        if (params.multibrot_power < 2 || params.multibrot_power > 12) {
-            if (outError) *outError = "multibrot_power must be in [2,12]";
-            return false;
-        }
-    }
-    if (IsExplainoFamily(view.fractal_type)) {
-        if (!std::isfinite(params.explaino_seed) || !std::isfinite(params.explaino_seed_b)) {
-            if (outError) *outError = "explaino_seed and explaino_seed_b must be finite";
-            return false;
-        }
-        if (!std::isfinite(params.explaino_mix) || params.explaino_mix < 0.0f || params.explaino_mix > 1.0f) {
-            if (outError) *outError = "explaino_mix must be finite and in [0,1]";
-            return false;
-        }
-        if (!std::isfinite(params.explaino_warp_strength) || params.explaino_warp_strength < 0.0f || params.explaino_warp_strength > 5.0f) {
-            if (outError) *outError = "explaino_warp_strength must be finite and in [0,5]";
-            return false;
-        }
-    }
-    return true;
+    return ValidateFractalRuntimeState(state.view, state.params, outError);
 }
 
 void ApplyFractalTypeDefaults(ViewState* ioView, KernelParams* ioParams, bool* ioSyncViewHp) {
