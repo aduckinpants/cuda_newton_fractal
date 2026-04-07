@@ -336,6 +336,10 @@ __device__ __forceinline__ Cx cx_abs_components(Cx a) {
     return {fabsf(a.x), fabsf(a.y)};
 }
 
+__device__ __forceinline__ Cxd cxd_abs_components(Cxd a) {
+    return {fabs(a.x), fabs(a.y)};
+}
+
 __device__ __forceinline__ Cx cx_pow_int(Cx z, int p) {
     // Integer power >= 2.
     Cx r = z;
@@ -353,6 +357,18 @@ __device__ __forceinline__ Cx cx_pow_real_principal(Cx z, float p) {
     float rp = powf(r, p);
     float angle = p * theta;
     return {rp * cosf(angle), rp * sinf(angle)};
+}
+
+__device__ __forceinline__ Cxd cxd_pow_real_principal(Cxd z, double p) {
+    double r2 = cxd_abs2(z);
+    if (r2 <= 1.0e-300) {
+        return {0.0, 0.0};
+    }
+    double r = sqrt(r2);
+    double theta = atan2(z.y, z.x);
+    double rp = pow(r, p);
+    double angle = p * theta;
+    return {rp * cos(angle), rp * sin(angle)};
 }
 
 __device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; }
@@ -1370,29 +1386,101 @@ __global__ void kernel_render(
             if (ft == FractalType::phoenix) {
                 // Phoenix (V1): z_{n+1} = z_n^2 + c + p * z_{n-1}
                 // Parameterization choice: c = coord (c-plane), z0 = 0, z_{-1} = 0.
-                Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
-                Cx zPrev{0.0f, 0.0f};
-                z = {0.0f, 0.0f};
-                cConst = coord;
+                if (useFP64) {
+                    Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+                    Cxd zPrevD{0.0, 0.0};
+                    Cxd zd{0.0, 0.0};
+                    Cxd cConstD = coordD;
 
-                float r2 = 0.0f;
+                    double r2 = 0.0;
+                    for (; it < maxIter; ++it) {
+                        Cxd z2 = cxd_mul(zd, zd);
+                        Cxd mem = cxd_mul(pConstD, zPrevD);
+                        Cxd zNext = cxd_add(cxd_add(z2, cConstD), mem);
+                        zPrevD = zd;
+                        zd = zNext;
+
+                        r2 = cxd_abs2(zd);
+                        if (r2 > 4.0) {
+                            escaped = true;
+                            break;
+                        }
+                        if (!isfinite(zd.x) || !isfinite(zd.y) || !isfinite(zPrevD.x) || !isfinite(zPrevD.y)) {
+                            escaped = true;
+                            break;
+                        }
+                    }
+                    z = {(float)zd.x, (float)zd.y};
+                } else {
+                    Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+                    Cx zPrev{0.0f, 0.0f};
+                    z = {0.0f, 0.0f};
+                    cConst = coord;
+
+                    float r2 = 0.0f;
+                    for (; it < maxIter; ++it) {
+                        Cx z2 = cx_mul(z, z);
+                        Cx mem = cx_mul(pConst, zPrev);
+                        Cx zNext = cx_add(cx_add(z2, cConst), mem);
+                        zPrev = z;
+                        z = zNext;
+
+                        r2 = cx_abs2(z);
+                        if (r2 > 4.0f) {
+                            escaped = true;
+                            break;
+                        }
+                        if (!isfinite(z.x) || !isfinite(z.y) || !isfinite(zPrev.x) || !isfinite(zPrev.y)) {
+                            escaped = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (useFP64) {
+                Cxd zd{0.0, 0.0};
+                Cxd cConstD{0.0, 0.0};
+
+                if (ft == FractalType::julia) {
+                    zd = coordD;
+                    cConstD = {-0.7, 0.27015};
+                } else if (ft == FractalType::lambda_map) {
+                    zd = coordD;
+                } else {
+                    zd = {0.0, 0.0};
+                    cConstD = coordD;
+                }
+
+                double pfD = (double)params.multibrot_power_float;
+                Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
+                double r2 = 0.0;
                 for (; it < maxIter; ++it) {
-                    Cx z2 = cx_mul(z, z);
-                    Cx mem = cx_mul(pConst, zPrev);
-                    Cx zNext = cx_add(cx_add(z2, cConst), mem);
-                    zPrev = z;
-                    z = zNext;
+                    if (ft == FractalType::burning_ship) {
+                        Cxd a = cxd_abs_components(zd);
+                        Cxd z2 = cxd_mul(a, a);
+                        zd = cxd_add(z2, cConstD);
+                    } else if (ft == FractalType::multibrot) {
+                        Cxd zp = cxd_pow_real_principal(zd, pfD);
+                        zd = cxd_add(zp, cConstD);
+                    } else if (ft == FractalType::lambda_map) {
+                        Cxd oneMinusZ{1.0 - zd.x, -zd.y};
+                        zd = cxd_mul(lambdaConstD, cxd_mul(zd, oneMinusZ));
+                    } else {
+                        Cxd z2 = cxd_mul(zd, zd);
+                        zd = cxd_add(z2, cConstD);
+                    }
 
-                    r2 = cx_abs2(z);
-                    if (r2 > 4.0f) {
+                    r2 = cxd_abs2(zd);
+                    if (r2 > 4.0) {
                         escaped = true;
                         break;
                     }
-                    if (!isfinite(z.x) || !isfinite(z.y) || !isfinite(zPrev.x) || !isfinite(zPrev.y)) {
+
+                    if (!isfinite(zd.x) || !isfinite(zd.y)) {
                         escaped = true;
                         break;
                     }
                 }
+                z = {(float)zd.x, (float)zd.y};
             } else if (ft == FractalType::julia) {
                 z = coord;
                 cConst = {-0.7f, 0.27015f};
