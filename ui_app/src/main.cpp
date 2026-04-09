@@ -643,7 +643,7 @@ static void ApplyFractalTypeAndPolyCoherence(ViewState& view, KernelParams& para
     }
 }
 
-static bool InitializeSweepIfEnabled(const SweepConfig& config, SweepPlayerState& sweepState,
+static bool InitializeSweepIfEnabled(const SweepPlayerConfig& config, SweepPlayerState& sweepState,
                                      ViewState& view, KernelParams& params, bool& dirty) {
     if (!config.enabled) return true;
     std::string sweepError;
@@ -720,12 +720,20 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema, BindingContext& 
     return a;
 }
 
+// Forward declarations for functions called by RenderControlsWindow
+static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& render,
+                              const RenderedFrameState& renderedFrame, const ViewState& view,
+                              const std::string& findingStatus, const std::string& lastFindingPath);
+static void RenderSweepControls(const SweepPlayerConfig& config, SweepPlayerState& sweepState,
+                                bool& sweepPaused, bool& sweepSingleStep,
+                                ViewState& view, KernelParams& params, bool& dirty);
+
 static UiActionFlags RenderControlsWindow(
         const UISchema& schema, const std::string& schemaWarning, const std::string& schemaPath,
         ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
         const RenderStats& stats, const RenderedFrameState& renderedFrame,
         const std::string& findingStatus, const std::string& lastFindingPath,
-        const SweepConfig& sweepConfig, SweepPlayerState& sweepState,
+        const SweepPlayerConfig& sweepConfig, SweepPlayerState& sweepState,
         bool& sweepPaused, bool& sweepSingleStep,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
     ImGui::Begin("Controls");
@@ -800,7 +808,7 @@ static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& re
     ImGui::Text("Precision: %s -> %s", tierLabel, backendStr);
 }
 
-static void RenderSweepControls(const SweepConfig& config, SweepPlayerState& sweepState,
+static void RenderSweepControls(const SweepPlayerConfig& config, SweepPlayerState& sweepState,
                                 bool& sweepPaused, bool& sweepSingleStep,
                                 ViewState& view, KernelParams& params, bool& dirty) {
     if (!config.enabled) return;
@@ -904,7 +912,7 @@ static void ApplyArrowKeySeedScrub(const ImGuiIO& io, ViewState& view, KernelPar
     }
 }
 
-static void ApplySweepPlaybackPerFrame(const SweepConfig& config, float deltaTime,
+static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float deltaTime,
                                        bool& sweepPaused, bool& sweepSingleStep,
                                        SweepPlayerState& sweepState,
                                        ViewState& view, KernelParams& params, bool& dirty) {
