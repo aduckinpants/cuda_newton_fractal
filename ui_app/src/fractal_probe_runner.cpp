@@ -650,12 +650,15 @@ bool SamplePoint(const ProbeState& state,
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
         Cx zPrev = z;
         const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+        float bestPF = 1.0e30f;
+        int bestIt_phx = 0;
 
         for (; it < maxIter; ++it) {
             Cx P, dP;
             PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
 
             pAbs = CxAbs(P);
+            if (pAbs < bestPF) { bestPF = pAbs; bestIt_phx = it; }
             if (pAbs < eps) {
                 status = FractalProbeSampleStatus::converged;
                 break;
@@ -679,6 +682,9 @@ bool SamplePoint(const ProbeState& state,
             }
         }
 
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
+            it = bestIt_phx;
+        }
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
         return true;
     }
@@ -689,12 +695,15 @@ bool SamplePoint(const ProbeState& state,
         const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
         const float joyCoupling = params.joy_coupling;
         const float oneMinusGamma = 1.0f - joyCoupling;
+        float bestPF = 1.0e30f;
+        int bestIt_joy = 0;
 
         for (; it < maxIter; ++it) {
             Cx P, dP, d2P;
             PolyEvalRealCoeffsDeg4D2(params.poly_coeffs, z, &P, &dP, &d2P);
 
             pAbs = CxAbs(P);
+            if (pAbs < bestPF) { bestPF = pAbs; bestIt_joy = it; }
             if (pAbs < eps) {
                 status = FractalProbeSampleStatus::converged;
                 break;
@@ -727,6 +736,9 @@ bool SamplePoint(const ProbeState& state,
             }
         }
 
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
+            it = bestIt_joy;
+        }
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
         return true;
     }

@@ -550,12 +550,14 @@ __global__ void kernel_render(
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_phx = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
             Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
             double pAbsD = 0.0;
             double dampD = (double)userDamp;
+            double bestPD_phx = 1.0e30;
             for (; it < maxIter; ++it) {
                 Cxd P, dP;
                 float coeffs[5];
@@ -563,6 +565,7 @@ __global__ void kernel_render(
                 for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
                 poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
                 pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_phx) { bestPD_phx = pAbsD; bestIt_phx = it; }
                 if (pAbsD < epsD) break;
                 double dAbs2 = cxd_abs2(dP);
                 Cxd step = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
@@ -586,6 +589,7 @@ __global__ void kernel_render(
             z = explaino_warp_start(coord, seed, phase, strength);
             Cx zPrev = z;
             Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_phx = 1.0e30f;
             for (; it < maxIter; ++it) {
                 Cx P, dP;
                 float coeffs[5];
@@ -593,6 +597,7 @@ __global__ void kernel_render(
                 for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
                 poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
                 pAbs = cx_abs(P);
+                if (pAbs < bestPF_phx) { bestPF_phx = pAbs; bestIt_phx = it; }
                 if (pAbs < eps) break;
                 float dAbs2 = cx_abs2(dP);
                 Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
@@ -612,6 +617,7 @@ __global__ void kernel_render(
             converged = (pAbs < eps);
         }
         if (!converged) {
+            it = bestIt_phx;
             int nRoots = ResolvePolynomialRootCount(params.poly_kind);
             if (useFP64) {
                 Cxd zd = {(double)z.x, (double)z.y};
@@ -643,6 +649,7 @@ __global__ void kernel_render(
         float joyCoupling = params.joy_coupling;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_joy = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
@@ -651,6 +658,7 @@ __global__ void kernel_render(
             double dampD = (double)userDamp;
             double gammaD = (double)joyCoupling;
             double oneMinusGammaD = 1.0 - gammaD;
+            double bestPD_joy = 1.0e30;
             for (; it < maxIter; ++it) {
                 Cxd P, dP, d2P;
                 float coeffs[5];
@@ -658,6 +666,7 @@ __global__ void kernel_render(
                 for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
                 poly_eval_real_coeffs_deg4_d2_d(coeffs, zd, &P, &dP, &d2P);
                 pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_joy) { bestPD_joy = pAbsD; bestIt_joy = it; }
                 if (pAbsD < epsD) break;
                 double dAbs2 = cxd_abs2(dP);
                 Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
@@ -692,6 +701,7 @@ __global__ void kernel_render(
             Cx zPrev = z;
             Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
             float oneMinusGamma = 1.0f - joyCoupling;
+            float bestPF_joy = 1.0e30f;
             for (; it < maxIter; ++it) {
                 Cx P, dP, d2P;
                 float coeffs[5];
@@ -699,6 +709,7 @@ __global__ void kernel_render(
                 for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
                 poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
                 pAbs = cx_abs(P);
+                if (pAbs < bestPF_joy) { bestPF_joy = pAbs; bestIt_joy = it; }
                 if (pAbs < eps) break;
                 float dAbs2 = cx_abs2(dP);
                 Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
@@ -728,6 +739,7 @@ __global__ void kernel_render(
             converged = (pAbs < eps);
         }
         if (!converged) {
+            it = bestIt_joy;
             int nRoots = ResolvePolynomialRootCount(params.poly_kind);
             if (useFP64) {
                 Cxd zd = {(double)z.x, (double)z.y};
