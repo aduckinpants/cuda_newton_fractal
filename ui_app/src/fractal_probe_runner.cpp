@@ -660,11 +660,19 @@ bool SamplePoint(const ProbeState& state,
                 status = FractalProbeSampleStatus::converged;
                 break;
             }
-            if (CxAbs2(dP) < 1.0e-20f) break;
-
-            const Cx zNext = CxAdd(CxSub(z, CxScale(CxDiv(P, dP), params.explaino_damping)), CxMul(pConst, zPrev));
+            const float dAbs2 = CxAbs2(dP);
+            const Cx step = (dAbs2 < 1.0e-20f) ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(step)));
+            const float damp = params.explaino_damping / (1.0f + stepMag);
+            const Cx zNext = CxAdd(CxSub(z, CxScale(step, damp)), CxMul(pConst, zPrev));
             zPrev = z;
             z = zNext;
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float r = std::sqrt(r2);
+                const float s = 4.0f / std::max(1e-12f, r);
+                z = CxScale(z, s);
+            }
             if (!IsFiniteCx(z)) {
                 status = FractalProbeSampleStatus::nonfinite;
                 break;
@@ -691,9 +699,8 @@ bool SamplePoint(const ProbeState& state,
                 status = FractalProbeSampleStatus::converged;
                 break;
             }
-            if (CxAbs2(dP) < 1.0e-20f) break;
-
-            const Cx newtonStep = CxDiv(P, dP);
+            const float dAbs2 = CxAbs2(dP);
+            const Cx newtonStep = (dAbs2 < 1.0e-20f) ? P : CxDiv(P, dP);
             Cx joyStep = {0.0f, 0.0f};
             if (CxAbs2(d2P) > 1.0e-20f) {
                 joyStep = CxDiv(dP, d2P);
@@ -701,11 +708,19 @@ bool SamplePoint(const ProbeState& state,
             const Cx combinedStep = CxAdd(
                 CxScale(newtonStep, oneMinusGamma),
                 CxScale(joyStep, joyCoupling));
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(combinedStep)));
+            const float damp = params.explaino_damping / (1.0f + stepMag);
             const Cx zNext = CxAdd(
-                CxSub(z, CxScale(combinedStep, params.explaino_damping)),
+                CxSub(z, CxScale(combinedStep, damp)),
                 CxMul(pConst, zPrev));
             zPrev = z;
             z = zNext;
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float r = std::sqrt(r2);
+                const float s = 4.0f / std::max(1e-12f, r);
+                z = CxScale(z, s);
+            }
             if (!IsFiniteCx(z)) {
                 status = FractalProbeSampleStatus::nonfinite;
                 break;

@@ -949,7 +949,8 @@ bool RenderEnumComboControl(
     bool* ioDirty,
     bool* ioInteracted) {
     const std::string currentId = ctx.GetEnumId(binding.path);
-    if (HasGroupedOptions(control) && RenderGroupedEnumComboControl(control, ctx, binding, currentId, ioDirty, ioInteracted)) {
+    if (HasGroupedOptions(control)) {
+        RenderGroupedEnumComboControl(control, ctx, binding, currentId, ioDirty, ioInteracted);
         return true;
     }
 

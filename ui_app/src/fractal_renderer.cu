@@ -543,7 +543,8 @@ __global__ void kernel_render(
         }
     } else if (ft == FractalType::explaino_phoenix) {
         // Explaino-Phoenix: seeded Newton with previous-z memory term.
-        // z_{n+1} = z_n - damping * f(z_n)/f'(z_n) + p * z_{n-1}
+        // z_{n+1} = z_n - damp * P(z)/P'(z) + p * z_{n-1}
+        // Uses adaptive damping and orbit pullback like standard explaino.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
@@ -564,11 +565,18 @@ __global__ void kernel_render(
                 pAbsD = cxd_abs(P);
                 if (pAbsD < epsD) break;
                 double dAbs2 = cxd_abs2(dP);
-                if (dAbs2 < 1e-30) break;
-                Cxd step = cxd_div(P, dP);
-                Cxd zNext = cxd_add(cxd_sub(zd, cxd_scale(step, dampD)), cxd_mul(pConstD, zPrevD));
+                Cxd step = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(step)));
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = cxd_add(cxd_sub(zd, cxd_scale(step, damp)), cxd_mul(pConstD, zPrevD));
                 zPrevD = zd;
                 zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
                 if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
             z = {(float)zd.x, (float)zd.y};
@@ -587,18 +595,48 @@ __global__ void kernel_render(
                 pAbs = cx_abs(P);
                 if (pAbs < eps) break;
                 float dAbs2 = cx_abs2(dP);
-                if (dAbs2 < 1e-20f) break;
-                Cx step = cx_div(P, dP);
-                Cx zNext = cx_add(cx_sub(z, cx_scale(step, userDamp)), cx_mul(pConst, zPrev));
+                Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(cx_sub(z, cx_scale(step, damp)), cx_mul(pConst, zPrev));
                 zPrev = z;
                 z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
                 if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
             }
             converged = (pAbs < eps);
         }
+        if (!converged) {
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_joy) {
         // Explaino-Joy: coupled root-critical Newton.
         // z_{n+1} = z_n - damp * [(1-gamma)*P/P' + gamma*P'/P''] + phoenix_p * z_{n-1}
+        // Uses adaptive damping and orbit pullback like standard explaino.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
@@ -622,8 +660,7 @@ __global__ void kernel_render(
                 pAbsD = cxd_abs(P);
                 if (pAbsD < epsD) break;
                 double dAbs2 = cxd_abs2(dP);
-                if (dAbs2 < 1e-30) break;
-                Cxd newtonStep = cxd_div(P, dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
                 Cxd joyStep = {0.0, 0.0};
                 double d2Abs2 = cxd_abs2(d2P);
                 if (d2Abs2 > 1e-30) {
@@ -632,11 +669,19 @@ __global__ void kernel_render(
                 Cxd combinedStep = cxd_add(
                     cxd_scale(newtonStep, oneMinusGammaD),
                     cxd_scale(joyStep, gammaD));
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(combinedStep)));
+                double damp = dampD / (1.0 + stepMag);
                 Cxd zNext = cxd_add(
-                    cxd_sub(zd, cxd_scale(combinedStep, dampD)),
+                    cxd_sub(zd, cxd_scale(combinedStep, damp)),
                     cxd_mul(pConstD, zPrevD));
                 zPrevD = zd;
                 zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
                 if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
             }
             z = {(float)zd.x, (float)zd.y};
@@ -656,8 +701,7 @@ __global__ void kernel_render(
                 pAbs = cx_abs(P);
                 if (pAbs < eps) break;
                 float dAbs2 = cx_abs2(dP);
-                if (dAbs2 < 1e-20f) break;
-                Cx newtonStep = cx_div(P, dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
                 Cx joyStep = {0.0f, 0.0f};
                 float d2Abs2 = cx_abs2(d2P);
                 if (d2Abs2 > 1e-20f) {
@@ -666,14 +710,44 @@ __global__ void kernel_render(
                 Cx combinedStep = cx_add(
                     cx_scale(newtonStep, oneMinusGamma),
                     cx_scale(joyStep, joyCoupling));
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(combinedStep)));
+                float damp = userDamp / (1.0f + stepMag);
                 Cx zNext = cx_add(
-                    cx_sub(z, cx_scale(combinedStep, userDamp)),
+                    cx_sub(z, cx_scale(combinedStep, damp)),
                     cx_mul(pConst, zPrev));
                 zPrev = z;
                 z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
                 if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
             }
             converged = (pAbs < eps);
+        }
+        if (!converged) {
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
         }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
