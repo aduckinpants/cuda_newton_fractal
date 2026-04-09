@@ -761,6 +761,121 @@ __global__ void kernel_render(
             }
             converged = true;
         }
+    } else if (ft == FractalType::explaino_fold) {
+        // Explaino-Fold: Burning-Ship-style abs-value folding applied to Newton step.
+        // step_folded = (|Re(P/P')|, |Im(P/P')|)
+        // combined = (1-alpha)*step_newton + alpha*step_folded
+        // z_{n+1} = z - damp * combined + mu * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float foldAlpha = params.fold_coupling;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_fold = 0;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double alphaD = (double)foldAlpha;
+            double oneMinusAlphaD = 1.0 - alphaD;
+            double bestPD_fold = 1.0e30;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_fold) { bestPD_fold = pAbsD; bestIt_fold = it; }
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                Cxd foldedStep = {fabs(newtonStep.x), fabs(newtonStep.y)};
+                Cxd combinedStep = cxd_add(
+                    cxd_scale(newtonStep, oneMinusAlphaD),
+                    cxd_scale(foldedStep, alphaD));
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(combinedStep)));
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = cxd_add(
+                    cxd_sub(zd, cxd_scale(combinedStep, damp)),
+                    cxd_mul(pConstD, zPrevD));
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float oneMinusAlpha = 1.0f - foldAlpha;
+            float bestPF_fold = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_fold) { bestPF_fold = pAbs; bestIt_fold = it; }
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                Cx foldedStep = {fabsf(newtonStep.x), fabsf(newtonStep.y)};
+                Cx combinedStep = cx_add(
+                    cx_scale(newtonStep, oneMinusAlpha),
+                    cx_scale(foldedStep, foldAlpha));
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(combinedStep)));
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(
+                    cx_sub(z, cx_scale(combinedStep, damp)),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_fold;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;

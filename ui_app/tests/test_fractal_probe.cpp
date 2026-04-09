@@ -404,6 +404,12 @@ int main() {
                     {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_joy")},
                 },
             },
+            {
+                "explaino_fold",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_fold")},
+                },
+            },
         };
 
         for (const ProbeCase& probeCase : cases) {
