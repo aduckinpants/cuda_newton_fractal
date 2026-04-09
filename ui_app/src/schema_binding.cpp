@@ -65,6 +65,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_fold: return "explaino_fold";
         case FractalType::explaino_bell: return "explaino_bell";
         case FractalType::explaino_ripple: return "explaino_ripple";
+        case FractalType::explaino_splice: return "explaino_splice";
         case FractalType::multicorn: return "multicorn";
         case FractalType::halley: return "halley";
         case FractalType::collatz: return "collatz";
@@ -170,6 +171,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_fold") view->fractal_type = FractalType::explaino_fold;
         else if (id == "explaino_bell") view->fractal_type = FractalType::explaino_bell;
         else if (id == "explaino_ripple") view->fractal_type = FractalType::explaino_ripple;
+        else if (id == "explaino_splice") view->fractal_type = FractalType::explaino_splice;
         else if (id == "multicorn") view->fractal_type = FractalType::multicorn;
         else if (id == "halley") view->fractal_type = FractalType::halley;
         else if (id == "collatz") view->fractal_type = FractalType::collatz;
@@ -353,6 +355,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.fold_coupling") { *outPtr = &params->fold_coupling; return true; }
         if (path == "fractal.params.bell_coupling") { *outPtr = &params->bell_coupling; return true; }
         if (path == "fractal.params.ripple_amplitude") { *outPtr = &params->ripple_amplitude; return true; }
+        if (path == "fractal.params.splice_offset") { *outPtr = &params->splice_offset; return true; }
         if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
         if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
         if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }

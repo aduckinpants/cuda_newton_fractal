@@ -100,6 +100,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_fold:
     case FractalType::explaino_bell:
     case FractalType::explaino_ripple:
+    case FractalType::explaino_splice:
     case FractalType::collatz:
     case FractalType::mcmullen:
     default:
@@ -172,6 +173,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_fold:
     case FractalType::explaino_bell:
     case FractalType::explaino_ripple:
+    case FractalType::explaino_splice:
         return true;
     default:
         return false;
@@ -193,6 +195,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_fold:
     case FractalType::explaino_bell:
     case FractalType::explaino_ripple:
+    case FractalType::explaino_splice:
         return 500;
     case FractalType::explaino_nova:
         return 300;
@@ -247,6 +250,9 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     }
     if (fractalType == FractalType::explaino_ripple) {
         params.ripple_amplitude = 0.15f;
+    }
+    if (fractalType == FractalType::explaino_splice) {
+        params.splice_offset = 0.5f;
     }
 }
 
@@ -487,6 +493,30 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
         params.poly_coeffs[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
         params.poly_coeffs[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
         params.poly_coeffs[0] = p01x * p23x - p01y * p23y;
+    }
+
+    // Splice: compute second polynomial from seed + splice_offset.
+    if (view.fractal_type == FractalType::explaino_splice) {
+        double offsetSeed = ExplainoSeedCombined(view, params) + (double)params.splice_offset;
+        ExplainoSeedShape shB = ExplainoShapeForCombinedSeed(
+            offsetSeed,
+            view.explaino_seed_tween,
+            phase,
+            spread,
+            phaseStrength);
+        float ba = shB.a, bb = shB.b, bc = shB.c, bd = shB.d;
+        Float2 rootsB[4] = {{ba, bb}, {ba, -bb}, {bc, bd}, {bc, -bd}};
+        const float s01x = rootsB[0].x + rootsB[1].x, s01y = rootsB[0].y + rootsB[1].y;
+        const float p01x = rootsB[0].x * rootsB[1].x - rootsB[0].y * rootsB[1].y;
+        const float p01y = rootsB[0].x * rootsB[1].y + rootsB[0].y * rootsB[1].x;
+        const float s23x = rootsB[2].x + rootsB[3].x, s23y = rootsB[2].y + rootsB[3].y;
+        const float p23x = rootsB[2].x * rootsB[3].x - rootsB[2].y * rootsB[3].y;
+        const float p23y = rootsB[2].x * rootsB[3].y + rootsB[2].y * rootsB[3].x;
+        params.poly_coeffs_b[4] = 1.0f;
+        params.poly_coeffs_b[3] = -(s01x + s23x);
+        params.poly_coeffs_b[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
+        params.poly_coeffs_b[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
+        params.poly_coeffs_b[0] = p01x * p23x - p01y * p23y;
     }
 
     if (ioDirty) *ioDirty = true;

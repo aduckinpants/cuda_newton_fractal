@@ -1123,6 +1123,121 @@ __global__ void kernel_render(
             }
             converged = true;
         }
+    } else if (ft == FractalType::explaino_splice) {
+        // Explaino-Splice: Alternating-polynomial interference.
+        // Even iterations use P_A (params.poly_coeffs), odd use P_B (params.poly_coeffs_b).
+        // Convergence is tested against P_A (primary polynomial).
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_splice = 0;
+        float coeffsA[5], coeffsB[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) { coeffsA[k] = params.poly_coeffs[k]; coeffsB[k] = params.poly_coeffs_b[k]; }
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double bestPD_splice = 1.0e30;
+            for (; it < maxIter; ++it) {
+                // Pick polynomial based on even/odd iteration
+                const float* activeCoeffs = (it % 2 == 0) ? coeffsA : coeffsB;
+                Cxd P, dP;
+                poly_eval_real_coeffs_deg4_d(activeCoeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_splice) { bestPD_splice = pAbsD; bestIt_splice = it; }
+                // Convergence check against primary polynomial P_A
+                {
+                    Cxd PA, dPA;
+                    poly_eval_real_coeffs_deg4_d(coeffsA, zd, &PA, &dPA);
+                    double paAbs = cxd_abs(PA);
+                    if (paAbs < epsD) { pAbsD = paAbs; break; }
+                }
+                double dAbs2 = cxd_abs2(dP);
+                Cxd step = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(step)));
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = {
+                    zd.x - step.x * damp + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
+                    zd.y - step.y * damp + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
+                };
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_splice = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                const float* activeCoeffs = (it % 2 == 0) ? coeffsA : coeffsB;
+                Cx P, dP;
+                poly_eval_real_coeffs_deg4(activeCoeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_splice) { bestPF_splice = pAbs; bestIt_splice = it; }
+                // Convergence check against primary polynomial P_A
+                {
+                    Cx PA, dPA;
+                    poly_eval_real_coeffs_deg4(coeffsA, z, &PA, &dPA);
+                    float paAbs = cx_abs(PA);
+                    if (paAbs < eps) { pAbs = paAbs; break; }
+                }
+                float dAbs2 = cx_abs2(dP);
+                Cx step = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(step)));
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(
+                    cx_sub(z, cx_scale(step, damp)),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_splice;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;
