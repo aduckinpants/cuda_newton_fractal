@@ -10,6 +10,11 @@
 // Resolve animation target by name using the BindFloat surface.
 // Tries "fractal.params.<name>" then "fractal.view.<name>".
 // Returns nullptr if name is unknown or "none".
+//
+// DO NOT replace this with an enum or switch/case dispatch.
+// BindFloat IS the property registry. Adding a new animatable param
+// requires only a BindFloat entry + a schema dropdown option.
+// test_param_anim_generic.cpp enforces this contract.
 static float* ResolveAnimTarget(const char* name, ViewState& view, KernelParams& params) {
     if (!name[0] || std::strcmp(name, "none") == 0) return nullptr;
 

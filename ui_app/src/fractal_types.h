@@ -77,6 +77,7 @@ enum class FractalType : int {
     explaino_bell = 32,
     explaino_ripple = 33,
     explaino_splice = 34,
+    explaino_vortex = 35,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -127,6 +128,21 @@ enum class CameraBehavior : int {
 // param_anim_target is stored as a name string (char[32]) in ViewState.
 // Resolution uses BindFloat at runtime — no enum needed.
 // To add a new animatable param: add a BindFloat entry + schema dropdown option.
+
+// --- PARAM ANIMATION TARGET ---
+// Stored as a plain name string. Resolved at runtime via BindFloat.
+//
+// DO NOT add an enum, switch/case, or manual dispatch for animation targets.
+// The system discovers targets by probing BindFloat("fractal.params.<name>")
+// then BindFloat("fractal.view.<name>"). This is the C++ equivalent of
+// reflecting over properties — schema JSON is the single UI source of truth.
+//
+// To make a new float param animatable:
+//   1. Ensure it has a BindFloat entry in schema_binding.cpp (needed for slider anyway)
+//   2. Add a dropdown option in fractal_binding_surface_v1.ui_schema.json
+//   That's it. No C++ enum/switch/resolve wiring.
+//
+// See: param_anim_dynamics.cpp, test_param_anim_generic.cpp
 
 struct ViewState {
     Float2 center{0.0f, 0.0f};
@@ -198,6 +214,7 @@ struct KernelParams {
     float ripple_amplitude{0.0f};
     float splice_offset{0.0f};
     float poly_coeffs_b[5]{0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // Second polynomial for splice
+    float vortex_strength{0.0f};
     McMullenPreset mcmullen_preset{McMullenPreset::z3_z3};
 };
 

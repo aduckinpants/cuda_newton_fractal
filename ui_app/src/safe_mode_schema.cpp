@@ -95,6 +95,7 @@ std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
         {"explaino_bell", "Explaino Bell", "Explaino"},
         {"explaino_ripple", "Explaino Ripple", "Explaino"},
         {"explaino_splice", "Explaino Splice", "Explaino"},
+        {"explaino_vortex", "Explaino Vortex", "Explaino"},
     };
 }
 

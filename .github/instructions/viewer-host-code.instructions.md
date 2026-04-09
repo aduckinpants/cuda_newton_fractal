@@ -12,3 +12,4 @@ applyTo: "ui_app/src/**/*.{cpp,cu,h}"
 - Unknown binding paths, enum ids, or invalid parameters must produce explicit errors or validation failures, not silent fallback.
 - When a behavior can be isolated, add or update a focused headless test before changing the implementation.
 - Do not create a second UI source of truth; schema drives layout, C++ structs drive runtime state.
+- Parameter animation targets are resolved at runtime via BindFloat — do NOT add enums, switch/case, or manual dispatch. To make a new float param animatable: add a BindFloat entry in schema_binding.cpp + a dropdown option in the schema JSON. See `param_anim_dynamics.cpp` and `test_param_anim_generic.cpp`.

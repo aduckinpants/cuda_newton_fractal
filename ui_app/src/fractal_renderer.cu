@@ -1238,6 +1238,133 @@ __global__ void kernel_render(
             }
             converged = true;
         }
+    } else if (ft == FractalType::explaino_vortex) {
+        // Explaino-Vortex: Self-referential spin — Newton step rotated by V * arg(step).
+        //   step = P/P'
+        //   theta = atan2(step.y, step.x)
+        //   rotated = step * exp(i * V * theta)
+        //   z_{n+1} = z - damp * rotated + mu * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float V = params.vortex_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_vortex = 0;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double Vd = (double)V;
+            double bestPD_vortex = 1.0e30;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_vortex) { bestPD_vortex = pAbsD; bestIt_vortex = it; }
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(newtonStep)));
+                // Self-referential rotation by V * arg(step)
+                Cxd rotStep = newtonStep;
+                if (Vd > 0.0 && stepMag > 1e-30) {
+                    double theta = atan2(newtonStep.y, newtonStep.x);
+                    double angle = Vd * theta;
+                    double cosA = cos(angle);
+                    double sinA = sin(angle);
+                    rotStep = {newtonStep.x * cosA - newtonStep.y * sinA,
+                               newtonStep.x * sinA + newtonStep.y * cosA};
+                }
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = {
+                    zd.x - rotStep.x * damp + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
+                    zd.y - rotStep.y * damp + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
+                };
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_vortex = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_vortex) { bestPF_vortex = pAbs; bestIt_vortex = it; }
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(newtonStep)));
+                // Self-referential rotation by V * arg(step)
+                Cx rotStep = newtonStep;
+                if (V > 0.0f && stepMag > 1e-20f) {
+                    float theta = atan2f(newtonStep.y, newtonStep.x);
+                    float angle = V * theta;
+                    float cosA = cosf(angle);
+                    float sinA = sinf(angle);
+                    rotStep = {newtonStep.x * cosA - newtonStep.y * sinA,
+                               newtonStep.x * sinA + newtonStep.y * cosA};
+                }
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(
+                    cx_sub(z, cx_scale(rotStep, damp)),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_vortex;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;

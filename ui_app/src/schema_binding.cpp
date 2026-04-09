@@ -67,6 +67,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_bell: return "explaino_bell";
         case FractalType::explaino_ripple: return "explaino_ripple";
         case FractalType::explaino_splice: return "explaino_splice";
+        case FractalType::explaino_vortex: return "explaino_vortex";
         case FractalType::multicorn: return "multicorn";
         case FractalType::halley: return "halley";
         case FractalType::collatz: return "collatz";
@@ -160,6 +161,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_bell") view->fractal_type = FractalType::explaino_bell;
         else if (id == "explaino_ripple") view->fractal_type = FractalType::explaino_ripple;
         else if (id == "explaino_splice") view->fractal_type = FractalType::explaino_splice;
+        else if (id == "explaino_vortex") view->fractal_type = FractalType::explaino_vortex;
         else if (id == "multicorn") view->fractal_type = FractalType::multicorn;
         else if (id == "halley") view->fractal_type = FractalType::halley;
         else if (id == "collatz") view->fractal_type = FractalType::collatz;
@@ -334,6 +336,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.bell_coupling") { *outPtr = &params->bell_coupling; return true; }
         if (path == "fractal.params.ripple_amplitude") { *outPtr = &params->ripple_amplitude; return true; }
         if (path == "fractal.params.splice_offset") { *outPtr = &params->splice_offset; return true; }
+        if (path == "fractal.params.vortex_strength") { *outPtr = &params->vortex_strength; return true; }
         // Short-name aliases for param_anim_target resolution.
         // These let the animation system resolve "damping" -> explaino_damping, etc.
         if (path == "fractal.params.damping") { *outPtr = &params->explaino_damping; return true; }

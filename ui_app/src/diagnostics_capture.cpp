@@ -38,6 +38,7 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::explaino_bell: return "explaino_bell";
     case FractalType::explaino_ripple: return "explaino_ripple";
     case FractalType::explaino_splice: return "explaino_splice";
+    case FractalType::explaino_vortex: return "explaino_vortex";
     case FractalType::multicorn: return "multicorn";
     case FractalType::halley: return "halley";
     case FractalType::collatz: return "collatz";

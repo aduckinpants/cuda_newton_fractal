@@ -957,6 +957,62 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
+    if (ft == FractalType::explaino_vortex) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+        const float V = params.vortex_strength;
+        float bestPF = 1.0e30f;
+        int bestIt_vortex = 0;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < bestPF) { bestPF = pAbs; bestIt_vortex = it; }
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            const float dAbs2 = CxAbs2(dP);
+            const Cx newtonStep = (dAbs2 < 1.0e-20f) ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(newtonStep)));
+            // Self-referential rotation by V * arg(step)
+            Cx rotStep = newtonStep;
+            if (V > 0.0f && stepMag > 1e-20f) {
+                const float theta = std::atan2(newtonStep.y, newtonStep.x);
+                const float angle = V * theta;
+                const float cosA = std::cos(angle);
+                const float sinA = std::sin(angle);
+                rotStep = {newtonStep.x * cosA - newtonStep.y * sinA,
+                           newtonStep.x * sinA + newtonStep.y * cosA};
+            }
+            const float damp = params.explaino_damping / (1.0f + stepMag);
+            const Cx zNext = CxAdd(
+                CxSub(z, CxScale(rotStep, damp)),
+                CxMul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float r = std::sqrt(r2);
+                const float s = 4.0f / std::max(1e-12f, r);
+                z = CxScale(z, s);
+            }
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
+            it = bestIt_vortex;
+        }
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
     if (ft == FractalType::explaino_transcendental) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
 
@@ -1257,6 +1313,7 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "explaino_bell",
         "explaino_ripple",
         "explaino_splice",
+        "explaino_vortex",
         "explaino_transcendental",
         "explaino_inertial",
         "explaino_julia",

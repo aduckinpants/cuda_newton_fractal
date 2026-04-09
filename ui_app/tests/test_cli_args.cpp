@@ -204,6 +204,7 @@ bool TestParseFractalTypeAllValues() {
         {"explaino_bell", FractalType::explaino_bell},
         {"explaino_ripple", FractalType::explaino_ripple},
         {"explaino_splice", FractalType::explaino_splice},
+        {"explaino_vortex", FractalType::explaino_vortex},
         {"multicorn", FractalType::multicorn},
         {"halley", FractalType::halley},
         {"collatz", FractalType::collatz},

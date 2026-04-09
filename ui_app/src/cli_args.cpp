@@ -67,6 +67,7 @@ bool TryParseFractalTypeArg(const std::vector<std::string>& args, FractalType* o
     if (text == "explaino_bell") { if (outType) *outType = FractalType::explaino_bell; return true; }
     if (text == "explaino_ripple") { if (outType) *outType = FractalType::explaino_ripple; return true; }
     if (text == "explaino_splice") { if (outType) *outType = FractalType::explaino_splice; return true; }
+    if (text == "explaino_vortex") { if (outType) *outType = FractalType::explaino_vortex; return true; }
     if (text == "multicorn") { if (outType) *outType = FractalType::multicorn; return true; }
     if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }
