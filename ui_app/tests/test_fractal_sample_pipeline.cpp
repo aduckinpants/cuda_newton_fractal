@@ -359,6 +359,7 @@ bool TestBasinColoringRootIndex() {
         "explaino_ripple",
         "explaino_splice",
         "explaino_vortex",
+        "explaino_tension",
     };
 
     for (const char* type : basinTypes) {

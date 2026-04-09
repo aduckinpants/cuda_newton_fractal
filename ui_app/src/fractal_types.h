@@ -78,6 +78,7 @@ enum class FractalType : int {
     explaino_ripple = 33,
     explaino_splice = 34,
     explaino_vortex = 35,
+    explaino_tension = 36,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -215,6 +216,7 @@ struct KernelParams {
     float splice_offset{0.0f};
     float poly_coeffs_b[5]{0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // Second polynomial for splice
     float vortex_strength{0.0f};
+    float tension_strength{0.0f};
     McMullenPreset mcmullen_preset{McMullenPreset::z3_z3};
 };
 

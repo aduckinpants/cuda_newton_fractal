@@ -1365,6 +1365,178 @@ __global__ void kernel_render(
             }
             converged = true;
         }
+    } else if (ft == FractalType::explaino_tension) {
+        // Explaino-Tension: Newton step + weak pull toward second-closest root.
+        //   step = P/P'
+        //   r_far = second_closest_root(z)
+        //   pull  = T * (r_far - z) / |r_far - z|^2
+        //   z_{n+1} = z - damp * step + pull + mu * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float T = params.tension_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int nRootsForPull = params.explaino_root_count;
+        int bestIt_tension = 0;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double Td = (double)T;
+            double bestPD_tension = 1.0e30;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_tension) { bestPD_tension = pAbsD; bestIt_tension = it; }
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(newtonStep)));
+                double damp = dampD / (1.0 + stepMag);
+                // Compute pull toward second-closest root
+                Cxd pull = {0.0, 0.0};
+                if (Td > 0.0 && nRootsForPull >= 2) {
+                    // Find nearest and second-nearest root
+                    double best1 = 1e30, best2 = 1e30;
+                    int idx2 = 0;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        double dx = zd.x - (double)params.explaino_roots[r].x;
+                        double dy = zd.y - (double)params.explaino_roots[r].y;
+                        double d2 = dx*dx + dy*dy;
+                        if (d2 < best1) { best2 = best1; idx2 = r; best1 = d2; }
+                        else if (d2 < best2) { best2 = d2; idx2 = r; }
+                    }
+                    // Fix: re-scan to get true second-nearest
+                    int idxNearest = 0;
+                    best1 = 1e30;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        double dx = zd.x - (double)params.explaino_roots[r].x;
+                        double dy = zd.y - (double)params.explaino_roots[r].y;
+                        double d2 = dx*dx + dy*dy;
+                        if (d2 < best1) { best1 = d2; idxNearest = r; }
+                    }
+                    best2 = 1e30; idx2 = (idxNearest == 0) ? 1 : 0;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        if (r == idxNearest) continue;
+                        double dx = zd.x - (double)params.explaino_roots[r].x;
+                        double dy = zd.y - (double)params.explaino_roots[r].y;
+                        double d2 = dx*dx + dy*dy;
+                        if (d2 < best2) { best2 = d2; idx2 = r; }
+                    }
+                    double fx = (double)params.explaino_roots[idx2].x - zd.x;
+                    double fy = (double)params.explaino_roots[idx2].y - zd.y;
+                    double dist2 = fx*fx + fy*fy;
+                    if (dist2 > 1e-20) {
+                        pull = {Td * fx / dist2, Td * fy / dist2};
+                    }
+                }
+                Cxd zNext = {
+                    zd.x - newtonStep.x * damp + pull.x + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
+                    zd.y - newtonStep.y * damp + pull.y + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
+                };
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_tension = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_tension) { bestPF_tension = pAbs; bestIt_tension = it; }
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(newtonStep)));
+                float damp = userDamp / (1.0f + stepMag);
+                // Compute pull toward second-closest root
+                Cx pull = {0.0f, 0.0f};
+                if (T > 0.0f && nRootsForPull >= 2) {
+                    int idxNearest = 0;
+                    float best1 = 1e30f;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        float dx = z.x - params.explaino_roots[r].x;
+                        float dy = z.y - params.explaino_roots[r].y;
+                        float d2 = dx*dx + dy*dy;
+                        if (d2 < best1) { best1 = d2; idxNearest = r; }
+                    }
+                    float best2 = 1e30f;
+                    int idx2 = (idxNearest == 0) ? 1 : 0;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        if (r == idxNearest) continue;
+                        float dx = z.x - params.explaino_roots[r].x;
+                        float dy = z.y - params.explaino_roots[r].y;
+                        float d2 = dx*dx + dy*dy;
+                        if (d2 < best2) { best2 = d2; idx2 = r; }
+                    }
+                    float fx = params.explaino_roots[idx2].x - z.x;
+                    float fy = params.explaino_roots[idx2].y - z.y;
+                    float dist2 = fx*fx + fy*fy;
+                    if (dist2 > 1e-20f) {
+                        pull = {T * fx / dist2, T * fy / dist2};
+                    }
+                }
+                Cx zNext = cx_add(
+                    cx_add(cx_sub(z, cx_scale(newtonStep, damp)), pull),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_tension;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;

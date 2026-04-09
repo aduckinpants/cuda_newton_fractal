@@ -1013,6 +1013,80 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
+    if (ft == FractalType::explaino_tension) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+        const float T = params.tension_strength;
+        const int nRootsForPull = params.explaino_root_count;
+        float bestPF = 1.0e30f;
+        int bestIt_tension = 0;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < bestPF) { bestPF = pAbs; bestIt_tension = it; }
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            const float dAbs2 = CxAbs2(dP);
+            const Cx newtonStep = (dAbs2 < 1.0e-20f) ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(newtonStep)));
+            const float damp = params.explaino_damping / (1.0f + stepMag);
+            // Compute pull toward second-closest root
+            Cx pull = {0.0f, 0.0f};
+            if (T > 0.0f && nRootsForPull >= 2) {
+                int idxNearest = 0;
+                float best1 = 1e30f;
+                for (int r = 0; r < nRootsForPull; ++r) {
+                    float dx = z.x - params.explaino_roots[r].x;
+                    float dy = z.y - params.explaino_roots[r].y;
+                    float d2 = dx*dx + dy*dy;
+                    if (d2 < best1) { best1 = d2; idxNearest = r; }
+                }
+                float best2 = 1e30f;
+                int idx2 = (idxNearest == 0) ? 1 : 0;
+                for (int r = 0; r < nRootsForPull; ++r) {
+                    if (r == idxNearest) continue;
+                    float dx = z.x - params.explaino_roots[r].x;
+                    float dy = z.y - params.explaino_roots[r].y;
+                    float d2 = dx*dx + dy*dy;
+                    if (d2 < best2) { best2 = d2; idx2 = r; }
+                }
+                float fx = params.explaino_roots[idx2].x - z.x;
+                float fy = params.explaino_roots[idx2].y - z.y;
+                float dist2 = fx*fx + fy*fy;
+                if (dist2 > 1e-20f) {
+                    pull = {T * fx / dist2, T * fy / dist2};
+                }
+            }
+            const Cx zNext = CxAdd(
+                CxAdd(CxSub(z, CxScale(newtonStep, damp)), pull),
+                CxMul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float r = std::sqrt(r2);
+                const float s = 4.0f / std::max(1e-12f, r);
+                z = CxScale(z, s);
+            }
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
+            it = bestIt_tension;
+        }
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
     if (ft == FractalType::explaino_transcendental) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
 
@@ -1314,6 +1388,7 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "explaino_ripple",
         "explaino_splice",
         "explaino_vortex",
+        "explaino_tension",
         "explaino_transcendental",
         "explaino_inertial",
         "explaino_julia",

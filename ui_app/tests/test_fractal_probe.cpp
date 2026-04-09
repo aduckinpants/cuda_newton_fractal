@@ -434,6 +434,12 @@ int main() {
                     {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_vortex")},
                 },
             },
+            {
+                "explaino_tension",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_tension")},
+                },
+            },
         };
 
         for (const ProbeCase& probeCase : cases) {

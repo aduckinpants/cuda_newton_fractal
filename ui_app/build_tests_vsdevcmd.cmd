@@ -403,6 +403,13 @@ if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_vortex_continuity.exe"
 if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_explaino_tension_continuity.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_tension_continuity.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_explaino_tension_continuity.exe"
+if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_sample_pipeline.exe"
 if errorlevel 1 exit /b 1
