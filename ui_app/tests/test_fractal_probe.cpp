@@ -398,6 +398,12 @@ int main() {
                     {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_collatz")},
                 },
             },
+            {
+                "explaino_joy",
+                {
+                    {"fractal.view.fractal_type", FractalProbeScalar::String("explaino_joy")},
+                },
+            },
         };
 
         for (const ProbeCase& probeCase : cases) {

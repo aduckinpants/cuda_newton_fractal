@@ -353,6 +353,7 @@ bool TestBasinColoringRootIndex() {
         "explaino_inertial",
         "explaino_rational",
         "explaino_collatz",
+        "explaino_joy",
     };
 
     for (const char* type : basinTypes) {

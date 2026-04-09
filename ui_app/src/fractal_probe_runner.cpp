@@ -675,6 +675,47 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
+    if (ft == FractalType::explaino_joy) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+        const float joyCoupling = params.joy_coupling;
+        const float oneMinusGamma = 1.0f - joyCoupling;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP, d2P;
+            PolyEvalRealCoeffsDeg4D2(params.poly_coeffs, z, &P, &dP, &d2P);
+
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            if (CxAbs2(dP) < 1.0e-20f) break;
+
+            const Cx newtonStep = CxDiv(P, dP);
+            Cx joyStep = {0.0f, 0.0f};
+            if (CxAbs2(d2P) > 1.0e-20f) {
+                joyStep = CxDiv(dP, d2P);
+            }
+            const Cx combinedStep = CxAdd(
+                CxScale(newtonStep, oneMinusGamma),
+                CxScale(joyStep, joyCoupling));
+            const Cx zNext = CxAdd(
+                CxSub(z, CxScale(combinedStep, params.explaino_damping)),
+                CxMul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
     if (ft == FractalType::explaino_transcendental) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
 
@@ -970,6 +1011,7 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "explaino_dual",
         "explaino_mult",
         "explaino_phoenix",
+        "explaino_joy",
         "explaino_transcendental",
         "explaino_inertial",
         "explaino_julia",

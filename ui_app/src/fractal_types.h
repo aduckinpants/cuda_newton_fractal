@@ -72,6 +72,7 @@ enum class FractalType : int {
     spider = 27,
     celtic_mandelbrot = 28,
     perpendicular_burning_ship = 29,
+    explaino_joy = 30,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -198,6 +199,7 @@ struct KernelParams {
     Float2 explaino_roots[4]{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
     TranscendentalFunc transcendental_func{TranscendentalFunc::f_sin};
     float momentum_beta{0.0f};
+    float joy_coupling{0.0f};
     McMullenPreset mcmullen_preset{McMullenPreset::z3_z3};
 };
 

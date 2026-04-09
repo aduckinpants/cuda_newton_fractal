@@ -90,6 +90,7 @@ std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
         {"explaino_collatz", "Explaino Collatz", "Explaino"},
         {"explaino_lambda", "Explaino Lambda", "Explaino"},
         {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
+        {"explaino_joy", "Explaino Joy", "Explaino"},
     };
 }
 

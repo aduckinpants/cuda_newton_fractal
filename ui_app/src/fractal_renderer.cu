@@ -596,6 +596,85 @@ __global__ void kernel_render(
             }
             converged = (pAbs < eps);
         }
+    } else if (ft == FractalType::explaino_joy) {
+        // Explaino-Joy: coupled root-critical Newton.
+        // z_{n+1} = z_n - damp * [(1-gamma)*P/P' + gamma*P'/P''] + phoenix_p * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float joyCoupling = params.joy_coupling;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double gammaD = (double)joyCoupling;
+            double oneMinusGammaD = 1.0 - gammaD;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP, d2P;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d2_d(coeffs, zd, &P, &dP, &d2P);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                if (dAbs2 < 1e-30) break;
+                Cxd newtonStep = cxd_div(P, dP);
+                Cxd joyStep = {0.0, 0.0};
+                double d2Abs2 = cxd_abs2(d2P);
+                if (d2Abs2 > 1e-30) {
+                    joyStep = cxd_div(dP, d2P);
+                }
+                Cxd combinedStep = cxd_add(
+                    cxd_scale(newtonStep, oneMinusGammaD),
+                    cxd_scale(joyStep, gammaD));
+                Cxd zNext = cxd_add(
+                    cxd_sub(zd, cxd_scale(combinedStep, dampD)),
+                    cxd_mul(pConstD, zPrevD));
+                zPrevD = zd;
+                zd = zNext;
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float oneMinusGamma = 1.0f - joyCoupling;
+            for (; it < maxIter; ++it) {
+                Cx P, dP, d2P;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d2(coeffs, z, &P, &dP, &d2P);
+                pAbs = cx_abs(P);
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                if (dAbs2 < 1e-20f) break;
+                Cx newtonStep = cx_div(P, dP);
+                Cx joyStep = {0.0f, 0.0f};
+                float d2Abs2 = cx_abs2(d2P);
+                if (d2Abs2 > 1e-20f) {
+                    joyStep = cx_div(dP, d2P);
+                }
+                Cx combinedStep = cx_add(
+                    cx_scale(newtonStep, oneMinusGamma),
+                    cx_scale(joyStep, joyCoupling));
+                Cx zNext = cx_add(
+                    cx_sub(z, cx_scale(combinedStep, userDamp)),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;

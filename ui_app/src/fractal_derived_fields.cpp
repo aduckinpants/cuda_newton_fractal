@@ -96,6 +96,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_julia:
     case FractalType::explaino_rational:
     case FractalType::explaino_collatz:
+    case FractalType::explaino_joy:
     case FractalType::collatz:
     case FractalType::mcmullen:
     default:
@@ -164,6 +165,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_collatz:
     case FractalType::explaino_lambda:
     case FractalType::explaino_rational_escape:
+    case FractalType::explaino_joy:
         return true;
     default:
         return false;
@@ -181,6 +183,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_inertial:
     case FractalType::explaino_rational:
     case FractalType::explaino_collatz:
+    case FractalType::explaino_joy:
         return 500;
     case FractalType::explaino_nova:
         return 300;
@@ -223,6 +226,9 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     }
     if (fractalType == FractalType::explaino_rational_escape) {
         params.exposure = 1.2f;
+    }
+    if (fractalType == FractalType::explaino_joy) {
+        params.joy_coupling = 0.3f;
     }
 }
 

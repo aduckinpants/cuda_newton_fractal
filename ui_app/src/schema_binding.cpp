@@ -61,6 +61,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         case FractalType::explaino_inertial: return "explaino_inertial";
         case FractalType::explaino_julia: return "explaino_julia";
         case FractalType::explaino_rational: return "explaino_rational";
+        case FractalType::explaino_joy: return "explaino_joy";
         case FractalType::multicorn: return "multicorn";
         case FractalType::halley: return "halley";
         case FractalType::collatz: return "collatz";
@@ -162,6 +163,7 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         else if (id == "explaino_inertial") view->fractal_type = FractalType::explaino_inertial;
         else if (id == "explaino_julia") view->fractal_type = FractalType::explaino_julia;
         else if (id == "explaino_rational") view->fractal_type = FractalType::explaino_rational;
+        else if (id == "explaino_joy") view->fractal_type = FractalType::explaino_joy;
         else if (id == "multicorn") view->fractal_type = FractalType::multicorn;
         else if (id == "halley") view->fractal_type = FractalType::halley;
         else if (id == "collatz") view->fractal_type = FractalType::collatz;
@@ -341,6 +343,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.explaino_damping") { *outPtr = &params->explaino_damping; return true; }
         if (path == "fractal.params.explaino_cluster_radius") { *outPtr = &params->explaino_cluster_radius; return true; }
         if (path == "fractal.params.momentum_beta") { *outPtr = &params->momentum_beta; return true; }
+        if (path == "fractal.params.joy_coupling") { *outPtr = &params->joy_coupling; return true; }
         if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
         if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
         if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
