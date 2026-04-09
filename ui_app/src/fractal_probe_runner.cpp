@@ -794,6 +794,59 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
+    if (ft == FractalType::explaino_bell) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+        const float bellBeta = params.bell_coupling;
+        float bestPF = 1.0e30f;
+        int bestIt_bell = 0;
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < bestPF) { bestPF = pAbs; bestIt_bell = it; }
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+            const float dAbs2 = CxAbs2(dP);
+            const Cx newtonStep = (dAbs2 < 1.0e-20f) ? P : CxDiv(P, dP);
+            // Decompose step by P-phase direction
+            const float pMag = std::max(1e-20f, pAbs);
+            const Cx pHat = {P.x / pMag, P.y / pMag};
+            const float dotPar = newtonStep.x * pHat.x + newtonStep.y * pHat.y;
+            const Cx sParallel = {dotPar * pHat.x, dotPar * pHat.y};
+            const Cx combinedStep = {newtonStep.x - bellBeta * sParallel.x,
+                                     newtonStep.y - bellBeta * sParallel.y};
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(combinedStep)));
+            const float damp = params.explaino_damping / (1.0f + stepMag);
+            const Cx zNext = CxAdd(
+                CxSub(z, CxScale(combinedStep, damp)),
+                CxMul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float r = std::sqrt(r2);
+                const float s = 4.0f / std::max(1e-12f, r);
+                z = CxScale(z, s);
+            }
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
+            it = bestIt_bell;
+        }
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
     if (ft == FractalType::explaino_transcendental) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
 
@@ -1091,6 +1144,7 @@ bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId
         "explaino_phoenix",
         "explaino_joy",
         "explaino_fold",
+        "explaino_bell",
         "explaino_transcendental",
         "explaino_inertial",
         "explaino_julia",

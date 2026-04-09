@@ -64,6 +64,7 @@ std::vector<FractalProbeCase> AllProbeCases() {
         {"explaino_collatz", true, false, {}},
         {"explaino_joy", true, false, {}},
         {"explaino_fold", true, false, {}},
+        {"explaino_bell", true, false, {}},
 
         // Escape-time types
         {"mandelbrot", false, true, {}},

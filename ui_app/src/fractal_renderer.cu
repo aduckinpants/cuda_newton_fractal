@@ -876,6 +876,128 @@ __global__ void kernel_render(
             }
             converged = true;
         }
+    } else if (ft == FractalType::explaino_bell) {
+        // Explaino-Bell: Measurement-reaction decomposition of Newton step.
+        // Project step onto P-phase direction (measurement/bulk) and orthogonal (reaction/spin).
+        // Attenuate measurement channel by beta; reaction channel passes through.
+        // combined = (1-beta)*s_parallel + s_perp = s - beta*s_parallel
+        // z_{n+1} = z - damp * combined + mu * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float bellBeta = params.bell_coupling;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_bell = 0;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double betaD = (double)bellBeta;
+            double bestPD_bell = 1.0e30;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_bell) { bestPD_bell = pAbsD; bestIt_bell = it; }
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                // Decompose step by P-phase: parallel = projection onto P direction
+                double pMag = fmax(1e-30, pAbsD);
+                Cxd pHat = {P.x / pMag, P.y / pMag};
+                // dot(step, pHat) = Re(step * conj(pHat))
+                double dotPar = newtonStep.x * pHat.x + newtonStep.y * pHat.y;
+                Cxd sParallel = {dotPar * pHat.x, dotPar * pHat.y};
+                // combined = step - beta * sParallel (attenuate measurement channel)
+                Cxd combinedStep = {newtonStep.x - betaD * sParallel.x,
+                                    newtonStep.y - betaD * sParallel.y};
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(combinedStep)));
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = cxd_add(
+                    cxd_sub(zd, cxd_scale(combinedStep, damp)),
+                    cxd_mul(pConstD, zPrevD));
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_bell = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_bell) { bestPF_bell = pAbs; bestIt_bell = it; }
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                // Decompose step by P-phase
+                float pMag = fmaxf(1e-20f, pAbs);
+                Cx pHat = {P.x / pMag, P.y / pMag};
+                float dotPar = newtonStep.x * pHat.x + newtonStep.y * pHat.y;
+                Cx sParallel = {dotPar * pHat.x, dotPar * pHat.y};
+                Cx combinedStep = {newtonStep.x - bellBeta * sParallel.x,
+                                   newtonStep.y - bellBeta * sParallel.y};
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(combinedStep)));
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(
+                    cx_sub(z, cx_scale(combinedStep, damp)),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_bell;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;

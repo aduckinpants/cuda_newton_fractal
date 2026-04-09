@@ -98,6 +98,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_collatz:
     case FractalType::explaino_joy:
     case FractalType::explaino_fold:
+    case FractalType::explaino_bell:
     case FractalType::collatz:
     case FractalType::mcmullen:
     default:
@@ -168,6 +169,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_rational_escape:
     case FractalType::explaino_joy:
     case FractalType::explaino_fold:
+    case FractalType::explaino_bell:
         return true;
     default:
         return false;
@@ -187,6 +189,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_collatz:
     case FractalType::explaino_joy:
     case FractalType::explaino_fold:
+    case FractalType::explaino_bell:
         return 500;
     case FractalType::explaino_nova:
         return 300;
@@ -235,6 +238,9 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     }
     if (fractalType == FractalType::explaino_fold) {
         params.fold_coupling = 0.5f;
+    }
+    if (fractalType == FractalType::explaino_bell) {
+        params.bell_coupling = 0.5f;
     }
 }
 

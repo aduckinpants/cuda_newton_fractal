@@ -74,6 +74,7 @@ enum class FractalType : int {
     perpendicular_burning_ship = 29,
     explaino_joy = 30,
     explaino_fold = 31,
+    explaino_bell = 32,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -202,6 +203,7 @@ struct KernelParams {
     float momentum_beta{0.0f};
     float joy_coupling{0.0f};
     float fold_coupling{0.0f};
+    float bell_coupling{0.0f};
     McMullenPreset mcmullen_preset{McMullenPreset::z3_z3};
 };
 
