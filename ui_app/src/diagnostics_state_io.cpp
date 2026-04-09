@@ -137,6 +137,7 @@ bool ParseFractalType(const std::string& text, FractalType* outType) {
     if (text == "explaino_joy") { if (outType) *outType = FractalType::explaino_joy; return true; }
     if (text == "explaino_fold") { if (outType) *outType = FractalType::explaino_fold; return true; }
     if (text == "explaino_bell") { if (outType) *outType = FractalType::explaino_bell; return true; }
+    if (text == "explaino_ripple") { if (outType) *outType = FractalType::explaino_ripple; return true; }
     if (text == "multicorn") { if (outType) *outType = FractalType::multicorn; return true; }
     if (text == "halley") { if (outType) *outType = FractalType::halley; return true; }
     if (text == "collatz") { if (outType) *outType = FractalType::collatz; return true; }

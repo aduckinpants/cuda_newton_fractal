@@ -998,6 +998,131 @@ __global__ void kernel_render(
             }
             converged = true;
         }
+    } else if (ft == FractalType::explaino_ripple) {
+        // Explaino-Ripple: Standing-wave perturbation perpendicular to Newton step.
+        // After computing Newton step s = P/P', adds sinusoidal kick normal to s:
+        //   nHat = i*s/|s|  (90-degree rotation of step direction)
+        //   kick = A * sin(2*pi*n/T + arg(P')) * nHat
+        //   z_{n+1} = z - damp*s + kick + mu * z_{n-1}
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float rippleA = params.ripple_amplitude;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int bestIt_ripple = 0;
+        const float kTwoPI = 6.2831853071795864f;
+        const float kRipplePeriod = 8.0f;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double ampD = (double)rippleA;
+            double bestPD_ripple = 1.0e30;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_ripple) { bestPD_ripple = pAbsD; bestIt_ripple = it; }
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(newtonStep)));
+                // Standing-wave kick perpendicular to step direction
+                Cxd kick = {0.0, 0.0};
+                if (ampD > 0.0 && stepMag > 1e-30) {
+                    Cxd nHat = {-newtonStep.y / stepMag, newtonStep.x / stepMag};
+                    double dpArg = atan2(dP.y, dP.x);
+                    double wave = ampD * sin((double)kTwoPI * (double)it / (double)kRipplePeriod + dpArg);
+                    kick = {nHat.x * wave, nHat.y * wave};
+                }
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = {
+                    zd.x - newtonStep.x * damp + kick.x + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
+                    zd.y - newtonStep.y * damp + kick.y + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
+                };
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_ripple = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_ripple) { bestPF_ripple = pAbs; bestIt_ripple = it; }
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(newtonStep)));
+                // Standing-wave kick perpendicular to step direction
+                Cx kick = {0.0f, 0.0f};
+                if (rippleA > 0.0f && stepMag > 1e-20f) {
+                    Cx nHat = {-newtonStep.y / stepMag, newtonStep.x / stepMag};
+                    float dpArg = atan2f(dP.y, dP.x);
+                    float wave = rippleA * sinf(kTwoPI * (float)it / kRipplePeriod + dpArg);
+                    kick = {nHat.x * wave, nHat.y * wave};
+                }
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(
+                    cx_add(cx_sub(z, cx_scale(newtonStep, damp)), kick),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_ripple;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
     } else if (ft == FractalType::explaino_transcendental) {
         // Explaino-Transcendental: seeded Newton applied to transcendental functions.
         float phase = view.explaino_phase;
