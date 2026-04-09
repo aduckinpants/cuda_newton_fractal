@@ -2,6 +2,9 @@
 
 Purpose: keep intentionally paused threads visible so they do not vanish between slices.
 
+Active specs: see `spec_intake/_STATUS.md` for the current planning surface.
+Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
+
 ## 1. Viewer Responsiveness / Adaptive Render Recovery
 
 Status: deferred on 2026-04-06
@@ -44,6 +47,10 @@ Planning sources:
 - spec_intake/ExplainoDesignSpace_DeepDive_2026-04-05.md
 - spec_intake/ExplainoFamilyExpansion_V1_SpecIntake.md
 
+Note: All 4 Explaino solver variants now landed (ripple, splice, vortex, tension).
+The next Explaino work is the CUDA sample_fn extraction + Optimization Staging +
+Reflexive sidecar initiative — see active specs in _STATUS.md.
+
 ## 3. Common Fractal Catalog Expansion + 2-Layer Dropdown
 
 Status: queued, not started
@@ -73,19 +80,29 @@ Stop rule:
 
 ## 4. CUDA Catalog Refactor Before Break-Wall
 
-Status: queued immediately after the next safe catalog wave
+Status: partially complete (escape-time and specialized formula extraction landed),
+        remaining work queued after active CUDA sample_fn initiative
 
 Problem:
 - the fractal renderer switch surface is growing faster than the shared math and family-rules seams
 
-Needed seams:
-- shared escape-time helpers
-- shared root-finding helpers
+Completed seams:
+- escape_time_direct_formulas.h (shared state-machine for 10 direct escape-time types)
+- escape_time_specialized_formulas.h (McMullen, Collatz)
+- perturbation_reference_orbit.h (perturbation cache/request/orbit)
+- escape_time_coloring.h (palette + final color grading)
+- explaino_collatz_formulas.h (Collatz residual/derivative/step)
+- polynomial_eval_real_coeffs.h (Horner evaluators)
+- basin_coloring.h (root-count, root-index, palette)
+- fractal_runtime_validation.h (shared fail-fast param validation)
+
+Remaining seams:
 - explicit family defaults / visibility / validation outside the monolithic kernel switch
 - cleaner organization for the future categorized dropdown surface
 
 Timing rule:
-- perform this refactor before any 3D, IFS, distance-estimator, or Mandelbulb-style work
+- perform remaining refactoring before any 3D, IFS, distance-estimator, or Mandelbulb-style work
+- the CUDA sample_fn extraction (K1-K5) will naturally drive further cleanup of the iteration path
 
 ## 5. Lens SDF Follow-Ups
 
@@ -101,6 +118,28 @@ Deferred follow-ups:
 
 Resume constraints:
 - do not mix this with the organized-selector/common-fractal thread
+
+## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
+
+Status: **ACTIVE** — this is the current initiative (2026-04-09)
+
+Three interconnected specs with a shared critical path. See `spec_intake/_STATUS.md`.
+
+Critical path: K1-K3 (extract `fractal_sample_device()` from renderer)
+  → enables Optimization Staging Phase 1 (measurement)
+  → enables CLI Bridge V2 session protocol
+  → enables Reflexive sidecar demonstrations
+
+Specs:
+- spec_intake/CliBridgeV2_GpuSampleFn_SpecIntake.md (K1-K5 kernel extraction + V2 session)
+- spec_intake/OptimizationStaging_ExplainoZeroAxis_SpecIntake.md (zero-axis measurement + cost profiling)
+- spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md (Explaino Reflexive — engine explaining itself)
+
+Design constraint: sample_fn is fully on CUDA. No CPU fallback.
+
+First slice: K1 — extract `fractal_sample_device()` __device__ function from
+`fractal_renderer.cu`, with a focused headless test proving equivalence to the
+existing renderer output for at least one fractal type.
 - keep any `lens.downsample` decision tied to explicit mask/SDF resolution behavior and tests
 
 Key references:

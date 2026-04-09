@@ -1,6 +1,6 @@
 # Spec Intake — Status Index
 
-Last updated: 2026-04-07 (merge prep for `working/salt-fractal-sweep-viewer`)
+Last updated: 2026-04-09
 
 ## Implemented
 
@@ -8,7 +8,7 @@ These specs are fully landed on the branch with tests, schema bindings, and prob
 
 | Spec | Summary | Key Commits |
 |------|---------|-------------|
-| ExplainoFamilyExpansion_V1 | explaino_nova, explaino_dual, explaino_lambda, explaino_rational_escape | multiple |
+| ExplainoFamilyExpansion_V1 | explaino_nova, explaino_dual, explaino_lambda, explaino_rational_escape + ripple, splice, vortex, tension | multiple |
 | NonIntegerMultibrot_V1 | multibrot_power_float with [2,12] domain | landed 2026-04-06 |
 | NovaFractal_V1 | Nova escape-time contract (coloring bug fixed) | Nova repair slice |
 | PhoenixFractal_V1 | Phoenix with single preset (p=0.5667) | early branch |
@@ -31,6 +31,14 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 | Color_Pipeline_TunePass_Directive | Escape-time smoothing, exposure refinement | Future polish phase |
 | VisualTuning_PostProcess | Sharpen, bloom, depth-of-field | Spec-only; do not implement yet |
 | Camera_Depth_UILayout_Notes | Dive-depth tuning, camera behavior stubs | Documented in KNOWN_ISSUES |
+
+## Planning — Active Specs (need refinement before implementation)
+
+| Spec | Summary | Dependencies |
+|------|---------|-------------|
+| OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, cost/sensitivity tables, variant crossfade; Phase 1 feeds kernel extraction validation | No external deps (Phase 1); CUDA sample_fn K1-K3 (Phase 2) |
+| CliBridgeV2_GpuSampleFn | **CUDA-resident sample_fn (K1-K5)** + CLI session V2 (batch, keep-alive, param diff, NDJSON) | K1-K3 is the critical path; extends GenericCudaSamplerBridge E3-E6 |
+| ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 + Optimization Staging Phase 2 |
 
 ## Research / Hypothesis — Deferred to Nine
 

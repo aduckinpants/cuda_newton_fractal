@@ -1,5 +1,11 @@
 # Viewer Host Repo Guidelines
 
+## Session Start
+- Read `AGENT_WORKING_PROTOCOL.md` first. It contains the full working rules,
+  build commands, slice workflow, and handoff discipline.
+- Then read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`,
+  and the last few entries of `HANDOFF_LOG.md` for current state.
+
 ## Mission
 - Treat this repo as the bootstrap and extraction surface for the viewer-host effort.
 - Prefer extracting and reusing proven seams over inventing new architecture.
