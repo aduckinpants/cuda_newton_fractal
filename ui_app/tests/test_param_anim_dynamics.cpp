@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 static int g_fail = 0;
 
@@ -13,10 +14,15 @@ static int g_fail = 0;
     } \
 } while(0)
 
+static void set_target(ViewState& view, const char* name) {
+    std::strncpy(view.param_anim_target, name, sizeof(view.param_anim_target) - 1);
+    view.param_anim_target[sizeof(view.param_anim_target) - 1] = '\0';
+}
+
 static void test_none_does_nothing() {
     ViewState view{};
     KernelParams params{};
-    view.param_anim_target = ParamAnimTarget::none;
+    set_target(view, "none");
     view.param_anim_rate = 1.0f;
     float before = params.explaino_damping;
     bool changed = ApplyParamAnimDynamics(0.016, view, params);
@@ -28,7 +34,7 @@ static void test_damping_increments() {
     ViewState view{};
     KernelParams params{};
     params.explaino_damping = 1.0f;
-    view.param_anim_target = ParamAnimTarget::damping;
+    set_target(view, "damping");
     view.param_anim_rate = 0.5f;
     bool changed = ApplyParamAnimDynamics(1.0, view, params);
     CHECK(changed, "damping should have changed");
@@ -39,7 +45,7 @@ static void test_multibrot_power_increments() {
     ViewState view{};
     KernelParams params{};
     params.multibrot_power_float = 3.0f;
-    view.param_anim_target = ParamAnimTarget::multibrot_power;
+    set_target(view, "multibrot_power");
     view.param_anim_rate = 0.1f;
     bool changed = ApplyParamAnimDynamics(2.0, view, params);
     CHECK(changed, "multibrot_power should have changed");
@@ -52,7 +58,7 @@ static void test_seed_target_uses_explaino_combined() {
     KernelParams params{};
     params.explaino_seed = 0.0;
     view.explaino_seed_drift = 0.0f;
-    view.param_anim_target = ParamAnimTarget::seed;
+    set_target(view, "seed");
     view.param_anim_rate = 0.1f;
     bool changed = ApplyParamAnimDynamics(1.0, view, params);
     CHECK(changed, "seed target should have changed");
@@ -65,7 +71,7 @@ static void test_seed_target_non_explaino_noop() {
     ViewState view{};
     view.fractal_type = FractalType::mandelbrot;
     KernelParams params{};
-    view.param_anim_target = ParamAnimTarget::seed;
+    set_target(view, "seed");
     view.param_anim_rate = 1.0f;
     bool changed = ApplyParamAnimDynamics(1.0, view, params);
     CHECK(!changed, "seed target on non-explaino should be noop");
@@ -75,7 +81,7 @@ static void test_zero_rate_noop() {
     ViewState view{};
     KernelParams params{};
     params.nova_alpha = 0.5f;
-    view.param_anim_target = ParamAnimTarget::nova_alpha;
+    set_target(view, "nova_alpha");
     view.param_anim_rate = 0.0f;
     bool changed = ApplyParamAnimDynamics(1.0, view, params);
     CHECK(!changed, "zero rate should be noop");
@@ -85,7 +91,7 @@ static void test_zero_rate_noop() {
 static void test_negative_delta_noop() {
     ViewState view{};
     KernelParams params{};
-    view.param_anim_target = ParamAnimTarget::damping;
+    set_target(view, "damping");
     view.param_anim_rate = 1.0f;
     bool changed = ApplyParamAnimDynamics(-0.5, view, params);
     CHECK(!changed, "negative delta should be noop");

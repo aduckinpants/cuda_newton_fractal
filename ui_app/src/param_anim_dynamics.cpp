@@ -2,27 +2,34 @@
 
 #include "explaino_seed.h"
 #include "fractal_family_rules.h"
+#include "schema_binding.h"
 
 #include <cmath>
+#include <cstring>
 
-static float* ResolveAnimTarget(ParamAnimTarget target, ViewState& view, KernelParams& params) {
-    switch (target) {
-    case ParamAnimTarget::damping:        return &params.explaino_damping;
-    case ParamAnimTarget::warp_strength:  return &params.explaino_warp_strength;
-    case ParamAnimTarget::root_spread:    return &params.explaino_root_spread;
-    case ParamAnimTarget::mix:            return &params.explaino_mix;
-    case ParamAnimTarget::nova_alpha:     return &params.nova_alpha;
-    case ParamAnimTarget::phoenix_p_real: return &params.phoenix_p_real;
-    case ParamAnimTarget::multibrot_power:return &params.multibrot_power_float;
-    case ParamAnimTarget::lambda_real:    return &params.lambda_real;
-    case ParamAnimTarget::momentum_beta:  return &params.momentum_beta;
-    case ParamAnimTarget::explaino_phase: return &view.explaino_phase;
-    default: return nullptr;
-    }
+// Resolve animation target by name using the BindFloat surface.
+// Tries "fractal.params.<name>" then "fractal.view.<name>".
+// Returns nullptr if name is unknown or "none".
+static float* ResolveAnimTarget(const char* name, ViewState& view, KernelParams& params) {
+    if (!name[0] || std::strcmp(name, "none") == 0) return nullptr;
+
+    BindingContext ctx;
+    ctx.view = &view;
+    ctx.params = &params;
+    float* ptr = nullptr;
+
+    std::string paramPath = std::string("fractal.params.") + name;
+    if (ctx.BindFloat(paramPath, &ptr)) return ptr;
+
+    std::string viewPath = std::string("fractal.view.") + name;
+    if (ctx.BindFloat(viewPath, &ptr)) return ptr;
+
+    return nullptr;
 }
 
 bool ApplyParamAnimDynamics(double deltaSeconds, ViewState& view, KernelParams& params) {
-    if (view.param_anim_target == ParamAnimTarget::none) return false;
+    if (view.param_anim_target[0] == '\0' || std::strcmp(view.param_anim_target, "none") == 0)
+        return false;
     if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0.0) return false;
 
     const double rate = std::fmax(0.0, static_cast<double>(view.param_anim_rate));
@@ -30,7 +37,7 @@ bool ApplyParamAnimDynamics(double deltaSeconds, ViewState& view, KernelParams& 
 
     const double delta = rate * deltaSeconds;
 
-    if (view.param_anim_target == ParamAnimTarget::seed) {
+    if (std::strcmp(view.param_anim_target, "seed") == 0) {
         if (!IsExplainoFamily(view.fractal_type)) return false;
         ExplainoSeedSetCombined(view, params, ExplainoSeedCombined(view, params) + delta);
         return true;

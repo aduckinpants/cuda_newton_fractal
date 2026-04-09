@@ -4,6 +4,7 @@
 #include "ui_schema_grouping.h"
 
 #include <cmath>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -96,20 +97,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         }
     }
     if (view && path == "fractal.view.param_anim_target") {
-        switch (view->param_anim_target) {
-        case ParamAnimTarget::none: return "none";
-        case ParamAnimTarget::seed: return "seed";
-        case ParamAnimTarget::damping: return "damping";
-        case ParamAnimTarget::warp_strength: return "warp_strength";
-        case ParamAnimTarget::root_spread: return "root_spread";
-        case ParamAnimTarget::mix: return "mix";
-        case ParamAnimTarget::nova_alpha: return "nova_alpha";
-        case ParamAnimTarget::phoenix_p_real: return "phoenix_p_real";
-        case ParamAnimTarget::multibrot_power: return "multibrot_power";
-        case ParamAnimTarget::lambda_real: return "lambda_real";
-        case ParamAnimTarget::momentum_beta: return "momentum_beta";
-        case ParamAnimTarget::explaino_phase: return "explaino_phase";
-        }
+        return std::string(view->param_anim_target);
     }
     return {};
 }
@@ -203,19 +191,8 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         return true;
     }
     if (view && path == "fractal.view.param_anim_target") {
-        if (id == "none") view->param_anim_target = ParamAnimTarget::none;
-        else if (id == "seed") view->param_anim_target = ParamAnimTarget::seed;
-        else if (id == "damping") view->param_anim_target = ParamAnimTarget::damping;
-        else if (id == "warp_strength") view->param_anim_target = ParamAnimTarget::warp_strength;
-        else if (id == "root_spread") view->param_anim_target = ParamAnimTarget::root_spread;
-        else if (id == "mix") view->param_anim_target = ParamAnimTarget::mix;
-        else if (id == "nova_alpha") view->param_anim_target = ParamAnimTarget::nova_alpha;
-        else if (id == "phoenix_p_real") view->param_anim_target = ParamAnimTarget::phoenix_p_real;
-        else if (id == "multibrot_power") view->param_anim_target = ParamAnimTarget::multibrot_power;
-        else if (id == "lambda_real") view->param_anim_target = ParamAnimTarget::lambda_real;
-        else if (id == "momentum_beta") view->param_anim_target = ParamAnimTarget::momentum_beta;
-        else if (id == "explaino_phase") view->param_anim_target = ParamAnimTarget::explaino_phase;
-        else return false;
+        if (id.size() >= sizeof(view->param_anim_target)) return false;
+        std::memcpy(view->param_anim_target, id.c_str(), id.size() + 1);
         return true;
     }
     return false;
@@ -340,6 +317,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.lambda_imag") { *outPtr = &params->lambda_imag; return true; }
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
         if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
+        if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
         if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
         if (path == "fractal.params.color_tint_r") { *outPtr = &params->color_tint_r; return true; }
@@ -356,6 +334,12 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.bell_coupling") { *outPtr = &params->bell_coupling; return true; }
         if (path == "fractal.params.ripple_amplitude") { *outPtr = &params->ripple_amplitude; return true; }
         if (path == "fractal.params.splice_offset") { *outPtr = &params->splice_offset; return true; }
+        // Short-name aliases for param_anim_target resolution.
+        // These let the animation system resolve "damping" -> explaino_damping, etc.
+        if (path == "fractal.params.damping") { *outPtr = &params->explaino_damping; return true; }
+        if (path == "fractal.params.warp_strength") { *outPtr = &params->explaino_warp_strength; return true; }
+        if (path == "fractal.params.root_spread") { *outPtr = &params->explaino_root_spread; return true; }
+        if (path == "fractal.params.mix") { *outPtr = &params->explaino_mix; return true; }
         if (path == "fractal.params.poly_coeffs.0") { *outPtr = &params->poly_coeffs[0]; return true; }
         if (path == "fractal.params.poly_coeffs.1") { *outPtr = &params->poly_coeffs[1]; return true; }
         if (path == "fractal.params.poly_coeffs.2") { *outPtr = &params->poly_coeffs[2]; return true; }
