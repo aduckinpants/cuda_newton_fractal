@@ -44,7 +44,7 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 
 | ID | Finding | Priority | Disposition |
 |----|---------|----------|------------|
-| KF-1 | explaino_y: 0 avg iters, residual up to 27, 100% convergence — degenerate early-exit? | **High** | Investigate before V2 relies on sample correctness |
+| KF-1 | explaino_y: 0 avg iters, residual up to 27, 100% convergence — degenerate early-exit? | **High** | **DONE** (816b5d1) — root-snap + residual zero + regression test |
 | KF-2 | collatz RGBA: fast-escape pixels render black | Low | Cosmetic; not a sample-path bug |
 | KF-3 | "neither" band: 3-12% max_iter exhaustion across escape types | Deferred | Optimization target for future phase |
 | KF-4 | nova/explaino_nova: 99.5% escape at 1 avg iter | Low | Parameter tuning — defaults may not showcase fractal |
