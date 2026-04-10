@@ -37,8 +37,18 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
 | OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, cost/sensitivity tables, variant crossfade; Phase 1 feeds kernel extraction validation | No external deps (Phase 1); CUDA sample_fn K1-K3 (Phase 2) |
-| CliBridgeV2_GpuSampleFn | **CUDA-resident sample_fn (K1-K5)** + CLI session V2 (batch, keep-alive, param diff, NDJSON) | K1-K3 is the critical path; extends GenericCudaSamplerBridge E3-E6 |
-| ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 + Optimization Staging Phase 2 |
+| CliBridgeV2_GpuSampleFn | **K1-K4 DONE.** K5 (shared lib target) next. CLI session V2 (batch, keep-alive, param diff, NDJSON) follows. | K5 is next; V2-A depends on K3 (done) |
+| ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 (done) + Optimization Staging Phase 2 |
+
+### K4 Diagnostic Findings (investigation backlog, prioritized)
+
+| ID | Finding | Priority | Disposition |
+|----|---------|----------|------------|
+| KF-1 | explaino_y: 0 avg iters, residual up to 27, 100% convergence — degenerate early-exit? | **High** | Investigate before V2 relies on sample correctness |
+| KF-2 | collatz RGBA: fast-escape pixels render black | Low | Cosmetic; not a sample-path bug |
+| KF-3 | "neither" band: 3-12% max_iter exhaustion across escape types | Deferred | Optimization target for future phase |
+| KF-4 | nova/explaino_nova: 99.5% escape at 1 avg iter | Low | Parameter tuning — defaults may not showcase fractal |
+| KF-5 | lambda_map/explaino_lambda: degenerate at default params | Low | Same as KF-4 |
 
 ## Research / Hypothesis — Deferred to Nine
 

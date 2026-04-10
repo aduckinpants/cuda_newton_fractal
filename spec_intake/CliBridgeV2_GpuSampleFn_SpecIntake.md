@@ -111,13 +111,25 @@ etc.) so that:
 
 ### 1.5 Phased plan (this repo — kernel extraction)
 
-| Phase | Description | Exit criteria |
-|-------|-------------|---------------|
-| K1 | Extract `fractal_sample_device()` from renderer | Device function compiles, matches renderer output for all 27 types |
-| K2 | Add `fractal_sample_kernel<<<>>>()` launch wrapper | Grid launch produces correct SampleResult buffer |
-| K3 | Add `fractal_sample_host_api()` C function | Host code can invoke sample kernel, get results; used by CLI V2 |
-| K4 | Headless equivalence test: sample API vs. renderer | 256x256 grid for all types; results match within float epsilon |
-| K5 | Shared CUDA core linkage target (static lib / object) | salticid-cuda can link against fractal_sample_kernel |
+| Phase | Description | Exit criteria | Status |
+|-------|-------------|---------------|--------|
+| K1 | Extract `fractal_sample_device()` from renderer | Device function compiles, matches renderer output for all 37 types | **DONE** (e3edb17) |
+| K2 | Add `fractal_sample_kernel<<<>>>()` launch wrapper + `SampleFractalPoints()` host API | Grid launch produces correct SampleResult buffer; host API manages device memory | **DONE** (e3ac63e, net -1403 lines) |
+| K3 | *(Delivered in K2)* | `SampleFractalPoints()` landed as part of K2 | **DONE** |
+| K4 | Headless equivalence test: sample API vs. renderer | 256x256 grid for all 37 types; results match within float epsilon; per-type diagnostics | **DONE** (0e7dc32 + bf857be) |
+| K5 | Shared CUDA core linkage target (static lib / object) | salticid-cuda can link against fractal_sample_kernel | |
+
+### 1.5.1 K4 diagnostic findings (investigation backlog)
+
+Discovered via 256x256 × 37-type equivalence test (~2.4M sample points).
+
+| ID | Finding | Priority | Notes |
+|----|---------|----------|-------|
+| KF-1 | **explaino_y**: 0 avg iterations, 100% convergence, residual up to 27 | **High** (correctness) | Suspicious degenerate early-exit; may be unconditional convergence at default params. Investigate before V2 work relies on sample correctness. |
+| KF-2 | **collatz RGBA gap**: some escaped pixels render as black | Low (cosmetic) | Very-fast-escape (1-2 iters) produces near-zero coloring values. Not a sample-path bug. |
+| KF-3 | **"neither" band**: 3-12% of pixels exhaust max_iter across escape types | Deferred (optimization) | Set interior pixels that neither converge nor escape — wasted compute. Natural early-bailout optimization target for a future phase. |
+| KF-4 | **nova/explaino_nova**: 99.5% escape, 1 avg iter at default params | Low (parameter tuning) | Extremely parameter-sensitive. Default params may not showcase the fractal well. |
+| KF-5 | **lambda_map/explaino_lambda**: 0 avg iters, 98.9% escape at default params | Low (parameter tuning) | Degenerate at defaults; investigate whether default view/params are representative. |
 
 ### 1.6 Salticid-side adapter (handoff, not this repo)
 
@@ -249,7 +261,7 @@ These rules apply to both the GPU-resident device function and the CLI bridge:
 | Deliverable | Owner |
 |-------------|-------|
 | CLI Bridge V2 session protocol (V2-A through V2-G) | **This repo** |
-| CUDA-resident `fractal_sample_device()` kernel extraction (K1-K4) | **This repo** |
+| CUDA-resident `fractal_sample_device()` kernel extraction (K1-K4) | **This repo** (DONE) |
 | Shared CUDA core linkage target (K5) | **This repo** |
 | Describe surface extensions (cost, sensitivity) | **This repo** |
 | Plugin loader for dynamic .cubin registration (E4, deferred) | **This repo** |
