@@ -1132,6 +1132,95 @@ bool TestSessionNdjsonGridRequest() {
     return true;
 }
 
+bool TestSessionNdjsonSummaryOnlyRequest() {
+    std::string req = "{\"request_version\":1,\"request_id\":\"ndjson-summary-session\",\"mode\":\"point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"points\":[{\"x\":-0.75,\"y\":0.0},{\"x\":0.25,\"y\":0.0}],"
+        "\"metrics\":[\"summary_mean_iterations\",\"summary_escape_fraction\"]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session summary-only ndjson request should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + summary + close expected for summary-only ndjson session request");
+
+    auto ready = ParseJsonLine(lines[0]);
+    auto summary = ParseJsonLine(lines[1]);
+    auto close = ParseJsonLine(lines[2]);
+    ASSERT(ready.error.empty() && ready.value.is_object(), "ready should be valid JSON");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary should be valid JSON");
+    ASSERT(close.error.empty() && close.value.is_object(), "close should be valid JSON");
+    ASSERT(summary.value.as_object().find("type") != summary.value.as_object().end() &&
+            summary.value.as_object().find("type")->second.as_string() == "summary",
+        "summary-only session request should emit only a summary line");
+    ASSERT(summary.value.as_object().find("state_token") != summary.value.as_object().end(),
+        "summary-only session ndjson should carry state_token");
+    ASSERT(summary.value.as_object().find("cost") != summary.value.as_object().end(),
+        "summary-only session ndjson should include cost metadata");
+    ASSERT(close.value.as_object().find("session") != close.value.as_object().end() &&
+            close.value.as_object().find("session")->second.as_string() == "closed",
+        "close ack should still be emitted after summary-only ndjson request");
+    return true;
+}
+
+bool TestSessionNdjsonSequencePointSetRequest() {
+    std::string req = "{\"request_version\":1,\"request_id\":\"ndjson-sequence-point-session\",\"mode\":\"sequence_point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3},{\"x\":-0.5,\"y\":0.0}],"
+        "\"sequence\":{\"zip_paths\":true,\"vary\":[{\"path\":\"fractal.view.zoom\",\"values\":[1.0,2.0]}]},"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session sequence_point_set ndjson request should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 5, "ready + 2 sequence batches + summary + close expected");
+
+    auto batch0 = ParseJsonLine(lines[1]);
+    auto batch1 = ParseJsonLine(lines[2]);
+    auto summary = ParseJsonLine(lines[3]);
+    ASSERT(batch0.error.empty() && batch0.value.is_object(), "sequence point batch 0 should be valid JSON");
+    ASSERT(batch1.error.empty() && batch1.value.is_object(), "sequence point batch 1 should be valid JSON");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary should be valid JSON");
+    ASSERT(batch0.value.as_object().find("type") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "first sequence_point_set session line should be sample_batch");
+    ASSERT(batch1.value.as_object().find("type") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "second sequence_point_set session line should be sample_batch");
+    ASSERT(batch0.value.as_object().find("sequence_index") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("sequence_index")->second.as_number() == 0.0,
+        "first sequence_point_set session batch should report sequence_index 0");
+    ASSERT(batch1.value.as_object().find("sequence_index") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("sequence_index")->second.as_number() == 1.0,
+        "second sequence_point_set session batch should report sequence_index 1");
+    ASSERT(batch0.value.as_object().find("row_index") == batch0.value.as_object().end(),
+        "sequence_point_set session batches should not include row_index");
+    ASSERT(batch1.value.as_object().find("row_index") == batch1.value.as_object().end(),
+        "sequence_point_set session batches should not include row_index");
+    ASSERT(batch0.value.as_object().find("samples") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("samples")->second.is_array() &&
+            batch0.value.as_object().find("samples")->second.as_array().size() == 2,
+        "each sequence_point_set session batch should contain all requested points");
+    ASSERT(batch1.value.as_object().find("samples") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("samples")->second.is_array() &&
+            batch1.value.as_object().find("samples")->second.as_array().size() == 2,
+        "each sequence_point_set session batch should contain all requested points");
+    ASSERT(summary.value.as_object().find("state_token") != summary.value.as_object().end(),
+        "sequence_point_set session ndjson summary should carry state_token");
+    return true;
+}
+
 bool TestSessionNdjsonSequenceGridBatchesPerSequenceStep() {
     std::string req = "{\"request_version\":1,\"request_id\":\"ndjson-sequence-session\",\"mode\":\"sequence_grid\"," 
         "\"output_mode\":\"ndjson\"," 
@@ -1542,6 +1631,8 @@ int main() {
     RUN(TestSessionUnknownSessionVerb);
     RUN(TestSessionResponseVersionField);
     RUN(TestSessionNdjsonGridRequest);
+    RUN(TestSessionNdjsonSummaryOnlyRequest);
+    RUN(TestSessionNdjsonSequencePointSetRequest);
     RUN(TestSessionNdjsonSequenceGridBatchesPerSequenceStep);
 
     // V2-C: MergeOverrides unit tests

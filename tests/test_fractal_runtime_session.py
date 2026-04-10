@@ -414,6 +414,80 @@ class TestSessionNdjsonMode:
         assert "state_token" in lines[3]
         assert lines[4]["session"] == "closed"
 
+    def test_summary_only_request_emits_only_summary_then_close(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        request = json.dumps({
+            "request_version": 1,
+            "request_id": "session-ndjson-summary-only",
+            "mode": "point_set",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "points": [
+                {"x": -0.75, "y": 0.0},
+                {"x": 0.25, "y": 0.0},
+            ],
+            "metrics": ["summary_mean_iterations", "summary_escape_fraction"],
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            request,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 3
+        assert lines[0]["session"] == "ready"
+        assert lines[1]["type"] == "summary"
+        assert lines[1]["request_id"] == "session-ndjson-summary-only"
+        assert lines[1]["cost"]["sample_count"] == 2
+        assert "state_token" in lines[1]
+        assert lines[2]["session"] == "closed"
+
+    def test_sequence_point_set_streams_batches_per_sequence_step(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        request = json.dumps({
+            "request_version": 1,
+            "request_id": "session-ndjson-sequence-point-set",
+            "mode": "sequence_point_set",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [
+                {"x": 0.5, "y": 0.3},
+                {"x": -0.5, "y": 0.0},
+            ],
+            "sequence": {
+                "zip_paths": True,
+                "vary": [
+                    {"path": "fractal.view.zoom", "values": [1.0, 2.0]},
+                ],
+            },
+            "metrics": ["iterations", "status", "summary_mean_iterations"],
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            request,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 5
+        assert lines[0]["session"] == "ready"
+        assert lines[1]["type"] == "sample_batch"
+        assert lines[2]["type"] == "sample_batch"
+        assert lines[1]["sequence_index"] == 0
+        assert lines[2]["sequence_index"] == 1
+        assert "row_index" not in lines[1]
+        assert "row_index" not in lines[2]
+        assert len(lines[1]["samples"]) == 2
+        assert len(lines[2]["samples"]) == 2
+        assert lines[3]["type"] == "summary"
+        assert "state_token" in lines[3]
+        assert lines[4]["session"] == "closed"
+
     def test_sequence_grid_streams_batches_per_sequence_step(self) -> None:
         if sys.platform != "win32":
             pytest.skip("session mode is Windows-only")
