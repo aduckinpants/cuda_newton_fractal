@@ -199,7 +199,25 @@ __global__ void kernel_render(
     outRGBA[py * width + px] = rgba;
 
     if (outMask) {
-        outMask[py * width + px] = LensMaskInsideForFractal(ft, converged, escaped) ? 255 : 0;
+        bool inside;
+        if (SupportsBasinColoring(ft)) {
+            // Basin types: mask boundary = basin boundaries (root-index parity).
+            // "converged vs not" is useless here — nearly all pixels converge,
+            // producing a uniform mask and a flat (black) SDF.
+            int rootIdx = -1;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            bool isExpFam = IsExplainoFamily(ft);
+            bool useCustom = (nRoots == 0) && isExpFam && (params.explaino_root_count > 0);
+            if (useCustom) {
+                rootIdx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+            } else if (nRoots > 0) {
+                rootIdx = NearestRootIndexUnitRoots(z, nRoots);
+            }
+            inside = (rootIdx >= 0) && ((rootIdx & 1) == 0);
+        } else {
+            inside = LensMaskInsideForFractal(ft, converged, escaped);
+        }
+        outMask[py * width + px] = inside ? 255 : 0;
     }
 }
 

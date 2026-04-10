@@ -549,18 +549,20 @@ static void RenderFractalViewport(
     ImGui::End();
 }
 
-static void RenderAuxImageWindow(const char* title, ID3D11ShaderResourceView* srv, const RenderSettings& render) {
-    if (!srv) return;
+static void RenderAuxImageWindow(const char* title, ID3D11ShaderResourceView* srv, const RenderedFrameState& frame) {
+    if (!srv || !frame.ready) return;
+    int texW = frame.width;
+    int texH = frame.height;
     ImGui::Begin(title);
     ImVec2 avail = ImGui::GetContentRegionAvail();
     float scale = 1.0f;
-    if (render.resolution.x > 0 && render.resolution.y > 0) {
-        float sx = avail.x / (float)render.resolution.x;
-        float sy = avail.y / (float)render.resolution.y;
+    if (texW > 0 && texH > 0) {
+        float sx = avail.x / (float)texW;
+        float sy = avail.y / (float)texH;
         scale = (sx < sy) ? sx : sy;
         if (scale <= 0.0f) scale = 1.0f;
     }
-    ImVec2 size((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+    ImVec2 size((float)texW * scale, (float)texH * scale);
     ImGui::Image((ImTextureID)srv, size);
     ImGui::End();
 }
@@ -1166,8 +1168,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         RenderFractalViewport(io, render, view, dirty, actions.interactionChanged);
 
         if (lens.enabled) {
-            RenderAuxImageWindow("Mask", g_maskSRV, render);
-            RenderAuxImageWindow("Lens SDF", g_lensSdfSRV, render);
+            RenderAuxImageWindow("Mask", g_maskSRV, renderedFrame);
+            RenderAuxImageWindow("Lens SDF", g_lensSdfSRV, renderedFrame);
         }
 
         // Camera behavior loop (per-frame deltas scaled only by dive_speed; no dt semantics).
