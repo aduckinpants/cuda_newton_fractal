@@ -102,9 +102,8 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
 
     std::string error;
     std::string requestText;
-    FractalProbeRequest request;
-    bool haveParsedRequest = false;
 
+    // --- Validate args ---
     if (sourceCount != 1) {
         error = "sample mode requires exactly one request source";
     } else if (!args.response_stdout && !haveResponseJson) {
@@ -114,40 +113,88 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
     } else if (!(args.request_stdin
             ? ReadStdinText(&requestText, &error)
             : TryReadTextFileExact(args.request_json_path, &requestText, &error))) {
-    } else if (!ParseFractalProbeRequestJson(requestText, &request, &error)) {
+        // error already set by the read function
     } else {
-        haveParsedRequest = true;
-        FractalProbeResponse response;
-        if (!RunFractalProbeRequest(request, exePath, &response, &error)) {
-            response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, error);
+        // --- Parse root JSON to detect object vs array ---
+        json_min::ParseResult parsed = json_min::Parse(requestText);
+        if (!parsed.error.empty()) {
+            error = parsed.error;
+        } else if (parsed.value.is_object()) {
+            // V1 single-request path: object in, object out
+            FractalProbeRequest request;
+            if (!ParseFractalProbeRequestFromValue(parsed.value, &request, &error)) {
+                FractalProbeResponse resp = BuildProbeErrorResponse(std::string(), exePath, FractalProbeOperatorContext{}, error);
+                const std::string responseJson = SerializeFractalProbeResponseJson(resp);
+                std::string emitError;
+                if (!EmitProbeResponse(responseJson, args.response_stdout,
+                        haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
+                    std::fprintf(stderr, "%s\n", emitError.c_str());
+                }
+                return 1;
+            }
+            FractalProbeResponse response;
+            if (!RunFractalProbeRequest(request, exePath, &response, &error)) {
+                response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, error);
+            }
+            const std::string responseJson = SerializeFractalProbeResponseJson(response);
+            std::string emitError;
+            if (!EmitProbeResponse(responseJson, args.response_stdout,
+                    haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
+                std::fprintf(stderr, "%s\n", emitError.c_str());
+                return 1;
+            }
+            return response.ok ? 0 : 1;
+        } else if (parsed.value.is_array()) {
+            // V2-A batch path: array in, array out
+            const json_min::Array& requestArray = parsed.value.as_array();
+            bool anyFailed = false;
+            std::string batchJson = "[";
+            for (size_t i = 0; i < requestArray.size(); ++i) {
+                FractalProbeRequest request;
+                std::string reqError;
+                FractalProbeResponse response;
+                if (!ParseFractalProbeRequestFromValue(requestArray[i], &request, &reqError)) {
+                    // Try to extract request_id for error attribution even when parse fails
+                    std::string failedRequestId;
+                    if (requestArray[i].is_object()) {
+                        auto idIt = requestArray[i].as_object().find("request_id");
+                        if (idIt != requestArray[i].as_object().end() && idIt->second.is_string()) {
+                            failedRequestId = idIt->second.as_string();
+                        }
+                    }
+                    response = BuildProbeErrorResponse(failedRequestId, exePath, FractalProbeOperatorContext{}, reqError);
+                    anyFailed = true;
+                } else {
+                    std::string runError;
+                    if (!RunFractalProbeRequest(request, exePath, &response, &runError)) {
+                        response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, runError);
+                        anyFailed = true;
+                    }
+                }
+                if (i > 0) batchJson += ",";
+                batchJson += SerializeFractalProbeResponseJson(response);
+            }
+            batchJson += "]";
+            std::string emitError;
+            if (!EmitProbeResponse(batchJson, args.response_stdout,
+                    haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
+                std::fprintf(stderr, "%s\n", emitError.c_str());
+                return 1;
+            }
+            return anyFailed ? 1 : 0;
+        } else {
+            error = "Probe request root must be an object or array";
         }
-        const std::string responseJson = SerializeFractalProbeResponseJson(response);
-        std::string emitError;
-        if (!EmitProbeResponse(responseJson,
-                args.response_stdout,
-                haveResponseJson ? args.response_json_path : std::string(),
-                &emitError)) {
-            std::fprintf(stderr, "%s\n", emitError.c_str());
-            return 1;
-        }
-        return response.ok ? 0 : 1;
     }
 
+    // --- Error fallback (pre-parse or structural errors) ---
     FractalProbeResponse response = BuildProbeErrorResponse(
-        haveParsedRequest ? request.request_id : std::string(),
-        exePath,
-        haveParsedRequest ? request.operator_context : FractalProbeOperatorContext{},
-        error);
+        std::string(), exePath, FractalProbeOperatorContext{}, error);
     const std::string responseJson = SerializeFractalProbeResponseJson(response);
     std::string emitError;
     if ((args.response_stdout || haveResponseJson) &&
-        EmitProbeResponse(responseJson,
-            args.response_stdout,
-            haveResponseJson ? args.response_json_path : std::string(),
-            &emitError)) {
-        return 1;
-    }
-    if (!emitError.empty()) {
+        !EmitProbeResponse(responseJson, args.response_stdout,
+            haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
         std::fprintf(stderr, "%s\n", emitError.c_str());
     }
     std::fprintf(stderr, "%s\n", error.c_str());

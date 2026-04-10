@@ -183,6 +183,10 @@ bool ParseFractalProbeRequestJson(const std::string& text,
     FractalProbeRequest* outRequest,
     std::string* outError);
 
+bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
+    FractalProbeRequest* outRequest,
+    std::string* outError);
+
 std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& response);
 
 FractalProbeMetricSelection BuildFractalProbeMetricSelection(const std::vector<std::string>& metrics);

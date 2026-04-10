@@ -512,26 +512,20 @@ const char* FractalProbeSampleStatusId(FractalProbeSampleStatus status) {
     return "bounded";
 }
 
-bool ParseFractalProbeRequestJson(const std::string& text,
+bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
     FractalProbeRequest* outRequest,
     std::string* outError) {
     if (outError) outError->clear();
     if (!outRequest) {
-        if (outError) *outError = "ParseFractalProbeRequestJson requires outRequest";
+        if (outError) *outError = "ParseFractalProbeRequestFromValue requires outRequest";
         return false;
     }
-
-    json_min::ParseResult parsed = json_min::Parse(text);
-    if (!parsed.error.empty()) {
-        if (outError) *outError = parsed.error;
-        return false;
-    }
-    if (!parsed.value.is_object()) {
+    if (!value.is_object()) {
         if (outError) *outError = "Probe request root must be an object";
         return false;
     }
 
-    const json_min::Object& root = parsed.value.as_object();
+    const json_min::Object& root = value.as_object();
     if (!RejectUnknownKeys(root,
             {"request_version", "request_id", "function_id", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context"},
             "request",
@@ -671,6 +665,22 @@ bool ParseFractalProbeRequestJson(const std::string& text,
 
     *outRequest = std::move(request);
     return true;
+}
+
+bool ParseFractalProbeRequestJson(const std::string& text,
+    FractalProbeRequest* outRequest,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!outRequest) {
+        if (outError) *outError = "ParseFractalProbeRequestJson requires outRequest";
+        return false;
+    }
+    json_min::ParseResult parsed = json_min::Parse(text);
+    if (!parsed.error.empty()) {
+        if (outError) *outError = parsed.error;
+        return false;
+    }
+    return ParseFractalProbeRequestFromValue(parsed.value, outRequest, outError);
 }
 
 std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& response) {

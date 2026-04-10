@@ -196,6 +196,135 @@ bool TestSampleModeValidFileRoundTrip() {
     return true;
 }
 
+// --- V2-A: Batch request array ---
+
+bool TestSampleModeBatchTwoValidRequests() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("batch_2_req.json");
+    args.response_json_path = TempPath("batch_2_resp.json");
+
+    std::string reqJson = "["
+        "{\"request_version\":1,\"request_id\":\"batch-1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]},"
+        "{\"request_version\":1,\"request_id\":\"batch-2\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"points\":[{\"x\":-0.5,\"y\":0.0}]}"
+        "]";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "batch of 2 valid requests should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    ASSERT(!respText.empty(), "response file should exist");
+    // Response must be a JSON array
+    ASSERT(respText.front() == '[', "batch response should be a JSON array");
+    // Both request_ids should appear
+    ASSERT(respText.find("\"batch-1\"") != std::string::npos, "should contain batch-1 response");
+    ASSERT(respText.find("\"batch-2\"") != std::string::npos, "should contain batch-2 response");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeBatchErrorIsolation() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("batch_err_req.json");
+    args.response_json_path = TempPath("batch_err_resp.json");
+
+    // First request is valid; second has an unknown field (should fail parse)
+    std::string reqJson = "["
+        "{\"request_version\":1,\"request_id\":\"ok-req\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]},"
+        "{\"request_version\":1,\"request_id\":\"bad-req\",\"mode\":\"point_set\","
+        "\"points\":[{\"x\":0.0,\"y\":0.0}],\"mystery_field\":123}"
+        "]";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    // rc=1 because at least one request failed
+    ASSERT(rc == 1, "batch with a bad request should return error exit code");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    ASSERT(!respText.empty(), "response file should exist");
+    ASSERT(respText.front() == '[', "batch response should be a JSON array");
+    // First request should succeed
+    ASSERT(respText.find("\"ok-req\"") != std::string::npos, "should contain ok-req response");
+    // Second request should fail but still appear
+    ASSERT(respText.find("\"bad-req\"") != std::string::npos, "should contain bad-req error response");
+    ASSERT(respText.find("mystery_field") != std::string::npos, "error should mention the unknown field");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeBatchEmptyArray() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("batch_empty_req.json");
+    args.response_json_path = TempPath("batch_empty_resp.json");
+
+    std::string err;
+    WriteTextFileExact(args.request_json_path, "[]", &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "empty batch should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    ASSERT(!respText.empty(), "response file should exist");
+    ASSERT(respText == "[]", "empty batch should return empty JSON array");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeRootNotObjectOrArray() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("batch_bad_root_req.json");
+    args.response_json_path = TempPath("batch_bad_root_resp.json");
+
+    std::string err;
+    WriteTextFileExact(args.request_json_path, "\"just a string\"", &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 1, "non-object non-array root should fail");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeSingleObjectStillReturnsSingleObject() {
+    // V1 backward compat: single object input -> single object output (not wrapped in array)
+    SampleModeArgs args;
+    args.request_json_path = TempPath("v1_compat_req.json");
+    args.response_json_path = TempPath("v1_compat_resp.json");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"v1-compat\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "single object request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    ASSERT(!respText.empty(), "response file should exist");
+    // Must be a JSON object, not array
+    ASSERT(respText.front() == '{', "V1 single-object response must be an object, not array");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
 #define RUN(fn) do { \
     if (fn()) { std::fprintf(stderr, "  PASS: %s\n", #fn); } \
     else { std::fprintf(stderr, "  FAIL: %s\n", #fn); } \
@@ -215,6 +344,13 @@ int main() {
     RUN(TestSampleModeConflictWithValidateUi);
     RUN(TestSampleModeBadRequestJson);
     RUN(TestSampleModeValidFileRoundTrip);
+
+    // V2-A: Batch request array
+    RUN(TestSampleModeBatchTwoValidRequests);
+    RUN(TestSampleModeBatchErrorIsolation);
+    RUN(TestSampleModeBatchEmptyArray);
+    RUN(TestSampleModeRootNotObjectOrArray);
+    RUN(TestSampleModeSingleObjectStillReturnsSingleObject);
 
     std::fprintf(stderr, "test_headless_modes: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;
