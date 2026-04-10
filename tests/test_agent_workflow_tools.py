@@ -98,3 +98,24 @@ def test_tasks_surface_exposes_profile_tasks() -> None:
     assert '"label": "verify: profile runtime"' in tasks_json
     assert '"label": "verify: profile catalog"' in tasks_json
     assert '"label": "verify: profile checkpoint"' in tasks_json
+
+
+def test_repo_workflow_surface_does_not_reintroduce_removed_core_tool_names() -> None:
+    old_names = (
+        "tools/agent_session_bootstrap.py",
+        "tools/agent_begin_work_slice.py",
+        "tools/assert_phased_plan_sync.py",
+        "tools/run_test_profile.py",
+        "tools/test_profile_toolchain.py",
+    )
+    files = (
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "AGENT_WORKING_PROTOCOL.md",
+        REPO_ROOT / ".github" / "copilot-instructions.md",
+        REPO_ROOT / "docs" / "PHASED_PLAN_CONTINUITY_PROTOCOL.md",
+        REPO_ROOT / ".vscode" / "tasks.json",
+    )
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        for old_name in old_names:
+            assert old_name not in text, f"{path} unexpectedly references removed tool {old_name}"
