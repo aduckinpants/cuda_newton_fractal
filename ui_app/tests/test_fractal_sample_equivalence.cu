@@ -215,6 +215,26 @@ bool TestOneType(FractalType ft, const char* name) {
     WARN((std::string(name) + " RGBA/flag consistency").c_str(),
          flagMismatchCount <= mismatchThreshold);
 
+    // Diagnostic summary (always printed for observability).
+    int convergedCount = 0, escapedCount = 0, neitherCount = 0;
+    float minResidual = 1e30f, maxResidual = -1e30f;
+    for (int i = 0; i < kNumPixels; ++i) {
+        if (results[i].converged) ++convergedCount;
+        else if (results[i].escaped) ++escapedCount;
+        else ++neitherCount;
+        float res = results[i].residual;
+        if (std::isfinite(res)) {
+            if (res < minResidual) minResidual = res;
+            if (res > maxResidual) maxResidual = res;
+        }
+    }
+    printf("    %-30s iters_avg=%-3d  conv=%5.1f%%  esc=%5.1f%%  neither=%5.1f%%  residual=[%.2e, %.2e]\n",
+           name, sampleItersAvg,
+           100.0 * convergedCount / kNumPixels,
+           100.0 * escapedCount / kNumPixels,
+           100.0 * neitherCount / kNumPixels,
+           minResidual, maxResidual);
+
     return true;
 }
 
