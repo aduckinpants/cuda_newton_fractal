@@ -2,6 +2,7 @@
 /artifacts/
 /imgui.ini
 /logs/
+*.log
 /newton.ppm
 /newton_driver_updated.ppm
 /newton_fractal.exe
