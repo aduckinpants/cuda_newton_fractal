@@ -62,7 +62,10 @@ struct EngineFunctionCatalog {
 // descriptor from it rather than inventing a second source of truth.
 FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema);
 
-// Build the full engine catalog (currently one function: fractal.sample).
+// Build a function descriptor for the generic function sampler.
+FunctionDescriptor BuildGenericSamplerDescriptor();
+
+// Build the full engine catalog.
 EngineFunctionCatalog BuildEngineCatalog(const UISchema& schema);
 
 // Serialize the catalog to JSON text.

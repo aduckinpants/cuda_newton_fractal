@@ -249,10 +249,37 @@ FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema) {
     return desc;
 }
 
+FunctionDescriptor BuildGenericSamplerDescriptor() {
+    FunctionDescriptor desc;
+    desc.id = "generic.sample";
+    desc.name = "Generic Function Sampler";
+    desc.description = "Evaluate a user-defined complex function at sample points.";
+
+    // Outputs.
+    desc.outputs.push_back({"iterations", "int", false, {}});
+    desc.outputs.push_back({"status", "enum", false, {{"escaped"}, {"converged"}, {"bounded"}, {"nonfinite"}}});
+    desc.outputs.push_back({"value_x", "double", false, {}});
+    desc.outputs.push_back({"value_y", "double", false, {}});
+    desc.outputs.push_back({"abs2", "double", false, {}});
+    desc.outputs.push_back({"derivative_x", "double", false, {}});
+    desc.outputs.push_back({"derivative_y", "double", false, {}});
+
+    // Summary metrics.
+    desc.summary_metrics.push_back({"mean_iterations"});
+    desc.summary_metrics.push_back({"converged_fraction"});
+    desc.summary_metrics.push_back({"escape_fraction"});
+    desc.summary_metrics.push_back({"nonfinite_fraction"});
+    desc.summary_metrics.push_back({"mean_abs2"});
+    desc.summary_metrics.push_back({"diverged_fraction"});
+
+    return desc;
+}
+
 EngineFunctionCatalog BuildEngineCatalog(const UISchema& schema) {
     EngineFunctionCatalog catalog;
     catalog.engine_version = 1;
     catalog.functions.push_back(BuildFractalSamplerDescriptor(schema));
+    catalog.functions.push_back(BuildGenericSamplerDescriptor());
     return catalog;
 }
 

@@ -212,8 +212,8 @@ int main() {
         schema.panels.push_back(panel);
 
         EngineFunctionCatalog catalog = BuildEngineCatalog(schema);
-        if (catalog.engine_version != 1 || catalog.functions.size() != 1) {
-            std::cerr << "Catalog should have version 1 and 1 function\n";
+        if (catalog.engine_version != 1 || catalog.functions.size() != 2) {
+            std::cerr << "Catalog should have version 1 and 2 functions, got " << catalog.functions.size() << "\n";
             return 1;
         }
 
@@ -224,8 +224,8 @@ int main() {
             return 1;
         }
         const auto* functions = parsed.value.get("functions");
-        if (!functions || !functions->is_array() || functions->as_array().size() != 1) {
-            std::cerr << "Expected one function in catalog JSON\n";
+        if (!functions || !functions->is_array() || functions->as_array().size() != 2) {
+            std::cerr << "Expected two functions in catalog JSON\n";
             return 1;
         }
         const auto& func = functions->as_array()[0];

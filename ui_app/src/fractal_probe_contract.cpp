@@ -108,6 +108,12 @@ bool IsSupportedMetric(const std::string& metric) {
         "summary_nonfinite_fraction",
         "summary_pole_fraction",
         "summary_best_sequence_index",
+        "value",
+        "abs2",
+        "derivative",
+        "summary_mean_abs2",
+        "summary_diverged_fraction",
+        "summary_nonfinite_fraction",
     };
     return supported.find(metric) != supported.end();
 }
@@ -440,6 +446,17 @@ void AppendSampleJson(std::ostringstream& ss,
     if (selection.include_root_index) {
         entries.push_back({"root_index", sample.has_root_index ? std::to_string(sample.root_index) : std::string("null")});
     }
+    if (selection.include_value) {
+        entries.push_back({"value_x", DoubleToJson(sample.final_z_x)});
+        entries.push_back({"value_y", DoubleToJson(sample.final_z_y)});
+    }
+    if (selection.include_abs2) {
+        entries.push_back({"abs2", DoubleToJson(sample.final_abs2)});
+    }
+    if (selection.include_derivative) {
+        entries.push_back({"derivative_x", DoubleToJson(sample.derivative_x)});
+        entries.push_back({"derivative_y", DoubleToJson(sample.derivative_y)});
+    }
 
     const std::string pad(static_cast<size_t>(indent), ' ');
     ss << pad;
@@ -464,6 +481,11 @@ FractalProbeMetricSelection BuildFractalProbeMetricSelection(const std::vector<s
     selection.include_summary_nonfinite_fraction = false;
     selection.include_summary_pole_fraction = false;
     selection.include_summary_best_sequence_index = false;
+    selection.include_derivative = false;
+    selection.include_value = false;
+    selection.include_abs2 = false;
+    selection.include_summary_mean_abs2 = false;
+    selection.include_summary_diverged_fraction = false;
     for (const std::string& metric : metrics) {
         if (metric == "iterations") selection.include_iterations = true;
         else if (metric == "status") selection.include_status = true;
@@ -477,6 +499,11 @@ FractalProbeMetricSelection BuildFractalProbeMetricSelection(const std::vector<s
         else if (metric == "summary_nonfinite_fraction") selection.include_summary_nonfinite_fraction = true;
         else if (metric == "summary_pole_fraction") selection.include_summary_pole_fraction = true;
         else if (metric == "summary_best_sequence_index") selection.include_summary_best_sequence_index = true;
+        else if (metric == "value") selection.include_value = true;
+        else if (metric == "abs2") selection.include_abs2 = true;
+        else if (metric == "derivative") selection.include_derivative = true;
+        else if (metric == "summary_mean_abs2") selection.include_summary_mean_abs2 = true;
+        else if (metric == "summary_diverged_fraction") selection.include_summary_diverged_fraction = true;
     }
     return selection;
 }
@@ -487,7 +514,10 @@ bool FractalProbeSelectionIncludesAnySampleMetrics(const FractalProbeMetricSelec
         selection.include_final_z ||
         selection.include_final_abs2 ||
         selection.include_residual ||
-        selection.include_root_index;
+        selection.include_root_index ||
+        selection.include_value ||
+        selection.include_abs2 ||
+        selection.include_derivative;
 }
 
 const char* FractalProbeModeId(FractalProbeMode mode) {
@@ -527,7 +557,7 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
 
     const json_min::Object& root = value.as_object();
     if (!RejectUnknownKeys(root,
-            {"request_version", "request_id", "function_id", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context"},
+            {"request_version", "request_id", "function_id", "function", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context"},
             "request",
             outError)) return false;
 
@@ -550,6 +580,59 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
             request.function_id = fidIt->second.as_string();
         } else {
             request.function_id = "fractal.sample";
+        }
+    }
+
+    // Parse "function" block for generic.sample requests.
+    {
+        auto funcIt = root.find("function");
+        if (funcIt != root.end()) {
+            if (!funcIt->second.is_object()) {
+                if (outError) *outError = "function must be an object";
+                return false;
+            }
+            const json_min::Object& funcObj = funcIt->second.as_object();
+            request.has_function = true;
+
+            auto exprIt = funcObj.find("expression");
+            if (exprIt == funcObj.end() || !exprIt->second.is_string()) {
+                if (outError) *outError = "function.expression must be a string";
+                return false;
+            }
+            request.generic_expression = exprIt->second.as_string();
+
+            auto paramsIt = funcObj.find("params");
+            if (paramsIt != funcObj.end()) {
+                if (!paramsIt->second.is_object()) {
+                    if (outError) *outError = "function.params must be an object";
+                    return false;
+                }
+                for (const auto& kv : paramsIt->second.as_object()) {
+                    if (!kv.second.is_number()) {
+                        if (outError) *outError = "function.params values must be numbers";
+                        return false;
+                    }
+                    request.generic_params[kv.first] = kv.second.as_number();
+                }
+            }
+
+            auto epsIt = funcObj.find("epsilon");
+            if (epsIt != funcObj.end()) {
+                if (!epsIt->second.is_number()) {
+                    if (outError) *outError = "function.epsilon must be a number";
+                    return false;
+                }
+                request.generic_epsilon = epsIt->second.as_number();
+            }
+
+            auto escIt = funcObj.find("escape_radius");
+            if (escIt != funcObj.end()) {
+                if (!escIt->second.is_number()) {
+                    if (outError) *outError = "function.escape_radius must be a number";
+                    return false;
+                }
+                request.generic_escape_radius = escIt->second.as_number();
+            }
         }
     }
 

@@ -2,6 +2,7 @@
 
 #include "json_min.h"
 
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -105,6 +106,13 @@ struct FractalProbeRequest {
     FractalProbeSequence sequence;
     std::vector<std::string> metrics;
     FractalProbeOperatorContext operator_context;
+
+    // Generic function fields (used when function_id == "generic.sample").
+    bool has_function{false};
+    std::string generic_expression;
+    std::map<std::string, double> generic_params;
+    double generic_epsilon{1e-6};
+    double generic_escape_radius{1000.0};
 };
 
 struct FractalProbeRuntimeInfo {
@@ -136,6 +144,11 @@ struct FractalProbeMetricSelection {
     bool include_summary_nonfinite_fraction{true};
     bool include_summary_pole_fraction{true};
     bool include_summary_best_sequence_index{true};
+    bool include_derivative{true};
+    bool include_value{true};
+    bool include_abs2{true};
+    bool include_summary_mean_abs2{true};
+    bool include_summary_diverged_fraction{true};
 };
 
 struct FractalProbeSequenceResult {
@@ -163,6 +176,8 @@ struct FractalProbeSample {
     double residual{0.0};
     bool has_root_index{false};
     int root_index{-1};
+    double derivative_x{0.0};
+    double derivative_y{0.0};
 };
 
 struct FractalProbeResponse {
