@@ -218,6 +218,7 @@ bool TestOneType(FractalType ft, const char* name) {
     // Diagnostic summary (always printed for observability).
     int convergedCount = 0, escapedCount = 0, neitherCount = 0;
     float minResidual = 1e30f, maxResidual = -1e30f;
+    float maxConvergedResidual = -1e30f;
     for (int i = 0; i < kNumPixels; ++i) {
         if (results[i].converged) ++convergedCount;
         else if (results[i].escaped) ++escapedCount;
@@ -226,8 +227,23 @@ bool TestOneType(FractalType ft, const char* name) {
         if (std::isfinite(res)) {
             if (res < minResidual) minResidual = res;
             if (res > maxResidual) maxResidual = res;
+            if (results[i].converged && res > maxConvergedResidual)
+                maxConvergedResidual = res;
         }
     }
+
+    // KF-1 regression: basin types claiming convergence must have residual < 1.0.
+    // A converged point with residual >> eps indicates a degenerate false-positive
+    // (e.g. unconditional converged=true without root-snapping).
+    if (isBasin && convergedCount > 0) {
+        CHECK((std::string(name) + " converged residual quality").c_str(),
+              maxConvergedResidual < 1.0f);
+        if (maxConvergedResidual >= 1.0f) {
+            std::cerr << "    " << name << " max converged residual: " << maxConvergedResidual
+                      << " (expected < 1.0)\n";
+        }
+    }
+
     printf("    %-30s iters_avg=%-3d  conv=%5.1f%%  esc=%5.1f%%  neither=%5.1f%%  residual=[%.2e, %.2e]\n",
            name, sampleItersAvg,
            100.0 * convergedCount / kNumPixels,

@@ -246,7 +246,20 @@
         if (!converged) {
             z = bestZ;
             it = bestIt;
-            pAbs = bestP;
+            // Snap to nearest root for meaningful basin assignment (matches
+            // explaino_fp / explaino_joy pattern).
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (nRoots > 0) {
+                int idx = NearestRootIndexUnitRoots(z, nRoots);
+                z = unit_root_k(idx, nRoots);
+                pAbs = 0.0f;
+            } else if (params.explaino_root_count > 0) {
+                int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                pAbs = 0.0f;
+            } else {
+                pAbs = bestP;
+            }
             converged = true;
         }
     } else if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
