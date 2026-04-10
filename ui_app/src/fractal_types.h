@@ -272,4 +272,5 @@ bool SampleFractalPoints(
     FractalSampleResult* outResults,
     const char** outError);
 
+void CleanupFractalSampleCore();
 void CleanupFractalCUDA();

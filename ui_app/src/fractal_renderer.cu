@@ -1,6 +1,7 @@
 #include "fractal_types.h"
 #include "fractal_family_rules.h"
 #include "fractal_sample_result.h"
+#include "fractal_device_math.cuh"
 #include "basin_coloring.h"
 #include "escape_time_direct_formulas.h"
 #include "escape_time_coloring.h"
@@ -21,123 +22,7 @@
 
 namespace {
 
-struct Cx {
-    float x;
-    float y;
-};
-
-struct Cxd {
-    double x;
-    double y;
-};
-
-__device__ __forceinline__ Cx cx_rot(Cx z, float a) {
-    float cs = cosf(a);
-    float sn = sinf(a);
-    return {z.x * cs - z.y * sn, z.x * sn + z.y * cs};
-}
-
-__device__ __forceinline__ float hash01_u32(unsigned int x) {
-    x ^= x >> 16;
-    x *= 0x7feb352dU;
-    x ^= x >> 15;
-    x *= 0x846ca68bU;
-    x ^= x >> 16;
-    return (float)(x & 0x00ffffffU) / (float)0x01000000U;
-}
-
-__device__ __forceinline__ Cx explaino_warp_start(Cx coord, double seed, float phase, float strength) {
-    float s = fmaxf(0.0f, fminf(1.0f, strength));
-    if (s <= 0.0f) return coord;
-    unsigned long long bits = (unsigned long long)__double_as_longlong(seed);
-    unsigned int u = (unsigned int)(bits ^ (bits >> 32));
-    float a0 = hash01_u32(u ^ 0x1234567u);
-    float a1 = hash01_u32(u ^ 0x89abcdefu);
-
-    float rot = s * (a0 * 2.0f - 1.0f) * 3.1415926f;
-    Cx z = cx_rot(coord, rot);
-
-    float freq = 2.0f + 6.0f * a1;
-    float k = 0.10f + 0.35f * a0;
-    z.x += s * k * sinf(z.y * freq + phase);
-    z.y += s * k * sinf(z.x * freq - phase);
-
-    Cx z2{z.x * z.x - z.y * z.y, 2.0f * z.x * z.y};
-    float push = s * (0.06f + 0.10f * a1);
-    z = {z.x + z2.x * push, z.y + z2.y * push};
-    return z;
-}
-
-__device__ __forceinline__ Cxd explaino_warp_start_d(Cxd coord, double seed, float phase, float strength) {
-    double s = fmax(0.0, fmin(1.0, (double)strength));
-    if (s <= 0.0) return coord;
-    unsigned long long bits = (unsigned long long)__double_as_longlong(seed);
-    unsigned int u = (unsigned int)(bits ^ (bits >> 32));
-    double a0 = (double)hash01_u32(u ^ 0x1234567u);
-    double a1 = (double)hash01_u32(u ^ 0x89abcdefu);
-
-    double rot = s * (a0 * 2.0 - 1.0) * 3.141592653589793;
-    double cs = cos(rot), sn = sin(rot);
-    Cxd z = {coord.x * cs - coord.y * sn, coord.x * sn + coord.y * cs};
-
-    double freq = 2.0 + 6.0 * a1;
-    double k = 0.10 + 0.35 * a0;
-    z.x += s * k * sin(z.y * freq + (double)phase);
-    z.y += s * k * sin(z.x * freq - (double)phase);
-
-    Cxd z2{z.x * z.x - z.y * z.y, 2.0 * z.x * z.y};
-    double push = s * (0.06 + 0.10 * a1);
-    z = {z.x + z2.x * push, z.y + z2.y * push};
-    return z;
-}
-
-__device__ __forceinline__ Cx cx_add(Cx a, Cx b) { return {a.x + b.x, a.y + b.y}; }
-__device__ __forceinline__ Cx cx_sub(Cx a, Cx b) { return {a.x - b.x, a.y - b.y}; }
-__device__ __forceinline__ Cx cx_mul(Cx a, Cx b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
-__device__ __forceinline__ Cx cx_scale(Cx a, float s) { return {a.x * s, a.y * s}; }
-__device__ __forceinline__ float cx_abs2(Cx a) { return a.x * a.x + a.y * a.y; }
-__device__ __forceinline__ float cx_abs(Cx a) { return sqrtf(cx_abs2(a)); }
-__device__ __forceinline__ Cx cx_div(Cx a, Cx b) {
-    // a / b
-    float denom = b.x * b.x + b.y * b.y;
-    if (denom == 0.0f) return {0.0f, 0.0f};
-    return {(a.x * b.x + a.y * b.y) / denom, (a.y * b.x - a.x * b.y) / denom};
-}
-
-__device__ __forceinline__ Cxd cxd_add(Cxd a, Cxd b) { return {a.x + b.x, a.y + b.y}; }
-__device__ __forceinline__ Cxd cxd_sub(Cxd a, Cxd b) { return {a.x - b.x, a.y - b.y}; }
-__device__ __forceinline__ Cxd cxd_mul(Cxd a, Cxd b) { return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x}; }
-__device__ __forceinline__ Cxd cxd_scale(Cxd a, double s) { return {a.x * s, a.y * s}; }
-__device__ __forceinline__ double cxd_abs2(Cxd a) { return a.x * a.x + a.y * a.y; }
-__device__ __forceinline__ double cxd_abs(Cxd a) { return sqrt(cxd_abs2(a)); }
-__device__ __forceinline__ Cxd cxd_div(Cxd a, Cxd b) {
-    double denom = b.x * b.x + b.y * b.y;
-    if (denom == 0.0) return {0.0, 0.0};
-    return {(a.x * b.x + a.y * b.y) / denom, (a.y * b.x - a.x * b.y) / denom};
-}
-
-__device__ __forceinline__ void poly_eval_real_coeffs_deg4(const float coeffs[5], Cx z, Cx* outP, Cx* outDp) {
-    PolyEvalRealCoeffsDeg4(coeffs, z, outP, outDp);
-}
-
-__device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2(const float coeffs[5], Cx z, Cx* outP, Cx* outDp, Cx* outD2p) {
-    PolyEvalRealCoeffsDeg4D2(coeffs, z, outP, outDp, outD2p);
-}
-
-__device__ __forceinline__ void poly_eval_real_coeffs_deg4_d(const float coeffs[5], Cxd z, Cxd* outP, Cxd* outDp) {
-    PolyEvalRealCoeffsDeg4(coeffs, z, outP, outDp);
-}
-
-__device__ __forceinline__ void poly_eval_real_coeffs_deg4_d2_d(const float coeffs[5], Cxd z, Cxd* outP, Cxd* outDp, Cxd* outD2p) {
-    PolyEvalRealCoeffsDeg4D2(coeffs, z, outP, outDp, outD2p);
-}
-
-__device__ __forceinline__ Cx unit_root_k(int k, int n) {
-    float a = (2.0f * CUDART_PI_F) * ((float)k / (float)max(1, n));
-    return {cosf(a), sinf(a)};
-}
-
-__device__ __forceinline__ Cxd cxd_from_double2(double2 v) { return {v.x, v.y}; }
+// Device math helpers are now in fractal_device_math.cuh.
 
 // --- Extracted device function: computes one fractal sample at a given coordinate.
 // No pixel mapping, no coloring, no framebuffer — pure iteration result.
@@ -146,29 +31,6 @@ __device__ FractalSampleResult fractal_sample_device(
     RenderSettings render, const double2* refOrbit, int refLen, double2 refC0)
 {
 #include "fractal_sample_device.inl"
-}
-
-// K2: Thin launch wrapper — samples arbitrary complex-plane coordinates.
-// No pixel mapping, no coloring, no framebuffer.
-__global__ void fractal_sample_kernel(
-    const double2* coords,
-    int numPoints,
-    FractalSampleResult* results,
-    ViewState view,
-    KernelParams params,
-    RenderSettings render,
-    const double2* refOrbit,
-    int refLen,
-    double2 refC0)
-{
-    int idx = (int)(blockIdx.x * blockDim.x + threadIdx.x);
-    if (idx >= numPoints) return;
-
-    double2 c = coords[idx];
-    Cx coord{(float)c.x, (float)c.y};
-    Cxd coordD{c.x, c.y};
-
-    results[idx] = fractal_sample_device(coord, coordD, view, params, render, refOrbit, refLen, refC0);
 }
 
 __global__ void kernel_render(
@@ -555,128 +417,7 @@ bool RenderFractalCUDA(
     return true;
 }
 
-bool SampleFractalPoints(
-    const Double2* coords,
-    int numPoints,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    FractalSampleResult* outResults,
-    const char** outError)
-{
-    if (outError) *outError = nullptr;
-
-    // Zero points is a valid no-op.
-    if (numPoints <= 0) return true;
-
-    if (!coords) {
-        if (outError) *outError = "coords is null";
-        return false;
-    }
-    if (!outResults) {
-        if (outError) *outError = "outResults is null";
-        return false;
-    }
-
-    // Fail-fast validation (no implicit fallback/repair).
-    if (!ValidateFractalRuntimeState(view, params, outError)) return false;
-
-    int deviceCount = 0;
-    cudaGetDeviceCount(&deviceCount);
-    int dev = render.device_id;
-    if (deviceCount > 0) {
-        if (dev < 0) dev = 0;
-        if (dev >= deviceCount) dev = deviceCount - 1;
-        cudaSetDevice(dev);
-    }
-
-    // Resolve the sample tier into a concrete (backend, strategy) pair.
-    RenderSettings resolvedRender = render;
-    resolvedRender.resolved_eval = ResolveSampleEvalMode(
-        view.fractal_type, render.sample_tier, view.log2_zoom);
-
-    // Handle perturbation reference orbit if needed.
-    const PerturbationReferenceOrbitRequest perturbRequest = ResolvePerturbationReferenceOrbitRequest(view, params);
-    const bool wantPerturb = perturbRequest.enabled;
-    const double2 refC0 = make_double2(perturbRequest.refCx, perturbRequest.refCy);
-    const int refLen = perturbRequest.refLen;
-    if (wantPerturb) {
-        if (!ensure_ref_orbit(refLen, outError)) return false;
-        const bool sameKey = g_cached.hostRefValid && MatchesPerturbationReferenceOrbitCacheKey(g_cached.hostRefKey, perturbRequest);
-        if (!sameKey) {
-            BuildPerturbationReferenceOrbit(perturbRequest, &g_cached.hostRefOrbit);
-            if (cudaMemcpy(g_cached.d_refOrbit, g_cached.hostRefOrbit.data(), (size_t)refLen * sizeof(double2), cudaMemcpyHostToDevice) != cudaSuccess) {
-                if (outError) *outError = "cudaMemcpy failed for ref orbit";
-                return false;
-            }
-            g_cached.hostRefValid = true;
-            g_cached.hostRefKey = MakePerturbationReferenceOrbitCacheKey(perturbRequest);
-        }
-    }
-
-    // Allocate device buffers for coordinates and results.
-    // Double2 (plain C++) and double2 (CUDA) have identical layout.
-    static_assert(sizeof(Double2) == sizeof(double2), "Double2/double2 layout mismatch");
-    double2* d_coords = nullptr;
-    FractalSampleResult* d_results = nullptr;
-    size_t coordBytes = (size_t)numPoints * sizeof(double2);
-    size_t resultBytes = (size_t)numPoints * sizeof(FractalSampleResult);
-
-    if (cudaMalloc(&d_coords, coordBytes) != cudaSuccess) {
-        if (outError) *outError = "cudaMalloc failed for sample coords";
-        return false;
-    }
-    if (cudaMalloc(&d_results, resultBytes) != cudaSuccess) {
-        cudaFree(d_coords);
-        if (outError) *outError = "cudaMalloc failed for sample results";
-        return false;
-    }
-
-    // Upload coordinates.
-    if (cudaMemcpy(d_coords, coords, coordBytes, cudaMemcpyHostToDevice) != cudaSuccess) {
-        cudaFree(d_coords);
-        cudaFree(d_results);
-        if (outError) *outError = "cudaMemcpy failed for sample coords";
-        return false;
-    }
-
-    // Launch kernel.
-    int threadsPerBlock = 256;
-    int blocks = (numPoints + threadsPerBlock - 1) / threadsPerBlock;
-
-    fractal_sample_kernel<<<blocks, threadsPerBlock>>>(
-        d_coords,
-        numPoints,
-        d_results,
-        view,
-        params,
-        resolvedRender,
-        wantPerturb ? g_cached.d_refOrbit : nullptr,
-        refLen,
-        refC0);
-
-    cudaError_t launchErr = cudaGetLastError();
-    if (launchErr != cudaSuccess) {
-        cudaFree(d_coords);
-        cudaFree(d_results);
-        if (outError) *outError = "CUDA sample kernel launch failed";
-        return false;
-    }
-
-    cudaDeviceSynchronize();
-
-    // Copy results back.
-    if (cudaMemcpy(outResults, d_results, resultBytes, cudaMemcpyDeviceToHost) != cudaSuccess) {
-        cudaFree(d_coords);
-        cudaFree(d_results);
-        if (outError) *outError = "cudaMemcpy failed for sample results";
-        return false;
-    }
-
-    cudaFree(d_coords);
-    cudaFree(d_results);
-    return true;
-}
+// SampleFractalPoints() has been moved to fractal_sample_core.cu (K5).
 
 void CleanupFractalCUDA() {
     if (g_cached.d_rgba) { cudaFree(g_cached.d_rgba); g_cached.d_rgba = nullptr; }
@@ -685,5 +426,6 @@ void CleanupFractalCUDA() {
     if (g_cached.d_refOrbit) { cudaFree(g_cached.d_refOrbit); g_cached.d_refOrbit = nullptr; }
     g_cached.w = 0;
     g_cached.h = 0;
+    CleanupFractalSampleCore();
     cudaDeviceReset();
 }
