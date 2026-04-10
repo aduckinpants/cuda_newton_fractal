@@ -243,3 +243,130 @@ class TestSessionErrorHandling:
         )
         assert result.returncode != 0
         assert "mutually exclusive" in result.stderr
+
+
+class TestSessionDiffMode:
+    """V2-C: parameter diff mode with state_token + merged overrides."""
+
+    def test_diff_carries_fractal_type_forward(self) -> None:
+        """r1 sets fractal_type=mandelbrot; r2 diffs from s1 with only zoom.
+        r2 should still run as mandelbrot, not fall back to default newton."""
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        r1 = json.dumps({
+            "request_version": 1, "request_id": "r1", "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        # After open (token s0), r1 response gives token s1.
+        r2 = json.dumps({
+            "request_version": 1, "request_id": "r2",
+            "state_token": "s1",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.view.zoom", "value": 2.0}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        result = _run_session([
+            json.dumps({"session": "open"}),
+            r1, r2,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 4  # ready + r1 + r2 + close
+
+        assert lines[1]["ok"] is True
+        assert lines[1]["runtime"]["fractal_type"] == "mandelbrot"
+
+        assert lines[2]["ok"] is True
+        assert lines[2]["runtime"]["fractal_type"] == "mandelbrot", (
+            "diff request should inherit fractal_type from state_token"
+        )
+
+    def test_invalid_state_token_errors(self) -> None:
+        """Referencing a non-existent state_token should produce an error."""
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        r1 = json.dumps({
+            "request_version": 1, "request_id": "r1",
+            "state_token": "s999",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [{"x": 0.5, "y": 0.3}],
+        })
+        result = _run_session([
+            json.dumps({"session": "open"}),
+            r1,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 3  # ready + error + close
+        assert lines[1]["ok"] is False
+        assert "s999" in lines[1]["error"]
+
+    def test_request_without_token_still_works(self) -> None:
+        """Requests without state_token should work as before (V2-B compat)."""
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        r1 = json.dumps({
+            "request_version": 1, "request_id": "r1", "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [{"x": 0.5, "y": 0.3}],
+        })
+        result = _run_session([
+            json.dumps({"session": "open"}),
+            r1,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 3
+        assert lines[1]["ok"] is True
+        assert "state_token" in lines[1]
+
+    def test_chained_diffs_carry_all_overrides(self) -> None:
+        """Chain r1→r2→r3: fractal_type from r1 should survive through r3."""
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        r1 = json.dumps({
+            "request_version": 1, "request_id": "r1", "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        r2 = json.dumps({
+            "request_version": 1, "request_id": "r2",
+            "state_token": "s1",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.view.zoom", "value": 2.0}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        r3 = json.dumps({
+            "request_version": 1, "request_id": "r3",
+            "state_token": "s2",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.params.max_iter", "value": 100}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        result = _run_session([
+            json.dumps({"session": "open"}),
+            r1, r2, r3,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 5  # ready + 3 responses + close
+
+        for i in range(1, 4):
+            assert lines[i]["ok"] is True
+            assert lines[i]["runtime"]["fractal_type"] == "mandelbrot", (
+                f"response {i} should have fractal_type=mandelbrot"
+            )
+
+        # All tokens should be distinct
+        tokens = [lines[i]["state_token"] for i in range(4)]  # ready + 3 responses
+        assert len(set(tokens)) == len(tokens)

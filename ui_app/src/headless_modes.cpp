@@ -237,7 +237,33 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     return 0;
 }
 
-// --- Session mode (V2-B) ---
+// --- Session mode (V2-B / V2-C) ---
+
+// --- V2-C: Override merge ---
+
+std::vector<FractalProbeOverride> MergeOverrides(
+    const std::vector<FractalProbeOverride>& base,
+    const std::vector<FractalProbeOverride>& diff) {
+    if (diff.empty()) return base;
+    if (base.empty()) return diff;
+
+    // Copy base, then apply diff: replace matching paths, append new ones.
+    std::vector<FractalProbeOverride> merged = base;
+    for (const auto& d : diff) {
+        bool replaced = false;
+        for (auto& m : merged) {
+            if (m.path == d.path) {
+                m.value = d.value;
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            merged.push_back(d);
+        }
+    }
+    return merged;
+}
 
 static std::string MakeStateToken(int counter) {
     return "s" + std::to_string(counter);
@@ -297,6 +323,7 @@ std::string ProcessSessionLine(const std::string& line,
     bool* sessionOpen,
     bool* sessionDone,
     int* stateTokenCounter,
+    SessionOverrideMap* accumulatedOverrides,
     const std::string& exePath) {
 
     // Skip empty/whitespace lines
@@ -368,12 +395,25 @@ std::string ProcessSessionLine(const std::string& line,
         }
         response = BuildProbeErrorResponse(failedRequestId, exePath, FractalProbeOperatorContext{}, reqError);
     } else {
+        // V2-C: If state_token is present, merge accumulated overrides
+        if (!request.state_token.empty() && accumulatedOverrides) {
+            auto it = accumulatedOverrides->find(request.state_token);
+            if (it == accumulatedOverrides->end()) {
+                response = BuildProbeErrorResponse(request.request_id, exePath,
+                    request.operator_context,
+                    "unknown state_token: " + request.state_token);
+                goto emit_response;
+            }
+            request.overrides = MergeOverrides(it->second, request.overrides);
+        }
+
         std::string runError;
         if (!RunFractalProbeRequest(request, exePath, &response, &runError)) {
             response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, runError);
         }
     }
 
+emit_response:
     // Stamp response_version=2 and state_token
     response.response_version = 2;
     (*stateTokenCounter)++;
@@ -386,6 +426,11 @@ std::string ProcessSessionLine(const std::string& line,
         responseJson.insert(lastBrace, ",\"state_token\":\"" + token + "\"");
     }
 
+    // V2-C: Store accumulated overrides for this token
+    if (accumulatedOverrides && response.ok) {
+        (*accumulatedOverrides)[token] = request.overrides;
+    }
+
     return responseJson;
 }
 
@@ -393,6 +438,7 @@ int RunSessionMode(std::istream& in, std::ostream& out, const std::string& exePa
     bool sessionOpen = false;
     bool sessionDone = false;
     int stateTokenCounter = 0;
+    SessionOverrideMap accumulatedOverrides;
 
     std::string line;
     while (std::getline(in, line)) {
@@ -400,7 +446,7 @@ int RunSessionMode(std::istream& in, std::ostream& out, const std::string& exePa
         if (!line.empty() && line.back() == '\r') line.pop_back();
 
         std::string response = ProcessSessionLine(line, &sessionOpen, &sessionDone,
-            &stateTokenCounter, exePath);
+            &stateTokenCounter, &accumulatedOverrides, exePath);
 
         if (!response.empty()) {
             out << response << "\n";

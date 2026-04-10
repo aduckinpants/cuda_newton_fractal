@@ -562,7 +562,7 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
 
     const json_min::Object& root = value.as_object();
     if (!RejectUnknownKeys(root,
-            {"request_version", "request_id", "function_id", "function", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context"},
+            {"request_version", "request_id", "function_id", "function", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context", "state_token"},
             "request",
             outError)) return false;
 
@@ -573,6 +573,18 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
         return false;
     }
     if (!GetRequiredString(root, "request_id", &request.request_id, outError)) return false;
+
+    // V2-C: state_token is optional — references accumulated session state.
+    {
+        auto stIt = root.find("state_token");
+        if (stIt != root.end()) {
+            if (!stIt->second.is_string()) {
+                if (outError) *outError = "state_token must be a string";
+                return false;
+            }
+            request.state_token = stIt->second.as_string();
+        }
+    }
 
     // function_id is optional; defaults to "fractal.sample" for backward compat.
     {

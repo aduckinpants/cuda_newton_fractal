@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -42,17 +43,33 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath);
 int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     const std::vector<std::string>& schemaCandidates);
 
-// --- Session mode (V2-B) ---
+// --- V2-C: Override merge ---
+
+// Merge two override vectors.  For each override in `diff`, if an override
+// with the same path exists in `base`, replace its value; otherwise append.
+// Order: base overrides first (with replacements applied), then new paths
+// from diff appended in order.
+std::vector<FractalProbeOverride> MergeOverrides(
+    const std::vector<FractalProbeOverride>& base,
+    const std::vector<FractalProbeOverride>& diff);
+
+// --- Session mode (V2-B / V2-C) ---
+
+// Accumulated override state for a session.  Maps state_token string to
+// the full override vector that produced that token.
+using SessionOverrideMap = std::map<std::string, std::vector<FractalProbeOverride>>;
 
 // Process a single session line given current state.  Returns the JSON
 // response line (without trailing newline).  Sets *sessionDone = true
 // when the session should exit.
 // stateTokenCounter is the monotonic counter for state_token generation.
+// accumulatedOverrides stores the override vector for each state_token.
 // Returns empty string if line was empty/whitespace (caller should skip).
 std::string ProcessSessionLine(const std::string& line,
     bool* sessionOpen,
     bool* sessionDone,
     int* stateTokenCounter,
+    SessionOverrideMap* accumulatedOverrides,
     const std::string& exePath);
 
 // Run session mode reading from `in` and writing to `out`.

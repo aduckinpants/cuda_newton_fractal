@@ -615,9 +615,10 @@ bool TestProcessSessionLineOpen() {
     bool sessionOpen = false;
     bool sessionDone = false;
     int counter = 0;
+    SessionOverrideMap accumulated;
     std::string result = ProcessSessionLine(
         "{\"session\":\"open\",\"request_id\":\"init\"}",
-        &sessionOpen, &sessionDone, &counter, kExePath);
+        &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(!result.empty(), "open should produce a response");
     ASSERT(sessionOpen, "sessionOpen should be set true");
     ASSERT(!sessionDone, "sessionDone should be false after open");
@@ -638,9 +639,10 @@ bool TestProcessSessionLineClose() {
     bool sessionOpen = true;
     bool sessionDone = false;
     int counter = 1;
+    SessionOverrideMap accumulated;
     std::string result = ProcessSessionLine(
         "{\"session\":\"close\"}",
-        &sessionOpen, &sessionDone, &counter, kExePath);
+        &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(!result.empty(), "close should produce a response");
     ASSERT(sessionDone, "sessionDone should be true after close");
 
@@ -659,10 +661,11 @@ bool TestProcessSessionLineEmptyReturnsEmpty() {
     bool sessionOpen = true;
     bool sessionDone = false;
     int counter = 0;
-    std::string result = ProcessSessionLine("", &sessionOpen, &sessionDone, &counter, kExePath);
+    SessionOverrideMap accumulated;
+    std::string result = ProcessSessionLine("", &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(result.empty(), "empty line should return empty string");
     ASSERT(!sessionDone, "empty line should not end session");
-    result = ProcessSessionLine("   ", &sessionOpen, &sessionDone, &counter, kExePath);
+    result = ProcessSessionLine("   ", &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(result.empty(), "whitespace-only line should return empty string");
     return true;
 }
@@ -671,11 +674,12 @@ bool TestProcessSessionLineRequestNotOpen() {
     bool sessionOpen = false;
     bool sessionDone = false;
     int counter = 0;
+    SessionOverrideMap accumulated;
     std::string result = ProcessSessionLine(
         "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
         "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
         "\"points\":[{\"x\":0.5,\"y\":0.3}]}",
-        &sessionOpen, &sessionDone, &counter, kExePath);
+        &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(!result.empty(), "should produce error response");
     ASSERT(sessionDone, "session should end on not-open request");
 
@@ -690,11 +694,12 @@ bool TestProcessSessionLineValidRequest() {
     bool sessionOpen = true;
     bool sessionDone = false;
     int counter = 1;
+    SessionOverrideMap accumulated;
     std::string result = ProcessSessionLine(
         "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
         "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
         "\"points\":[{\"x\":0.5,\"y\":0.3}]}",
-        &sessionOpen, &sessionDone, &counter, kExePath);
+        &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(!result.empty(), "valid request should produce a response");
     ASSERT(!sessionDone, "session should remain open");
     ASSERT(counter == 2, "state token counter should increment");
@@ -714,9 +719,10 @@ bool TestProcessSessionLineMalformedJson() {
     bool sessionOpen = true;
     bool sessionDone = false;
     int counter = 1;
+    SessionOverrideMap accumulated;
     std::string result = ProcessSessionLine(
         "not valid json {{{{",
-        &sessionOpen, &sessionDone, &counter, kExePath);
+        &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
     ASSERT(!result.empty(), "malformed JSON should produce error response");
     ASSERT(!sessionDone, "session should stay open after parse error");
 
@@ -749,6 +755,319 @@ bool TestSessionResponseVersionField() {
     ASSERT(verIt != p.value.as_object().end() && verIt->second.is_number(),
         "response should have response_version");
     ASSERT(verIt->second.as_number() == 2.0, "response_version should be 2");
+    return true;
+}
+
+// --- V2-C: MergeOverrides unit tests ---
+
+static FractalProbeOverride MakeOverride(const std::string& path, double value) {
+    FractalProbeOverride o;
+    o.path = path;
+    o.value = FractalProbeScalar::Number(value);
+    return o;
+}
+
+static FractalProbeOverride MakeStringOverride(const std::string& path, const std::string& value) {
+    FractalProbeOverride o;
+    o.path = path;
+    o.value = FractalProbeScalar::String(value);
+    return o;
+}
+
+bool TestMergeOverridesBothEmpty() {
+    std::vector<FractalProbeOverride> base;
+    std::vector<FractalProbeOverride> diff;
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.empty(), "merging two empty vectors should produce empty");
+    return true;
+}
+
+bool TestMergeOverridesEmptyBase() {
+    std::vector<FractalProbeOverride> base;
+    std::vector<FractalProbeOverride> diff = { MakeOverride("a.b", 1.0) };
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.size() == 1, "empty base + 1 diff = 1 override");
+    ASSERT(merged[0].path == "a.b", "path should be a.b");
+    ASSERT(merged[0].value.number_value == 1.0, "value should be 1.0");
+    return true;
+}
+
+bool TestMergeOverridesEmptyDiff() {
+    std::vector<FractalProbeOverride> base = { MakeOverride("x.y", 2.0) };
+    std::vector<FractalProbeOverride> diff;
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.size() == 1, "1 base + empty diff = 1 override");
+    ASSERT(merged[0].path == "x.y", "path preserved from base");
+    ASSERT(merged[0].value.number_value == 2.0, "value preserved from base");
+    return true;
+}
+
+bool TestMergeOverridesDisjointPaths() {
+    std::vector<FractalProbeOverride> base = { MakeOverride("a", 1.0) };
+    std::vector<FractalProbeOverride> diff = { MakeOverride("b", 2.0) };
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.size() == 2, "disjoint paths should produce union");
+    // base entry first, then appended diff entry
+    ASSERT(merged[0].path == "a" && merged[0].value.number_value == 1.0, "base entry first");
+    ASSERT(merged[1].path == "b" && merged[1].value.number_value == 2.0, "diff entry second");
+    return true;
+}
+
+bool TestMergeOverridesReplacesMatchingPath() {
+    std::vector<FractalProbeOverride> base = { MakeOverride("a", 1.0) };
+    std::vector<FractalProbeOverride> diff = { MakeOverride("a", 99.0) };
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.size() == 1, "matching path should replace, not duplicate");
+    ASSERT(merged[0].path == "a", "path should be a");
+    ASSERT(merged[0].value.number_value == 99.0, "value should be replaced by diff");
+    return true;
+}
+
+bool TestMergeOverridesMixed() {
+    // Base: [a=1, b=2, c=3]  Diff: [b=20, d=4]
+    // Expected: [a=1, b=20, c=3, d=4]
+    std::vector<FractalProbeOverride> base = {
+        MakeOverride("a", 1.0), MakeOverride("b", 2.0), MakeOverride("c", 3.0)
+    };
+    std::vector<FractalProbeOverride> diff = {
+        MakeOverride("b", 20.0), MakeOverride("d", 4.0)
+    };
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.size() == 4, "should have 4 entries after merge");
+    ASSERT(merged[0].path == "a" && merged[0].value.number_value == 1.0, "a=1 from base");
+    ASSERT(merged[1].path == "b" && merged[1].value.number_value == 20.0, "b=20 replaced by diff");
+    ASSERT(merged[2].path == "c" && merged[2].value.number_value == 3.0, "c=3 from base");
+    ASSERT(merged[3].path == "d" && merged[3].value.number_value == 4.0, "d=4 appended from diff");
+    return true;
+}
+
+bool TestMergeOverridesKindChange() {
+    // Diff can change the value kind (number -> string) for a matching path.
+    std::vector<FractalProbeOverride> base = { MakeOverride("a", 1.0) };
+    std::vector<FractalProbeOverride> diff = { MakeStringOverride("a", "hello") };
+    auto merged = MergeOverrides(base, diff);
+    ASSERT(merged.size() == 1, "should have 1 entry");
+    ASSERT(merged[0].value.kind == FractalProbeScalar::Kind::string, "kind should change to string");
+    ASSERT(merged[0].value.string_value == "hello", "string value should be hello");
+    return true;
+}
+
+// --- V2-C: Session diff integration tests ---
+
+// Helper: extract state_token from a JSON line.
+static std::string GetToken(const std::string& line) {
+    auto p = json_min::Parse(line);
+    if (!p.error.empty() || !p.value.is_object()) return "";
+    auto it = p.value.as_object().find("state_token");
+    if (it == p.value.as_object().end() || !it->second.is_string()) return "";
+    return it->second.as_string();
+}
+
+// Helper: extract runtime.fractal_type from a JSON response line.
+static std::string GetRuntimeFractalType(const std::string& line) {
+    auto p = json_min::Parse(line);
+    if (!p.error.empty() || !p.value.is_object()) return "";
+    auto rtIt = p.value.as_object().find("runtime");
+    if (rtIt == p.value.as_object().end() || !rtIt->second.is_object()) return "";
+    auto ftIt = rtIt->second.as_object().find("fractal_type");
+    if (ftIt == rtIt->second.as_object().end() || !ftIt->second.is_string()) return "";
+    return ftIt->second.as_string();
+}
+
+bool TestSessionDiffValidTokenMergesOverrides() {
+    // r1: set fractal_type=mandelbrot + point.  r2 (diff from s1): only override
+    // max_iter, no fractal_type.  Without merge, the default is newton.
+    // With merge, fractal_type=mandelbrot should carry forward.
+    std::string r1 = "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\"}\n"
+                        + r1 + "\n";
+
+    // We need to capture s1 token, then build r2 dynamically.
+    // Use RunSessionMode directly with istringstream/ostringstream to read
+    // the token, but we can't inject the 2nd request after reading the first.
+    // Instead, construct a 2-request session where r2 references "s1"
+    // (the first response token).
+    // MakeStateToken(1) = "s1", MakeStateToken(2) = "s2" etc.
+    // After open (counter=0, token="s0"), r1 response increments to counter=1
+    // → token "s1".  So r2 should reference "s1".
+
+    std::string r2 = "{\"request_version\":1,\"request_id\":\"r2\","
+        "\"state_token\":\"s1\","
+        "\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.zoom\",\"value\":2.0}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string fullInput = "{\"session\":\"open\"}\n"
+                            + r1 + "\n"
+                            + r2 + "\n"
+                            + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(fullInput, &output);
+    ASSERT(rc == 0, "diff session should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 4, "ready + r1_resp + r2_resp + close-ack");
+
+    // r1 response should have fractal_type=mandelbrot
+    std::string ft1 = GetRuntimeFractalType(lines[1]);
+    ASSERT(ft1 == "mandelbrot", "r1 fractal_type should be mandelbrot");
+
+    // r2 response should also have fractal_type=mandelbrot (carried from merge)
+    std::string ft2 = GetRuntimeFractalType(lines[2]);
+    ASSERT(ft2 == "mandelbrot", "r2 should inherit fractal_type=mandelbrot via merge");
+
+    // Both should have state_token
+    std::string t1 = GetToken(lines[1]);
+    std::string t2 = GetToken(lines[2]);
+    ASSERT(!t1.empty() && !t2.empty(), "both responses must have state_token");
+    ASSERT(t1 != t2, "tokens should be different");
+    return true;
+}
+
+bool TestSessionDiffInvalidTokenErrors() {
+    // Referencing a non-existent state_token should produce an error.
+    std::string r1 = "{\"request_version\":1,\"request_id\":\"r1\","
+        "\"state_token\":\"s999\","
+        "\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\"}\n"
+                        + r1 + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session should still close cleanly after error");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + error + close-ack");
+
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.value.is_object(), "error response should be JSON object");
+    auto okIt = p1.value.as_object().find("ok");
+    ASSERT(okIt != p1.value.as_object().end() && !okIt->second.as_bool(),
+        "invalid state_token should produce ok=false");
+    auto errIt = p1.value.as_object().find("error");
+    ASSERT(errIt != p1.value.as_object().end() && errIt->second.is_string(),
+        "should have error message");
+    // Error should mention the token
+    ASSERT(errIt->second.as_string().find("s999") != std::string::npos,
+        "error should mention the invalid token");
+    return true;
+}
+
+bool TestSessionDiffWithoutTokenWorksNormally() {
+    // A request without state_token should work exactly like V2-B (no merge).
+    std::string req = "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\"}\n"
+                        + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session without state_token should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + response + close-ack");
+
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.value.is_object(), "response should be JSON object");
+    auto okIt = p1.value.as_object().find("ok");
+    ASSERT(okIt != p1.value.as_object().end() && okIt->second.as_bool(),
+        "no-token request should still succeed");
+    auto tokIt = p1.value.as_object().find("state_token");
+    ASSERT(tokIt != p1.value.as_object().end() && tokIt->second.is_string(),
+        "response should still have state_token");
+    return true;
+}
+
+bool TestSessionDiffChainedDiffs() {
+    // r1: fractal_type=mandelbrot (token s0→s1)
+    // r2: diff from s1, add max_iterations=200 (token s1→s2)
+    // r3: diff from s2, change only zoom (token s2→s3)
+    // r3 should still reflect fractal_type=mandelbrot (from r1) carried through r2→r3.
+    std::string r1 = "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+    std::string r2 = "{\"request_version\":1,\"request_id\":\"r2\","
+        "\"state_token\":\"s1\","
+        "\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.zoom\",\"value\":2.0}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+    std::string r3 = "{\"request_version\":1,\"request_id\":\"r3\","
+        "\"state_token\":\"s2\","
+        "\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.params.max_iter\",\"value\":100}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\"}\n"
+                        + r1 + "\n" + r2 + "\n" + r3 + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "chained diff session should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 5, "ready + 3 responses + close-ack");
+
+    // All three responses should show fractal_type=mandelbrot
+    for (int i = 1; i <= 3; ++i) {
+        std::string ft = GetRuntimeFractalType(lines[i]);
+        ASSERT(ft == "mandelbrot",
+            ("response " + std::to_string(i) + " should have fractal_type=mandelbrot").c_str());
+    }
+
+    // Tokens should all be different
+    std::string t1 = GetToken(lines[1]);
+    std::string t2 = GetToken(lines[2]);
+    std::string t3 = GetToken(lines[3]);
+    ASSERT(t1 != t2 && t2 != t3 && t1 != t3, "all tokens should be distinct");
+    return true;
+}
+
+bool TestProcessSessionLineDiffRequest() {
+    // Unit test: ProcessSessionLine with a diff request that references
+    // accumulated overrides.
+    bool sessionOpen = true;
+    bool sessionDone = false;
+    int counter = 1;
+    SessionOverrideMap accumulated;
+
+    // Seed the accumulated map with s1 → [fractal_type=mandelbrot]
+    accumulated["s1"] = { MakeStringOverride("fractal.view.fractal_type", "mandelbrot") };
+
+    // Send a diff request referencing s1 with only zoom override
+    std::string result = ProcessSessionLine(
+        "{\"request_version\":1,\"request_id\":\"rd\","
+        "\"state_token\":\"s1\","
+        "\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.zoom\",\"value\":2.0}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}",
+        &sessionOpen, &sessionDone, &counter, &accumulated, kExePath);
+
+    ASSERT(!result.empty(), "diff request should produce a response");
+    ASSERT(!sessionDone, "session should remain open");
+
+    auto p = json_min::Parse(result);
+    ASSERT(p.error.empty() && p.value.is_object(), "response should be valid JSON");
+    auto& obj = p.value.as_object();
+    auto okIt = obj.find("ok");
+    ASSERT(okIt != obj.end() && okIt->second.as_bool(), "diff request should succeed");
+
+    // Check runtime shows mandelbrot (from merge, not default newton)
+    std::string ft = GetRuntimeFractalType(result);
+    ASSERT(ft == "mandelbrot", "merged overrides should include fractal_type=mandelbrot");
+
+    // The new token should be in the accumulated map
+    std::string newToken = GetToken(result);
+    ASSERT(!newToken.empty(), "response must have state_token");
+    ASSERT(accumulated.count(newToken) == 1,
+        "accumulated map should contain entry for new token");
     return true;
 }
 
@@ -800,6 +1119,24 @@ int main() {
     RUN(TestSessionBadRequestPreservesSession);
     RUN(TestSessionUnknownSessionVerb);
     RUN(TestSessionResponseVersionField);
+
+    // V2-C: MergeOverrides unit tests
+    RUN(TestMergeOverridesBothEmpty);
+    RUN(TestMergeOverridesEmptyBase);
+    RUN(TestMergeOverridesEmptyDiff);
+    RUN(TestMergeOverridesDisjointPaths);
+    RUN(TestMergeOverridesReplacesMatchingPath);
+    RUN(TestMergeOverridesMixed);
+    RUN(TestMergeOverridesKindChange);
+
+    // V2-C: Session diff — ProcessSessionLine unit test
+    RUN(TestProcessSessionLineDiffRequest);
+
+    // V2-C: Session diff — RunSessionMode integration tests
+    RUN(TestSessionDiffValidTokenMergesOverrides);
+    RUN(TestSessionDiffInvalidTokenErrors);
+    RUN(TestSessionDiffWithoutTokenWorksNormally);
+    RUN(TestSessionDiffChainedDiffs);
 
     std::fprintf(stderr, "test_headless_modes: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;
