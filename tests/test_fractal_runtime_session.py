@@ -276,6 +276,34 @@ class TestSessionErrorHandling:
 class TestSessionDiffMode:
     """V2-C: parameter diff mode with state_token + merged overrides."""
 
+    def test_ready_token_s0_is_usable_for_first_diff_request(self) -> None:
+        """The ready token s0 should be a usable empty baseline state."""
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        r1 = json.dumps({
+            "request_version": 1,
+            "request_id": "use-s0",
+            "state_token": "s0",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        result = _run_session([
+            json.dumps({"session": "open"}),
+            r1,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 3
+        assert lines[0]["session"] == "ready"
+        assert lines[0]["state_token"] == "s0"
+
+        assert lines[1]["ok"] is True
+        assert lines[1]["runtime"]["fractal_type"] == "mandelbrot"
+        assert lines[1]["state_token"] == "s1"
+
     def test_diff_carries_fractal_type_forward(self) -> None:
         """r1 sets fractal_type=mandelbrot; r2 diffs from s1 with only zoom.
         r2 should still run as mandelbrot, not fall back to default newton."""

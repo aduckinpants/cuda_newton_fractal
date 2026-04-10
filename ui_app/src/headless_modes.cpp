@@ -433,6 +433,10 @@ std::string ProcessSessionLine(const std::string& line,
             }
             *sessionOpen = true;
             std::string token = MakeStateToken(*stateTokenCounter);
+            if (accumulatedOverrides) {
+                accumulatedOverrides->clear();
+                (*accumulatedOverrides)[token] = {};
+            }
             return "{\"session\":\"ready\",\"state_token\":\"" + token + "\",\"engine_version\":2}";
         }
 

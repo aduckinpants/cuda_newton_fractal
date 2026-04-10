@@ -1500,6 +1500,43 @@ bool TestSessionDiffValidTokenMergesOverrides() {
     return true;
 }
 
+bool TestSessionReadyTokenIsUsableAsBaselineState() {
+    std::string request = "{\"request_version\":1,\"request_id\":\"use-s0\"," 
+        "\"state_token\":\"s0\"," 
+        "\"mode\":\"point_set\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"points\":[{\"x\":-0.5,\"y\":0.0}]}";
+
+    std::string input = "{\"session\":\"open\"}\n"
+                        + request + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session should close cleanly after s0 baseline request");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + response + close-ack");
+
+    auto ready = ParseJsonLine(lines[0]);
+    ASSERT(ready.value.is_object(), "ready response should be JSON object");
+    auto readyTokenIt = ready.value.as_object().find("state_token");
+    ASSERT(readyTokenIt != ready.value.as_object().end() && readyTokenIt->second.is_string(),
+        "ready response should include state_token");
+    ASSERT(readyTokenIt->second.as_string() == "s0",
+        "ready response should advertise the baseline token s0");
+
+    auto response = ParseJsonLine(lines[1]);
+    ASSERT(response.value.is_object(), "sample response should be JSON object");
+    auto okIt = response.value.as_object().find("ok");
+    ASSERT(okIt != response.value.as_object().end() && okIt->second.as_bool(),
+        "first request should be able to reference the ready token s0");
+    ASSERT(GetRuntimeFractalType(lines[1]) == "mandelbrot",
+        "request should still honor explicit overrides when diffing from s0");
+    ASSERT(GetToken(lines[1]) == "s1",
+        "first successful request should mint s1 after the ready token s0");
+    return true;
+}
+
 bool TestSessionDiffInvalidTokenErrors() {
     // Referencing a non-existent state_token should produce an error.
     std::string r1 = "{\"request_version\":1,\"request_id\":\"r1\","
@@ -1720,6 +1757,7 @@ int main() {
 
     // V2-C: Session diff — RunSessionMode integration tests
     RUN(TestSessionDiffValidTokenMergesOverrides);
+    RUN(TestSessionReadyTokenIsUsableAsBaselineState);
     RUN(TestSessionDiffInvalidTokenErrors);
     RUN(TestSessionDiffWithoutTokenWorksNormally);
     RUN(TestSessionDiffChainedDiffs);
