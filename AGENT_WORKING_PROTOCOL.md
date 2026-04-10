@@ -7,6 +7,17 @@ Work here merges back into the mainline Salticid system.
 The agent's job: deliver bounded, tested, checkpointed slices that
 a successor agent can resume without archaeology.
 
+## Bootstrap Surface
+
+Read `AGENTS.md` first in a new session.
+
+Use it as the concise bootstrap checklist and session-transition surface for this repo.
+Treat `AGENT_WORKING_PROTOCOL.md` as the detailed rules document and `AGENTS.md`
+as the short operational bootstrap.
+
+Repeatable bootstrap command:
+`py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`
+
 ---
 
 ## Non-Negotiable Invariants
@@ -59,8 +70,20 @@ A second editable layout source WILL drift and WILL cause bugs.
 
 Use the checked-in scripts. Do not hand-assemble compiler commands.
 
+Public workflow surface:
+- `agent: session bootstrap`
+- `agent: begin work slice`
+- `agent: assert phased plan sync`
+- `verify: profile native`
+- `verify: profile runtime`
+- `verify: profile catalog`
+- `verify: profile checkpoint`
+
 | Task | Command | Notes |
 |------|---------|-------|
+| Session bootstrap | `py -3.14 tools\viewer_host_session_bootstrap.py --audit --tail-handoff 8` | Repeatable new-session start surface |
+| Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>` | Repo-specific adapter that delegates to mainline `handoff_append.py` |
+| Plan sync check | `py -3.14 tools\viewer_host_assert_phased_plan_sync.py` | Deterministic phased-plan continuity adapter |
 | Native helper tests | `ui_app\build_tests_vsdevcmd.cmd` | Must pass before any commit |
 | Full viewer build | `ui_app\build_vsdevcmd.cmd` | Must pass before any commit |
 | Probe catalog smoke | `py -3.14 tools\reality_toolkit\scripts\run_fractal_catalog_smoke.py --strict --out-dir <task-dir>` | For probe/descriptor changes |
@@ -117,7 +140,28 @@ For any multi-slice initiative:
 - Each turn updates the checklist: mark completed steps, note blockers
 - The plan is the resumable state — not chat history
 
+Required continuity rules:
+- If you edit a `*_PHASED_PLAN.md` file, keep `## Current Phase` and
+  `## Phase Checklist` synchronized in the same edit
+- Do not leave a later phase current while earlier phases remain unchecked
+- Use `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` or the VS Code task
+  `agent: assert phased plan sync` instead of eyeballing plan drift
+
+Reference protocol:
+- `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`
+
 For the current active specs, see `spec_intake/_STATUS.md`.
+
+## No Chat-History Reliance
+
+Do not treat chat history as a durable planning surface.
+
+For every meaningful work slice:
+- create or update a detailed, checklisted, phased plan in the repo
+- prefer the nearest existing plan doc; otherwise create
+  `docs/notes/<slug>_PHASED_PLAN.md`
+- treat `HANDOFF_LOG.md` as the checkpoint index and the phased plan as the
+  detailed resumable state
 
 ---
 
@@ -168,6 +212,10 @@ Cross-repo tooling: the handoff append tool lives in salticid-cuda:
 py -3.14 C:\code\salticid-cuda\tools\handoff_append.py --repo-root "c:\code\cuda_newton_fractal_clone" "message"
 ```
 
+Do not fork core workflow tools from mainline into this repo under the same names.
+Use the mainline helper directly when it supports `--repo-root`, or use a thin
+repo-specific `viewer_host_*` adapter when local repo context is required.
+
 ---
 
 ## Architecture Rules (from .github/copilot-instructions.md)
@@ -205,11 +253,15 @@ py -3.14 C:\code\salticid-cuda\tools\handoff_append.py --repo-root "c:\code\cuda
 
 When beginning work in a new session:
 
-1. Read `AGENT_WORKING_PROTOCOL.md` (this file)
-2. Read `spec_intake/_STATUS.md` for current phase
-3. Read `DEFERRED_THREADS.md` for paused work
-4. Read `KNOWN_ISSUES.md` for known bugs
-5. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
-6. Read the relevant spec intake doc for the current initiative
-7. Check git status — if worktree is dirty, assess and checkpoint carryover
-8. Identify the bounded next slice and proceed
+1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`
+2. Read `AGENTS.md`
+3. Read `AGENT_WORKING_PROTOCOL.md` (this file)
+4. Read `spec_intake/_STATUS.md` for current phase
+5. Read `DEFERRED_THREADS.md` for paused work
+6. Read `KNOWN_ISSUES.md` for known bugs
+7. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
+8. Read the relevant spec intake doc for the current initiative
+9. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
+10. Create or update the nearest phased plan and assert sync if you touch it
+11. Check git status — if the worktree is dirty, assess and checkpoint carryover
+12. Identify the bounded next slice and proceed

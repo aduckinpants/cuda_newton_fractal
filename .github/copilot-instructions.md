@@ -1,10 +1,13 @@
 # Viewer Host Repo Guidelines
 
 ## Session Start
-- Read `AGENT_WORKING_PROTOCOL.md` first. It contains the full working rules,
-  build commands, slice workflow, and handoff discipline.
+- Read `AGENTS.md` first. It is the concise startup checklist and session-transition surface.
+- Then read `AGENT_WORKING_PROTOCOL.md`. It contains the full working rules,
+    build commands, slice workflow, and handoff discipline.
+- Use `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8` or the
+    VS Code task `agent: session bootstrap` as the repeatable new-session bootstrap.
 - Then read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`,
-  and the last few entries of `HANDOFF_LOG.md` for current state.
+    and the last few entries of `HANDOFF_LOG.md` for current state.
 
 ## Mission
 - Treat this repo as the bootstrap and extraction surface for the viewer-host effort.
@@ -18,8 +21,21 @@
 
 ## Workflow
 - For any non-trivial slice, read the relevant planning material first and restate the current phase plus exit criteria before editing.
+- For any meaningful slice, append a pending breadcrumb first with
+    `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>`
+    or the VS Code task `agent: begin work slice`.
+- Do not rely on chat history as the durable plan. Reuse the nearest phased plan or create
+    `docs/notes/<slug>_PHASED_PLAN.md`, then keep `## Current Phase` and `## Phase Checklist`
+    synchronized in the same edit.
+- Use `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` or task `agent: assert phased plan sync`
+    after touching a phased plan.
 - Follow strict TDD for behavioral changes: add or extend the focused test first, then implement the minimal fix, then refactor.
 - Prefer deterministic scripts, tests, and generated reports over ad hoc runtime speculation.
+- Prefer the public validation task surface instead of reconstructing command bundles from memory:
+    the `verify: profile ...` VS Code tasks.
+- Do not fork core workflow tools from mainline into this repo under the same names;
+    call the mainline helper directly when it supports `--repo-root`, or use a thin
+    `viewer_host_*` adapter when local repo context is required.
 - Keep the worktree focused; do not touch unrelated files or expand scope silently.
 - End each slice at an explicit stop point the next agent can resume.
 

@@ -1,0 +1,204 @@
+{
+  "version": "2.0.0",
+  "presentation": {
+    "showReuseMessage": false,
+    "close": true
+  },
+  "inputs": [
+    {
+      "id": "agentSliceIntent",
+      "type": "promptString",
+      "description": "Short intent for the pending work-slice HANDOFF_LOG breadcrumb",
+      "default": "tighten the active slice"
+    },
+    {
+      "id": "agentSliceProfile",
+      "type": "pickString",
+      "description": "Expected public validation profile for this slice",
+      "options": [
+        "native",
+        "runtime",
+        "catalog",
+        "checkpoint",
+        "unspecified"
+      ],
+      "default": "native"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "agent: session bootstrap",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "tools/viewer_host_session_bootstrap.py",
+        "--audit",
+        "--tail-handoff",
+        "8"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "agent: begin work slice",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "tools/viewer_host_begin_work_slice.py",
+        "--intent",
+        "${input:agentSliceIntent}",
+        "--profile",
+        "${input:agentSliceProfile}"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "agent: assert phased plan sync",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "tools/viewer_host_assert_phased_plan_sync.py"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "verify: code quality audit",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "tools/code_quality_audit.py",
+        "--check-baseline",
+        "--out",
+        "artifacts/code_quality_report.json"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: native helper tests",
+      "type": "shell",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "ui_app\\build_tests_vsdevcmd.cmd"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: runtime publish",
+      "type": "shell",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "ui_app\\build_vsdevcmd.cmd"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: runtime probe/session pytest",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "-m",
+        "pytest",
+        "tests/test_fractal_runtime_probe_cli.py",
+        "tests/test_fractal_runtime_session.py",
+        "-q"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: catalog smoke",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "tools/reality_toolkit/scripts/run_fractal_catalog_smoke.py",
+        "--strict",
+        "--out-dir",
+        "artifacts/fractal_catalog_smoke_profile"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: profile native",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "-c",
+        "print('Run the dependent verification tasks (see dependsOn).')"
+      ],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "verify: code quality audit",
+        "verify: native helper tests"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: profile runtime",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "-c",
+        "print('Run the dependent verification tasks (see dependsOn).')"
+      ],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "verify: code quality audit",
+        "verify: runtime publish",
+        "verify: runtime probe/session pytest"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: profile catalog",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "-c",
+        "print('Run the dependent verification tasks (see dependsOn).')"
+      ],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "verify: code quality audit",
+        "verify: runtime publish",
+        "verify: catalog smoke"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: profile checkpoint",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "-c",
+        "print('Run the dependent verification tasks (see dependsOn).')"
+      ],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "verify: code quality audit",
+        "verify: native helper tests",
+        "verify: runtime publish",
+        "verify: runtime probe/session pytest"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    }
+  ]
+}
