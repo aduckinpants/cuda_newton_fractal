@@ -13,6 +13,11 @@ struct Int2 {
     int y;
 };
 
+struct Double2 {
+    double x;
+    double y;
+};
+
 enum class PolyKind : int {
     z3_minus_1 = 0,
     z4_minus_1 = 1,
@@ -251,6 +256,20 @@ bool RenderFractalCUDA(
     uint32_t* outRGBA,
     uint8_t* outMask,
     RenderStats* outStats,
+    const char** outError);
+
+// K2: Sample arbitrary complex-plane coordinates without pixel mapping or coloring.
+// coords: host array of complex-plane points (Double2: .x = Re, .y = Im).
+// outResults: host array of FractalSampleResult (caller-allocated, length numPoints).
+// Returns false on error; *outError will be set.
+struct FractalSampleResult;
+bool SampleFractalPoints(
+    const Double2* coords,
+    int numPoints,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleResult* outResults,
     const char** outError);
 
 void CleanupFractalCUDA();

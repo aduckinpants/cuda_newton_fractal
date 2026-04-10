@@ -352,6 +352,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_fractal_sample_device.exe"
 if errorlevel 1 exit /b 1
 
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\fractal_renderer.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_kernel.cu ^
+  -o "%TESTROOT%\test_fractal_sample_kernel.exe"
+if errorlevel 1 exit /b 1
+
 "%TESTROOT%\test_sample_tier_resolver.exe"
 if errorlevel 1 exit /b 1
 
@@ -362,6 +370,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_sample_device.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_fractal_sample_kernel.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
