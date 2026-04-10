@@ -473,5 +473,13 @@ if errorlevel 1 exit /b 1
 "%TESTROOT%\test_param_anim_generic.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_generic_function_math.cpp ^
+  /Fe:"%TESTROOT%\test_generic_function_math.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_generic_function_math.exe"
+if errorlevel 1 exit /b 1
+
 echo All helper tests passed.
 exit /b 0
