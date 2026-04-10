@@ -43,10 +43,18 @@ def required_docs(repo_root: Path) -> list[BootstrapDoc]:
 
 
 def tail_handoff_entries(text: str, count: int) -> list[str]:
-    entries = [line.strip()[2:] for line in text.splitlines() if line.strip().startswith("- `ck:")]
+    entries = [line.strip()[2:] for line in text.splitlines() if line.strip().startswith("- `")]
     if count <= 0:
         return []
     return entries[-count:]
+
+
+def legacy_pending_handoff_entries(text: str) -> list[str]:
+    return [
+        line.strip()[2:]
+        for line in text.splitlines()
+        if line.strip().startswith("- `") and "— pending:" in line
+    ]
 
 
 def _capture_git(*args: str) -> str:
@@ -83,6 +91,7 @@ def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> d
     head = _capture_git("rev-parse", "--short", "HEAD")
     dirty = bool(_capture_git("status", "--porcelain=v1"))
     handoff_log = (REPO_ROOT / "HANDOFF_LOG.md").read_text(encoding="utf-8")
+    legacy_pending = legacy_pending_handoff_entries(handoff_log)
     audit = _run_audit(py) if run_audit else None
     docs = [asdict(doc) for doc in required_docs(REPO_ROOT)]
     return {
@@ -90,6 +99,10 @@ def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> d
         "git": {"branch": branch, "head": head, "dirty": dirty},
         "docs": docs,
         "recent_handoff": tail_handoff_entries(handoff_log, tail_handoff),
+        "handoff_warnings": {
+            "legacy_pending_count": len(legacy_pending),
+            "legacy_pending_entries": legacy_pending[-tail_handoff:] if tail_handoff > 0 else [],
+        },
         "audit": asdict(audit) if audit is not None else None,
         "next_commands": {
             "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified>",
@@ -115,6 +128,11 @@ def print_bootstrap_report(state: dict[str, Any]) -> None:
             print(f"- {entry}")
     else:
         print("- <no checkpoint entries found>")
+    warnings = state["handoff_warnings"]
+    if warnings["legacy_pending_count"]:
+        print(f"handoff warnings: legacy_pending_entries={warnings['legacy_pending_count']}")
+        for entry in warnings["legacy_pending_entries"]:
+            print(f"- {entry}")
     audit = state["audit"]
     if audit is not None:
         result = "ok" if audit["returncode"] == 0 else f"nonzero={audit['returncode']}"

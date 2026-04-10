@@ -9,7 +9,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.viewer_host_begin_work_slice import build_breadcrumb_message
-from tools.viewer_host_session_bootstrap import tail_handoff_entries
+from tools.viewer_host_session_bootstrap import legacy_pending_handoff_entries, tail_handoff_entries
 from tools.viewer_host_assert_phased_plan_sync import validate_plan_text
 
 
@@ -32,11 +32,24 @@ def test_tail_handoff_entries_returns_latest_checkpoint_lines() -> None:
 - `ck:00000001` older
 - noise entry
 - `ck:00000002` newer
+- `abc12345` committed
+- `pending` active
 - `ck:00000003` newest
 """
     assert tail_handoff_entries(text, 2) == [
-        "`ck:00000002` newer",
+        "`pending` active",
         "`ck:00000003` newest",
+    ]
+
+
+def test_legacy_pending_handoff_entries_finds_unresolvable_lines() -> None:
+    text = """
+- `ck:old11111` 2026-04-10 10:00 UTC — pending: older legacy entry
+- `pending` 2026-04-10 10:05 UTC — session-start | branch=feature/test | head=abc123 | status=dirty | profile=native | intent=example
+- `abc12345` 2026-04-10 10:10 UTC — committed note
+"""
+    assert legacy_pending_handoff_entries(text) == [
+        "`ck:old11111` 2026-04-10 10:00 UTC — pending: older legacy entry"
     ]
 
 
