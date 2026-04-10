@@ -249,6 +249,89 @@ static void test_operator_precedence() {
     check_eval("-z ^ 2", empty, 3.0, 0.0, -9.0, 0.0, 1e-6, "-z^2 = -(z^2)");
 }
 
+static void test_log_conj_abs() {
+    printf("--- test_log_conj_abs ---\n");
+    std::map<std::string, double> empty;
+
+    // log(e) at z=(e, 0) -> (1, 0)
+    check_eval("log(z)", empty, std::exp(1.0), 0.0, 1.0, 0.0, 1e-6, "log(e)");
+
+    // conj(z) at z=(2, 3) -> (2, -3)
+    check_eval("conj(z)", empty, 2.0, 3.0, 2.0, -3.0, 1e-10, "conj(2+3i)");
+
+    // abs(z) at z=(3, 4) -> (5, 0)
+    check_eval("abs(z)", empty, 3.0, 4.0, 5.0, 0.0, 1e-6, "abs(3+4i)");
+
+    // abs(z)^2 is also testable (compose abs then power)
+    check_eval("abs(z) ^ 2", empty, 3.0, 4.0, 25.0, 0.0, 1e-6, "abs(3+4i)^2");
+}
+
+static void test_z_conj_variable() {
+    printf("--- test_z_conj_variable ---\n");
+    std::map<std::string, double> empty;
+
+    // z_conj at z=(2, 3) -> (2, -3). Not to confuse with conj(z).
+    check_eval("z_conj", empty, 2.0, 3.0, 2.0, -3.0, 1e-10, "z_conj");
+
+    // z * z_conj = |z|^2 (real)
+    // At z=(3,4): z*z_conj = (3+4i)(3-4i) = 9+16 = 25
+    check_eval("z * z_conj", empty, 3.0, 4.0, 25.0, 0.0, 1e-10, "z*z_conj=|z|^2");
+}
+
+static void test_negative_exponents() {
+    printf("--- test_negative_exponents ---\n");
+    std::map<std::string, double> empty;
+
+    // z^-1 at z=(2, 0) = 0.5
+    check_eval("z ^ -1", empty, 2.0, 0.0, 0.5, 0.0, 1e-6, "z^-1=1/z");
+
+    // z^-2 at z=(2, 0) = 0.25
+    check_eval("z ^ -2", empty, 2.0, 0.0, 0.25, 0.0, 1e-6, "z^-2");
+}
+
+static void test_max_node_depth() {
+    printf("--- test_max_node_depth ---\n");
+    // Generate a deeply nested expression: ((((z+1)+1)+1)+1)...
+    // This should work up to MAX_GF_NODES, then fail gracefully.
+    std::map<std::string, double> empty;
+    std::string expr = "z";
+    // Each "+ 1" adds 2 nodes (const + add). z itself = 1 node 
+    // MAX_GF_NODES = 64, so we can do ~31 additions before hitting limit
+    for (int i = 0; i < 30; ++i) {
+        expr = "(" + expr + " + 1)";
+    }
+    GFParseResult pr = ParseGenericFunctionExpression(expr, empty);
+    CHECK(pr.ok, "30 nested additions should succeed");
+    if (pr.ok) {
+        // z + 30*1 at z=0 -> 30
+        GFCpuComplex result = gf_cpu_eval(pr.desc, {0.0, 0.0});
+        CHECK(std::fabs(result.x - 30.0) < 1e-6, "z+30 at z=0 = 30");
+    }
+
+    // Now exceed the limit.
+    std::string big = "z";
+    for (int i = 0; i < 40; ++i) {
+        big = "(" + big + " + 1)";
+    }
+    GFParseResult pr2 = ParseGenericFunctionExpression(big, empty);
+    CHECK(!pr2.ok, "exceeding MAX_GF_NODES should fail");
+    if (!pr2.ok) {
+        CHECK(pr2.error.find("complex") != std::string::npos || pr2.error.find("max") != std::string::npos,
+              "error mentions complexity limit");
+    }
+}
+
+static void test_scientific_notation() {
+    printf("--- test_scientific_notation ---\n");
+    std::map<std::string, double> empty;
+
+    // 1e3 + z at z=(0,0) -> 1000
+    check_eval("1e3 + z", empty, 0.0, 0.0, 1000.0, 0.0, 1e-6, "1e3");
+
+    // 2.5e-2 (= 0.025)
+    check_eval("2.5e-2", empty, 99.0, 99.0, 0.025, 0.0, 1e-10, "2.5e-2");
+}
+
 int main() {
     printf("=== GF-4: Expression parser tests ===\n\n");
 
@@ -264,6 +347,11 @@ int main() {
     test_compose_expression();
     test_parse_errors();
     test_operator_precedence();
+    test_log_conj_abs();
+    test_z_conj_variable();
+    test_negative_exponents();
+    test_max_node_depth();
+    test_scientific_notation();
 
     printf("\n=== GF-4 parser summary: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;

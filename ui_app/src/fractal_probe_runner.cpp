@@ -1594,6 +1594,8 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
         &response.summary.mean_iterations, &response.summary.escape_fraction,
         &response.summary.converged_fraction, &response.summary.nonfinite_fraction, &response.summary.pole_fraction);
     response.summary.best_sequence_index = bestSequenceIndex < 0 ? 0 : bestSequenceIndex;
+    response.summary.mean_abs2 = globalCount > 0 ? globalAbs2Sum / globalCount : 0.0;
+    response.summary.diverged_fraction = globalCount > 0 ? static_cast<double>(globalEscaped) / globalCount : 0.0;
 
     *outResponse = std::move(response);
     return true;

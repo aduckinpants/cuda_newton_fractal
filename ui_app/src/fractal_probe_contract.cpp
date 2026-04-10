@@ -113,7 +113,6 @@ bool IsSupportedMetric(const std::string& metric) {
         "derivative",
         "summary_mean_abs2",
         "summary_diverged_fraction",
-        "summary_nonfinite_fraction",
     };
     return supported.find(metric) != supported.end();
 }
@@ -385,6 +384,12 @@ void AppendSummaryJson(std::ostringstream& ss,
     if (selection.include_summary_best_sequence_index) {
         entries.push_back({"best_sequence_index", std::to_string(summary.best_sequence_index)});
     }
+    if (selection.include_summary_mean_abs2) {
+        entries.push_back({"mean_abs2", DoubleToJson(summary.mean_abs2)});
+    }
+    if (selection.include_summary_diverged_fraction) {
+        entries.push_back({"diverged_fraction", DoubleToJson(summary.diverged_fraction)});
+    }
 
     const std::string pad(static_cast<size_t>(indent), ' ');
     ss << pad << "\"summary\": ";
@@ -592,6 +597,10 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
                 return false;
             }
             const json_min::Object& funcObj = funcIt->second.as_object();
+            if (!RejectUnknownKeys(funcObj,
+                    {"expression", "params", "epsilon", "escape_radius"},
+                    "function",
+                    outError)) return false;
             request.has_function = true;
 
             auto exprIt = funcObj.find("expression");

@@ -128,6 +128,8 @@ struct FractalProbeSummary {
     double converged_fraction{0.0};
     double nonfinite_fraction{0.0};
     double pole_fraction{0.0};
+    double mean_abs2{0.0};
+    double diverged_fraction{0.0};
     int best_sequence_index{-1};
 };
 

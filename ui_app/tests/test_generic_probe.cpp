@@ -339,6 +339,254 @@ int main() {
         passed++;
     }
 
-    std::cout << "test_generic_probe: " << passed << "/9 passed\n";
-    return (passed == 9) ? 0 : 1;
+    // 10. summary_mean_abs2 and summary_diverged_fraction are computed --------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-summary-abs2";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "iterate(z^2, 20)";
+        request.generic_epsilon = 1e-8;
+        request.generic_escape_radius = 4.0;
+        request.metrics = {"status", "summary_mean_abs2", "summary_diverged_fraction"};
+        // z=0.5 should converge (0.5^2=0.25, 0.25^2=0.0625, ...)
+        request.points.push_back({0.5, 0.0});
+        // z=3 should escape immediately (9 > 4)
+        request.points.push_back({3.0, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[10] summary metrics failed: " << error << "\n";
+            return 1;
+        }
+        // summary.mean_abs2 should be non-zero (we have one converged, one escaped).
+        if (response.summary.mean_abs2 <= 0.0) {
+            std::cerr << "[10] mean_abs2 should be positive, got " << response.summary.mean_abs2 << "\n";
+            return 1;
+        }
+        // diverged_fraction: 1 out of 2 escaped.
+        if (!NearlyEqual(response.summary.diverged_fraction, 0.5, 0.01)) {
+            std::cerr << "[10] diverged_fraction=" << response.summary.diverged_fraction << " expected ~0.5\n";
+            return 1;
+        }
+
+        // Verify JSON serialization includes these fields.
+        std::string json = SerializeFractalProbeResponseJson(response);
+        if (json.find("mean_abs2") == std::string::npos) {
+            std::cerr << "[10] JSON missing mean_abs2\n";
+            return 1;
+        }
+        if (json.find("diverged_fraction") == std::string::npos) {
+            std::cerr << "[10] JSON missing diverged_fraction\n";
+            return 1;
+        }
+        std::cout << "[10] summary_mean_abs2/diverged_fraction: passed (mean_abs2=" << response.summary.mean_abs2 << ")\n";
+        passed++;
+    }
+
+    // 11. function block rejects unknown keys (no-implicit-fallback) ----------
+    {
+        std::string badJson = R"({
+  "request_version": 1,
+  "request_id": "gf-bad-func-key",
+  "function_id": "generic.sample",
+  "mode": "point_set",
+  "function": {
+    "expression": "z^2",
+    "expresion_typo": "should fail"
+  },
+  "points": [{"x": 0.0, "y": 0.0}]
+})";
+        FractalProbeRequest request{};
+        std::string error;
+        bool ok = ParseFractalProbeRequestJson(badJson, &request, &error);
+        if (ok) {
+            std::cerr << "[11] function block with unknown key should fail parsing\n";
+            return 1;
+        }
+        if (error.find("expresion_typo") == std::string::npos) {
+            std::cerr << "[11] error should mention the bad key: " << error << "\n";
+            return 1;
+        }
+        std::cout << "[11] function block rejects unknown keys: passed\n";
+        passed++;
+    }
+
+    // 12. derivative is computed for iterate roots ----------------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-derivative";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "iterate(z - (z^3 - 1) / (3 * z^2), 200)";
+        request.generic_epsilon = 1e-10;
+        request.generic_escape_radius = 1000.0;
+        request.metrics = {"derivative", "value"};
+        request.points.push_back({1.1, 0.05});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[12] derivative request failed: " << error << "\n";
+            return 1;
+        }
+        if (response.samples.size() != 1) {
+            std::cerr << "[12] expected 1 sample\n";
+            return 1;
+        }
+        const auto& s = response.samples[0];
+        // At a converged root, the derivative of the Newton step f(z) = z - p(z)/p'(z)
+        // should have |f'(root)| = 0 for a simple root (superlinear convergence).
+        double dmag = std::sqrt(s.derivative_x * s.derivative_x + s.derivative_y * s.derivative_y);
+        // The numerical derivative at a root should be close to 0 for Newton's method.
+        // For z^3-1, f'(z) = 1 - (3z^2 * 3z^2 - (z^3-1)*6z) / (3z^2)^2
+        // At z=1: f'(1) = 1 - (9 - 0)/9 = 0
+        if (dmag > 0.1) {
+            std::cerr << "[12] derivative magnitude at root should be near 0, got " << dmag << "\n";
+            return 1;
+        }
+
+        // Verify JSON has derivative fields.
+        std::string json = SerializeFractalProbeResponseJson(response);
+        if (json.find("derivative_x") == std::string::npos || json.find("derivative_y") == std::string::npos) {
+            std::cerr << "[12] JSON missing derivative_x/derivative_y\n";
+            return 1;
+        }
+        std::cout << "[12] derivative at root: passed (|f'|=" << dmag << ")\n";
+        passed++;
+    }
+
+    // 13. direct eval derivative (non-iterate) --------------------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-direct-deriv";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "z^2";
+        request.metrics = {"value", "derivative"};
+        // d/dz(z^2) = 2z. At z=3: deriv = (6, 0).
+        request.points.push_back({3.0, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[13] direct derivative failed: " << error << "\n";
+            return 1;
+        }
+        const auto& s = response.samples[0];
+        // value should be (9, 0)
+        if (!NearlyEqual(s.final_z_x, 9.0, 1e-6)) {
+            std::cerr << "[13] value_x=" << s.final_z_x << " expected 9\n";
+            return 1;
+        }
+        // derivative should be close to (6, 0)
+        if (!NearlyEqual(s.derivative_x, 6.0, 1e-4)) {
+            std::cerr << "[13] derivative_x=" << s.derivative_x << " expected 6\n";
+            return 1;
+        }
+        if (!NearlyEqual(s.derivative_y, 0.0, 1e-4)) {
+            std::cerr << "[13] derivative_y=" << s.derivative_y << " expected 0\n";
+            return 1;
+        }
+        std::cout << "[13] direct eval derivative: passed (f'(3)=" << s.derivative_x << ")\n";
+        passed++;
+    }
+
+    // 14. z_conj works --------------------------------------------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-zconj";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "z_conj";
+        request.metrics = {"value"};
+        // z = (2, 3), conj = (2, -3)
+        request.points.push_back({2.0, 3.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[14] z_conj failed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(response.samples[0].final_z_x, 2.0, 1e-10) ||
+            !NearlyEqual(response.samples[0].final_z_y, -3.0, 1e-10)) {
+            std::cerr << "[14] z_conj(2+3i)=" << response.samples[0].final_z_x << "+" << response.samples[0].final_z_y << "i\n";
+            return 1;
+        }
+        std::cout << "[14] z_conj: passed\n";
+        passed++;
+    }
+
+    // 15. transcendental: exp(z) at known value -------------------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-exp";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "exp(z)";
+        request.metrics = {"value"};
+        // exp(1 + pi*i) = e * (cos(pi) + i*sin(pi)) = -e + 0i
+        request.points.push_back({1.0, 3.14159265358979});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[15] exp(z) failed: " << error << "\n";
+            return 1;
+        }
+        double e = std::exp(1.0);
+        if (!NearlyEqual(response.samples[0].final_z_x, -e, 1e-6)) {
+            std::cerr << "[15] exp(1+pi*i) real=" << response.samples[0].final_z_x << " expected " << -e << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(response.samples[0].final_z_y, 0.0, 1e-6)) {
+            std::cerr << "[15] exp(1+pi*i) imag=" << response.samples[0].final_z_y << " expected 0\n";
+            return 1;
+        }
+        std::cout << "[15] exp(z): passed\n";
+        passed++;
+    }
+
+    // 16. compose through probe path ------------------------------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-compose-probe";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "compose(z^2, z + 1)";
+        request.metrics = {"value"};
+        // compose(z^2, z+1) at z=2 -> (2+1)^2 = 9
+        request.points.push_back({2.0, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[16] compose failed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(response.samples[0].final_z_x, 9.0, 1e-6)) {
+            std::cerr << "[16] compose(z^2,z+1)(2)=" << response.samples[0].final_z_x << " expected 9\n";
+            return 1;
+        }
+        std::cout << "[16] compose probe: passed\n";
+        passed++;
+    }
+
+    const int total = 16;
+    std::cout << "test_generic_probe: " << passed << "/" << total << " passed\n";
+    return (passed == total) ? 0 : 1;
 }
