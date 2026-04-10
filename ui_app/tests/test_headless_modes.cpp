@@ -918,6 +918,38 @@ bool TestSessionBadRequestPreservesSession() {
     return true;
 }
 
+bool TestSessionBadRequestDoesNotMintStateToken() {
+    std::string goodReq = "{\"request_version\":1,\"request_id\":\"good\",\"mode\":\"point_set\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+    std::string badReq = "{\"request_version\":1,\"request_id\":\"bad\",\"mode\":\"point_set\"}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + badReq + "\n"
+                        + goodReq + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "bad request should not kill session");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 4, "ready + bad_error + good_response + close expected");
+
+    auto bad = ParseJsonLine(lines[1]);
+    auto good = ParseJsonLine(lines[2]);
+    ASSERT(bad.error.empty() && bad.value.is_object(), "bad response should be valid JSON");
+    ASSERT(good.error.empty() && good.value.is_object(), "good response should be valid JSON");
+    ASSERT(bad.value.as_object().find("ok") != bad.value.as_object().end() &&
+            !bad.value.as_object().find("ok")->second.as_bool(),
+        "bad response should be ok=false");
+    ASSERT(bad.value.as_object().find("state_token") == bad.value.as_object().end(),
+        "bad response should not mint a state_token");
+    ASSERT(good.value.as_object().find("state_token") != good.value.as_object().end() &&
+            good.value.as_object().find("state_token")->second.as_string() == "s1",
+        "first successful response after an error should still mint s1");
+    return true;
+}
+
 bool TestSessionUnknownSessionVerb() {
     // Unknown session verb (not open/close) with session field should error.
     std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
@@ -1218,6 +1250,43 @@ bool TestSessionNdjsonSequencePointSetRequest() {
         "each sequence_point_set session batch should contain all requested points");
     ASSERT(summary.value.as_object().find("state_token") != summary.value.as_object().end(),
         "sequence_point_set session ndjson summary should carry state_token");
+    return true;
+}
+
+bool TestSessionNdjsonBadRequestDoesNotMintStateToken() {
+    std::string badReq = "{\"request_version\":1,\"request_id\":\"bad-ndjson\",\"mode\":\"point_set\"," 
+        "\"output_mode\":\"ndjson\"}";
+    std::string goodReq = "{\"request_version\":1,\"request_id\":\"good-ndjson\",\"mode\":\"point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}],"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + badReq + "\n"
+                        + goodReq + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "bad ndjson request should not kill session");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 5, "ready + error + batch + summary + close expected");
+
+    auto bad = ParseJsonLine(lines[1]);
+    auto batch = ParseJsonLine(lines[2]);
+    auto summary = ParseJsonLine(lines[3]);
+    ASSERT(bad.error.empty() && bad.value.is_object(), "bad ndjson fallback should be valid JSON");
+    ASSERT(batch.error.empty() && batch.value.is_object(), "good ndjson batch should be valid JSON");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "good ndjson summary should be valid JSON");
+    ASSERT(bad.value.as_object().find("ok") != bad.value.as_object().end() &&
+            !bad.value.as_object().find("ok")->second.as_bool(),
+        "bad ndjson fallback should be ok=false");
+    ASSERT(bad.value.as_object().find("state_token") == bad.value.as_object().end(),
+        "bad ndjson fallback should not mint a state_token");
+    ASSERT(summary.value.as_object().find("state_token") != summary.value.as_object().end() &&
+            summary.value.as_object().find("state_token")->second.as_string() == "s1",
+        "first successful ndjson summary after an error should still mint s1");
     return true;
 }
 
@@ -1628,12 +1697,14 @@ int main() {
     RUN(TestSessionEofWithoutClose);
     RUN(TestSessionDoubleOpen);
     RUN(TestSessionBadRequestPreservesSession);
+    RUN(TestSessionBadRequestDoesNotMintStateToken);
     RUN(TestSessionUnknownSessionVerb);
     RUN(TestSessionResponseVersionField);
     RUN(TestSessionNdjsonGridRequest);
     RUN(TestSessionNdjsonSummaryOnlyRequest);
     RUN(TestSessionNdjsonSequencePointSetRequest);
     RUN(TestSessionNdjsonSequenceGridBatchesPerSequenceStep);
+    RUN(TestSessionNdjsonBadRequestDoesNotMintStateToken);
 
     // V2-C: MergeOverrides unit tests
     RUN(TestMergeOverridesBothEmpty);

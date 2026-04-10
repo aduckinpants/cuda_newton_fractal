@@ -485,15 +485,18 @@ std::string ProcessSessionLine(const std::string& line,
 emit_response:
     // Stamp response_version=2 and state_token
     response.response_version = 2;
-    (*stateTokenCounter)++;
-    std::string token = MakeStateToken(*stateTokenCounter);
+    std::string token;
+    if (response.ok) {
+        (*stateTokenCounter)++;
+        token = MakeStateToken(*stateTokenCounter);
+    }
     std::string responseJson;
     if (request.output_mode == FractalProbeOutputMode::ndjson && response.ok) {
         responseJson = BuildNdjsonProbeResponse(request, response, token);
     } else {
         responseJson = CompactJson(SerializeFractalProbeResponseJson(response));
         size_t lastBrace = responseJson.rfind('}');
-        if (lastBrace != std::string::npos) {
+        if (!token.empty() && lastBrace != std::string::npos) {
             responseJson.insert(lastBrace, ",\"state_token\":\"" + token + "\"");
         }
     }

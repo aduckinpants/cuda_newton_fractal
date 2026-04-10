@@ -221,6 +221,32 @@ class TestSessionErrorHandling:
         assert lines[2]["ok"] is True
         assert lines[2]["request_id"] == "good"
 
+    def test_bad_request_does_not_mint_state_token(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        good_req = json.dumps({
+            "request_version": 1, "request_id": "good", "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [{"x": 0.5, "y": 0.3}],
+        })
+        bad_req = json.dumps({
+            "request_version": 1, "request_id": "bad", "mode": "point_set",
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            bad_req,
+            good_req,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 4
+        assert lines[1]["ok"] is False
+        assert "state_token" not in lines[1]
+        assert lines[2]["ok"] is True
+        assert lines[2]["state_token"] == "s1"
+
     def test_eof_without_close_returns_error(self) -> None:
         if sys.platform != "win32":
             pytest.skip("session mode is Windows-only")
@@ -573,4 +599,39 @@ class TestSessionNdjsonMode:
         assert lines[3]["ok"] is True
         assert lines[3]["request_id"] == "session-followup-json"
         assert lines[3]["runtime"]["fractal_type"] == "mandelbrot"
+        assert lines[4]["session"] == "closed"
+
+    def test_bad_ndjson_request_does_not_mint_state_token(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        bad_request = json.dumps({
+            "request_version": 1,
+            "request_id": "bad-ndjson",
+            "mode": "point_set",
+            "output_mode": "ndjson",
+        })
+        good_request = json.dumps({
+            "request_version": 1,
+            "request_id": "good-ndjson",
+            "mode": "point_set",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [{"x": 0.5, "y": 0.3}],
+            "metrics": ["iterations", "status", "summary_mean_iterations"],
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            bad_request,
+            good_request,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 5  # ready + error + batch + summary + close
+        assert lines[1]["ok"] is False
+        assert "state_token" not in lines[1]
+        assert lines[2]["type"] == "sample_batch"
+        assert lines[3]["type"] == "summary"
+        assert lines[3]["state_token"] == "s1"
         assert lines[4]["session"] == "closed"
