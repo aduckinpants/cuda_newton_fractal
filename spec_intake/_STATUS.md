@@ -37,7 +37,7 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
 | OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, cost/sensitivity tables, variant crossfade; Phase 1 feeds kernel extraction validation | No external deps (Phase 1); CUDA sample_fn K1-K3 (Phase 2) |
-| CliBridgeV2_GpuSampleFn | **K1-K4 DONE.** K5 (shared lib target) next. CLI session V2 (batch, keep-alive, param diff, NDJSON) follows. | K5 is next; V2-A depends on K3 (done) |
+| CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE.** Kernel extraction complete. CLI session V2 (batch, keep-alive, param diff, NDJSON) is next. | V2-A is next unblocked slice |
 | ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 (done) + Optimization Staging Phase 2 |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)

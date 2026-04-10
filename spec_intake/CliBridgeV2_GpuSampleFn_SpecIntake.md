@@ -117,7 +117,7 @@ etc.) so that:
 | K2 | Add `fractal_sample_kernel<<<>>>()` launch wrapper + `SampleFractalPoints()` host API | Grid launch produces correct SampleResult buffer; host API manages device memory | **DONE** (e3ac63e, net -1403 lines) |
 | K3 | *(Delivered in K2)* | `SampleFractalPoints()` landed as part of K2 | **DONE** |
 | K4 | Headless equivalence test: sample API vs. renderer | 256x256 grid for all 37 types; results match within float epsilon; per-type diagnostics | **DONE** (0e7dc32 + bf857be) |
-| K5 | Shared CUDA core linkage target (static lib / object) | salticid-cuda can link against fractal_sample_kernel | |
+| K5 | Shared CUDA core linkage target (static lib / object) | salticid-cuda can link against fractal_sample_kernel | **DONE** (3e0a798) |
 
 ### 1.5.1 K4 diagnostic findings (investigation backlog)
 
@@ -262,7 +262,7 @@ These rules apply to both the GPU-resident device function and the CLI bridge:
 |-------------|-------|
 | CLI Bridge V2 session protocol (V2-A through V2-G) | **This repo** |
 | CUDA-resident `fractal_sample_device()` kernel extraction (K1-K4) | **This repo** (DONE) |
-| Shared CUDA core linkage target (K5) | **This repo** |
+| Shared CUDA core linkage target (K5) | **This repo** (DONE) |
 | Describe surface extensions (cost, sensitivity) | **This repo** |
 | Plugin loader for dynamic .cubin registration (E4, deferred) | **This repo** |
 | Shared CUDA core integration + native adapter | **salticid-cuda** (G1-G2) |
