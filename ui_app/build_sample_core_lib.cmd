@@ -37,9 +37,20 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo --- Compiling generic_sample_core.cu ---
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I.\src ^
+  -c .\src\generic_sample_core.cu -o "%OUTDIR%\generic_sample_core.obj"
+if errorlevel 1 (
+  echo FAIL: generic_sample_core.cu compilation failed.
+  exit /b 1
+)
+
 echo --- Creating fractal_sample_core.lib ---
 lib /nologo /OUT:"%OUTDIR%\fractal_sample_core.lib" ^
-  "%OUTDIR%\fractal_sample_core.obj" "%OUTDIR%\sample_tier_resolver.obj"
+  "%OUTDIR%\fractal_sample_core.obj" "%OUTDIR%\sample_tier_resolver.obj" "%OUTDIR%\generic_sample_core.obj"
 if errorlevel 1 (
   echo FAIL: lib.exe failed.
   exit /b 1

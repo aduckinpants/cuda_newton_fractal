@@ -55,6 +55,11 @@ struct GenericFunctionDesc {
     int max_iterate;      // Max iterations for gf_iterate nodes (default 1)
 };
 
+// Coordinate struct for host API (same layout as CUDA double2).
+struct GFPoint {
+    double x, y;
+};
+
 struct GenericSampleResult {
     double value_x;       // Re(f(z))
     double value_y;       // Im(f(z))
