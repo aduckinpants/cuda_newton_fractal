@@ -236,3 +236,186 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     }
     return 0;
 }
+
+// --- Session mode (V2-B) ---
+
+static std::string MakeStateToken(int counter) {
+    return "s" + std::to_string(counter);
+}
+
+// Escape a string for JSON embedding (minimal: quotes, backslash, control chars).
+static std::string JsonEscapeString(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (char c : s) {
+        switch (c) {
+            case '"':  out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (static_cast<unsigned char>(c) < 0x20) {
+                    char buf[8];
+                    std::snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
+                    out += buf;
+                } else {
+                    out += c;
+                }
+        }
+    }
+    return out;
+}
+
+static std::string BuildSessionError(const std::string& error) {
+    return "{\"ok\":false,\"error\":\"" + JsonEscapeString(error) + "\"}";
+}
+
+// Compact pretty-printed JSON to a single line (for session NDJSON output).
+static std::string CompactJson(const std::string& json) {
+    std::string result;
+    result.reserve(json.size());
+    bool inString = false;
+    bool prevBackslash = false;
+    for (size_t i = 0; i < json.size(); ++i) {
+        char c = json[i];
+        if (inString) {
+            result += c;
+            if (c == '\\' && !prevBackslash) { prevBackslash = true; continue; }
+            if (c == '"' && !prevBackslash) inString = false;
+            prevBackslash = false;
+        } else {
+            if (c == '"') { inString = true; result += c; }
+            else if (c == '\n' || c == '\r' || c == ' ' || c == '\t') { /* skip whitespace outside strings */ }
+            else { result += c; }
+        }
+    }
+    return result;
+}
+
+std::string ProcessSessionLine(const std::string& line,
+    bool* sessionOpen,
+    bool* sessionDone,
+    int* stateTokenCounter,
+    const std::string& exePath) {
+
+    // Skip empty/whitespace lines
+    bool allWhitespace = true;
+    for (char c : line) {
+        if (c != ' ' && c != '\t' && c != '\r' && c != '\n') { allWhitespace = false; break; }
+    }
+    if (line.empty() || allWhitespace) return {};
+
+    // Parse JSON
+    json_min::ParseResult parsed = json_min::Parse(line);
+    if (!parsed.error.empty()) {
+        if (!*sessionOpen) {
+            *sessionDone = true;
+            return BuildSessionError("session not open and line is not valid JSON: " + parsed.error);
+        }
+        return BuildSessionError("JSON parse error: " + parsed.error);
+    }
+
+    if (!parsed.value.is_object()) {
+        if (!*sessionOpen) {
+            *sessionDone = true;
+            return BuildSessionError("session not open and line is not a JSON object");
+        }
+        return BuildSessionError("session line must be a JSON object");
+    }
+
+    const auto& obj = parsed.value.as_object();
+
+    // Check for session control message
+    auto sessIt = obj.find("session");
+    if (sessIt != obj.end() && sessIt->second.is_string()) {
+        const std::string& verb = sessIt->second.as_string();
+
+        if (verb == "open") {
+            if (*sessionOpen) {
+                return BuildSessionError("session already open");
+            }
+            *sessionOpen = true;
+            std::string token = MakeStateToken(*stateTokenCounter);
+            return "{\"session\":\"ready\",\"state_token\":\"" + token + "\",\"engine_version\":2}";
+        }
+
+        if (verb == "close") {
+            *sessionDone = true;
+            return "{\"session\":\"closed\"}";
+        }
+
+        // Unknown session verb
+        return BuildSessionError("unknown session verb: " + verb);
+    }
+
+    // Not a session control message — treat as sample request
+    if (!*sessionOpen) {
+        *sessionDone = true;
+        return BuildSessionError("session not open");
+    }
+
+    // Parse and execute the probe request
+    FractalProbeRequest request;
+    std::string reqError;
+    FractalProbeResponse response;
+
+    if (!ParseFractalProbeRequestFromValue(parsed.value, &request, &reqError)) {
+        std::string failedRequestId;
+        auto idIt = obj.find("request_id");
+        if (idIt != obj.end() && idIt->second.is_string()) {
+            failedRequestId = idIt->second.as_string();
+        }
+        response = BuildProbeErrorResponse(failedRequestId, exePath, FractalProbeOperatorContext{}, reqError);
+    } else {
+        std::string runError;
+        if (!RunFractalProbeRequest(request, exePath, &response, &runError)) {
+            response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, runError);
+        }
+    }
+
+    // Stamp response_version=2 and state_token
+    response.response_version = 2;
+    (*stateTokenCounter)++;
+    std::string responseJson = CompactJson(SerializeFractalProbeResponseJson(response));
+
+    // Inject state_token into the serialized JSON (just before the closing brace)
+    std::string token = MakeStateToken(*stateTokenCounter);
+    size_t lastBrace = responseJson.rfind('}');
+    if (lastBrace != std::string::npos) {
+        responseJson.insert(lastBrace, ",\"state_token\":\"" + token + "\"");
+    }
+
+    return responseJson;
+}
+
+int RunSessionMode(std::istream& in, std::ostream& out, const std::string& exePath) {
+    bool sessionOpen = false;
+    bool sessionDone = false;
+    int stateTokenCounter = 0;
+
+    std::string line;
+    while (std::getline(in, line)) {
+        // Strip trailing \r from CRLF
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+
+        std::string response = ProcessSessionLine(line, &sessionOpen, &sessionDone,
+            &stateTokenCounter, exePath);
+
+        if (!response.empty()) {
+            out << response << "\n";
+            out.flush();
+        }
+
+        if (sessionDone) {
+            // If the session was never opened, this is an error exit
+            return sessionOpen ? 0 : 1;
+        }
+    }
+
+    // EOF without close
+    if (sessionOpen) {
+        return 1;
+    }
+    return 1;
+}

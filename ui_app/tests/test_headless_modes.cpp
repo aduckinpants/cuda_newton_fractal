@@ -1,9 +1,11 @@
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <Windows.h>
 #include "../src/headless_modes.h"
+#include "../src/json_min.h"
 
 static int g_passed = 0;
 static int g_failed = 0;
@@ -325,6 +327,431 @@ bool TestSampleModeSingleObjectStillReturnsSingleObject() {
     return true;
 }
 
+// --- V2-B: Session mode ---
+
+// Helper: parse JSON line and return the parsed object.
+static json_min::ParseResult ParseJsonLine(const std::string& line) {
+    return json_min::Parse(line);
+}
+
+// Helper: run a full session exchange via RunSessionMode with stringstreams.
+static int RunSessionWithStrings(const std::string& input, std::string* output) {
+    std::istringstream in(input);
+    std::ostringstream out;
+    int rc = RunSessionMode(in, out, kExePath);
+    *output = out.str();
+    return rc;
+}
+
+// Helper: split output into lines (skipping empty trailing line from final newline).
+static std::vector<std::string> SplitLines(const std::string& text) {
+    std::vector<std::string> lines;
+    std::istringstream stream(text);
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (!line.empty()) lines.push_back(line);
+    }
+    return lines;
+}
+
+bool TestSessionOpenReady() {
+    // Client sends open, gets ready response.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "clean open+close should return 0");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 2, "should have ready + close-ack lines");
+
+    auto p0 = ParseJsonLine(lines[0]);
+    ASSERT(p0.error.empty(), "ready response should be valid JSON");
+    ASSERT(p0.value.is_object(), "ready response should be an object");
+    auto& obj = p0.value.as_object();
+    auto sessIt = obj.find("session");
+    ASSERT(sessIt != obj.end() && sessIt->second.is_string() && sessIt->second.as_string() == "ready",
+        "session field should be 'ready'");
+    auto tokIt = obj.find("state_token");
+    ASSERT(tokIt != obj.end() && tokIt->second.is_string(),
+        "ready response must include state_token");
+    auto verIt = obj.find("engine_version");
+    ASSERT(verIt != obj.end() && verIt->second.is_number(),
+        "ready response must include engine_version");
+    ASSERT(verIt->second.as_number() == 2.0, "engine_version should be 2");
+    return true;
+}
+
+bool TestSessionCloseAck() {
+    // After close, engine should emit an ack line.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "clean session should return 0");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() >= 2, "need at least ready + close-ack");
+    auto pLast = ParseJsonLine(lines.back());
+    ASSERT(pLast.error.empty(), "close-ack should be valid JSON");
+    auto& obj = pLast.value.as_object();
+    auto sessIt = obj.find("session");
+    ASSERT(sessIt != obj.end() && sessIt->second.is_string() && sessIt->second.as_string() == "closed",
+        "close ack session field should be 'closed'");
+    return true;
+}
+
+bool TestSessionSingleRequest() {
+    // Open, one sample request, close.
+    std::string reqLine = "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + reqLine + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session with valid request should return 0");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "should have ready + response + close-ack");
+
+    // Parse the sample response (line 1)
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.error.empty(), "sample response should be valid JSON");
+    ASSERT(p1.value.is_object(), "sample response should be an object");
+    auto& resp = p1.value.as_object();
+    auto okIt = resp.find("ok");
+    ASSERT(okIt != resp.end() && okIt->second.is_bool() && okIt->second.as_bool(),
+        "sample response ok should be true");
+    auto idIt = resp.find("request_id");
+    ASSERT(idIt != resp.end() && idIt->second.is_string() && idIt->second.as_string() == "r1",
+        "request_id should echo back r1");
+    auto tokIt = resp.find("state_token");
+    ASSERT(tokIt != resp.end() && tokIt->second.is_string(),
+        "sample response must include state_token");
+    return true;
+}
+
+bool TestSessionStateTokenIncrements() {
+    // Two requests — state_token should change.
+    std::string req = "{\"request_version\":1,\"request_id\":\"rX\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + req + "\n" + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "two-request session should return 0");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 4, "ready + 2 responses + close-ack");
+
+    // Extract state_tokens from ready, resp1, resp2
+    auto getToken = [](const std::string& line) -> std::string {
+        auto p = json_min::Parse(line);
+        if (!p.error.empty() || !p.value.is_object()) return "";
+        auto it = p.value.as_object().find("state_token");
+        if (it == p.value.as_object().end() || !it->second.is_string()) return "";
+        return it->second.as_string();
+    };
+
+    std::string t0 = getToken(lines[0]);
+    std::string t1 = getToken(lines[1]);
+    std::string t2 = getToken(lines[2]);
+    ASSERT(!t0.empty() && !t1.empty() && !t2.empty(), "all responses must have state_token");
+    ASSERT(t0 != t1, "token should change after first request");
+    ASSERT(t1 != t2, "token should change after second request");
+    return true;
+}
+
+bool TestSessionRequestWithoutOpen() {
+    // Sending a sample request without opening first should error.
+    std::string input = "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 1, "request without open should return error");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() >= 1, "should have at least one error line");
+    auto p = ParseJsonLine(lines[0]);
+    ASSERT(p.error.empty() && p.value.is_object(), "error line should be valid JSON object");
+    auto& obj = p.value.as_object();
+    auto okIt = obj.find("ok");
+    ASSERT(okIt != obj.end() && okIt->second.is_bool() && !okIt->second.as_bool(),
+        "ok should be false for session-not-open error");
+    auto errIt = obj.find("error");
+    ASSERT(errIt != obj.end() && errIt->second.is_string() && !errIt->second.as_string().empty(),
+        "should have error message");
+    return true;
+}
+
+bool TestSessionMalformedJsonLine() {
+    // Malformed JSON in session should produce error response, not crash.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        "not valid json {{{{\n"
+                        "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "malformed request followed by close should still close cleanly");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + error_response + close-ack");
+
+    // The error response (line 1)
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.error.empty() && p1.value.is_object(), "error response should be valid JSON");
+    auto& obj = p1.value.as_object();
+    auto okIt = obj.find("ok");
+    ASSERT(okIt != obj.end() && okIt->second.is_bool() && !okIt->second.as_bool(),
+        "ok should be false for parse error");
+    return true;
+}
+
+bool TestSessionEmptyLines() {
+    // Empty and whitespace-only lines should be silently skipped.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        "\n"
+                        "   \n"
+                        "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "empty lines should be skipped cleanly");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 2, "ready + close-ack only (no output for blank lines)");
+    return true;
+}
+
+bool TestSessionEofWithoutClose() {
+    // If stdin hits EOF without close, treat as unclean exit.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 1, "EOF without close should return error");
+    return true;
+}
+
+bool TestSessionDoubleOpen() {
+    // Sending open twice should error on the second open.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        "{\"session\":\"open\",\"request_id\":\"init2\"}\n"
+                        "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    // Session should still close cleanly but the second open produced an error response
+    ASSERT(rc == 0, "double open should still close cleanly");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + error_from_double_open + close-ack");
+
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.error.empty() && p1.value.is_object(), "double-open error should be valid JSON");
+    auto okIt = p1.value.as_object().find("ok");
+    ASSERT(okIt != p1.value.as_object().end() && okIt->second.is_bool() && !okIt->second.as_bool(),
+        "ok should be false for double-open");
+    return true;
+}
+
+bool TestSessionBadRequestPreservesSession() {
+    // A bad request should produce an error response but the session stays open for next request.
+    std::string goodReq = "{\"request_version\":1,\"request_id\":\"good\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+    // Bad: missing required fields
+    std::string badReq = "{\"request_version\":1,\"request_id\":\"bad\",\"mode\":\"point_set\"}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + badReq + "\n"
+                        + goodReq + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "bad request shouldn't kill session");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 4, "ready + bad_error + good_response + close-ack");
+
+    // bad request should fail
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.value.is_object(), "bad response should be JSON object");
+    auto ok1 = p1.value.as_object().find("ok");
+    ASSERT(ok1 != p1.value.as_object().end() && !ok1->second.as_bool(), "bad request ok=false");
+
+    // good request should succeed
+    auto p2 = ParseJsonLine(lines[2]);
+    ASSERT(p2.value.is_object(), "good response should be JSON object");
+    auto ok2 = p2.value.as_object().find("ok");
+    ASSERT(ok2 != p2.value.as_object().end() && ok2->second.as_bool(), "good request ok=true");
+    return true;
+}
+
+bool TestSessionUnknownSessionVerb() {
+    // Unknown session verb (not open/close) with session field should error.
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        "{\"session\":\"reset\"}\n"
+                        "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "unknown session verb shouldn't crash");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + error + close-ack");
+
+    auto p1 = ParseJsonLine(lines[1]);
+    ASSERT(p1.value.is_object(), "error response should be JSON object");
+    auto okIt = p1.value.as_object().find("ok");
+    ASSERT(okIt != p1.value.as_object().end() && !okIt->second.as_bool(),
+        "unknown session verb should produce ok=false");
+    return true;
+}
+
+bool TestProcessSessionLineOpen() {
+    bool sessionOpen = false;
+    bool sessionDone = false;
+    int counter = 0;
+    std::string result = ProcessSessionLine(
+        "{\"session\":\"open\",\"request_id\":\"init\"}",
+        &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(!result.empty(), "open should produce a response");
+    ASSERT(sessionOpen, "sessionOpen should be set true");
+    ASSERT(!sessionDone, "sessionDone should be false after open");
+
+    auto p = json_min::Parse(result);
+    ASSERT(p.error.empty() && p.value.is_object(), "open response should be valid JSON");
+    auto& obj = p.value.as_object();
+    {
+        auto it = obj.find("session");
+        ASSERT(it != obj.end() && it->second.as_string() == "ready",
+            "should be session=ready");
+    }
+    ASSERT(obj.find("state_token") != obj.end(), "must have state_token");
+    return true;
+}
+
+bool TestProcessSessionLineClose() {
+    bool sessionOpen = true;
+    bool sessionDone = false;
+    int counter = 1;
+    std::string result = ProcessSessionLine(
+        "{\"session\":\"close\"}",
+        &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(!result.empty(), "close should produce a response");
+    ASSERT(sessionDone, "sessionDone should be true after close");
+
+    auto p = json_min::Parse(result);
+    ASSERT(p.error.empty() && p.value.is_object(), "close response should be valid JSON");
+    auto& obj = p.value.as_object();
+    {
+        auto it = obj.find("session");
+        ASSERT(it != obj.end() && it->second.as_string() == "closed",
+            "should be session=closed");
+    }
+    return true;
+}
+
+bool TestProcessSessionLineEmptyReturnsEmpty() {
+    bool sessionOpen = true;
+    bool sessionDone = false;
+    int counter = 0;
+    std::string result = ProcessSessionLine("", &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(result.empty(), "empty line should return empty string");
+    ASSERT(!sessionDone, "empty line should not end session");
+    result = ProcessSessionLine("   ", &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(result.empty(), "whitespace-only line should return empty string");
+    return true;
+}
+
+bool TestProcessSessionLineRequestNotOpen() {
+    bool sessionOpen = false;
+    bool sessionDone = false;
+    int counter = 0;
+    std::string result = ProcessSessionLine(
+        "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}",
+        &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(!result.empty(), "should produce error response");
+    ASSERT(sessionDone, "session should end on not-open request");
+
+    auto p = json_min::Parse(result);
+    ASSERT(p.error.empty() && p.value.is_object(), "error should be valid JSON");
+    auto okIt = p.value.as_object().find("ok");
+    ASSERT(okIt != p.value.as_object().end() && !okIt->second.as_bool(), "ok should be false");
+    return true;
+}
+
+bool TestProcessSessionLineValidRequest() {
+    bool sessionOpen = true;
+    bool sessionDone = false;
+    int counter = 1;
+    std::string result = ProcessSessionLine(
+        "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}",
+        &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(!result.empty(), "valid request should produce a response");
+    ASSERT(!sessionDone, "session should remain open");
+    ASSERT(counter == 2, "state token counter should increment");
+
+    auto p = json_min::Parse(result);
+    ASSERT(p.error.empty() && p.value.is_object(), "response should be valid JSON");
+    auto& obj = p.value.as_object();
+    auto okIt = obj.find("ok");
+    ASSERT(okIt != obj.end() && okIt->second.as_bool(), "ok should be true");
+    auto tokIt = obj.find("state_token");
+    ASSERT(tokIt != obj.end() && tokIt->second.is_string(), "must have state_token");
+    ASSERT(tokIt->second.as_string() == "s2", "token should be s2 (counter was 1, now 2)");
+    return true;
+}
+
+bool TestProcessSessionLineMalformedJson() {
+    bool sessionOpen = true;
+    bool sessionDone = false;
+    int counter = 1;
+    std::string result = ProcessSessionLine(
+        "not valid json {{{{",
+        &sessionOpen, &sessionDone, &counter, kExePath);
+    ASSERT(!result.empty(), "malformed JSON should produce error response");
+    ASSERT(!sessionDone, "session should stay open after parse error");
+
+    auto p = json_min::Parse(result);
+    ASSERT(p.error.empty() && p.value.is_object(), "error response should be valid JSON");
+    auto okIt = p.value.as_object().find("ok");
+    ASSERT(okIt != p.value.as_object().end() && !okIt->second.as_bool(), "ok should be false");
+    return true;
+}
+
+bool TestSessionResponseVersionField() {
+    // All sample responses in session mode should have response_version: 2.
+    std::string req = "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 3, "ready + response + close-ack");
+
+    auto p = ParseJsonLine(lines[1]);
+    ASSERT(p.value.is_object(), "response should be JSON object");
+    auto verIt = p.value.as_object().find("response_version");
+    ASSERT(verIt != p.value.as_object().end() && verIt->second.is_number(),
+        "response should have response_version");
+    ASSERT(verIt->second.as_number() == 2.0, "response_version should be 2");
+    return true;
+}
+
 #define RUN(fn) do { \
     if (fn()) { std::fprintf(stderr, "  PASS: %s\n", #fn); } \
     else { std::fprintf(stderr, "  FAIL: %s\n", #fn); } \
@@ -351,6 +778,28 @@ int main() {
     RUN(TestSampleModeBatchEmptyArray);
     RUN(TestSampleModeRootNotObjectOrArray);
     RUN(TestSampleModeSingleObjectStillReturnsSingleObject);
+
+    // V2-B: Session mode — ProcessSessionLine unit tests
+    RUN(TestProcessSessionLineOpen);
+    RUN(TestProcessSessionLineClose);
+    RUN(TestProcessSessionLineEmptyReturnsEmpty);
+    RUN(TestProcessSessionLineRequestNotOpen);
+    RUN(TestProcessSessionLineValidRequest);
+    RUN(TestProcessSessionLineMalformedJson);
+
+    // V2-B: Session mode — RunSessionMode integration tests
+    RUN(TestSessionOpenReady);
+    RUN(TestSessionCloseAck);
+    RUN(TestSessionSingleRequest);
+    RUN(TestSessionStateTokenIncrements);
+    RUN(TestSessionRequestWithoutOpen);
+    RUN(TestSessionMalformedJsonLine);
+    RUN(TestSessionEmptyLines);
+    RUN(TestSessionEofWithoutClose);
+    RUN(TestSessionDoubleOpen);
+    RUN(TestSessionBadRequestPreservesSession);
+    RUN(TestSessionUnknownSessionVerb);
+    RUN(TestSessionResponseVersionField);
 
     std::fprintf(stderr, "test_headless_modes: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

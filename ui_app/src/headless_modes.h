@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -40,3 +41,22 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath);
 // Returns 0 on success, 1 on error.
 int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     const std::vector<std::string>& schemaCandidates);
+
+// --- Session mode (V2-B) ---
+
+// Process a single session line given current state.  Returns the JSON
+// response line (without trailing newline).  Sets *sessionDone = true
+// when the session should exit.
+// stateTokenCounter is the monotonic counter for state_token generation.
+// Returns empty string if line was empty/whitespace (caller should skip).
+std::string ProcessSessionLine(const std::string& line,
+    bool* sessionOpen,
+    bool* sessionDone,
+    int* stateTokenCounter,
+    const std::string& exePath);
+
+// Run session mode reading from `in` and writing to `out`.
+// Each request/response is a single JSON line.
+// Returns 0 on clean close, 1 on error.
+int RunSessionMode(std::istream& in, std::ostream& out,
+    const std::string& exePath);

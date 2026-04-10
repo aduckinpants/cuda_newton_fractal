@@ -996,6 +996,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     { int rc = ParseViewerCli(args, &cli); if (rc != 0) return rc; }
     const std::string exePath = GetExePath();
 
+    if (cli.sample_session) {
+        if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
+            cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
+            std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
+            return 1;
+        }
+        return RunSessionMode(std::cin, std::cout, exePath);
+    }
+
     if (cli.any_sample_mode_arg) {
         return RunSampleMode(BuildSampleModeArgs(cli), exePath);
     }

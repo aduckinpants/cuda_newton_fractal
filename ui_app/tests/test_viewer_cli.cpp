@@ -174,6 +174,24 @@ static void TestDescribeFunctionsJson() {
     Check(cli.describe_functions_json_path == "out.json", "TestDescribeFunctionsJson_Path");
 }
 
+static void TestSampleSession() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({ "--sample-session" }), &cli);
+    Check(rc == 0, "TestSampleSession_ReturnCode");
+    Check(cli.sample_session, "TestSampleSession_Flag");
+    // --sample-session is independent of the legacy sample mode args
+    Check(!cli.any_sample_mode_arg, "TestSampleSession_NotAnySampleMode");
+}
+
+static void TestSampleSessionConflictsWithSampleRequest() {
+    // --sample-session + --sample-request-stdin should both parse, but WinMain validates conflicts
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({ "--sample-session", "--sample-request-stdin" }), &cli);
+    Check(rc == 0, "TestSampleSessionConflict_ReturnCode");
+    Check(cli.sample_session, "TestSampleSessionConflict_Session");
+    Check(cli.sample_request_stdin, "TestSampleSessionConflict_Stdin");
+}
+
 static void TestDescribeFunctionsJsonMissingValue() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--describe-functions-json"}), &cli);
@@ -298,6 +316,8 @@ int main() {
     TestSweepConfigIncomplete();
     TestSampleModeStdio();
     TestSampleModeJsonPaths();
+    TestSampleSession();
+    TestSampleSessionConflictsWithSampleRequest();
     TestDescribeFunctionsJson();
     TestDescribeFunctionsJsonMissingValue();
     TestLoadStateJson();

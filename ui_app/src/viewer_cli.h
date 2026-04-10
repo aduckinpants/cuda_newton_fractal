@@ -25,6 +25,9 @@ struct ViewerCliArgs {
     std::string sample_request_json_path;
     std::string sample_response_json_path;
 
+    // Session mode (V2-B)
+    bool sample_session = false;
+
     // Describe-functions
     bool have_describe_functions_json = false;
     std::string describe_functions_json_path;
