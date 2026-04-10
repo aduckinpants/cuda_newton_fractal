@@ -413,3 +413,90 @@ class TestSessionNdjsonMode:
         assert lines[3]["cost"]["sample_count"] == 4
         assert "state_token" in lines[3]
         assert lines[4]["session"] == "closed"
+
+    def test_sequence_grid_streams_batches_per_sequence_step(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        request = json.dumps({
+            "request_version": 1,
+            "request_id": "session-ndjson-sequence-grid",
+            "mode": "sequence_grid",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "region": {
+                "center_x": -0.75,
+                "center_y": 0.0,
+                "span_x": 0.5,
+                "span_y": 0.5,
+                "grid_width": 2,
+                "grid_height": 2,
+            },
+            "sequence": {
+                "zip_paths": True,
+                "vary": [
+                    {"path": "fractal.view.zoom", "values": [1.0, 2.0]},
+                ],
+            },
+            "metrics": ["iterations", "status", "summary_mean_iterations"],
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            request,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 5  # ready + 2 sequence batches + summary + close
+        assert lines[0]["session"] == "ready"
+        assert lines[1]["type"] == "sample_batch"
+        assert lines[2]["type"] == "sample_batch"
+        assert lines[1]["sequence_index"] == 0
+        assert lines[2]["sequence_index"] == 1
+        assert "row_index" not in lines[1]
+        assert "row_index" not in lines[2]
+        assert len(lines[1]["samples"]) == 4
+        assert len(lines[2]["samples"]) == 4
+        assert lines[3]["type"] == "summary"
+        assert lines[3]["cost"]["sample_count"] == 8
+        assert "state_token" in lines[3]
+        assert lines[4]["session"] == "closed"
+
+    def test_ndjson_summary_state_token_carries_forward(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        first_request = json.dumps({
+            "request_version": 1,
+            "request_id": "session-ndjson-point-set",
+            "mode": "point_set",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "points": [{"x": -0.5, "y": 0.0}],
+            "metrics": ["iterations", "status", "summary_mean_iterations"],
+        })
+        second_request = json.dumps({
+            "request_version": 1,
+            "request_id": "session-followup-json",
+            "state_token": "s1",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.view.zoom", "value": 2.0}],
+            "points": [{"x": -0.5, "y": 0.0}],
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            first_request,
+            second_request,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 5  # ready + ndjson batch + ndjson summary + json response + close
+        assert lines[0]["session"] == "ready"
+        assert lines[1]["type"] == "sample_batch"
+        assert lines[2]["type"] == "summary"
+        assert lines[2]["state_token"] == "s1"
+        assert lines[3]["ok"] is True
+        assert lines[3]["request_id"] == "session-followup-json"
+        assert lines[3]["runtime"]["fractal_type"] == "mandelbrot"
+        assert lines[4]["session"] == "closed"

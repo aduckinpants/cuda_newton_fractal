@@ -94,7 +94,7 @@ bool EmitProbeResponse(const std::string& responseJson,
 }
 
 bool UsesGridRows(FractalProbeMode mode) {
-    return mode == FractalProbeMode::grid || mode == FractalProbeMode::sequence_grid;
+    return mode == FractalProbeMode::grid;
 }
 
 bool EmitSampleModeResponse(const SampleModeArgs& args,

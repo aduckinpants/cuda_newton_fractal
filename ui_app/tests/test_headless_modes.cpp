@@ -10,6 +10,9 @@
 static int g_passed = 0;
 static int g_failed = 0;
 
+static json_min::ParseResult ParseJsonLine(const std::string& line);
+static std::vector<std::string> SplitLines(const std::string& text);
+
 #define ASSERT(cond, msg) \
     do { \
         if (!(cond)) { \
@@ -321,6 +324,317 @@ bool TestSampleModeSingleObjectStillReturnsSingleObject() {
     ASSERT(!respText.empty(), "response file should exist");
     // Must be a JSON object, not array
     ASSERT(respText.front() == '{', "V1 single-object response must be an object, not array");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeNdjsonGridResponse() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_grid_req.json");
+    args.response_json_path = TempPath("ndjson_grid_resp.ndjson");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"ndjson-grid\",\"mode\":\"grid\","
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"region\":{\"center_x\":-0.75,\"center_y\":0.0,\"span_x\":0.5,\"span_y\":0.5,\"grid_width\":2,\"grid_height\":2},"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "ndjson grid request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto lines = SplitLines(respText);
+    ASSERT(lines.size() == 3, "2 grid rows + 1 summary line expected");
+
+    auto batch0 = ParseJsonLine(lines[0]);
+    auto batch1 = ParseJsonLine(lines[1]);
+    auto summary = ParseJsonLine(lines[2]);
+    ASSERT(batch0.error.empty() && batch0.value.is_object(), "batch line 0 should be valid JSON object");
+    ASSERT(batch1.error.empty() && batch1.value.is_object(), "batch line 1 should be valid JSON object");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary line should be valid JSON object");
+
+    ASSERT(batch0.value.as_object().find("type") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "first line should be sample_batch");
+    ASSERT(batch1.value.as_object().find("type") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "second line should be sample_batch");
+    ASSERT(summary.value.as_object().find("type") != summary.value.as_object().end() &&
+            summary.value.as_object().find("type")->second.as_string() == "summary",
+        "last line should be summary");
+    ASSERT(summary.value.as_object().find("cost") != summary.value.as_object().end(),
+        "summary line should include cost metadata");
+    ASSERT(summary.value.as_object().find("summary") != summary.value.as_object().end(),
+        "summary line should include summary object");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeNdjsonPointSetSingleBatchAndMetricFiltering() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_point_set_req.json");
+    args.response_json_path = TempPath("ndjson_point_set_resp.ndjson");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"ndjson-point-set\",\"mode\":\"point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3},{\"x\":-0.5,\"y\":0.0}],"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "ndjson point_set request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto lines = SplitLines(respText);
+    ASSERT(lines.size() == 2, "point_set ndjson should emit one sample batch plus summary");
+
+    auto batch = ParseJsonLine(lines[0]);
+    auto summary = ParseJsonLine(lines[1]);
+    ASSERT(batch.error.empty() && batch.value.is_object(), "point_set batch should be valid JSON object");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "point_set summary should be valid JSON object");
+
+    const auto& batchObj = batch.value.as_object();
+    ASSERT(batchObj.find("type") != batchObj.end() && batchObj.find("type")->second.as_string() == "sample_batch",
+        "point_set first line should be sample_batch");
+    ASSERT(batchObj.find("request_id") != batchObj.end() && batchObj.find("request_id")->second.as_string() == "ndjson-point-set",
+        "point_set batch should carry request_id");
+    ASSERT(batchObj.find("function_id") != batchObj.end() && batchObj.find("function_id")->second.as_string() == "fractal.sample",
+        "point_set batch should carry function_id");
+    ASSERT(batchObj.find("row_index") == batchObj.end(), "point_set batch should not include row_index");
+    ASSERT(batchObj.find("samples") != batchObj.end() && batchObj.find("samples")->second.is_array(),
+        "point_set batch should include a samples array");
+    ASSERT(batchObj.find("samples")->second.as_array().size() == 2, "point_set batch should contain both requested points");
+
+    const auto& sampleObj = batchObj.find("samples")->second.as_array()[0].as_object();
+    ASSERT(sampleObj.find("iterations") != sampleObj.end(), "iterations should be present when requested");
+    ASSERT(sampleObj.find("status") != sampleObj.end(), "status should be present when requested");
+    ASSERT(sampleObj.find("final_z_x") == sampleObj.end(), "final_z_x should be omitted when not requested");
+    ASSERT(sampleObj.find("final_z_y") == sampleObj.end(), "final_z_y should be omitted when not requested");
+    ASSERT(sampleObj.find("final_abs2") == sampleObj.end(), "final_abs2 should be omitted when not requested");
+    ASSERT(sampleObj.find("residual") == sampleObj.end(), "residual should be omitted when not requested");
+    ASSERT(sampleObj.find("root_index") == sampleObj.end(), "root_index should be omitted when not requested");
+    ASSERT(summary.value.as_object().find("type") != summary.value.as_object().end() &&
+            summary.value.as_object().find("type")->second.as_string() == "summary",
+        "point_set last line should be summary");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeNdjsonSummaryOnlyEmitsSummaryLine() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_summary_only_req.json");
+    args.response_json_path = TempPath("ndjson_summary_only_resp.ndjson");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"ndjson-summary-only\",\"mode\":\"point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"points\":[{\"x\":-0.75,\"y\":0.0},{\"x\":0.25,\"y\":0.0}],"
+        "\"metrics\":[\"summary_mean_iterations\",\"summary_escape_fraction\"]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "ndjson summary-only request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto lines = SplitLines(respText);
+    ASSERT(lines.size() == 1, "summary-only ndjson should emit only the summary line");
+
+    auto summary = ParseJsonLine(lines[0]);
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary-only line should be valid JSON object");
+    ASSERT(summary.value.as_object().find("type") != summary.value.as_object().end() &&
+            summary.value.as_object().find("type")->second.as_string() == "summary",
+        "summary-only ndjson should emit a summary object");
+    ASSERT(summary.value.as_object().find("summary") != summary.value.as_object().end(),
+        "summary-only ndjson should still carry summary metrics");
+    ASSERT(summary.value.as_object().find("cost") != summary.value.as_object().end(),
+        "summary-only ndjson should still carry cost metadata");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeGenericSampleNdjsonIncludesFunctionId() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_generic_req.json");
+    args.response_json_path = TempPath("ndjson_generic_resp.ndjson");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"ndjson-generic\",\"function_id\":\"generic.sample\",\"mode\":\"point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"function\":{\"expression\":\"z^2 + z + 1\"},"
+        "\"points\":[{\"x\":1.0,\"y\":0.0}],"
+        "\"metrics\":[\"value\",\"abs2\"]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "generic.sample ndjson request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto lines = SplitLines(respText);
+    ASSERT(lines.size() == 2, "generic.sample ndjson should emit one batch plus summary");
+
+    auto batch = ParseJsonLine(lines[0]);
+    auto summary = ParseJsonLine(lines[1]);
+    ASSERT(batch.error.empty() && batch.value.is_object(), "generic.sample batch should be valid JSON object");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "generic.sample summary should be valid JSON object");
+    ASSERT(batch.value.as_object().find("function_id") != batch.value.as_object().end() &&
+            batch.value.as_object().find("function_id")->second.as_string() == "generic.sample",
+        "generic.sample batch should advertise function_id");
+    ASSERT(summary.value.as_object().find("function_id") != summary.value.as_object().end() &&
+            summary.value.as_object().find("function_id")->second.as_string() == "generic.sample",
+        "generic.sample summary should advertise function_id");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeNdjsonSequenceGridBatchesPerSequenceStep() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_sequence_grid_req.json");
+    args.response_json_path = TempPath("ndjson_sequence_grid_resp.ndjson");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"ndjson-sequence-grid\",\"mode\":\"sequence_grid\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"region\":{\"center_x\":-0.75,\"center_y\":0.0,\"span_x\":0.5,\"span_y\":0.5,\"grid_width\":2,\"grid_height\":2},"
+        "\"sequence\":{\"zip_paths\":true,\"vary\":[{\"path\":\"fractal.view.zoom\",\"values\":[1.0,2.0]}]},"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "ndjson sequence_grid request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto lines = SplitLines(respText);
+    ASSERT(lines.size() == 3, "2 sequence steps + 1 summary line expected");
+
+    auto batch0 = ParseJsonLine(lines[0]);
+    auto batch1 = ParseJsonLine(lines[1]);
+    auto summary = ParseJsonLine(lines[2]);
+    ASSERT(batch0.error.empty() && batch0.value.is_object(), "sequence batch 0 should be valid JSON object");
+    ASSERT(batch1.error.empty() && batch1.value.is_object(), "sequence batch 1 should be valid JSON object");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary line should be valid JSON object");
+
+    ASSERT(batch0.value.as_object().find("type") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "first sequence line should be sample_batch");
+    ASSERT(batch1.value.as_object().find("type") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "second sequence line should be sample_batch");
+    ASSERT(batch0.value.as_object().find("row_index") == batch0.value.as_object().end(),
+        "sequence-grid batches should not be split by row_index");
+    ASSERT(batch1.value.as_object().find("row_index") == batch1.value.as_object().end(),
+        "sequence-grid batches should not be split by row_index");
+    ASSERT(batch0.value.as_object().find("sequence_index") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("sequence_index")->second.as_number() == 0.0,
+        "first sequence batch should report sequence_index 0");
+    ASSERT(batch1.value.as_object().find("sequence_index") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("sequence_index")->second.as_number() == 1.0,
+        "second sequence batch should report sequence_index 1");
+    ASSERT(batch0.value.as_object().find("samples") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("samples")->second.is_array() &&
+            batch0.value.as_object().find("samples")->second.as_array().size() == 4,
+        "each sequence-grid batch should contain the full 2x2 grid");
+    ASSERT(batch1.value.as_object().find("samples") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("samples")->second.is_array() &&
+            batch1.value.as_object().find("samples")->second.as_array().size() == 4,
+        "each sequence-grid batch should contain the full 2x2 grid");
+    ASSERT(summary.value.as_object().find("type") != summary.value.as_object().end() &&
+            summary.value.as_object().find("type")->second.as_string() == "summary",
+        "last line should be summary");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeNdjsonSequencePointSetBatchesPerSequenceStep() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_sequence_point_set_req.json");
+    args.response_json_path = TempPath("ndjson_sequence_point_set_resp.ndjson");
+
+    std::string reqJson = "{\"request_version\":1,\"request_id\":\"ndjson-sequence-point-set\",\"mode\":\"sequence_point_set\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3},{\"x\":-0.5,\"y\":0.0}],"
+        "\"sequence\":{\"zip_paths\":true,\"vary\":[{\"path\":\"fractal.view.zoom\",\"values\":[1.0,2.0]}]},"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 0, "ndjson sequence_point_set request should succeed");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto lines = SplitLines(respText);
+    ASSERT(lines.size() == 3, "sequence_point_set should emit one batch per sequence step plus summary");
+
+    auto batch0 = ParseJsonLine(lines[0]);
+    auto batch1 = ParseJsonLine(lines[1]);
+    ASSERT(batch0.error.empty() && batch0.value.is_object(), "sequence point batch 0 should be valid JSON");
+    ASSERT(batch1.error.empty() && batch1.value.is_object(), "sequence point batch 1 should be valid JSON");
+    ASSERT(batch0.value.as_object().find("row_index") == batch0.value.as_object().end(),
+        "sequence_point_set batches should not include row_index");
+    ASSERT(batch1.value.as_object().find("row_index") == batch1.value.as_object().end(),
+        "sequence_point_set batches should not include row_index");
+    ASSERT(batch0.value.as_object().find("sequence_index") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("sequence_index")->second.as_number() == 0.0,
+        "first sequence_point_set batch should report sequence_index 0");
+    ASSERT(batch1.value.as_object().find("sequence_index") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("sequence_index")->second.as_number() == 1.0,
+        "second sequence_point_set batch should report sequence_index 1");
+    ASSERT(batch0.value.as_object().find("samples") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("samples")->second.is_array() &&
+            batch0.value.as_object().find("samples")->second.as_array().size() == 2,
+        "each sequence_point_set batch should contain all requested points");
+    ASSERT(batch1.value.as_object().find("samples") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("samples")->second.is_array() &&
+            batch1.value.as_object().find("samples")->second.as_array().size() == 2,
+        "each sequence_point_set batch should contain all requested points");
+
+    DeleteFileA(args.request_json_path.c_str());
+    DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestSampleModeBatchRejectsNdjsonOutputMode() {
+    SampleModeArgs args;
+    args.request_json_path = TempPath("ndjson_batch_req.json");
+    args.response_json_path = TempPath("ndjson_batch_resp.json");
+
+    std::string reqJson = "["
+        "{\"request_version\":1,\"request_id\":\"ndjson-bad\",\"mode\":\"point_set\",\"output_mode\":\"ndjson\","
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}"
+        "]";
+    std::string err;
+    WriteTextFileExact(args.request_json_path, reqJson, &err);
+
+    int rc = RunSampleMode(args, kExePath);
+    ASSERT(rc == 1, "batch array containing ndjson request should fail");
+
+    std::string respText = ReadTextFile(args.response_json_path.c_str());
+    auto parsed = json_min::Parse(respText);
+    ASSERT(parsed.error.empty() && parsed.value.is_array(), "batch response should still be a JSON array");
+    ASSERT(parsed.value.as_array().size() == 1, "batch response should contain one error entry");
+    const auto& obj = parsed.value.as_array()[0].as_object();
+    ASSERT(obj.find("ok") != obj.end() && !obj.find("ok")->second.as_bool(), "ndjson-in-batch should return ok=false");
+    ASSERT(obj.find("error") != obj.end() && obj.find("error")->second.as_string().find("ndjson") != std::string::npos,
+        "error should mention ndjson batch incompatibility");
 
     DeleteFileA(args.request_json_path.c_str());
     DeleteFileA(args.response_json_path.c_str());
@@ -771,6 +1085,94 @@ bool TestSessionResponseVersionField() {
     return true;
 }
 
+bool TestSessionNdjsonGridRequest() {
+    std::string req = "{\"request_version\":1,\"request_id\":\"ndjson-session\",\"mode\":\"grid\","
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"region\":{\"center_x\":-0.75,\"center_y\":0.0,\"span_x\":0.5,\"span_y\":0.5,\"grid_width\":2,\"grid_height\":2},"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session ndjson request should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 5, "ready + 2 batch rows + summary + close expected");
+
+    auto ready = ParseJsonLine(lines[0]);
+    auto batch0 = ParseJsonLine(lines[1]);
+    auto batch1 = ParseJsonLine(lines[2]);
+    auto summary = ParseJsonLine(lines[3]);
+    auto close = ParseJsonLine(lines[4]);
+    ASSERT(ready.error.empty() && ready.value.is_object(), "ready should be valid JSON");
+    ASSERT(batch0.error.empty() && batch0.value.is_object(), "batch 0 should be valid JSON");
+    ASSERT(batch1.error.empty() && batch1.value.is_object(), "batch 1 should be valid JSON");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary should be valid JSON");
+    ASSERT(close.error.empty() && close.value.is_object(), "close should be valid JSON");
+
+    ASSERT(batch0.value.as_object().find("type") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "batch line should have type=sample_batch");
+    ASSERT(batch1.value.as_object().find("type") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("type")->second.as_string() == "sample_batch",
+        "batch line should have type=sample_batch");
+    ASSERT(summary.value.as_object().find("type") != summary.value.as_object().end() &&
+            summary.value.as_object().find("type")->second.as_string() == "summary",
+        "summary line should have type=summary");
+    ASSERT(summary.value.as_object().find("state_token") != summary.value.as_object().end(),
+        "summary line should carry state_token in session mode");
+    ASSERT(summary.value.as_object().find("cost") != summary.value.as_object().end(),
+        "summary line should include cost metadata");
+    ASSERT(close.value.as_object().find("session") != close.value.as_object().end() &&
+            close.value.as_object().find("session")->second.as_string() == "closed",
+        "close ack should still be emitted after ndjson request");
+    return true;
+}
+
+bool TestSessionNdjsonSequenceGridBatchesPerSequenceStep() {
+    std::string req = "{\"request_version\":1,\"request_id\":\"ndjson-sequence-session\",\"mode\":\"sequence_grid\"," 
+        "\"output_mode\":\"ndjson\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"mandelbrot\"}],"
+        "\"region\":{\"center_x\":-0.75,\"center_y\":0.0,\"span_x\":0.5,\"span_y\":0.5,\"grid_width\":2,\"grid_height\":2},"
+        "\"sequence\":{\"zip_paths\":true,\"vary\":[{\"path\":\"fractal.view.zoom\",\"values\":[1.0,2.0]}]},"
+        "\"metrics\":[\"iterations\",\"status\",\"summary_mean_iterations\"]}";
+
+    std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
+                        + req + "\n"
+                        + "{\"session\":\"close\"}\n";
+    std::string output;
+    int rc = RunSessionWithStrings(input, &output);
+    ASSERT(rc == 0, "session sequence_grid ndjson request should succeed");
+
+    auto lines = SplitLines(output);
+    ASSERT(lines.size() == 5, "ready + 2 sequence batches + summary + close expected");
+
+    auto batch0 = ParseJsonLine(lines[1]);
+    auto batch1 = ParseJsonLine(lines[2]);
+    auto summary = ParseJsonLine(lines[3]);
+    ASSERT(batch0.error.empty() && batch0.value.is_object(), "sequence batch 0 should be valid JSON");
+    ASSERT(batch1.error.empty() && batch1.value.is_object(), "sequence batch 1 should be valid JSON");
+    ASSERT(summary.error.empty() && summary.value.is_object(), "summary should be valid JSON");
+    ASSERT(batch0.value.as_object().find("row_index") == batch0.value.as_object().end(),
+        "session sequence-grid batches should not include row_index");
+    ASSERT(batch1.value.as_object().find("row_index") == batch1.value.as_object().end(),
+        "session sequence-grid batches should not include row_index");
+    ASSERT(batch0.value.as_object().find("samples") != batch0.value.as_object().end() &&
+            batch0.value.as_object().find("samples")->second.is_array() &&
+            batch0.value.as_object().find("samples")->second.as_array().size() == 4,
+        "session sequence batch 0 should contain full grid");
+    ASSERT(batch1.value.as_object().find("samples") != batch1.value.as_object().end() &&
+            batch1.value.as_object().find("samples")->second.is_array() &&
+            batch1.value.as_object().find("samples")->second.as_array().size() == 4,
+        "session sequence batch 1 should contain full grid");
+    ASSERT(summary.value.as_object().find("state_token") != summary.value.as_object().end(),
+        "session ndjson summary should still carry state_token");
+    return true;
+}
+
 // --- V2-C: MergeOverrides unit tests ---
 
 static FractalProbeOverride MakeOverride(const std::string& path, double value) {
@@ -1110,6 +1512,13 @@ int main() {
     RUN(TestSampleModeBatchEmptyArray);
     RUN(TestSampleModeRootNotObjectOrArray);
     RUN(TestSampleModeSingleObjectStillReturnsSingleObject);
+    RUN(TestSampleModeNdjsonGridResponse);
+    RUN(TestSampleModeNdjsonPointSetSingleBatchAndMetricFiltering);
+    RUN(TestSampleModeNdjsonSummaryOnlyEmitsSummaryLine);
+    RUN(TestSampleModeGenericSampleNdjsonIncludesFunctionId);
+    RUN(TestSampleModeNdjsonSequenceGridBatchesPerSequenceStep);
+    RUN(TestSampleModeNdjsonSequencePointSetBatchesPerSequenceStep);
+    RUN(TestSampleModeBatchRejectsNdjsonOutputMode);
 
     // V2-B: Session mode — ProcessSessionLine unit tests
     RUN(TestProcessSessionLineOpen);
@@ -1132,6 +1541,8 @@ int main() {
     RUN(TestSessionBadRequestPreservesSession);
     RUN(TestSessionUnknownSessionVerb);
     RUN(TestSessionResponseVersionField);
+    RUN(TestSessionNdjsonGridRequest);
+    RUN(TestSessionNdjsonSequenceGridBatchesPerSequenceStep);
 
     // V2-C: MergeOverrides unit tests
     RUN(TestMergeOverridesBothEmpty);

@@ -330,6 +330,191 @@ def test_probe_cli_supports_ndjson_output_mode() -> None:
     assert lines[2]["cost"]["sample_count"] == 4
 
 
+def test_probe_cli_point_set_ndjson_single_batch_and_metric_filtering() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-ndjson-point-set",
+        "mode": "point_set",
+        "output_mode": "ndjson",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "newton"},
+        ],
+        "points": [
+            {"x": 0.5, "y": 0.3},
+            {"x": -0.5, "y": 0.0},
+        ],
+        "metrics": ["iterations", "status", "summary_mean_iterations"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 2
+    assert lines[0]["type"] == "sample_batch"
+    assert lines[0]["request_id"] == request["request_id"]
+    assert lines[0]["function_id"] == "fractal.sample"
+    assert "row_index" not in lines[0]
+    assert len(lines[0]["samples"]) == 2
+    sample = lines[0]["samples"][0]
+    assert "iterations" in sample and "status" in sample
+    assert "final_abs2" not in sample
+    assert "final_z_x" not in sample and "final_z_y" not in sample
+    assert "residual" not in sample and "root_index" not in sample
+    assert lines[1]["type"] == "summary"
+
+
+def test_probe_cli_ndjson_summary_only_emits_summary_line() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-ndjson-summary-only",
+        "mode": "point_set",
+        "output_mode": "ndjson",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "mandelbrot"},
+        ],
+        "points": [
+            {"x": -0.75, "y": 0.0},
+            {"x": 0.25, "y": 0.0},
+        ],
+        "metrics": ["summary_mean_iterations", "summary_escape_fraction"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 1
+    assert lines[0]["type"] == "summary"
+    assert lines[0]["summary"]["sample_count"] == 2
+    assert lines[0]["cost"]["sample_count"] == 2
+
+
+def test_probe_cli_generic_sample_ndjson_includes_function_id() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-ndjson-generic",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "output_mode": "ndjson",
+        "function": {
+            "expression": "z^2 + z + 1",
+        },
+        "points": [
+            {"x": 1.0, "y": 0.0},
+        ],
+        "metrics": ["value", "abs2"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 2
+    assert lines[0]["type"] == "sample_batch"
+    assert lines[0]["function_id"] == "generic.sample"
+    assert lines[1]["type"] == "summary"
+    assert lines[1]["function_id"] == "generic.sample"
+
+
+def test_probe_cli_sequence_point_set_ndjson_batches_per_sequence_step() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-ndjson-sequence-point-set",
+        "mode": "sequence_point_set",
+        "output_mode": "ndjson",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "newton"},
+        ],
+        "points": [
+            {"x": 0.5, "y": 0.3},
+            {"x": -0.5, "y": 0.0},
+        ],
+        "sequence": {
+            "zip_paths": True,
+            "vary": [
+                {"path": "fractal.view.zoom", "values": [1.0, 2.0]},
+            ],
+        },
+        "metrics": ["iterations", "status", "summary_mean_iterations"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 3
+    assert lines[0]["type"] == "sample_batch"
+    assert lines[1]["type"] == "sample_batch"
+    assert lines[0]["sequence_index"] == 0
+    assert lines[1]["sequence_index"] == 1
+    assert "row_index" not in lines[0]
+    assert "row_index" not in lines[1]
+    assert len(lines[0]["samples"]) == 2
+    assert len(lines[1]["samples"]) == 2
+    assert lines[2]["type"] == "summary"
+
+
 def test_probe_cli_batch_rejects_ndjson_output_mode(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("probe CLI runtime regression is Windows-only")
@@ -367,3 +552,61 @@ def test_probe_cli_batch_rejects_ndjson_output_mode(tmp_path: Path) -> None:
     assert isinstance(response, list)
     assert response[0]["ok"] is False
     assert "ndjson" in response[0]["error"]
+
+
+def test_probe_cli_sequence_grid_ndjson_batches_per_sequence_step() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-ndjson-sequence-grid",
+        "mode": "sequence_grid",
+        "output_mode": "ndjson",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "mandelbrot"},
+        ],
+        "region": {
+            "center_x": -0.75,
+            "center_y": 0.0,
+            "span_x": 0.5,
+            "span_y": 0.5,
+            "grid_width": 2,
+            "grid_height": 2,
+        },
+        "sequence": {
+            "zip_paths": True,
+            "vary": [
+                {"path": "fractal.view.zoom", "values": [1.0, 2.0]},
+            ],
+        },
+        "metrics": ["iterations", "status", "summary_mean_iterations"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 3
+    assert lines[0]["type"] == "sample_batch"
+    assert lines[1]["type"] == "sample_batch"
+    assert lines[0]["sequence_index"] == 0
+    assert lines[1]["sequence_index"] == 1
+    assert "row_index" not in lines[0]
+    assert "row_index" not in lines[1]
+    assert len(lines[0]["samples"]) == 4
+    assert len(lines[1]["samples"]) == 4
+    assert lines[2]["type"] == "summary"
+    assert lines[2]["cost"]["sample_count"] == 8
