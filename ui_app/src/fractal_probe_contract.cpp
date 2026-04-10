@@ -396,6 +396,18 @@ void AppendSummaryJson(std::ostringstream& ss,
     AppendJsonObject(ss, entries, indent);
 }
 
+void AppendCostJson(std::ostringstream& ss,
+    const FractalProbeCost& cost,
+    int indent) {
+    std::vector<std::pair<std::string, std::string>> entries;
+    entries.push_back({"gpu_ms", DoubleToJson(cost.gpu_ms)});
+    entries.push_back({"sample_count", std::to_string(cost.sample_count)});
+
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad << "\"cost\": ";
+    AppendJsonObject(ss, entries, indent);
+}
+
 void AppendSequenceSummaryJson(std::ostringstream& ss,
     const FractalProbeSequenceResult& result,
     const FractalProbeMetricSelection& selection,
@@ -803,6 +815,8 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "    \"device_id\": " << response.runtime.device_id << "\n";
     ss << "  },\n";
     AppendSummaryJson(ss, response.summary, response.metric_selection, 2);
+    ss << ",\n";
+    AppendCostJson(ss, response.cost, 2);
     ss << ",\n";
     ss << "  \"sequence_results\": [\n";
     for (size_t index = 0; index < response.sequence_results.size(); ++index) {

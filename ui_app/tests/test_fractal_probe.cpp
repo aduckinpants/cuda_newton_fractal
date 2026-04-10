@@ -152,6 +152,10 @@ int main() {
             std::cerr << "Expected two point samples in response\n";
             return 1;
         }
+        if (response.cost.sample_count != 2 || response.cost.gpu_ms < 0.0) {
+            std::cerr << "Expected cost metadata with non-negative gpu_ms and sample_count=2\n";
+            return 1;
+        }
         if (response.sequence_results.size() != 1 || response.sequence_results[0].sequence_index != 0) {
             std::cerr << "Point-set probe should emit one implicit sequence summary\n";
             return 1;
@@ -164,14 +168,25 @@ int main() {
             return 1;
         }
         const json_min::Value* summary = pr.value.get("summary");
+        const json_min::Value* cost = pr.value.get("cost");
         const json_min::Value* samples = pr.value.get("samples");
-        if (!summary || !summary->is_object() || !samples || !samples->is_array()) {
-            std::cerr << "Serialized response missing summary/samples\n";
+        if (!summary || !summary->is_object() || !cost || !cost->is_object() || !samples || !samples->is_array()) {
+            std::cerr << "Serialized response missing summary/cost/samples\n";
             return 1;
         }
         const json_min::Value* sampleCount = summary->get("sample_count");
         if (!sampleCount || !sampleCount->is_number() || !NearlyEqual(sampleCount->as_number(), 2.0)) {
             std::cerr << "Serialized summary sample_count mismatch\n";
+            return 1;
+        }
+        const json_min::Value* costSampleCount = cost->get("sample_count");
+        const json_min::Value* gpuMs = cost->get("gpu_ms");
+        if (!costSampleCount || !costSampleCount->is_number() || !NearlyEqual(costSampleCount->as_number(), 2.0)) {
+            std::cerr << "Serialized cost sample_count mismatch\n";
+            return 1;
+        }
+        if (!gpuMs || !gpuMs->is_number() || gpuMs->as_number() < 0.0) {
+            std::cerr << "Serialized cost gpu_ms should be a non-negative number\n";
             return 1;
         }
     }

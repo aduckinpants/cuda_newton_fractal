@@ -431,6 +431,19 @@ bool TestSessionSingleRequest() {
     auto tokIt = resp.find("state_token");
     ASSERT(tokIt != resp.end() && tokIt->second.is_string(),
         "sample response must include state_token");
+    auto costIt = resp.find("cost");
+    ASSERT(costIt != resp.end() && costIt->second.is_object(),
+        "sample response must include cost metadata");
+    auto costSampleCountIt = costIt->second.as_object().find("sample_count");
+    ASSERT(costSampleCountIt != costIt->second.as_object().end() &&
+            costSampleCountIt->second.is_number() &&
+            costSampleCountIt->second.as_number() == 1.0,
+        "session sample response cost.sample_count should be 1");
+    auto gpuMsIt = costIt->second.as_object().find("gpu_ms");
+    ASSERT(gpuMsIt != costIt->second.as_object().end() &&
+            gpuMsIt->second.is_number() &&
+            gpuMsIt->second.as_number() >= 0.0,
+        "session sample response cost.gpu_ms should be a non-negative number");
     return true;
 }
 

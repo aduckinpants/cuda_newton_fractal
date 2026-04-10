@@ -122,6 +122,11 @@ struct FractalProbeRuntimeInfo {
     int device_id{0};
 };
 
+struct FractalProbeCost {
+    double gpu_ms{0.0};
+    int sample_count{0};
+};
+
 struct FractalProbeSummary {
     int sample_count{0};
     double mean_iterations{0.0};
@@ -189,6 +194,7 @@ struct FractalProbeResponse {
     std::string function_id; // echoes back the resolved function_id
     bool ok{false};
     FractalProbeRuntimeInfo runtime;
+    FractalProbeCost cost;
     FractalProbeSummary summary;
     FractalProbeMetricSelection metric_selection;
     std::vector<FractalProbeSequenceResult> sequence_results;

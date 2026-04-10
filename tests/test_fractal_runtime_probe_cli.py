@@ -72,6 +72,8 @@ def test_probe_cli_supports_stdin_stdout_json() -> None:
     assert response["request_id"] == request["request_id"]
     assert response["runtime"]["fractal_type"] == "explaino_lambda"
     assert response["summary"]["sample_count"] == 2
+    assert response["cost"]["sample_count"] == 2
+    assert response["cost"]["gpu_ms"] >= 0.0
     assert len(response["sequence_results"]) == 1
     assert len(response["samples"]) == 2
     assert response["operator_context"]["source"] == "salticid"
@@ -187,6 +189,8 @@ def test_probe_cli_emits_json_error_payload_for_invalid_request() -> None:
     response = json.loads(result.stdout)
     assert response["ok"] is False
     assert response["request_id"] == ""
+    assert response["cost"]["sample_count"] == 0
+    assert response["cost"]["gpu_ms"] == 0.0
     assert "mystery_field" in response["error"]
 
 

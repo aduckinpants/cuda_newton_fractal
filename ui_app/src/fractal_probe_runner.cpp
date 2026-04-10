@@ -19,6 +19,7 @@
 #include "generic_function_cpu_eval.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -1366,6 +1367,12 @@ std::string CurrentFractalTypeId(const ProbeState& state) {
     return ctx.GetEnumId("fractal.view.fractal_type");
 }
 
+using ProbeClock = std::chrono::steady_clock;
+
+double ElapsedMilliseconds(ProbeClock::time_point startedAt) {
+    return std::chrono::duration<double, std::milli>(ProbeClock::now() - startedAt).count();
+}
+
 } // namespace
 
 bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId) {
@@ -1421,6 +1428,8 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
     const std::string& exePath,
     FractalProbeResponse* outResponse,
     std::string* outError) {
+
+    const ProbeClock::time_point startedAt = ProbeClock::now();
 
     if (!request.has_function || request.generic_expression.empty()) {
         if (outError) *outError = "generic.sample requires a 'function' block with 'expression'";
@@ -1590,12 +1599,14 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
     }
 
     response.summary.sample_count = globalCount;
+    response.cost.sample_count = globalCount;
     FinalizeSummary(globalCount, globalIterationSum, globalEscaped, globalConverged, globalNonfinite, globalPole,
         &response.summary.mean_iterations, &response.summary.escape_fraction,
         &response.summary.converged_fraction, &response.summary.nonfinite_fraction, &response.summary.pole_fraction);
     response.summary.best_sequence_index = bestSequenceIndex < 0 ? 0 : bestSequenceIndex;
     response.summary.mean_abs2 = globalCount > 0 ? globalAbs2Sum / globalCount : 0.0;
     response.summary.diverged_fraction = globalCount > 0 ? static_cast<double>(globalEscaped) / globalCount : 0.0;
+    response.cost.gpu_ms = ElapsedMilliseconds(startedAt);
 
     *outResponse = std::move(response);
     return true;
@@ -1622,6 +1633,8 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
     if (resolvedFunctionId == "generic.sample") {
         return RunGenericSampleRequest(request, exePath, outResponse, outError);
     }
+
+    const ProbeClock::time_point startedAt = ProbeClock::now();
 
     ProbeState baseState;
     if (!BuildBaseState(request, &baseState, outError)) return false;
@@ -1715,6 +1728,7 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
     }
 
     response.summary.sample_count = globalCount;
+    response.cost.sample_count = globalCount;
     FinalizeSummary(globalCount,
         globalIterationSum,
         globalEscaped,
@@ -1727,6 +1741,7 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
         &response.summary.nonfinite_fraction,
         &response.summary.pole_fraction);
     response.summary.best_sequence_index = bestSequenceIndex < 0 ? 0 : bestSequenceIndex;
+    response.cost.gpu_ms = ElapsedMilliseconds(startedAt);
 
     *outResponse = std::move(response);
     return true;

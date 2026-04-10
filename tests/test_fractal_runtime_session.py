@@ -120,6 +120,8 @@ class TestSessionSampling:
         assert resp["ok"] is True
         assert resp["request_id"] == "r1"
         assert "state_token" in resp
+        assert resp["cost"]["sample_count"] == 1
+        assert resp["cost"]["gpu_ms"] >= 0.0
         assert resp["response_version"] == 2
 
     def test_two_requests_have_different_state_tokens(self) -> None:

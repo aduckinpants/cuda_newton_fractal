@@ -54,6 +54,10 @@ int main() {
             std::cerr << "[1] expected 2 samples, got " << response.samples.size() << "\n";
             return 1;
         }
+        if (response.cost.sample_count != 2 || response.cost.gpu_ms < 0.0) {
+            std::cerr << "[1] expected cost metadata with non-negative gpu_ms and sample_count=2\n";
+            return 1;
+        }
         // First sample should converge near (1, 0).
         const auto& s0 = response.samples[0];
         if (s0.status != FractalProbeSampleStatus::converged) {
