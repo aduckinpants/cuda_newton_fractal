@@ -93,6 +93,135 @@ bool EmitProbeResponse(const std::string& responseJson,
     return true;
 }
 
+bool UsesGridRows(FractalProbeMode mode) {
+    return mode == FractalProbeMode::grid || mode == FractalProbeMode::sequence_grid;
+}
+
+bool EmitSampleModeResponse(const SampleModeArgs& args,
+    const std::string& responseText,
+    std::string* outError) {
+    return EmitProbeResponse(responseText,
+        args.response_stdout,
+        args.response_json_path,
+        outError);
+}
+
+std::string BuildNdjsonProbeResponse(const FractalProbeRequest& request,
+    const FractalProbeResponse& response,
+    const std::string& stateToken) {
+    std::ostringstream out;
+    const bool groupByRow = UsesGridRows(request.mode);
+    size_t batchStart = 0;
+    bool wroteLine = false;
+
+    while (batchStart < response.samples.size()) {
+        const int batchSequenceIndex = response.samples[batchStart].sequence_index;
+        const int batchRowIndex = groupByRow ? response.samples[batchStart].grid_y : -1;
+        size_t batchEnd = batchStart + 1;
+        while (batchEnd < response.samples.size()) {
+            const FractalProbeSample& sample = response.samples[batchEnd];
+            if (sample.sequence_index != batchSequenceIndex) break;
+            if (groupByRow && sample.grid_y != batchRowIndex) break;
+            ++batchEnd;
+        }
+
+        if (wroteLine) out << "\n";
+        out << SerializeFractalProbeNdjsonSampleBatchJson(
+            response.request_id,
+            response.function_id,
+            batchSequenceIndex,
+            batchRowIndex,
+            std::vector<FractalProbeSample>(response.samples.begin() + batchStart,
+                response.samples.begin() + batchEnd),
+            response.metric_selection);
+        wroteLine = true;
+        batchStart = batchEnd;
+    }
+
+    if (wroteLine) out << "\n";
+    out << SerializeFractalProbeNdjsonSummaryJson(response, stateToken);
+    return out.str();
+}
+
+int RunSingleSampleRequest(const json_min::Value& requestValue,
+    const SampleModeArgs& args,
+    const std::string& exePath) {
+    std::string error;
+    FractalProbeRequest request;
+    if (!ParseFractalProbeRequestFromValue(requestValue, &request, &error)) {
+        FractalProbeResponse response = BuildProbeErrorResponse(
+            std::string(), exePath, FractalProbeOperatorContext{}, error);
+        std::string emitError;
+        if (!EmitSampleModeResponse(args, SerializeFractalProbeResponseJson(response), &emitError)) {
+            std::fprintf(stderr, "%s\n", emitError.c_str());
+        }
+        return 1;
+    }
+
+    FractalProbeResponse response;
+    if (!RunFractalProbeRequest(request, exePath, &response, &error)) {
+        response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, error);
+    }
+
+    const std::string responseText =
+        request.output_mode == FractalProbeOutputMode::ndjson && response.ok
+        ? BuildNdjsonProbeResponse(request, response, std::string())
+        : SerializeFractalProbeResponseJson(response);
+
+    std::string emitError;
+    if (!EmitSampleModeResponse(args, responseText, &emitError)) {
+        std::fprintf(stderr, "%s\n", emitError.c_str());
+        return 1;
+    }
+    return response.ok ? 0 : 1;
+}
+
+int RunBatchSampleRequests(const json_min::Array& requestArray,
+    const SampleModeArgs& args,
+    const std::string& exePath) {
+    bool anyFailed = false;
+    std::string batchJson = "[";
+    for (size_t i = 0; i < requestArray.size(); ++i) {
+        FractalProbeRequest request;
+        std::string reqError;
+        FractalProbeResponse response;
+        if (!ParseFractalProbeRequestFromValue(requestArray[i], &request, &reqError)) {
+            std::string failedRequestId;
+            if (requestArray[i].is_object()) {
+                auto idIt = requestArray[i].as_object().find("request_id");
+                if (idIt != requestArray[i].as_object().end() && idIt->second.is_string()) {
+                    failedRequestId = idIt->second.as_string();
+                }
+            }
+            response = BuildProbeErrorResponse(failedRequestId, exePath, FractalProbeOperatorContext{}, reqError);
+            anyFailed = true;
+        } else if (request.output_mode == FractalProbeOutputMode::ndjson) {
+            response = BuildProbeErrorResponse(
+                request.request_id,
+                exePath,
+                request.operator_context,
+                "output_mode ndjson is not allowed inside batch request arrays");
+            anyFailed = true;
+        } else {
+            std::string runError;
+            if (!RunFractalProbeRequest(request, exePath, &response, &runError)) {
+                response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, runError);
+                anyFailed = true;
+            }
+        }
+        if (i > 0) batchJson += ",";
+        batchJson += SerializeFractalProbeResponseJson(response);
+    }
+    batchJson += "]";
+
+    std::string emitError;
+    if (!EmitSampleModeResponse(args, batchJson, &emitError)) {
+        std::fprintf(stderr, "%s\n", emitError.c_str());
+        return 1;
+    }
+    return anyFailed ? 1 : 0;
+}
+
 // --- Headless mode dispatch ---
 
 int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
@@ -120,68 +249,9 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
         if (!parsed.error.empty()) {
             error = parsed.error;
         } else if (parsed.value.is_object()) {
-            // V1 single-request path: object in, object out
-            FractalProbeRequest request;
-            if (!ParseFractalProbeRequestFromValue(parsed.value, &request, &error)) {
-                FractalProbeResponse resp = BuildProbeErrorResponse(std::string(), exePath, FractalProbeOperatorContext{}, error);
-                const std::string responseJson = SerializeFractalProbeResponseJson(resp);
-                std::string emitError;
-                if (!EmitProbeResponse(responseJson, args.response_stdout,
-                        haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
-                    std::fprintf(stderr, "%s\n", emitError.c_str());
-                }
-                return 1;
-            }
-            FractalProbeResponse response;
-            if (!RunFractalProbeRequest(request, exePath, &response, &error)) {
-                response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, error);
-            }
-            const std::string responseJson = SerializeFractalProbeResponseJson(response);
-            std::string emitError;
-            if (!EmitProbeResponse(responseJson, args.response_stdout,
-                    haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
-                std::fprintf(stderr, "%s\n", emitError.c_str());
-                return 1;
-            }
-            return response.ok ? 0 : 1;
+            return RunSingleSampleRequest(parsed.value, args, exePath);
         } else if (parsed.value.is_array()) {
-            // V2-A batch path: array in, array out
-            const json_min::Array& requestArray = parsed.value.as_array();
-            bool anyFailed = false;
-            std::string batchJson = "[";
-            for (size_t i = 0; i < requestArray.size(); ++i) {
-                FractalProbeRequest request;
-                std::string reqError;
-                FractalProbeResponse response;
-                if (!ParseFractalProbeRequestFromValue(requestArray[i], &request, &reqError)) {
-                    // Try to extract request_id for error attribution even when parse fails
-                    std::string failedRequestId;
-                    if (requestArray[i].is_object()) {
-                        auto idIt = requestArray[i].as_object().find("request_id");
-                        if (idIt != requestArray[i].as_object().end() && idIt->second.is_string()) {
-                            failedRequestId = idIt->second.as_string();
-                        }
-                    }
-                    response = BuildProbeErrorResponse(failedRequestId, exePath, FractalProbeOperatorContext{}, reqError);
-                    anyFailed = true;
-                } else {
-                    std::string runError;
-                    if (!RunFractalProbeRequest(request, exePath, &response, &runError)) {
-                        response = BuildProbeErrorResponse(request.request_id, exePath, request.operator_context, runError);
-                        anyFailed = true;
-                    }
-                }
-                if (i > 0) batchJson += ",";
-                batchJson += SerializeFractalProbeResponseJson(response);
-            }
-            batchJson += "]";
-            std::string emitError;
-            if (!EmitProbeResponse(batchJson, args.response_stdout,
-                    haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
-                std::fprintf(stderr, "%s\n", emitError.c_str());
-                return 1;
-            }
-            return anyFailed ? 1 : 0;
+            return RunBatchSampleRequests(parsed.value.as_array(), args, exePath);
         } else {
             error = "Probe request root must be an object or array";
         }
@@ -193,8 +263,7 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
     const std::string responseJson = SerializeFractalProbeResponseJson(response);
     std::string emitError;
     if ((args.response_stdout || haveResponseJson) &&
-        !EmitProbeResponse(responseJson, args.response_stdout,
-            haveResponseJson ? args.response_json_path : std::string(), &emitError)) {
+        !EmitSampleModeResponse(args, responseJson, &emitError)) {
         std::fprintf(stderr, "%s\n", emitError.c_str());
     }
     std::fprintf(stderr, "%s\n", error.c_str());
@@ -417,13 +486,16 @@ emit_response:
     // Stamp response_version=2 and state_token
     response.response_version = 2;
     (*stateTokenCounter)++;
-    std::string responseJson = CompactJson(SerializeFractalProbeResponseJson(response));
-
-    // Inject state_token into the serialized JSON (just before the closing brace)
     std::string token = MakeStateToken(*stateTokenCounter);
-    size_t lastBrace = responseJson.rfind('}');
-    if (lastBrace != std::string::npos) {
-        responseJson.insert(lastBrace, ",\"state_token\":\"" + token + "\"");
+    std::string responseJson;
+    if (request.output_mode == FractalProbeOutputMode::ndjson && response.ok) {
+        responseJson = BuildNdjsonProbeResponse(request, response, token);
+    } else {
+        responseJson = CompactJson(SerializeFractalProbeResponseJson(response));
+        size_t lastBrace = responseJson.rfind('}');
+        if (lastBrace != std::string::npos) {
+            responseJson.insert(lastBrace, ",\"state_token\":\"" + token + "\"");
+        }
     }
 
     // V2-C: Store accumulated overrides for this token

@@ -1,6 +1,6 @@
 # Spec Intake — Status Index
 
-Last updated: 2026-04-09
+Last updated: 2026-04-10
 
 ## Implemented
 
@@ -37,7 +37,7 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
 | OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, cost/sensitivity tables, variant crossfade; Phase 1 feeds kernel extraction validation | No external deps (Phase 1); CUDA sample_fn K1-K3 (Phase 2) |
-| CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, and response cost metadata; NDJSON and describe sensitivity remain. | V2-E (NDJSON streaming) is next unblocked slice |
+| CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, and NDJSON streaming for single/session requests; describe sensitivity and alternate transport remain. | V2-G (named pipe / socket transport) is the next protocol-only unblocked slice; V2-F still depends on Optimization Staging Phase 2 |
 | ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 (done) + Optimization Staging Phase 2 |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)

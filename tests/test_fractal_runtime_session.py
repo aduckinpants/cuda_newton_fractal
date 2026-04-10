@@ -372,3 +372,44 @@ class TestSessionDiffMode:
         # All tokens should be distinct
         tokens = [lines[i]["state_token"] for i in range(4)]  # ready + 3 responses
         assert len(set(tokens)) == len(tokens)
+
+
+class TestSessionNdjsonMode:
+    """V2-E: NDJSON streaming output in session mode."""
+
+    def test_grid_request_streams_batches_then_summary(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        request = json.dumps({
+            "request_version": 1,
+            "request_id": "session-ndjson-grid",
+            "mode": "grid",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "mandelbrot"}],
+            "region": {
+                "center_x": -0.75,
+                "center_y": 0.0,
+                "span_x": 0.5,
+                "span_y": 0.5,
+                "grid_width": 2,
+                "grid_height": 2,
+            },
+            "metrics": ["iterations", "status", "summary_mean_iterations"],
+        })
+        result = _run_session([
+            json.dumps({"session": "open", "request_id": "init"}),
+            request,
+            json.dumps({"session": "close"}),
+        ])
+        assert result.returncode == 0, result.stderr
+
+        lines = _parse_output_lines(result.stdout)
+        assert len(lines) == 5  # ready + 2 sample_batch rows + summary + close
+        assert lines[0]["session"] == "ready"
+        assert lines[1]["type"] == "sample_batch"
+        assert lines[2]["type"] == "sample_batch"
+        assert lines[3]["type"] == "summary"
+        assert lines[3]["request_id"] == "session-ndjson-grid"
+        assert lines[3]["cost"]["sample_count"] == 4
+        assert "state_token" in lines[3]
+        assert lines[4]["session"] == "closed"

@@ -228,7 +228,7 @@ Engine writes (one line per sequence step or grid row):
 | V2-B | Keep-alive session mode | `--sample-session` verb; open/close lifecycle; state_token carry-forward |
 | V2-C | Parameter diff mode | Request with state_token + sparse overrides; only changed params re-applied |
 | V2-D | Cost metadata in response | gpu_ms, sample_count in every response |
-| V2-E | NDJSON streaming output | `output_mode: "ndjson"` for progressive results |
+| V2-E | NDJSON streaming output | `output_mode: "ndjson"` streams one `sample_batch` line per row/sequence step plus a final `summary` line; batch arrays reject NDJSON mode |
 | V2-F | Describe with sensitivity | Describe response carries param sensitivity table from Optimization Staging |
 | V2-G | Named pipe / socket transport | Alternative transport for concurrent external consumers |
 

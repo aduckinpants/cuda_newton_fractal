@@ -281,3 +281,89 @@ def test_probe_cli_omits_unrequested_sample_metrics() -> None:
     assert "final_abs2" not in sample
     assert "final_z_x" not in sample and "final_z_y" not in sample
     assert "residual" not in sample and "root_index" not in sample
+
+
+def test_probe_cli_supports_ndjson_output_mode() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-ndjson-grid",
+        "mode": "grid",
+        "output_mode": "ndjson",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "mandelbrot"},
+        ],
+        "region": {
+            "center_x": -0.75,
+            "center_y": 0.0,
+            "span_x": 0.5,
+            "span_y": 0.5,
+            "grid_width": 2,
+            "grid_height": 2,
+        },
+        "metrics": ["iterations", "status", "summary_mean_iterations"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 3
+    assert lines[0]["type"] == "sample_batch"
+    assert lines[1]["type"] == "sample_batch"
+    assert lines[2]["type"] == "summary"
+    assert lines[2]["request_id"] == request["request_id"]
+    assert lines[2]["cost"]["sample_count"] == 4
+
+
+def test_probe_cli_batch_rejects_ndjson_output_mode(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request_path = tmp_path / "ndjson_batch_request.json"
+    response_path = tmp_path / "ndjson_batch_response.json"
+    batch = [
+        {
+            "request_version": 1,
+            "request_id": "ndjson-bad",
+            "mode": "point_set",
+            "output_mode": "ndjson",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [{"x": 0.5, "y": 0.3}],
+        }
+    ]
+    request_path.write_text(json.dumps(batch), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-json",
+            str(request_path),
+            "--sample-response-json",
+            str(response_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    response = json.loads(response_path.read_text(encoding="utf-8"))
+    assert isinstance(response, list)
+    assert response[0]["ok"] is False
+    assert "ndjson" in response[0]["error"]

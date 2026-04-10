@@ -125,6 +125,12 @@ bool ParseModeId(const std::string& text, FractalProbeMode* outMode) {
     return false;
 }
 
+bool ParseOutputModeId(const std::string& text, FractalProbeOutputMode* outMode) {
+    if (text == "json") { if (outMode) *outMode = FractalProbeOutputMode::json; return true; }
+    if (text == "ndjson") { if (outMode) *outMode = FractalProbeOutputMode::ndjson; return true; }
+    return false;
+}
+
 bool ParseOverride(const json_min::Value& value,
     FractalProbeOverride* outOverride,
     std::string* outError) {
@@ -347,6 +353,10 @@ std::string DoubleToJson(double value) {
     return ss.str();
 }
 
+std::string JsonStringLiteral(const std::string& text) {
+    return "\"" + EscapeJsonString(text) + "\"";
+}
+
 void AppendJsonObject(std::ostringstream& ss,
     const std::vector<std::pair<std::string, std::string>>& entries,
     int indent) {
@@ -360,10 +370,19 @@ void AppendJsonObject(std::ostringstream& ss,
     ss << pad << "}";
 }
 
-void AppendSummaryJson(std::ostringstream& ss,
+void AppendJsonObjectCompact(std::ostringstream& ss,
+    const std::vector<std::pair<std::string, std::string>>& entries) {
+    ss << "{";
+    for (size_t index = 0; index < entries.size(); ++index) {
+        if (index > 0) ss << ",";
+        ss << "\"" << entries[index].first << "\":" << entries[index].second;
+    }
+    ss << "}";
+}
+
+std::vector<std::pair<std::string, std::string>> BuildSummaryEntries(
     const FractalProbeSummary& summary,
-    const FractalProbeMetricSelection& selection,
-    int indent) {
+    const FractalProbeMetricSelection& selection) {
     std::vector<std::pair<std::string, std::string>> entries;
     entries.push_back({"sample_count", std::to_string(summary.sample_count)});
     if (selection.include_summary_mean_iterations) {
@@ -390,28 +409,20 @@ void AppendSummaryJson(std::ostringstream& ss,
     if (selection.include_summary_diverged_fraction) {
         entries.push_back({"diverged_fraction", DoubleToJson(summary.diverged_fraction)});
     }
-
-    const std::string pad(static_cast<size_t>(indent), ' ');
-    ss << pad << "\"summary\": ";
-    AppendJsonObject(ss, entries, indent);
+    return entries;
 }
 
-void AppendCostJson(std::ostringstream& ss,
-    const FractalProbeCost& cost,
-    int indent) {
+std::vector<std::pair<std::string, std::string>> BuildCostEntries(
+    const FractalProbeCost& cost) {
     std::vector<std::pair<std::string, std::string>> entries;
     entries.push_back({"gpu_ms", DoubleToJson(cost.gpu_ms)});
     entries.push_back({"sample_count", std::to_string(cost.sample_count)});
-
-    const std::string pad(static_cast<size_t>(indent), ' ');
-    ss << pad << "\"cost\": ";
-    AppendJsonObject(ss, entries, indent);
+    return entries;
 }
 
-void AppendSequenceSummaryJson(std::ostringstream& ss,
+std::vector<std::pair<std::string, std::string>> BuildSequenceSummaryEntries(
     const FractalProbeSequenceResult& result,
-    const FractalProbeMetricSelection& selection,
-    int indent) {
+    const FractalProbeMetricSelection& selection) {
     std::vector<std::pair<std::string, std::string>> entries;
     if (selection.include_summary_mean_iterations) {
         entries.push_back({"mean_iterations", DoubleToJson(result.mean_iterations)});
@@ -428,16 +439,12 @@ void AppendSequenceSummaryJson(std::ostringstream& ss,
     if (selection.include_summary_pole_fraction) {
         entries.push_back({"pole_fraction", DoubleToJson(result.pole_fraction)});
     }
-
-    const std::string pad(static_cast<size_t>(indent), ' ');
-    ss << pad << "\"summary\": ";
-    AppendJsonObject(ss, entries, indent);
+    return entries;
 }
 
-void AppendSampleJson(std::ostringstream& ss,
+std::vector<std::pair<std::string, std::string>> BuildSampleEntries(
     const FractalProbeSample& sample,
-    const FractalProbeMetricSelection& selection,
-    int indent) {
+    const FractalProbeMetricSelection& selection) {
     std::vector<std::pair<std::string, std::string>> entries;
     entries.push_back({"sequence_index", std::to_string(sample.sequence_index)});
     entries.push_back({"grid_x", std::to_string(sample.grid_x)});
@@ -448,7 +455,7 @@ void AppendSampleJson(std::ostringstream& ss,
         entries.push_back({"iterations", std::to_string(sample.iterations)});
     }
     if (selection.include_status) {
-        entries.push_back({"status", std::string("\"") + FractalProbeSampleStatusId(sample.status) + "\""});
+        entries.push_back({"status", JsonStringLiteral(FractalProbeSampleStatusId(sample.status))});
     }
     if (selection.include_final_z) {
         entries.push_back({"final_z_x", DoubleToJson(sample.final_z_x)});
@@ -474,7 +481,43 @@ void AppendSampleJson(std::ostringstream& ss,
         entries.push_back({"derivative_x", DoubleToJson(sample.derivative_x)});
         entries.push_back({"derivative_y", DoubleToJson(sample.derivative_y)});
     }
+    return entries;
+}
 
+void AppendSummaryJson(std::ostringstream& ss,
+    const FractalProbeSummary& summary,
+    const FractalProbeMetricSelection& selection,
+    int indent) {
+    const std::vector<std::pair<std::string, std::string>> entries = BuildSummaryEntries(summary, selection);
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad << "\"summary\": ";
+    AppendJsonObject(ss, entries, indent);
+}
+
+void AppendCostJson(std::ostringstream& ss,
+    const FractalProbeCost& cost,
+    int indent) {
+    const std::vector<std::pair<std::string, std::string>> entries = BuildCostEntries(cost);
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad << "\"cost\": ";
+    AppendJsonObject(ss, entries, indent);
+}
+
+void AppendSequenceSummaryJson(std::ostringstream& ss,
+    const FractalProbeSequenceResult& result,
+    const FractalProbeMetricSelection& selection,
+    int indent) {
+    const std::vector<std::pair<std::string, std::string>> entries = BuildSequenceSummaryEntries(result, selection);
+    const std::string pad(static_cast<size_t>(indent), ' ');
+    ss << pad << "\"summary\": ";
+    AppendJsonObject(ss, entries, indent);
+}
+
+void AppendSampleJson(std::ostringstream& ss,
+    const FractalProbeSample& sample,
+    const FractalProbeMetricSelection& selection,
+    int indent) {
+    const std::vector<std::pair<std::string, std::string>> entries = BuildSampleEntries(sample, selection);
     const std::string pad(static_cast<size_t>(indent), ' ');
     ss << pad;
     AppendJsonObject(ss, entries, indent);
@@ -547,6 +590,14 @@ const char* FractalProbeModeId(FractalProbeMode mode) {
     return "point_set";
 }
 
+const char* FractalProbeOutputModeId(FractalProbeOutputMode mode) {
+    switch (mode) {
+    case FractalProbeOutputMode::json: return "json";
+    case FractalProbeOutputMode::ndjson: return "ndjson";
+    }
+    return "json";
+}
+
 const char* FractalProbeSampleStatusId(FractalProbeSampleStatus status) {
     switch (status) {
     case FractalProbeSampleStatus::escaped: return "escaped";
@@ -574,7 +625,7 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
 
     const json_min::Object& root = value.as_object();
     if (!RejectUnknownKeys(root,
-            {"request_version", "request_id", "function_id", "function", "mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context", "state_token"},
+            {"request_version", "request_id", "function_id", "function", "mode", "output_mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context", "state_token"},
             "request",
             outError)) return false;
 
@@ -674,6 +725,20 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
     if (!ParseModeId(modeText, &request.mode)) {
         if (outError) *outError = "Unsupported probe mode: " + modeText;
         return false;
+    }
+
+    {
+        auto outputIt = root.find("output_mode");
+        if (outputIt != root.end()) {
+            if (!outputIt->second.is_string()) {
+                if (outError) *outError = "output_mode must be a string";
+                return false;
+            }
+            if (!ParseOutputModeId(outputIt->second.as_string(), &request.output_mode)) {
+                if (outError) *outError = "Unsupported output_mode: " + outputIt->second.as_string();
+                return false;
+            }
+        }
     }
 
     auto it = root.find("base_state");
@@ -852,5 +917,67 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "  },\n";
     ss << "  \"error\": " << (response.error.empty() ? std::string("null") : std::string("\"") + EscapeJsonString(response.error) + "\"") << "\n";
     ss << "}\n";
+    return ss.str();
+}
+
+std::string SerializeFractalProbeNdjsonSampleBatchJson(
+    const std::string& requestId,
+    const std::string& functionId,
+    int sequenceIndex,
+    int rowIndex,
+    const std::vector<FractalProbeSample>& samples,
+    const FractalProbeMetricSelection& selection) {
+    std::ostringstream sampleArray;
+    sampleArray << "[";
+    for (size_t index = 0; index < samples.size(); ++index) {
+        if (index > 0) sampleArray << ",";
+        AppendJsonObjectCompact(sampleArray, BuildSampleEntries(samples[index], selection));
+    }
+    sampleArray << "]";
+
+    std::vector<std::pair<std::string, std::string>> entries;
+    entries.push_back({"type", JsonStringLiteral("sample_batch")});
+    entries.push_back({"request_id", JsonStringLiteral(requestId)});
+    if (!functionId.empty()) {
+        entries.push_back({"function_id", JsonStringLiteral(functionId)});
+    }
+    entries.push_back({"sequence_index", std::to_string(sequenceIndex)});
+    if (rowIndex >= 0) {
+        entries.push_back({"row_index", std::to_string(rowIndex)});
+    }
+    entries.push_back({"samples", sampleArray.str()});
+
+    std::ostringstream ss;
+    AppendJsonObjectCompact(ss, entries);
+    return ss.str();
+}
+
+std::string SerializeFractalProbeNdjsonSummaryJson(
+    const FractalProbeResponse& response,
+    const std::string& stateToken) {
+    std::ostringstream summaryJson;
+    AppendJsonObjectCompact(summaryJson, BuildSummaryEntries(response.summary, response.metric_selection));
+
+    std::ostringstream costJson;
+    AppendJsonObjectCompact(costJson, BuildCostEntries(response.cost));
+
+    std::vector<std::pair<std::string, std::string>> entries;
+    entries.push_back({"type", JsonStringLiteral("summary")});
+    entries.push_back({"request_id", JsonStringLiteral(response.request_id)});
+    if (!response.function_id.empty()) {
+        entries.push_back({"function_id", JsonStringLiteral(response.function_id)});
+    }
+    entries.push_back({"ok", response.ok ? "true" : "false"});
+    entries.push_back({"summary", summaryJson.str()});
+    entries.push_back({"cost", costJson.str()});
+    if (!stateToken.empty()) {
+        entries.push_back({"state_token", JsonStringLiteral(stateToken)});
+    }
+    if (!response.error.empty()) {
+        entries.push_back({"error", JsonStringLiteral(response.error)});
+    }
+
+    std::ostringstream ss;
+    AppendJsonObjectCompact(ss, entries);
     return ss.str();
 }

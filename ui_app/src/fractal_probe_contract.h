@@ -14,6 +14,11 @@ enum class FractalProbeMode {
     sequence_grid = 3,
 };
 
+enum class FractalProbeOutputMode {
+    json = 0,
+    ndjson = 1,
+};
+
 enum class FractalProbeSampleStatus {
     escaped = 0,
     converged = 1,
@@ -98,6 +103,7 @@ struct FractalProbeRequest {
     std::string function_id; // default: "fractal.sample"; unknown ids fail fast
     std::string state_token; // V2-C: references accumulated session state
     FractalProbeMode mode{FractalProbeMode::point_set};
+    FractalProbeOutputMode output_mode{FractalProbeOutputMode::json};
     std::string base_state_load_path;
     std::vector<FractalProbeOverride> overrides;
     bool has_region{false};
@@ -212,9 +218,20 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
     std::string* outError);
 
 std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& response);
+std::string SerializeFractalProbeNdjsonSampleBatchJson(
+    const std::string& requestId,
+    const std::string& functionId,
+    int sequenceIndex,
+    int rowIndex,
+    const std::vector<FractalProbeSample>& samples,
+    const FractalProbeMetricSelection& selection);
+std::string SerializeFractalProbeNdjsonSummaryJson(
+    const FractalProbeResponse& response,
+    const std::string& stateToken);
 
 FractalProbeMetricSelection BuildFractalProbeMetricSelection(const std::vector<std::string>& metrics);
 bool FractalProbeSelectionIncludesAnySampleMetrics(const FractalProbeMetricSelection& selection);
 
 const char* FractalProbeModeId(FractalProbeMode mode);
+const char* FractalProbeOutputModeId(FractalProbeOutputMode mode);
 const char* FractalProbeSampleStatusId(FractalProbeSampleStatus status);
