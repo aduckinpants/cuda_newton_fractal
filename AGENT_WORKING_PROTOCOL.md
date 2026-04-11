@@ -140,6 +140,11 @@ Public workflow surface:
 | Python test suite | `py -3.14 -m pytest tests/ -q` | For Python-side changes |
 | Specific test file | `py -3.14 -m pytest tests/<test_file>.py -q` | Targeted validation |
 
+For long-running direct terminal commands, prefer:
+`py -3.14 tools\viewer_host_run_logged_command.py --label "<label>" --log artifacts/<task>.log -- <command ...>`
+
+This keeps the full transcript in `artifacts/` while emitting a short deterministic summary to stdout, which is more reliable than asking editor-integrated terminal wrappers to carry the entire build/test transcript.
+
 **After both build commands pass**, the runtime is at:
 `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`
 
