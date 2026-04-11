@@ -70,6 +70,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\sample_tier_resolver.cpp .\src\explaino_variant_benchmark.cpp .\tests\test_explaino_variant_benchmark.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_variant_benchmark.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\tests\test_runtime_reset.cpp ^
   /Fe:"%TESTROOT%\test_runtime_reset.exe"
 if errorlevel 1 exit /b 1
@@ -306,6 +311,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_view_hp_sync.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_explaino_variant_benchmark.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_diagnostics_state_io.exe"
