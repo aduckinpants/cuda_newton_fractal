@@ -529,6 +529,10 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
         params.poly_coeffs_b[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
         params.poly_coeffs_b[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
         params.poly_coeffs_b[0] = p01x * p23x - p01y * p23y;
+    } else {
+        for (float& coeff : params.poly_coeffs_b) {
+            coeff = 0.0f;
+        }
     }
 
     if (ioDirty) *ioDirty = true;

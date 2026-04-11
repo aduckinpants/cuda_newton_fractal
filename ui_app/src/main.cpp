@@ -26,6 +26,7 @@
 #include "viewer_state_init.h"
 #include "diagnostics_capture.h"
 #include "finding_archive_actions.h"
+#include "finding_capture_state.h"
 #include "finding_state_actions.h"
 #include "explaino_seed.h"
 #include "explaino_sidecar_cuda_sample_host.h"
@@ -456,17 +457,12 @@ static void RunInLoopDiagnosticCapture(
     }
 }
 
-static void RunInLoopFindingCapture(
+static bool RunInLoopFindingCapture(
     const std::string& exeDir, ViewState& view, KernelParams& params,
     const RenderSettings& render, std::string& findingStatus, std::string& lastFindingPath) {
     std::string findingDir;
     std::string captureError;
-    if (IsExplainoFamily(view.fractal_type)) {
-        UpdateExplainoPolynomial(view, params, nullptr);
-    }
-    if (view.auto_max_iter) {
-        params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
-    }
+    const bool invalidateCaches = PrepareFindingCaptureRuntimeState(view, params);
     RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
     std::vector<uint32_t> findingRgba;
     findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
@@ -474,6 +470,7 @@ static void RunInLoopFindingCapture(
     RenderStats findingStats{};
     if (!RenderFractalCUDA(view, params, findingRender, findingRgba.data(), nullptr, &findingStats, &err)) {
         findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
+        return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
             findingRgba.data(), findingRgba.size(), "manual_capture", "Manual viewer capture.",
             &findingDir, &captureError)) {
@@ -482,6 +479,7 @@ static void RunInLoopFindingCapture(
         findingStatus = "Captured finding: " + findingDir;
         lastFindingPath = findingDir;
     }
+    return invalidateCaches;
 }
 
 // --- Image window helpers ---
@@ -1198,7 +1196,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         }
 
         if (actions.captureFinding) {
-            RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath);
+            if (RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath)) {
+                sidecarStateValid = false;
+                sidecarBudgetStateValid = false;
+            }
         }
 
         RenderExplainoSidecarWindow(sidecarState);

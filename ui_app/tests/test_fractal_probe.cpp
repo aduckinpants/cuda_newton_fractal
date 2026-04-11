@@ -566,6 +566,34 @@ int main() {
         }
     }
 
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "probe-explaino-y-nonfinite-status";
+        request.mode = FractalProbeMode::point_set;
+        request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_y")});
+        request.points.push_back({1.0e300, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "probe.exe", &response, &error)) {
+            std::cerr << "Expected Explaino-Y nonfinite probe to run: " << error << "\n";
+            return 1;
+        }
+        if (!response.ok || response.samples.size() != 1) {
+            std::cerr << "Expected a single Explaino-Y nonfinite sample\n";
+            return 1;
+        }
+        if (response.samples[0].status != FractalProbeSampleStatus::nonfinite) {
+            std::cerr << "Explaino-Y nonfinite samples must not be rewritten to converged\n";
+            return 1;
+        }
+        if (response.samples[0].has_root_index) {
+            std::cerr << "Explaino-Y nonfinite samples must not report a root index\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_fractal_probe: all passed\n";
     return 0;
 }

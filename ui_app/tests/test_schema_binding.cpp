@@ -116,6 +116,67 @@ int main() {
 
     {
         ViewState view{};
+        bool* boolValue = nullptr;
+        BindingContext viewOnly = MakeBindingContext(&view, nullptr, nullptr, nullptr);
+        if (!viewOnly.BindBool("fractal.view.auto_refresh", &boolValue) || boolValue != &view.auto_refresh) {
+            std::cerr << "Expected view-only bool bindings to succeed without a render context\n";
+            return 1;
+        }
+
+        RenderSettings render{};
+        boolValue = nullptr;
+        BindingContext renderOnly = MakeBindingContext(nullptr, nullptr, &render, nullptr);
+        if (!renderOnly.BindBool("fractal.render.benchmark", &boolValue) || boolValue != &render.benchmark) {
+            std::cerr << "Expected render-only bool bindings to succeed without a view context\n";
+            return 1;
+        }
+
+        LensSettings lens{};
+        boolValue = nullptr;
+        BindingContext lensOnly = MakeBindingContext(nullptr, nullptr, nullptr, &lens);
+        if (!lensOnly.BindBool("fractal.lens.enabled", &boolValue) || boolValue != &lens.enabled) {
+            std::cerr << "Expected lens-only bool bindings to succeed without view/render contexts\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+
+        UISchemaPredicate invalidPath{};
+        invalidPath.op = "eq";
+        invalidPath.path = "fractal.view.not_real";
+        invalidPath.value = "explaino";
+        if (ctx.EvalVisibleIf(invalidPath)) {
+            std::cerr << "Invalid visible_if paths should fail closed\n";
+            return 1;
+        }
+
+        UISchemaPredicate invalidOp{};
+        invalidOp.op = "mystery_op";
+        invalidOp.path = "fractal.view.fractal_type";
+        invalidOp.value = "explaino";
+        if (ctx.EvalVisibleIf(invalidOp)) {
+            std::cerr << "Invalid visible_if operators should fail closed\n";
+            return 1;
+        }
+
+        UISchemaPredicate invalidNumeric{};
+        invalidNumeric.op = "gt";
+        invalidNumeric.path = "fractal.view.zoom";
+        invalidNumeric.value = "not_a_number";
+        if (ctx.EvalVisibleIf(invalidNumeric)) {
+            std::cerr << "Invalid visible_if numeric values should fail closed\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
         KernelParams params{};
         RenderSettings render{};
         LensSettings lens{};
@@ -201,6 +262,44 @@ int main() {
         error.clear();
         if (!ValidateSchemaBindings(schema, ctx, &error)) {
             std::cerr << "Supported enum binding paths should validate cleanly: " << error << "\n";
+            return 1;
+        }
+
+        schema.panels.clear();
+        panel.controls.clear();
+        UISchemaControl invalidVisibleIf = MakeBoundControl("bad_visible_if", "slider_float", "Bad VisibleIf", "float", "param", "fractal.params.exposure");
+        invalidVisibleIf.has_visible_if = true;
+        invalidVisibleIf.visible_if.op = "eq";
+        invalidVisibleIf.visible_if.path = "fractal.view.not_real";
+        invalidVisibleIf.visible_if.value = "explaino";
+        panel.controls.push_back(invalidVisibleIf);
+        schema.panels.push_back(panel);
+        error.clear();
+        if (ValidateSchemaBindings(schema, ctx, &error)) {
+            std::cerr << "Invalid visible_if predicates should fail schema validation\n";
+            return 1;
+        }
+        if (error.find("visible_if") == std::string::npos) {
+            std::cerr << "Expected invalid visible_if validation error details\n";
+            return 1;
+        }
+
+        schema.panels.clear();
+        panel.controls.clear();
+        UISchemaControl invalidIntCombo = MakeBoundControl("bad_int_combo", "combo", "Bad Int Combo", "int", "param", "fractal.render.device_id");
+        invalidIntCombo.options = {
+            {"0", "Zero", ""},
+            {"not_an_int", "Broken", ""},
+        };
+        panel.controls.push_back(invalidIntCombo);
+        schema.panels.push_back(panel);
+        error.clear();
+        if (ValidateSchemaBindings(schema, ctx, &error)) {
+            std::cerr << "Invalid int combo option ids should fail schema validation\n";
+            return 1;
+        }
+        if (error.find("not_an_int") == std::string::npos) {
+            std::cerr << "Expected invalid int combo validation error details\n";
             return 1;
         }
     }

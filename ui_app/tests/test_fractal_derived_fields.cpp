@@ -449,6 +449,27 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_splice;
+        params.splice_offset = 1.0f;
+        UpdateExplainoPolynomial(view, params, nullptr);
+        if (!NearlyEqual(params.poly_coeffs_b[4], 1.0f)) {
+            std::cerr << "Explaino-Splice should populate the secondary polynomial coefficients\n";
+            return 1;
+        }
+
+        view.fractal_type = FractalType::explaino_joy;
+        UpdateExplainoPolynomial(view, params, nullptr);
+        for (float coeff : params.poly_coeffs_b) {
+            if (!NearlyEqual(coeff, 0.0f)) {
+                std::cerr << "Non-splice Explaino modes must clear stale secondary polynomial coefficients\n";
+                return 1;
+            }
+        }
+    }
+
     // Normalized-seed regression: the host polynomial update should depend on
     // the split combined seed surface (base + drift), not on raw fractional
     // writes into params.explaino_seed.

@@ -535,7 +535,7 @@ bool SamplePoint(const ProbeState& state,
             }
         }
 
-        if (status != FractalProbeSampleStatus::converged) {
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
             z = bestZ;
             it = bestIt;
             pAbs = bestP;

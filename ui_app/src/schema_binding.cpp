@@ -235,8 +235,7 @@ bool BindingContext::GetDoubleValue(const std::string& path, double& out) const 
 }
 
 bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
-    // Fail-open: if we cannot evaluate a predicate, keep the control visible.
-    if (pred.op.empty() || pred.path.empty()) return true;
+    if (pred.op.empty() || pred.path.empty()) return false;
 
     // Enum predicates
     std::string curEnum = GetEnumId(pred.path);
@@ -259,7 +258,7 @@ bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
             }
             return false;
         }
-        return true;
+        return false;
     }
 
     // Bool predicates
@@ -268,7 +267,7 @@ bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
         bool rhs = (pred.value == "true" || pred.value == "1");
         if (pred.op == "eq") return curB == rhs;
         if (pred.op == "neq") return curB != rhs;
-        return true;
+        return false;
     }
 
     // Numeric predicates (int/float)
@@ -280,14 +279,14 @@ bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
         if (GetIntValue(pred.path, curI)) curN = (double)curI;
         else if (GetFloatValue(pred.path, curF)) curN = (double)curF;
         else if (GetDoubleValue(pred.path, curD)) curN = curD;
-        else return true;
+        else return false;
     }
 
     double rhsN = 0.0;
     try {
         rhsN = std::stod(pred.value);
     } catch (...) {
-        return true;
+        return false;
     }
 
     if (pred.op == "eq") return curN == rhsN;
@@ -296,7 +295,7 @@ bool BindingContext::EvalVisibleIf(const UISchemaPredicate& pred) const {
     if (pred.op == "lte") return curN <= rhsN;
     if (pred.op == "gt") return curN > rhsN;
     if (pred.op == "gte") return curN >= rhsN;
-    return true;
+    return false;
 }
 
 bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
@@ -383,19 +382,92 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
 }
 
 bool BindingContext::BindBool(const std::string& path, bool** outPtr) {
-    if (!view || !render) return false;
-    if (path == "fractal.view.auto_refresh") { *outPtr = &view->auto_refresh; return true; }
-    if (path == "fractal.view.auto_dive") { *outPtr = &view->auto_dive; return true; }
-    if (path == "fractal.view.auto_max_iter") { *outPtr = &view->auto_max_iter; return true; }
-    if (path == "fractal.view.explaino_alive") { *outPtr = &view->explaino_alive; return true; }
-    if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
-    if (path == "fractal.view.auto_increment_seed") { *outPtr = &view->auto_increment_seed; return true; }
-    if (path == "fractal.render.benchmark") { *outPtr = &render->benchmark; return true; }
+    if (view) {
+        if (path == "fractal.view.auto_refresh") { *outPtr = &view->auto_refresh; return true; }
+        if (path == "fractal.view.auto_dive") { *outPtr = &view->auto_dive; return true; }
+        if (path == "fractal.view.auto_max_iter") { *outPtr = &view->auto_max_iter; return true; }
+        if (path == "fractal.view.explaino_alive") { *outPtr = &view->explaino_alive; return true; }
+        if (path == "fractal.view.explaino_seed_tween") { *outPtr = &view->explaino_seed_tween; return true; }
+        if (path == "fractal.view.auto_increment_seed") { *outPtr = &view->auto_increment_seed; return true; }
+    }
+    if (render) {
+        if (path == "fractal.render.benchmark") { *outPtr = &render->benchmark; return true; }
+    }
     if (lens && path == "fractal.lens.enabled") { *outPtr = &lens->enabled; return true; }
     return false;
 }
 
 namespace {
+
+bool IsValidBoolPredicateValue(const std::string& value) {
+    return value == "true" || value == "false" || value == "1" || value == "0";
+}
+
+bool ValidateVisibleIfPredicate(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
+    if (!control.has_visible_if) {
+        return true;
+    }
+
+    const UISchemaPredicate& pred = control.visible_if;
+    if (pred.op.empty() || pred.path.empty()) {
+        if (outError) *outError = "Invalid visible_if predicate for control: " + control.id;
+        return false;
+    }
+
+    const std::string enumValue = ctx.GetEnumId(pred.path);
+    if (!enumValue.empty()) {
+        if (pred.op == "eq" || pred.op == "neq" || pred.op == "in") {
+            return true;
+        }
+        if (outError) *outError = "Invalid visible_if enum operator for control: " + control.id + " (path: " + pred.path + ", op: " + pred.op + ")";
+        return false;
+    }
+
+    bool boolValue = false;
+    if (ctx.GetBoolValue(pred.path, boolValue)) {
+        if ((pred.op == "eq" || pred.op == "neq") && IsValidBoolPredicateValue(pred.value)) {
+            return true;
+        }
+        if (outError) *outError = "Invalid visible_if bool predicate for control: " + control.id + " (path: " + pred.path + ", op: " + pred.op + ", value: " + pred.value + ")";
+        return false;
+    }
+
+    int intValue = 0;
+    float floatValue = 0.0f;
+    double doubleValue = 0.0;
+    if (ctx.GetIntValue(pred.path, intValue) || ctx.GetFloatValue(pred.path, floatValue) || ctx.GetDoubleValue(pred.path, doubleValue)) {
+        if (!(pred.op == "eq" || pred.op == "neq" || pred.op == "lt" || pred.op == "lte" || pred.op == "gt" || pred.op == "gte")) {
+            if (outError) *outError = "Invalid visible_if numeric operator for control: " + control.id + " (path: " + pred.path + ", op: " + pred.op + ")";
+            return false;
+        }
+        try {
+            (void)std::stod(pred.value);
+        } catch (...) {
+            if (outError) *outError = "Invalid visible_if numeric value for control: " + control.id + " (path: " + pred.path + ", value: " + pred.value + ")";
+            return false;
+        }
+        return true;
+    }
+
+    if (outError) *outError = "Unknown visible_if binding path: " + pred.path + " (control: " + control.id + ")";
+    return false;
+}
+
+bool ValidateIntComboOptions(const UISchemaControl& control, std::string* outError) {
+    if (control.value_type != "int" || control.type != "combo") {
+        return true;
+    }
+
+    for (const auto& option : control.options) {
+        try {
+            (void)std::stoi(option.id);
+        } catch (...) {
+            if (outError) *outError = "Invalid int combo option id: " + option.id + " (control: " + control.id + ")";
+            return false;
+        }
+    }
+    return true;
+}
 
 bool ApplyBoolSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
     bool* value = nullptr;
@@ -549,6 +621,9 @@ bool ValidateEnumBindingPath(const UISchemaControl& control, BindingContext& ctx
 }
 
 bool ValidateParamBinding(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
+    if (!ValidateIntComboOptions(control, outError)) {
+        return false;
+    }
     const std::string& path = control.binding.path;
     if (control.value_type == "bool") {
         bool* value = nullptr;
@@ -612,6 +687,10 @@ void ApplySchemaDefaults(const UISchema& schema, BindingContext& ctx, bool* ioDi
 bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::string* outError) {
     for (const auto& panel : schema.panels) {
         for (const auto& c : panel.controls) {
+            if (!ValidateVisibleIfPredicate(c, ctx, outError)) {
+                return false;
+            }
+
             if (!c.has_binding) continue;
 
             const auto& b = c.binding;
@@ -849,6 +928,11 @@ bool RenderIntComboControl(
     std::vector<const char*> labels;
     labels.reserve(control.options.size());
     for (const auto& option : control.options) {
+        try {
+            (void)std::stoi(option.id);
+        } catch (...) {
+            return RenderDiagnosticLabel(control, "invalid option id");
+        }
         labels.push_back(option.label.c_str());
     }
 
@@ -862,6 +946,7 @@ bool RenderIntComboControl(
                     changed = true;
                 }
             } catch (...) {
+                return RenderDiagnosticLabel(control, "invalid option id");
             }
         }
     }
