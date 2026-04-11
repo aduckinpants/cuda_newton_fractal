@@ -44,4 +44,5 @@ Complete - Recheck continuity repair checkpointed
   - repo is clean after commit(s)
 
 - Phase 4 completion snapshot:
-  - repair is ready to checkpoint as a continuity fix to the earlier hostile-audit batch
+  - continuity repair checkpointed in `223dd03` and handoff metadata recorded in `1ae8937`
+  - the earlier hostile-audit batch no longer depends on an untracked local-only regression source
