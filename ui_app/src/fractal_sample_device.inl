@@ -14,14 +14,18 @@
     Cx cConst{0.0f, 0.0f};
 
     FractalType ft = view.fractal_type;
+    const bool isExplainoComposedVariant =
+        ft == FractalType::explaino_ripple ||
+        ft == FractalType::explaino_splice ||
+        ft == FractalType::explaino_vortex ||
+        ft == FractalType::explaino_tension;
+    const bool hasExplainoComposedPerturbation =
+        params.ripple_amplitude != 0.0f ||
+        params.splice_offset != 0.0f ||
+        params.vortex_strength != 0.0f ||
+        params.tension_strength != 0.0f;
     // Zero-axis Explaino variants must collapse to the baseline Explaino path exactly.
-    if (ft == FractalType::explaino_ripple && params.ripple_amplitude == 0.0f) {
-        ft = FractalType::explaino;
-    } else if (ft == FractalType::explaino_splice && params.splice_offset == 0.0f) {
-        ft = FractalType::explaino;
-    } else if (ft == FractalType::explaino_vortex && params.vortex_strength == 0.0f) {
-        ft = FractalType::explaino;
-    } else if (ft == FractalType::explaino_tension && params.tension_strength == 0.0f) {
+    if (isExplainoComposedVariant && !hasExplainoComposedPerturbation) {
         ft = FractalType::explaino;
     }
     if (ft == FractalType::newton) {
@@ -815,6 +819,233 @@
         }
         if (!converged) {
             it = bestIt_bell;
+            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+            if (useFP64) {
+                Cxd zd = {(double)z.x, (double)z.y};
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(zd, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            } else {
+                if (nRoots > 0) {
+                    int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    z = unit_root_k(idx, nRoots);
+                } else if (params.explaino_root_count > 0) {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
+        }
+    } else if (ft == FractalType::explaino_ripple ||
+               ft == FractalType::explaino_splice ||
+               ft == FractalType::explaino_vortex ||
+               ft == FractalType::explaino_tension) {
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        float rippleA = params.ripple_amplitude;
+        float V = params.vortex_strength;
+        float T = params.tension_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        int nRootsForPull = params.explaino_root_count;
+        int bestIt_composed = 0;
+        const bool useSplice = params.splice_offset != 0.0f;
+        const float kTwoPI = 6.2831853071795864f;
+        const float kRipplePeriod = 8.0f;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd zPrevD = zd;
+            Cxd pConstD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+            double pAbsD = 0.0;
+            double dampD = (double)userDamp;
+            double ampD = (double)rippleA;
+            double Vd = (double)V;
+            double Td = (double)T;
+            double bestPD_composed = 1.0e30;
+            float coeffsA[5], coeffsB[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) {
+                coeffsA[k] = params.poly_coeffs[k];
+                coeffsB[k] = params.poly_coeffs_b[k];
+            }
+            for (; it < maxIter; ++it) {
+                const float* activeCoeffs = (useSplice && (it % 2) != 0) ? coeffsB : coeffsA;
+                Cxd P, dP;
+                poly_eval_real_coeffs_deg4_d(activeCoeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_composed) { bestPD_composed = pAbsD; bestIt_composed = it; }
+                if (useSplice) {
+                    Cxd PA, dPA;
+                    poly_eval_real_coeffs_deg4_d(coeffsA, zd, &PA, &dPA);
+                    double paAbs = cxd_abs(PA);
+                    if (paAbs < epsD) { pAbsD = paAbs; break; }
+                } else if (pAbsD < epsD) {
+                    break;
+                }
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(newtonStep)));
+
+                Cxd composedStep = newtonStep;
+                if (Vd > 0.0 && stepMag > 1e-30) {
+                    double theta = atan2(newtonStep.y, newtonStep.x);
+                    double angle = Vd * theta;
+                    double cosA = cos(angle);
+                    double sinA = sin(angle);
+                    composedStep = {newtonStep.x * cosA - newtonStep.y * sinA,
+                                    newtonStep.x * sinA + newtonStep.y * cosA};
+                }
+
+                Cxd kick = {0.0, 0.0};
+                if (ampD > 0.0 && stepMag > 1e-30) {
+                    Cxd nHat = {-newtonStep.y / stepMag, newtonStep.x / stepMag};
+                    double dpArg = atan2(dP.y, dP.x);
+                    double wave = ampD * sin((double)kTwoPI * (double)it / (double)kRipplePeriod + dpArg);
+                    kick = {nHat.x * wave, nHat.y * wave};
+                }
+
+                Cxd pull = {0.0, 0.0};
+                if (Td > 0.0 && nRootsForPull >= 2) {
+                    int idxNearest = 0;
+                    double best1 = 1e30;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        double dx = zd.x - (double)params.explaino_roots[r].x;
+                        double dy = zd.y - (double)params.explaino_roots[r].y;
+                        double d2 = dx * dx + dy * dy;
+                        if (d2 < best1) { best1 = d2; idxNearest = r; }
+                    }
+                    double best2 = 1e30;
+                    int idx2 = (idxNearest == 0) ? 1 : 0;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        if (r == idxNearest) continue;
+                        double dx = zd.x - (double)params.explaino_roots[r].x;
+                        double dy = zd.y - (double)params.explaino_roots[r].y;
+                        double d2 = dx * dx + dy * dy;
+                        if (d2 < best2) { best2 = d2; idx2 = r; }
+                    }
+                    double fx = (double)params.explaino_roots[idx2].x - zd.x;
+                    double fy = (double)params.explaino_roots[idx2].y - zd.y;
+                    double dist2 = fx * fx + fy * fy;
+                    if (dist2 > 1e-20) {
+                        pull = {Td * fx / dist2, Td * fy / dist2};
+                    }
+                }
+
+                double damp = dampD / (1.0 + stepMag);
+                Cxd zNext = {
+                    zd.x - composedStep.x * damp + kick.x + pull.x + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
+                    zd.y - composedStep.y * damp + kick.y + pull.y + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
+                };
+                zPrevD = zd;
+                zd = zNext;
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            Cx zPrev = z;
+            Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+            float bestPF_composed = 1.0e30f;
+            float coeffsA[5], coeffsB[5];
+            #pragma unroll
+            for (int k = 0; k < 5; ++k) {
+                coeffsA[k] = params.poly_coeffs[k];
+                coeffsB[k] = params.poly_coeffs_b[k];
+            }
+            for (; it < maxIter; ++it) {
+                const float* activeCoeffs = (useSplice && (it % 2) != 0) ? coeffsB : coeffsA;
+                Cx P, dP;
+                poly_eval_real_coeffs_deg4(activeCoeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_composed) { bestPF_composed = pAbs; bestIt_composed = it; }
+                if (useSplice) {
+                    Cx PA, dPA;
+                    poly_eval_real_coeffs_deg4(coeffsA, z, &PA, &dPA);
+                    float paAbs = cx_abs(PA);
+                    if (paAbs < eps) { pAbs = paAbs; break; }
+                } else if (pAbs < eps) {
+                    break;
+                }
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(newtonStep)));
+
+                Cx composedStep = newtonStep;
+                if (V > 0.0f && stepMag > 1e-20f) {
+                    float theta = atan2f(newtonStep.y, newtonStep.x);
+                    float angle = V * theta;
+                    float cosA = cosf(angle);
+                    float sinA = sinf(angle);
+                    composedStep = {newtonStep.x * cosA - newtonStep.y * sinA,
+                                    newtonStep.x * sinA + newtonStep.y * cosA};
+                }
+
+                Cx kick = {0.0f, 0.0f};
+                if (rippleA > 0.0f && stepMag > 1e-20f) {
+                    Cx nHat = {-newtonStep.y / stepMag, newtonStep.x / stepMag};
+                    float dpArg = atan2f(dP.y, dP.x);
+                    float wave = rippleA * sinf(kTwoPI * (float)it / kRipplePeriod + dpArg);
+                    kick = {nHat.x * wave, nHat.y * wave};
+                }
+
+                Cx pull = {0.0f, 0.0f};
+                if (T > 0.0f && nRootsForPull >= 2) {
+                    int idxNearest = 0;
+                    float best1 = 1e30f;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        float dx = z.x - params.explaino_roots[r].x;
+                        float dy = z.y - params.explaino_roots[r].y;
+                        float d2 = dx * dx + dy * dy;
+                        if (d2 < best1) { best1 = d2; idxNearest = r; }
+                    }
+                    float best2 = 1e30f;
+                    int idx2 = (idxNearest == 0) ? 1 : 0;
+                    for (int r = 0; r < nRootsForPull; ++r) {
+                        if (r == idxNearest) continue;
+                        float dx = z.x - params.explaino_roots[r].x;
+                        float dy = z.y - params.explaino_roots[r].y;
+                        float d2 = dx * dx + dy * dy;
+                        if (d2 < best2) { best2 = d2; idx2 = r; }
+                    }
+                    float fx = params.explaino_roots[idx2].x - z.x;
+                    float fy = params.explaino_roots[idx2].y - z.y;
+                    float dist2 = fx * fx + fy * fy;
+                    if (dist2 > 1e-20f) {
+                        pull = {T * fx / dist2, T * fy / dist2};
+                    }
+                }
+
+                float damp = userDamp / (1.0f + stepMag);
+                Cx zNext = cx_add(
+                    cx_add(cx_add(cx_sub(z, cx_scale(composedStep, damp)), kick), pull),
+                    cx_mul(pConst, zPrev));
+                zPrev = z;
+                z = zNext;
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_composed;
             int nRoots = ResolvePolynomialRootCount(params.poly_kind);
             if (useFP64) {
                 Cxd zd = {(double)z.x, (double)z.y};

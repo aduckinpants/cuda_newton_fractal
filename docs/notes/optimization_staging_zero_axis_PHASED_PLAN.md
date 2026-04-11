@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - composed-kernel follow-on
+Complete - composed Explaino perturbation chain landed, validated, and ready to checkpoint
 
 ## Phase Checklist
 
@@ -10,22 +10,27 @@ Phase 5 - composed-kernel follow-on
 - [x] Phase 2 - zero-axis micro-benchmark harness
 - [x] Phase 3 - parameter sensitivity sweep script
 - [x] Phase 4 - describe/probe exposure
-- [ ] Phase 5 - composed-kernel follow-on
+- [x] Phase 5 - composed-kernel follow-on
 
 ## Notes
 
 - Spec source: `spec_intake/OptimizationStaging_ExplainoZeroAxis_SpecIntake.md`
+- Phase 5 delivered:
+  - `ui_app/src/fractal_probe_runner.cpp` and `ui_app/src/fractal_sample_device.inl` now route `explaino_ripple`, `explaino_splice`, `explaino_vortex`, and `explaino_tension` through one composed perturbation chain whenever any of `ripple_amplitude`, `splice_offset`, `vortex_strength`, or `tension_strength` is non-zero; plain `explaino` still ignores latent variant params
+  - `ui_app/src/fractal_derived_fields.cpp` now emits `poly_coeffs_b` for splice-active composed-capable Explaino states so splice alternation works behind any legacy Explaino variant label
+  - `ui_app/tests/test_explaino_zero_axis_equivalence.cu` now proves secondary-only reduction, plain Explaino latent-param isolation, and multi-active label invariance; final helper validation recorded `test_explaino_zero_axis_equivalence: 110 passed, 0 failed`
+  - `ui_app/tests/test_fractal_probe.cpp` adds matching host probe reductions and composed-label invariance coverage so the probe sampler stays aligned with the shared device/runtime seam
+  - this slice intentionally keeps composition internal behind the existing legacy Explaino variant labels; no new schema/describe/UI surface or public `explaino_composed` fractal type was introduced yet
+  - closure validation is green with `ui_app/build_tests_vsdevcmd.cmd`, `ui_app/build_vsdevcmd.cmd`, `py -3.14 -m pytest tests/test_fractal_runtime_probe_cli.py -q`, and `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/phase5_composed_code_quality_report_audit2.json`
 - Phase 1 delivered:
   - added `ui_app/tests/test_explaino_zero_axis_equivalence.cu` as a headless CUDA-path regression over a shared 256x256 coordinate grid for baseline `explaino` plus `explaino_ripple`, `explaino_splice`, `explaino_vortex`, and `explaino_tension`
   - proved the root surface already matched at zero axis, then exposed a real runtime defect where zero-valued variants still ran their branch-local solver substrate instead of collapsing to baseline Explaino
   - repaired the shared runtime path in `ui_app/src/fractal_sample_device.inl` by normalizing zero-valued variant dispatch to `FractalType::explaino` before iteration, which fixes both sample and renderer consumers of the shared device seam
   - wired the regression into `ui_app/build_tests_vsdevcmd.cmd` so the helper matrix executes it deterministically
-- Phase 5 next slice:
-  - use the now-measured zero/default benchmark and sensitivity surfaces to scope the composed-kernel follow-on without weakening the shared sample/describe/probe seams that Phases 2-4 established
-  - preserve the V1 rule that generic sequence axes may not vary `fractal.view.fractal_type`; any future composed-kernel sequencing should stay behind an explicit contract mode the way `variant_crossfade` does
 - Deferred to later phases:
   - GPU timing benchmark harness
   - CSV sensitivity sweep tooling
+  - any future public `explaino_composed` schema/describe/UI surface beyond the internal composed routing landed here
 
 - Phase 2 delivered:
   - added `ui_app/src/explaino_variant_benchmark.h/.cpp` as the headless case/config surface for baseline Explaino plus ripple/splice/vortex/tension zero-axis and default-strength benchmark rows

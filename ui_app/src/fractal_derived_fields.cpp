@@ -506,6 +506,18 @@ static void ClearPolynomialCoefficients(float coeffs[5]) {
     }
 }
 
+static bool IsExplainoComposedVariantType(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino_ripple:
+    case FractalType::explaino_splice:
+    case FractalType::explaino_vortex:
+    case FractalType::explaino_tension:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {
     if (!IsExplainoFamily(view.fractal_type)) {
         params.explaino_root_count = 0;
@@ -523,7 +535,10 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     SetExplainoRootsForShape(view.fractal_type, params.explaino_cluster_radius, shape, params);
     SetDegree4PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
 
-    if (view.fractal_type == FractalType::explaino_splice) {
+    const bool needsSplicePolynomial =
+        view.fractal_type == FractalType::explaino_splice ||
+        (IsExplainoComposedVariantType(view.fractal_type) && params.splice_offset != 0.0f);
+    if (needsSplicePolynomial) {
         UpdateExplainoSplicePolynomial(view, params, phase, spread, phaseStrength, params.poly_coeffs_b);
     } else {
         ClearPolynomialCoefficients(params.poly_coeffs_b);

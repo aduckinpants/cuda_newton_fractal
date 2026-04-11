@@ -474,7 +474,20 @@ bool SamplePoint(const ProbeState& state,
     float pAbs = 0.0f;
     Cx z{0.0f, 0.0f};
     FractalProbeSampleStatus status = FractalProbeSampleStatus::bounded;
-    const FractalType ft = view.fractal_type;
+    FractalType ft = view.fractal_type;
+    const bool isExplainoComposedVariant =
+        ft == FractalType::explaino_ripple ||
+        ft == FractalType::explaino_splice ||
+        ft == FractalType::explaino_vortex ||
+        ft == FractalType::explaino_tension;
+    const bool hasExplainoComposedPerturbation =
+        params.ripple_amplitude != 0.0f ||
+        params.splice_offset != 0.0f ||
+        params.vortex_strength != 0.0f ||
+        params.tension_strength != 0.0f;
+    if (isExplainoComposedVariant && !hasExplainoComposedPerturbation) {
+        ft = FractalType::explaino;
+    }
 
     auto explainoSeed = [&]() {
         const double combinedSeed = params.explaino_seed + static_cast<double>(view.explaino_seed_drift);
@@ -912,6 +925,118 @@ bool SamplePoint(const ProbeState& state,
 
         if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
             it = bestIt_bell;
+        }
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_ripple ||
+        ft == FractalType::explaino_splice ||
+        ft == FractalType::explaino_vortex ||
+        ft == FractalType::explaino_tension) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        Cx zPrev = z;
+        const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};
+        const float rippleA = params.ripple_amplitude;
+        const float vortexStrength = params.vortex_strength;
+        const float tensionStrength = params.tension_strength;
+        const int nRootsForPull = params.explaino_root_count;
+        const bool useSplice = params.splice_offset != 0.0f;
+        float bestPF = 1.0e30f;
+        int bestIt_composed = 0;
+        const float kTwoPI = 6.2831853071795864f;
+        const float kRipplePeriod = 8.0f;
+
+        for (; it < maxIter; ++it) {
+            const float* activeCoeffs = (useSplice && (it % 2) != 0) ? params.poly_coeffs_b : params.poly_coeffs;
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(activeCoeffs, z, &P, &dP);
+
+            pAbs = CxAbs(P);
+            if (pAbs < bestPF) { bestPF = pAbs; bestIt_composed = it; }
+            if (useSplice) {
+                Cx PA, dPA;
+                PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &PA, &dPA);
+                const float paAbs = CxAbs(PA);
+                if (paAbs < eps) {
+                    pAbs = paAbs;
+                    status = FractalProbeSampleStatus::converged;
+                    break;
+                }
+            } else if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+
+            const float dAbs2 = CxAbs2(dP);
+            const Cx newtonStep = (dAbs2 < 1.0e-20f) ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(newtonStep)));
+
+            Cx composedStep = newtonStep;
+            if (vortexStrength > 0.0f && stepMag > 1.0e-20f) {
+                const float theta = std::atan2(newtonStep.y, newtonStep.x);
+                const float angle = vortexStrength * theta;
+                const float cosA = std::cos(angle);
+                const float sinA = std::sin(angle);
+                composedStep = {newtonStep.x * cosA - newtonStep.y * sinA,
+                                newtonStep.x * sinA + newtonStep.y * cosA};
+            }
+
+            Cx kick = {0.0f, 0.0f};
+            if (rippleA > 0.0f && stepMag > 1.0e-20f) {
+                const Cx nHat = {-newtonStep.y / stepMag, newtonStep.x / stepMag};
+                const float dpArg = std::atan2(dP.y, dP.x);
+                const float wave = rippleA * std::sin(kTwoPI * (float)it / kRipplePeriod + dpArg);
+                kick = {nHat.x * wave, nHat.y * wave};
+            }
+
+            Cx pull = {0.0f, 0.0f};
+            if (tensionStrength > 0.0f && nRootsForPull >= 2) {
+                int idxNearest = 0;
+                float best1 = 1.0e30f;
+                for (int r = 0; r < nRootsForPull; ++r) {
+                    const float dx = z.x - params.explaino_roots[r].x;
+                    const float dy = z.y - params.explaino_roots[r].y;
+                    const float d2 = dx * dx + dy * dy;
+                    if (d2 < best1) { best1 = d2; idxNearest = r; }
+                }
+                float best2 = 1.0e30f;
+                int idx2 = (idxNearest == 0) ? 1 : 0;
+                for (int r = 0; r < nRootsForPull; ++r) {
+                    if (r == idxNearest) continue;
+                    const float dx = z.x - params.explaino_roots[r].x;
+                    const float dy = z.y - params.explaino_roots[r].y;
+                    const float d2 = dx * dx + dy * dy;
+                    if (d2 < best2) { best2 = d2; idx2 = r; }
+                }
+                const float fx = params.explaino_roots[idx2].x - z.x;
+                const float fy = params.explaino_roots[idx2].y - z.y;
+                const float dist2 = fx * fx + fy * fy;
+                if (dist2 > 1.0e-20f) {
+                    pull = {tensionStrength * fx / dist2, tensionStrength * fy / dist2};
+                }
+            }
+
+            const float damp = params.explaino_damping / (1.0f + stepMag);
+            const Cx zNext = CxAdd(
+                CxAdd(CxAdd(CxSub(z, CxScale(composedStep, damp)), kick), pull),
+                CxMul(pConst, zPrev));
+            zPrev = z;
+            z = zNext;
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float r = std::sqrt(r2);
+                const float s = 4.0f / std::max(1e-12f, r);
+                z = CxScale(z, s);
+            }
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged && status != FractalProbeSampleStatus::nonfinite) {
+            it = bestIt_composed;
         }
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
         return true;

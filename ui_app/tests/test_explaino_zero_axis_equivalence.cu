@@ -42,7 +42,27 @@ double Distance(double ax, double ay, double bx, double by) {
     return std::sqrt(dx * dx + dy * dy);
 }
 
-void BuildZeroAxisState(FractalType fractalType, ZeroAxisState* outState) {
+float DefaultVariantStrength(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino_ripple:
+        return 0.15f;
+    case FractalType::explaino_splice:
+        return 0.5f;
+    case FractalType::explaino_vortex:
+        return 0.3f;
+    case FractalType::explaino_tension:
+        return 0.02f;
+    default:
+        return 0.0f;
+    }
+}
+
+void BuildExplainoVariantState(FractalType fractalType,
+    float rippleAmplitude,
+    float spliceOffset,
+    float vortexStrength,
+    float tensionStrength,
+    ZeroAxisState* outState) {
     outState->view = {};
     outState->params = {};
     outState->render = {};
@@ -63,10 +83,10 @@ void BuildZeroAxisState(FractalType fractalType, ZeroAxisState* outState) {
     outState->params.explaino_root_spread = 0.5f;
     outState->params.explaino_damping = 1.0f;
     outState->params.explaino_cluster_radius = 0.0f;
-    outState->params.ripple_amplitude = 0.0f;
-    outState->params.splice_offset = 0.0f;
-    outState->params.vortex_strength = 0.0f;
-    outState->params.tension_strength = 0.0f;
+    outState->params.ripple_amplitude = rippleAmplitude;
+    outState->params.splice_offset = spliceOffset;
+    outState->params.vortex_strength = vortexStrength;
+    outState->params.tension_strength = tensionStrength;
 
     outState->render.resolution = {kWidth, kHeight};
     outState->render.block_size = 256;
@@ -77,6 +97,10 @@ void BuildZeroAxisState(FractalType fractalType, ZeroAxisState* outState) {
     ExplainoSeedNormalize(outState->view, outState->params);
     UpdateExplainoPolynomial(outState->view, outState->params, nullptr);
     SyncViewHpFromUi(outState->view);
+}
+
+void BuildZeroAxisState(FractalType fractalType, ZeroAxisState* outState) {
+    BuildExplainoVariantState(fractalType, 0.0f, 0.0f, 0.0f, 0.0f, outState);
 }
 
 void BuildGridCoordinates(const ViewState& view, std::vector<Double2>* outCoords) {
@@ -226,6 +250,174 @@ void CheckVariantAgainstBaseline(FractalType variantType, const char* variantNam
     CHECK("zero-axis final_z stays within tolerance", finalZMismatches == 0);
 }
 
+void CheckStateEquivalence(const ZeroAxisState& expected,
+    const ZeroAxisState& actual,
+    const char* name) {
+    CheckRootSurface(expected, actual, name);
+
+    std::vector<Double2> coords;
+    BuildGridCoordinates(expected.view, &coords);
+
+    std::vector<FractalSampleResult> expectedResults;
+    std::vector<FractalSampleResult> actualResults;
+    CHECK("expected sample ok", SampleGrid(expected, coords, &expectedResults));
+    CHECK("actual sample ok", SampleGrid(actual, coords, &actualResults));
+    if (expectedResults.size() != actualResults.size() || expectedResults.empty()) {
+        CHECK("sample result counts match", false);
+        return;
+    }
+
+    int flagMismatches = 0;
+    int basinMismatches = 0;
+    int iterationMismatches = 0;
+    int residualMismatches = 0;
+    int finalZMismatches = 0;
+    int convergedComparisons = 0;
+    double maxResidualDelta = 0.0;
+    double maxFinalZDelta = 0.0;
+
+    for (size_t index = 0; index < expectedResults.size(); ++index) {
+        const FractalSampleResult& expectedResult = expectedResults[index];
+        const FractalSampleResult& actualResult = actualResults[index];
+
+        if (expectedResult.converged != actualResult.converged || expectedResult.escaped != actualResult.escaped) {
+            ++flagMismatches;
+        }
+
+        if (std::abs(expectedResult.iterations - actualResult.iterations) > 1) {
+            ++iterationMismatches;
+        }
+
+        if (expectedResult.converged && actualResult.converged) {
+            ++convergedComparisons;
+            if (NearestRootIndex(expected.params, expectedResult) != NearestRootIndex(expected.params, actualResult)) {
+                ++basinMismatches;
+            }
+
+            const double residualDelta = std::fabs(static_cast<double>(expectedResult.residual) - static_cast<double>(actualResult.residual));
+            const double finalZDelta = Distance(
+                expectedResult.final_z_x,
+                expectedResult.final_z_y,
+                actualResult.final_z_x,
+                actualResult.final_z_y);
+            if (residualDelta > kResidualTolerance) {
+                ++residualMismatches;
+            }
+            if (finalZDelta > kFinalZTolerance) {
+                ++finalZMismatches;
+            }
+            if (residualDelta > maxResidualDelta) maxResidualDelta = residualDelta;
+            if (finalZDelta > maxFinalZDelta) maxFinalZDelta = finalZDelta;
+        }
+    }
+
+    std::printf("    %-30s conv=%5d flag=%4d basin=%4d iter=%4d residual_max=%.3e final_z_max=%.3e\n",
+        name,
+        convergedComparisons,
+        flagMismatches,
+        basinMismatches,
+        iterationMismatches,
+        maxResidualDelta,
+        maxFinalZDelta);
+
+    CHECK("converged comparisons available", convergedComparisons > 0);
+    CHECK("state flags match", flagMismatches == 0);
+    CHECK("state basin identity matches", basinMismatches == 0);
+    CHECK("state iterations stay within tolerance", iterationMismatches == 0);
+    CHECK("state residuals stay within tolerance", residualMismatches == 0);
+    CHECK("state final_z stays within tolerance", finalZMismatches == 0);
+}
+
+void CheckSecondaryVariantReduction(FractalType primaryType,
+    const char* primaryName,
+    FractalType secondaryType,
+    const char* secondaryName) {
+    ZeroAxisState expected;
+    ZeroAxisState actual;
+
+    float rippleAmplitude = 0.0f;
+    float spliceOffset = 0.0f;
+    float vortexStrength = 0.0f;
+    float tensionStrength = 0.0f;
+    const float secondaryStrength = DefaultVariantStrength(secondaryType);
+
+    switch (secondaryType) {
+    case FractalType::explaino_ripple:
+        rippleAmplitude = secondaryStrength;
+        break;
+    case FractalType::explaino_splice:
+        spliceOffset = secondaryStrength;
+        break;
+    case FractalType::explaino_vortex:
+        vortexStrength = secondaryStrength;
+        break;
+    case FractalType::explaino_tension:
+        tensionStrength = secondaryStrength;
+        break;
+    default:
+        CHECK("secondary type must be a composed variant", false);
+        return;
+    }
+
+    BuildExplainoVariantState(secondaryType,
+        rippleAmplitude,
+        spliceOffset,
+        vortexStrength,
+        tensionStrength,
+        &expected);
+    BuildExplainoVariantState(primaryType,
+        rippleAmplitude,
+        spliceOffset,
+        vortexStrength,
+        tensionStrength,
+        &actual);
+
+    char label[96];
+    std::snprintf(label, sizeof(label), "%s secondary=%s", primaryName, secondaryName);
+    CheckStateEquivalence(expected, actual, label);
+}
+
+void CheckPlainExplainoIgnoresLatentComposition() {
+    ZeroAxisState expected;
+    ZeroAxisState actual;
+    BuildZeroAxisState(FractalType::explaino, &expected);
+    BuildExplainoVariantState(FractalType::explaino,
+        DefaultVariantStrength(FractalType::explaino_ripple),
+        DefaultVariantStrength(FractalType::explaino_splice),
+        DefaultVariantStrength(FractalType::explaino_vortex),
+        DefaultVariantStrength(FractalType::explaino_tension),
+        &actual);
+    CheckStateEquivalence(expected, actual, "plain explaino latent params");
+}
+
+void CheckComposedLabelInvariance(FractalType leftType,
+    const char* leftName,
+    FractalType rightType,
+    const char* rightName,
+    float rippleAmplitude,
+    float spliceOffset,
+    float vortexStrength,
+    float tensionStrength) {
+    ZeroAxisState left;
+    ZeroAxisState right;
+    BuildExplainoVariantState(leftType,
+        rippleAmplitude,
+        spliceOffset,
+        vortexStrength,
+        tensionStrength,
+        &left);
+    BuildExplainoVariantState(rightType,
+        rippleAmplitude,
+        spliceOffset,
+        vortexStrength,
+        tensionStrength,
+        &right);
+
+    char label[128];
+    std::snprintf(label, sizeof(label), "%s vs %s composed invariance", leftName, rightName);
+    CheckStateEquivalence(left, right, label);
+}
+
 } // namespace
 
 int main() {
@@ -234,6 +426,30 @@ int main() {
     CheckVariantAgainstBaseline(FractalType::explaino_splice, "explaino_splice");
     CheckVariantAgainstBaseline(FractalType::explaino_vortex, "explaino_vortex");
     CheckVariantAgainstBaseline(FractalType::explaino_tension, "explaino_tension");
+    std::printf("=== Explaino composed secondary reductions ===\n");
+    CheckSecondaryVariantReduction(FractalType::explaino_ripple, "explaino_ripple", FractalType::explaino_vortex, "explaino_vortex");
+    CheckSecondaryVariantReduction(FractalType::explaino_vortex, "explaino_vortex", FractalType::explaino_splice, "explaino_splice");
+    CheckSecondaryVariantReduction(FractalType::explaino_splice, "explaino_splice", FractalType::explaino_tension, "explaino_tension");
+    CheckSecondaryVariantReduction(FractalType::explaino_tension, "explaino_tension", FractalType::explaino_ripple, "explaino_ripple");
+    CheckPlainExplainoIgnoresLatentComposition();
+    CheckComposedLabelInvariance(
+        FractalType::explaino_ripple,
+        "explaino_ripple",
+        FractalType::explaino_vortex,
+        "explaino_vortex",
+        DefaultVariantStrength(FractalType::explaino_ripple),
+        0.0f,
+        DefaultVariantStrength(FractalType::explaino_vortex),
+        0.0f);
+    CheckComposedLabelInvariance(
+        FractalType::explaino_splice,
+        "explaino_splice",
+        FractalType::explaino_tension,
+        "explaino_tension",
+        0.0f,
+        DefaultVariantStrength(FractalType::explaino_splice),
+        0.0f,
+        DefaultVariantStrength(FractalType::explaino_tension));
     std::printf("test_explaino_zero_axis_equivalence: %d passed, %d failed\n", gPass, gFail);
     return gFail == 0 ? 0 : 1;
 }
