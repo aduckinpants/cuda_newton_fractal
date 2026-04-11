@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - composed Explaino perturbation chain landed, validated, and ready to checkpoint
+Complete - composed Explaino perturbation chain checkpointed and validation-receipted
 
 ## Phase Checklist
 
