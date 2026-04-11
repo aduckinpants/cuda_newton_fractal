@@ -344,6 +344,28 @@ int main() {
     {
         FakeMeasurementHost host;
         host.fail = true;
+        ExplainoSidecarWindowState state;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        std::string error;
+        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, nullptr, nullptr, &policy, &state, &error)) {
+            std::cerr << "Expected initial sidecar window state build to fail when the measurement host fails\n";
+            return 1;
+        }
+        if (error.find("fake measurement host failure") == std::string::npos) {
+            std::cerr << "Expected initial measurement failure to mention the host failure\n";
+            return 1;
+        }
+        if (state.controller_error_message.find("completeness function_id") == std::string::npos) {
+            std::cerr << "Expected initial measurement failures to expose an explicit controller-unavailable error instead of a blank controller state\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        host.fail = true;
         ExplainoSidecarWindowState seeded;
         ExplainoSidecarWindowState state;
         SidecarAutoDemoControllerPolicy policy;

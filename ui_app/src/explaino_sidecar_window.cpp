@@ -69,9 +69,6 @@ void PopulateControllerDecision(ExplainoSidecarWindowState* ioState) {
 
     ioState->controller_error_message.clear();
     ioState->controller_decision = {};
-    if (ioState->completeness.function_id.empty()) {
-        return;
-    }
 
     std::string controllerError;
     if (!BuildSidecarAutoDemoControllerDecision(
