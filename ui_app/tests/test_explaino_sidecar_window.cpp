@@ -107,6 +107,17 @@ EngineFunctionCatalog BuildBrokenCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildDuplicateMeasurementCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    FunctionParamDescriptor duplicate = MakeParam("fractal.params.explaino_mix", "float", "Mix Duplicate", 0.0, 1.0, 0.5);
+    duplicate.has_applicable_when = true;
+    duplicate.applicable_when.op = "eq";
+    duplicate.applicable_when.path = "fractal.view.fractal_type";
+    duplicate.applicable_when.value = "explaino";
+    catalog.functions[0].parameters.push_back(duplicate);
+    return catalog;
+}
+
 EngineFunctionCatalog BuildUnsupportedCurrentTypeCatalog() {
     EngineFunctionCatalog catalog = BuildCatalog();
     catalog.functions[0].parameters[0].options.clear();
@@ -215,14 +226,52 @@ int main() {
             std::cerr << "Expected successful measurements to leave no measurement error message\n";
             return 1;
         }
+        if (state.budget.batch_count != 1 || state.budget.cumulative_information_gain_total != state.measurement.total_information_gain_estimate) {
+            std::cerr << "Expected first sidecar window measurement build to seed the persistent budget state\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState first;
+        ExplainoSidecarWindowState second;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &first, &error)) {
+            std::cerr << "Expected initial sidecar window state to build before persistence test: " << error << "\n";
+            return 1;
+        }
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &first.budget, &second, &error)) {
+            std::cerr << "Expected repeated sidecar window state build to preserve budget state: " << error << "\n";
+            return 1;
+        }
+        if (second.budget.batch_count != 2) {
+            std::cerr << "Expected repeated sidecar window builds on the same surface to accumulate budget batches\n";
+            return 1;
+        }
+        if (second.budget.cumulative_information_gain_total != first.budget.cumulative_information_gain_total + second.measurement.total_information_gain_estimate) {
+            std::cerr << "Expected repeated sidecar window builds to accumulate cumulative information gain\n";
+            return 1;
+        }
+        if (!(second.budget.mean_posterior_uncertainty < first.budget.mean_posterior_uncertainty)) {
+            std::cerr << "Expected repeated sidecar window builds to reduce posterior uncertainty\n";
+            return 1;
+        }
     }
 
     {
         FakeMeasurementHost host;
         host.fail = true;
+        ExplainoSidecarWindowState seeded;
         ExplainoSidecarWindowState state;
         std::string error;
-        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &state, &error)) {
+        host.fail = false;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded, &error)) {
+            std::cerr << "Expected seeded sidecar window state to build before failure preservation test: " << error << "\n";
+            return 1;
+        }
+        host.fail = true;
+        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded.budget, &state, &error)) {
             std::cerr << "Expected sidecar window state build to fail when measurement host fails\n";
             return 1;
         }
@@ -236,6 +285,39 @@ int main() {
         }
         if (state.rows.size() != 3) {
             std::cerr << "Expected sidecar window state to retain base rows when measurement fails\n";
+            return 1;
+        }
+        if (state.budget.cumulative_information_gain_total != seeded.budget.cumulative_information_gain_total) {
+            std::cerr << "Expected sidecar window state to retain the last known budget state when measurement fails\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState seeded;
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded, &error)) {
+            std::cerr << "Expected seeded sidecar window state to build before budget-failure preservation test: " << error << "\n";
+            return 1;
+        }
+        if (BuildExplainoSidecarWindowState(BuildDuplicateMeasurementCatalog(), ctx, &host, &seeded.budget, &state, &error)) {
+            std::cerr << "Expected duplicate measurement rows to fail during budget update\n";
+            return 1;
+        }
+        if (error.find("duplicate") == std::string::npos) {
+            std::cerr << "Expected budget update failure to report duplicate measurement rows\n";
+            return 1;
+        }
+        if (state.measurement_error_message.find("duplicate") == std::string::npos) {
+            std::cerr << "Expected sidecar window state to retain the budget failure message\n";
+            return 1;
+        }
+        if (state.budget.batch_count != seeded.budget.batch_count ||
+            state.budget.cumulative_information_gain_total != seeded.budget.cumulative_information_gain_total ||
+            state.budget.function_id != seeded.budget.function_id) {
+            std::cerr << "Expected budget update failures to retain the last known budget state\n";
             return 1;
         }
     }

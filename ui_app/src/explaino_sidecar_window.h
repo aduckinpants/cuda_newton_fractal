@@ -1,5 +1,6 @@
 #pragma once
 
+#include "explaino_sidecar_budget.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
 
@@ -22,8 +23,17 @@ struct ExplainoSidecarWindowState {
     std::string measurement_error_message;
     SidecarOrientationVector orientation{};
     SidecarMeasurementBatch measurement{};
+    SidecarBudgetState budget{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError);
 
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,

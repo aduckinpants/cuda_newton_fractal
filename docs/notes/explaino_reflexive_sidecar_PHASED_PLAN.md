@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - R2 CUDA demonstration engine
+Phase 4 - R3 lens and action selection
 
 ## Phase Checklist
 
 - [x] Phase 1 - R1 headless model scaffold
 - [x] Phase 2 - R1 viewer window shell
-- [ ] Phase 3 - R2 CUDA demonstration engine
+- [x] Phase 3 - R2 CUDA demonstration engine
 - [ ] Phase 4 - R3 lens and action selection
 - [ ] Phase 5 - R4 divergence, energy, and persistence
 
@@ -16,10 +16,10 @@ Phase 3 - R2 CUDA demonstration engine
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - add a headless sidecar model seam outside `ui_app/src/main.cpp`
-  - define the R1 orientation-vector data shape
-  - derive the sidecar hypothesis space from the existing describe surface
-  - add focused native tests that lock discovery and ordering behavior
+  - derive an initial lens projection seam from the measured EIG/budget surface
+  - expose an active-zone summary without adding autonomous action selection yet
+  - keep the new R3 logic extracted from `ui_app/src/main.cpp`
+  - add focused native tests that lock lens ordering and failure behavior
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -40,18 +40,22 @@ Phase 3 - R2 CUDA demonstration engine
 - Delivered so far in Phase 3:
   - `ui_app/src/explaino_sidecar_measurement.h/.cpp`
   - `ui_app/src/explaino_sidecar_cuda_sample_host.h/.cpp`
+  - `ui_app/src/explaino_sidecar_budget.h/.cpp`
   - `ui_app/tests/test_explaino_sidecar_measurement.cpp`
+  - `ui_app/tests/test_explaino_sidecar_budget.cpp`
   - sidecar window measurement state and initial information-budget rendering in `ui_app/src/explaino_sidecar_window.h/.cpp`
+  - persistent budget state and EIG semantics in `ui_app/src/explaino_sidecar_window.h/.cpp`
   - runtime wiring in `ui_app/src/main.cpp` that reuses the in-process CUDA sample host and avoids recomputing the micro-sweep on idle frames
   - hostile-audit repair for stale derived Explaino polynomial state during measurement variants
+  - hostile-audit repairs for mean-budget math, zero-information observation counting, empty-surface batch accounting, and budget-state preservation on update failure
 - Validation achieved for the current Phase 3 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/code_quality_audit.py --out artifacts/code_quality_report.json`
-- Next bounded slice for Phase 3:
-  - convert the current output-delta score into an explicit per-param EIG estimate surface with named budget semantics
-  - persist cumulative information-gain and uncertainty state across interactions instead of recomputing only the current batch
-  - keep action selection and lens projection deferred until the R2 budget state is durable
+- Next bounded slice for Phase 4:
+  - compute an initial lens projection per measured parameter from the current demonstration surface
+  - render active-zone guidance alongside the ranked budget rows without adding auto-selection yet
+  - keep argmax EIG-cost action recommendation deferred until the lens seam is durable
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - EIG, lens projection, and autonomous action selection

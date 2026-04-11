@@ -39,6 +39,7 @@ bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,
     const BindingContext& ctx,
     const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
     if (!outState) {
@@ -78,14 +79,28 @@ bool BuildExplainoSidecarWindowState(
         std::string measurementError;
         if (!BuildSidecarMeasurementBatch(space, ctx, *measurementHost, &next.measurement, &measurementError)) {
             next.measurement_error_message = measurementError;
+            if (previousBudget) {
+                next.budget = *previousBudget;
+            }
             *outState = std::move(next);
             if (outError) *outError = measurementError;
             return false;
         }
 
+        std::string budgetError;
+        if (!UpdateSidecarBudgetState(space, next.fractal_type_id, next.measurement, previousBudget, &next.budget, &budgetError)) {
+            next.measurement_error_message = budgetError;
+            if (previousBudget) {
+                next.budget = *previousBudget;
+            }
+            *outState = std::move(next);
+            if (outError) *outError = budgetError;
+            return false;
+        }
+
         next.orientation = ComputeSidecarOrientationVector(ctx, space, BuildSidecarOrientationInputs(next.measurement));
-        if (!next.measurement.rows.empty()) {
-            next.orientation.field_embedding_stats = next.measurement.mean_information_gain_estimate;
+        if (!next.budget.rows.empty()) {
+            next.orientation.field_embedding_stats = next.budget.estimated_information_gain_total;
         }
     }
 
@@ -96,9 +111,18 @@ bool BuildExplainoSidecarWindowState(
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,
     const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
-    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, outState, outError);
+    return BuildExplainoSidecarWindowState(catalog, ctx, measurementHost, nullptr, outState, outError);
+}
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError) {
+    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, nullptr, outState, outError);
 }
 
 void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
@@ -128,42 +152,41 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
     ImGui::BulletText("diff_magnitude: %.3f", state.orientation.diff_magnitude);
     ImGui::Separator();
     ImGui::Text("Information Budget");
-    if (state.measurement.rows.empty()) {
+    if (state.budget.rows.empty()) {
         ImGui::TextDisabled("Measurement unavailable.");
     } else {
-        ImGui::BulletText("total_information_gain: %.3f", state.measurement.total_information_gain_estimate);
-        ImGui::BulletText("mean_information_gain: %.3f", state.measurement.mean_information_gain_estimate);
-        ImGui::BulletText("explored_fraction: %.3f", state.measurement.explored_fraction);
-        ImGui::BulletText("mean_decode_stability: %.3f", state.measurement.mean_decode_stability);
-        ImGui::BulletText("total_diff_magnitude: %.3f", state.measurement.total_diff_magnitude);
+        ImGui::BulletText("estimated_information_gain_total: %.3f", state.budget.estimated_information_gain_total);
+        ImGui::BulletText("cumulative_information_gain_total: %.3f", state.budget.cumulative_information_gain_total);
+        ImGui::BulletText("mean_posterior_uncertainty: %.3f", state.budget.mean_posterior_uncertainty);
+        ImGui::BulletText("mean_decode_stability: %.3f", state.budget.mean_decode_stability);
+        ImGui::BulletText("budget_batches: %d", state.budget.batch_count);
 
-        if (ImGui::BeginTable("sidecar_measurements", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        if (ImGui::BeginTable("sidecar_budget", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
             ImGui::TableSetupColumn("Label");
             ImGui::TableSetupColumn("Path");
-            ImGui::TableSetupColumn("Current");
-            ImGui::TableSetupColumn("Step");
-            ImGui::TableSetupColumn("IG");
-            ImGui::TableSetupColumn("Stability");
+            ImGui::TableSetupColumn("EIG");
+            ImGui::TableSetupColumn("Cumulative");
+            ImGui::TableSetupColumn("Uncertainty");
+            ImGui::TableSetupColumn("Obs");
             ImGui::TableHeadersRow();
 
-            for (const auto& row : state.measurement.rows) {
+            for (const auto& row : state.budget.rows) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::TextUnformatted(row.label.c_str());
                 ImGui::TableNextColumn();
                 ImGui::TextUnformatted(row.path.c_str());
                 ImGui::TableNextColumn();
-                const std::string currentText = FormatNumber(row.current_value);
-                ImGui::TextUnformatted(currentText.c_str());
+                const std::string eigText = FormatNumber(row.estimated_information_gain);
+                ImGui::TextUnformatted(eigText.c_str());
                 ImGui::TableNextColumn();
-                const std::string stepText = FormatNumber(row.step_value);
-                ImGui::TextUnformatted(stepText.c_str());
+                const std::string cumulativeText = FormatNumber(row.cumulative_information_gain);
+                ImGui::TextUnformatted(cumulativeText.c_str());
                 ImGui::TableNextColumn();
-                const std::string informationGainText = FormatNumber(row.information_gain_estimate);
-                ImGui::TextUnformatted(informationGainText.c_str());
+                const std::string uncertaintyText = FormatNumber(row.posterior_uncertainty);
+                ImGui::TextUnformatted(uncertaintyText.c_str());
                 ImGui::TableNextColumn();
-                const std::string stabilityText = FormatNumber(row.decode_stability);
-                ImGui::TextUnformatted(stabilityText.c_str());
+                ImGui::Text("%d", row.observation_count);
             }
 
             ImGui::EndTable();

@@ -1050,6 +1050,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     CudaSidecarMeasurementHost sidecarMeasurementHost;
     ExplainoSidecarWindowState sidecarState;
     bool sidecarStateValid = false;
+    SidecarBudgetState sidecarBudgetState;
+    bool sidecarBudgetStateValid = false;
 
     {
         ApplySchemaDefaults(uiSchema, initBind, &dirty);
@@ -1175,7 +1177,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
             }
             // Micro-sweeps are only recomputed when the bound runtime state changes.
-            BuildExplainoSidecarWindowState(engineCatalog, initBind, &sidecarMeasurementHost, &sidecarState, nullptr);
+            BuildExplainoSidecarWindowState(engineCatalog,
+                initBind,
+                &sidecarMeasurementHost,
+                sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
+                &sidecarState,
+                nullptr);
+            if (!sidecarState.budget.function_id.empty()) {
+                sidecarBudgetState = sidecarState.budget;
+                sidecarBudgetStateValid = true;
+            } else {
+                sidecarBudgetState = {};
+                sidecarBudgetStateValid = false;
+            }
             sidecarStateValid = true;
         }
         DispatchRenderFrame(view, params, render, lens, renderPacing,
