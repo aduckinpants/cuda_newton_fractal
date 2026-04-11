@@ -60,3 +60,4 @@
 - `0f600f2` 2026-04-10 23:20 UTC — Committed sample-session s0 baseline-token repair and regression locks; ready token s0 is now seeded as the empty baseline state, with focused native/runtime validation at test_headless_modes.exe plus probe/session pytest (35 passed). [ck:85e237d9]
 - `072f5b8` 2026-04-10 23:42 UTC — session-start | branch=feature/explaino-joy | head=d27dbf7 | status=clean | intent=resume Explaino Reflexive sidecar initiative
 - `072f5b8` 2026-04-11 00:06 UTC — Explaino sidecar Phase 1: added the headless sidecar hypothesis/orientation model seam, a focused native regression for discovery/applicability/order/hash behavior, and build wiring on both native-helper and runtime publish rails. Validated ui_app/build_tests_vsdevcmd.cmd and ui_app/build_vsdevcmd.cmd.
+- `pending` 2026-04-11 00:13 UTC — session-start | branch=feature/explaino-joy | head=dd004a9 | status=clean | profile=native | intent=repair Explaino sidecar audit findings

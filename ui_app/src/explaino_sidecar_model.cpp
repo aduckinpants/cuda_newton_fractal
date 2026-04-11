@@ -4,6 +4,7 @@
 #include "fractal_family_rules.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -22,15 +23,43 @@ void HashBytes(std::uint64_t* ioHash, const void* data, std::size_t size) {
     }
 }
 
-void HashString(std::uint64_t* ioHash, const std::string& value) {
-    HashBytes(ioHash, value.data(), value.size());
+void HashTag(std::uint64_t* ioHash, unsigned char tag) {
+    HashBytes(ioHash, &tag, sizeof(tag));
 }
 
-void HashDouble(std::uint64_t* ioHash, double value) {
+void HashStringField(std::uint64_t* ioHash, unsigned char tag, const std::string& value) {
+    const std::uint64_t size = static_cast<std::uint64_t>(value.size());
+    HashTag(ioHash, tag);
+    HashBytes(ioHash, &size, sizeof(size));
+    if (size > 0) {
+        HashBytes(ioHash, value.data(), static_cast<std::size_t>(size));
+    }
+}
+
+void HashBoolField(std::uint64_t* ioHash, unsigned char tag, bool value) {
+    const unsigned char byte = value ? 1u : 0u;
+    HashTag(ioHash, tag);
+    HashBytes(ioHash, &byte, sizeof(byte));
+}
+
+void HashDoubleField(std::uint64_t* ioHash, unsigned char tag, double value) {
     static_assert(sizeof(double) == sizeof(std::uint64_t), "double hash assumes IEEE-754 64-bit doubles");
     std::uint64_t bits = 0;
     std::memcpy(&bits, &value, sizeof(bits));
+    HashTag(ioHash, tag);
     HashBytes(ioHash, &bits, sizeof(bits));
+}
+
+std::string TrimAscii(const std::string& value) {
+    std::size_t start = 0;
+    while (start < value.size() && std::isspace(static_cast<unsigned char>(value[start])) != 0) {
+        ++start;
+    }
+    std::size_t end = value.size();
+    while (end > start && std::isspace(static_cast<unsigned char>(value[end - 1])) != 0) {
+        --end;
+    }
+    return value.substr(start, end - start);
 }
 
 bool ValidateSidecarContext(const BindingContext& ctx, std::string* outError) {
@@ -95,6 +124,148 @@ bool SidecarParamOrder(const SidecarParamSurfaceEntry& left, const SidecarParamS
     return left.path < right.path;
 }
 
+bool ParsePredicateBool(const std::string& value, bool* outValue) {
+    if (!outValue) return false;
+    const std::string trimmed = TrimAscii(value);
+    if (trimmed == "true" || trimmed == "1") {
+        *outValue = true;
+        return true;
+    }
+    if (trimmed == "false" || trimmed == "0") {
+        *outValue = false;
+        return true;
+    }
+    return false;
+}
+
+bool ParsePredicateDouble(const std::string& value, double* outValue) {
+    if (!outValue) return false;
+    const std::string trimmed = TrimAscii(value);
+    if (trimmed.empty()) return false;
+    std::size_t consumed = 0;
+    try {
+        const double parsed = std::stod(trimmed, &consumed);
+        if (consumed != trimmed.size()) return false;
+        *outValue = parsed;
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool EvaluateSidecarPredicateStrict(
+    const BindingContext& ctx,
+    const UISchemaPredicate& pred,
+    bool* outApplicable,
+    std::string* outError) {
+    if (!outApplicable) {
+        if (outError) *outError = "EvaluateSidecarPredicateStrict requires outApplicable";
+        return false;
+    }
+    if (pred.op.empty() || pred.path.empty()) {
+        if (outError) *outError = "Sidecar applicable_when must include both op and path";
+        return false;
+    }
+
+    const std::string currentEnum = ctx.GetEnumId(pred.path);
+    if (!currentEnum.empty()) {
+        if (pred.op == "eq") {
+            *outApplicable = currentEnum == pred.value;
+            return true;
+        }
+        if (pred.op == "neq") {
+            *outApplicable = currentEnum != pred.value;
+            return true;
+        }
+        if (pred.op == "in") {
+            const std::string values = pred.value;
+            std::size_t start = 0;
+            while (start <= values.size()) {
+                const std::size_t comma = values.find(',', start);
+                const std::size_t end = (comma == std::string::npos) ? values.size() : comma;
+                const std::string token = TrimAscii(values.substr(start, end - start));
+                if (!token.empty() && token == currentEnum) {
+                    *outApplicable = true;
+                    return true;
+                }
+                if (comma == std::string::npos) break;
+                start = comma + 1;
+            }
+            *outApplicable = false;
+            return true;
+        }
+        if (outError) *outError = "Unsupported enum applicable_when op for sidecar param: " + pred.op;
+        return false;
+    }
+
+    bool currentBool = false;
+    if (ctx.GetBoolValue(pred.path, currentBool)) {
+        bool rhsBool = false;
+        if (!ParsePredicateBool(pred.value, &rhsBool)) {
+            if (outError) *outError = "Invalid bool applicable_when value for sidecar param: " + pred.value;
+            return false;
+        }
+        if (pred.op == "eq") {
+            *outApplicable = currentBool == rhsBool;
+            return true;
+        }
+        if (pred.op == "neq") {
+            *outApplicable = currentBool != rhsBool;
+            return true;
+        }
+        if (outError) *outError = "Unsupported bool applicable_when op for sidecar param: " + pred.op;
+        return false;
+    }
+
+    double currentNumeric = 0.0;
+    int currentInt = 0;
+    float currentFloat = 0.0f;
+    double currentDouble = 0.0;
+    if (ctx.GetIntValue(pred.path, currentInt)) {
+        currentNumeric = static_cast<double>(currentInt);
+    } else if (ctx.GetFloatValue(pred.path, currentFloat)) {
+        currentNumeric = static_cast<double>(currentFloat);
+    } else if (ctx.GetDoubleValue(pred.path, currentDouble)) {
+        currentNumeric = currentDouble;
+    } else {
+        if (outError) *outError = "Unknown applicable_when binding path for sidecar param: " + pred.path;
+        return false;
+    }
+
+    double rhsNumeric = 0.0;
+    if (!ParsePredicateDouble(pred.value, &rhsNumeric)) {
+        if (outError) *outError = "Invalid numeric applicable_when value for sidecar param: " + pred.value;
+        return false;
+    }
+
+    if (pred.op == "eq") {
+        *outApplicable = currentNumeric == rhsNumeric;
+        return true;
+    }
+    if (pred.op == "neq") {
+        *outApplicable = currentNumeric != rhsNumeric;
+        return true;
+    }
+    if (pred.op == "lt") {
+        *outApplicable = currentNumeric < rhsNumeric;
+        return true;
+    }
+    if (pred.op == "lte") {
+        *outApplicable = currentNumeric <= rhsNumeric;
+        return true;
+    }
+    if (pred.op == "gt") {
+        *outApplicable = currentNumeric > rhsNumeric;
+        return true;
+    }
+    if (pred.op == "gte") {
+        *outApplicable = currentNumeric >= rhsNumeric;
+        return true;
+    }
+    if (outError) *outError = "Unsupported numeric applicable_when op for sidecar param: " + pred.op;
+    return false;
+}
+
 std::string CurrentFractalTypeToken(const BindingContext& ctx) {
     return ctx.GetEnumId("fractal.view.fractal_type");
 }
@@ -107,20 +278,20 @@ double CurrentOrientationSeed(const BindingContext& ctx) {
 
 std::uint64_t HashImportSignature(const BindingContext& ctx) {
     std::uint64_t hash = kFnvOffset;
-    HashString(&hash, CurrentFractalTypeToken(ctx));
-    HashDouble(&hash, CurrentOrientationSeed(ctx));
+    HashStringField(&hash, 0x01u, CurrentFractalTypeToken(ctx));
+    HashDoubleField(&hash, 0x02u, CurrentOrientationSeed(ctx));
     return hash;
 }
 
 std::uint64_t HashProjection(const SidecarHypothesisSpace& space) {
     std::uint64_t hash = kFnvOffset;
-    HashString(&hash, space.function_id);
+    HashStringField(&hash, 0x10u, space.function_id);
     for (const auto& param : space.applicable_parameters) {
-        HashString(&hash, param.path);
-        HashString(&hash, param.type);
-        HashBytes(&hash, &param.has_declared_span, sizeof(param.has_declared_span));
+        HashStringField(&hash, 0x11u, param.path);
+        HashStringField(&hash, 0x12u, param.type);
+        HashBoolField(&hash, 0x13u, param.has_declared_span);
         if (param.has_declared_span) {
-            HashDouble(&hash, param.declared_span);
+            HashDoubleField(&hash, 0x14u, param.declared_span);
         }
     }
     return hash;
@@ -153,8 +324,15 @@ bool BuildSidecarHypothesisSpace(
     SidecarHypothesisSpace next;
     next.function_id = functionId;
     for (const auto& param : function->parameters) {
-        if (param.has_applicable_when && !ctx.EvalVisibleIf(param.applicable_when)) {
-            continue;
+        if (param.has_applicable_when) {
+            bool applicable = false;
+            if (!EvaluateSidecarPredicateStrict(ctx, param.applicable_when, &applicable, outError)) {
+                *outSpace = {};
+                return false;
+            }
+            if (!applicable) {
+                continue;
+            }
         }
         SidecarParamSurfaceEntry entry;
         if (!TryBuildSurfaceEntry(param, &entry, outError)) {
@@ -188,10 +366,10 @@ std::uint64_t HashSidecarOrientationVector(const SidecarOrientationVector& orien
     std::uint64_t hash = kFnvOffset;
     HashBytes(&hash, &orientation.import_signature, sizeof(orientation.import_signature));
     HashBytes(&hash, &orientation.pack_projection_hash, sizeof(orientation.pack_projection_hash));
-    HashDouble(&hash, orientation.field_embedding_stats);
-    HashDouble(&hash, orientation.slime_energy_delta);
-    HashDouble(&hash, orientation.busy_beaver_metrics);
-    HashDouble(&hash, orientation.decode_stability);
-    HashDouble(&hash, orientation.diff_magnitude);
+    HashDoubleField(&hash, 0x20u, orientation.field_embedding_stats);
+    HashDoubleField(&hash, 0x21u, orientation.slime_energy_delta);
+    HashDoubleField(&hash, 0x22u, orientation.busy_beaver_metrics);
+    HashDoubleField(&hash, 0x23u, orientation.decode_stability);
+    HashDoubleField(&hash, 0x24u, orientation.diff_magnitude);
     return hash;
 }
