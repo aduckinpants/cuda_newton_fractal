@@ -279,6 +279,35 @@ int main() {
         }
     }
 
+    {
+        const fs::path pythonLauncher = R"(C:\Windows\py.exe)";
+        const fs::path scriptPath = R"(C:\code\cuda newton fractal clone\tools\reality_toolkit\scripts\run_fractal_explorer_archive_finding.py)";
+        const fs::path repoRoot = R"(C:\code\cuda newton fractal clone\)";
+        const fs::path diagnosticsDir = R"(D:\salt fractal\cuda_newton_fractal_clone\runtime\diagnostics\last\)";
+        const fs::path outRoot = R"(D:\salt fractal\cuda_newton_fractal_clone\findings\manual capture\2026-04-05\)";
+        const std::string findingId = "235959_999__explaino_fp";
+
+        const std::wstring commandLine = BuildArchiveScriptCommandLine(
+            pythonLauncher,
+            scriptPath,
+            repoRoot,
+            diagnosticsDir,
+            outRoot,
+            findingId,
+            "Trailing slash capture",
+            "fractal_ui.cmd --capture-diagnostic");
+        const std::vector<std::wstring> argv = ParseWindowsCommandLine(commandLine);
+
+        if (argv.size() < 9) {
+            std::cerr << "Expected trailing-backslash command line to parse into argv entries\n";
+            return 1;
+        }
+        if (argv[4] != repoRoot.wstring() || argv[6] != diagnosticsDir.wstring() || argv[8] != outRoot.wstring()) {
+            std::cerr << "Expected trailing-backslash paths to round-trip through CommandLineToArgvW\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_finding_archive_actions: all passed\n";
     return 0;
 }

@@ -1,6 +1,9 @@
 #include "cli_args.h"
 
+#include <cerrno>
+#include <climits>
 #include <cstdlib>
+#include <cmath>
 
 bool HasArg(const std::vector<std::string>& args, const char* flag) {
     for (const auto& arg : args) {
@@ -23,8 +26,10 @@ bool TryParseDoubleArg(const std::vector<std::string>& args, const char* flag, d
     std::string text;
     if (!TryGetArgValue(args, flag, &text)) return false;
     char* end = nullptr;
+    errno = 0;
     double value = std::strtod(text.c_str(), &end);
-    if (!end || *end != '\0') return false;
+    if (!end || end == text.c_str() || *end != '\0') return false;
+    if (errno == ERANGE || !std::isfinite(value)) return false;
     if (outValue) *outValue = value;
     return true;
 }
@@ -33,13 +38,16 @@ bool TryParseIntArg(const std::vector<std::string>& args, const char* flag, int*
     std::string text;
     if (!TryGetArgValue(args, flag, &text)) return false;
     char* end = nullptr;
+    errno = 0;
     long value = std::strtol(text.c_str(), &end, 10);
-    if (!end || *end != '\0') return false;
+    if (!end || end == text.c_str() || *end != '\0') return false;
+    if (errno == ERANGE || value < static_cast<long>(INT_MIN) || value > static_cast<long>(INT_MAX)) return false;
     if (outValue) *outValue = (int)value;
     return true;
 }
 
 bool TryParseFractalTypeArg(const std::vector<std::string>& args, FractalType* outType) {
+    if (!outType) return false;
     std::string text;
     if (!TryGetArgValue(args, "--fractal-type", &text)) return false;
 

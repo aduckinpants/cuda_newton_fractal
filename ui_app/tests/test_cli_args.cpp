@@ -102,6 +102,41 @@ bool TestTryParseDoubleArgMissing() {
     return true;
 }
 
+bool TestTryParseDoubleArgEmptyValue() {
+    std::vector<std::string> args = {"app.exe", "--zoom", ""};
+    double val = 0.0;
+    ASSERT(!TryParseDoubleArg(args, "--zoom", &val), "empty value should fail");
+    return true;
+}
+
+bool TestTryParseDoubleArgOverflow() {
+    std::vector<std::string> args = {"app.exe", "--zoom", "1e309"};
+    double val = 0.0;
+    ASSERT(!TryParseDoubleArg(args, "--zoom", &val), "overflow should fail");
+    return true;
+}
+
+bool TestTryParseDoubleArgUnderflow() {
+    std::vector<std::string> args = {"app.exe", "--zoom", "1e-4000"};
+    double val = 0.0;
+    ASSERT(!TryParseDoubleArg(args, "--zoom", &val), "underflow should fail");
+    return true;
+}
+
+bool TestTryParseDoubleArgInfinity() {
+    std::vector<std::string> args = {"app.exe", "--zoom", "inf"};
+    double val = 0.0;
+    ASSERT(!TryParseDoubleArg(args, "--zoom", &val), "infinity should fail");
+    return true;
+}
+
+bool TestTryParseDoubleArgNaN() {
+    std::vector<std::string> args = {"app.exe", "--zoom", "nan"};
+    double val = 0.0;
+    ASSERT(!TryParseDoubleArg(args, "--zoom", &val), "NaN should fail");
+    return true;
+}
+
 // --- TryParseIntArg ---
 
 bool TestTryParseIntArg() {
@@ -125,6 +160,27 @@ bool TestTryParseIntArgTrailingGarbage() {
     std::vector<std::string> args = {"app.exe", "--width", "800px"};
     int val = 0;
     ASSERT(!TryParseIntArg(args, "--width", &val), "trailing garbage should fail");
+    return true;
+}
+
+bool TestTryParseIntArgEmptyValue() {
+    std::vector<std::string> args = {"app.exe", "--width", ""};
+    int val = 0;
+    ASSERT(!TryParseIntArg(args, "--width", &val), "empty value should fail");
+    return true;
+}
+
+bool TestTryParseIntArgPositiveOverflow() {
+    std::vector<std::string> args = {"app.exe", "--width", "2147483648"};
+    int val = 0;
+    ASSERT(!TryParseIntArg(args, "--width", &val), "positive overflow should fail");
+    return true;
+}
+
+bool TestTryParseIntArgNegativeOverflow() {
+    std::vector<std::string> args = {"app.exe", "--width", "-2147483649"};
+    int val = 0;
+    ASSERT(!TryParseIntArg(args, "--width", &val), "negative overflow should fail");
     return true;
 }
 
@@ -173,6 +229,12 @@ bool TestParseFractalTypeMissing() {
     std::vector<std::string> args = {"app.exe"};
     FractalType type{};
     ASSERT(!TryParseFractalTypeArg(args, &type), "missing --fractal-type should fail");
+    return true;
+}
+
+bool TestParseFractalTypeNullOutType() {
+    std::vector<std::string> args = {"app.exe", "--fractal-type", "mandelbrot"};
+    ASSERT(!TryParseFractalTypeArg(args, nullptr), "null outType should fail");
     return true;
 }
 
@@ -247,15 +309,24 @@ int main() {
     RUN(TestTryParseDoubleArgBadValue);
     RUN(TestTryParseDoubleArgTrailingGarbage);
     RUN(TestTryParseDoubleArgMissing);
+    RUN(TestTryParseDoubleArgEmptyValue);
+    RUN(TestTryParseDoubleArgOverflow);
+    RUN(TestTryParseDoubleArgUnderflow);
+    RUN(TestTryParseDoubleArgInfinity);
+    RUN(TestTryParseDoubleArgNaN);
     RUN(TestTryParseIntArg);
     RUN(TestTryParseIntArgBadValue);
     RUN(TestTryParseIntArgTrailingGarbage);
+    RUN(TestTryParseIntArgEmptyValue);
+    RUN(TestTryParseIntArgPositiveOverflow);
+    RUN(TestTryParseIntArgNegativeOverflow);
     RUN(TestParseFractalTypeNewton);
     RUN(TestParseFractalTypeMandelbrot);
     RUN(TestParseFractalTypeLambda);
     RUN(TestParseFractalTypePerpendicularBurningShip);
     RUN(TestParseFractalTypeUnknown);
     RUN(TestParseFractalTypeMissing);
+    RUN(TestParseFractalTypeNullOutType);
     RUN(TestParseFractalTypeAllValues);
 
     std::fprintf(stderr, "test_cli_args: %d passed, %d failed\n", g_passed, g_failed);
