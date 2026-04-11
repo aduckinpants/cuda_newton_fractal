@@ -1,0 +1,192 @@
+#include "../src/explaino_sidecar_model.h"
+
+#include <cmath>
+#include <iostream>
+#include <string>
+
+namespace {
+
+bool NearlyEqual(double left, double right, double eps = 1.0e-9) {
+    const double delta = left - right;
+    return delta < eps && delta > -eps;
+}
+
+FunctionParamDescriptor MakeParam(
+    const char* path,
+    const char* type,
+    const char* label,
+    double minValue,
+    double maxValue) {
+    FunctionParamDescriptor param;
+    param.path = path;
+    param.type = type;
+    param.label = label;
+    param.has_min = true;
+    param.min_value = minValue;
+    param.has_max = true;
+    param.max_value = maxValue;
+    return param;
+}
+
+EngineFunctionCatalog BuildCatalog() {
+    EngineFunctionCatalog catalog;
+
+    FunctionDescriptor fractalSample;
+    fractalSample.id = "fractal.sample";
+    fractalSample.name = "Fractal Sample";
+
+    FunctionParamDescriptor fractalType;
+    fractalType.path = "fractal.view.fractal_type";
+    fractalType.type = "enum";
+    fractalType.label = "Fractal Type";
+    fractalType.required = true;
+    fractalType.options.push_back({"mandelbrot", "Mandelbrot"});
+    fractalType.options.push_back({"explaino", "Explaino"});
+    fractalSample.parameters.push_back(fractalType);
+
+    FunctionParamDescriptor zoom = MakeParam("fractal.view.zoom", "float", "Zoom", 1.0, 1000.0);
+    fractalSample.parameters.push_back(zoom);
+
+    FunctionParamDescriptor epsilon = MakeParam("fractal.params.epsilon", "float", "Epsilon", 1.0e-12, 1.0e-2);
+    epsilon.has_applicable_when = true;
+    epsilon.applicable_when.op = "eq";
+    epsilon.applicable_when.path = "fractal.view.fractal_type";
+    epsilon.applicable_when.value = "explaino";
+    fractalSample.parameters.push_back(epsilon);
+
+    FunctionParamDescriptor explainoMix = MakeParam("fractal.params.explaino_mix", "float", "Mix", 0.0, 1.0);
+    explainoMix.has_applicable_when = true;
+    explainoMix.applicable_when.op = "eq";
+    explainoMix.applicable_when.path = "fractal.view.fractal_type";
+    explainoMix.applicable_when.value = "explaino";
+    fractalSample.parameters.push_back(explainoMix);
+
+    catalog.functions.push_back(fractalSample);
+    return catalog;
+}
+
+BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
+    BindingContext ctx;
+    ctx.view = view;
+    ctx.params = params;
+    ctx.render = render;
+    ctx.lens = lens;
+    return ctx;
+}
+
+bool HasPath(const SidecarHypothesisSpace& space, const char* path) {
+    for (const auto& param : space.applicable_parameters) {
+        if (param.path == path) return true;
+    }
+    return false;
+}
+
+} // namespace
+
+int main() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    view.fractal_type = FractalType::explaino;
+    params.explaino_seed = 3.0;
+    view.explaino_seed_drift = 0.25f;
+    BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+
+    {
+        SidecarHypothesisSpace missing{};
+        std::string error;
+        if (BuildSidecarHypothesisSpace(catalog, "missing.function", ctx, &missing, &error)) {
+            std::cerr << "Expected missing function id to fail\n";
+            return 1;
+        }
+        if (error.find("missing.function") == std::string::npos) {
+            std::cerr << "Expected missing-function error to mention the requested id\n";
+            return 1;
+        }
+    }
+
+    SidecarHypothesisSpace explainoSpace{};
+    std::string error;
+    if (!BuildSidecarHypothesisSpace(catalog, "fractal.sample", ctx, &explainoSpace, &error)) {
+        std::cerr << "Expected explaino sidecar hypothesis space to build: " << error << "\n";
+        return 1;
+    }
+    if (explainoSpace.applicable_parameters.size() != 4) {
+        std::cerr << "Expected 4 applicable explaino params, got: " << explainoSpace.applicable_parameters.size() << "\n";
+        return 1;
+    }
+    if (explainoSpace.applicable_parameters[0].path != "fractal.view.zoom") {
+        std::cerr << "Expected widest declared span to sort first\n";
+        return 1;
+    }
+    if (explainoSpace.applicable_parameters[1].path != "fractal.params.explaino_mix") {
+        std::cerr << "Expected explaino_mix to sort ahead of epsilon by declared span\n";
+        return 1;
+    }
+    if (explainoSpace.applicable_parameters[2].path != "fractal.params.epsilon") {
+        std::cerr << "Expected epsilon to remain applicable for explaino\n";
+        return 1;
+    }
+    if (explainoSpace.applicable_parameters[3].path != "fractal.view.fractal_type") {
+        std::cerr << "Expected span-less fractal_type to sort last\n";
+        return 1;
+    }
+
+    SidecarOrientationVector orientationA = ComputeSidecarOrientationVector(ctx, explainoSpace);
+    if (orientationA.import_signature == 0) {
+        std::cerr << "Expected import signature to hash current state\n";
+        return 1;
+    }
+    if (orientationA.pack_projection_hash == 0) {
+        std::cerr << "Expected pack projection hash to reflect applicable params\n";
+        return 1;
+    }
+    if (!NearlyEqual(orientationA.field_embedding_stats, 4.0)) {
+        std::cerr << "Expected field embedding stats to reflect applicable param count\n";
+        return 1;
+    }
+
+    params.explaino_seed = 4.0;
+    SidecarOrientationVector orientationB = ComputeSidecarOrientationVector(ctx, explainoSpace);
+    if (orientationA.import_signature == orientationB.import_signature) {
+        std::cerr << "Expected import signature to change when the Explaino seed changes\n";
+        return 1;
+    }
+    if (orientationA.pack_projection_hash != orientationB.pack_projection_hash) {
+        std::cerr << "Expected pack projection hash to remain stable for the same applicable surface\n";
+        return 1;
+    }
+    if (HashSidecarOrientationVector(orientationA) == HashSidecarOrientationVector(orientationB)) {
+        std::cerr << "Expected orientation hash to change when import signature changes\n";
+        return 1;
+    }
+
+    view.fractal_type = FractalType::mandelbrot;
+    SidecarHypothesisSpace mandelbrotSpace{};
+    if (!BuildSidecarHypothesisSpace(catalog, "fractal.sample", ctx, &mandelbrotSpace, &error)) {
+        std::cerr << "Expected mandelbrot sidecar hypothesis space to build: " << error << "\n";
+        return 1;
+    }
+    if (mandelbrotSpace.applicable_parameters.size() != 2) {
+        std::cerr << "Expected only 2 applicable mandelbrot params, got: " << mandelbrotSpace.applicable_parameters.size() << "\n";
+        return 1;
+    }
+    if (HasPath(mandelbrotSpace, "fractal.params.epsilon") || HasPath(mandelbrotSpace, "fractal.params.explaino_mix")) {
+        std::cerr << "Expected Explaino-only params to be filtered for mandelbrot\n";
+        return 1;
+    }
+    SidecarOrientationVector orientationC = ComputeSidecarOrientationVector(ctx, mandelbrotSpace);
+    if (orientationC.pack_projection_hash == orientationA.pack_projection_hash) {
+        std::cerr << "Expected pack projection hash to change when applicable params change\n";
+        return 1;
+    }
+    if (!NearlyEqual(orientationC.field_embedding_stats, 2.0)) {
+        std::cerr << "Expected mandelbrot field embedding stats to reflect its narrower surface\n";
+        return 1;
+    }
+
+    std::cout << "test_explaino_sidecar_model: all passed\n";
+    return 0;
+}

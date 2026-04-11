@@ -218,6 +218,12 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_function_descriptor.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\explaino_sidecar_model.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_explaino_sidecar_model.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_sidecar_model.exe"
+if errorlevel 1 exit /b 1
+
 "%TESTROOT%\test_cli_args.exe"
 if errorlevel 1 exit /b 1
 
@@ -321,6 +327,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_function_descriptor.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_explaino_sidecar_model.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
