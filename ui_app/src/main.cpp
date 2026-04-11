@@ -1090,6 +1090,7 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
         bind,
         &sidecarMeasurementHost,
         sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
+        sidecarStateValid ? &sidecarState.completeness : nullptr,
         &sidecarState,
         nullptr);
     if (!sidecarState.budget.function_id.empty()) {

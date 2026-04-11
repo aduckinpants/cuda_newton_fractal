@@ -64,6 +64,7 @@ Phase 4 - R3 lens and action selection
   - sidecar window now exposes one passive `EIG - gamma*Cost` action recommendation over the current budget/lens surface without mutating parameters
   - sidecar window now exposes an exploration-completeness summary and demonstrated-vs-uncertain table derived from persistent posterior-uncertainty / observation-count state
   - hostile-audit repairs for missing budget coverage, duplicate hypothesis-surface paths, dead recommendation wiring in the sidecar window, duplicate budget-row validation in the action seam, invalid `cost_hint` metadata entering the sidecar model, and cross-surface type drift in the action seam
+  - hostile-audit repair for preserved-budget failure paths in the live viewer: when sidecar rebuilds fail after a prior budget exists, the window now preserves the last known completeness surface instead of dropping it while `main.cpp` still renders the partial state
   - hostile-audit proof that the completeness seam's strict numeric-surface coverage invariant matches the existing measurement surface contract
 - Validation achieved for the current Phase 4 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`

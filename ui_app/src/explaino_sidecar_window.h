@@ -41,6 +41,7 @@ bool BuildExplainoSidecarWindowState(
     const BindingContext& ctx,
     const SidecarMeasurementHost* measurementHost,
     const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
     ExplainoSidecarWindowState* outState,
     std::string* outError);
 

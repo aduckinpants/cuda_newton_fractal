@@ -283,7 +283,7 @@ int main() {
             std::cerr << "Expected initial sidecar window state to build before persistence test: " << error << "\n";
             return 1;
         }
-        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &first.budget, &second, &error)) {
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &first.budget, &first.completeness, &second, &error)) {
             std::cerr << "Expected repeated sidecar window state build to preserve budget state: " << error << "\n";
             return 1;
         }
@@ -321,7 +321,7 @@ int main() {
             return 1;
         }
         host.fail = true;
-        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded.budget, &state, &error)) {
+        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded.budget, &seeded.completeness, &state, &error)) {
             std::cerr << "Expected sidecar window state build to fail when measurement host fails\n";
             return 1;
         }
@@ -341,6 +341,12 @@ int main() {
             std::cerr << "Expected sidecar window state to retain the last known budget state when measurement fails\n";
             return 1;
         }
+        if (state.completeness.rows.size() != seeded.completeness.rows.size() ||
+            state.completeness.demonstrated_count != seeded.completeness.demonstrated_count ||
+            state.completeness.uncertain_count != seeded.completeness.uncertain_count) {
+            std::cerr << "Expected sidecar window measurement failures to preserve the last known completeness surface\n";
+            return 1;
+        }
         if (!state.lens.rows.empty()) {
             std::cerr << "Expected failed measurement updates to leave no derived lens projection rows\n";
             return 1;
@@ -356,7 +362,7 @@ int main() {
             std::cerr << "Expected seeded sidecar window state to build before budget-failure preservation test: " << error << "\n";
             return 1;
         }
-        if (BuildExplainoSidecarWindowState(BuildDuplicateMeasurementCatalog(), ctx, &host, &seeded.budget, &state, &error)) {
+        if (BuildExplainoSidecarWindowState(BuildDuplicateMeasurementCatalog(), ctx, &host, &seeded.budget, &seeded.completeness, &state, &error)) {
             std::cerr << "Expected duplicate measurement rows to fail during budget update\n";
             return 1;
         }
@@ -372,6 +378,12 @@ int main() {
             state.budget.cumulative_information_gain_total != seeded.budget.cumulative_information_gain_total ||
             state.budget.function_id != seeded.budget.function_id) {
             std::cerr << "Expected budget update failures to retain the last known budget state\n";
+            return 1;
+        }
+        if (state.completeness.rows.size() != seeded.completeness.rows.size() ||
+            state.completeness.demonstrated_count != seeded.completeness.demonstrated_count ||
+            state.completeness.uncertain_count != seeded.completeness.uncertain_count) {
+            std::cerr << "Expected budget update failures to preserve the last known completeness surface\n";
             return 1;
         }
         if (!state.lens.rows.empty()) {

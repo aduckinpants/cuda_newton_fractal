@@ -37,6 +37,31 @@ std::string FormatActiveZone(const SidecarLensProjectionRow& row) {
     return "[" + FormatNumber(row.active_min) + ", " + FormatNumber(row.active_max) + "]";
 }
 
+void PopulateCompletenessFromBudget(
+    const SidecarHypothesisSpace& space,
+    const SidecarExplorationCompleteness* previousCompleteness,
+    ExplainoSidecarWindowState* ioState) {
+    if (!ioState) {
+        return;
+    }
+    if (ioState->budget.function_id.empty()) {
+        return;
+    }
+
+    std::string completenessError;
+    if (BuildSidecarExplorationCompleteness(space, ioState->budget, &ioState->completeness, &completenessError)) {
+        ioState->completeness_error_message.clear();
+    } else if (previousCompleteness &&
+        previousCompleteness->function_id == ioState->budget.function_id &&
+        previousCompleteness->fractal_type_id == ioState->budget.fractal_type_id) {
+        ioState->completeness = *previousCompleteness;
+        ioState->completeness_error_message.clear();
+    } else {
+        ioState->completeness = {};
+        ioState->completeness_error_message = completenessError;
+    }
+}
+
 } // namespace
 
 bool BuildExplainoSidecarWindowState(
@@ -44,6 +69,7 @@ bool BuildExplainoSidecarWindowState(
     const BindingContext& ctx,
     const SidecarMeasurementHost* measurementHost,
     const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
     if (!outState) {
@@ -86,6 +112,7 @@ bool BuildExplainoSidecarWindowState(
             if (previousBudget) {
                 next.budget = *previousBudget;
             }
+            PopulateCompletenessFromBudget(space, previousCompleteness, &next);
             *outState = std::move(next);
             if (outError) *outError = measurementError;
             return false;
@@ -97,6 +124,7 @@ bool BuildExplainoSidecarWindowState(
             if (previousBudget) {
                 next.budget = *previousBudget;
             }
+            PopulateCompletenessFromBudget(space, previousCompleteness, &next);
             *outState = std::move(next);
             if (outError) *outError = budgetError;
             return false;
@@ -113,6 +141,7 @@ bool BuildExplainoSidecarWindowState(
             if (previousBudget) {
                 next.budget = *previousBudget;
             }
+            PopulateCompletenessFromBudget(space, previousCompleteness, &next);
             *outState = std::move(next);
             if (outError) *outError = lensError;
             return false;
@@ -144,7 +173,7 @@ bool BuildExplainoSidecarWindowState(
     const SidecarMeasurementHost* measurementHost,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
-    return BuildExplainoSidecarWindowState(catalog, ctx, measurementHost, nullptr, outState, outError);
+    return BuildExplainoSidecarWindowState(catalog, ctx, measurementHost, nullptr, nullptr, outState, outError);
 }
 
 bool BuildExplainoSidecarWindowState(
@@ -152,7 +181,7 @@ bool BuildExplainoSidecarWindowState(
     const BindingContext& ctx,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
-    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, nullptr, outState, outError);
+    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, nullptr, nullptr, outState, outError);
 }
 
 void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
