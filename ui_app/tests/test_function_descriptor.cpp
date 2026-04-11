@@ -88,6 +88,28 @@ int main() {
         epsilonControl.visible_if.value = "newton,explaino";
         paramsPanel.controls.push_back(epsilonControl);
 
+        UISchemaControl rippleControl;
+        rippleControl.id = "ripple_amplitude";
+        rippleControl.type = "drag_float";
+        rippleControl.label = "Ripple Amplitude";
+        rippleControl.value_type = "float";
+        rippleControl.has_min = true;
+        rippleControl.min = 0.0;
+        rippleControl.has_max = true;
+        rippleControl.max = 0.15;
+        rippleControl.has_step = true;
+        rippleControl.step = 0.01;
+        rippleControl.has_default = true;
+        rippleControl.def.v = 0.15;
+        rippleControl.has_binding = true;
+        rippleControl.binding.kind = "param";
+        rippleControl.binding.path = "fractal.params.ripple_amplitude";
+        rippleControl.has_visible_if = true;
+        rippleControl.visible_if.op = "eq";
+        rippleControl.visible_if.path = "fractal.view.fractal_type";
+        rippleControl.visible_if.value = "explaino_ripple";
+        paramsPanel.controls.push_back(rippleControl);
+
         schema.panels.push_back(paramsPanel);
 
         FunctionDescriptor desc = BuildFractalSamplerDescriptor(schema);
@@ -96,8 +118,8 @@ int main() {
             std::cerr << "Expected function id fractal.sample, got: " << desc.id << "\n";
             return 1;
         }
-        if (desc.parameters.size() != 2) {
-            std::cerr << "Expected 2 params (action excluded), got: " << desc.parameters.size() << "\n";
+        if (desc.parameters.size() != 3) {
+            std::cerr << "Expected 3 params (action excluded), got: " << desc.parameters.size() << "\n";
             return 1;
         }
 
@@ -161,6 +183,38 @@ int main() {
             return 1;
         }
 
+        const auto& p2 = desc.parameters[2];
+        if (p2.path != "fractal.params.ripple_amplitude" || p2.type != "float") {
+            std::cerr << "Third param should be ripple_amplitude float\n";
+            return 1;
+        }
+        if (!p2.has_applicable_when || p2.applicable_when.op != "eq" || p2.applicable_when.value != "explaino_ripple") {
+            std::cerr << "ripple_amplitude should keep the explaino_ripple applicable_when predicate\n";
+            return 1;
+        }
+        if (!p2.has_cost_hint || !NearlyEqual(p2.cost_hint, 2.55, 1.0e-6)) {
+            std::cerr << "ripple_amplitude should expose the measured relative cost hint\n";
+            return 1;
+        }
+        if (!p2.has_sensitivity_report) {
+            std::cerr << "ripple_amplitude should expose a sensitivity report\n";
+            return 1;
+        }
+        if (p2.sensitivity_report.zero_case_id != "explaino_ripple_zero" ||
+            p2.sensitivity_report.default_case_id != "explaino_ripple_default") {
+            std::cerr << "ripple_amplitude sensitivity report should carry the phase-2 case ids\n";
+            return 1;
+        }
+        if (p2.sensitivity_report.samples.size() != 5) {
+            std::cerr << "ripple_amplitude sensitivity report should contain 5 sweep samples\n";
+            return 1;
+        }
+        if (!NearlyEqual(p2.sensitivity_report.samples.front().param_value, 0.0) ||
+            !NearlyEqual(p2.sensitivity_report.samples.back().param_value, 0.15)) {
+            std::cerr << "ripple_amplitude sensitivity sweep should span zero to shipped default\n";
+            return 1;
+        }
+
         // outputs
         if (desc.outputs.size() != 7) {
             std::cerr << "Expected 7 outputs, got: " << desc.outputs.size() << "\n";
@@ -211,6 +265,21 @@ int main() {
         panel.controls.push_back(c);
         schema.panels.push_back(panel);
 
+        UISchemaPanel paramsPanel;
+        paramsPanel.id = "params";
+        UISchemaControl ripple;
+        ripple.id = "ripple_amplitude";
+        ripple.type = "drag_float";
+        ripple.label = "Ripple Amplitude";
+        ripple.value_type = "float";
+        ripple.has_binding = true;
+        ripple.binding.kind = "param";
+        ripple.binding.path = "fractal.params.ripple_amplitude";
+        ripple.has_default = true;
+        ripple.def.v = 0.15;
+        paramsPanel.controls.push_back(ripple);
+        schema.panels.push_back(paramsPanel);
+
         EngineFunctionCatalog catalog = BuildEngineCatalog(schema);
         if (catalog.engine_version != 1 || catalog.functions.size() != 2) {
             std::cerr << "Catalog should have version 1 and 2 functions, got " << catalog.functions.size() << "\n";
@@ -235,8 +304,31 @@ int main() {
             return 1;
         }
         const auto* params = func.get("parameters");
-        if (!params || !params->is_array() || params->as_array().size() != 1) {
-            std::cerr << "Expected 1 parameter in catalog JSON\n";
+        if (!params || !params->is_array() || params->as_array().size() != 2) {
+            std::cerr << "Expected 2 parameters in catalog JSON\n";
+            return 1;
+        }
+        const auto& rippleParam = params->as_array()[1];
+        const auto* costHint = rippleParam.get("cost_hint");
+        if (!costHint || !costHint->is_number() || !NearlyEqual(costHint->as_number(), 2.55, 1.0e-6)) {
+            std::cerr << "Expected ripple cost_hint in catalog JSON\n";
+            return 1;
+        }
+        const auto* sensitivity = rippleParam.get("sensitivity");
+        if (!sensitivity || !sensitivity->is_object()) {
+            std::cerr << "Expected ripple sensitivity object in catalog JSON\n";
+            return 1;
+        }
+        const auto* points = sensitivity->get("points");
+        if (!points || !points->is_array() || points->as_array().size() != 5) {
+            std::cerr << "Expected 5 ripple sensitivity points in catalog JSON\n";
+            return 1;
+        }
+        const auto* zeroCaseId = sensitivity->get("zero_case_id");
+        const auto* defaultCaseId = sensitivity->get("default_case_id");
+        if (!zeroCaseId || !zeroCaseId->is_string() || zeroCaseId->as_string() != "explaino_ripple_zero" ||
+            !defaultCaseId || !defaultCaseId->is_string() || defaultCaseId->as_string() != "explaino_ripple_default") {
+            std::cerr << "Expected ripple phase-2 case ids in catalog JSON\n";
             return 1;
         }
         const auto* outputs = func.get("outputs");

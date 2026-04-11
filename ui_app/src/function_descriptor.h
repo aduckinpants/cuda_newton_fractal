@@ -6,6 +6,26 @@
 #include <string>
 #include <vector>
 
+// A measured sensitivity sample for a described parameter.
+struct FunctionParamSensitivitySample {
+    double t = 0.0;
+    double param_value = 0.0;
+    double mean_iterations = 0.0;
+    double escape_fraction = 0.0;
+    double converged_fraction = 0.0;
+    double nonfinite_fraction = 0.0;
+    double pole_fraction = 0.0;
+    double root_entropy_bits = 0.0;
+};
+
+// A measured multi-metric sensitivity report for a described parameter.
+struct FunctionParamSensitivityReport {
+    std::string baseline_case_id;
+    std::string zero_case_id;
+    std::string default_case_id;
+    std::vector<FunctionParamSensitivitySample> samples;
+};
+
 // A described parameter for a callable engine function.
 struct FunctionParamDescriptor {
     std::string path;
@@ -21,6 +41,10 @@ struct FunctionParamDescriptor {
     bool has_default = false;
     json_min::Value default_value;
     bool required = false;
+    bool has_cost_hint = false;
+    double cost_hint = 0.0;
+    bool has_sensitivity_report = false;
+    FunctionParamSensitivityReport sensitivity_report;
 
     std::vector<UISchemaOption> options; // for enum types
 

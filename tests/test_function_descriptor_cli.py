@@ -73,12 +73,19 @@ def test_describe_functions_emits_valid_catalog() -> None:
         "explaino_nova",
         "explaino_halley",
         "explaino_dual",
+        "explaino_fold",
+        "explaino_joy",
+        "explaino_bell",
         "explaino_mult",
         "explaino_phoenix",
         "explaino_transcendental",
         "explaino_inertial",
         "explaino_julia",
         "explaino_rational",
+        "explaino_ripple",
+        "explaino_splice",
+        "explaino_vortex",
+        "explaino_tension",
         "multicorn",
         "halley",
         "collatz",
@@ -97,6 +104,15 @@ def test_describe_functions_emits_valid_catalog() -> None:
     assert eps_param["type"] == "float"
     assert "applicable_when" in eps_param
     assert eps_param["applicable_when"]["op"] == "in"
+
+    ripple_param = next(p for p in func["parameters"] if p["path"] == "fractal.params.ripple_amplitude")
+    assert ripple_param["type"] == "float"
+    assert ripple_param["cost_hint"] == pytest.approx(2.55)
+    assert ripple_param["sensitivity"]["zero_case_id"] == "explaino_ripple_zero"
+    assert ripple_param["sensitivity"]["default_case_id"] == "explaino_ripple_default"
+    assert len(ripple_param["sensitivity"]["points"]) == 5
+    assert ripple_param["sensitivity"]["points"][0]["param_value"] == pytest.approx(0.0)
+    assert ripple_param["sensitivity"]["points"][-1]["param_value"] == pytest.approx(0.15)
 
     # status output should be enum with option list
     status_out = next(o for o in func["outputs"] if o["name"] == "status")

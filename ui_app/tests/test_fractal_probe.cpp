@@ -104,6 +104,78 @@ int main() {
         }
     }
 
+        {
+                const std::string requestJson = R"({
+    "request_version": 1,
+    "request_id": "probe-variant-crossfade-parse",
+    "mode": "sequence_grid",
+    "region": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "span_x": 0.2,
+        "span_y": 0.2,
+        "grid_width": 2,
+        "grid_height": 2
+    },
+    "sequence": {
+        "mode": "variant_crossfade",
+        "from_variant": "explaino_ripple",
+        "to_variant": "explaino_splice",
+        "steps": 5
+    }
+})";
+
+                FractalProbeRequest request{};
+                std::string error;
+                if (!ParseFractalProbeRequestJson(requestJson, &request, &error)) {
+                        std::cerr << "Expected variant_crossfade request to parse: " << error << "\n";
+                        return 1;
+                }
+                if (!request.has_sequence || request.sequence.mode != FractalProbeSequenceMode::variant_crossfade) {
+                        std::cerr << "Expected sequence.mode=variant_crossfade\n";
+                        return 1;
+                }
+                if (request.sequence.variant_crossfade.from_variant_id != "explaino_ripple" ||
+                        request.sequence.variant_crossfade.to_variant_id != "explaino_splice" ||
+                        request.sequence.variant_crossfade.steps != 5) {
+                        std::cerr << "Expected variant_crossfade fields to parse\n";
+                        return 1;
+                }
+        }
+
+        {
+                const std::string badJson = R"({
+    "request_version": 1,
+    "request_id": "probe-variant-crossfade-bad-steps",
+    "mode": "sequence_grid",
+    "region": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "span_x": 0.2,
+        "span_y": 0.2,
+        "grid_width": 2,
+        "grid_height": 2
+    },
+    "sequence": {
+        "mode": "variant_crossfade",
+        "from_variant": "explaino_ripple",
+        "to_variant": "explaino_splice",
+        "steps": 4
+    }
+})";
+
+                FractalProbeRequest request{};
+                std::string error;
+                if (ParseFractalProbeRequestJson(badJson, &request, &error)) {
+                        std::cerr << "variant_crossfade should reject even step counts\n";
+                        return 1;
+                }
+                if (error.find("odd integer >= 3") == std::string::npos) {
+                        std::cerr << "Expected variant_crossfade step error to mention odd integer >= 3\n";
+                        return 1;
+                }
+        }
+
     {
         const std::string badJson = R"({
   "request_version": 1,
@@ -225,6 +297,82 @@ int main() {
         }
         if (response.summary.best_sequence_index < 0 || response.summary.best_sequence_index > 1) {
             std::cerr << "Expected best_sequence_index to reference one of the sequence entries\n";
+            return 1;
+        }
+    }
+
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "sequence-grid-variant-crossfade";
+        request.mode = FractalProbeMode::sequence_grid;
+        request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino")});
+        request.overrides.push_back({"fractal.params.explaino_seed", FractalProbeScalar::Number(3.0)});
+        request.overrides.push_back({"fractal.params.explaino_warp_strength", FractalProbeScalar::Number(0.25)});
+        request.overrides.push_back({"fractal.view.explaino_seed_drift", FractalProbeScalar::Number(0.1)});
+        request.has_region = true;
+        request.region = {0.0, 0.0, 0.2, 0.2, 2, 2};
+        request.has_sequence = true;
+        request.sequence.mode = FractalProbeSequenceMode::variant_crossfade;
+        request.sequence.variant_crossfade.from_variant_id = "explaino_ripple";
+        request.sequence.variant_crossfade.to_variant_id = "explaino_splice";
+        request.sequence.variant_crossfade.steps = 5;
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe", &response, &error)) {
+            std::cerr << "Expected variant_crossfade sequence_grid probe to run: " << error << "\n";
+            return 1;
+        }
+        if (!response.ok || response.runtime.fractal_type != "explaino_splice") {
+            std::cerr << "Expected successful variant_crossfade probe response ending on explaino_splice\n";
+            return 1;
+        }
+        if (response.sequence_results.size() != 5) {
+            std::cerr << "Expected five sequence summaries for variant_crossfade\n";
+            return 1;
+        }
+        if (response.summary.sample_count != 20 || response.samples.size() != 20) {
+            std::cerr << "Expected 5 sequences * 2x2 grid = 20 samples\n";
+            return 1;
+        }
+
+        const auto& firstApplied = response.sequence_results[0].applied;
+        const auto& secondApplied = response.sequence_results[1].applied;
+        const auto& middleApplied = response.sequence_results[2].applied;
+        const auto& fourthApplied = response.sequence_results[3].applied;
+        const auto& lastApplied = response.sequence_results[4].applied;
+        if (firstApplied.size() != 2 ||
+            firstApplied[0].first != "fractal.view.fractal_type" ||
+            firstApplied[0].second.string_value != "explaino_ripple" ||
+            firstApplied[1].first != "fractal.params.ripple_amplitude" ||
+            !NearlyEqual(firstApplied[1].second.number_value, 0.15)) {
+            std::cerr << "Expected first crossfade step to use explaino_ripple default strength\n";
+            return 1;
+        }
+        if (secondApplied.size() != 2 ||
+            secondApplied[0].second.string_value != "explaino_ripple" ||
+            !NearlyEqual(secondApplied[1].second.number_value, 0.075)) {
+            std::cerr << "Expected second crossfade step to halve ripple strength\n";
+            return 1;
+        }
+        if (middleApplied.size() != 1 ||
+            middleApplied[0].first != "fractal.view.fractal_type" ||
+            middleApplied[0].second.string_value != "explaino") {
+            std::cerr << "Expected middle crossfade step to land on plain explaino\n";
+            return 1;
+        }
+        if (fourthApplied.size() != 2 ||
+            fourthApplied[0].second.string_value != "explaino_splice" ||
+            fourthApplied[1].first != "fractal.params.splice_offset" ||
+            !NearlyEqual(fourthApplied[1].second.number_value, 0.25)) {
+            std::cerr << "Expected fourth crossfade step to ramp splice strength from the midpoint\n";
+            return 1;
+        }
+        if (lastApplied.size() != 2 ||
+            lastApplied[0].second.string_value != "explaino_splice" ||
+            !NearlyEqual(lastApplied[1].second.number_value, 0.5)) {
+            std::cerr << "Expected final crossfade step to use explaino_splice default strength\n";
             return 1;
         }
     }

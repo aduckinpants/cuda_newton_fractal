@@ -159,6 +159,81 @@ def test_probe_cli_supports_request_response_files(tmp_path: Path) -> None:
     assert len(response["samples"]) == 8
 
 
+def test_probe_cli_supports_variant_crossfade_sequence_mode() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    request = {
+        "request_version": 1,
+        "request_id": "probe-variant-crossfade",
+        "mode": "sequence_grid",
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "explaino"},
+            {"path": "fractal.params.explaino_seed", "value": 3.0},
+            {"path": "fractal.params.explaino_warp_strength", "value": 0.25},
+            {"path": "fractal.view.explaino_seed_drift", "value": 0.1},
+        ],
+        "region": {
+            "center_x": 0.0,
+            "center_y": 0.0,
+            "span_x": 0.2,
+            "span_y": 0.2,
+            "grid_width": 2,
+            "grid_height": 2,
+        },
+        "sequence": {
+            "mode": "variant_crossfade",
+            "from_variant": "explaino_ripple",
+            "to_variant": "explaino_splice",
+            "steps": 5,
+        },
+        "metrics": ["iterations", "status", "summary_mean_iterations", "summary_best_sequence_index"],
+    }
+
+    result = subprocess.run(
+        [
+            str(exe_path),
+            "--sample-request-stdin",
+            "--sample-response-stdout",
+        ],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    response = json.loads(result.stdout)
+    assert response["ok"] is True
+    assert response["request_id"] == request["request_id"]
+    assert response["runtime"]["fractal_type"] == "explaino_splice"
+    assert response["summary"]["sample_count"] == 20
+    assert len(response["sequence_results"]) == 5
+    assert len(response["samples"]) == 20
+
+    assert response["sequence_results"][0]["applied"] == {
+        "fractal.view.fractal_type": "explaino_ripple",
+        "fractal.params.ripple_amplitude": pytest.approx(0.15),
+    }
+    assert response["sequence_results"][1]["applied"] == {
+        "fractal.view.fractal_type": "explaino_ripple",
+        "fractal.params.ripple_amplitude": pytest.approx(0.075),
+    }
+    assert response["sequence_results"][2]["applied"] == {
+        "fractal.view.fractal_type": "explaino",
+    }
+    assert response["sequence_results"][3]["applied"] == {
+        "fractal.view.fractal_type": "explaino_splice",
+        "fractal.params.splice_offset": pytest.approx(0.25),
+    }
+    assert response["sequence_results"][4]["applied"] == {
+        "fractal.view.fractal_type": "explaino_splice",
+        "fractal.params.splice_offset": pytest.approx(0.5),
+    }
+
+
 def test_probe_cli_emits_json_error_payload_for_invalid_request() -> None:
     if sys.platform != "win32":
         pytest.skip("probe CLI runtime regression is Windows-only")

@@ -145,6 +145,25 @@ void ApplyFractalTypeDefaults(ViewState* ioView, KernelParams* ioParams, bool* i
     if (ioSyncViewHp) *ioSyncViewHp = true;
 }
 
+bool ApplyFractalTypeOverridePreservingState(const std::string& fractalTypeId,
+    ProbeState* ioState,
+    std::string* outError) {
+    if (!ioState) {
+        if (outError) *outError = "ApplyFractalTypeOverridePreservingState requires state";
+        return false;
+    }
+    BindingContext ctx;
+    ctx.view = &ioState->view;
+    ctx.params = &ioState->params;
+    ctx.render = &ioState->render;
+    ctx.lens = &ioState->lens;
+    if (!ctx.SetEnumId("fractal.view.fractal_type", fractalTypeId)) {
+        if (outError) *outError = "Unknown enum id for fractal.view.fractal_type: " + fractalTypeId;
+        return false;
+    }
+    return true;
+}
+
 bool ApplySingleOverride(const FractalProbeOverride& overrideValue,
     ProbeState* ioState,
     bool* ioSyncViewHp,
@@ -258,6 +277,52 @@ bool ApplyOverridesWithFractalTypeFirst(const std::vector<FractalProbeOverride>&
     for (size_t index = 0; index < overrides.size(); ++index) {
         if (static_cast<int>(index) == fractalTypeIndex) continue;
         if (!ApplySingleOverride(overrides[index], ioState, &syncViewHp, allowFractalType, outError)) return false;
+    }
+
+    if (syncViewHp) {
+        SyncViewHpFromUi(ioState->view);
+    }
+    if (ioState->params.poly_kind != PolyKind::custom) {
+        SetPolyPreset(ioState->params);
+    }
+    if (IsExplainoFamily(ioState->view.fractal_type)) {
+        ExplainoSeedNormalize(ioState->view, ioState->params);
+        UpdateExplainoPolynomial(ioState->view, ioState->params, nullptr);
+    }
+    if (ioState->view.auto_max_iter) {
+        ioState->params.max_iter = ComputeAutoMaxIter(ioState->view.log2_zoom, ioState->view.fractal_type);
+    }
+    return true;
+}
+
+bool ApplyCrossfadeSequenceOverrides(const std::vector<FractalProbeOverride>& overrides,
+    ProbeState* ioState,
+    std::string* outError) {
+    if (!ioState) {
+        if (outError) *outError = "ApplyCrossfadeSequenceOverrides requires state";
+        return false;
+    }
+
+    bool syncViewHp = false;
+    int fractalTypeIndex = -1;
+    for (size_t index = 0; index < overrides.size(); ++index) {
+        if (overrides[index].path == "fractal.view.fractal_type") {
+            fractalTypeIndex = static_cast<int>(index);
+        }
+    }
+
+    if (fractalTypeIndex >= 0) {
+        const FractalProbeOverride& overrideValue = overrides[static_cast<size_t>(fractalTypeIndex)];
+        if (overrideValue.value.kind != FractalProbeScalar::Kind::string) {
+            if (outError) *outError = "fractal.view.fractal_type override requires a string enum id";
+            return false;
+        }
+        if (!ApplyFractalTypeOverridePreservingState(overrideValue.value.string_value, ioState, outError)) return false;
+    }
+
+    for (size_t index = 0; index < overrides.size(); ++index) {
+        if (static_cast<int>(index) == fractalTypeIndex) continue;
+        if (!ApplySingleOverride(overrides[index], ioState, &syncViewHp, true, outError)) return false;
     }
 
     if (syncViewHp) {
@@ -1262,6 +1327,93 @@ std::vector<std::pair<std::string, FractalProbeScalar>> ToAppliedPairs(const std
     return result;
 }
 
+struct VariantCrossfadeSpec {
+    FractalType fractal_type{FractalType::explaino};
+    const char* strength_path{nullptr};
+    double default_strength{0.0};
+};
+
+bool ResolveVariantCrossfadeSpec(const std::string& variantId,
+    VariantCrossfadeSpec* outSpec,
+    std::string* outError) {
+    FractalType fractalType = FractalType::explaino;
+    if (!TryParseFractalTypeId(variantId, &fractalType)) {
+        if (outError) *outError = "Unknown variant_crossfade fractal type: " + variantId;
+        return false;
+    }
+
+    VariantCrossfadeSpec spec;
+    spec.fractal_type = fractalType;
+    switch (fractalType) {
+    case FractalType::explaino_ripple:
+        spec.strength_path = "fractal.params.ripple_amplitude";
+        break;
+    case FractalType::explaino_splice:
+        spec.strength_path = "fractal.params.splice_offset";
+        break;
+    case FractalType::explaino_vortex:
+        spec.strength_path = "fractal.params.vortex_strength";
+        break;
+    case FractalType::explaino_tension:
+        spec.strength_path = "fractal.params.tension_strength";
+        break;
+    default:
+        if (outError) *outError = "variant_crossfade only supports explaino_ripple, explaino_splice, explaino_vortex, and explaino_tension";
+        return false;
+    }
+
+    ProbeState defaultState;
+    defaultState.view.fractal_type = fractalType;
+    ApplyFractalTypeDefaults(&defaultState.view, &defaultState.params, nullptr);
+    switch (fractalType) {
+    case FractalType::explaino_ripple:
+        spec.default_strength = defaultState.params.ripple_amplitude;
+        break;
+    case FractalType::explaino_splice:
+        spec.default_strength = defaultState.params.splice_offset;
+        break;
+    case FractalType::explaino_vortex:
+        spec.default_strength = defaultState.params.vortex_strength;
+        break;
+    case FractalType::explaino_tension:
+        spec.default_strength = defaultState.params.tension_strength;
+        break;
+    default:
+        break;
+    }
+
+    if (outSpec) *outSpec = spec;
+    return true;
+}
+
+bool ExpandVariantCrossfadeSequence(const FractalProbeSequence& sequence,
+    std::vector<std::vector<FractalProbeOverride>>* outVariants,
+    std::string* outError) {
+    VariantCrossfadeSpec fromSpec;
+    VariantCrossfadeSpec toSpec;
+    if (!ResolveVariantCrossfadeSpec(sequence.variant_crossfade.from_variant_id, &fromSpec, outError)) return false;
+    if (!ResolveVariantCrossfadeSpec(sequence.variant_crossfade.to_variant_id, &toSpec, outError)) return false;
+
+    const int midpoint = sequence.variant_crossfade.steps / 2;
+    const double midpointScale = static_cast<double>(midpoint);
+    for (int step = 0; step < sequence.variant_crossfade.steps; ++step) {
+        std::vector<FractalProbeOverride> variant;
+        if (step < midpoint) {
+            const double weight = static_cast<double>(midpoint - step) / midpointScale;
+            variant.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(FractalTypeId(fromSpec.fractal_type))});
+            variant.push_back({fromSpec.strength_path, FractalProbeScalar::Number(fromSpec.default_strength * weight)});
+        } else if (step > midpoint) {
+            const double weight = static_cast<double>(step - midpoint) / midpointScale;
+            variant.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(FractalTypeId(toSpec.fractal_type))});
+            variant.push_back({toSpec.strength_path, FractalProbeScalar::Number(toSpec.default_strength * weight)});
+        } else {
+            variant.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino")});
+        }
+        outVariants->push_back(std::move(variant));
+    }
+    return true;
+}
+
 bool ExpandCartesianAxes(const std::vector<FractalProbeSequenceAxis>& axes,
     size_t axisIndex,
     std::vector<FractalProbeOverride>* ioCurrent,
@@ -1290,6 +1442,10 @@ bool ExpandSequenceOverrides(const FractalProbeRequest& request,
     if (!request.has_sequence) {
         outVariants->push_back({});
         return true;
+    }
+
+    if (request.sequence.mode == FractalProbeSequenceMode::variant_crossfade) {
+        return ExpandVariantCrossfadeSequence(request.sequence, outVariants, outError);
     }
 
     if (request.sequence.zip_paths) {
@@ -1440,6 +1596,10 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
 
     if (!request.has_function || request.generic_expression.empty()) {
         if (outError) *outError = "generic.sample requires a 'function' block with 'expression'";
+        return false;
+    }
+    if (request.has_sequence && request.sequence.mode == FractalProbeSequenceMode::variant_crossfade) {
+        if (outError) *outError = "generic.sample does not support sequence.mode=variant_crossfade";
         return false;
     }
 
@@ -1680,7 +1840,11 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
 
     for (size_t sequenceIndex = 0; sequenceIndex < sequenceVariants.size(); ++sequenceIndex) {
         ProbeState working = baseState;
-        if (!ApplyOverridesWithFractalTypeFirst(sequenceVariants[sequenceIndex], &working, false, outError)) return false;
+        if (request.has_sequence && request.sequence.mode == FractalProbeSequenceMode::variant_crossfade) {
+            if (!ApplyCrossfadeSequenceOverrides(sequenceVariants[sequenceIndex], &working, outError)) return false;
+        } else {
+            if (!ApplyOverridesWithFractalTypeFirst(sequenceVariants[sequenceIndex], &working, false, outError)) return false;
+        }
         if (!ValidateProbeState(working, outError)) return false;
 
         FractalProbeSequenceResult sequenceResult;

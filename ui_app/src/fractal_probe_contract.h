@@ -19,6 +19,11 @@ enum class FractalProbeOutputMode {
     ndjson = 1,
 };
 
+enum class FractalProbeSequenceMode {
+    axes = 0,
+    variant_crossfade = 1,
+};
+
 enum class FractalProbeSampleStatus {
     escaped = 0,
     converged = 1,
@@ -86,9 +91,17 @@ struct FractalProbeSequenceAxis {
     std::vector<FractalProbeScalar> values;
 };
 
+struct FractalProbeVariantCrossfade {
+    std::string from_variant_id;
+    std::string to_variant_id;
+    int steps{0};
+};
+
 struct FractalProbeSequence {
+    FractalProbeSequenceMode mode{FractalProbeSequenceMode::axes};
     bool zip_paths{false};
     std::vector<FractalProbeSequenceAxis> axes;
+    FractalProbeVariantCrossfade variant_crossfade;
 };
 
 struct FractalProbeOperatorContext {

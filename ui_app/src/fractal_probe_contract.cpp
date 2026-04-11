@@ -75,6 +75,20 @@ bool GetOptionalBool(const json_min::Object& object,
     return true;
 }
 
+bool GetOptionalString(const json_min::Object& object,
+    const char* key,
+    std::string* outValue,
+    std::string* outError) {
+    auto it = object.find(key);
+    if (it == object.end()) return true;
+    if (!it->second.is_string()) {
+        if (outError) *outError = std::string("Expected string field: ") + key;
+        return false;
+    }
+    if (outValue) *outValue = it->second.as_string();
+    return true;
+}
+
 bool ParseScalarValue(const json_min::Value& value,
     FractalProbeScalar* outScalar,
     std::string* outError) {
@@ -128,6 +142,12 @@ bool ParseModeId(const std::string& text, FractalProbeMode* outMode) {
 bool ParseOutputModeId(const std::string& text, FractalProbeOutputMode* outMode) {
     if (text == "json") { if (outMode) *outMode = FractalProbeOutputMode::json; return true; }
     if (text == "ndjson") { if (outMode) *outMode = FractalProbeOutputMode::ndjson; return true; }
+    return false;
+}
+
+bool ParseSequenceModeId(const std::string& text, FractalProbeSequenceMode* outMode) {
+    if (text == "axes") { if (outMode) *outMode = FractalProbeSequenceMode::axes; return true; }
+    if (text == "variant_crossfade") { if (outMode) *outMode = FractalProbeSequenceMode::variant_crossfade; return true; }
     return false;
 }
 
@@ -249,6 +269,25 @@ bool ParseSequenceAxis(const json_min::Value& value,
     return true;
 }
 
+bool ParseVariantCrossfade(const json_min::Object& object,
+    FractalProbeVariantCrossfade* outCrossfade,
+    std::string* outError) {
+    FractalProbeVariantCrossfade crossfade;
+    if (!GetRequiredString(object, "from_variant", &crossfade.from_variant_id, outError)) return false;
+    if (!GetRequiredString(object, "to_variant", &crossfade.to_variant_id, outError)) return false;
+    if (!GetRequiredInt(object, "steps", &crossfade.steps, outError)) return false;
+    if (crossfade.steps < 3 || (crossfade.steps % 2) == 0) {
+        if (outError) *outError = "variant_crossfade steps must be an odd integer >= 3";
+        return false;
+    }
+    if (crossfade.from_variant_id == crossfade.to_variant_id) {
+        if (outError) *outError = "variant_crossfade requires distinct from_variant and to_variant ids";
+        return false;
+    }
+    if (outCrossfade) *outCrossfade = std::move(crossfade);
+    return true;
+}
+
 bool ParseSequence(const json_min::Value& value,
     FractalProbeSequence* outSequence,
     std::string* outError) {
@@ -257,33 +296,45 @@ bool ParseSequence(const json_min::Value& value,
         return false;
     }
     const json_min::Object& object = value.as_object();
-    if (!RejectUnknownKeys(object, {"zip_paths", "vary"}, "sequence", outError)) return false;
 
     FractalProbeSequence sequence;
-    if (!GetOptionalBool(object, "zip_paths", &sequence.zip_paths, outError)) return false;
+    std::string modeText = "axes";
+    if (!GetOptionalString(object, "mode", &modeText, outError)) return false;
+    if (!ParseSequenceModeId(modeText, &sequence.mode)) {
+        if (outError) *outError = "Unsupported sequence.mode: " + modeText;
+        return false;
+    }
 
-    auto it = object.find("vary");
-    if (it == object.end() || !it->second.is_array()) {
-        if (outError) *outError = "Sequence requires an array field: vary";
-        return false;
-    }
-    for (const auto& item : it->second.as_array()) {
-        FractalProbeSequenceAxis axis;
-        if (!ParseSequenceAxis(item, &axis, outError)) return false;
-        sequence.axes.push_back(std::move(axis));
-    }
-    if (sequence.axes.empty()) {
-        if (outError) *outError = "Sequence vary must not be empty";
-        return false;
-    }
-    if (sequence.zip_paths) {
-        const size_t count = sequence.axes.front().values.size();
-        for (const auto& axis : sequence.axes) {
-            if (axis.values.size() != count) {
-                if (outError) *outError = "zip_paths requires all sequence value arrays to have matching lengths";
-                return false;
+    if (sequence.mode == FractalProbeSequenceMode::axes) {
+        if (!RejectUnknownKeys(object, {"mode", "zip_paths", "vary"}, "sequence", outError)) return false;
+        if (!GetOptionalBool(object, "zip_paths", &sequence.zip_paths, outError)) return false;
+
+        auto it = object.find("vary");
+        if (it == object.end() || !it->second.is_array()) {
+            if (outError) *outError = "Sequence requires an array field: vary";
+            return false;
+        }
+        for (const auto& item : it->second.as_array()) {
+            FractalProbeSequenceAxis axis;
+            if (!ParseSequenceAxis(item, &axis, outError)) return false;
+            sequence.axes.push_back(std::move(axis));
+        }
+        if (sequence.axes.empty()) {
+            if (outError) *outError = "Sequence vary must not be empty";
+            return false;
+        }
+        if (sequence.zip_paths) {
+            const size_t count = sequence.axes.front().values.size();
+            for (const auto& axis : sequence.axes) {
+                if (axis.values.size() != count) {
+                    if (outError) *outError = "zip_paths requires all sequence value arrays to have matching lengths";
+                    return false;
+                }
             }
         }
+    } else {
+        if (!RejectUnknownKeys(object, {"mode", "from_variant", "to_variant", "steps"}, "sequence", outError)) return false;
+        if (!ParseVariantCrossfade(object, &sequence.variant_crossfade, outError)) return false;
     }
 
     if (outSequence) *outSequence = std::move(sequence);
