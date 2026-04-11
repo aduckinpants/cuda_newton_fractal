@@ -118,6 +118,14 @@ bool BuildExplainoSidecarWindowState(
             return false;
         }
 
+        std::string completenessError;
+        if (!BuildSidecarExplorationCompleteness(space, next.budget, &next.completeness, &completenessError)) {
+            next.completeness_error_message = completenessError;
+            *outState = std::move(next);
+            if (outError) *outError = completenessError;
+            return false;
+        }
+
         std::string actionError;
         if (BuildSidecarActionRecommendation(space, next.budget, next.lens, &next.action_recommendation, &actionError)) {
             next.has_action_recommendation = true;
@@ -225,6 +233,50 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
                 } else {
                     ImGui::TextDisabled("--");
                 }
+            }
+
+            ImGui::EndTable();
+        }
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Exploration Completeness");
+    if (!state.completeness_error_message.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Completeness error");
+        ImGui::TextWrapped("%s", state.completeness_error_message.c_str());
+    } else if (state.completeness.rows.empty()) {
+        ImGui::TextDisabled("Completeness unavailable.");
+    } else {
+        ImGui::BulletText("demonstrated: %d/%d (%.3f)",
+            state.completeness.demonstrated_count,
+            static_cast<int>(state.completeness.rows.size()),
+            state.completeness.demonstrated_fraction);
+        ImGui::BulletText("uncertain: %d", state.completeness.uncertain_count);
+        ImGui::BulletText("mean_coverage_score: %.3f", state.completeness.mean_coverage_score);
+
+        if (ImGui::BeginTable("sidecar_completeness", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("Label");
+            ImGui::TableSetupColumn("Path");
+            ImGui::TableSetupColumn("Coverage");
+            ImGui::TableSetupColumn("Uncertainty");
+            ImGui::TableSetupColumn("Obs");
+            ImGui::TableSetupColumn("Status");
+            ImGui::TableHeadersRow();
+
+            for (const auto& row : state.completeness.rows) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(row.label.c_str());
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(row.path.c_str());
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(FormatNumber(row.coverage_score).c_str());
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(FormatNumber(row.posterior_uncertainty).c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%d", row.observation_count);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(row.coverage_bucket.c_str());
             }
 
             ImGui::EndTable();

@@ -242,6 +242,18 @@ int main() {
             std::cerr << "Expected sidecar window state to expose lens rows alongside the ranked budget rows\n";
             return 1;
         }
+        if (state.completeness.rows.size() != state.budget.rows.size()) {
+            std::cerr << "Expected sidecar window state to expose completeness rows alongside the tracked budget rows\n";
+            return 1;
+        }
+        if (state.completeness.demonstrated_count != 0 || state.completeness.uncertain_count != static_cast<int>(state.completeness.rows.size())) {
+            std::cerr << "Expected first measurement batch to leave the sidecar completeness surface fully uncertain\n";
+            return 1;
+        }
+        if (state.completeness.rows[0].coverage_bucket.empty()) {
+            std::cerr << "Expected sidecar completeness rows to carry a rendered bucket label\n";
+            return 1;
+        }
         if (state.lens.rows[0].path != state.budget.rows[0].path || state.lens.rows[0].guidance.empty()) {
             std::cerr << "Expected top-ranked lens guidance to align with the top-ranked budget row\n";
             return 1;
@@ -285,6 +297,14 @@ int main() {
         }
         if (!(second.budget.mean_posterior_uncertainty < first.budget.mean_posterior_uncertainty)) {
             std::cerr << "Expected repeated sidecar window builds to reduce posterior uncertainty\n";
+            return 1;
+        }
+        if (!(second.completeness.demonstrated_count > first.completeness.demonstrated_count)) {
+            std::cerr << "Expected repeated sidecar window builds to move params from uncertain toward demonstrated coverage\n";
+            return 1;
+        }
+        if (!(second.completeness.demonstrated_fraction > first.completeness.demonstrated_fraction)) {
+            std::cerr << "Expected repeated sidecar window builds to improve demonstrated coverage fraction\n";
             return 1;
         }
     }

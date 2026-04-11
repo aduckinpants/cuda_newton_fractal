@@ -16,10 +16,9 @@ Phase 4 - R3 lens and action selection
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - derive an exploration-completeness summary from the current posterior-uncertainty / observation-count surface
-  - expose a demonstrated-vs-uncertain view in the sidecar without mutating runtime state yet
-  - keep the auto-demonstration loop deferred until the passive recommendation and completeness surfaces are both durable
-  - add focused native tests that lock completeness ordering, coverage buckets, and fail-fast behavior
+  - extract a gated auto-demonstration controller seam on top of the recommendation + completeness surfaces
+  - keep runtime parameter mutation opt-in/off by default until the controller stop conditions prove durable
+  - add focused native tests for no-eligible-action behavior, stop conditions, and explicit opt-in policy
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -55,22 +54,26 @@ Phase 4 - R3 lens and action selection
 - Delivered so far in Phase 4:
   - `ui_app/src/explaino_sidecar_lens.h/.cpp`
   - `ui_app/src/explaino_sidecar_action.h/.cpp`
+  - `ui_app/src/explaino_sidecar_completeness.h/.cpp`
   - `ui_app/tests/test_explaino_sidecar_lens.cpp`
   - `ui_app/tests/test_explaino_sidecar_action.cpp`
+  - `ui_app/tests/test_explaino_sidecar_completeness.cpp`
   - sidecar window state now derives per-param active-zone projections from the measured EIG/budget surface
   - sidecar hypothesis-space entries now preserve describe-surface `cost_hint` metadata for passive action selection
   - sidecar budget rendering now shows lens zone and guidance columns alongside the ranked rows
   - sidecar window now exposes one passive `EIG - gamma*Cost` action recommendation over the current budget/lens surface without mutating parameters
+  - sidecar window now exposes an exploration-completeness summary and demonstrated-vs-uncertain table derived from persistent posterior-uncertainty / observation-count state
   - hostile-audit repairs for missing budget coverage, duplicate hypothesis-surface paths, dead recommendation wiring in the sidecar window, duplicate budget-row validation in the action seam, invalid `cost_hint` metadata entering the sidecar model, and cross-surface type drift in the action seam
+  - hostile-audit proof that the completeness seam's strict numeric-surface coverage invariant matches the existing measurement surface contract
 - Validation achieved for the current Phase 4 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
   - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_action_code_quality_report.json`
 - Next bounded slice for Phase 4:
-  - classify demonstrated versus uncertain params from posterior uncertainty and observation counts on the persistent budget surface
-  - render an exploration-completeness summary or map alongside the passive recommendation without enabling autonomous parameter mutation yet
-  - keep auto-demonstration deferred until the completeness surface proves durable under hostile audit
+  - extract a gated R3-C auto-demonstration controller that consumes the passive recommendation + completeness surfaces
+  - keep actual runtime parameter mutation disabled by default until explicit opt-in and controller stop conditions are test-locked
+  - preserve the no-implicit-fallback posture when the controller has no eligible action or reaches a completeness stop point
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - EIG, lens projection, and autonomous action selection
