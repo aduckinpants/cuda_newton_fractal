@@ -1,5 +1,6 @@
 #pragma once
 
+#include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
 
 #include <string>
@@ -18,9 +19,18 @@ struct ExplainoSidecarWindowState {
     std::string function_id;
     std::string fractal_type_id;
     std::string error_message;
+    std::string measurement_error_message;
     SidecarOrientationVector orientation{};
+    SidecarMeasurementBatch measurement{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError);
 
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,

@@ -28,6 +28,7 @@
 #include "finding_archive_actions.h"
 #include "finding_state_actions.h"
 #include "explaino_seed.h"
+#include "explaino_sidecar_cuda_sample_host.h"
 #include "explaino_sidecar_window.h"
 #include "explaino_seed_dynamics.h"
 #include "param_anim_dynamics.h"
@@ -1046,6 +1047,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::string schemaPath = std::move(schemaResult.path);
     std::string schemaWarning = std::move(schemaResult.warning);
     EngineFunctionCatalog engineCatalog = BuildEngineCatalog(uiSchema);
+    CudaSidecarMeasurementHost sidecarMeasurementHost;
+    ExplainoSidecarWindowState sidecarState;
+    bool sidecarStateValid = false;
 
     {
         ApplySchemaDefaults(uiSchema, initBind, &dirty);
@@ -1163,6 +1167,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             &renderPacingState);
 
         const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
+        if (dirty || !sidecarStateValid) {
+            if (IsExplainoFamily(view.fractal_type)) {
+                UpdateExplainoPolynomial(view, params, nullptr);
+            }
+            if (view.auto_max_iter) {
+                params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+            }
+            // Micro-sweeps are only recomputed when the bound runtime state changes.
+            BuildExplainoSidecarWindowState(engineCatalog, initBind, &sidecarMeasurementHost, &sidecarState, nullptr);
+            sidecarStateValid = true;
+        }
         DispatchRenderFrame(view, params, render, lens, renderPacing,
             forceFullQualityRender, view.auto_refresh, dirty,
             actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
@@ -1176,8 +1191,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath);
         }
 
-        ExplainoSidecarWindowState sidecarState;
-        BuildExplainoSidecarWindowState(engineCatalog, initBind, &sidecarState, nullptr);
         RenderExplainoSidecarWindow(sidecarState);
 
         RenderFractalViewport(io, render, view, dirty, actions.interactionChanged);

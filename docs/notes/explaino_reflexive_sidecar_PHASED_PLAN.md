@@ -37,10 +37,21 @@ Phase 3 - R2 CUDA demonstration engine
   - `ui_app/tests/test_explaino_sidecar_window.cpp`
   - runtime/native build wiring for the new sidecar window module
   - hostile-audit repairs for unsupported or empty required enum selections in the filtered describe surface
+- Delivered so far in Phase 3:
+  - `ui_app/src/explaino_sidecar_measurement.h/.cpp`
+  - `ui_app/src/explaino_sidecar_cuda_sample_host.h/.cpp`
+  - `ui_app/tests/test_explaino_sidecar_measurement.cpp`
+  - sidecar window measurement state and initial information-budget rendering in `ui_app/src/explaino_sidecar_window.h/.cpp`
+  - runtime wiring in `ui_app/src/main.cpp` that reuses the in-process CUDA sample host and avoids recomputing the micro-sweep on idle frames
+  - hostile-audit repair for stale derived Explaino polynomial state during measurement variants
+- Validation achieved for the current Phase 3 slice:
+  - `ui_app/build_tests_vsdevcmd.cmd`
+  - `ui_app/build_vsdevcmd.cmd`
+  - `py -3.14 tools/code_quality_audit.py --out artifacts/code_quality_report.json`
 - Next bounded slice for Phase 3:
-  - wire the sidecar to call the extracted sample host API in-process
-  - measure per-param micro-sweeps for the current applicable surface
-  - begin recording information-gain inputs without adding autonomous action selection yet
+  - convert the current output-delta score into an explicit per-param EIG estimate surface with named budget semantics
+  - persist cumulative information-gain and uncertainty state across interactions instead of recomputing only the current batch
+  - keep action selection and lens projection deferred until the R2 budget state is durable
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - EIG, lens projection, and autonomous action selection

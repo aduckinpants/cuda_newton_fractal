@@ -38,6 +38,7 @@ std::string FormatRange(const SidecarParamSurfaceEntry& entry) {
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,
     const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
     if (!outState) {
@@ -73,8 +74,31 @@ bool BuildExplainoSidecarWindowState(
         next.rows.push_back(std::move(row));
     }
 
+    if (measurementHost) {
+        std::string measurementError;
+        if (!BuildSidecarMeasurementBatch(space, ctx, *measurementHost, &next.measurement, &measurementError)) {
+            next.measurement_error_message = measurementError;
+            *outState = std::move(next);
+            if (outError) *outError = measurementError;
+            return false;
+        }
+
+        next.orientation = ComputeSidecarOrientationVector(ctx, space, BuildSidecarOrientationInputs(next.measurement));
+        if (!next.measurement.rows.empty()) {
+            next.orientation.field_embedding_stats = next.measurement.mean_information_gain_estimate;
+        }
+    }
+
     *outState = std::move(next);
     return true;
+}
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError) {
+    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, outState, outError);
 }
 
 void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
@@ -89,6 +113,10 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
 
     ImGui::Text("Function: %s", state.function_id.c_str());
     ImGui::Text("Fractal Type: %s", state.fractal_type_id.c_str());
+    if (!state.measurement_error_message.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.2f, 1.0f), "Measurement error");
+        ImGui::TextWrapped("%s", state.measurement_error_message.c_str());
+    }
     ImGui::Separator();
     ImGui::Text("Orientation");
     ImGui::BulletText("import_signature: %llu", static_cast<unsigned long long>(state.orientation.import_signature));
@@ -98,6 +126,50 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
     ImGui::BulletText("busy_beaver_metrics: %.3f", state.orientation.busy_beaver_metrics);
     ImGui::BulletText("decode_stability: %.3f", state.orientation.decode_stability);
     ImGui::BulletText("diff_magnitude: %.3f", state.orientation.diff_magnitude);
+    ImGui::Separator();
+    ImGui::Text("Information Budget");
+    if (state.measurement.rows.empty()) {
+        ImGui::TextDisabled("Measurement unavailable.");
+    } else {
+        ImGui::BulletText("total_information_gain: %.3f", state.measurement.total_information_gain_estimate);
+        ImGui::BulletText("mean_information_gain: %.3f", state.measurement.mean_information_gain_estimate);
+        ImGui::BulletText("explored_fraction: %.3f", state.measurement.explored_fraction);
+        ImGui::BulletText("mean_decode_stability: %.3f", state.measurement.mean_decode_stability);
+        ImGui::BulletText("total_diff_magnitude: %.3f", state.measurement.total_diff_magnitude);
+
+        if (ImGui::BeginTable("sidecar_measurements", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("Label");
+            ImGui::TableSetupColumn("Path");
+            ImGui::TableSetupColumn("Current");
+            ImGui::TableSetupColumn("Step");
+            ImGui::TableSetupColumn("IG");
+            ImGui::TableSetupColumn("Stability");
+            ImGui::TableHeadersRow();
+
+            for (const auto& row : state.measurement.rows) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(row.label.c_str());
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(row.path.c_str());
+                ImGui::TableNextColumn();
+                const std::string currentText = FormatNumber(row.current_value);
+                ImGui::TextUnformatted(currentText.c_str());
+                ImGui::TableNextColumn();
+                const std::string stepText = FormatNumber(row.step_value);
+                ImGui::TextUnformatted(stepText.c_str());
+                ImGui::TableNextColumn();
+                const std::string informationGainText = FormatNumber(row.information_gain_estimate);
+                ImGui::TextUnformatted(informationGainText.c_str());
+                ImGui::TableNextColumn();
+                const std::string stabilityText = FormatNumber(row.decode_stability);
+                ImGui::TextUnformatted(stabilityText.c_str());
+            }
+
+            ImGui::EndTable();
+        }
+    }
+
     ImGui::Separator();
     ImGui::Text("Applicable Parameters");
 

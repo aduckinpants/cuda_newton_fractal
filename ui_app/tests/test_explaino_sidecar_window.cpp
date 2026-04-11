@@ -5,6 +5,48 @@
 
 namespace {
 
+bool NearlyEqual(double left, double right, double eps = 1.0e-9) {
+    const double delta = left - right;
+    return delta < eps && delta > -eps;
+}
+
+class FakeMeasurementHost : public SidecarMeasurementHost {
+public:
+    bool fail = false;
+
+    bool Sample(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams& params,
+        const RenderSettings& render,
+        std::vector<FractalSampleResult>* outResults,
+        std::string* outError) const override {
+        if (fail) {
+            if (outError) *outError = "fake measurement host failure";
+            return false;
+        }
+        if (!outResults) {
+            if (outError) *outError = "outResults is null";
+            return false;
+        }
+
+        outResults->clear();
+        outResults->reserve(coords.size());
+        for (const Double2& coord : coords) {
+            const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
+            FractalSampleResult sample{};
+            sample.iterations = static_cast<int>(std::lround(20.0 + static_cast<double>(params.explaino_mix) * 100.0 + coordSpan * 20.0 + static_cast<double>(render.device_id)));
+            sample.final_z_x = static_cast<float>(coord.x);
+            sample.final_z_y = static_cast<float>(coord.y);
+            sample.residual = static_cast<float>(1.0 + static_cast<double>(params.explaino_mix) + coordSpan);
+            sample.converged = params.explaino_mix >= 0.5f;
+            sample.escaped = !sample.converged && coordSpan > 0.05;
+            outResults->push_back(sample);
+        }
+        return true;
+    }
+};
+
+
 FunctionParamDescriptor MakeParam(
     const char* path,
     const char* type,
@@ -95,6 +137,7 @@ int main() {
     RenderSettings render{};
     LensSettings lens{};
     view.fractal_type = FractalType::explaino;
+    view.zoom = 10.0f;
     params.explaino_seed = 7.0;
     view.explaino_seed_drift = 0.125f;
     BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
@@ -136,6 +179,63 @@ int main() {
         }
         if (state.orientation.import_signature == 0 || state.orientation.pack_projection_hash == 0) {
             std::cerr << "Expected sidecar window state to carry orientation data\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &state, &error)) {
+            std::cerr << "Expected sidecar window state with measurement host to build: " << error << "\n";
+            return 1;
+        }
+        if (state.measurement.rows.size() != 2) {
+            std::cerr << "Expected measurement rows for zoom and explaino_mix\n";
+            return 1;
+        }
+        if (state.measurement.rows[0].path != "fractal.params.explaino_mix") {
+            std::cerr << "Expected sidecar measurements to rank explaino_mix first\n";
+            return 1;
+        }
+        if (state.measurement.total_information_gain_estimate <= 0.0) {
+            std::cerr << "Expected sidecar window state to expose positive measurement information gain\n";
+            return 1;
+        }
+        if (!NearlyEqual(state.orientation.slime_energy_delta, state.measurement.total_information_gain_estimate)) {
+            std::cerr << "Expected sidecar orientation to ingest measurement information gain\n";
+            return 1;
+        }
+        if (!NearlyEqual(state.orientation.busy_beaver_metrics, state.measurement.explored_fraction)) {
+            std::cerr << "Expected sidecar orientation to ingest measurement explored fraction\n";
+            return 1;
+        }
+        if (!state.measurement_error_message.empty()) {
+            std::cerr << "Expected successful measurements to leave no measurement error message\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        host.fail = true;
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &state, &error)) {
+            std::cerr << "Expected sidecar window state build to fail when measurement host fails\n";
+            return 1;
+        }
+        if (error.find("fake measurement host failure") == std::string::npos) {
+            std::cerr << "Expected sidecar window measurement error to mention the host failure\n";
+            return 1;
+        }
+        if (state.measurement_error_message.find("fake measurement host failure") == std::string::npos) {
+            std::cerr << "Expected sidecar window state to retain the measurement error message\n";
+            return 1;
+        }
+        if (state.rows.size() != 3) {
+            std::cerr << "Expected sidecar window state to retain base rows when measurement fails\n";
             return 1;
         }
     }
