@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - Checkpoint repairs and audit trail
+Complete - Broad hostile re-audit checkpointed
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - Checkpoint repairs and audit trail
 - [x] Phase 2 - Add regression coverage for confirmed defect(s)
 - [x] Phase 3 - Implement minimal repair(s)
 - [x] Phase 4 - Revalidate repaired state and re-audit
-- [ ] Phase 5 - Checkpoint repairs and audit trail
+- [x] Phase 5 - Checkpoint repairs and audit trail
 
 ## Notes
 
@@ -43,3 +43,7 @@ Phase 5 - Checkpoint repairs and audit trail
 
 - Residual audit note:
   - the repo-level code-quality baseline remains regressed at 88/100 versus the stored baseline 95; that is real repo debt surfaced by this audit pass but was not broadened into a structural refactor within this bounded regression-coverage slice
+
+- Phase 5 completion snapshot:
+  - checkpointed the regression-coverage repair in `8366c91`
+  - recorded the broad hostile re-audit finding in `HANDOFF_LOG.md`
