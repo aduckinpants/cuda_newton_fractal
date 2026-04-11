@@ -37,7 +37,7 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
 | OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, cost/sensitivity tables, variant crossfade; Phase 1 feeds kernel extraction validation | No external deps (Phase 1); CUDA sample_fn K1-K3 (Phase 2) |
-| CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-G DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming for single/session requests, and a Windows named-pipe alternate transport. | V2-F (describe with sensitivity) is the remaining active CLI Bridge V2 slice and still depends on Optimization Staging Phase 2 |
+| CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-G DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming for single/session requests, and a Windows named-pipe alternate transport. Broader multi-client/socket transport remains deferred. | V2-F (describe with sensitivity) is the remaining active CLI Bridge V2 slice and still depends on Optimization Staging Phase 2 |
 | ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 (done) + Optimization Staging Phase 2 |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)

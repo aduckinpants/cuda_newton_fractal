@@ -150,7 +150,27 @@ Key references:
 - ui_app/tests/test_fractal_family_rules.cpp
 - ui_app/tests/test_lens_sdf.cpp
 
-## 6. Current Pause Point
+## 7. CLI Bridge V2 Multi-Client / Socket Transport Follow-On
+
+Status: deferred on 2026-04-11
+
+Why paused:
+- V2-G landed as a bounded Windows named-pipe transport that reuses the existing one-line session protocol for one external client/session per process.
+- The surviving V2-G spec text still implied concurrent callers, but the shipped implementation does not provide multi-client pipe fan-in or socket transport.
+- That broader transport surface is a follow-on thread, not required to close the current V2-G slice.
+
+Resume constraints:
+- do not advertise concurrent callers again until the runtime actually supports multiple simultaneous clients or a socket-based equivalent
+- if resumed, add focused tests for per-client session isolation and concurrent connect/close behavior
+- preserve the existing JSON line protocol and fail-fast semantics; transport changes should not fork request/response behavior
+
+Key references:
+- spec_intake/CliBridgeV2_GpuSampleFn_SpecIntake.md
+- ui_app/src/headless_modes.cpp
+- ui_app/src/headless_modes.h
+- tests/test_fractal_runtime_session.py
+
+## 8. Current Pause Point
 
 If work resumes from this file alone, the intended next order is:
 1. keep live responsiveness stable and do not reopen pacing experimentation casually

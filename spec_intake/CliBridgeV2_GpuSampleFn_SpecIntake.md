@@ -179,7 +179,7 @@ V2 is motivated by three new consumers:
 | Parameter diff | no | **yes** | Request specifies only changed overrides vs. previous state_token |
 | Cost/budget metadata | no | **yes** | Response includes gpu_ms, sample_count, estimated_cost |
 | Describe with sensitivity | no | **yes** | Describe response includes param sensitivity hints (from Optimization Staging) |
-| Named pipe / socket transport | no | **yes** | Alternative to stdin/stdout for concurrent callers |
+| Named pipe / socket transport | no | **yes** | Alternative to stdin/stdout for external consumers; broader multi-client/socket transport remains a follow-on |
 | Binary sample output | no | **maybe** | For very large grids; NDJSON may be sufficient |
 
 ### 2.4 Session protocol (V2 keep-alive)
@@ -230,7 +230,7 @@ Engine writes (one line per sequence step or grid row):
 | V2-D | Cost metadata in response | gpu_ms, sample_count in every response |
 | V2-E | NDJSON streaming output | `output_mode: "ndjson"` streams one `sample_batch` line per row/sequence step plus a final `summary` line; batch arrays reject NDJSON mode |
 | V2-F | Describe with sensitivity | Describe response carries param sensitivity table from Optimization Staging |
-| V2-G | Named pipe / socket transport | Alternative transport for concurrent external consumers |
+| V2-G | Named pipe / socket transport | Windows named-pipe transport that reuses the V2 session protocol; broader multi-client/socket transport remains deferred |
 
 ### 2.7 Dependency ordering
 
@@ -245,8 +245,8 @@ V2-G (named pipe) ← V2-B (session lifecycle must exist first)
 ```
 
 Status update 2026-04-11:
-- V2-G landed as a Windows named-pipe transport that reuses the existing one-line JSON session protocol.
-- Socket transport remains a possible future portability extension, not a blocker for closing the current alternate-transport phase.
+- V2-G landed as a Windows named-pipe transport that reuses the existing one-line JSON session protocol for a single external client/session per process.
+- Broader multi-client pipe fan-in or socket transport remains a possible future follow-on, not a blocker for closing the current alternate-transport phase.
 
 ---
 

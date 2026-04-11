@@ -38,5 +38,6 @@ Complete - Windows named-pipe transport landed, validated, and ready to checkpoi
 - Phase 3 audit snapshot so far:
   - hostile review found a real race in the new native named-pipe test helper; fixed `ConnectSessionPipe()` to retry until the server actually creates the pipe instead of relying on a single `WaitNamedPipeA()` call
   - hostile review found a real structural splice error in `tests/test_fractal_runtime_session.py`; restored the existing NDJSON test body and moved the new named-pipe class to the end of the file
+  - hostile re-audit found a continuity defect in the surviving V2-G spec text: the implementation is a bounded Windows named-pipe transport for one external client/session per process, but the spec still advertised concurrent callers/external consumers; narrowed the spec to the shipped scope and recorded broader multi-client/socket transport as deferred
   - revalidated focused seams with `D:\salt-fractal\cuda_newton_fractal_clone\build_tests\test_headless_modes.exe`, `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`, `ui_app/build_vsdevcmd.cmd`, and `py -3.14 -m pytest tests/test_fractal_runtime_session.py -q`
   - canonical native helper validation completed with `ui_app/build_tests_vsdevcmd.cmd` ending in `All helper tests passed.` after the repaired test helper rerun
