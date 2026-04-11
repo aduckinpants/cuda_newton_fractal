@@ -1,5 +1,8 @@
 #include "headless_modes.h"
 
+#include <Windows.h>
+
+#include <cctype>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -543,4 +546,205 @@ int RunSessionMode(std::istream& in, std::ostream& out, const std::string& exePa
         return 1;
     }
     return 1;
+}
+
+static bool IsAllowedSessionPipeNameChar(unsigned char ch) {
+    return std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.';
+}
+
+bool TryBuildSessionPipePath(const std::string& pipeName,
+    std::string* outPipePath,
+    std::string* outError) {
+    if (pipeName.empty()) {
+        if (outError) *outError = "sample session pipe name must not be empty";
+        return false;
+    }
+
+    for (unsigned char ch : pipeName) {
+        if (!IsAllowedSessionPipeNameChar(ch)) {
+            if (outError) {
+                *outError = "sample session pipe name must use only letters, numbers, dot, dash, or underscore";
+            }
+            return false;
+        }
+    }
+
+    if (outPipePath) *outPipePath = "\\\\.\\pipe\\" + pipeName;
+    return true;
+}
+
+static std::string FormatWin32ErrorMessage(DWORD errorCode) {
+    LPSTR buffer = nullptr;
+    const DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS;
+    const DWORD length = FormatMessageA(
+        flags,
+        nullptr,
+        errorCode,
+        0,
+        reinterpret_cast<LPSTR>(&buffer),
+        0,
+        nullptr);
+    std::string message;
+    if (length != 0 && buffer) {
+        message.assign(buffer, length);
+        while (!message.empty() && (message.back() == '\r' || message.back() == '\n' || message.back() == ' ')) {
+            message.pop_back();
+        }
+    } else {
+        message = "Win32 error " + std::to_string(errorCode);
+    }
+    if (buffer) {
+        LocalFree(buffer);
+    }
+    return message;
+}
+
+static bool WriteNamedPipeText(HANDLE pipe,
+    const std::string& text,
+    std::string* outError) {
+    const char* next = text.data();
+    size_t remaining = text.size();
+    while (remaining > 0) {
+        DWORD written = 0;
+        const DWORD chunk = remaining > static_cast<size_t>(DWORD(-1))
+            ? DWORD(-1)
+            : static_cast<DWORD>(remaining);
+        if (!WriteFile(pipe, next, chunk, &written, nullptr)) {
+            if (outError) {
+                *outError = "Failed to write named-pipe session response: "
+                    + FormatWin32ErrorMessage(GetLastError());
+            }
+            return false;
+        }
+        next += written;
+        remaining -= written;
+    }
+
+    if (!FlushFileBuffers(pipe)) {
+        if (outError) {
+            *outError = "Failed to flush named-pipe session response: "
+                + FormatWin32ErrorMessage(GetLastError());
+        }
+        return false;
+    }
+    return true;
+}
+
+static bool ReadNamedPipeLine(HANDLE pipe,
+    std::string* outLine,
+    bool* outDisconnected,
+    std::string* outError) {
+    if (outLine) outLine->clear();
+    if (outDisconnected) *outDisconnected = false;
+
+    while (true) {
+        char ch = 0;
+        DWORD bytesRead = 0;
+        if (!ReadFile(pipe, &ch, 1, &bytesRead, nullptr) || bytesRead == 0) {
+            const DWORD errorCode = bytesRead == 0 ? ERROR_BROKEN_PIPE : GetLastError();
+            if (errorCode == ERROR_BROKEN_PIPE || errorCode == ERROR_PIPE_NOT_CONNECTED || errorCode == ERROR_HANDLE_EOF) {
+                if (outDisconnected) *outDisconnected = true;
+                return false;
+            }
+            if (outError) {
+                *outError = "Failed to read named-pipe session request: "
+                    + FormatWin32ErrorMessage(errorCode);
+            }
+            return false;
+        }
+
+        if (ch == '\n') {
+            return true;
+        }
+        if (ch != '\r' && outLine) {
+            outLine->push_back(ch);
+        }
+    }
+}
+
+int RunNamedPipeSessionMode(const std::string& pipeName,
+    const std::string& exePath) {
+    std::string pipePath;
+    std::string error;
+    if (!TryBuildSessionPipePath(pipeName, &pipePath, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+
+    HANDLE pipe = CreateNamedPipeA(
+        pipePath.c_str(),
+        PIPE_ACCESS_DUPLEX,
+        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+        1,
+        65536,
+        65536,
+        0,
+        nullptr);
+    if (pipe == INVALID_HANDLE_VALUE) {
+        std::fprintf(stderr, "Failed to create named-pipe session transport: %s\n",
+            FormatWin32ErrorMessage(GetLastError()).c_str());
+        return 1;
+    }
+
+    const auto cleanupPipe = [&]() {
+        DisconnectNamedPipe(pipe);
+        CloseHandle(pipe);
+    };
+
+    BOOL connected = ConnectNamedPipe(pipe, nullptr);
+    if (!connected) {
+        const DWORD errorCode = GetLastError();
+        if (errorCode != ERROR_PIPE_CONNECTED) {
+            std::fprintf(stderr, "Failed to connect named-pipe session transport: %s\n",
+                FormatWin32ErrorMessage(errorCode).c_str());
+            cleanupPipe();
+            return 1;
+        }
+    }
+
+    bool sessionOpen = false;
+    bool sessionDone = false;
+    int stateTokenCounter = 0;
+    SessionOverrideMap accumulatedOverrides;
+
+    while (true) {
+        std::string line;
+        bool disconnected = false;
+        std::string readError;
+        if (!ReadNamedPipeLine(pipe, &line, &disconnected, &readError)) {
+            if (!readError.empty()) {
+                std::fprintf(stderr, "%s\n", readError.c_str());
+            }
+            cleanupPipe();
+            return 1;
+        }
+
+        std::string response = ProcessSessionLine(line,
+            &sessionOpen,
+            &sessionDone,
+            &stateTokenCounter,
+            &accumulatedOverrides,
+            exePath);
+        if (!response.empty()) {
+            std::string writeError;
+            if (!WriteNamedPipeText(pipe, response + "\n", &writeError)) {
+                std::fprintf(stderr, "%s\n", writeError.c_str());
+                cleanupPipe();
+                return 1;
+            }
+        }
+
+        if (sessionDone) {
+            const int exitCode = sessionOpen ? 0 : 1;
+            cleanupPipe();
+            return exitCode;
+        }
+
+        if (disconnected) {
+            cleanupPipe();
+            return 1;
+        }
+    }
 }

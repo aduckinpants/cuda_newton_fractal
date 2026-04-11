@@ -27,6 +27,8 @@ struct ViewerCliArgs {
 
     // Session mode (V2-B)
     bool sample_session = false;
+    bool have_sample_session_pipe = false;
+    std::string sample_session_pipe_name;
 
     // Describe-functions
     bool have_describe_functions_json = false;

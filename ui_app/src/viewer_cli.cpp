@@ -73,6 +73,8 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
 
     // Session mode (V2-B)
     out->sample_session = HasArg(args, "--sample-session");
+    if (!TryStr(args, "--sample-session-pipe", &out->have_sample_session_pipe, &out->sample_session_pipe_name)) return 1;
+    if (out->have_sample_session_pipe && !out->sample_session) return 1;
 
     int sampleSourceCount = (out->sample_request_stdin ? 1 : 0) + (out->have_sample_request_json ? 1 : 0);
     out->any_sample_mode_arg = sampleSourceCount > 0 || out->sample_response_stdout || out->have_sample_response_json;

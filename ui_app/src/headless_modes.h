@@ -77,3 +77,15 @@ std::string ProcessSessionLine(const std::string& line,
 // Returns 0 on clean close, 1 on error.
 int RunSessionMode(std::istream& in, std::ostream& out,
     const std::string& exePath);
+
+// Build the full Windows named-pipe path for a bounded session pipe name.
+// Pipe names must be non-empty and contain only ASCII letters, numbers,
+// underscore, dash, or dot.
+bool TryBuildSessionPipePath(const std::string& pipeName,
+    std::string* outPipePath,
+    std::string* outError);
+
+// Run session mode over a Windows named pipe. The pipe transport reuses the
+// same one-line JSON session protocol as stdin/stdout session mode.
+int RunNamedPipeSessionMode(const std::string& pipeName,
+    const std::string& exePath);

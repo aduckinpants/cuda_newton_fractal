@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+import time
+import uuid
 from pathlib import Path
 
 import pytest
@@ -38,6 +41,40 @@ def _run_session(lines: list[str], timeout: float = 30.0) -> subprocess.Complete
         check=False,
         timeout=timeout,
     )
+
+
+def _pipe_path(pipe_name: str) -> str:
+    return rf"\\.\pipe\{pipe_name}"
+
+
+def _connect_named_pipe(pipe_name: str, timeout: float = 10.0):
+    pipe_path = _pipe_path(pipe_name)
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return open(pipe_path, "r+b", buffering=0)
+        except OSError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.05)
+
+
+def _write_pipe_line(pipe_file, line: str) -> None:
+    pipe_file.write((line + "\n").encode("utf-8"))
+    pipe_file.flush()
+
+
+def _read_pipe_json_line(pipe_file) -> dict:
+    data = bytearray()
+    while True:
+        chunk = pipe_file.read(1)
+        if not chunk:
+            raise EOFError("named pipe closed before newline")
+        if chunk == b"\n":
+            break
+        if chunk != b"\r":
+            data.extend(chunk)
+    return json.loads(data.decode("utf-8"))
 
 
 def _parse_output_lines(stdout: str) -> list[dict]:
@@ -663,3 +700,54 @@ class TestSessionNdjsonMode:
         assert lines[3]["type"] == "summary"
         assert lines[3]["state_token"] == "s1"
         assert lines[4]["session"] == "closed"
+
+
+class TestSessionNamedPipeTransport:
+    """V2-G: alternate named-pipe transport for session mode."""
+
+    def test_named_pipe_round_trip(self) -> None:
+        if sys.platform != "win32":
+            pytest.skip("session mode is Windows-only")
+        exe_path = _active_runtime_exe()
+        pipe_name = f"fractal_ui_session_{os.getpid()}_{uuid.uuid4().hex}"
+        request = json.dumps({
+            "request_version": 1,
+            "request_id": "pipe-r1",
+            "mode": "point_set",
+            "overrides": [{"path": "fractal.view.fractal_type", "value": "newton"}],
+            "points": [{"x": 0.5, "y": 0.3}],
+        })
+
+        proc = subprocess.Popen(
+            [str(exe_path), "--sample-session", "--sample-session-pipe", pipe_name],
+            cwd=str(RUNTIME_DIR),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            with _connect_named_pipe(pipe_name) as pipe_file:
+                _write_pipe_line(pipe_file, json.dumps({"session": "open", "request_id": "init"}))
+                ready = _read_pipe_json_line(pipe_file)
+                assert ready["session"] == "ready"
+                assert ready["engine_version"] == 2
+
+                _write_pipe_line(pipe_file, request)
+                response = _read_pipe_json_line(pipe_file)
+                assert response["ok"] is True
+                assert response["request_id"] == "pipe-r1"
+                assert response["response_version"] == 2
+                assert response["cost"]["sample_count"] == 1
+
+                _write_pipe_line(pipe_file, json.dumps({"session": "close"}))
+                closed = _read_pipe_json_line(pipe_file)
+                assert closed["session"] == "closed"
+
+            stdout, stderr = proc.communicate(timeout=30.0)
+            assert proc.returncode == 0, stderr
+            assert stdout == ""
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=10.0)

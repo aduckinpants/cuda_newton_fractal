@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 #include <Windows.h>
 #include "../src/headless_modes.h"
@@ -668,6 +669,65 @@ static std::vector<std::string> SplitLines(const std::string& text) {
     return lines;
 }
 
+static std::string UniqueSessionPipeName(const char* suffix) {
+    return std::string("test_headless_pipe_")
+        + std::to_string(static_cast<unsigned long>(GetCurrentProcessId()))
+        + "_"
+        + std::to_string(static_cast<unsigned long long>(GetTickCount64()))
+        + "_"
+        + suffix;
+}
+
+static bool ConnectSessionPipe(const std::string& pipePath, HANDLE* outPipe) {
+    const ULONGLONG deadline = GetTickCount64() + 5000;
+    while (GetTickCount64() < deadline) {
+        HANDLE pipe = CreateFileA(
+            pipePath.c_str(),
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            nullptr,
+            OPEN_EXISTING,
+            0,
+            nullptr);
+        if (pipe != INVALID_HANDLE_VALUE) {
+            *outPipe = pipe;
+            return true;
+        }
+
+        const DWORD errorCode = GetLastError();
+        if (errorCode != ERROR_FILE_NOT_FOUND && errorCode != ERROR_PIPE_BUSY) {
+            return false;
+        }
+
+        WaitNamedPipeA(pipePath.c_str(), 50);
+    }
+    return false;
+}
+
+static bool WriteSessionPipeLine(HANDLE pipe, const std::string& line) {
+    const std::string wire = line + "\n";
+    DWORD written = 0;
+    return WriteFile(pipe, wire.data(), static_cast<DWORD>(wire.size()), &written, nullptr)
+        && written == wire.size();
+}
+
+static bool ReadSessionPipeLine(HANDLE pipe, std::string* outLine) {
+    outLine->clear();
+    while (true) {
+        char ch = 0;
+        DWORD read = 0;
+        if (!ReadFile(pipe, &ch, 1, &read, nullptr) || read == 0) {
+            return false;
+        }
+        if (ch == '\n') {
+            return true;
+        }
+        if (ch != '\r') {
+            outLine->push_back(ch);
+        }
+    }
+}
+
 bool TestSessionOpenReady() {
     // Client sends open, gets ready response.
     std::string input = "{\"session\":\"open\",\"request_id\":\"init\"}\n"
@@ -712,6 +772,108 @@ bool TestSessionCloseAck() {
     auto sessIt = obj.find("session");
     ASSERT(sessIt != obj.end() && sessIt->second.is_string() && sessIt->second.as_string() == "closed",
         "close ack session field should be 'closed'");
+    return true;
+}
+
+bool TestTryBuildSessionPipePath() {
+    std::string pipePath;
+    std::string error;
+    ASSERT(TryBuildSessionPipePath("session_pipe_a", &pipePath, &error),
+        "valid pipe name should build a path");
+    ASSERT(error.empty(), "valid pipe name should not produce an error");
+    ASSERT(pipePath == "\\\\.\\pipe\\session_pipe_a",
+        "pipe path should be normalized under \\\\.\\pipe\\");
+    return true;
+}
+
+bool TestTryBuildSessionPipePathRejectsSlash() {
+    std::string pipePath;
+    std::string error;
+    ASSERT(!TryBuildSessionPipePath("bad/name", &pipePath, &error),
+        "slash in pipe name should be rejected");
+    ASSERT(!error.empty(), "invalid pipe name should report an error");
+    return true;
+}
+
+bool TestNamedPipeSessionRoundTrip() {
+    const std::string pipeName = UniqueSessionPipeName("round_trip");
+    std::string pipePath;
+    std::string error;
+    ASSERT(TryBuildSessionPipePath(pipeName, &pipePath, &error),
+        "test pipe name should build a path");
+
+    int serverRc = -999;
+    std::thread server([&]() {
+        serverRc = RunNamedPipeSessionMode(pipeName, kExePath);
+    });
+
+    HANDLE pipe = INVALID_HANDLE_VALUE;
+    ASSERT(ConnectSessionPipe(pipePath, &pipe), "client should connect to named pipe session");
+    ASSERT(WriteSessionPipeLine(pipe, "{\"session\":\"open\",\"request_id\":\"init\"}"),
+        "client should write open line");
+
+    std::string readyLine;
+    ASSERT(ReadSessionPipeLine(pipe, &readyLine), "server should emit ready line");
+    auto ready = ParseJsonLine(readyLine);
+    ASSERT(ready.error.empty() && ready.value.is_object(), "ready line should be valid JSON");
+    ASSERT(ready.value.as_object().find("session") != ready.value.as_object().end() &&
+            ready.value.as_object().find("session")->second.as_string() == "ready",
+        "ready line should advertise session=ready");
+
+    const std::string requestLine =
+        "{\"request_version\":1,\"request_id\":\"r1\",\"mode\":\"point_set\"," 
+        "\"overrides\":[{\"path\":\"fractal.view.fractal_type\",\"value\":\"newton\"}],"
+        "\"points\":[{\"x\":0.5,\"y\":0.3}]}";
+    ASSERT(WriteSessionPipeLine(pipe, requestLine), "client should write sample request line");
+
+    std::string responseLine;
+    ASSERT(ReadSessionPipeLine(pipe, &responseLine), "server should emit sample response line");
+    auto response = ParseJsonLine(responseLine);
+    ASSERT(response.error.empty() && response.value.is_object(), "sample response should be valid JSON");
+    ASSERT(response.value.as_object().find("ok") != response.value.as_object().end() &&
+            response.value.as_object().find("ok")->second.as_bool(),
+        "sample response should succeed");
+
+    ASSERT(WriteSessionPipeLine(pipe, "{\"session\":\"close\"}"),
+        "client should write close line");
+
+    std::string closeLine;
+    ASSERT(ReadSessionPipeLine(pipe, &closeLine), "server should emit close ack line");
+    auto close = ParseJsonLine(closeLine);
+    ASSERT(close.error.empty() && close.value.is_object(), "close line should be valid JSON");
+    ASSERT(close.value.as_object().find("session") != close.value.as_object().end() &&
+            close.value.as_object().find("session")->second.as_string() == "closed",
+        "close line should advertise session=closed");
+
+    CloseHandle(pipe);
+    server.join();
+    ASSERT(serverRc == 0, "named-pipe session should exit cleanly after close");
+    return true;
+}
+
+bool TestNamedPipeSessionDisconnectWithoutCloseFails() {
+    const std::string pipeName = UniqueSessionPipeName("disconnect");
+    std::string pipePath;
+    std::string error;
+    ASSERT(TryBuildSessionPipePath(pipeName, &pipePath, &error),
+        "test pipe name should build a path");
+
+    int serverRc = -999;
+    std::thread server([&]() {
+        serverRc = RunNamedPipeSessionMode(pipeName, kExePath);
+    });
+
+    HANDLE pipe = INVALID_HANDLE_VALUE;
+    ASSERT(ConnectSessionPipe(pipePath, &pipe), "client should connect to named pipe session");
+    ASSERT(WriteSessionPipeLine(pipe, "{\"session\":\"open\",\"request_id\":\"init\"}"),
+        "client should write open line");
+
+    std::string readyLine;
+    ASSERT(ReadSessionPipeLine(pipe, &readyLine), "server should emit ready line before disconnect");
+
+    CloseHandle(pipe);
+    server.join();
+    ASSERT(serverRc == 1, "named-pipe session should fail on disconnect without close");
     return true;
 }
 
@@ -1742,6 +1904,12 @@ int main() {
     RUN(TestSessionNdjsonSequencePointSetRequest);
     RUN(TestSessionNdjsonSequenceGridBatchesPerSequenceStep);
     RUN(TestSessionNdjsonBadRequestDoesNotMintStateToken);
+
+    // V2-G: Named-pipe session transport tests
+    RUN(TestTryBuildSessionPipePath);
+    RUN(TestTryBuildSessionPipePathRejectsSlash);
+    RUN(TestNamedPipeSessionRoundTrip);
+    RUN(TestNamedPipeSessionDisconnectWithoutCloseFails);
 
     // V2-C: MergeOverrides unit tests
     RUN(TestMergeOverridesBothEmpty);

@@ -244,6 +244,10 @@ V2-F (sensitivity) ← Optimization Staging Phase 2
 V2-G (named pipe) ← V2-B (session lifecycle must exist first)
 ```
 
+Status update 2026-04-11:
+- V2-G landed as a Windows named-pipe transport that reuses the existing one-line JSON session protocol.
+- Socket transport remains a possible future portability extension, not a blocker for closing the current alternate-transport phase.
+
 ---
 
 ## 3. Shared Contract Invariants (Both Surfaces)

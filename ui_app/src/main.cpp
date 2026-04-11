@@ -980,6 +980,13 @@ static SampleModeArgs BuildSampleModeArgs(const ViewerCliArgs& cli) {
     return sma;
 }
 
+static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exePath) {
+    if (cli.have_sample_session_pipe) {
+        return RunNamedPipeSessionMode(cli.sample_session_pipe_name, exePath);
+    }
+    return RunSessionMode(std::cin, std::cout, exePath);
+}
+
 static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::string& exePath,
                                        const std::string& exeDir) {
     if (cli.sample_session) {
@@ -988,7 +995,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
             return 1;
         }
-        return RunSessionMode(std::cin, std::cout, exePath);
+        return RunSampleSessionMode(cli, exePath);
     }
 
     if (cli.any_sample_mode_arg) {

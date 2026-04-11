@@ -223,6 +223,36 @@ static void TestSampleSession() {
     Check(!cli.any_sample_mode_arg, "TestSampleSession_NotAnySampleMode");
 }
 
+static void TestSampleSessionPipe() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sample-session",
+        "--sample-session-pipe", "session_pipe_a"
+    }), &cli);
+    Check(rc == 0, "TestSampleSessionPipe_ReturnCode");
+    Check(cli.sample_session, "TestSampleSessionPipe_Session");
+    Check(cli.have_sample_session_pipe, "TestSampleSessionPipe_HavePipe");
+    Check(cli.sample_session_pipe_name == "session_pipe_a", "TestSampleSessionPipe_Name");
+    Check(!cli.any_sample_mode_arg, "TestSampleSessionPipe_NotAnySampleMode");
+}
+
+static void TestSampleSessionPipeRequiresSession() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sample-session-pipe", "session_pipe_a"
+    }), &cli);
+    Check(rc != 0, "TestSampleSessionPipeRequiresSession_Fails");
+}
+
+static void TestSampleSessionPipeMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sample-session",
+        "--sample-session-pipe"
+    }), &cli);
+    Check(rc != 0, "TestSampleSessionPipeMissingValue_Fails");
+}
+
 static void TestSampleSessionConflictsWithSampleRequest() {
     // --sample-session + --sample-request-stdin should both parse, but WinMain validates conflicts
     ViewerCliArgs cli{};
@@ -361,6 +391,9 @@ int main() {
     TestSampleModeStdio();
     TestSampleModeJsonPaths();
     TestSampleSession();
+    TestSampleSessionPipe();
+    TestSampleSessionPipeRequiresSession();
+    TestSampleSessionPipeMissingValue();
     TestSampleSessionConflictsWithSampleRequest();
     TestDescribeFunctionsJson();
     TestDescribeFunctionsJsonMissingValue();
