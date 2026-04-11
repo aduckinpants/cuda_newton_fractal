@@ -99,8 +99,9 @@ The VS Code task surface is the canonical profile surface under `verify: profile
 Before ending a meaningful work slice:
 
 1. Update the active phased plan, if one exists.
-2. Append `HANDOFF_LOG.md` with the handoff append helper.
-3. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
-4. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
+2. Respect the workspace checkpoint guard hook in `.github/hooks/checkpoint_guard.json`; completion/stop is blocked if repo state differs from the session baseline.
+3. Append `HANDOFF_LOG.md` with the handoff append helper.
+4. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
+5. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
 
 Do not treat validated-but-undocumented work as finished.

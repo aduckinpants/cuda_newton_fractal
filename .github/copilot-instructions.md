@@ -34,6 +34,7 @@
 - For every meaningful code slice, run a distrust-first audit automatically before declaring the work done.
 - Default audit posture: assume the implementation is wrong, keep reviewing until a real defect or workflow mistake is found, repair it, then re-audit the repaired state; only stop after 2-3 deliberate passes fail to find another real issue.
 - Do not wait for the user to request this review explicitly. Treat it as part of normal slice closure.
+- Treat the workspace checkpoint guard hook as mandatory enforcement, not advice: if it blocks `task_complete` or stop because repo state differs from the session baseline, resolve the repo state before trying to end the slice.
 - Prefer the public validation task surface instead of reconstructing command bundles from memory:
     the `verify: profile ...` VS Code tasks.
 - Do not fork core workflow tools from mainline into this repo under the same names;

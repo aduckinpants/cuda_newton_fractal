@@ -68,6 +68,19 @@ Audit evidence must be durable:
 - update the phased plan stop point if the audit changes the real phase boundary
 - call out workflow/tooling friction found during the audit in the final summary
 
+### 2.2 Deterministic Completion Guard
+
+This repo has a workspace hook guard at `.github/hooks/checkpoint_guard.json` backed by
+`tools/viewer_host_checkpoint_guard.py`.
+
+It exists to enforce the closure invariant at runtime, not just in prose:
+- `SessionStart` captures the repository dirty-state baseline for the session
+- `PreToolUse` denies `task_complete` when the repo state differs from that baseline
+- `Stop` blocks the agent from ending while the repo state still differs from that baseline
+
+Do not treat the hook as optional guidance. If it fires, fix the repo state by committing,
+reverting to the session baseline, or otherwise resolving the discrepancy before trying to stop.
+
 ### 3. No Implicit Fallback
 
 This is a hard architectural rule, not a suggestion:
