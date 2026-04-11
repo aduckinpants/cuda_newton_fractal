@@ -119,6 +119,22 @@ bool BuildSidecarActionRecommendation(
 
         const SidecarParamSurfaceEntry& surface = *surfaceIt->second;
         const SidecarLensProjectionRow& lensRow = *lensIt->second;
+        if (budgetRow.type != surface.type) {
+            *outRecommendation = {};
+            if (outError) {
+                *outError = "Sidecar action recommendation budget type mismatch for path: " + budgetRow.path +
+                    " (surface=" + surface.type + ", budget=" + budgetRow.type + ")";
+            }
+            return false;
+        }
+        if (lensRow.type != surface.type) {
+            *outRecommendation = {};
+            if (outError) {
+                *outError = "Sidecar action recommendation lens type mismatch for path: " + budgetRow.path +
+                    " (surface=" + surface.type + ", lens=" + lensRow.type + ")";
+            }
+            return false;
+        }
         if (!IsActionNumericType(surface.type)) {
             continue;
         }

@@ -104,6 +104,13 @@ bool TryBuildSurfaceEntry(
     entry.has_cost_hint = param.has_cost_hint;
     entry.cost_hint = param.cost_hint;
 
+    if (param.has_cost_hint) {
+        if (!std::isfinite(param.cost_hint) || param.cost_hint < 0.0) {
+            if (outError) *outError = "Invalid cost_hint for sidecar param: " + param.path;
+            return false;
+        }
+    }
+
     if (param.has_min && param.has_max) {
         if (!std::isfinite(param.min_value) || !std::isfinite(param.max_value)) {
             if (outError) *outError = "Non-finite declared range for sidecar param: " + param.path;

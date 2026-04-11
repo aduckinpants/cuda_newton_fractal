@@ -133,6 +133,12 @@ EngineFunctionCatalog BuildNoSupportedTypeCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildInvalidCostHintCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    catalog.functions[0].parameters[2].cost_hint = -0.25;
+    return catalog;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -401,6 +407,23 @@ int main() {
         }
         if (state.error_message.find("has no supported options") == std::string::npos) {
             std::cerr << "Expected sidecar window state to retain the empty-options error message\n";
+            return 1;
+        }
+    }
+
+    {
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (BuildExplainoSidecarWindowState(BuildInvalidCostHintCatalog(), ctx, &state, &error)) {
+            std::cerr << "Expected invalid sidecar cost_hint metadata to fail window-state build\n";
+            return 1;
+        }
+        if (error.find("cost_hint") == std::string::npos || error.find("fractal.params.explaino_mix") == std::string::npos) {
+            std::cerr << "Expected sidecar window error to mention the invalid cost_hint path\n";
+            return 1;
+        }
+        if (state.error_message.find("cost_hint") == std::string::npos) {
+            std::cerr << "Expected sidecar window state to retain the invalid cost_hint error message\n";
             return 1;
         }
     }

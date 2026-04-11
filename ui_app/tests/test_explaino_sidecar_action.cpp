@@ -207,6 +207,36 @@ int main() {
         }
     }
 
+    {
+        SidecarBudgetState budget = BuildBudget();
+        budget.rows[2].type = "bool";
+        SidecarActionRecommendation recommendation;
+        std::string error;
+        if (BuildSidecarActionRecommendation(BuildSpace(), budget, BuildLens(), &recommendation, &error)) {
+            std::cerr << "Expected budget type drift to fail action recommendation\n";
+            return 1;
+        }
+        if (error.find("budget type mismatch") == std::string::npos) {
+            std::cerr << "Expected budget-type invariant failure to mention the mismatch\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarLensProjection lens = BuildLens();
+        lens.rows[2].type = "bool";
+        SidecarActionRecommendation recommendation;
+        std::string error;
+        if (BuildSidecarActionRecommendation(BuildSpace(), BuildBudget(), lens, &recommendation, &error)) {
+            std::cerr << "Expected lens type drift to fail action recommendation\n";
+            return 1;
+        }
+        if (error.find("lens type mismatch") == std::string::npos) {
+            std::cerr << "Expected lens-type invariant failure to mention the mismatch\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_explaino_sidecar_action: all passed\n";
     return 0;
 }

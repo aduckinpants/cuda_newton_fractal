@@ -61,7 +61,7 @@ Phase 4 - R3 lens and action selection
   - sidecar hypothesis-space entries now preserve describe-surface `cost_hint` metadata for passive action selection
   - sidecar budget rendering now shows lens zone and guidance columns alongside the ranked rows
   - sidecar window now exposes one passive `EIG - gamma*Cost` action recommendation over the current budget/lens surface without mutating parameters
-  - hostile-audit repairs for missing budget coverage, duplicate hypothesis-surface paths, dead recommendation wiring in the sidecar window, and duplicate budget-row validation in the action seam
+  - hostile-audit repairs for missing budget coverage, duplicate hypothesis-surface paths, dead recommendation wiring in the sidecar window, duplicate budget-row validation in the action seam, invalid `cost_hint` metadata entering the sidecar model, and cross-surface type drift in the action seam
 - Validation achieved for the current Phase 4 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`

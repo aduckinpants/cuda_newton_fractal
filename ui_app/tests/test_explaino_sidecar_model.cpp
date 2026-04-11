@@ -102,6 +102,12 @@ EngineFunctionCatalog BuildNoSupportedTypeCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildInvalidCostHintCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    catalog.functions[0].parameters[3].cost_hint = -0.25;
+    return catalog;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -192,6 +198,19 @@ int main() {
         }
         if (error.find("has no supported options") == std::string::npos) {
             std::cerr << "Expected empty-required-enum error to mention the invalid catalog surface\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace broken{};
+        std::string error;
+        if (BuildSidecarHypothesisSpace(BuildInvalidCostHintCatalog(), "fractal.sample", ctx, &broken, &error)) {
+            std::cerr << "Expected invalid sidecar cost_hint metadata to fail fast\n";
+            return 1;
+        }
+        if (error.find("cost_hint") == std::string::npos || error.find("fractal.params.explaino_mix") == std::string::npos) {
+            std::cerr << "Expected invalid-cost-hint error to mention both cost_hint and the bad path\n";
             return 1;
         }
     }
