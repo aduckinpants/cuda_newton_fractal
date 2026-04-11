@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 2 - R1 viewer window shell
+Phase 3 - R2 CUDA demonstration engine
 
 ## Phase Checklist
 
 - [x] Phase 1 - R1 headless model scaffold
-- [ ] Phase 2 - R1 viewer window shell
+- [x] Phase 2 - R1 viewer window shell
 - [ ] Phase 3 - R2 CUDA demonstration engine
 - [ ] Phase 4 - R3 lens and action selection
 - [ ] Phase 5 - R4 divergence, energy, and persistence
@@ -32,10 +32,15 @@ Phase 2 - R1 viewer window shell
 - Validation achieved:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
-- Next bounded slice for Phase 2:
-  - add a secondary ImGui sidecar window fed by the headless model
-  - render the discovered applicable params in deterministic order
-  - keep the window logic extracted from `ui_app/src/main.cpp` as much as possible
+- Delivered in Phase 2:
+  - `ui_app/src/explaino_sidecar_window.h/.cpp`
+  - `ui_app/tests/test_explaino_sidecar_window.cpp`
+  - runtime/native build wiring for the new sidecar window module
+  - hostile-audit repairs for unsupported or empty required enum selections in the filtered describe surface
+- Next bounded slice for Phase 3:
+  - wire the sidecar to call the extracted sample host API in-process
+  - measure per-param micro-sweeps for the current applicable surface
+  - begin recording information-gain inputs without adding autonomous action selection yet
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - EIG, lens projection, and autonomous action selection

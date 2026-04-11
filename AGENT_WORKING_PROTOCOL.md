@@ -48,6 +48,26 @@ Concretely:
 - Prefer headless testable modules over GUI-only verification
 - Prefer deterministic scripts over ad hoc runtime speculation
 
+### 2.1 Mandatory Distrust-First Audit
+
+Every meaningful slice must go through a hostile audit before it is considered complete.
+
+Required posture:
+- assume the initial implementation is wrong or incomplete
+- assume at least one bug, omission, or workflow mistake still exists
+- do not stop at "tests passed" or "build is green"
+
+Required audit loop:
+1. Review the diff and touched seams as if there is already a bug in them.
+2. Search for at least one real defect, missing regression, misleading checkpoint, or workflow mistake.
+3. If a defect is found, add or extend the regression first, fix the issue, revalidate, and audit the repaired state again.
+4. Only stop the audit after 2-3 deliberate passes on the repaired state fail to find another real issue.
+
+Audit evidence must be durable:
+- record meaningful audit findings or "repair follow-up" checkpoints in `HANDOFF_LOG.md`
+- update the phased plan stop point if the audit changes the real phase boundary
+- call out workflow/tooling friction found during the audit in the final summary
+
 ### 3. No Implicit Fallback
 
 This is a hard architectural rule, not a suggestion:
@@ -126,9 +146,10 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 
 1. Both build scripts pass
 2. Relevant Python tests pass
-3. Commit with clear message explaining what landed
-4. Update `HANDOFF_LOG.md` with checkpoint entry
-5. Update the active phased plan checklist if one exists
+3. Run the mandatory distrust-first audit loop and repair anything it finds
+4. Commit with clear message explaining what landed
+5. Update `HANDOFF_LOG.md` with checkpoint entry
+6. Update the active phased plan checklist if one exists
 
 ---
 

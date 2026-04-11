@@ -93,6 +93,10 @@ bool TryBuildSurfaceEntry(
     entry.label = param.label;
     entry.type = param.type;
     entry.help = param.help;
+    entry.has_min = param.has_min;
+    entry.min_value = param.min_value;
+    entry.has_max = param.has_max;
+    entry.max_value = param.max_value;
     entry.has_default = param.has_default;
     entry.default_value = param.default_value;
     entry.has_step = param.has_step;
@@ -113,6 +117,37 @@ bool TryBuildSurfaceEntry(
 
     *outEntry = std::move(entry);
     return true;
+}
+
+bool ValidateRequiredEnumSelection(
+    const FunctionParamDescriptor& param,
+    const BindingContext& ctx,
+    std::string* outError) {
+    if (!param.required || param.type != "enum") {
+        return true;
+    }
+
+    if (param.options.empty()) {
+        if (outError) *outError = "Required enum sidecar param has no supported options: " + param.path;
+        return false;
+    }
+
+    const std::string currentEnum = ctx.GetEnumId(param.path);
+    if (currentEnum.empty()) {
+        if (outError) *outError = "Missing required enum selection for sidecar param: " + param.path;
+        return false;
+    }
+
+    for (const auto& option : param.options) {
+        if (option.id == currentEnum) {
+            return true;
+        }
+    }
+
+    if (outError) {
+        *outError = "Unsupported required enum selection for sidecar param: " + param.path + "=" + currentEnum;
+    }
+    return false;
 }
 
 bool SidecarParamOrder(const SidecarParamSurfaceEntry& left, const SidecarParamSurfaceEntry& right) {
@@ -324,6 +359,10 @@ bool BuildSidecarHypothesisSpace(
     SidecarHypothesisSpace next;
     next.function_id = functionId;
     for (const auto& param : function->parameters) {
+        if (!ValidateRequiredEnumSelection(param, ctx, outError)) {
+            *outSpace = {};
+            return false;
+        }
         if (param.has_applicable_when) {
             bool applicable = false;
             if (!EvaluateSidecarPredicateStrict(ctx, param.applicable_when, &applicable, outError)) {

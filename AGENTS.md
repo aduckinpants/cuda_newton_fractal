@@ -40,6 +40,17 @@ The VS Code task surface mirrors these commands:
 - Do not leave stale blocker text in a phased plan after another checked-in slice already closed that blocker.
 - Deterministic check surface: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` or task `agent: assert phased plan sync`.
 
+## Mandatory Audit Rule
+
+- After every meaningful code slice, run a distrust-first audit before treating the slice as done.
+- Default posture: assume the first implementation is wrong or incomplete until a hostile review proves otherwise.
+- Required audit loop:
+   1. review the landed diff and the touched seams as if they contain at least one bug
+   2. keep digging until a real defect, omission, or workflow mistake is found, or a second and third pass fail to find one
+   3. if an audit pass finds a real issue, add the regression first, fix it, revalidate, and repeat the audit on the repaired state
+- Do not wait for the user to ask for this review explicitly; it is part of normal slice closure in this repo.
+- Record audit findings and follow-up checkpoint commits in `HANDOFF_LOG.md`.
+
 ## Public Validation Profiles
 
 Use the public task/profile surface instead of reconstructing command bundles from memory:

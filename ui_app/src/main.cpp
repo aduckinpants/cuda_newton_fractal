@@ -28,6 +28,7 @@
 #include "finding_archive_actions.h"
 #include "finding_state_actions.h"
 #include "explaino_seed.h"
+#include "explaino_sidecar_window.h"
 #include "explaino_seed_dynamics.h"
 #include "param_anim_dynamics.h"
 #include "fractal_derived_fields.h"
@@ -1044,6 +1045,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     UISchema uiSchema = std::move(schemaResult.schema);
     std::string schemaPath = std::move(schemaResult.path);
     std::string schemaWarning = std::move(schemaResult.warning);
+    EngineFunctionCatalog engineCatalog = BuildEngineCatalog(uiSchema);
 
     {
         ApplySchemaDefaults(uiSchema, initBind, &dirty);
@@ -1173,6 +1175,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         if (actions.captureFinding) {
             RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath);
         }
+
+        ExplainoSidecarWindowState sidecarState;
+        BuildExplainoSidecarWindowState(engineCatalog, initBind, &sidecarState, nullptr);
+        RenderExplainoSidecarWindow(sidecarState);
 
         RenderFractalViewport(io, render, view, dirty, actions.interactionChanged);
 

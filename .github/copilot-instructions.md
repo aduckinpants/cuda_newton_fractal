@@ -31,6 +31,9 @@
     after touching a phased plan.
 - Follow strict TDD for behavioral changes: add or extend the focused test first, then implement the minimal fix, then refactor.
 - Prefer deterministic scripts, tests, and generated reports over ad hoc runtime speculation.
+- For every meaningful code slice, run a distrust-first audit automatically before declaring the work done.
+- Default audit posture: assume the implementation is wrong, keep reviewing until a real defect or workflow mistake is found, repair it, then re-audit the repaired state; only stop after 2-3 deliberate passes fail to find another real issue.
+- Do not wait for the user to request this review explicitly. Treat it as part of normal slice closure.
 - Prefer the public validation task surface instead of reconstructing command bundles from memory:
     the `verify: profile ...` VS Code tasks.
 - Do not fork core workflow tools from mainline into this repo under the same names;

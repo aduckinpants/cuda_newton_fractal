@@ -29,6 +29,10 @@ struct SidecarParamSurfaceEntry {
     std::string label;
     std::string type;
     std::string help;
+    bool has_min{false};
+    double min_value{0.0};
+    bool has_max{false};
+    double max_value{0.0};
     bool has_default{false};
     json_min::Value default_value;
     bool has_declared_span{false};

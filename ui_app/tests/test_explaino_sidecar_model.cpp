@@ -87,6 +87,19 @@ EngineFunctionCatalog BuildInvalidNumericPredicateCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildUnsupportedCurrentTypeCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    catalog.functions[0].parameters[0].options.clear();
+    catalog.functions[0].parameters[0].options.push_back({"mandelbrot", "Mandelbrot"});
+    return catalog;
+}
+
+EngineFunctionCatalog BuildNoSupportedTypeCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    catalog.functions[0].parameters[0].options.clear();
+    return catalog;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -151,6 +164,32 @@ int main() {
         }
         if (error.find("not-a-number") == std::string::npos) {
             std::cerr << "Expected invalid numeric applicable_when error to mention the bad value\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace broken{};
+        std::string error;
+        if (BuildSidecarHypothesisSpace(BuildUnsupportedCurrentTypeCatalog(), "fractal.sample", ctx, &broken, &error)) {
+            std::cerr << "Expected unsupported current fractal_type to fail fast\n";
+            return 1;
+        }
+        if (error.find("fractal.view.fractal_type=explaino") == std::string::npos) {
+            std::cerr << "Expected unsupported enum error to mention the filtered current selection\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace broken{};
+        std::string error;
+        if (BuildSidecarHypothesisSpace(BuildNoSupportedTypeCatalog(), "fractal.sample", ctx, &broken, &error)) {
+            std::cerr << "Expected empty required enum options to fail fast\n";
+            return 1;
+        }
+        if (error.find("has no supported options") == std::string::npos) {
+            std::cerr << "Expected empty-required-enum error to mention the invalid catalog surface\n";
             return 1;
         }
     }
