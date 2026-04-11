@@ -194,6 +194,32 @@ def build_pretool_response(
     }
 
 
+def build_posttool_response(
+    tool_name: str,
+    baseline: dict[str, Any] | None,
+    current: dict[str, Any],
+) -> dict[str, Any] | None:
+    status = evaluate_checkpoint_guard(baseline, current)
+    if not status.should_block:
+        return None
+
+    changed_summary = summarize_changed_paths(status.changed_paths)
+    return {
+        "systemMessage": (
+            "Checkpoint debt after "
+            + tool_name
+            + ": repository state differs from the session baseline. "
+            + status.reason
+            + " Changed paths: "
+            + changed_summary
+            + ". Before any final response, update continuity surfaces and create a checkpoint commit or restore the baseline."
+        ),
+        "hookSpecificOutput": {
+            "hookEventName": "PostToolUse",
+        },
+    }
+
+
 def build_stop_response(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
@@ -288,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(_session_start_response(session_id, repo_root)))
             return 0
 
-        if event_name not in ("PreToolUse", "Stop"):
+        if event_name not in ("PreToolUse", "PostToolUse", "Stop"):
             return 0
 
         if event_name == "PreToolUse" and str(payload.get("tool_name", "")) != TASK_COMPLETE_TOOL:
@@ -299,6 +325,8 @@ def main(argv: list[str] | None = None) -> int:
 
         if event_name == "PreToolUse":
             response = build_pretool_response(str(payload.get("tool_name", "")), baseline, current)
+        elif event_name == "PostToolUse":
+            response = build_posttool_response(str(payload.get("tool_name", "unknown_tool")), baseline, current)
         else:
             response = build_stop_response(baseline, current)
 

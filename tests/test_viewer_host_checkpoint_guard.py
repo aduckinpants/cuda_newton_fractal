@@ -10,6 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.viewer_host_checkpoint_guard import (
+    build_posttool_response,
     build_pretool_response,
     build_stop_response,
     compare_snapshots,
@@ -76,6 +77,30 @@ def test_build_pretool_response_ignores_other_tools() -> None:
     assert build_pretool_response("run_in_terminal", baseline, current) is None
 
 
+def test_build_posttool_response_emits_checkpoint_debt_reminder() -> None:
+    baseline = _snapshot()
+    current = _snapshot(
+        unstaged={"docs/notes/plan.md": "hash-plan"},
+        staged={"HANDOFF_LOG.md": "blob-1"},
+    )
+
+    response = build_posttool_response("apply_patch", baseline, current)
+
+    assert response is not None
+    assert "systemMessage" in response
+    assert "apply_patch" in response["systemMessage"]
+    assert "checkpoint commit" in response["systemMessage"] or "baseline" in response["systemMessage"]
+    assert "docs/notes/plan.md" in response["systemMessage"]
+    assert "HANDOFF_LOG.md" in response["systemMessage"]
+
+
+def test_build_posttool_response_ignores_clean_state() -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    assert build_posttool_response("apply_patch", baseline, current) is None
+
+
 def test_build_stop_response_blocks_dirty_stop() -> None:
     baseline = _snapshot(unstaged={"AGENTS.md": "hash-a"})
     current = _snapshot(unstaged={"AGENTS.md": "hash-b"}, untracked={"artifacts/report.txt": "hash-r"})
@@ -97,8 +122,8 @@ def test_summarize_changed_paths_truncates_long_lists() -> None:
 def test_hook_config_wires_checkpoint_guard_events() -> None:
     payload = json.loads((REPO_ROOT / ".github" / "hooks" / "checkpoint_guard.json").read_text(encoding="utf-8"))
 
-    assert set(payload["hooks"]) == {"SessionStart", "PreToolUse", "Stop"}
-    for event_name in ("SessionStart", "PreToolUse", "Stop"):
+    assert set(payload["hooks"]) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
+    for event_name in ("SessionStart", "PreToolUse", "PostToolUse", "Stop"):
         command = payload["hooks"][event_name][0]["windows"]
         assert command == "py -3.14 tools\\viewer_host_checkpoint_guard.py"
 

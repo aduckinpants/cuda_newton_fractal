@@ -14,6 +14,13 @@
         "timeout": 15
       }
     ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "windows": "py -3.14 tools\\viewer_host_checkpoint_guard.py",
+        "timeout": 15
+      }
+    ],
     "Stop": [
       {
         "type": "command",
