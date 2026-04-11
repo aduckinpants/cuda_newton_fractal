@@ -67,6 +67,34 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_splice;
+        params.splice_offset = 1.0f;
+
+        if (!PrepareFindingCaptureRuntimeState(view, params)) {
+            std::cerr << "Capture prep should invalidate caches for Explaino-Splice polynomial refresh\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.poly_coeffs_b[4], 1.0f)) {
+            std::cerr << "Capture prep should populate the secondary Explaino-Splice polynomial coefficients\n";
+            return 1;
+        }
+
+        view.fractal_type = FractalType::explaino_joy;
+        if (!PrepareFindingCaptureRuntimeState(view, params)) {
+            std::cerr << "Capture prep should invalidate caches when switching away from Explaino-Splice\n";
+            return 1;
+        }
+        for (float coeff : params.poly_coeffs_b) {
+            if (!NearlyEqual(coeff, 0.0f)) {
+                std::cerr << "Capture prep should clear stale secondary Explaino-Splice polynomial coefficients\n";
+                return 1;
+            }
+        }
+    }
+
     std::cout << "test_finding_capture_state: all passed\n";
     return 0;
 }
