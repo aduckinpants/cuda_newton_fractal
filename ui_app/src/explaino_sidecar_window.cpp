@@ -33,6 +33,10 @@ std::string FormatRange(const SidecarParamSurfaceEntry& entry) {
     return std::string();
 }
 
+std::string FormatActiveZone(const SidecarLensProjectionRow& row) {
+    return "[" + FormatNumber(row.active_min) + ", " + FormatNumber(row.active_max) + "]";
+}
+
 } // namespace
 
 bool BuildExplainoSidecarWindowState(
@@ -102,6 +106,17 @@ bool BuildExplainoSidecarWindowState(
         if (!next.budget.rows.empty()) {
             next.orientation.field_embedding_stats = next.budget.estimated_information_gain_total;
         }
+
+        std::string lensError;
+        if (!BuildSidecarLensProjection(space, next.measurement, next.budget, &next.lens, &lensError)) {
+            next.measurement_error_message = lensError;
+            if (previousBudget) {
+                next.budget = *previousBudget;
+            }
+            *outState = std::move(next);
+            if (outError) *outError = lensError;
+            return false;
+        }
     }
 
     *outState = std::move(next);
@@ -161,16 +176,19 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
         ImGui::BulletText("mean_decode_stability: %.3f", state.budget.mean_decode_stability);
         ImGui::BulletText("budget_batches: %d", state.budget.batch_count);
 
-        if (ImGui::BeginTable("sidecar_budget", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        if (ImGui::BeginTable("sidecar_budget", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
             ImGui::TableSetupColumn("Label");
             ImGui::TableSetupColumn("Path");
             ImGui::TableSetupColumn("EIG");
             ImGui::TableSetupColumn("Cumulative");
             ImGui::TableSetupColumn("Uncertainty");
             ImGui::TableSetupColumn("Obs");
+            ImGui::TableSetupColumn("Zone");
+            ImGui::TableSetupColumn("Guidance");
             ImGui::TableHeadersRow();
 
-            for (const auto& row : state.budget.rows) {
+            for (size_t index = 0; index < state.budget.rows.size(); ++index) {
+                const auto& row = state.budget.rows[index];
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::TextUnformatted(row.label.c_str());
@@ -187,6 +205,19 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
                 ImGui::TextUnformatted(uncertaintyText.c_str());
                 ImGui::TableNextColumn();
                 ImGui::Text("%d", row.observation_count);
+                ImGui::TableNextColumn();
+                if (index < state.lens.rows.size() && state.lens.rows[index].path == row.path) {
+                    const std::string zoneText = FormatActiveZone(state.lens.rows[index]);
+                    ImGui::TextUnformatted(zoneText.c_str());
+                } else {
+                    ImGui::TextDisabled("--");
+                }
+                ImGui::TableNextColumn();
+                if (index < state.lens.rows.size() && state.lens.rows[index].path == row.path) {
+                    ImGui::TextUnformatted(state.lens.rows[index].guidance.c_str());
+                } else {
+                    ImGui::TextDisabled("--");
+                }
             }
 
             ImGui::EndTable();

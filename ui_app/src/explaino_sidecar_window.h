@@ -1,6 +1,7 @@
 #pragma once
 
 #include "explaino_sidecar_budget.h"
+#include "explaino_sidecar_lens.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
 
@@ -24,6 +25,7 @@ struct ExplainoSidecarWindowState {
     SidecarOrientationVector orientation{};
     SidecarMeasurementBatch measurement{};
     SidecarBudgetState budget{};
+    SidecarLensProjection lens{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
 

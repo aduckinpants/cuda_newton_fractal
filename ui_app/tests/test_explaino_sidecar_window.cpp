@@ -230,6 +230,14 @@ int main() {
             std::cerr << "Expected first sidecar window measurement build to seed the persistent budget state\n";
             return 1;
         }
+        if (state.lens.rows.size() != state.budget.rows.size()) {
+            std::cerr << "Expected sidecar window state to expose lens rows alongside the ranked budget rows\n";
+            return 1;
+        }
+        if (state.lens.rows[0].path != state.budget.rows[0].path || state.lens.rows[0].guidance.empty()) {
+            std::cerr << "Expected top-ranked lens guidance to align with the top-ranked budget row\n";
+            return 1;
+        }
     }
 
     {
@@ -291,6 +299,10 @@ int main() {
             std::cerr << "Expected sidecar window state to retain the last known budget state when measurement fails\n";
             return 1;
         }
+        if (!state.lens.rows.empty()) {
+            std::cerr << "Expected failed measurement updates to leave no derived lens projection rows\n";
+            return 1;
+        }
     }
 
     {
@@ -318,6 +330,10 @@ int main() {
             state.budget.cumulative_information_gain_total != seeded.budget.cumulative_information_gain_total ||
             state.budget.function_id != seeded.budget.function_id) {
             std::cerr << "Expected budget update failures to retain the last known budget state\n";
+            return 1;
+        }
+        if (!state.lens.rows.empty()) {
+            std::cerr << "Expected failed budget updates to leave no derived lens projection rows\n";
             return 1;
         }
     }

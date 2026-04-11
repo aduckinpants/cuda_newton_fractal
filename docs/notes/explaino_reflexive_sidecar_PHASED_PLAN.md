@@ -52,6 +52,12 @@ Phase 4 - R3 lens and action selection
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/code_quality_audit.py --out artifacts/code_quality_report.json`
+- Delivered so far in Phase 4:
+  - `ui_app/src/explaino_sidecar_lens.h/.cpp`
+  - `ui_app/tests/test_explaino_sidecar_lens.cpp`
+  - sidecar window state now derives per-param active-zone projections from the measured EIG/budget surface
+  - sidecar budget rendering now shows lens zone and guidance columns alongside the ranked rows
+  - hostile-audit repairs for missing budget coverage and duplicate hypothesis-surface paths in the new lens seam
 - Next bounded slice for Phase 4:
   - compute an initial lens projection per measured parameter from the current demonstration surface
   - render active-zone guidance alongside the ranked budget rows without adding auto-selection yet
