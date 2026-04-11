@@ -14,6 +14,16 @@
     Cx cConst{0.0f, 0.0f};
 
     FractalType ft = view.fractal_type;
+    // Zero-axis Explaino variants must collapse to the baseline Explaino path exactly.
+    if (ft == FractalType::explaino_ripple && params.ripple_amplitude == 0.0f) {
+        ft = FractalType::explaino;
+    } else if (ft == FractalType::explaino_splice && params.splice_offset == 0.0f) {
+        ft = FractalType::explaino;
+    } else if (ft == FractalType::explaino_vortex && params.vortex_strength == 0.0f) {
+        ft = FractalType::explaino;
+    } else if (ft == FractalType::explaino_tension && params.tension_strength == 0.0f) {
+        ft = FractalType::explaino;
+    }
     if (ft == FractalType::newton) {
         if (useFP64) {
             Cxd zd = coordD;

@@ -419,6 +419,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_fractal_sample_equivalence.exe"
 if errorlevel 1 exit /b 1
 
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_explaino_zero_axis_equivalence.cu ^
+  -o "%TESTROOT%\test_explaino_zero_axis_equivalence.exe"
+if errorlevel 1 exit /b 1
+
 "%TESTROOT%\test_sample_tier_resolver.exe"
 if errorlevel 1 exit /b 1
 
@@ -435,6 +443,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_sample_equivalence.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_explaino_zero_axis_equivalence.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
