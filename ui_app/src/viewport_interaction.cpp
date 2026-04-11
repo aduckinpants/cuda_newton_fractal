@@ -56,3 +56,30 @@ DragPanResult ComputeDragPan(
     r.new_center_hp_y = center_hp_y - dyWorld;
     return r;
 }
+
+bool ApplyDragPanStep(
+    ViewState& view,
+    float drag_dx,
+    float drag_dy,
+    int resolution_x,
+    int resolution_y) {
+    if (drag_dx == 0.0f && drag_dy == 0.0f) {
+        return false;
+    }
+    if (resolution_x <= 0 || resolution_y <= 0) {
+        return false;
+    }
+
+    const DragPanResult pan = ComputeDragPan(
+        view.center_hp_x,
+        view.center_hp_y,
+        view.log2_zoom,
+        drag_dx,
+        drag_dy,
+        resolution_x,
+        resolution_y);
+    view.center_hp_x = pan.new_center_hp_x;
+    view.center_hp_y = pan.new_center_hp_y;
+    SyncViewUiFromHp(view);
+    return true;
+}

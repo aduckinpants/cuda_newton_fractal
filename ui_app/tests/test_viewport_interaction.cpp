@@ -301,6 +301,36 @@ bool TestDragPanReversibility() {
     return true;
 }
 
+bool TestApplyDragPanStepZeroDeltaNoOp() {
+    ViewState view{};
+    view.center_hp_x = 1.25;
+    view.center_hp_y = -0.75;
+    view.log2_zoom = 6.0;
+    SyncViewUiFromHp(view);
+
+    const float centerXBefore = view.center.x;
+    const float centerYBefore = view.center.y;
+    ASSERT(!ApplyDragPanStep(view, 0.0f, 0.0f, 1024, 768), "zero drag delta should not report a viewport change");
+    ASSERT_NEAR(view.center_hp_x, 1.25, 1e-15, "zero drag delta should preserve center_hp_x");
+    ASSERT_NEAR(view.center_hp_y, -0.75, 1e-15, "zero drag delta should preserve center_hp_y");
+    ASSERT_NEAR(view.center.x, centerXBefore, 1e-7f, "zero drag delta should preserve synced center.x");
+    ASSERT_NEAR(view.center.y, centerYBefore, 1e-7f, "zero drag delta should preserve synced center.y");
+    return true;
+}
+
+bool TestApplyDragPanStepUpdatesView() {
+    ViewState view{};
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+
+    ASSERT(ApplyDragPanStep(view, 128.0f, 64.0f, 1024, 512), "non-zero drag delta should report a viewport change");
+    ASSERT(view.center_hp_x < 0.0, "dragging right should move the center left");
+    ASSERT(view.center_hp_y < 0.0, "dragging down should move the center up");
+    ASSERT(view.zoom > 0.0f, "non-zero drag delta should keep UI fields synced");
+    return true;
+}
+
 // --- Combined interaction tests ---
 
 bool TestZoomThenPanConsistency() {
@@ -370,6 +400,8 @@ int main() {
     RUN(TestDragPanScalesWithZoom);
     RUN(TestDragPanAspectRatio);
     RUN(TestDragPanReversibility);
+    RUN(TestApplyDragPanStepZeroDeltaNoOp);
+    RUN(TestApplyDragPanStepUpdatesView);
     
     // Combined
     RUN(TestZoomThenPanConsistency);

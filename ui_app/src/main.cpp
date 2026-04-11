@@ -535,14 +535,10 @@ static void RenderFractalViewport(
                 ImVec2 dpx = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
                 ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
 
-                auto pr = ComputeDragPan(
-                    view.center_hp_x, view.center_hp_y, view.log2_zoom,
-                    dpx.x, dpx.y, render.resolution.x, render.resolution.y);
-                view.center_hp_x = pr.new_center_hp_x;
-                view.center_hp_y = pr.new_center_hp_y;
-                SyncViewUiFromHp(view);
-                dirty = true;
-                interactionChanged = true;
+                if (ApplyDragPanStep(view, dpx.x, dpx.y, render.resolution.x, render.resolution.y)) {
+                    dirty = true;
+                    interactionChanged = true;
+                }
             }
         }
     } else {

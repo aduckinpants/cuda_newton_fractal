@@ -49,3 +49,12 @@ struct DragPanResult {
 DragPanResult ComputeDragPan(
     double center_hp_x, double center_hp_y, double log2_zoom,
     float drag_dx, float drag_dy, int resolution_x, int resolution_y);
+
+// Apply one viewport drag-pan step to the current view.
+// Returns true only when a non-zero drag delta changed the view.
+bool ApplyDragPanStep(
+    ViewState& view,
+    float drag_dx,
+    float drag_dy,
+    int resolution_x,
+    int resolution_y);
