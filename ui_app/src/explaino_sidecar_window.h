@@ -3,6 +3,7 @@
 #include "explaino_sidecar_action.h"
 #include "explaino_sidecar_budget.h"
 #include "explaino_sidecar_completeness.h"
+#include "explaino_sidecar_controller.h"
 #include "explaino_sidecar_lens.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
@@ -26,15 +27,28 @@ struct ExplainoSidecarWindowState {
     std::string measurement_error_message;
     std::string action_error_message;
     std::string completeness_error_message;
+    std::string controller_error_message;
     SidecarOrientationVector orientation{};
+    SidecarAutoDemoControllerPolicy controller_policy{};
     SidecarMeasurementBatch measurement{};
     SidecarBudgetState budget{};
     SidecarLensProjection lens{};
     SidecarExplorationCompleteness completeness{};
     bool has_action_recommendation{false};
     SidecarActionRecommendation action_recommendation{};
+    SidecarAutoDemoControllerDecision controller_decision{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
+    const SidecarAutoDemoControllerPolicy* controllerPolicy,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError);
 
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,

@@ -2,23 +2,23 @@
 
 ## Current Phase
 
-Phase 4 - R3 lens and action selection
+Phase 5 - R4 divergence, energy, and persistence
 
 ## Phase Checklist
 
 - [x] Phase 1 - R1 headless model scaffold
 - [x] Phase 2 - R1 viewer window shell
 - [x] Phase 3 - R2 CUDA demonstration engine
-- [ ] Phase 4 - R3 lens and action selection
+- [x] Phase 4 - R3 lens and action selection
 - [ ] Phase 5 - R4 divergence, energy, and persistence
 
 ## Notes
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - extract a gated auto-demonstration controller seam on top of the recommendation + completeness surfaces
-  - keep runtime parameter mutation opt-in/off by default until the controller stop conditions prove durable
-  - add focused native tests for no-eligible-action behavior, stop conditions, and explicit opt-in policy
+  - prepare the next R4 divergence/energy/persistence seam on top of the now-landed controller + completeness surfaces
+  - keep runtime parameter mutation opt-in/off by default until a later phase explicitly wires live mutation
+  - preserve the no-implicit-fallback posture across future sidecar failure paths and persistence seams
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -55,26 +55,30 @@ Phase 4 - R3 lens and action selection
   - `ui_app/src/explaino_sidecar_lens.h/.cpp`
   - `ui_app/src/explaino_sidecar_action.h/.cpp`
   - `ui_app/src/explaino_sidecar_completeness.h/.cpp`
+  - `ui_app/src/explaino_sidecar_controller.h/.cpp`
   - `ui_app/tests/test_explaino_sidecar_lens.cpp`
   - `ui_app/tests/test_explaino_sidecar_action.cpp`
   - `ui_app/tests/test_explaino_sidecar_completeness.cpp`
+  - `ui_app/tests/test_explaino_sidecar_controller.cpp`
   - sidecar window state now derives per-param active-zone projections from the measured EIG/budget surface
   - sidecar hypothesis-space entries now preserve describe-surface `cost_hint` metadata for passive action selection
   - sidecar budget rendering now shows lens zone and guidance columns alongside the ranked rows
   - sidecar window now exposes one passive `EIG - gamma*Cost` action recommendation over the current budget/lens surface without mutating parameters
   - sidecar window now exposes an exploration-completeness summary and demonstrated-vs-uncertain table derived from persistent posterior-uncertainty / observation-count state
+  - sidecar window and runtime now expose a gated auto-demonstration controller decision seam with explicit disabled, blocked, stopped, proposal-ready, and apply-ready states
   - hostile-audit repairs for missing budget coverage, duplicate hypothesis-surface paths, dead recommendation wiring in the sidecar window, duplicate budget-row validation in the action seam, invalid `cost_hint` metadata entering the sidecar model, and cross-surface type drift in the action seam
   - hostile-audit repair for preserved-budget failure paths in the live viewer: when sidecar rebuilds fail after a prior budget exists, the window now preserves the last known completeness surface instead of dropping it while `main.cpp` still renders the partial state
+  - hostile-audit repair for controller failure paths: preserved completeness now recomputes an explicit blocked or stopped controller state instead of silently falling back to default-disabled when measurement, budget, or lens rebuilds fail
   - hostile-audit proof that the completeness seam's strict numeric-surface coverage invariant matches the existing measurement surface contract
 - Validation achieved for the current Phase 4 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
-  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_action_code_quality_report.json`
+  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_controller_code_quality_report.json`
 - Next bounded slice for Phase 4:
-  - extract a gated R3-C auto-demonstration controller that consumes the passive recommendation + completeness surfaces
-  - keep actual runtime parameter mutation disabled by default until explicit opt-in and controller stop conditions are test-locked
-  - preserve the no-implicit-fallback posture when the controller has no eligible action or reaches a completeness stop point
+  - extract the first R4 divergence/energy/persistence seam on top of the measured sidecar state
+  - decide which derived Explaino/runtime signals become durable sidecar persistence inputs instead of chat-only concepts
+  - keep live runtime mutation out of scope until the new persistence seam proves durable under hostile audit
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
-  - EIG, lens projection, and autonomous action selection
+  - live auto-demonstration parameter mutation

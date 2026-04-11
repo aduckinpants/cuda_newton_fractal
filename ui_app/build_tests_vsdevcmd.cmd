@@ -256,12 +256,17 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\explaino_sidecar_controller.cpp .\tests\test_explaino_sidecar_controller.cpp ^
+  /Fe:"%TESTROOT%\test_explaino_sidecar_controller.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\explaino_sidecar_completeness.cpp .\tests\test_explaino_sidecar_completeness.cpp ^
   /Fe:"%TESTROOT%\test_explaino_sidecar_completeness.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_explaino_sidecar_window.cpp ^
   /Fe:"%TESTROOT%\test_explaino_sidecar_window.exe"
 if errorlevel 1 exit /b 1
@@ -297,6 +302,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_sidecar_action.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_explaino_sidecar_controller.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_sidecar_completeness.exe"

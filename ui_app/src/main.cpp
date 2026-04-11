@@ -1072,6 +1072,7 @@ static bool InitializeViewerWindowAndImGui(HINSTANCE hInstance, const std::strin
 static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParams& params,
                                         const EngineFunctionCatalog& engineCatalog,
                                         const BindingContext& bind,
+                                        const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                                         CudaSidecarMeasurementHost& sidecarMeasurementHost,
                                         ExplainoSidecarWindowState& sidecarState,
                                         bool& sidecarStateValid,
@@ -1091,6 +1092,7 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
         &sidecarMeasurementHost,
         sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
         sidecarStateValid ? &sidecarState.completeness : nullptr,
+        &sidecarControllerPolicy,
         &sidecarState,
         nullptr);
     if (!sidecarState.budget.function_id.empty()) {
@@ -1154,6 +1156,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::string schemaWarning;
     EngineFunctionCatalog engineCatalog;
     CudaSidecarMeasurementHost sidecarMeasurementHost;
+    SidecarAutoDemoControllerPolicy sidecarControllerPolicy;
     ExplainoSidecarWindowState sidecarState;
     bool sidecarStateValid = false;
     SidecarBudgetState sidecarBudgetState;
@@ -1256,7 +1259,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
         RefreshSidecarStateIfNeeded(dirty || !sidecarStateValid, view, params, engineCatalog,
-            bind, sidecarMeasurementHost, sidecarState, sidecarStateValid,
+            bind, sidecarControllerPolicy, sidecarMeasurementHost, sidecarState, sidecarStateValid,
             sidecarBudgetState, sidecarBudgetStateValid);
         DispatchRenderFrame(view, params, render, lens, renderPacing,
             forceFullQualityRender, view.auto_refresh, dirty,

@@ -62,6 +62,29 @@ void PopulateCompletenessFromBudget(
     }
 }
 
+void PopulateControllerDecision(ExplainoSidecarWindowState* ioState) {
+    if (!ioState) {
+        return;
+    }
+
+    ioState->controller_error_message.clear();
+    ioState->controller_decision = {};
+    if (ioState->completeness.function_id.empty()) {
+        return;
+    }
+
+    std::string controllerError;
+    if (!BuildSidecarAutoDemoControllerDecision(
+            ioState->has_action_recommendation ? &ioState->action_recommendation : nullptr,
+            ioState->completeness,
+            ioState->controller_policy,
+            &ioState->controller_decision,
+            &controllerError)) {
+        ioState->controller_decision = {};
+        ioState->controller_error_message = controllerError;
+    }
+}
+
 } // namespace
 
 bool BuildExplainoSidecarWindowState(
@@ -70,6 +93,7 @@ bool BuildExplainoSidecarWindowState(
     const SidecarMeasurementHost* measurementHost,
     const SidecarBudgetState* previousBudget,
     const SidecarExplorationCompleteness* previousCompleteness,
+    const SidecarAutoDemoControllerPolicy* controllerPolicy,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
     if (!outState) {
@@ -92,6 +116,9 @@ bool BuildExplainoSidecarWindowState(
     next.function_id = space.function_id;
     next.fractal_type_id = ctx.GetEnumId("fractal.view.fractal_type");
     next.orientation = ComputeSidecarOrientationVector(ctx, space);
+    if (controllerPolicy) {
+        next.controller_policy = *controllerPolicy;
+    }
 
     for (const auto& param : space.applicable_parameters) {
         ExplainoSidecarWindowRow row;
@@ -113,6 +140,7 @@ bool BuildExplainoSidecarWindowState(
                 next.budget = *previousBudget;
             }
             PopulateCompletenessFromBudget(space, previousCompleteness, &next);
+            PopulateControllerDecision(&next);
             *outState = std::move(next);
             if (outError) *outError = measurementError;
             return false;
@@ -125,6 +153,7 @@ bool BuildExplainoSidecarWindowState(
                 next.budget = *previousBudget;
             }
             PopulateCompletenessFromBudget(space, previousCompleteness, &next);
+            PopulateControllerDecision(&next);
             *outState = std::move(next);
             if (outError) *outError = budgetError;
             return false;
@@ -142,6 +171,7 @@ bool BuildExplainoSidecarWindowState(
                 next.budget = *previousBudget;
             }
             PopulateCompletenessFromBudget(space, previousCompleteness, &next);
+            PopulateControllerDecision(&next);
             *outState = std::move(next);
             if (outError) *outError = lensError;
             return false;
@@ -161,6 +191,13 @@ bool BuildExplainoSidecarWindowState(
         } else {
             next.action_error_message = actionError;
         }
+
+        PopulateControllerDecision(&next);
+        if (!next.controller_error_message.empty()) {
+            *outState = std::move(next);
+            if (outError) *outError = outState->controller_error_message;
+            return false;
+        }
     }
 
     *outState = std::move(next);
@@ -171,9 +208,28 @@ bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,
     const BindingContext& ctx,
     const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
-    return BuildExplainoSidecarWindowState(catalog, ctx, measurementHost, nullptr, nullptr, outState, outError);
+    return BuildExplainoSidecarWindowState(
+        catalog,
+        ctx,
+        measurementHost,
+        previousBudget,
+        previousCompleteness,
+        nullptr,
+        outState,
+        outError);
+}
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError) {
+    return BuildExplainoSidecarWindowState(catalog, ctx, measurementHost, nullptr, nullptr, nullptr, outState, outError);
 }
 
 bool BuildExplainoSidecarWindowState(
@@ -181,7 +237,7 @@ bool BuildExplainoSidecarWindowState(
     const BindingContext& ctx,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
-    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, nullptr, nullptr, outState, outError);
+    return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, nullptr, nullptr, nullptr, outState, outError);
 }
 
 void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
@@ -309,6 +365,23 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
             }
 
             ImGui::EndTable();
+        }
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Auto Demonstration");
+    if (!state.controller_error_message.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Controller error");
+        ImGui::TextWrapped("%s", state.controller_error_message.c_str());
+    } else {
+        ImGui::BulletText("status: %s", state.controller_decision.summary.c_str());
+        ImGui::BulletText("reason: %s", state.controller_decision.reason.c_str());
+        ImGui::BulletText("enabled: %s", state.controller_policy.enabled ? "true" : "false");
+        ImGui::BulletText("mutation_opt_in: %s", state.controller_policy.allow_runtime_mutation ? "true" : "false");
+        if (state.controller_decision.has_target_value) {
+            ImGui::BulletText("path: %s", state.controller_decision.path.c_str());
+            ImGui::BulletText("target_value: %.6f", state.controller_decision.target_value);
+            ImGui::BulletText("guidance: %s", state.controller_decision.guidance.c_str());
         }
     }
 

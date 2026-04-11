@@ -139,6 +139,33 @@ EngineFunctionCatalog BuildInvalidCostHintCatalog() {
     return catalog;
 }
 
+SidecarBudgetState BuildCompleteBudget(const SidecarBudgetState& budget) {
+    SidecarBudgetState next = budget;
+    next.mean_posterior_uncertainty = 0.0;
+    for (auto& row : next.rows) {
+        row.posterior_uncertainty = 0.0;
+        row.observation_count = 2;
+    }
+    return next;
+}
+
+SidecarExplorationCompleteness BuildCompleteCompleteness(
+    const SidecarExplorationCompleteness& completeness) {
+    SidecarExplorationCompleteness next = completeness;
+    next.demonstrated_count = static_cast<int>(next.rows.size());
+    next.uncertain_count = 0;
+    next.demonstrated_fraction = 1.0;
+    next.mean_coverage_score = 1.0;
+    for (auto& row : next.rows) {
+        row.posterior_uncertainty = 0.0;
+        row.observation_count = 2;
+        row.coverage_score = 1.0;
+        row.demonstrated = true;
+        row.coverage_bucket = "demonstrated";
+    }
+    return next;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -263,6 +290,11 @@ int main() {
                       << state.action_error_message << "\n";
             return 1;
         }
+        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::disabled ||
+            state.controller_decision.should_mutate) {
+            std::cerr << "Expected sidecar window controller state to stay disabled by default\n";
+            return 1;
+        }
         if (state.action_recommendation.path != "fractal.params.explaino_mix") {
             std::cerr << "Expected Explaino Mix to be the recommended next action in the fake measurement fixture, got: "
                       << state.action_recommendation.path << "\n";
@@ -314,6 +346,9 @@ int main() {
         host.fail = true;
         ExplainoSidecarWindowState seeded;
         ExplainoSidecarWindowState state;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
         std::string error;
         host.fail = false;
         if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded, &error)) {
@@ -321,7 +356,7 @@ int main() {
             return 1;
         }
         host.fail = true;
-        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded.budget, &seeded.completeness, &state, &error)) {
+        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded.budget, &seeded.completeness, &policy, &state, &error)) {
             std::cerr << "Expected sidecar window state build to fail when measurement host fails\n";
             return 1;
         }
@@ -347,8 +382,42 @@ int main() {
             std::cerr << "Expected sidecar window measurement failures to preserve the last known completeness surface\n";
             return 1;
         }
+        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::blocked_no_action ||
+            state.controller_decision.should_mutate ||
+            !state.controller_error_message.empty()) {
+            std::cerr << "Expected measurement failures with preserved incomplete completeness to expose an explicit blocked controller state\n";
+            return 1;
+        }
         if (!state.lens.rows.empty()) {
             std::cerr << "Expected failed measurement updates to leave no derived lens projection rows\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState seeded;
+        ExplainoSidecarWindowState state;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &seeded, &error)) {
+            std::cerr << "Expected seeded sidecar window state to build before controller stop preservation test: " << error << "\n";
+            return 1;
+        }
+
+        SidecarBudgetState completeBudget = BuildCompleteBudget(seeded.budget);
+        SidecarExplorationCompleteness completeCompleteness = BuildCompleteCompleteness(seeded.completeness);
+        host.fail = true;
+        if (BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &completeBudget, &completeCompleteness, &policy, &state, &error)) {
+            std::cerr << "Expected sidecar window state build to fail when measurement host fails during controller stop preservation test\n";
+            return 1;
+        }
+        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::stopped_complete ||
+            state.controller_decision.should_mutate ||
+            !state.controller_error_message.empty()) {
+            std::cerr << "Expected preserved complete completeness to keep the controller in explicit stopped state during measurement failures\n";
             return 1;
         }
     }
