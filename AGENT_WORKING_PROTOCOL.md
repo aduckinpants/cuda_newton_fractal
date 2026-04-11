@@ -81,6 +81,23 @@ It exists to enforce the closure invariant at runtime, not just in prose:
 Do not treat the hook as optional guidance. If it fires, fix the repo state by committing,
 reverting to the session baseline, or otherwise resolving the discrepancy before trying to stop.
 
+### 2.3 Validation Receipt Gate
+
+Clean git state alone is not enough to justify closure after a commit in the same session.
+
+If the current `HEAD` differs from the session-start `HEAD`, completion also requires a
+validation receipt for the current committed state.
+
+Required flow after the final validation commands pass for the slice:
+1. ensure the repo is clean at the final committed `HEAD`
+2. write a receipt with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`
+3. only then use `task_complete` / stop the slice
+
+The checkpoint guard enforces this deterministically:
+- `PostToolUse` reminds immediately when `HEAD` advanced without a receipt
+- `PreToolUse` denies `task_complete` for a clean-but-unreceipted committed state
+- `Stop` blocks ending the slice until the receipt exists
+
 ### 3. No Implicit Fallback
 
 This is a hard architectural rule, not a suggestion:
@@ -161,8 +178,9 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 2. Relevant Python tests pass
 3. Run the mandatory distrust-first audit loop and repair anything it finds
 4. Commit with clear message explaining what landed
-5. Update `HANDOFF_LOG.md` with checkpoint entry
-6. Update the active phased plan checklist if one exists
+5. Write the validation receipt for the final committed `HEAD`
+6. Update `HANDOFF_LOG.md` with checkpoint entry
+7. Update the active phased plan checklist if one exists
 
 ---
 

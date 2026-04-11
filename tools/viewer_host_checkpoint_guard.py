@@ -4,6 +4,7 @@ import hashlib
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_checkpoint_guard"
+RECEIPT_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_validation_receipts"
 TASK_COMPLETE_TOOL = "task_complete"
 DELETED_MARKER = "__DELETED__"
 
@@ -136,6 +138,48 @@ def compare_snapshots(baseline: dict[str, Any], current: dict[str, Any]) -> list
     return sorted(changed_paths)
 
 
+def validation_receipt_path(head: str, repo_root: Path = REPO_ROOT) -> Path:
+    sanitized = "".join(ch for ch in head if ch.isalnum())
+    if not sanitized:
+        raise RuntimeError("Validation receipt requires a non-empty HEAD id")
+    return repo_root / "artifacts" / "hooks" / "viewer_host_validation_receipts" / f"{sanitized}.json"
+
+
+def load_validation_receipt(head: str, repo_root: Path = REPO_ROOT) -> dict[str, Any] | None:
+    path = validation_receipt_path(head, repo_root)
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_validation_receipt(
+    summary: str,
+    *,
+    repo_root: Path = REPO_ROOT,
+    commands: list[str] | None = None,
+    notes: list[str] | None = None,
+) -> Path:
+    repo_root = repo_root.resolve()
+    snapshot = capture_repo_snapshot(repo_root)
+    if not snapshot_is_clean(snapshot):
+        raise RuntimeError("Validation receipt requires a clean repository state")
+
+    head = str(snapshot.get("head", "")).strip()
+    path = validation_receipt_path(head, repo_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "repo_root": repo_root.as_posix(),
+        "head": head,
+        "summary": summary,
+        "commands": list(commands or []),
+        "notes": list(notes or []),
+        "clean": True,
+        "written_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return path
+
+
 def summarize_changed_paths(paths: list[str], *, limit: int = 6) -> str:
     if not paths:
         return "none"
@@ -143,6 +187,32 @@ def summarize_changed_paths(paths: list[str], *, limit: int = 6) -> str:
         return ", ".join(paths)
     visible = ", ".join(paths[:limit])
     return f"{visible}, ... (+{len(paths) - limit} more)"
+
+
+def evaluate_validation_receipt_guard(
+    baseline: dict[str, Any] | None,
+    current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    if baseline is None:
+        return False, ""
+
+    baseline_head = str(baseline.get("head", "")).strip()
+    current_head = str(current.get("head", "")).strip()
+    if not baseline_head or not current_head or baseline_head == current_head:
+        return False, ""
+
+    receipt = load_validation_receipt(current_head, repo_root)
+    if receipt is None:
+        return True, (
+            "Current HEAD differs from the session baseline and lacks a validation receipt for the committed state. "
+            "Run the required validation, then record it with tools/viewer_host_write_validation_receipt.py before completion."
+        )
+
+    if str(receipt.get("head", "")).strip() != current_head:
+        return True, "Validation receipt head does not match the current committed state."
+
+    return False, ""
 
 
 def evaluate_checkpoint_guard(
@@ -174,13 +244,26 @@ def build_pretool_response(
     tool_name: str,
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
     if tool_name != TASK_COMPLETE_TOOL:
         return None
 
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
-        return None
+        should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+        if not should_block:
+            return None
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+                "additionalContext": (
+                    "Expected receipt path: " + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                ),
+            }
+        }
 
     return {
         "hookSpecificOutput": {
@@ -198,21 +281,39 @@ def build_posttool_response(
     tool_name: str,
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
     status = evaluate_checkpoint_guard(baseline, current)
-    if not status.should_block:
+    if status.should_block:
+        changed_summary = summarize_changed_paths(status.changed_paths)
+        return {
+            "systemMessage": (
+                "Checkpoint debt after "
+                + tool_name
+                + ": repository state differs from the session baseline. "
+                + status.reason
+                + " Changed paths: "
+                + changed_summary
+                + ". Before any final response, update continuity surfaces and create a checkpoint commit or restore the baseline."
+            ),
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+            },
+        }
+
+    should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+    if not should_block:
         return None
 
-    changed_summary = summarize_changed_paths(status.changed_paths)
     return {
         "systemMessage": (
-            "Checkpoint debt after "
+            "Validation debt after "
             + tool_name
-            + ": repository state differs from the session baseline. "
-            + status.reason
-            + " Changed paths: "
-            + changed_summary
-            + ". Before any final response, update continuity surfaces and create a checkpoint commit or restore the baseline."
+            + ": "
+            + reason
+            + " Expected receipt path: "
+            + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+            + "."
         ),
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
@@ -223,10 +324,20 @@ def build_posttool_response(
 def build_stop_response(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
-        return None
+        should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+        if not should_block:
+            return None
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "Stop",
+                "decision": "block",
+                "reason": reason,
+            }
+        }
 
     return {
         "hookSpecificOutput": {
@@ -324,11 +435,11 @@ def main(argv: list[str] | None = None) -> int:
         baseline = _bootstrap_missing_baseline_if_clean(session_id, current, repo_root)
 
         if event_name == "PreToolUse":
-            response = build_pretool_response(str(payload.get("tool_name", "")), baseline, current)
+            response = build_pretool_response(str(payload.get("tool_name", "")), baseline, current, repo_root)
         elif event_name == "PostToolUse":
-            response = build_posttool_response(str(payload.get("tool_name", "unknown_tool")), baseline, current)
+            response = build_posttool_response(str(payload.get("tool_name", "unknown_tool")), baseline, current, repo_root)
         else:
-            response = build_stop_response(baseline, current)
+            response = build_stop_response(baseline, current, repo_root)
 
         if response is not None:
             print(json.dumps(response))
