@@ -16,9 +16,9 @@ Phase 5 - R4 divergence, energy, and persistence
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - prepare the next R4 divergence/energy/persistence seam on top of the now-landed controller + completeness surfaces
-  - keep runtime parameter mutation opt-in/off by default until a later phase explicitly wires live mutation
-  - preserve the no-implicit-fallback posture across future sidecar failure paths and persistence seams
+  - extract the R4-B energy-landscape seam on top of the now-landed R4-A divergence surface
+  - decide whether the first energy presentation is a ranked/profile surface or needs an explicit 2D heatmap in the sidecar window
+  - keep runtime parameter mutation and orientation persistence out of scope until the energy seam proves durable under hostile audit
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -75,10 +75,21 @@ Phase 5 - R4 divergence, energy, and persistence
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
   - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_controller_code_quality_report.json`
-- Next bounded slice for Phase 4:
-  - extract the first R4 divergence/energy/persistence seam on top of the measured sidecar state
-  - decide which derived Explaino/runtime signals become durable sidecar persistence inputs instead of chat-only concepts
-  - keep live runtime mutation out of scope until the new persistence seam proves durable under hostile audit
+- Delivered so far in Phase 5:
+  - `ui_app/src/explaino_sidecar_divergence.h/.cpp`
+  - `ui_app/tests/test_explaino_sidecar_divergence.cpp`
+  - sidecar window state and rendering now expose an explicit divergence indicator with unavailable, stable, and diverged states
+  - runtime sidecar refresh now threads prior orientation state into divergence comparison across valid rebuilds
+  - hostile-audit repair for prior model-error states: zero/default orientation is no longer reused as the previous divergence baseline during recovery
+  - hostile-audit repair for the divergence slice code-quality regression by extracting focused sidecar render sections out of `RenderExplainoSidecarWindow()`
+- Validation achieved for the current Phase 5 slice:
+  - `ui_app/build_tests_vsdevcmd.cmd`
+  - `ui_app/build_vsdevcmd.cmd`
+  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_divergence_code_quality_report.json`
+- Next bounded slice for Phase 5:
+  - extract the R4-B energy-landscape seam from the existing budget + lens + action surfaces
+  - decide whether the first energy view is table/profile-only or a true heatmap while preserving the headless test seam
+  - keep slime-trace recording and orientation persistence deferred until the energy surface is validated and audited
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - live auto-demonstration parameter mutation

@@ -4,6 +4,7 @@
 #include "explaino_sidecar_budget.h"
 #include "explaino_sidecar_completeness.h"
 #include "explaino_sidecar_controller.h"
+#include "explaino_sidecar_divergence.h"
 #include "explaino_sidecar_lens.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
@@ -28,6 +29,8 @@ struct ExplainoSidecarWindowState {
     std::string action_error_message;
     std::string completeness_error_message;
     std::string controller_error_message;
+    std::string divergence_error_message;
+    bool has_orientation{false};
     SidecarOrientationVector orientation{};
     SidecarAutoDemoControllerPolicy controller_policy{};
     SidecarMeasurementBatch measurement{};
@@ -37,6 +40,7 @@ struct ExplainoSidecarWindowState {
     bool has_action_recommendation{false};
     SidecarActionRecommendation action_recommendation{};
     SidecarAutoDemoControllerDecision controller_decision{};
+    SidecarStateDivergence divergence{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
 
@@ -46,6 +50,17 @@ bool BuildExplainoSidecarWindowState(
     const SidecarMeasurementHost* measurementHost,
     const SidecarBudgetState* previousBudget,
     const SidecarExplorationCompleteness* previousCompleteness,
+    const SidecarAutoDemoControllerPolicy* controllerPolicy,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError);
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
+    const SidecarOrientationVector* previousOrientation,
     const SidecarAutoDemoControllerPolicy* controllerPolicy,
     ExplainoSidecarWindowState* outState,
     std::string* outError);

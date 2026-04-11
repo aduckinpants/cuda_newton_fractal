@@ -237,8 +237,17 @@ int main() {
             std::cerr << "Expected sidecar window state with measurement host to build: " << error << "\n";
             return 1;
         }
+        if (!state.has_orientation) {
+            std::cerr << "Expected successful sidecar window builds to expose a reusable orientation\n";
+            return 1;
+        }
         if (state.measurement.rows.size() != 2) {
             std::cerr << "Expected measurement rows for zoom and explaino_mix\n";
+            return 1;
+        }
+        if (state.divergence.status != SidecarStateDivergenceStatus::unavailable ||
+            !state.divergence_error_message.empty()) {
+            std::cerr << "Expected first sidecar measurement build to expose an explicit unavailable divergence state\n";
             return 1;
         }
         if (state.measurement.rows[0].path != "fractal.params.explaino_mix") {
@@ -315,8 +324,18 @@ int main() {
             std::cerr << "Expected initial sidecar window state to build before persistence test: " << error << "\n";
             return 1;
         }
-        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &first.budget, &first.completeness, &second, &error)) {
+        if (!first.has_orientation) {
+            std::cerr << "Expected initial sidecar window state to expose a reusable orientation\n";
+            return 1;
+        }
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &first.budget, &first.completeness, &first.orientation, nullptr, &second, &error)) {
             std::cerr << "Expected repeated sidecar window state build to preserve budget state: " << error << "\n";
+            return 1;
+        }
+        if (second.divergence.status != SidecarStateDivergenceStatus::stable ||
+            !NearlyEqual(second.divergence.scalar_divergence, 0.0) ||
+            !second.divergence_error_message.empty()) {
+            std::cerr << "Expected repeated builds without fractal_type or seed change to keep divergence stable\n";
             return 1;
         }
         if (second.budget.batch_count != 2) {
@@ -339,6 +358,21 @@ int main() {
             std::cerr << "Expected repeated sidecar window builds to improve demonstrated coverage fraction\n";
             return 1;
         }
+
+        params.explaino_seed = 8.0;
+        ExplainoSidecarWindowState third;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &host, &second.budget, &second.completeness, &second.orientation, nullptr, &third, &error)) {
+            std::cerr << "Expected seed-change sidecar window state build to succeed: " << error << "\n";
+            return 1;
+        }
+        if (third.divergence.status != SidecarStateDivergenceStatus::diverged ||
+            !(third.divergence.scalar_divergence > 0.0) ||
+            !third.divergence.import_changed ||
+            !third.divergence_error_message.empty()) {
+            std::cerr << "Expected explaino seed changes to produce a positive divergence indicator\n";
+            return 1;
+        }
+        params.explaino_seed = 7.0;
     }
 
     {
@@ -496,6 +530,45 @@ int main() {
         }
         if (state.error_message.find("fractal.view.not_real") == std::string::npos) {
             std::cerr << "Expected sidecar window state to retain the model error message\n";
+            return 1;
+        }
+        if (state.has_orientation) {
+            std::cerr << "Expected model-error sidecar state to reject orientation reuse\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState broken;
+        std::string error;
+        if (BuildExplainoSidecarWindowState(BuildBrokenCatalog(), ctx, &broken, &error)) {
+            std::cerr << "Expected broken sidecar window state build to fail before recovery test\n";
+            return 1;
+        }
+
+        ExplainoSidecarWindowState recovered;
+        error.clear();
+        if (!BuildExplainoSidecarWindowState(
+                BuildCatalog(),
+                ctx,
+                &host,
+                nullptr,
+                nullptr,
+                broken.has_orientation ? &broken.orientation : nullptr,
+                nullptr,
+                &recovered,
+                &error)) {
+            std::cerr << "Expected sidecar window state to recover after a prior model failure: " << error << "\n";
+            return 1;
+        }
+        if (!recovered.has_orientation) {
+            std::cerr << "Expected recovered sidecar window state to restore a reusable orientation\n";
+            return 1;
+        }
+        if (recovered.divergence.status != SidecarStateDivergenceStatus::unavailable ||
+            !recovered.divergence_error_message.empty()) {
+            std::cerr << "Expected recovery after a prior model-error state to treat divergence as unavailable, not compare against zero orientation\n";
             return 1;
         }
     }
