@@ -8,6 +8,71 @@ static bool NearlyEqual(double a, double b, double eps = 1.0e-9) {
     return std::fabs(a - b) <= eps;
 }
 
+static void WriteMinimalStateWithExtraParams(const std::filesystem::path& statePath, const std::string& extraParamsJson) {
+  std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+  file << "{\n"
+      "  \"state_version\": 3,\n"
+      "  \"fractal_type\": \"newton\",\n"
+      "  \"view\": {\n"
+      "    \"center_x\": 0,\n"
+      "    \"center_y\": 0,\n"
+      "    \"zoom\": 1,\n"
+      "    \"rotation_degrees\": 0,\n"
+      "    \"center_hp_x\": 0,\n"
+      "    \"center_hp_y\": 0,\n"
+      "    \"log2_zoom\": 0,\n"
+      "    \"explaino_phase\": 0,\n"
+      "    \"explaino_seed_drift\": 0,\n"
+      "    \"explaino_seed_tween\": true\n"
+      "  },\n"
+      "  \"params\": {\n"
+      "    \"max_iter\": 500,\n"
+      "    \"epsilon\": 0.000001,\n"
+      "    \"exposure\": 1.0,\n"
+      "    \"poly_kind\": 0,\n"
+      "    \"coloring_mode\": \"root_basin\",\n"
+      "    \"nova_alpha\": 0.5,\n"
+      "    \"phoenix_p_real\": 0.0,\n"
+      "    \"phoenix_p_imag\": 0.0,\n"
+      "    \"multibrot_power\": 3,\n"
+      "    \"multibrot_power_float\": 3.0,\n"
+      "    \"lambda_real\": 0.0,\n"
+      "    \"lambda_imag\": 0.0,\n"
+      "    \"explaino_seed\": 0,\n"
+      "    \"explaino_warp_strength\": 0,\n"
+      "    \"explaino_root_count\": 0,\n"
+      "    \"poly_coeffs\": [-1, 0, 0, 1, 0]";
+  if (!extraParamsJson.empty()) {
+    file << ",\n" << extraParamsJson;
+  }
+  file << "\n  },\n"
+      "  \"render\": {\n"
+      "    \"width\": 1024,\n"
+      "    \"height\": 768,\n"
+      "    \"block_size\": 256,\n"
+      "    \"device_id\": 0\n"
+      "  }\n"
+      "}";
+}
+
+static bool ExpectLoadDiagnosticsStateFailure(const std::filesystem::path& statePath,
+  const std::string& expectedErrorSubstring,
+  std::string* outObservedError) {
+  ViewState view{};
+  KernelParams params{};
+  RenderSettings render{};
+  std::string error;
+  if (LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+    if (outObservedError) *outObservedError = "load unexpectedly succeeded";
+    return false;
+  }
+  if (error.find(expectedErrorSubstring) == std::string::npos) {
+    if (outObservedError) *outObservedError = error;
+    return false;
+  }
+  return true;
+}
+
 int main() {
     namespace fs = std::filesystem;
 
@@ -762,6 +827,183 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "bad_zero_max_iter_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 0,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected zero max_iter to fail\n";
+            return 1;
+        }
+        if (error.find("max_iter") == std::string::npos) {
+            std::cerr << "Unexpected zero-max_iter error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "bad_zero_width_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 0,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected zero width to fail\n";
+            return 1;
+        }
+        if (error.find("width") == std::string::npos) {
+            std::cerr << "Unexpected zero-width error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "bad_negative_height_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0,
+    "center_y": 0,
+    "zoom": 1,
+    "rotation_degrees": 0,
+    "center_hp_x": 0,
+    "center_hp_y": 0,
+    "log2_zoom": 0,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 0,
+    "explaino_warp_strength": 0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": -1,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected negative height to fail\n";
+            return 1;
+        }
+        if (error.find("height") == std::string::npos) {
+            std::cerr << "Unexpected negative-height error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "bad_coloring_mode_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({
@@ -873,6 +1115,61 @@ int main() {
         }
     }
 
+      {
+        const fs::path statePath = tempRoot / "bad_transcendental_func_type_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "    \"transcendental_func\": 123");
+
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "transcendental_func", &error)) {
+          std::cerr << "Expected invalid transcendental_func type to fail: " << error << "\n";
+          return 1;
+        }
+      }
+
+      {
+        const fs::path statePath = tempRoot / "bad_transcendental_func_value_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "    \"transcendental_func\": \"f_unknown\"");
+
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "transcendental_func", &error)) {
+          std::cerr << "Expected unknown transcendental_func to fail: " << error << "\n";
+          return 1;
+        }
+      }
+
+      {
+        const fs::path statePath = tempRoot / "bad_momentum_beta_type_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "    \"momentum_beta\": \"fast\"");
+
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "momentum_beta", &error)) {
+          std::cerr << "Expected invalid momentum_beta type to fail: " << error << "\n";
+          return 1;
+        }
+      }
+
+      {
+        const fs::path statePath = tempRoot / "bad_mcmullen_preset_type_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "    \"mcmullen_preset\": 7");
+
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "mcmullen_preset", &error)) {
+          std::cerr << "Expected invalid mcmullen_preset type to fail: " << error << "\n";
+          return 1;
+        }
+      }
+
+      {
+        const fs::path statePath = tempRoot / "bad_mcmullen_preset_value_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "    \"mcmullen_preset\": \"z9_z9\"");
+
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "mcmullen_preset", &error)) {
+          std::cerr << "Expected unknown mcmullen_preset to fail: " << error << "\n";
+          return 1;
+        }
+      }
+
     {
         const fs::path statePath = tempRoot / "legacy_state_version1_phoenix.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -974,6 +1271,62 @@ int main() {
         }
         if (error.find("Finding metadata points to missing state file") == std::string::npos) {
           std::cerr << "Unexpected missing-state error text: " << error << "\n";
+          return 1;
+        }
+      }
+
+      {
+        const fs::path safeRoot = tempRoot / "finding_state_traversal";
+        const fs::path findingDir = safeRoot / "finding_bundle";
+        const fs::path outsideDir = safeRoot / "outside";
+        fs::create_directories(findingDir);
+        fs::create_directories(outsideDir);
+
+        const fs::path outsideStatePath = outsideDir / "state.json";
+        std::ofstream stateFile(outsideStatePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        stateFile << "{}";
+        stateFile.close();
+
+        const fs::path findingPath = findingDir / "finding.json";
+        std::ofstream findingFile(findingPath, std::ios::out | std::ios::binary | std::ios::trunc);
+        findingFile << R"({
+      "finding_id": "escape_attempt",
+      "state_file": "../outside/state.json"
+    })";
+        findingFile.close();
+
+        std::string resolvedStatePath;
+        std::string error;
+        if (ResolveFindingStateJsonPath(findingPath.string(), &resolvedStatePath, &error)) {
+          std::cerr << "Expected finding state path traversal to fail\n";
+          return 1;
+        }
+        if (error.find("state_file") == std::string::npos) {
+          std::cerr << "Unexpected traversal error text: " << error << "\n";
+          return 1;
+        }
+      }
+
+      {
+        const fs::path findingDir = tempRoot / "finding_state_directory_ref";
+        fs::create_directories(findingDir);
+
+        const fs::path findingPath = findingDir / "finding.json";
+        std::ofstream findingFile(findingPath, std::ios::out | std::ios::binary | std::ios::trunc);
+        findingFile << R"({
+      "finding_id": "directory_ref",
+      "state_file": "."
+    })";
+        findingFile.close();
+
+        std::string resolvedStatePath;
+        std::string error;
+        if (ResolveFindingStateJsonPath(findingPath.string(), &resolvedStatePath, &error)) {
+          std::cerr << "Expected directory state_file reference to fail\n";
+          return 1;
+        }
+        if (error.find("state_file") == std::string::npos) {
+          std::cerr << "Unexpected directory-ref error text: " << error << "\n";
           return 1;
         }
       }

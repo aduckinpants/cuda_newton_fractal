@@ -22,6 +22,12 @@ static bool TryStr(const std::vector<std::string>& args, const char* flag, bool*
     return true;
 }
 
+static bool IsValidSweepSeedRange(double start, double stop, double step) {
+    if (step <= 0.0) return false;
+    if (!(start < stop)) return false;
+    return true;
+}
+
 int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     *out = ViewerCliArgs{};
 
@@ -89,6 +95,9 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
 
     if (haveAnySweep) {
         if (!(haveSweepStart && haveSweepStop && haveSweepStep)) {
+            return 1;
+        }
+        if (!IsValidSweepSeedRange(sweepStart, sweepStop, sweepStep)) {
             return 1;
         }
         out->sweep_config.enabled = true;

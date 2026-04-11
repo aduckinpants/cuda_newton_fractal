@@ -181,6 +181,25 @@ bool ParseIntField(const json_min::Value& object, const char* key, int* outValue
     return true;
 }
 
+bool RequirePositiveIntField(int value, const char* key, std::string* outError) {
+    if (value > 0) return true;
+    if (outError) *outError = std::string(key) + " must be > 0";
+    return false;
+}
+
+bool IsFindingStateRelativePathAllowed(const std::filesystem::path& relativePath) {
+    if (relativePath.empty()) return false;
+    if (relativePath.is_absolute() || relativePath.has_root_name() || relativePath.has_root_directory()) {
+        return false;
+    }
+    const std::filesystem::path normalized = relativePath.lexically_normal();
+    if (normalized.empty() || normalized == "." || normalized.filename().empty()) return false;
+    for (const auto& part : normalized) {
+        if (part == "..") return false;
+    }
+    return true;
+}
+
 } // namespace
 
 bool LoadDiagnosticsStateJson(const std::string& text,
@@ -359,6 +378,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         }
         return false;
     }
+    if (!RequirePositiveIntField(maxIter, "max_iter", outError)) return false;
     nextParams.max_iter = maxIter;
     nextParams.epsilon = static_cast<float>(epsilon);
     nextParams.exposure = static_cast<float>(exposure);
@@ -396,20 +416,31 @@ bool LoadDiagnosticsStateJson(const std::string& text,
 
     // transcendental_func (optional for backward compat)
     {
-        std::string tfStr;
         const json_min::Value* tfVal = paramsObject->get("transcendental_func");
-        if (tfVal && tfVal->is_string()) {
-            tfStr = tfVal->as_string();
+        if (tfVal) {
+            if (!tfVal->is_string()) {
+                if (outError) *outError = "Invalid transcendental_func field";
+                return false;
+            }
+            const std::string tfStr = tfVal->as_string();
             if (tfStr == "f_sin") nextParams.transcendental_func = TranscendentalFunc::f_sin;
             else if (tfStr == "f_exp_minus_1") nextParams.transcendental_func = TranscendentalFunc::f_exp_minus_1;
             else if (tfStr == "f_cosh") nextParams.transcendental_func = TranscendentalFunc::f_cosh;
+            else {
+                if (outError) *outError = "Unknown transcendental_func: " + tfStr;
+                return false;
+            }
         }
     }
 
     // momentum_beta (optional for backward compat)
     {
         const json_min::Value* mbVal = paramsObject->get("momentum_beta");
-        if (mbVal && mbVal->is_number()) {
+        if (mbVal) {
+            if (!mbVal->is_number()) {
+                if (outError) *outError = "Invalid momentum_beta field";
+                return false;
+            }
             nextParams.momentum_beta = static_cast<float>(mbVal->as_number());
         }
     }
@@ -417,12 +448,20 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     // mcmullen_preset (optional for backward compat)
     {
         const json_min::Value* mpVal = paramsObject->get("mcmullen_preset");
-        if (mpVal && mpVal->is_string()) {
+        if (mpVal) {
+            if (!mpVal->is_string()) {
+                if (outError) *outError = "Invalid mcmullen_preset field";
+                return false;
+            }
             std::string mpStr = mpVal->as_string();
             if (mpStr == "z3_z3") nextParams.mcmullen_preset = McMullenPreset::z3_z3;
             else if (mpStr == "z2_z2") nextParams.mcmullen_preset = McMullenPreset::z2_z2;
             else if (mpStr == "z4_z2") nextParams.mcmullen_preset = McMullenPreset::z4_z2;
             else if (mpStr == "z3_z2") nextParams.mcmullen_preset = McMullenPreset::z3_z2;
+            else {
+                if (outError) *outError = "Unknown mcmullen_preset: " + mpStr;
+                return false;
+            }
         }
     }
 
@@ -449,6 +488,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*renderObject, "interaction_debounce_ms", &interactionDebounceMs, nullptr, outError)) return false;
     if (!GetOptionalNumber(*renderObject, "preview_target_fps", &previewTargetFps, nullptr, outError)) return false;
     if (!GetOptionalNumber(*renderObject, "preview_min_scale", &previewMinScale, nullptr, outError)) return false;
+    if (!RequirePositiveIntField(width, "width", outError)) return false;
+    if (!RequirePositiveIntField(height, "height", outError)) return false;
     nextRender.resolution.x = width;
     nextRender.resolution.y = height;
     nextRender.block_size = blockSize;
@@ -510,7 +551,12 @@ bool ResolveFindingStateJsonPath(const std::string& selectedPath,
 
     std::string stateFileName;
     if (!GetRequiredString(parseResult.value, "state_file", &stateFileName, outError)) return false;
-    const std::filesystem::path statePath = inputPath.parent_path() / stateFileName;
+    const std::filesystem::path relativeStatePath(stateFileName);
+    if (!IsFindingStateRelativePathAllowed(relativeStatePath)) {
+        if (outError) *outError = "state_file must stay within the finding directory";
+        return false;
+    }
+    const std::filesystem::path statePath = (inputPath.parent_path() / relativeStatePath).lexically_normal();
     if (!std::filesystem::exists(statePath)) {
         if (outError) *outError = "Finding metadata points to missing state file: " + statePath.string();
         return false;

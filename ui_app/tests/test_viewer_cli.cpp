@@ -138,6 +138,46 @@ static void TestSweepConfigIncomplete() {
     Check(rc != 0, "TestSweepConfigIncomplete_Fails");
 }
 
+static void TestSweepConfigZeroStepFails() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sweep-seed-start", "1.0",
+        "--sweep-seed-stop", "5.0",
+        "--sweep-seed-step", "0.0"
+    }), &cli);
+    Check(rc != 0, "TestSweepConfigZeroStepFails_Fails");
+}
+
+static void TestSweepConfigNegativeStepFails() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sweep-seed-start", "1.0",
+        "--sweep-seed-stop", "5.0",
+        "--sweep-seed-step", "-0.5"
+    }), &cli);
+    Check(rc != 0, "TestSweepConfigNegativeStepFails_Fails");
+}
+
+static void TestSweepConfigEqualBoundsFails() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sweep-seed-start", "3.0",
+        "--sweep-seed-stop", "3.0",
+        "--sweep-seed-step", "0.5"
+    }), &cli);
+    Check(rc != 0, "TestSweepConfigEqualBoundsFails_Fails");
+}
+
+static void TestSweepConfigDescendingBoundsFails() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--sweep-seed-start", "5.0",
+        "--sweep-seed-stop", "1.0",
+        "--sweep-seed-step", "0.5"
+    }), &cli);
+    Check(rc != 0, "TestSweepConfigDescendingBoundsFails_Fails");
+}
+
 static void TestSampleModeStdio() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -314,6 +354,10 @@ int main() {
     TestResolutionBadWidth();
     TestSweepConfigComplete();
     TestSweepConfigIncomplete();
+    TestSweepConfigZeroStepFails();
+    TestSweepConfigNegativeStepFails();
+    TestSweepConfigEqualBoundsFails();
+    TestSweepConfigDescendingBoundsFails();
     TestSampleModeStdio();
     TestSampleModeJsonPaths();
     TestSampleSession();
