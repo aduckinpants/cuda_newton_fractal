@@ -65,6 +65,28 @@ EngineFunctionCatalog BuildCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildUnknownPredicatePathCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    FunctionParamDescriptor broken = MakeParam("fractal.params.nova_alpha", "float", "Broken Path", 0.0, 1.0);
+    broken.has_applicable_when = true;
+    broken.applicable_when.op = "eq";
+    broken.applicable_when.path = "fractal.view.not_real";
+    broken.applicable_when.value = "explaino";
+    catalog.functions[0].parameters.push_back(broken);
+    return catalog;
+}
+
+EngineFunctionCatalog BuildInvalidNumericPredicateCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    FunctionParamDescriptor broken = MakeParam("fractal.params.nova_alpha", "float", "Broken Numeric", 0.0, 1.0);
+    broken.has_applicable_when = true;
+    broken.applicable_when.op = "gte";
+    broken.applicable_when.path = "fractal.view.zoom";
+    broken.applicable_when.value = "not-a-number";
+    catalog.functions[0].parameters.push_back(broken);
+    return catalog;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -103,6 +125,32 @@ int main() {
         }
         if (error.find("missing.function") == std::string::npos) {
             std::cerr << "Expected missing-function error to mention the requested id\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace broken{};
+        std::string error;
+        if (BuildSidecarHypothesisSpace(BuildUnknownPredicatePathCatalog(), "fractal.sample", ctx, &broken, &error)) {
+            std::cerr << "Expected unknown applicable_when path to fail fast\n";
+            return 1;
+        }
+        if (error.find("fractal.view.not_real") == std::string::npos) {
+            std::cerr << "Expected unknown applicable_when path error to mention the bad path\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace broken{};
+        std::string error;
+        if (BuildSidecarHypothesisSpace(BuildInvalidNumericPredicateCatalog(), "fractal.sample", ctx, &broken, &error)) {
+            std::cerr << "Expected invalid numeric applicable_when value to fail fast\n";
+            return 1;
+        }
+        if (error.find("not-a-number") == std::string::npos) {
+            std::cerr << "Expected invalid numeric applicable_when error to mention the bad value\n";
             return 1;
         }
     }
@@ -185,6 +233,23 @@ int main() {
     if (!NearlyEqual(orientationC.field_embedding_stats, 2.0)) {
         std::cerr << "Expected mandelbrot field embedding stats to reflect its narrower surface\n";
         return 1;
+    }
+
+    {
+        SidecarHypothesisSpace collisionA{};
+        collisionA.function_id = "fractal.sample";
+        collisionA.applicable_parameters.push_back({"ab", "A", "c", "", false, {}, false, 0.0, false, 0.0});
+
+        SidecarHypothesisSpace collisionB{};
+        collisionB.function_id = "fractal.sample";
+        collisionB.applicable_parameters.push_back({"a", "B", "bc", "", false, {}, false, 0.0, false, 0.0});
+
+        SidecarOrientationVector collisionOrientationA = ComputeSidecarOrientationVector(ctx, collisionA);
+        SidecarOrientationVector collisionOrientationB = ComputeSidecarOrientationVector(ctx, collisionB);
+        if (collisionOrientationA.pack_projection_hash == collisionOrientationB.pack_projection_hash) {
+            std::cerr << "Expected pack projection hash to distinguish adjacent-field boundary changes\n";
+            return 1;
+        }
     }
 
     std::cout << "test_explaino_sidecar_model: all passed\n";
