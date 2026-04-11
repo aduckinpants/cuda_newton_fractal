@@ -12,6 +12,7 @@
 #include "function_descriptor.h"
 #include "json_min.h"
 #include "ui_schema.h"
+#include "viewer_schema_load.h"
 
 // --- File I/O utilities ---
 
@@ -275,25 +276,28 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
 
 int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     const std::vector<std::string>& schemaCandidates) {
-    UISchema descSchema;
-    bool descSchemaLoaded = false;
-    for (const auto& cand : schemaCandidates) {
-        std::string text = ReadTextFile(cand.c_str());
-        if (text.empty()) continue;
-        auto pr = json_min::Parse(text);
-        if (!pr.error.empty()) continue;
-        auto lr = LoadUISchemaFromJson(pr.value);
-        if (!lr.error.empty()) continue;
-        descSchema = std::move(lr.schema);
-        descSchemaLoaded = true;
-        break;
-    }
-    if (!descSchemaLoaded) {
-        std::fprintf(stderr, "Failed to load UI schema for --describe-functions\n");
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    BindingContext bind;
+    bind.view = &view;
+    bind.params = &params;
+    bind.render = &render;
+    bind.lens = &lens;
+
+    SchemaLoadResult schemaResult = LoadAndValidateViewerSchema(schemaCandidates, bind, false);
+    if (schemaResult.fatal_error) {
+        if (!schemaResult.warning.empty()) {
+            std::fprintf(stderr, "%s\n", schemaResult.warning.c_str());
+        }
         return 1;
     }
+    if (!schemaResult.warning.empty()) {
+        std::fprintf(stderr, "%s\n", schemaResult.warning.c_str());
+    }
 
-    EngineFunctionCatalog catalog = BuildEngineCatalog(descSchema);
+    EngineFunctionCatalog catalog = BuildEngineCatalog(schemaResult.schema);
     std::string catalogJson = SerializeEngineCatalogJson(catalog);
 
     if (toStdout) {

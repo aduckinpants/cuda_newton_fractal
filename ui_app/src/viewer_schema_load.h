@@ -21,3 +21,5 @@ SchemaLoadResult LoadAndValidateViewerSchema(
     const std::vector<std::string>& candidates,
     BindingContext& bind,
     bool validate_ui_only);
+
+std::vector<std::string> BuildViewerSchemaCandidates(const std::string& exeDir);

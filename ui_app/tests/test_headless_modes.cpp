@@ -32,6 +32,25 @@ static std::string TempPath(const char* name) {
     return std::string(tmp) + "\\test_headless_" + name;
 }
 
+static bool CatalogHasParameterPath(const json_min::Value& catalogValue, const std::string& path) {
+    if (!catalogValue.is_object()) return false;
+    auto functionsIt = catalogValue.as_object().find("functions");
+    if (functionsIt == catalogValue.as_object().end() || !functionsIt->second.is_array()) return false;
+    for (const auto& functionValue : functionsIt->second.as_array()) {
+        if (!functionValue.is_object()) continue;
+        auto paramsIt = functionValue.as_object().find("parameters");
+        if (paramsIt == functionValue.as_object().end() || !paramsIt->second.is_array()) continue;
+        for (const auto& paramValue : paramsIt->second.as_array()) {
+            if (!paramValue.is_object()) continue;
+            auto pathIt = paramValue.as_object().find("path");
+            if (pathIt != paramValue.as_object().end() && pathIt->second.is_string() && pathIt->second.as_string() == path) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // --- File I/O round-trip ---
 
 bool TestWriteAndReadTextFile() {
@@ -639,6 +658,38 @@ bool TestSampleModeBatchRejectsNdjsonOutputMode() {
 
     DeleteFileA(args.request_json_path.c_str());
     DeleteFileA(args.response_json_path.c_str());
+    return true;
+}
+
+bool TestDescribeFunctionsInvalidSchemaFallsBackToSafeModeCatalog() {
+    const std::string schemaPath = TempPath("describe_functions_bad_schema.json");
+    const std::string outPath = TempPath("describe_functions_bad_schema_out.json");
+
+    const std::string badSchemaJson =
+        "{ \"schema_version\": \"1\", \"namespace\": \"fractal\", \"panels\": ["
+        "{ \"id\": \"p1\", \"label\": \"Bad\", \"controls\": ["
+        "{ \"id\": \"bad_control\", \"type\": \"drag_float\", \"label\": \"Bad Control\","
+        "  \"value_type\": \"float\","
+        "  \"binding\": { \"kind\": \"param\", \"path\": \"fractal.params.not_real\" },"
+        "  \"default\": 0.5 }"
+        "] } ] }";
+
+    std::string err;
+    ASSERT(WriteTextFileExact(schemaPath, badSchemaJson, &err), "should write invalid test schema");
+
+    const int rc = RunDescribeFunctionsMode(false, outPath, {schemaPath});
+    ASSERT(rc == 0, "describe-functions should safe-mode rather than fail-open on invalid schema bindings");
+
+    std::string catalogText = ReadTextFile(outPath.c_str());
+    auto parsed = json_min::Parse(catalogText);
+    ASSERT(parsed.error.empty() && parsed.value.is_object(), "describe-functions output should still be valid JSON");
+    ASSERT(!CatalogHasParameterPath(parsed.value, "fractal.params.not_real"),
+        "describe-functions should not advertise parameters from an invalid schema binding");
+    ASSERT(CatalogHasParameterPath(parsed.value, "fractal.view.fractal_type"),
+        "describe-functions should fall back to the safe-mode catalog when schema binding validation fails");
+
+    DeleteFileA(schemaPath.c_str());
+    DeleteFileA(outPath.c_str());
     return true;
 }
 
@@ -1876,6 +1927,7 @@ int main() {
     RUN(TestSampleModeNdjsonSequenceGridBatchesPerSequenceStep);
     RUN(TestSampleModeNdjsonSequencePointSetBatchesPerSequenceStep);
     RUN(TestSampleModeBatchRejectsNdjsonOutputMode);
+    RUN(TestDescribeFunctionsInvalidSchemaFallsBackToSafeModeCatalog);
 
     // V2-B: Session mode — ProcessSessionLine unit tests
     RUN(TestProcessSessionLineOpen);

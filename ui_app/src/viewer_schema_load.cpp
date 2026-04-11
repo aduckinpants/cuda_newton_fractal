@@ -5,6 +5,35 @@
 #include "safe_mode_schema.h"
 #include "schema_startup_policy.h"
 
+#include <filesystem>
+
+namespace {
+
+constexpr char kViewerSchemaFileName[] = "fractal_binding_surface_v1.ui_schema.json";
+
+void AppendUniqueCandidate(const std::filesystem::path& candidatePath,
+    std::vector<std::string>* outCandidates) {
+    if (!outCandidates) return;
+    const std::string candidate = candidatePath.lexically_normal().generic_string();
+    if (candidate.empty()) return;
+    for (const auto& existing : *outCandidates) {
+        if (existing == candidate) return;
+    }
+    outCandidates->push_back(candidate);
+}
+
+} // namespace
+
+std::vector<std::string> BuildViewerSchemaCandidates(const std::string& exeDir) {
+    std::vector<std::string> candidates;
+    if (exeDir.empty()) return candidates;
+
+    const std::filesystem::path exePath = std::filesystem::path(exeDir).lexically_normal();
+    AppendUniqueCandidate(exePath / "ui" / kViewerSchemaFileName, &candidates);
+    AppendUniqueCandidate(exePath / ".." / "ui" / kViewerSchemaFileName, &candidates);
+    return candidates;
+}
+
 SchemaLoadResult LoadAndValidateViewerSchema(
     const std::vector<std::string>& candidates,
     BindingContext& bind,

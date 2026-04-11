@@ -109,6 +109,8 @@
         "pytest",
         "tests/test_fractal_runtime_probe_cli.py",
         "tests/test_fractal_runtime_session.py",
+        "tests/test_function_descriptor_cli.py",
+        "tests/test_generic_probe_cli.py",
         "-q"
       ],
       "problemMatcher": [],

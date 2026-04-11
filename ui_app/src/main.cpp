@@ -654,14 +654,6 @@ static bool InitializeSweepIfEnabled(const SweepPlayerConfig& config, SweepPlaye
     return true;
 }
 
-static std::vector<std::string> BuildSchemaCandidates(const std::string& exeDir) {
-    std::vector<std::string> candidates;
-    candidates.push_back(JoinPath(exeDir, "ui\\fractal_binding_surface_v1.ui_schema.json"));
-    candidates.push_back(JoinPath(exeDir, "..\\ui\\fractal_binding_surface_v1.ui_schema.json"));
-    candidates.push_back("..\\ui\\fractal_binding_surface_v1.ui_schema.json");
-    return candidates;
-}
-
 struct UiActionFlags {
     bool renderOnce = false;
     bool resetView = false;
@@ -1009,7 +1001,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
         }
         return RunDescribeFunctionsMode(cli.describe_functions,
             cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(),
-            BuildSchemaCandidates(exeDir));
+            BuildViewerSchemaCandidates(exeDir));
     }
 
     return -1;
@@ -1155,7 +1147,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     LensSettings lens{};
     bool dirty = true;
 
-    std::vector<std::string> schemaCandidates = BuildSchemaCandidates(exeDir);
+    std::vector<std::string> schemaCandidates = BuildViewerSchemaCandidates(exeDir);
     UISchema uiSchema;
     std::string schemaPath;
     std::string schemaWarning;

@@ -255,6 +255,23 @@ static void TestBadBindingSafeMode() {
     RemoveTempFile(tmpPath);
 }
 
+static void TestBuildViewerSchemaCandidatesStayExeRelative() {
+    std::vector<std::string> candidates = BuildViewerSchemaCandidates("C:\\runtime\\published");
+
+    CHECK("BuildSchemaCandidates_StagedFirst",
+        candidates.size() >= 1 && candidates[0] == "C:/runtime/published/ui/fractal_binding_surface_v1.ui_schema.json");
+    CHECK("BuildSchemaCandidates_ExeRelativeFallbackSecond",
+        candidates.size() >= 2 && candidates[1] == "C:/runtime/ui/fractal_binding_surface_v1.ui_schema.json");
+
+    bool foundCwdRelative = false;
+    for (const auto& candidate : candidates) {
+        if (candidate == "../ui/fractal_binding_surface_v1.ui_schema.json") {
+            foundCwdRelative = true;
+        }
+    }
+    CHECK("BuildSchemaCandidates_NoCwdRelativeFallback", !foundCwdRelative);
+}
+
 int main() {
     TestValidSchemaLoads();
     TestNoCandidatesSafeMode();
@@ -264,6 +281,7 @@ int main() {
     TestSkipsMissingCandidate();
     TestValidateUiOnlyFatal();
     TestBadBindingSafeMode();
+    TestBuildViewerSchemaCandidatesStayExeRelative();
 
     printf("test_viewer_schema_load: %d passed, %d failed\n", gPass, gFail);
     return gFail > 0 ? 1 : 0;
