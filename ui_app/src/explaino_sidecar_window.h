@@ -1,5 +1,6 @@
 #pragma once
 
+#include "explaino_sidecar_action.h"
 #include "explaino_sidecar_budget.h"
 #include "explaino_sidecar_lens.h"
 #include "explaino_sidecar_measurement.h"
@@ -22,10 +23,13 @@ struct ExplainoSidecarWindowState {
     std::string fractal_type_id;
     std::string error_message;
     std::string measurement_error_message;
+    std::string action_error_message;
     SidecarOrientationVector orientation{};
     SidecarMeasurementBatch measurement{};
     SidecarBudgetState budget{};
     SidecarLensProjection lens{};
+    bool has_action_recommendation{false};
+    SidecarActionRecommendation action_recommendation{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
 

@@ -16,10 +16,10 @@ Phase 4 - R3 lens and action selection
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - derive an initial lens projection seam from the measured EIG/budget surface
-  - expose an active-zone summary without adding autonomous action selection yet
-  - keep the new R3 logic extracted from `ui_app/src/main.cpp`
-  - add focused native tests that lock lens ordering and failure behavior
+  - derive an exploration-completeness summary from the current posterior-uncertainty / observation-count surface
+  - expose a demonstrated-vs-uncertain view in the sidecar without mutating runtime state yet
+  - keep the auto-demonstration loop deferred until the passive recommendation and completeness surfaces are both durable
+  - add focused native tests that lock completeness ordering, coverage buckets, and fail-fast behavior
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -54,14 +54,23 @@ Phase 4 - R3 lens and action selection
   - `py -3.14 tools/code_quality_audit.py --out artifacts/code_quality_report.json`
 - Delivered so far in Phase 4:
   - `ui_app/src/explaino_sidecar_lens.h/.cpp`
+  - `ui_app/src/explaino_sidecar_action.h/.cpp`
   - `ui_app/tests/test_explaino_sidecar_lens.cpp`
+  - `ui_app/tests/test_explaino_sidecar_action.cpp`
   - sidecar window state now derives per-param active-zone projections from the measured EIG/budget surface
+  - sidecar hypothesis-space entries now preserve describe-surface `cost_hint` metadata for passive action selection
   - sidecar budget rendering now shows lens zone and guidance columns alongside the ranked rows
-  - hostile-audit repairs for missing budget coverage and duplicate hypothesis-surface paths in the new lens seam
+  - sidecar window now exposes one passive `EIG - gamma*Cost` action recommendation over the current budget/lens surface without mutating parameters
+  - hostile-audit repairs for missing budget coverage, duplicate hypothesis-surface paths, dead recommendation wiring in the sidecar window, and duplicate budget-row validation in the action seam
+- Validation achieved for the current Phase 4 slice:
+  - `ui_app/build_tests_vsdevcmd.cmd`
+  - `ui_app/build_vsdevcmd.cmd`
+  - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_action_code_quality_report.json`
 - Next bounded slice for Phase 4:
-  - compute an initial lens projection per measured parameter from the current demonstration surface
-  - render active-zone guidance alongside the ranked budget rows without adding auto-selection yet
-  - keep argmax EIG-cost action recommendation deferred until the lens seam is durable
+  - classify demonstrated versus uncertain params from posterior uncertainty and observation counts on the persistent budget surface
+  - render an exploration-completeness summary or map alongside the passive recommendation without enabling autonomous parameter mutation yet
+  - keep auto-demonstration deferred until the completeness surface proves durable under hostile audit
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - EIG, lens projection, and autonomous action selection

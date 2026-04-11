@@ -90,6 +90,8 @@ EngineFunctionCatalog BuildCatalog() {
     explainoMix.applicable_when.op = "eq";
     explainoMix.applicable_when.path = "fractal.view.fractal_type";
     explainoMix.applicable_when.value = "explaino";
+    explainoMix.has_cost_hint = true;
+    explainoMix.cost_hint = 0.75;
     fractalSample.parameters.push_back(explainoMix);
 
     catalog.functions.push_back(fractalSample);
@@ -236,6 +238,20 @@ int main() {
         }
         if (state.lens.rows[0].path != state.budget.rows[0].path || state.lens.rows[0].guidance.empty()) {
             std::cerr << "Expected top-ranked lens guidance to align with the top-ranked budget row\n";
+            return 1;
+        }
+        if (!state.has_action_recommendation) {
+            std::cerr << "Expected sidecar window state to expose a passive action recommendation when cost hints are available: "
+                      << state.action_error_message << "\n";
+            return 1;
+        }
+        if (state.action_recommendation.path != "fractal.params.explaino_mix") {
+            std::cerr << "Expected Explaino Mix to be the recommended next action in the fake measurement fixture, got: "
+                      << state.action_recommendation.path << "\n";
+            return 1;
+        }
+        if (state.action_recommendation.guidance.empty() || !state.action_error_message.empty()) {
+            std::cerr << "Expected successful action recommendation builds to carry guidance and no action error\n";
             return 1;
         }
     }

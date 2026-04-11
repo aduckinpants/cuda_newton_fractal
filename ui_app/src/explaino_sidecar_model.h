@@ -39,6 +39,8 @@ struct SidecarParamSurfaceEntry {
     double declared_span{0.0};
     bool has_step{false};
     double step_value{0.0};
+    bool has_cost_hint{false};
+    double cost_hint{0.0};
 };
 
 struct SidecarHypothesisSpace {

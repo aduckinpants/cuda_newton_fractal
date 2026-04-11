@@ -117,6 +117,13 @@ bool BuildExplainoSidecarWindowState(
             if (outError) *outError = lensError;
             return false;
         }
+
+        std::string actionError;
+        if (BuildSidecarActionRecommendation(space, next.budget, next.lens, &next.action_recommendation, &actionError)) {
+            next.has_action_recommendation = true;
+        } else {
+            next.action_error_message = actionError;
+        }
     }
 
     *outState = std::move(next);
@@ -222,6 +229,24 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
 
             ImGui::EndTable();
         }
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Recommended Action");
+    if (state.has_action_recommendation) {
+        const SidecarActionRecommendation& action = state.action_recommendation;
+        ImGui::BulletText("label: %s", action.label.c_str());
+        ImGui::BulletText("path: %s", action.path.c_str());
+        ImGui::BulletText("utility: %.3f", action.utility);
+        ImGui::BulletText("effective_information_gain: %.3f", action.effective_information_gain);
+        ImGui::BulletText("cost_hint: %.3f", action.cost_hint);
+        ImGui::BulletText("zone: %s", FormatActiveZone({action.label, action.path, action.type, 0.0, action.active_min, action.active_max, action.active_fraction, 0.0, 0.0, false, action.guidance}).c_str());
+        ImGui::BulletText("guidance: %s", action.guidance.c_str());
+    } else if (!state.action_error_message.empty()) {
+        ImGui::TextDisabled("Recommendation unavailable.");
+        ImGui::TextWrapped("%s", state.action_error_message.c_str());
+    } else {
+        ImGui::TextDisabled("Recommendation unavailable.");
     }
 
     ImGui::Separator();

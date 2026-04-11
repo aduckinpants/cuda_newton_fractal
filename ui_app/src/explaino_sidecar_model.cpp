@@ -101,6 +101,8 @@ bool TryBuildSurfaceEntry(
     entry.default_value = param.default_value;
     entry.has_step = param.has_step;
     entry.step_value = param.step_value;
+    entry.has_cost_hint = param.has_cost_hint;
+    entry.cost_hint = param.cost_hint;
 
     if (param.has_min && param.has_max) {
         if (!std::isfinite(param.min_value) || !std::isfinite(param.max_value)) {
@@ -327,6 +329,10 @@ std::uint64_t HashProjection(const SidecarHypothesisSpace& space) {
         HashBoolField(&hash, 0x13u, param.has_declared_span);
         if (param.has_declared_span) {
             HashDoubleField(&hash, 0x14u, param.declared_span);
+        }
+        HashBoolField(&hash, 0x15u, param.has_cost_hint);
+        if (param.has_cost_hint) {
+            HashDoubleField(&hash, 0x16u, param.cost_hint);
         }
     }
     return hash;

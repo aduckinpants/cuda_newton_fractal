@@ -59,6 +59,8 @@ EngineFunctionCatalog BuildCatalog() {
     explainoMix.applicable_when.op = "eq";
     explainoMix.applicable_when.path = "fractal.view.fractal_type";
     explainoMix.applicable_when.value = "explaino";
+    explainoMix.has_cost_hint = true;
+    explainoMix.cost_hint = 0.75;
     fractalSample.parameters.push_back(explainoMix);
 
     catalog.functions.push_back(fractalSample);
@@ -210,6 +212,10 @@ int main() {
     }
     if (explainoSpace.applicable_parameters[1].path != "fractal.params.explaino_mix") {
         std::cerr << "Expected explaino_mix to sort ahead of epsilon by declared span\n";
+        return 1;
+    }
+    if (!explainoSpace.applicable_parameters[1].has_cost_hint || !NearlyEqual(explainoSpace.applicable_parameters[1].cost_hint, 0.75)) {
+        std::cerr << "Expected explaino sidecar hypothesis space to preserve param cost hints\n";
         return 1;
     }
     if (explainoSpace.applicable_parameters[2].path != "fractal.params.epsilon") {
