@@ -1,5 +1,7 @@
 #include "finding_archive_actions.h"
 
+#include "enum_id_utils.h"
+
 #include <Windows.h>
 
 #include <cstdio>
@@ -34,46 +36,8 @@ std::string SanitizeFindingLabel(const std::string& text) {
 }
 
 const char* FractalTypeSlug(FractalType fractalType) {
-    switch (fractalType) {
-    case FractalType::newton: return "newton";
-    case FractalType::nova: return "nova";
-    case FractalType::mandelbrot: return "mandelbrot";
-    case FractalType::julia: return "julia";
-    case FractalType::burning_ship: return "burning_ship";
-    case FractalType::multibrot: return "multibrot";
-    case FractalType::phoenix: return "phoenix";
-    case FractalType::explaino: return "explaino";
-    case FractalType::explaino_y: return "explaino_y";
-    case FractalType::explaino_fp: return "explaino_fp";
-    case FractalType::explaino_nova: return "explaino_nova";
-    case FractalType::explaino_halley: return "explaino_halley";
-    case FractalType::explaino_dual: return "explaino_dual";
-    case FractalType::explaino_mult: return "explaino_mult";
-    case FractalType::explaino_phoenix: return "explaino_phoenix";
-    case FractalType::explaino_transcendental: return "explaino_transcendental";
-    case FractalType::explaino_inertial: return "explaino_inertial";
-    case FractalType::explaino_julia: return "explaino_julia";
-    case FractalType::explaino_rational: return "explaino_rational";
-    case FractalType::explaino_joy: return "explaino_joy";
-    case FractalType::explaino_fold: return "explaino_fold";
-    case FractalType::explaino_bell: return "explaino_bell";
-    case FractalType::explaino_ripple: return "explaino_ripple";
-    case FractalType::explaino_splice: return "explaino_splice";
-    case FractalType::explaino_vortex: return "explaino_vortex";
-    case FractalType::explaino_tension: return "explaino_tension";
-    case FractalType::multicorn: return "multicorn";
-    case FractalType::halley: return "halley";
-    case FractalType::collatz: return "collatz";
-    case FractalType::explaino_collatz: return "explaino_collatz";
-    case FractalType::mcmullen: return "mcmullen";
-    case FractalType::lambda_map: return "lambda";
-    case FractalType::explaino_lambda: return "explaino_lambda";
-    case FractalType::explaino_rational_escape: return "explaino_rational_escape";
-    case FractalType::spider: return "spider";
-    case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
-    case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
-    }
-    return "unknown";
+    const char* id = FractalTypeId(fractalType);
+    return id ? id : "unknown";
 }
 
 std::filesystem::path RuntimeRepoRootMetadataPath(const std::filesystem::path& runtimeDir) {

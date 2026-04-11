@@ -864,6 +864,29 @@ bool ParseFractalProbeRequestJson(const std::string& text,
     return ParseFractalProbeRequestFromValue(parsed.value, outRequest, outError);
 }
 
+static void AppendSequenceResultsJson(std::ostringstream& ss,
+    const std::vector<FractalProbeSequenceResult>& results,
+    const FractalProbeMetricSelection& selection) {
+    ss << "  \"sequence_results\": [\n";
+    for (size_t index = 0; index < results.size(); ++index) {
+        const FractalProbeSequenceResult& result = results[index];
+        ss << "    {\n";
+        ss << "      \"sequence_index\": " << result.sequence_index << ",\n";
+        ss << "      \"applied\": {";
+        for (size_t itemIndex = 0; itemIndex < result.applied.size(); ++itemIndex) {
+            const auto& item = result.applied[itemIndex];
+            if (itemIndex > 0) ss << ", ";
+            ss << "\"" << EscapeJsonString(item.first) << "\": " << ScalarToJson(item.second);
+        }
+        ss << "},\n";
+        AppendSequenceSummaryJson(ss, result, selection, 6);
+        ss << "\n    }";
+        if (index + 1 < results.size()) ss << ",";
+        ss << "\n";
+    }
+    ss << "  ],\n";
+}
+
 std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& response) {
     std::ostringstream ss;
     ss << std::setprecision(17);
@@ -883,25 +906,7 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << ",\n";
     AppendCostJson(ss, response.cost, 2);
     ss << ",\n";
-    ss << "  \"sequence_results\": [\n";
-    for (size_t index = 0; index < response.sequence_results.size(); ++index) {
-        const FractalProbeSequenceResult& result = response.sequence_results[index];
-        ss << "    {\n";
-        ss << "      \"sequence_index\": " << result.sequence_index << ",\n";
-        ss << "      \"applied\": {";
-        for (size_t itemIndex = 0; itemIndex < result.applied.size(); ++itemIndex) {
-            const auto& item = result.applied[itemIndex];
-            if (itemIndex > 0) ss << ", ";
-            ss << "\"" << EscapeJsonString(item.first) << "\": " << ScalarToJson(item.second);
-        }
-        ss << "},\n";
-        AppendSequenceSummaryJson(ss, result, response.metric_selection, 6);
-        ss << "\n";
-        ss << "    }";
-        if (index + 1 < response.sequence_results.size()) ss << ",";
-        ss << "\n";
-    }
-    ss << "  ],\n";
+    AppendSequenceResultsJson(ss, response.sequence_results, response.metric_selection);
     ss << "  \"samples\": [\n";
     for (size_t index = 0; index < response.samples.size(); ++index) {
         const FractalProbeSample& sample = response.samples[index];

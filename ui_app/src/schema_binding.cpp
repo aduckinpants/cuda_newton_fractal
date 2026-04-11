@@ -1,4 +1,6 @@
 #include "schema_binding.h"
+
+#include "enum_id_utils.h"
 #include "explaino_seed.h"
 #include "imgui.h"
 #include "ui_schema_grouping.h"
@@ -8,95 +10,40 @@
 #include <string>
 #include <vector>
 
+namespace {
+
+std::string EnumIdOrEmpty(const char* id) {
+    return id ? std::string(id) : std::string();
+}
+
+template <typename EnumT, typename ParseFn>
+bool ParseAndAssignEnumId(const std::string& id, EnumT* outValue, ParseFn parseFn) {
+    return outValue && parseFn(id, outValue);
+}
+
+} // namespace
+
 std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.poly_kind") {
-        switch (params->poly_kind) {
-        case PolyKind::z3_minus_1: return "z3_minus_1";
-        case PolyKind::z4_minus_1: return "z4_minus_1";
-        case PolyKind::custom: return "custom";
-        }
+        return EnumIdOrEmpty(PolyKindId(params->poly_kind));
     }
     if (params && path == "fractal.params.transcendental_func") {
-        switch (params->transcendental_func) {
-        case TranscendentalFunc::f_sin: return "f_sin";
-        case TranscendentalFunc::f_exp_minus_1: return "f_exp_minus_1";
-        case TranscendentalFunc::f_cosh: return "f_cosh";
-        }
+        return EnumIdOrEmpty(TranscendentalFuncId(params->transcendental_func));
     }
     if (params && path == "fractal.params.mcmullen_preset") {
-        switch (params->mcmullen_preset) {
-        case McMullenPreset::z3_z3: return "z3_z3";
-        case McMullenPreset::z2_z2: return "z2_z2";
-        case McMullenPreset::z4_z2: return "z4_z2";
-        case McMullenPreset::z3_z2: return "z3_z2";
-        }
+        return EnumIdOrEmpty(McMullenPresetId(params->mcmullen_preset));
     }
     if (params && path == "fractal.params.coloring_mode") {
-        switch (params->coloring_mode) {
-        case ColoringMode::root_basin: return "root_basin";
-        case ColoringMode::iteration_count: return "iteration_count";
-        case ColoringMode::smooth_escape: return "smooth_escape";
-        case ColoringMode::joy_basins: return "joy_basins";
-        case ColoringMode::phase: return "phase";
-        case ColoringMode::iteration_bands: return "iteration_bands";
-        }
+        return EnumIdOrEmpty(ColoringModeId(params->coloring_mode));
     }
     if (view && path == "fractal.view.fractal_type") {
-        switch (view->fractal_type) {
-        case FractalType::newton: return "newton";
-        case FractalType::nova: return "nova";
-        case FractalType::mandelbrot: return "mandelbrot";
-        case FractalType::julia: return "julia";
-        case FractalType::burning_ship: return "burning_ship";
-        case FractalType::multibrot: return "multibrot";
-        case FractalType::phoenix: return "phoenix";
-        case FractalType::explaino: return "explaino";
-        case FractalType::explaino_y: return "explaino_y";
-        case FractalType::explaino_fp: return "explaino_fp";
-        case FractalType::explaino_nova: return "explaino_nova";
-        case FractalType::explaino_halley: return "explaino_halley";
-        case FractalType::explaino_dual: return "explaino_dual";
-        case FractalType::explaino_mult: return "explaino_mult";
-        case FractalType::explaino_phoenix: return "explaino_phoenix";
-        case FractalType::explaino_transcendental: return "explaino_transcendental";
-        case FractalType::explaino_inertial: return "explaino_inertial";
-        case FractalType::explaino_julia: return "explaino_julia";
-        case FractalType::explaino_rational: return "explaino_rational";
-        case FractalType::explaino_joy: return "explaino_joy";
-        case FractalType::explaino_fold: return "explaino_fold";
-        case FractalType::explaino_bell: return "explaino_bell";
-        case FractalType::explaino_ripple: return "explaino_ripple";
-        case FractalType::explaino_splice: return "explaino_splice";
-        case FractalType::explaino_vortex: return "explaino_vortex";
-        case FractalType::explaino_tension: return "explaino_tension";
-        case FractalType::multicorn: return "multicorn";
-        case FractalType::halley: return "halley";
-        case FractalType::collatz: return "collatz";
-        case FractalType::explaino_collatz: return "explaino_collatz";
-        case FractalType::mcmullen: return "mcmullen";
-        case FractalType::lambda_map: return "lambda";
-        case FractalType::explaino_lambda: return "explaino_lambda";
-        case FractalType::explaino_rational_escape: return "explaino_rational_escape";
-        case FractalType::spider: return "spider";
-        case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
-        case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
-        }
+        return EnumIdOrEmpty(FractalTypeId(view->fractal_type));
     }
     if (view && path == "fractal.view.camera_behavior") {
-        switch (view->camera_behavior) {
-        case CameraBehavior::manual: return "manual";
-        case CameraBehavior::complexity: return "complexity";
-        case CameraBehavior::orbit: return "orbit";
-        case CameraBehavior::entropy: return "entropy";
-        case CameraBehavior::off: return "off";
-        }
+        return EnumIdOrEmpty(CameraBehaviorId(view->camera_behavior));
     }
     if (render && path == "fractal.render.sample_tier") {
-        switch (render->sample_tier) {
-        case SampleTier::tier_auto: return "tier_auto";
-        case SampleTier::fast: return "fast";
-        case SampleTier::standard: return "standard";
-        }
+        return EnumIdOrEmpty(SampleTierId(render->sample_tier));
     }
     if (view && path == "fractal.view.param_anim_target") {
         return std::string(view->param_anim_target);
@@ -106,93 +53,25 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
 
 bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (params && path == "fractal.params.poly_kind") {
-        if (id == "z3_minus_1") params->poly_kind = PolyKind::z3_minus_1;
-        else if (id == "z4_minus_1") params->poly_kind = PolyKind::z4_minus_1;
-        else if (id == "custom") params->poly_kind = PolyKind::custom;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &params->poly_kind, TryParsePolyKindId);
     }
     if (params && path == "fractal.params.transcendental_func") {
-        if (id == "f_sin") params->transcendental_func = TranscendentalFunc::f_sin;
-        else if (id == "f_exp_minus_1") params->transcendental_func = TranscendentalFunc::f_exp_minus_1;
-        else if (id == "f_cosh") params->transcendental_func = TranscendentalFunc::f_cosh;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &params->transcendental_func, TryParseTranscendentalFuncId);
     }
     if (params && path == "fractal.params.mcmullen_preset") {
-        if (id == "z3_z3") params->mcmullen_preset = McMullenPreset::z3_z3;
-        else if (id == "z2_z2") params->mcmullen_preset = McMullenPreset::z2_z2;
-        else if (id == "z4_z2") params->mcmullen_preset = McMullenPreset::z4_z2;
-        else if (id == "z3_z2") params->mcmullen_preset = McMullenPreset::z3_z2;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &params->mcmullen_preset, TryParseMcMullenPresetId);
     }
     if (params && path == "fractal.params.coloring_mode") {
-        if (id == "root_basin") params->coloring_mode = ColoringMode::root_basin;
-        else if (id == "iteration_count") params->coloring_mode = ColoringMode::iteration_count;
-        else if (id == "smooth_escape") params->coloring_mode = ColoringMode::smooth_escape;
-        else if (id == "joy_basins") params->coloring_mode = ColoringMode::joy_basins;
-        else if (id == "phase") params->coloring_mode = ColoringMode::phase;
-        else if (id == "iteration_bands") params->coloring_mode = ColoringMode::iteration_bands;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &params->coloring_mode, TryParseColoringModeId);
     }
     if (view && path == "fractal.view.fractal_type") {
-        if (id == "newton") view->fractal_type = FractalType::newton;
-        else if (id == "nova") view->fractal_type = FractalType::nova;
-        else if (id == "mandelbrot") view->fractal_type = FractalType::mandelbrot;
-        else if (id == "julia") view->fractal_type = FractalType::julia;
-        else if (id == "burning_ship") view->fractal_type = FractalType::burning_ship;
-        else if (id == "multibrot") view->fractal_type = FractalType::multibrot;
-        else if (id == "phoenix") view->fractal_type = FractalType::phoenix;
-        else if (id == "explaino") view->fractal_type = FractalType::explaino;
-        else if (id == "explaino_y") view->fractal_type = FractalType::explaino_y;
-        else if (id == "explaino_fp") view->fractal_type = FractalType::explaino_fp;
-        else if (id == "explaino_nova") view->fractal_type = FractalType::explaino_nova;
-        else if (id == "explaino_halley") view->fractal_type = FractalType::explaino_halley;
-        else if (id == "explaino_dual") view->fractal_type = FractalType::explaino_dual;
-        else if (id == "explaino_mult") view->fractal_type = FractalType::explaino_mult;
-        else if (id == "explaino_phoenix") view->fractal_type = FractalType::explaino_phoenix;
-        else if (id == "explaino_transcendental") view->fractal_type = FractalType::explaino_transcendental;
-        else if (id == "explaino_inertial") view->fractal_type = FractalType::explaino_inertial;
-        else if (id == "explaino_julia") view->fractal_type = FractalType::explaino_julia;
-        else if (id == "explaino_rational") view->fractal_type = FractalType::explaino_rational;
-        else if (id == "explaino_joy") view->fractal_type = FractalType::explaino_joy;
-        else if (id == "explaino_fold") view->fractal_type = FractalType::explaino_fold;
-        else if (id == "explaino_bell") view->fractal_type = FractalType::explaino_bell;
-        else if (id == "explaino_ripple") view->fractal_type = FractalType::explaino_ripple;
-        else if (id == "explaino_splice") view->fractal_type = FractalType::explaino_splice;
-        else if (id == "explaino_vortex") view->fractal_type = FractalType::explaino_vortex;
-        else if (id == "explaino_tension") view->fractal_type = FractalType::explaino_tension;
-        else if (id == "multicorn") view->fractal_type = FractalType::multicorn;
-        else if (id == "halley") view->fractal_type = FractalType::halley;
-        else if (id == "collatz") view->fractal_type = FractalType::collatz;
-        else if (id == "explaino_collatz") view->fractal_type = FractalType::explaino_collatz;
-        else if (id == "mcmullen") view->fractal_type = FractalType::mcmullen;
-        else if (id == "lambda") view->fractal_type = FractalType::lambda_map;
-        else if (id == "explaino_lambda") view->fractal_type = FractalType::explaino_lambda;
-        else if (id == "explaino_rational_escape") view->fractal_type = FractalType::explaino_rational_escape;
-        else if (id == "spider") view->fractal_type = FractalType::spider;
-        else if (id == "celtic_mandelbrot") view->fractal_type = FractalType::celtic_mandelbrot;
-        else if (id == "perpendicular_burning_ship") view->fractal_type = FractalType::perpendicular_burning_ship;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &view->fractal_type, TryParseFractalTypeId);
     }
     if (view && path == "fractal.view.camera_behavior") {
-        if (id == "manual") view->camera_behavior = CameraBehavior::manual;
-        else if (id == "complexity") view->camera_behavior = CameraBehavior::complexity;
-        else if (id == "orbit") view->camera_behavior = CameraBehavior::orbit;
-        else if (id == "entropy") view->camera_behavior = CameraBehavior::entropy;
-        else if (id == "off") view->camera_behavior = CameraBehavior::off;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &view->camera_behavior, TryParseCameraBehaviorId);
     }
     if (render && path == "fractal.render.sample_tier") {
-        if (id == "tier_auto") render->sample_tier = SampleTier::tier_auto;
-        else if (id == "fast") render->sample_tier = SampleTier::fast;
-        else if (id == "standard") render->sample_tier = SampleTier::standard;
-        else return false;
-        return true;
+        return ParseAndAssignEnumId(id, &render->sample_tier, TryParseSampleTierId);
     }
     if (view && path == "fractal.view.param_anim_target") {
         if (id.size() >= sizeof(view->param_anim_target)) return false;

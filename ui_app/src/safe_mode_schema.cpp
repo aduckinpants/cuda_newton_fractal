@@ -2,6 +2,52 @@
 
 namespace {
 
+struct SafeModeFractalTypeOptionDef {
+    const char* id;
+    const char* label;
+    const char* group;
+};
+
+constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
+    {"explaino", "Explaino", "Common"},
+    {"nova", "Nova", "Common"},
+    {"mandelbrot", "Mandelbrot", "Common"},
+    {"julia", "Julia", "Common"},
+    {"burning_ship", "Burning Ship", "Common"},
+    {"phoenix", "Phoenix", "Common"},
+    {"newton", "Newton", "Root-Finding"},
+    {"halley", "Halley", "Root-Finding"},
+    {"multibrot", "Multibrot", "Escape-Time"},
+    {"spider", "Spider", "Escape-Time"},
+    {"celtic_mandelbrot", "Celtic Mandelbrot", "Escape-Time"},
+    {"perpendicular_burning_ship", "Perpendicular Burning Ship", "Escape-Time"},
+    {"multicorn", "Multicorn", "Escape-Time"},
+    {"collatz", "Collatz", "Escape-Time"},
+    {"mcmullen", "McMullen", "Escape-Time"},
+    {"lambda", "Lambda", "Escape-Time"},
+    {"explaino_y", "Explaino Y", "Explaino"},
+    {"explaino_fp", "Explaino FP", "Explaino"},
+    {"explaino_nova", "Explaino Nova", "Explaino"},
+    {"explaino_halley", "Explaino Halley", "Explaino"},
+    {"explaino_dual", "Explaino DualSeed", "Explaino"},
+    {"explaino_mult", "Explaino Multiplicity", "Explaino"},
+    {"explaino_phoenix", "Explaino Phoenix", "Explaino"},
+    {"explaino_transcendental", "Explaino Transcendental", "Explaino"},
+    {"explaino_inertial", "Explaino Inertial", "Explaino"},
+    {"explaino_julia", "Explaino Julia", "Explaino"},
+    {"explaino_rational", "Explaino Rational", "Explaino"},
+    {"explaino_collatz", "Explaino Collatz", "Explaino"},
+    {"explaino_lambda", "Explaino Lambda", "Explaino"},
+    {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
+    {"explaino_joy", "Explaino Joy", "Explaino"},
+    {"explaino_fold", "Explaino Fold", "Explaino"},
+    {"explaino_bell", "Explaino Bell", "Explaino"},
+    {"explaino_ripple", "Explaino Ripple", "Explaino"},
+    {"explaino_splice", "Explaino Splice", "Explaino"},
+    {"explaino_vortex", "Explaino Vortex", "Explaino"},
+    {"explaino_tension", "Explaino Tension", "Explaino"},
+};
+
 UISchemaBinding MakeBinding(const char* kind, const char* path) {
     UISchemaBinding binding;
     binding.kind = kind;
@@ -59,45 +105,12 @@ UISchemaControl MakeActionControl(const char* id, const char* label, const char*
 }
 
 std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
-    return {
-        {"explaino", "Explaino", "Common"},
-        {"nova", "Nova", "Common"},
-        {"mandelbrot", "Mandelbrot", "Common"},
-        {"julia", "Julia", "Common"},
-        {"burning_ship", "Burning Ship", "Common"},
-        {"phoenix", "Phoenix", "Common"},
-        {"newton", "Newton", "Root-Finding"},
-        {"halley", "Halley", "Root-Finding"},
-        {"multibrot", "Multibrot", "Escape-Time"},
-        {"spider", "Spider", "Escape-Time"},
-        {"celtic_mandelbrot", "Celtic Mandelbrot", "Escape-Time"},
-        {"perpendicular_burning_ship", "Perpendicular Burning Ship", "Escape-Time"},
-        {"multicorn", "Multicorn", "Escape-Time"},
-        {"collatz", "Collatz", "Escape-Time"},
-        {"mcmullen", "McMullen", "Escape-Time"},
-        {"lambda", "Lambda", "Escape-Time"},
-        {"explaino_y", "Explaino Y", "Explaino"},
-        {"explaino_fp", "Explaino FP", "Explaino"},
-        {"explaino_nova", "Explaino Nova", "Explaino"},
-        {"explaino_halley", "Explaino Halley", "Explaino"},
-        {"explaino_dual", "Explaino DualSeed", "Explaino"},
-        {"explaino_mult", "Explaino Multiplicity", "Explaino"},
-        {"explaino_phoenix", "Explaino Phoenix", "Explaino"},
-        {"explaino_transcendental", "Explaino Transcendental", "Explaino"},
-        {"explaino_inertial", "Explaino Inertial", "Explaino"},
-        {"explaino_julia", "Explaino Julia", "Explaino"},
-        {"explaino_rational", "Explaino Rational", "Explaino"},
-        {"explaino_collatz", "Explaino Collatz", "Explaino"},
-        {"explaino_lambda", "Explaino Lambda", "Explaino"},
-        {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
-        {"explaino_joy", "Explaino Joy", "Explaino"},
-        {"explaino_fold", "Explaino Fold", "Explaino"},
-        {"explaino_bell", "Explaino Bell", "Explaino"},
-        {"explaino_ripple", "Explaino Ripple", "Explaino"},
-        {"explaino_splice", "Explaino Splice", "Explaino"},
-        {"explaino_vortex", "Explaino Vortex", "Explaino"},
-        {"explaino_tension", "Explaino Tension", "Explaino"},
-    };
+    std::vector<UISchemaOption> options;
+    options.reserve(sizeof(kSafeModeFractalTypeOptionDefs) / sizeof(kSafeModeFractalTypeOptionDefs[0]));
+    for (const auto& option : kSafeModeFractalTypeOptionDefs) {
+        options.push_back({option.id, option.label, option.group});
+    }
+    return options;
 }
 
 UISchemaControl BuildSafeModeFractalTypeControl() {

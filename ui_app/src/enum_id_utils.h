@@ -1,0 +1,173 @@
+#pragma once
+
+#include "fractal_types.h"
+
+#include <cstddef>
+#include <string_view>
+
+namespace enum_id_utils {
+
+template <typename EnumT>
+struct EnumIdPair {
+    EnumT value;
+    const char* id;
+};
+
+template <typename EnumT, std::size_t N>
+inline const char* LookupEnumId(EnumT value, const EnumIdPair<EnumT>(&pairs)[N]) {
+    for (const auto& pair : pairs) {
+        if (pair.value == value) return pair.id;
+    }
+    return nullptr;
+}
+
+template <typename EnumT, std::size_t N>
+inline bool TryParseEnumId(std::string_view id, const EnumIdPair<EnumT>(&pairs)[N], EnumT* outValue) {
+    for (const auto& pair : pairs) {
+        if (id == pair.id) {
+            if (outValue) *outValue = pair.value;
+            return true;
+        }
+    }
+    return false;
+}
+
+inline constexpr EnumIdPair<PolyKind> kPolyKindIds[] = {
+    {PolyKind::z3_minus_1, "z3_minus_1"},
+    {PolyKind::z4_minus_1, "z4_minus_1"},
+    {PolyKind::custom, "custom"},
+};
+
+inline constexpr EnumIdPair<TranscendentalFunc> kTranscendentalFuncIds[] = {
+    {TranscendentalFunc::f_sin, "f_sin"},
+    {TranscendentalFunc::f_exp_minus_1, "f_exp_minus_1"},
+    {TranscendentalFunc::f_cosh, "f_cosh"},
+};
+
+inline constexpr EnumIdPair<McMullenPreset> kMcMullenPresetIds[] = {
+    {McMullenPreset::z3_z3, "z3_z3"},
+    {McMullenPreset::z2_z2, "z2_z2"},
+    {McMullenPreset::z4_z2, "z4_z2"},
+    {McMullenPreset::z3_z2, "z3_z2"},
+};
+
+inline constexpr EnumIdPair<ColoringMode> kColoringModeIds[] = {
+    {ColoringMode::root_basin, "root_basin"},
+    {ColoringMode::iteration_count, "iteration_count"},
+    {ColoringMode::smooth_escape, "smooth_escape"},
+    {ColoringMode::joy_basins, "joy_basins"},
+    {ColoringMode::phase, "phase"},
+    {ColoringMode::iteration_bands, "iteration_bands"},
+};
+
+inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
+    {FractalType::newton, "newton"},
+    {FractalType::nova, "nova"},
+    {FractalType::mandelbrot, "mandelbrot"},
+    {FractalType::julia, "julia"},
+    {FractalType::burning_ship, "burning_ship"},
+    {FractalType::multibrot, "multibrot"},
+    {FractalType::phoenix, "phoenix"},
+    {FractalType::explaino, "explaino"},
+    {FractalType::explaino_y, "explaino_y"},
+    {FractalType::explaino_fp, "explaino_fp"},
+    {FractalType::explaino_nova, "explaino_nova"},
+    {FractalType::explaino_halley, "explaino_halley"},
+    {FractalType::explaino_dual, "explaino_dual"},
+    {FractalType::explaino_mult, "explaino_mult"},
+    {FractalType::explaino_phoenix, "explaino_phoenix"},
+    {FractalType::explaino_transcendental, "explaino_transcendental"},
+    {FractalType::explaino_inertial, "explaino_inertial"},
+    {FractalType::explaino_julia, "explaino_julia"},
+    {FractalType::explaino_rational, "explaino_rational"},
+    {FractalType::multicorn, "multicorn"},
+    {FractalType::halley, "halley"},
+    {FractalType::collatz, "collatz"},
+    {FractalType::explaino_collatz, "explaino_collatz"},
+    {FractalType::mcmullen, "mcmullen"},
+    {FractalType::lambda_map, "lambda"},
+    {FractalType::explaino_lambda, "explaino_lambda"},
+    {FractalType::explaino_rational_escape, "explaino_rational_escape"},
+    {FractalType::spider, "spider"},
+    {FractalType::celtic_mandelbrot, "celtic_mandelbrot"},
+    {FractalType::perpendicular_burning_ship, "perpendicular_burning_ship"},
+    {FractalType::explaino_joy, "explaino_joy"},
+    {FractalType::explaino_fold, "explaino_fold"},
+    {FractalType::explaino_bell, "explaino_bell"},
+    {FractalType::explaino_ripple, "explaino_ripple"},
+    {FractalType::explaino_splice, "explaino_splice"},
+    {FractalType::explaino_vortex, "explaino_vortex"},
+    {FractalType::explaino_tension, "explaino_tension"},
+};
+
+inline constexpr EnumIdPair<CameraBehavior> kCameraBehaviorIds[] = {
+    {CameraBehavior::manual, "manual"},
+    {CameraBehavior::complexity, "complexity"},
+    {CameraBehavior::orbit, "orbit"},
+    {CameraBehavior::entropy, "entropy"},
+    {CameraBehavior::off, "off"},
+};
+
+inline constexpr EnumIdPair<SampleTier> kSampleTierIds[] = {
+    {SampleTier::tier_auto, "tier_auto"},
+    {SampleTier::fast, "fast"},
+    {SampleTier::standard, "standard"},
+};
+
+} // namespace enum_id_utils
+
+inline const char* PolyKindId(PolyKind value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kPolyKindIds);
+}
+
+inline bool TryParsePolyKindId(std::string_view id, PolyKind* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kPolyKindIds, outValue);
+}
+
+inline const char* TranscendentalFuncId(TranscendentalFunc value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kTranscendentalFuncIds);
+}
+
+inline bool TryParseTranscendentalFuncId(std::string_view id, TranscendentalFunc* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kTranscendentalFuncIds, outValue);
+}
+
+inline const char* McMullenPresetId(McMullenPreset value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kMcMullenPresetIds);
+}
+
+inline bool TryParseMcMullenPresetId(std::string_view id, McMullenPreset* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kMcMullenPresetIds, outValue);
+}
+
+inline const char* ColoringModeId(ColoringMode value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kColoringModeIds);
+}
+
+inline bool TryParseColoringModeId(std::string_view id, ColoringMode* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColoringModeIds, outValue);
+}
+
+inline const char* FractalTypeId(FractalType value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kFractalTypeIds);
+}
+
+inline bool TryParseFractalTypeId(std::string_view id, FractalType* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kFractalTypeIds, outValue);
+}
+
+inline const char* CameraBehaviorId(CameraBehavior value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kCameraBehaviorIds);
+}
+
+inline bool TryParseCameraBehaviorId(std::string_view id, CameraBehavior* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kCameraBehaviorIds, outValue);
+}
+
+inline const char* SampleTierId(SampleTier value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kSampleTierIds);
+}
+
+inline bool TryParseSampleTierId(std::string_view id, SampleTier* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kSampleTierIds, outValue);
+}

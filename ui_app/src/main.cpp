@@ -980,18 +980,8 @@ static SampleModeArgs BuildSampleModeArgs(const ViewerCliArgs& cli) {
     return sma;
 }
 
-static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
-    if (ApplyAutoDiveStep(view)) {
-        if (ioDirty) *ioDirty = true;
-    }
-}
-
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
-    std::vector<std::string> args = GetCommandLineArgsUtf8();
-    ViewerCliArgs cli{};
-    { int rc = ParseViewerCli(args, &cli); if (rc != 0) return rc; }
-    const std::string exePath = GetExePath();
-
+static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::string& exePath,
+                                       const std::string& exeDir) {
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
@@ -1010,25 +1000,22 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
             return 1;
         }
-        std::string exeDir = GetExeDir();
-        return RunDescribeFunctionsMode(cli.describe_functions, cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(), BuildSchemaCandidates(exeDir));
+        return RunDescribeFunctionsMode(cli.describe_functions,
+            cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(),
+            BuildSchemaCandidates(exeDir));
     }
 
-    if (!ValidateCliConflicts(cli)) return 1;
+    return -1;
+}
 
-    ViewState view{};
-    KernelParams params{};
-    RenderSettings render{};
-    RenderStats stats{};
-    LensSettings lens{};
-    bool dirty = true;
-
-    // Schema load policy:
-    // - Use one checked-in schema file for both repo and published runtime paths
-    // - If missing/invalid while editing, keep the app running with a built-in Safe Mode UI
-    std::string exeDir = GetExeDir();
-    std::vector<std::string> schemaCandidates = BuildSchemaCandidates(exeDir);
-
+static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
+                                             const std::vector<std::string>& schemaCandidates,
+                                             ViewState& view, KernelParams& params,
+                                             RenderSettings& render, LensSettings& lens,
+                                             bool& dirty, UISchema& uiSchema,
+                                             std::string& schemaPath,
+                                             std::string& schemaWarning,
+                                             EngineFunctionCatalog& engineCatalog) {
     BindingContext initBind;
     initBind.view = &view;
     initBind.params = &params;
@@ -1037,40 +1024,31 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     SchemaLoadResult schemaResult = LoadAndValidateViewerSchema(schemaCandidates, initBind, cli.validate_ui_only);
     if (schemaResult.fatal_error) return 1;
-    UISchema uiSchema = std::move(schemaResult.schema);
-    std::string schemaPath = std::move(schemaResult.path);
-    std::string schemaWarning = std::move(schemaResult.warning);
-    EngineFunctionCatalog engineCatalog = BuildEngineCatalog(uiSchema);
-    CudaSidecarMeasurementHost sidecarMeasurementHost;
-    ExplainoSidecarWindowState sidecarState;
-    bool sidecarStateValid = false;
-    SidecarBudgetState sidecarBudgetState;
-    bool sidecarBudgetStateValid = false;
 
-    {
-        ApplySchemaDefaults(uiSchema, initBind, &dirty);
+    uiSchema = std::move(schemaResult.schema);
+    schemaPath = std::move(schemaResult.path);
+    schemaWarning = std::move(schemaResult.warning);
+    engineCatalog = BuildEngineCatalog(uiSchema);
 
-        // Ensure polynomial coefficients remain coherent if schema sets poly_kind.
-        if (params.poly_kind != PolyKind::custom) {
-            SetPolyPreset(params);
-        }
-
-        int initRc = ApplyCliOverrides(cli, view, params, render, &dirty);
-        if (initRc != 0) return initRc;
+    ApplySchemaDefaults(uiSchema, initBind, &dirty);
+    if (params.poly_kind != PolyKind::custom) {
+        SetPolyPreset(params);
     }
+    return ApplyCliOverrides(cli, view, params, render, &dirty);
+}
 
-    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty);
-      if (headless >= 0) return headless; }
-
+static bool InitializeViewerWindowAndImGui(HINSTANCE hInstance, const std::string& exeDir,
+                                           HWND* outHwnd, WNDCLASSEX* outWindowClass) {
     WNDCLASSEX wc = {sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, hInstance, nullptr, nullptr, nullptr, nullptr, _T("FractalUI"), nullptr};
     RegisterClassEx(&wc);
 
-    HWND hwnd = CreateWindow(wc.lpszClassName, _T("CUDA Newton Fractal Explorer"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = CreateWindow(wc.lpszClassName, _T("CUDA Newton Fractal Explorer"),
+        WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
 
     if (!CreateDeviceD3D(hwnd)) {
         CleanupDeviceD3D();
         UnregisterClass(wc.lpszClassName, wc.hInstance);
-        return 1;
+        return false;
     }
 
     ShowWindow(hwnd, SW_SHOWDEFAULT);
@@ -1086,6 +1064,120 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
+
+    if (outHwnd) *outHwnd = hwnd;
+    if (outWindowClass) *outWindowClass = wc;
+    return true;
+}
+
+static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParams& params,
+                                        const EngineFunctionCatalog& engineCatalog,
+                                        const BindingContext& bind,
+                                        CudaSidecarMeasurementHost& sidecarMeasurementHost,
+                                        ExplainoSidecarWindowState& sidecarState,
+                                        bool& sidecarStateValid,
+                                        SidecarBudgetState& sidecarBudgetState,
+                                        bool& sidecarBudgetStateValid) {
+    if (!dirty && sidecarStateValid) return;
+
+    if (IsExplainoFamily(view.fractal_type)) {
+        UpdateExplainoPolynomial(view, params, nullptr);
+    }
+    if (view.auto_max_iter) {
+        params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+    }
+
+    BuildExplainoSidecarWindowState(engineCatalog,
+        bind,
+        &sidecarMeasurementHost,
+        sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
+        &sidecarState,
+        nullptr);
+    if (!sidecarState.budget.function_id.empty()) {
+        sidecarBudgetState = sidecarState.budget;
+        sidecarBudgetStateValid = true;
+    } else {
+        sidecarBudgetState = {};
+        sidecarBudgetStateValid = false;
+    }
+    sidecarStateValid = true;
+}
+
+static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFlags& actions,
+                                     ViewState& view, KernelParams& params,
+                                     const RenderSettings& render, const RenderStats& stats,
+                                     const std::vector<uint32_t>& rgba,
+                                     const RenderedFrameState& renderedFrame,
+                                     std::string& findingStatus,
+                                     std::string& lastFindingPath,
+                                     bool& sidecarStateValid,
+                                     bool& sidecarBudgetStateValid) {
+    if (actions.captureDiagnostic) {
+        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, findingStatus);
+    }
+
+    if (actions.captureFinding) {
+        if (RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath)) {
+            sidecarStateValid = false;
+            sidecarBudgetStateValid = false;
+        }
+    }
+}
+
+static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
+    if (ApplyAutoDiveStep(view)) {
+        if (ioDirty) *ioDirty = true;
+    }
+}
+
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
+    std::vector<std::string> args = GetCommandLineArgsUtf8();
+    ViewerCliArgs cli{};
+    { int rc = ParseViewerCli(args, &cli); if (rc != 0) return rc; }
+    const std::string exePath = GetExePath();
+
+    std::string exeDir = GetExeDir();
+    { int headlessRc = TryDispatchCommandLineModes(cli, exePath, exeDir); if (headlessRc >= 0) return headlessRc; }
+
+    if (!ValidateCliConflicts(cli)) return 1;
+
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    LensSettings lens{};
+    bool dirty = true;
+
+    std::vector<std::string> schemaCandidates = BuildSchemaCandidates(exeDir);
+    UISchema uiSchema;
+    std::string schemaPath;
+    std::string schemaWarning;
+    EngineFunctionCatalog engineCatalog;
+    CudaSidecarMeasurementHost sidecarMeasurementHost;
+    ExplainoSidecarWindowState sidecarState;
+    bool sidecarStateValid = false;
+    SidecarBudgetState sidecarBudgetState;
+    bool sidecarBudgetStateValid = false;
+
+    { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
+          dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
+      if (initRc != 0) return initRc; }
+
+    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty);
+      if (headless >= 0) return headless; }
+
+    HWND hwnd = nullptr;
+    WNDCLASSEX wc{};
+    if (!InitializeViewerWindowAndImGui(hInstance, exeDir, &hwnd, &wc)) {
+        return 1;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+    BindingContext bind;
+    bind.view = &view;
+    bind.params = &params;
+    bind.render = &render;
+    bind.lens = &lens;
 
     std::vector<uint32_t> rgba;
     std::vector<uint8_t> maskBuffer;
@@ -1163,44 +1255,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             &renderPacingState);
 
         const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
-        if (dirty || !sidecarStateValid) {
-            if (IsExplainoFamily(view.fractal_type)) {
-                UpdateExplainoPolynomial(view, params, nullptr);
-            }
-            if (view.auto_max_iter) {
-                params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
-            }
-            // Micro-sweeps are only recomputed when the bound runtime state changes.
-            BuildExplainoSidecarWindowState(engineCatalog,
-                initBind,
-                &sidecarMeasurementHost,
-                sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
-                &sidecarState,
-                nullptr);
-            if (!sidecarState.budget.function_id.empty()) {
-                sidecarBudgetState = sidecarState.budget;
-                sidecarBudgetStateValid = true;
-            } else {
-                sidecarBudgetState = {};
-                sidecarBudgetStateValid = false;
-            }
-            sidecarStateValid = true;
-        }
+        RefreshSidecarStateIfNeeded(dirty || !sidecarStateValid, view, params, engineCatalog,
+            bind, sidecarMeasurementHost, sidecarState, sidecarStateValid,
+            sidecarBudgetState, sidecarBudgetStateValid);
         DispatchRenderFrame(view, params, render, lens, renderPacing,
             forceFullQualityRender, view.auto_refresh, dirty,
             actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
             rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
 
-        if (actions.captureDiagnostic) {
-            RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, findingStatus);
-        }
-
-        if (actions.captureFinding) {
-            if (RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath)) {
-                sidecarStateValid = false;
-                sidecarBudgetStateValid = false;
-            }
-        }
+        RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
+            renderedFrame, findingStatus, lastFindingPath,
+            sidecarStateValid, sidecarBudgetStateValid);
 
         RenderExplainoSidecarWindow(sidecarState);
 

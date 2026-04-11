@@ -422,6 +422,90 @@ static ExplainoSeedShape ExplainoShapeForCombinedSeed(double combinedSeed, bool 
     return LerpExplainoShape(shape0, shape1, tweenFrac);
 }
 
+static ExplainoSeedShape ResolveExplainoSeedShape(const ViewState& view, const KernelParams& params,
+                                                  float phase, float spread, float phaseStrength) {
+    ExplainoSeedShape shape = ExplainoShapeForCombinedSeed(
+        ExplainoSeedCombined(view, params),
+        view.explaino_seed_tween,
+        phase,
+        spread,
+        phaseStrength);
+    if (view.fractal_type != FractalType::explaino_dual) {
+        return shape;
+    }
+
+    float mix = params.explaino_mix;
+    if (!std::isfinite(mix)) mix = 0.5f;
+    mix = ClampF(mix, 0.0f, 1.0f);
+    ExplainoSeedShape shapeB = ExplainoShapeForCombinedSeed(
+        params.explaino_seed_b,
+        view.explaino_seed_tween,
+        phase,
+        spread,
+        phaseStrength);
+    return LerpExplainoShape(shape, shapeB, mix);
+}
+
+static void SetExplainoRootsForShape(FractalType fractalType, float clusterRadius,
+                                     const ExplainoSeedShape& shape, KernelParams& params) {
+    if (fractalType == FractalType::explaino_mult) {
+        const float halfClusterRadius = ClampF(clusterRadius, 0.0f, 2.0f) * 0.5f;
+        params.explaino_roots[0] = {shape.a + halfClusterRadius, shape.b};
+        params.explaino_roots[1] = {shape.a - halfClusterRadius, shape.b};
+        params.explaino_roots[2] = {shape.c, shape.d + halfClusterRadius};
+        params.explaino_roots[3] = {shape.c, shape.d - halfClusterRadius};
+        return;
+    }
+
+    params.explaino_roots[0] = {shape.a, shape.b};
+    params.explaino_roots[1] = {shape.a, -shape.b};
+    params.explaino_roots[2] = {shape.c, shape.d};
+    params.explaino_roots[3] = {shape.c, -shape.d};
+}
+
+static void SetDegree4PolynomialCoefficientsFromRoots(const Float2 roots[4], float coeffs[5]) {
+    const float r0x = roots[0].x, r0y = roots[0].y;
+    const float r1x = roots[1].x, r1y = roots[1].y;
+    const float r2x = roots[2].x, r2y = roots[2].y;
+    const float r3x = roots[3].x, r3y = roots[3].y;
+
+    const float s01x = r0x + r1x, s01y = r0y + r1y;
+    const float p01x = r0x * r1x - r0y * r1y, p01y = r0x * r1y + r0y * r1x;
+    const float s23x = r2x + r3x, s23y = r2y + r3y;
+    const float p23x = r2x * r3x - r2y * r3y, p23y = r2x * r3y + r2y * r3x;
+
+    coeffs[4] = 1.0f;
+    coeffs[3] = -(s01x + s23x);
+    coeffs[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
+    coeffs[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
+    coeffs[0] = p01x * p23x - p01y * p23y;
+}
+
+static void UpdateExplainoSplicePolynomial(const ViewState& view, const KernelParams& params,
+                                           float phase, float spread, float phaseStrength,
+                                           float coeffs[5]) {
+    const double offsetSeed = ExplainoSeedCombined(view, params) + (double)params.splice_offset;
+    const ExplainoSeedShape shape = ExplainoShapeForCombinedSeed(
+        offsetSeed,
+        view.explaino_seed_tween,
+        phase,
+        spread,
+        phaseStrength);
+    const Float2 roots[4] = {
+        {shape.a, shape.b},
+        {shape.a, -shape.b},
+        {shape.c, shape.d},
+        {shape.c, -shape.d},
+    };
+    SetDegree4PolynomialCoefficientsFromRoots(roots, coeffs);
+}
+
+static void ClearPolynomialCoefficients(float coeffs[5]) {
+    for (int i = 0; i < 5; ++i) {
+        coeffs[i] = 0.0f;
+    }
+}
+
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {
     if (!IsExplainoFamily(view.fractal_type)) {
         params.explaino_root_count = 0;
@@ -435,104 +519,14 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     const float spread = std::fmax(0.0f, std::fmin(3.0f, params.explaino_root_spread));
     const float phaseStrength = view.explaino_phase_strength;
 
-    ExplainoSeedShape sh = ExplainoShapeForCombinedSeed(
-        ExplainoSeedCombined(view, params),
-        view.explaino_seed_tween,
-        phase,
-        spread,
-        phaseStrength);
-    if (view.fractal_type == FractalType::explaino_dual) {
-        float mix = params.explaino_mix;
-        if (!std::isfinite(mix)) mix = 0.5f;
-        mix = ClampF(mix, 0.0f, 1.0f);
-        ExplainoSeedShape shB = ExplainoShapeForCombinedSeed(
-            params.explaino_seed_b,
-            view.explaino_seed_tween,
-            phase,
-            spread,
-            phaseStrength);
-        sh = LerpExplainoShape(sh, shB, mix);
-    }
+    const ExplainoSeedShape shape = ResolveExplainoSeedShape(view, params, phase, spread, phaseStrength);
+    SetExplainoRootsForShape(view.fractal_type, params.explaino_cluster_radius, shape, params);
+    SetDegree4PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
 
-    float a = sh.a;
-    float b = sh.b;
-    float c = sh.c;
-    float d = sh.d;
-
-    if (view.fractal_type == FractalType::explaino_mult) {
-        // Multiplicity mode: cluster roots in pairs around two centers.
-        // Each center gets two near-coincident roots offset by cluster_radius.
-        // This exposes solver failure geometry at near-degenerate polynomials.
-        float cr = ClampF(params.explaino_cluster_radius, 0.0f, 2.0f);
-        float half = cr * 0.5f;
-
-        // Center 1: (a, b) — split into two roots offset along the real axis
-        params.explaino_roots[0] = {a + half, b};
-        params.explaino_roots[1] = {a - half, b};
-        // Center 2: (c, d) — split into two roots offset along the imaginary axis
-        params.explaino_roots[2] = {c, d + half};
-        params.explaino_roots[3] = {c, d - half};
-    } else {
-        params.explaino_roots[0] = {a, b};
-        params.explaino_roots[1] = {a, -b};
-        params.explaino_roots[2] = {c, d};
-        params.explaino_roots[3] = {c, -d};
-    }
-
-    // Compute degree-4 polynomial from the four roots: (z-r0)(z-r1)(z-r2)(z-r3)
-    // Use the actual root positions stored in params.explaino_roots[].
-    {
-        const float r0x = params.explaino_roots[0].x, r0y = params.explaino_roots[0].y;
-        const float r1x = params.explaino_roots[1].x, r1y = params.explaino_roots[1].y;
-        const float r2x = params.explaino_roots[2].x, r2y = params.explaino_roots[2].y;
-        const float r3x = params.explaino_roots[3].x, r3y = params.explaino_roots[3].y;
-
-        // Quadratic factor from roots 0,1: (z - r0)(z - r1) = z^2 - (r0+r1)z + r0*r1
-        // Sum s01 = r0 + r1,  product p01 = r0 * r1
-        const float s01x = r0x + r1x, s01y = r0y + r1y;
-        const float p01x = r0x * r1x - r0y * r1y, p01y = r0x * r1y + r0y * r1x;
-
-        // Quadratic factor from roots 2,3: (z - r2)(z - r3) = z^2 - (r2+r3)z + r2*r3
-        const float s23x = r2x + r3x, s23y = r2y + r3y;
-        const float p23x = r2x * r3x - r2y * r3y, p23y = r2x * r3y + r2y * r3x;
-
-        // (z^2 - s01*z + p01)(z^2 - s23*z + p23)
-        // = z^4 - (s01+s23) z^3 + (p01 + s01*s23 + p23) z^2 - (p01*s23 + s01*p23) z + p01*p23
-        // For real coefficients, take only real parts (imaginary parts cancel for conjugate pairs;
-        // for explaino_mult near-coincident pairs, small imaginary residuals are dropped).
-        params.poly_coeffs[4] = 1.0f;
-        params.poly_coeffs[3] = -(s01x + s23x);
-        params.poly_coeffs[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
-        params.poly_coeffs[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
-        params.poly_coeffs[0] = p01x * p23x - p01y * p23y;
-    }
-
-    // Splice: compute second polynomial from seed + splice_offset.
     if (view.fractal_type == FractalType::explaino_splice) {
-        double offsetSeed = ExplainoSeedCombined(view, params) + (double)params.splice_offset;
-        ExplainoSeedShape shB = ExplainoShapeForCombinedSeed(
-            offsetSeed,
-            view.explaino_seed_tween,
-            phase,
-            spread,
-            phaseStrength);
-        float ba = shB.a, bb = shB.b, bc = shB.c, bd = shB.d;
-        Float2 rootsB[4] = {{ba, bb}, {ba, -bb}, {bc, bd}, {bc, -bd}};
-        const float s01x = rootsB[0].x + rootsB[1].x, s01y = rootsB[0].y + rootsB[1].y;
-        const float p01x = rootsB[0].x * rootsB[1].x - rootsB[0].y * rootsB[1].y;
-        const float p01y = rootsB[0].x * rootsB[1].y + rootsB[0].y * rootsB[1].x;
-        const float s23x = rootsB[2].x + rootsB[3].x, s23y = rootsB[2].y + rootsB[3].y;
-        const float p23x = rootsB[2].x * rootsB[3].x - rootsB[2].y * rootsB[3].y;
-        const float p23y = rootsB[2].x * rootsB[3].y + rootsB[2].y * rootsB[3].x;
-        params.poly_coeffs_b[4] = 1.0f;
-        params.poly_coeffs_b[3] = -(s01x + s23x);
-        params.poly_coeffs_b[2] = p01x + (s01x * s23x - s01y * s23y) + p23x;
-        params.poly_coeffs_b[1] = -(p01x * s23x - p01y * s23y + s01x * p23x - s01y * p23y);
-        params.poly_coeffs_b[0] = p01x * p23x - p01y * p23y;
+        UpdateExplainoSplicePolynomial(view, params, phase, spread, phaseStrength, params.poly_coeffs_b);
     } else {
-        for (float& coeff : params.poly_coeffs_b) {
-            coeff = 0.0f;
-        }
+        ClearPolynomialCoefficients(params.poly_coeffs_b);
     }
 
     if (ioDirty) *ioDirty = true;

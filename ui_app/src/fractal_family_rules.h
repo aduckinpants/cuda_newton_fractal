@@ -9,67 +9,40 @@
 #endif
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fractalType) {
-    return fractalType == FractalType::explaino ||
-        fractalType == FractalType::explaino_y ||
-        fractalType == FractalType::explaino_fp ||
-        fractalType == FractalType::explaino_nova ||
-    fractalType == FractalType::explaino_halley ||
-    fractalType == FractalType::explaino_dual ||
-    fractalType == FractalType::explaino_mult ||
-    fractalType == FractalType::explaino_phoenix ||
-    fractalType == FractalType::explaino_transcendental ||
-    fractalType == FractalType::explaino_inertial ||
-    fractalType == FractalType::explaino_julia ||
-    fractalType == FractalType::explaino_rational ||
-    fractalType == FractalType::explaino_collatz ||
-    fractalType == FractalType::explaino_lambda ||
-    fractalType == FractalType::explaino_rational_escape ||
-    fractalType == FractalType::explaino_joy ||
-    fractalType == FractalType::explaino_fold ||
-    fractalType == FractalType::explaino_bell ||
-    fractalType == FractalType::explaino_ripple ||
-    fractalType == FractalType::explaino_splice ||
-    fractalType == FractalType::explaino_vortex ||
-    fractalType == FractalType::explaino_tension;
+    return fractalType == FractalType::explaino || fractalType == FractalType::explaino_y ||
+        fractalType == FractalType::explaino_fp || fractalType == FractalType::explaino_nova ||
+        fractalType == FractalType::explaino_halley || fractalType == FractalType::explaino_dual ||
+        fractalType == FractalType::explaino_mult || fractalType == FractalType::explaino_phoenix ||
+        fractalType == FractalType::explaino_transcendental || fractalType == FractalType::explaino_inertial ||
+        fractalType == FractalType::explaino_julia || fractalType == FractalType::explaino_rational ||
+        fractalType == FractalType::explaino_collatz || fractalType == FractalType::explaino_lambda ||
+        fractalType == FractalType::explaino_rational_escape || fractalType == FractalType::explaino_joy ||
+        fractalType == FractalType::explaino_fold || fractalType == FractalType::explaino_bell ||
+        fractalType == FractalType::explaino_ripple || fractalType == FractalType::explaino_splice ||
+        fractalType == FractalType::explaino_vortex || fractalType == FractalType::explaino_tension;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
-    return fractalType == FractalType::newton ||
-        fractalType == FractalType::explaino ||
-        fractalType == FractalType::explaino_y ||
-        fractalType == FractalType::explaino_fp ||
-    fractalType == FractalType::explaino_halley ||
-    fractalType == FractalType::explaino_dual ||
-    fractalType == FractalType::explaino_mult ||
-    fractalType == FractalType::explaino_phoenix ||
-    fractalType == FractalType::explaino_transcendental ||
-    fractalType == FractalType::explaino_inertial ||
-    fractalType == FractalType::explaino_rational ||
-    fractalType == FractalType::explaino_collatz ||
-    fractalType == FractalType::explaino_joy ||
-    fractalType == FractalType::explaino_fold ||
-    fractalType == FractalType::explaino_bell ||
-    fractalType == FractalType::explaino_ripple ||
-    fractalType == FractalType::explaino_splice ||
-    fractalType == FractalType::explaino_vortex ||
-    fractalType == FractalType::explaino_tension ||
-    fractalType == FractalType::halley;
+    return fractalType == FractalType::newton || fractalType == FractalType::explaino ||
+        fractalType == FractalType::explaino_y || fractalType == FractalType::explaino_fp ||
+        fractalType == FractalType::explaino_halley || fractalType == FractalType::explaino_dual ||
+        fractalType == FractalType::explaino_mult || fractalType == FractalType::explaino_phoenix ||
+        fractalType == FractalType::explaino_transcendental || fractalType == FractalType::explaino_inertial ||
+        fractalType == FractalType::explaino_rational || fractalType == FractalType::explaino_collatz ||
+        fractalType == FractalType::explaino_joy || fractalType == FractalType::explaino_fold ||
+        fractalType == FractalType::explaino_bell || fractalType == FractalType::explaino_ripple ||
+        fractalType == FractalType::explaino_splice || fractalType == FractalType::explaino_vortex ||
+        fractalType == FractalType::explaino_tension || fractalType == FractalType::halley;
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fractalType) {
-    return fractalType == FractalType::nova ||
-        fractalType == FractalType::mandelbrot ||
-        fractalType == FractalType::julia ||
-        fractalType == FractalType::burning_ship ||
-        fractalType == FractalType::multibrot ||
-        fractalType == FractalType::phoenix ||
-        fractalType == FractalType::explaino_nova ||
-        fractalType == FractalType::explaino_julia ||
-        fractalType == FractalType::multicorn ||
-        fractalType == FractalType::collatz ||
-    fractalType == FractalType::mcmullen ||
-    fractalType == FractalType::lambda_map ||
-    fractalType == FractalType::explaino_lambda ||
+    return fractalType == FractalType::nova || fractalType == FractalType::mandelbrot ||
+        fractalType == FractalType::julia || fractalType == FractalType::burning_ship ||
+        fractalType == FractalType::multibrot || fractalType == FractalType::phoenix ||
+        fractalType == FractalType::explaino_nova || fractalType == FractalType::explaino_julia ||
+        fractalType == FractalType::multicorn || fractalType == FractalType::collatz ||
+        fractalType == FractalType::mcmullen || fractalType == FractalType::lambda_map ||
+        fractalType == FractalType::explaino_lambda ||
         fractalType == FractalType::explaino_rational_escape ||
         fractalType == FractalType::spider ||
         fractalType == FractalType::celtic_mandelbrot ||

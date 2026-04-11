@@ -28,6 +28,34 @@ static bool IsValidSweepSeedRange(double start, double stop, double step) {
     return true;
 }
 
+static bool TryParseSweepConfig(const std::vector<std::string>& args, SweepPlayerConfig* outConfig) {
+    bool haveSweepStart = false, haveSweepStop = false, haveSweepStep = false;
+    double sweepStart = 0.0, sweepStop = 0.0, sweepStep = 0.0;
+    if (!TryDouble(args, "--sweep-seed-start", &haveSweepStart, &sweepStart)) return false;
+    if (!TryDouble(args, "--sweep-seed-stop", &haveSweepStop, &sweepStop)) return false;
+    if (!TryDouble(args, "--sweep-seed-step", &haveSweepStep, &sweepStep)) return false;
+
+    int sweepDwellMs = 450;
+    bool haveSweepDwell = false;
+    if (!TryInt(args, "--sweep-dwell-ms", &haveSweepDwell, &sweepDwellMs)) return false;
+
+    const bool sweepLoop = HasArg(args, "--sweep-loop");
+    const bool haveAnySweep = haveSweepStart || haveSweepStop || haveSweepStep || haveSweepDwell || sweepLoop;
+    if (!haveAnySweep) return true;
+    if (!(haveSweepStart && haveSweepStop && haveSweepStep)) return false;
+    if (!IsValidSweepSeedRange(sweepStart, sweepStop, sweepStep)) return false;
+
+    if (outConfig) {
+        outConfig->enabled = true;
+        outConfig->seed_start = sweepStart;
+        outConfig->seed_stop = sweepStop;
+        outConfig->seed_step = sweepStep;
+        outConfig->dwell_seconds = (double)sweepDwellMs / 1000.0;
+        outConfig->loop = sweepLoop;
+    }
+    return true;
+}
+
 int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     *out = ViewerCliArgs{};
 
@@ -79,34 +107,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     if (!TryStr(args, "--finding-group", &out->have_finding_group, &out->finding_group)) return 1;
     if (!TryStr(args, "--finding-why", &out->have_finding_why, &out->finding_why)) return 1;
 
-    // Sweep configuration
-    bool haveSweepStart = false, haveSweepStop = false, haveSweepStep = false;
-    double sweepStart = 0.0, sweepStop = 0.0, sweepStep = 0.0;
-    if (!TryDouble(args, "--sweep-seed-start", &haveSweepStart, &sweepStart)) return 1;
-    if (!TryDouble(args, "--sweep-seed-stop", &haveSweepStop, &sweepStop)) return 1;
-    if (!TryDouble(args, "--sweep-seed-step", &haveSweepStep, &sweepStep)) return 1;
-
-    int sweepDwellMs = 450;
-    bool haveSweepDwell = false;
-    if (!TryInt(args, "--sweep-dwell-ms", &haveSweepDwell, &sweepDwellMs)) return 1;
-
-    bool sweepLoop = HasArg(args, "--sweep-loop");
-    bool haveAnySweep = haveSweepStart || haveSweepStop || haveSweepStep || haveSweepDwell || sweepLoop;
-
-    if (haveAnySweep) {
-        if (!(haveSweepStart && haveSweepStop && haveSweepStep)) {
-            return 1;
-        }
-        if (!IsValidSweepSeedRange(sweepStart, sweepStop, sweepStep)) {
-            return 1;
-        }
-        out->sweep_config.enabled = true;
-        out->sweep_config.seed_start = sweepStart;
-        out->sweep_config.seed_stop = sweepStop;
-        out->sweep_config.seed_step = sweepStep;
-        out->sweep_config.dwell_seconds = (double)sweepDwellMs / 1000.0;
-        out->sweep_config.loop = sweepLoop;
-    }
+    if (!TryParseSweepConfig(args, &out->sweep_config)) return 1;
 
     return 0;
 }
