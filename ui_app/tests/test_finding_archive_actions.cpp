@@ -142,10 +142,18 @@ int main() {
         render.resolution = {64, 48};
         RenderStats stats{};
         std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff336699u);
+        SidecarOrientationVector orientation{};
+        orientation.import_signature = 9007199254740993ull;
+        orientation.pack_projection_hash = 18446744073709551614ull;
+        orientation.field_embedding_stats = 5.5;
+        orientation.slime_energy_delta = 2.25;
+        orientation.busy_beaver_metrics = 0.75;
+        orientation.decode_stability = 0.5;
+        orientation.diff_magnitude = 1.5;
 
         DiagnosticsCaptureResult capture;
         std::string error;
-        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &capture, &error)) {
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &orientation, &capture, &error)) {
             std::cerr << "Expected diagnostics capture bundle to succeed: " << error << "\n";
             return 1;
         }
@@ -160,8 +168,12 @@ int main() {
             stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
             stateJson.find("\"interaction_debounce_ms\": 200") == std::string::npos ||
             stateJson.find("\"preview_target_fps\": 30") == std::string::npos ||
-            stateJson.find("\"preview_min_scale\": 0.5") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist Explaino phase strength, root spread, auto_max_iter, and adaptive preview pacing fields\n";
+            stateJson.find("\"preview_min_scale\": 0.5") == std::string::npos ||
+            stateJson.find("\"sidecar_orientation\"") == std::string::npos ||
+            stateJson.find("\"import_signature\": \"9007199254740993\"") == std::string::npos ||
+            stateJson.find("\"pack_projection_hash\": \"18446744073709551614\"") == std::string::npos ||
+            stateJson.find("\"field_embedding_stats\": 5.5") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist Explaino fields, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
 

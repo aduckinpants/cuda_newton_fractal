@@ -135,10 +135,16 @@ int main() {
         ViewState view{};
         KernelParams params{};
         RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = true;
         std::string error;
-        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &orientation, &hasOrientation, &error)) {
             std::cerr << "LoadDiagnosticsStateFile failed: " << error << "\n";
             return 1;
+        }
+        if (hasOrientation) {
+          std::cerr << "Expected legacy diagnostics state loads without sidecar_orientation to report no persisted orientation\n";
+          return 1;
         }
 
         if (view.fractal_type != FractalType::phoenix) {
@@ -291,6 +297,156 @@ int main() {
         }
     }
 
+
+    {
+        const fs::path statePath = tempRoot / "sidecar_orientation_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 7.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_orientation": {
+    "import_signature": "9007199254740993",
+    "pack_projection_hash": "18446744073709551614",
+    "field_embedding_stats": 3.5,
+    "slime_energy_delta": 1.25,
+    "busy_beaver_metrics": 0.75,
+    "decode_stability": 0.5,
+    "diff_magnitude": 2.0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = false;
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &orientation, &hasOrientation, &error)) {
+            std::cerr << "Expected sidecar orientation state to load: " << error << "\n";
+            return 1;
+        }
+        if (!hasOrientation) {
+            std::cerr << "Expected diagnostics state load to report persisted sidecar orientation when present\n";
+            return 1;
+        }
+        if (orientation.import_signature != 9007199254740993ull ||
+            orientation.pack_projection_hash != 18446744073709551614ull ||
+            !NearlyEqual(orientation.field_embedding_stats, 3.5) ||
+            !NearlyEqual(orientation.slime_energy_delta, 1.25) ||
+            !NearlyEqual(orientation.busy_beaver_metrics, 0.75) ||
+            !NearlyEqual(orientation.decode_stability, 0.5) ||
+            !NearlyEqual(orientation.diff_magnitude, 2.0)) {
+            std::cerr << "Expected persisted sidecar orientation values to round-trip through diagnostics state loading\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "sidecar_orientation_numeric_legacy_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 7.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_orientation": {
+    "import_signature": 11,
+    "pack_projection_hash": 17,
+    "field_embedding_stats": 3.5,
+    "slime_energy_delta": 1.25,
+    "busy_beaver_metrics": 0.75,
+    "decode_stability": 0.5,
+    "diff_magnitude": 2.0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = false;
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &orientation, &hasOrientation, &error)) {
+            std::cerr << "Expected legacy numeric sidecar hashes to remain loadable: " << error << "\n";
+            return 1;
+        }
+        if (!hasOrientation || orientation.import_signature != 11u || orientation.pack_projection_hash != 17u) {
+            std::cerr << "Expected legacy numeric sidecar hashes to remain backward compatible\n";
+            return 1;
+        }
+    }
 
     {
         const fs::path statePath = tempRoot / "composed_variant_state.json";

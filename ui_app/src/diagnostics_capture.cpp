@@ -168,7 +168,24 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << "\n";
 }
 
-std::string BuildStateJson(const ViewState& view, const KernelParams& params, const RenderSettings& render, const RenderStats& stats) {
+void WriteSidecarOrientationJson(std::ostringstream& js, const SidecarOrientationVector& orientation) {
+    js << "  \"sidecar_orientation\": {\n";
+    js << "    \"import_signature\": \"" << static_cast<unsigned long long>(orientation.import_signature) << "\",\n";
+    js << "    \"pack_projection_hash\": \"" << static_cast<unsigned long long>(orientation.pack_projection_hash) << "\",\n";
+    js << "    \"field_embedding_stats\": " << orientation.field_embedding_stats << ",\n";
+    js << "    \"slime_energy_delta\": " << orientation.slime_energy_delta << ",\n";
+    js << "    \"busy_beaver_metrics\": " << orientation.busy_beaver_metrics << ",\n";
+    js << "    \"decode_stability\": " << orientation.decode_stability << ",\n";
+    js << "    \"diff_magnitude\": " << orientation.diff_magnitude << "\n";
+    js << "  }\n";
+}
+
+std::string BuildStateJson(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const SidecarOrientationVector* sidecarOrientation) {
     std::ostringstream js;
     js << "{\n";
     js << "  \"state_version\": 3,\n";
@@ -234,7 +251,13 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
     js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
     js << "    \"last_device_id\": " << stats.last_device_id << "\n";
-    js << "  }\n";
+    js << "  }";
+    if (sidecarOrientation) {
+        js << ",\n";
+        WriteSidecarOrientationJson(js, *sidecarOrientation);
+    } else {
+        js << "\n";
+    }
     js << "}\n";
     return js.str();
 }
@@ -248,6 +271,29 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const RenderStats& stats,
     const uint32_t* rgba,
     std::size_t rgbaPixelCount,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
     if (outError) outError->clear();
@@ -272,7 +318,7 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
         return false;
     }
 
-    std::string stateJson = BuildStateJson(view, params, render, stats);
+    std::string stateJson = BuildStateJson(view, params, render, stats, sidecarOrientation);
     if (!WriteTextFile(statePath, stateJson, outError)) {
         return false;
     }

@@ -25,6 +25,7 @@
 #include "viewer_schema_load.h"
 #include "viewer_state_init.h"
 #include "diagnostics_capture.h"
+#include "diagnostics_state_io.h"
 #include "finding_archive_actions.h"
 #include "finding_capture_state.h"
 #include "finding_state_actions.h"
@@ -161,6 +162,42 @@ static bool PromptOpenFindingStatePath(HWND owner, std::string* outPath) {
     dialog.lpstrDefExt = "json";
     if (!GetOpenFileNameA(&dialog)) return false;
     if (outPath) *outPath = buffer;
+    return true;
+}
+
+static bool TryLoadPersistedSidecarOrientation(const std::string& selectedPath,
+                                               SidecarOrientationVector* outOrientation,
+                                               bool* outHasOrientation,
+                                               std::string* outResolvedStatePath,
+                                               std::string* outError) {
+    if (outError) outError->clear();
+    if (outOrientation) *outOrientation = {};
+    if (outHasOrientation) *outHasOrientation = false;
+
+    std::string resolvedStatePath;
+    if (!ResolveFindingStateJsonPath(selectedPath, &resolvedStatePath, outError)) {
+        return false;
+    }
+
+    ViewState ignoredView{};
+    KernelParams ignoredParams{};
+    RenderSettings ignoredRender{};
+    SidecarOrientationVector orientation{};
+    bool hasOrientation = false;
+    if (!LoadDiagnosticsStateFile(
+            resolvedStatePath,
+            &ignoredView,
+            &ignoredParams,
+            &ignoredRender,
+            &orientation,
+            &hasOrientation,
+            outError)) {
+        return false;
+    }
+
+    if (outResolvedStatePath) *outResolvedStatePath = resolvedStatePath;
+    if (outOrientation) *outOrientation = orientation;
+    if (outHasOrientation) *outHasOrientation = hasOrientation;
     return true;
 }
 
@@ -386,11 +423,24 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParams& params,
+                                        const EngineFunctionCatalog& engineCatalog,
+                                        const BindingContext& bind,
+                                        const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+                                        CudaSidecarMeasurementHost& sidecarMeasurementHost,
+                                        SidecarOrientationVector& loadedOrientationBaseline,
+                                        bool& loadedOrientationBaselineValid,
+                                        ExplainoSidecarWindowState& sidecarState,
+                                        bool& sidecarStateValid,
+                                        SidecarBudgetState& sidecarBudgetState,
+                                        bool& sidecarBudgetStateValid);
+
 // --- Headless capture helpers ---
 
 static int RunHeadlessDiagnosticCapture(
     const std::string& exeDir, const ViewState& view,
-    const KernelParams& params, const RenderSettings& render) {
+    const KernelParams& params, const RenderSettings& render,
+    const SidecarOrientationVector* sidecarOrientation) {
     std::vector<uint32_t> headlessRgba;
     headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     const char* err = nullptr;
@@ -401,7 +451,7 @@ static int RunHeadlessDiagnosticCapture(
     std::string captureError;
     DiagnosticsCaptureResult captureResult;
     if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), &captureResult, &captureError)) {
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &captureResult, &captureError)) {
         return 1;
     }
     return 0;
@@ -409,7 +459,8 @@ static int RunHeadlessDiagnosticCapture(
 
 static int RunHeadlessFindingCapture(
     const std::string& exeDir, const ViewerCliArgs& cli,
-    const ViewState& view, const KernelParams& params, const RenderSettings& render) {
+    const ViewState& view, const KernelParams& params, const RenderSettings& render,
+    const SidecarOrientationVector* sidecarOrientation) {
     ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
     RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
     std::vector<uint32_t> headlessRgba;
@@ -426,7 +477,8 @@ static int RunHeadlessFindingCapture(
     const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
     const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
     if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), findingGroup, findingWhy, &findingDir, &findingError)) {
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation,
+            findingGroup, findingWhy, &findingDir, &findingError)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
             findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
         return 1;
@@ -440,6 +492,7 @@ static void RunInLoopDiagnosticCapture(
     const std::string& exeDir, const ViewState& view, const KernelParams& params,
     const RenderSettings& render, const RenderStats& stats,
     const std::vector<uint32_t>& rgba, const RenderedFrameState& renderedFrame,
+    const SidecarOrientationVector* sidecarOrientation,
     std::string& findingStatus) {
     std::string captureError;
     RenderSettings captureRender = render;
@@ -449,7 +502,7 @@ static void RunInLoopDiagnosticCapture(
     } else {
         DiagnosticsCaptureResult captureResult;
         if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats,
-                rgba.data(), rgba.size(), &captureResult, &captureError)) {
+                rgba.data(), rgba.size(), sidecarOrientation, &captureResult, &captureError)) {
             findingStatus = "Capture diagnostic failed: " + captureError;
         } else {
             findingStatus = "Diagnostic captured.";
@@ -459,7 +512,9 @@ static void RunInLoopDiagnosticCapture(
 
 static bool RunInLoopFindingCapture(
     const std::string& exeDir, ViewState& view, KernelParams& params,
-    const RenderSettings& render, std::string& findingStatus, std::string& lastFindingPath) {
+    const RenderSettings& render,
+    const SidecarOrientationVector* sidecarOrientation,
+    std::string& findingStatus, std::string& lastFindingPath) {
     std::string findingDir;
     std::string captureError;
     const bool invalidateCaches = PrepareFindingCaptureRuntimeState(view, params);
@@ -472,7 +527,8 @@ static bool RunInLoopFindingCapture(
         findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
         return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
-            findingRgba.data(), findingRgba.size(), "manual_capture", "Manual viewer capture.",
+            findingRgba.data(), findingRgba.size(), sidecarOrientation,
+            "manual_capture", "Manual viewer capture.",
             &findingDir, &captureError)) {
         findingStatus = "Capture finding failed: " + captureError;
     } else {
@@ -836,6 +892,12 @@ static void DispatchUiActions(HWND hwnd,
                               bool nextSeedAction, bool prevSeedAction,
                               ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
                               bool& dirty, bool& interactionChanged,
+                              ExplainoSidecarWindowState& sidecarState,
+                              bool& sidecarStateValid,
+                              SidecarBudgetState& sidecarBudgetState,
+                              bool& sidecarBudgetStateValid,
+                              SidecarOrientationVector& loadedOrientationBaseline,
+                              bool& loadedOrientationBaselineValid,
                               PolyKind& lastPolyKind, FractalType& lastFractalType,
                               std::string& findingStatus, std::string& lastFindingPath) {
     if (resetViewAction) {
@@ -848,6 +910,10 @@ static void DispatchUiActions(HWND hwnd,
         ResetRuntimeStateForCurrentFractal(view, params, render, lens, &dirty);
         lastPolyKind = params.poly_kind;
         lastFractalType = view.fractal_type;
+        sidecarState = {};
+        sidecarStateValid = false;
+        sidecarBudgetState = {};
+        sidecarBudgetStateValid = false;
         interactionChanged = true;
     }
     if (loadStateAction) {
@@ -858,6 +924,25 @@ static void DispatchUiActions(HWND hwnd,
             if (!LoadFindingSelectionIntoRuntime(selectedPath, &view, &params, &render, &resolvedStatePath, &loadError)) {
                 findingStatus = "Load state failed: " + loadError;
             } else {
+                SidecarOrientationVector loadedOrientation{};
+                bool hasLoadedOrientation = false;
+                std::string orientationError;
+                if (TryLoadPersistedSidecarOrientation(
+                        resolvedStatePath,
+                        &loadedOrientation,
+                        &hasLoadedOrientation,
+                        nullptr,
+                        &orientationError)) {
+                    loadedOrientationBaseline = loadedOrientation;
+                    loadedOrientationBaselineValid = hasLoadedOrientation;
+                } else {
+                    loadedOrientationBaseline = {};
+                    loadedOrientationBaselineValid = false;
+                }
+                sidecarState = {};
+                sidecarStateValid = false;
+                sidecarBudgetState = {};
+                sidecarBudgetStateValid = false;
                 lastPolyKind = params.poly_kind;
                 lastFractalType = view.fractal_type;
                 findingStatus = "Loaded finding state: " + resolvedStatePath;
@@ -924,7 +1009,17 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
 }
 
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
-                                    ViewState& view, KernelParams& params, RenderSettings& render, bool& dirty) {
+                                    ViewState& view, KernelParams& params, RenderSettings& render, bool& dirty,
+                                    const EngineFunctionCatalog& engineCatalog,
+                                    const BindingContext& bind,
+                                    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+                                    CudaSidecarMeasurementHost& sidecarMeasurementHost,
+                                    SidecarOrientationVector& loadedOrientationBaseline,
+                                    bool& loadedOrientationBaselineValid,
+                                    ExplainoSidecarWindowState& sidecarState,
+                                    bool& sidecarStateValid,
+                                    SidecarBudgetState& sidecarBudgetState,
+                                    bool& sidecarBudgetStateValid) {
     if (cli.capture_diagnostic_only || cli.capture_finding_only) {
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, &dirty);
@@ -932,10 +1027,27 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
         if (view.auto_max_iter) {
             params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
         }
+
+        RefreshSidecarStateIfNeeded(
+            true,
+            view,
+            params,
+            engineCatalog,
+            bind,
+            sidecarControllerPolicy,
+            sidecarMeasurementHost,
+            loadedOrientationBaseline,
+            loadedOrientationBaselineValid,
+            sidecarState,
+            sidecarStateValid,
+            sidecarBudgetState,
+            sidecarBudgetStateValid);
     }
+    const SidecarOrientationVector* sidecarOrientation =
+        (sidecarStateValid && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr;
     if (cli.validate_ui_only) return 0;
-    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render);
-    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render);
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render, sidecarOrientation);
+    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, sidecarOrientation);
     return -1;
 }
 
@@ -1074,6 +1186,8 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
                                         const BindingContext& bind,
                                         const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                                         CudaSidecarMeasurementHost& sidecarMeasurementHost,
+                                        SidecarOrientationVector& loadedOrientationBaseline,
+                                        bool& loadedOrientationBaselineValid,
                                         ExplainoSidecarWindowState& sidecarState,
                                         bool& sidecarStateValid,
                                         SidecarBudgetState& sidecarBudgetState,
@@ -1087,12 +1201,20 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
         params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
     }
 
+    const bool usingLoadedOrientationBaseline = !sidecarStateValid && loadedOrientationBaselineValid;
+    const SidecarOrientationVector* previousOrientation = nullptr;
+    if (sidecarStateValid && sidecarState.has_orientation) {
+        previousOrientation = &sidecarState.orientation;
+    } else if (usingLoadedOrientationBaseline) {
+        previousOrientation = &loadedOrientationBaseline;
+    }
+
     BuildExplainoSidecarWindowState(engineCatalog,
         bind,
         &sidecarMeasurementHost,
         sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
         sidecarStateValid ? &sidecarState.completeness : nullptr,
-        (sidecarStateValid && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr,
+        previousOrientation,
         (sidecarStateValid && !sidecarState.trace.function_id.empty()) ? &sidecarState.trace : nullptr,
         &sidecarControllerPolicy,
         &sidecarState,
@@ -1105,6 +1227,10 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
         sidecarBudgetStateValid = false;
     }
     sidecarStateValid = true;
+    if (usingLoadedOrientationBaseline && sidecarState.has_orientation) {
+        loadedOrientationBaseline = {};
+        loadedOrientationBaselineValid = false;
+    }
 }
 
 static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFlags& actions,
@@ -1112,18 +1238,22 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
                                      const RenderSettings& render, const RenderStats& stats,
                                      const std::vector<uint32_t>& rgba,
                                      const RenderedFrameState& renderedFrame,
+                                     const ExplainoSidecarWindowState& sidecarState,
+                                     bool haveSidecarState,
                                      std::string& findingStatus,
                                      std::string& lastFindingPath,
-                                     bool& sidecarStateValid,
-                                     bool& sidecarBudgetStateValid) {
+                                     bool& ioSidecarStateValid,
+                                     bool& ioSidecarBudgetStateValid) {
+    const SidecarOrientationVector* sidecarOrientation =
+        (haveSidecarState && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr;
     if (actions.captureDiagnostic) {
-        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, findingStatus);
+        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, sidecarOrientation, findingStatus);
     }
 
     if (actions.captureFinding) {
-        if (RunInLoopFindingCapture(exeDir, view, params, render, findingStatus, lastFindingPath)) {
-            sidecarStateValid = false;
-            sidecarBudgetStateValid = false;
+        if (RunInLoopFindingCapture(exeDir, view, params, render, sidecarOrientation, findingStatus, lastFindingPath)) {
+            ioSidecarStateValid = false;
+            ioSidecarBudgetStateValid = false;
         }
     }
 }
@@ -1163,12 +1293,35 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sidecarStateValid = false;
     SidecarBudgetState sidecarBudgetState;
     bool sidecarBudgetStateValid = false;
+    SidecarOrientationVector loadedOrientationBaseline{};
+    bool loadedOrientationBaselineValid = false;
 
     { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
 
-    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty);
+    if (cli.have_load_state_json) {
+        std::string loadError;
+        if (!TryLoadPersistedSidecarOrientation(
+                cli.load_state_json,
+                &loadedOrientationBaseline,
+                &loadedOrientationBaselineValid,
+                nullptr,
+                &loadError)) {
+            return 1;
+        }
+    }
+
+    BindingContext bind;
+    bind.view = &view;
+    bind.params = &params;
+    bind.render = &render;
+    bind.lens = &lens;
+
+    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty,
+          engineCatalog, bind, sidecarControllerPolicy, sidecarMeasurementHost,
+          loadedOrientationBaseline, loadedOrientationBaselineValid,
+          sidecarState, sidecarStateValid, sidecarBudgetState, sidecarBudgetStateValid);
       if (headless >= 0) return headless; }
 
     HWND hwnd = nullptr;
@@ -1178,11 +1331,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    BindingContext bind;
-    bind.view = &view;
-    bind.params = &params;
-    bind.render = &render;
-    bind.lens = &lens;
 
     std::vector<uint32_t> rgba;
     std::vector<uint8_t> maskBuffer;
@@ -1236,7 +1384,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
             actions.nextSeed, actions.prevSeed, view, params, render, lens,
-            dirty, actions.interactionChanged, lastPolyKind, lastFractalType,
+            dirty, actions.interactionChanged,
+            sidecarState, sidecarStateValid,
+            sidecarBudgetState, sidecarBudgetStateValid,
+            loadedOrientationBaseline, loadedOrientationBaselineValid,
+            lastPolyKind, lastFractalType,
             findingStatus, lastFindingPath);
 
         ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
@@ -1261,7 +1413,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
         RefreshSidecarStateIfNeeded(dirty || !sidecarStateValid, view, params, engineCatalog,
-            bind, sidecarControllerPolicy, sidecarMeasurementHost, sidecarState, sidecarStateValid,
+            bind, sidecarControllerPolicy, sidecarMeasurementHost,
+            loadedOrientationBaseline, loadedOrientationBaselineValid,
+            sidecarState, sidecarStateValid,
             sidecarBudgetState, sidecarBudgetStateValid);
         DispatchRenderFrame(view, params, render, lens, renderPacing,
             forceFullQualityRender, view.auto_refresh, dirty,
@@ -1269,7 +1423,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
 
         RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
-            renderedFrame, findingStatus, lastFindingPath,
+            renderedFrame, sidecarState, sidecarStateValid,
+            findingStatus, lastFindingPath,
             sidecarStateValid, sidecarBudgetStateValid);
 
         RenderExplainoSidecarWindow(sidecarState);

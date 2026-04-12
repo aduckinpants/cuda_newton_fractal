@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - R4 divergence, energy, and persistence
+Complete - Phase 5 checkpoint and handoff
 
 ## Phase Checklist
 
@@ -10,15 +10,15 @@ Phase 5 - R4 divergence, energy, and persistence
 - [x] Phase 2 - R1 viewer window shell
 - [x] Phase 3 - R2 CUDA demonstration engine
 - [x] Phase 4 - R3 lens and action selection
-- [ ] Phase 5 - R4 divergence, energy, and persistence
+- [x] Phase 5 - R4 divergence, energy, and persistence
 
 ## Notes
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - extract the R4-D orientation-persistence seam on top of the now-landed divergence, energy, and slime-trace surfaces
-  - decide the first persistence contract for save/load/compare without inventing live mutation or a second source of truth
-  - keep runtime parameter mutation deferred until orientation persistence proves durable under hostile audit
+  - Phase 5 is now complete: the R4-D orientation-persistence seam landed on top of the divergence, energy, and slime-trace surfaces
+  - the first save/load/compare contract now reuses diagnostics `state.json` without inventing live mutation or a second source of truth
+  - direct runtime auto-demonstration mutation remains deferred until a new follow-on plan is chosen
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -93,14 +93,19 @@ Phase 5 - R4 divergence, energy, and persistence
   - runtime sidecar refresh now threads prior trace state into rebuilds when the current sidecar state actually carries a trace identity
   - hostile-audit repair for stale prior trace identity: incompatible prior traces now reset instead of failing the current trace build
   - hostile-audit repair for stale prior trace paths on error paths: measurement/controller failures no longer preserve traces whose paths are absent from the current window surface
+  - diagnostics capture/load now persists optional `sidecar_orientation` state through `state.json`
+  - runtime load-state paths now seed the first sidecar divergence comparison from persisted orientation snapshots instead of stale live memory
+  - manual viewer capture, finding archive capture, and headless `--load-state-json` capture flows now preserve persisted orientation across save/load/capture round-trips
+  - hostile-audit repair for headless round-trip omission: headless diagnostic/finding capture now rebuilds current sidecar orientation before writing `state.json`
+  - hostile-audit repair for exact 64-bit persistence: sidecar hash fields now serialize as quoted decimal strings while the loader remains backward compatible with older safe numeric payloads
 - Validation achieved for the current Phase 5 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
-- Next bounded slice for Phase 5:
-  - extract the R4-D orientation vector persistence seam from the now-landed divergence surface and reusable sidecar orientation state
-  - define the first save/load/compare contract for exploration states without introducing a second editable truth source
-  - keep live auto-demonstration mutation deferred until persistence survives the same hostile-audit loop
+  - `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k load_state_json -q`
+- Next bounded slice after this plan:
+  - choose a new phased plan or follow-on phase for sidecar work; direct auto-demonstration mutation is still deferred
+  - preserve the diagnostics `state.json` contract as the first and only persisted orientation authority unless a new spec explicitly broadens it
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - live auto-demonstration parameter mutation

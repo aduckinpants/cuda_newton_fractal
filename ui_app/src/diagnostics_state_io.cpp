@@ -5,6 +5,8 @@
 #include "fractal_family_rules.h"
 #include "json_min.h"
 
+#include <cmath>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -115,6 +117,98 @@ bool GetOptionalBool(const json_min::Value& object, const char* key, bool* outVa
     return true;
 }
 
+bool SidecarOrientationFieldsAreFinite(const SidecarOrientationVector& orientation) {
+    return std::isfinite(orientation.field_embedding_stats) &&
+           std::isfinite(orientation.slime_energy_delta) &&
+           std::isfinite(orientation.busy_beaver_metrics) &&
+           std::isfinite(orientation.decode_stability) &&
+           std::isfinite(orientation.diff_magnitude);
+}
+
+bool ParseSidecarHashField(const json_min::Value& object,
+    const char* key,
+    std::uint64_t* outValue,
+    std::string* outError) {
+    constexpr double kMaxExactJsonInteger = 9007199254740991.0;
+
+    const json_min::Value* value = object.get(key);
+    if (!value) {
+        if (outError) *outError = std::string("Missing sidecar_orientation field: ") + key;
+        return false;
+    }
+
+    if (value->is_string()) {
+        const std::string text = value->as_string();
+        if (text.empty()) {
+            if (outError) *outError = std::string("Invalid sidecar_orientation field: ") + key;
+            return false;
+        }
+
+        std::size_t consumed = 0;
+        try {
+            const unsigned long long parsed = std::stoull(text, &consumed, 10);
+            if (consumed != text.size()) {
+                if (outError) *outError = std::string("Invalid sidecar_orientation field: ") + key;
+                return false;
+            }
+            if (outValue) *outValue = static_cast<std::uint64_t>(parsed);
+            return true;
+        } catch (...) {
+            if (outError) *outError = std::string("Invalid sidecar_orientation field: ") + key;
+            return false;
+        }
+    }
+
+    if (!value->is_number()) {
+        if (outError) *outError = std::string("Invalid sidecar_orientation field: ") + key;
+        return false;
+    }
+
+    const double numeric = value->as_number();
+    if (numeric < 0.0 || std::floor(numeric) != numeric || numeric > kMaxExactJsonInteger) {
+        if (outError) {
+            *outError = std::string("sidecar_orientation.") + key +
+                " must be an exact non-negative integer; use a quoted decimal string for full 64-bit values";
+        }
+        return false;
+    }
+
+    if (outValue) *outValue = static_cast<std::uint64_t>(numeric);
+    return true;
+}
+
+bool ParseOptionalSidecarOrientation(const json_min::Value& root,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    std::string* outError) {
+    if (outOrientation) *outOrientation = {};
+    if (outHasOrientation) *outHasOrientation = false;
+
+    const json_min::Value* orientationObject = root.get("sidecar_orientation");
+    if (!orientationObject) return true;
+    if (!orientationObject->is_object()) {
+        if (outError) *outError = "Missing or invalid object field: sidecar_orientation";
+        return false;
+    }
+
+    SidecarOrientationVector orientation{};
+    if (!ParseSidecarHashField(*orientationObject, "import_signature", &orientation.import_signature, outError)) return false;
+    if (!ParseSidecarHashField(*orientationObject, "pack_projection_hash", &orientation.pack_projection_hash, outError)) return false;
+    if (!GetRequiredNumber(*orientationObject, "field_embedding_stats", &orientation.field_embedding_stats, outError)) return false;
+    if (!GetRequiredNumber(*orientationObject, "slime_energy_delta", &orientation.slime_energy_delta, outError)) return false;
+    if (!GetRequiredNumber(*orientationObject, "busy_beaver_metrics", &orientation.busy_beaver_metrics, outError)) return false;
+    if (!GetRequiredNumber(*orientationObject, "decode_stability", &orientation.decode_stability, outError)) return false;
+    if (!GetRequiredNumber(*orientationObject, "diff_magnitude", &orientation.diff_magnitude, outError)) return false;
+    if (!SidecarOrientationFieldsAreFinite(orientation)) {
+        if (outError) *outError = "sidecar_orientation must contain only finite values";
+        return false;
+    }
+
+    if (outOrientation) *outOrientation = orientation;
+    if (outHasOrientation) *outHasOrientation = true;
+    return true;
+}
+
 bool ParseFractalType(const std::string& text, FractalType* outType) {
     return TryParseFractalTypeId(text, outType);
 }
@@ -167,7 +261,19 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    std::string* outError) {
     if (outError) outError->clear();
+    if (outOrientation) *outOrientation = {};
+    if (outHasOrientation) *outHasOrientation = false;
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadDiagnosticsStateJson requires non-null output pointers";
         return false;
@@ -184,6 +290,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     }
 
     const json_min::Value& root = parseResult.value;
+    if (!ParseOptionalSidecarOrientation(root, outOrientation, outHasOrientation, outError)) return false;
     int stateVersion = 0;
     if (!ParseIntField(root, "state_version", &stateVersion, outError)) return false;
     if (stateVersion != 1 && stateVersion != 2 && stateVersion != 3) {
@@ -490,10 +597,20 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
+    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    std::string* outError) {
     if (outError) outError->clear();
     std::string text;
     if (!ReadTextFile(std::filesystem::path(path), &text, outError)) return false;
-    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, outError);
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, outOrientation, outHasOrientation, outError);
 }
 
 bool ResolveFindingStateJsonPath(const std::string& selectedPath,

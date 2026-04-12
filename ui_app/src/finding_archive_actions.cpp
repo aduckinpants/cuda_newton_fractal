@@ -482,11 +482,39 @@ bool CaptureAndArchiveFindingBundle(
     const std::string& why,
     std::string* outFindingDir,
     std::string* outError) {
+    return CaptureAndArchiveFindingBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        nullptr,
+        group,
+        why,
+        outFindingDir,
+        outError);
+}
+
+bool CaptureAndArchiveFindingBundle(
+    const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const std::string& group,
+    const std::string& why,
+    std::string* outFindingDir,
+    std::string* outError) {
     if (outError) outError->clear();
 
     DiagnosticsCaptureResult capture;
     std::string captureError;
-    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba, rgbaPixelCount, &capture, &captureError)) {
+    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, stats, rgba, rgbaPixelCount, sidecarOrientation, &capture, &captureError)) {
         if (outError) *outError = captureError;
         return false;
     }

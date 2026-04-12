@@ -1,5 +1,6 @@
 #pragma once
 
+#include "explaino_sidecar_model.h"
 #include "fractal_types.h"
 
 #include <cstddef>
@@ -18,5 +19,16 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const RenderStats& stats,
     const uint32_t* rgba,
     std::size_t rgbaPixelCount,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError);
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
     DiagnosticsCaptureResult* outResult,
     std::string* outError);
