@@ -1,6 +1,8 @@
 @echo off
 setlocal
 
+echo [build_vsdevcmd] Starting runtime publish
+
 REM Reuse the existing VS dev environment path used by the CUDA demo
 call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
 if errorlevel 1 exit /b 1
@@ -34,6 +36,7 @@ if not exist "%BUILDROOT%" mkdir "%BUILDROOT%"
 set IMGUI=third_party\imgui
 
 REM Compile CUDA renderer
+echo [build_vsdevcmd] Compiling CUDA renderer
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
   -Xcompiler "/EHsc /MD" ^
@@ -42,6 +45,7 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
 if errorlevel 1 exit /b 1
 
 REM Compile CUDA sample core (K5: standalone linkable sample path)
+echo [build_vsdevcmd] Compiling CUDA sample core
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
   -Xcompiler "/EHsc /MD" ^
@@ -49,6 +53,7 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
 if errorlevel 1 exit /b 1
 
 REM Compile app + ImGui sources
+echo [build_vsdevcmd] Compiling app and ImGui sources
 cl /nologo /EHsc /MD /std:c++17 /O2 ^
   /I"%IMGUI%" /I"%IMGUI%\backends" ^
   /I"%CUDA_PATH%\include" ^
@@ -59,11 +64,12 @@ cl /nologo /EHsc /MD /std:c++17 /O2 ^
 if errorlevel 1 exit /b 1
 
 REM Link (keep /MD dynamic CRT; link CUDA runtime explicitly)
+echo [build_vsdevcmd] Linking runtime
 call :link_runtime "%PRIMARY_EXE%" "%LINK_LOG%"
 if errorlevel 1 (
   call :is_locked_primary_runtime_failure "%LINK_LOG%" "%PRIMARY_EXE%"
   if errorlevel 1 exit /b 1
-  echo Published runtime is locked; retrying link as %FALLBACK_EXE_NAME%
+  echo [build_vsdevcmd] Published runtime is locked; retrying link as %FALLBACK_EXE_NAME%
   call :link_runtime "%FALLBACK_EXE%" "%LINK_LOG%"
   if errorlevel 1 exit /b 1
   set ACTIVE_EXE=%FALLBACK_EXE%
@@ -75,6 +81,7 @@ if errorlevel 1 (
 del "%LINK_LOG%" >NUL 2>NUL
 
 REM Stage schema beside the published runtime so the external exe can validate and render without touching the repo tree.
+echo [build_vsdevcmd] Staging schema and launcher metadata
 if not exist "%OUTROOT%\ui" mkdir "%OUTROOT%\ui"
 if exist ..\ui\fractal_binding_surface_v1.ui_schema.json (
   copy /Y ..\ui\fractal_binding_surface_v1.ui_schema.json "%OUTROOT%\ui\fractal_binding_surface_v1.ui_schema.json" >NUL
@@ -100,7 +107,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Active runtime: %ACTIVE_EXE%
+echo [build_vsdevcmd] Active runtime: %ACTIVE_EXE%
 exit /b 0
 
 :link_runtime
