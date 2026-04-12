@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - closure audit and continuity cleanup
+Complete
 
 ## Phase Checklist
 
 - [x] Phase 1 - real-schema proof surface
 - [x] Phase 2 - contract repair for baseline Explaino auto-demo
 - [x] Phase 3 - runtime motion proof surface
-- [ ] Phase 4 - closure audit and continuity cleanup
+- [x] Phase 4 - closure audit and continuity cleanup
 
 ## Notes
 
@@ -25,6 +25,7 @@ Phase 4 - closure audit and continuity cleanup
   - a new headless executable proof surface now exists for runtime-sidecar motion: `--sidecar-apply-armed-step-count` and `--sidecar-pump-paced-loop-seconds` run against the published exe after `--load-state-json`, and the runtime pytest lane now proves explicit apply state/frame delta plus paced-loop state/frame delta and low-threshold stop behavior
   - the live runtime/window proof gap is now closed: `tests/test_fractal_runtime_explaino_sidecar_live.py` proves default Explaino startup stability, visible multi-step paced-loop motion after loading sidecar policy, and zero-threshold stop behavior against the published runtime window surface
   - the older live sweep/pause runtime regression is now hardened against zero-size startup captures and calibrated to the observed live pixel-diff signal so the broader Explaino runtime lane remains trustworthy instead of relying on a stale absolute threshold
+  - the Phase 4 hostile audit found one continuity defect after the live proof closure: `KNOWN_ISSUES.md` still described the pre-fix sweep regression fragility. That stale issue text is now repaired so the continuity docs match the landed live-runtime harness.
 
 - Phase 1 exit criteria:
   - a native helper test loads the checked-in schema, builds the real engine catalog, and proves the current baseline `explaino` sidecar state under that real surface

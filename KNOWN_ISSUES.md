@@ -130,11 +130,11 @@ The sweep-mode seed path now has both focused headless coverage and a live runti
 
 ---
 
-## P2 — Live GUI sweep regression test is fragile
+## ~~P2 — Live GUI sweep regression test is fragile~~ RESOLVED
 
-**Status:** open (not a code bug; test environment sensitivity)
+**Status:** resolved (2026-04-12 live-runtime proof hardening)
 **Area:** testing
 
-`tests/test_fractal_runtime_sweep_pause.py::test_runtime_sweep_changes_live_view_and_space_pauses_it` intermittently fails because the pixel-diff threshold (>1.0) requires visible frame change within 0.8 seconds. On slow GPU init, minimized windows, or RDP sessions the diff can be below threshold without indicating a real bug. The headless sweep coverage in `test_viewer_sweep.cpp` is the reliable contract test.
+`tests/test_fractal_runtime_sweep_pause.py::test_runtime_sweep_changes_live_view_and_space_pauses_it` no longer relies on the stale `>1.0` whole-window diff threshold. The live harness now waits for a visible non-zero client area, retries until the window produces a real frame, and compares adjacent live intervals against the observed runtime signal. The headless sweep coverage in `ui_app/tests/test_viewer_sweep.cpp` remains the primary contract test, and the live runtime regression is now a trustworthy companion proof rather than a known-fragile threshold check.
 
-Not a merge blocker. Future stabilization could use a retry loop or lower threshold.
+Residual constraint: the live GUI runtime tests are still Windows-only and require a visible desktop session. That is an environment contract, not an open product bug.
