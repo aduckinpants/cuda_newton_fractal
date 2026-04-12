@@ -291,6 +291,99 @@ int main() {
         }
     }
 
+
+    {
+        const fs::path statePath = tempRoot / "composed_variant_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_vortex",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 2.9685855,
+    "lambda_imag": -0.27446103,
+    "explaino_seed": 2.0,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_spread": 0.5,
+    "explaino_root_count": 4,
+    "explaino_cluster_radius": 0.0,
+    "joy_coupling": 0.0,
+    "fold_coupling": 0.0,
+    "bell_coupling": 0.0,
+    "ripple_amplitude": 0.0,
+    "splice_offset": 0.0,
+    "vortex_strength": 0.3,
+    "tension_strength": 0.0,
+    "transcendental_func": "f_sin",
+    "momentum_beta": 0.0,
+    "mcmullen_preset": "z3_z3",
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0],
+    "color_saturation": 1.15,
+    "color_contrast": 1.1,
+    "color_tint_r": 1.0,
+    "color_tint_g": 1.0,
+    "color_tint_b": 1.0
+  },
+  "render": {
+    "width": 320,
+    "height": 240,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30.0,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Composed variant state should load: " << error << "\n";
+            return 1;
+        }
+
+        if (view.fractal_type != FractalType::explaino_vortex) {
+            std::cerr << "Composed variant fractal_type should round-trip\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.ripple_amplitude, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.splice_offset, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.vortex_strength, 0.3f, 1.0e-6) ||
+            !NearlyEqual(params.tension_strength, 0.0f, 1.0e-6)) {
+            std::cerr << "Composed Explaino strength params should round-trip through diagnostics state loading\n";
+            return 1;
+        }
+    }
     {
         const fs::path statePath = tempRoot / "legacy_explaino_nova_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);

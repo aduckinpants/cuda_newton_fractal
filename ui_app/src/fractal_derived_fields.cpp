@@ -229,6 +229,13 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.explaino_cluster_radius = 0.0f;
     params.explaino_root_count = 0;
     params.momentum_beta = 0.0f;
+    params.joy_coupling = 0.0f;
+    params.fold_coupling = 0.0f;
+    params.bell_coupling = 0.0f;
+    params.ripple_amplitude = 0.0f;
+    params.splice_offset = 0.0f;
+    params.vortex_strength = 0.0f;
+    params.tension_strength = 0.0f;
 
     if (fractalType == FractalType::explaino_phoenix) {
         params.phoenix_p_real = 0.12f;

@@ -150,6 +150,24 @@ bool WriteRgbaBmp(const std::filesystem::path& path, const uint32_t* rgba, int w
     return true;
 }
 
+void WriteExplainoVariantParamsJson(std::ostringstream& js, const KernelParams& params) {
+    js << "    \"joy_coupling\": " << static_cast<double>(params.joy_coupling) << ",\n";
+    js << "    \"fold_coupling\": " << static_cast<double>(params.fold_coupling) << ",\n";
+    js << "    \"bell_coupling\": " << static_cast<double>(params.bell_coupling) << ",\n";
+    js << "    \"ripple_amplitude\": " << static_cast<double>(params.ripple_amplitude) << ",\n";
+    js << "    \"splice_offset\": " << static_cast<double>(params.splice_offset) << ",\n";
+    js << "    \"vortex_strength\": " << static_cast<double>(params.vortex_strength) << ",\n";
+    js << "    \"tension_strength\": " << static_cast<double>(params.tension_strength) << ",\n";
+}
+
+void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
+    js << "    \"color_saturation\": " << static_cast<double>(params.color_saturation) << ",\n";
+    js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
+    js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
+    js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
+    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << "\n";
+}
+
 std::string BuildStateJson(const ViewState& view, const KernelParams& params, const RenderSettings& render, const RenderStats& stats) {
     std::ostringstream js;
     js << "{\n";
@@ -191,6 +209,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
     js << "    \"explaino_root_spread\": " << static_cast<double>(params.explaino_root_spread) << ",\n";
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
+    WriteExplainoVariantParamsJson(js, params);
     js << "    \"transcendental_func\": \"" << TranscendentalFuncId(params.transcendental_func) << "\",\n";
     js << "    \"momentum_beta\": " << static_cast<double>(params.momentum_beta) << ",\n";
     js << "    \"mcmullen_preset\": \"" << McMullenPresetId(params.mcmullen_preset) << "\",\n";
@@ -200,11 +219,7 @@ std::string BuildStateJson(const ViewState& view, const KernelParams& params, co
         js << static_cast<double>(params.poly_coeffs[i]);
     }
     js << "],\n";
-    js << "    \"color_saturation\": " << static_cast<double>(params.color_saturation) << ",\n";
-    js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
-    js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
-    js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
-    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << "\n";
+    WriteColorParamsJson(js, params);
     js << "  },\n";
     js << "  \"render\": {\n";
     js << "    \"width\": " << render.resolution.x << ",\n";

@@ -470,6 +470,45 @@ int main() {
         }
     }
 
+    {
+        struct ComposedVariantExpectation {
+            FractalType fractal_type;
+            float ripple_amplitude;
+            float splice_offset;
+            float vortex_strength;
+            float tension_strength;
+        };
+
+        const ComposedVariantExpectation expectations[] = {
+            {FractalType::explaino_ripple, 0.15f, 0.0f, 0.0f, 0.0f},
+            {FractalType::explaino_splice, 0.0f, 0.5f, 0.0f, 0.0f},
+            {FractalType::explaino_vortex, 0.0f, 0.0f, 0.3f, 0.0f},
+            {FractalType::explaino_tension, 0.0f, 0.0f, 0.0f, 0.02f},
+        };
+
+        for (const ComposedVariantExpectation& expectation : expectations) {
+            ViewState view{};
+            KernelParams params{};
+            view.fractal_type = expectation.fractal_type;
+
+            // Simulate schema-default carryover from hidden variant controls.
+            params.ripple_amplitude = 0.15f;
+            params.splice_offset = 0.5f;
+            params.vortex_strength = 0.3f;
+            params.tension_strength = 0.02f;
+
+            ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
+
+            if (!NearlyEqual(params.ripple_amplitude, expectation.ripple_amplitude) ||
+                !NearlyEqual(params.splice_offset, expectation.splice_offset) ||
+                !NearlyEqual(params.vortex_strength, expectation.vortex_strength) ||
+                !NearlyEqual(params.tension_strength, expectation.tension_strength)) {
+                std::cerr << "Explaino composed presets must clear latent variant strengths before applying the selected default\n";
+                return 1;
+            }
+        }
+    }
+
     // Normalized-seed regression: the host polynomial update should depend on
     // the split combined seed surface (base + drift), not on raw fractional
     // writes into params.explaino_seed.

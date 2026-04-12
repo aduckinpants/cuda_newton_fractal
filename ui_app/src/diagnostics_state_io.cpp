@@ -272,6 +272,13 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoWarpStrength = 0.0;
     double explainoRootSpread = nextParams.explaino_root_spread;
     int explainoRootCount = 0;
+    double joyCoupling = nextParams.joy_coupling;
+    double foldCoupling = nextParams.fold_coupling;
+    double bellCoupling = nextParams.bell_coupling;
+    double rippleAmplitude = nextParams.ripple_amplitude;
+    double spliceOffset = nextParams.splice_offset;
+    double vortexStrength = nextParams.vortex_strength;
+    double tensionStrength = nextParams.tension_strength;
     const json_min::Value* polyCoeffsArray = nullptr;
     if (!ParseIntField(*paramsObject, "max_iter", &maxIter, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "epsilon", &epsilon, outError)) return false;
@@ -293,6 +300,13 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetRequiredNumber(*paramsObject, "explaino_warp_strength", &explainoWarpStrength, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_spread", &explainoRootSpread, nullptr, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "joy_coupling", &joyCoupling, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "fold_coupling", &foldCoupling, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "bell_coupling", &bellCoupling, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "ripple_amplitude", &rippleAmplitude, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "splice_offset", &spliceOffset, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "vortex_strength", &vortexStrength, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "tension_strength", &tensionStrength, nullptr, outError)) return false;
     if (!GetRequiredArray(*paramsObject, "poly_coeffs", &polyCoeffsArray, outError)) return false;
     if (polyCoeffsArray->as_array().size() != 5) {
         if (outError) *outError = "poly_coeffs must contain exactly 5 numbers";
@@ -348,6 +362,13 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_spread = static_cast<float>(explainoRootSpread);
     nextParams.explaino_root_count = explainoRootCount;
+    nextParams.joy_coupling = static_cast<float>(joyCoupling);
+    nextParams.fold_coupling = static_cast<float>(foldCoupling);
+    nextParams.bell_coupling = static_cast<float>(bellCoupling);
+    nextParams.ripple_amplitude = static_cast<float>(rippleAmplitude);
+    nextParams.splice_offset = static_cast<float>(spliceOffset);
+    nextParams.vortex_strength = static_cast<float>(vortexStrength);
+    nextParams.tension_strength = static_cast<float>(tensionStrength);
     if (IsExplainoFamily(nextView.fractal_type)) {
         ExplainoSeedNormalize(nextView, nextParams);
     }
