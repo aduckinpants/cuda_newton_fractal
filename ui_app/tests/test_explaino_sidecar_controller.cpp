@@ -1,4 +1,5 @@
 #include "../src/explaino_sidecar_controller.h"
+#include "../src/explaino_sidecar_refresh.h"
 #include "../src/schema_binding.h"
 
 #include <cmath>
@@ -177,6 +178,72 @@ int main() {
         }
         if (decision.status != SidecarAutoDemoControllerStatus::stopped_complete || decision.should_mutate) {
             std::cerr << "Expected controller stop conditions to prevent further mutation once completeness is satisfied\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy cachedPolicy;
+        cachedPolicy.enabled = true;
+        cachedPolicy.allow_runtime_mutation = true;
+        cachedPolicy.run_paced_loop = true;
+        cachedPolicy.paced_loop_interval_seconds = 0.5;
+        cachedPolicy.stop_demonstrated_fraction = 0.75;
+        cachedPolicy.stop_uncertain_count = 2;
+
+        if (!SidecarAutoDemoControllerPoliciesMatch(cachedPolicy, cachedPolicy)) {
+            std::cerr << "Expected identical sidecar controller policies to compare equal\n";
+            return 1;
+        }
+        if (ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, cachedPolicy)) {
+            std::cerr << "Expected unchanged controller policy to reuse cached sidecar state\n";
+            return 1;
+        }
+
+        SidecarAutoDemoControllerPolicy changedPolicy = cachedPolicy;
+        changedPolicy.enabled = false;
+        if (!ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, changedPolicy)) {
+            std::cerr << "Expected enable toggle changes to invalidate cached sidecar state\n";
+            return 1;
+        }
+
+        changedPolicy = cachedPolicy;
+        changedPolicy.allow_runtime_mutation = false;
+        if (!ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, changedPolicy)) {
+            std::cerr << "Expected runtime mutation opt-in changes to invalidate cached sidecar state\n";
+            return 1;
+        }
+
+        changedPolicy = cachedPolicy;
+        changedPolicy.run_paced_loop = false;
+        if (!ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, changedPolicy)) {
+            std::cerr << "Expected paced-loop toggle changes to invalidate cached sidecar state\n";
+            return 1;
+        }
+
+        changedPolicy = cachedPolicy;
+        changedPolicy.paced_loop_interval_seconds = 1.25;
+        if (!ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, changedPolicy)) {
+            std::cerr << "Expected paced-loop interval changes to invalidate cached sidecar state\n";
+            return 1;
+        }
+
+        changedPolicy = cachedPolicy;
+        changedPolicy.stop_demonstrated_fraction = 0.9;
+        if (!ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, changedPolicy)) {
+            std::cerr << "Expected stop demonstrated fraction changes to invalidate cached sidecar state\n";
+            return 1;
+        }
+
+        changedPolicy = cachedPolicy;
+        changedPolicy.stop_uncertain_count = 1;
+        if (!ShouldRefreshExplainoSidecarState(false, true, &cachedPolicy, changedPolicy)) {
+            std::cerr << "Expected stop uncertain count changes to invalidate cached sidecar state\n";
+            return 1;
+        }
+
+        if (!ShouldRefreshExplainoSidecarState(false, false, nullptr, cachedPolicy)) {
+            std::cerr << "Expected invalid cached sidecar state to rebuild even when policy is unchanged\n";
             return 1;
         }
     }

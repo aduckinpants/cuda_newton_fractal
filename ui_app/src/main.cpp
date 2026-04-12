@@ -31,6 +31,7 @@
 #include "finding_state_actions.h"
 #include "explaino_seed.h"
 #include "explaino_sidecar_cuda_sample_host.h"
+#include "explaino_sidecar_refresh.h"
 #include "explaino_sidecar_window.h"
 #include "explaino_seed_dynamics.h"
 #include "param_anim_dynamics.h"
@@ -1162,7 +1163,13 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
                                         bool& sidecarStateValid,
                                         SidecarBudgetState& sidecarBudgetState,
                                         bool& sidecarBudgetStateValid) {
-    if (!dirty && sidecarStateValid) return;
+    if (!ShouldRefreshExplainoSidecarState(
+            dirty,
+            sidecarStateValid,
+            sidecarStateValid ? &sidecarState.controller_policy : nullptr,
+            sidecarControllerPolicy)) {
+        return;
+    }
 
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);

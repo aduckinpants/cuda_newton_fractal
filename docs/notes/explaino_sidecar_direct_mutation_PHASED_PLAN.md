@@ -64,12 +64,18 @@ Phase 3 - persistence and capture integration
 	- preserved the current frame's dwell time when a newly armed decision first appears so the loop fires on the configured cadence instead of one tick late
 	- reset the paced-loop state after manual applies so a previous dwell window cannot make the next autonomous step fire early
 	- repaired the temporary `WinMain()` line-count ratchet regression by extracting the per-frame sidecar auto-demo block into a dedicated helper
+	- repaired the cached sidecar refresh gate so controller-policy changes now rebuild the sidecar state even when the fractal runtime itself is otherwise clean
 - Validation achieved for Phase 2:
 	- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/phase2_paced_loop_code_quality.json`
 	- `py -3.14 tools/viewer_host_run_logged_command.py --label phase2-native-after-audit-fix --log artifacts/phase2_paced_loop_build_tests.log -- ui_app\build_tests_vsdevcmd.cmd`
 	- `py -3.14 tools/viewer_host_run_logged_command.py --label phase2-runtime-final --log artifacts/phase2_paced_loop_runtime_build.log -- ui_app\build_vsdevcmd.cmd`
 	- `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui`
 	- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- Validation achieved for the control-surface repair:
+	- `ui_app/build_tests_vsdevcmd.cmd`
+	- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
+	- `ui_app/build_vsdevcmd.cmd`
+	- `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui`
 - Deferred to later phases:
 	- persistence or replay of controller policy / mutation traces
 	- headless capture or diagnostics surfaces for explicit mutation actions
