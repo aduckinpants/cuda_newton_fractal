@@ -156,6 +156,7 @@ Public workflow surface:
 |------|---------|-------|
 | Session bootstrap | `py -3.14 tools\viewer_host_session_bootstrap.py --audit --tail-handoff 8` | Repeatable new-session start surface |
 | Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>` | Repo-specific adapter that delegates to mainline `handoff_append.py` |
+| Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> "<message>"` | Repo-specific adapter that resolves the active pending breadcrumb and appends the final checkpoint summary in one invocation |
 | Plan sync check | `py -3.14 tools\viewer_host_assert_phased_plan_sync.py` | Deterministic phased-plan continuity adapter |
 | Native helper tests | `ui_app\build_tests_vsdevcmd.cmd` | Must pass before any commit |
 | Full viewer build | `ui_app\build_vsdevcmd.cmd` | Must pass before any commit |
@@ -167,6 +168,7 @@ For long-running direct terminal commands, prefer:
 `py -3.14 tools\viewer_host_run_logged_command.py --label "<label>" --log artifacts/<task>.log -- <command ...>`
 
 This keeps the full transcript in `artifacts/` while emitting a short deterministic summary to stdout, which is more reliable than asking editor-integrated terminal wrappers to carry the entire build/test transcript.
+On Windows, the wrapper now normalizes direct relative `.cmd`/`.bat` paths under the selected `--cwd`, so `ui_app\build_tests_vsdevcmd.cmd` no longer requires a manual `./` prefix when run through the helper.
 
 **After both build commands pass**, the runtime is at:
 `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`
@@ -288,9 +290,9 @@ If information would be lost when the chat session ends, it belongs in one of:
 | `nine` | Planning/research reference | Do not edit from this workspace |
 | `wizard-test` | Historical/conceptual reference | Read-only |
 
-Cross-repo tooling: the handoff append tool lives in salticid-cuda:
+Cross-repo tooling: the mainline append implementation still lives in `salticid-cuda`, but this repo's canonical append surface is the thin local adapter:
 ```
-py -3.14 C:\code\salticid-cuda\tools\handoff_append.py --repo-root "c:\code\cuda_newton_fractal_clone" "message"
+py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> "message"
 ```
 
 Do not fork core workflow tools from mainline into this repo under the same names.

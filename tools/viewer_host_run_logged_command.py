@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+WINDOWS_BATCH_SUFFIXES = {".bat", ".cmd"}
 
 
 def _relative_to_repo(path: Path) -> str:
@@ -29,6 +30,27 @@ def _tail_lines(path: Path, line_count: int) -> list[str]:
 
 def _format_command(command: list[str]) -> str:
     return shlex.join(command)
+
+
+def _normalize_command_for_launch(command: list[str], cwd: Path) -> list[str]:
+    normalized = list(command)
+    if os.name != "nt" or not normalized:
+        return normalized
+
+    entry = normalized[0].strip()
+    if not entry:
+        return normalized
+
+    entry_path = Path(entry)
+    if entry_path.suffix.lower() not in WINDOWS_BATCH_SUFFIXES:
+        return normalized
+
+    if not entry_path.is_absolute():
+        entry_path = (cwd / entry_path).resolve()
+    else:
+        entry_path = entry_path.resolve()
+    normalized[0] = str(entry_path)
+    return normalized
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -52,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     cwd = Path(args.cwd)
     if not cwd.is_absolute():
         cwd = (REPO_ROOT / cwd).resolve()
+    command = _normalize_command_for_launch(command, cwd)
 
     log_path = Path(args.log)
     if not log_path.is_absolute():

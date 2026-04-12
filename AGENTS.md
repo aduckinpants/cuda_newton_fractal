@@ -97,7 +97,7 @@ The VS Code task surface is the canonical profile surface under `verify: profile
 - `salticid-cuda` is the mainline reference repo from this workspace.
 - Do not edit mainline directly from here.
 - This repo may invoke mainline workflow helpers when needed, especially `C:\code\salticid-cuda\tools\handoff_append.py`.
-- Do not fork core workflow tools into this repo under the same names. Call the mainline helper directly when it supports `--repo-root`, or use a thin repo-specific `viewer_host_*` adapter when local context is required.
+- Do not fork core workflow tools into this repo under the same names. Call the mainline helper directly when it supports `--repo-root`, or use a thin repo-specific `viewer_host_*` adapter when local context is required. For checkpoint closure in this repo, prefer `py -3.14 tools\viewer_host_append_handoff.py ...` over calling the mainline helper by hand.
 
 ## Output Discipline
 

@@ -106,6 +106,7 @@ def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> d
         "audit": asdict(audit) if audit is not None else None,
         "next_commands": {
             "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified>",
+            "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> \"<message>\"",
             "assert_plan_sync": "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
             "profiles": "Use the VS Code tasks under verify: profile ...",
         },
