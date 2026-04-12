@@ -1093,6 +1093,7 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
         sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
         sidecarStateValid ? &sidecarState.completeness : nullptr,
         (sidecarStateValid && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr,
+        (sidecarStateValid && !sidecarState.trace.function_id.empty()) ? &sidecarState.trace : nullptr,
         &sidecarControllerPolicy,
         &sidecarState,
         nullptr);

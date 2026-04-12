@@ -139,6 +139,12 @@ EngineFunctionCatalog BuildInvalidCostHintCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildControllerEligibleCatalog() {
+    EngineFunctionCatalog catalog = BuildCatalog();
+    catalog.functions[0].parameters[2].cost_hint = 0.0;
+    return catalog;
+}
+
 SidecarBudgetState BuildCompleteBudget(const SidecarBudgetState& budget) {
     SidecarBudgetState next = budget;
     next.mean_posterior_uncertainty = 0.0;
@@ -323,6 +329,131 @@ int main() {
         }
         if (state.action_recommendation.guidance.empty() || !state.action_error_message.empty()) {
             std::cerr << "Expected successful action recommendation builds to carry guidance and no action error\n";
+            return 1;
+        }
+        if (!state.trace_error_message.empty() || !state.trace.steps.empty()) {
+            std::cerr << "Expected disabled controller policy to leave the slime trace empty with no error\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState state;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildControllerEligibleCatalog(), ctx, &host, nullptr, nullptr, nullptr, &policy, &state, &error)) {
+            std::cerr << "Expected enabled sidecar window state to build for slime-trace proposal test: " << error << "\n";
+            return 1;
+        }
+        if (!state.has_action_recommendation || !(state.action_recommendation.utility > 0.0)) {
+            std::cerr << "Expected proposal-ready slime-trace test fixture to expose a positive-energy recommendation\n";
+            return 1;
+        }
+        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::proposal_ready ||
+            state.trace.steps.size() != 1 ||
+            state.trace.steps[0].path != "fractal.params.explaino_mix" ||
+            state.trace.steps[0].should_mutate ||
+            state.trace.visit_counts.size() != 1 ||
+            state.trace.visit_counts[0].path != "fractal.params.explaino_mix" ||
+            state.trace.visit_counts[0].visit_count != 1 ||
+            state.trace.visit_counts[0].latest_step_index != 1 ||
+            !state.trace_error_message.empty()) {
+            std::cerr << "Expected enabled controller policy to record a first proposal step in the slime trace and overlay it onto the energy profile"
+                      << " status=" << static_cast<int>(state.controller_decision.status)
+                      << " steps=" << state.trace.steps.size()
+                      << " step_path=" << (state.trace.steps.empty() ? std::string("<none>") : state.trace.steps[0].path)
+                      << " step_mutate=" << (state.trace.steps.empty() ? false : state.trace.steps[0].should_mutate)
+                      << " visits=" << state.trace.visit_counts.size()
+                      << " visit_path=" << (state.trace.visit_counts.empty() ? std::string("<none>") : state.trace.visit_counts[0].path)
+                      << " visit_count=" << (state.trace.visit_counts.empty() ? 0 : state.trace.visit_counts[0].visit_count)
+                      << " latest_step_index=" << (state.trace.visit_counts.empty() ? 0 : state.trace.visit_counts[0].latest_step_index)
+                      << " trace_error=" << state.trace_error_message << "\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState seeded;
+        ExplainoSidecarWindowState state;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildControllerEligibleCatalog(), ctx, &host, nullptr, nullptr, nullptr, &policy, &seeded, &error)) {
+            std::cerr << "Expected seeded proposal-ready sidecar state before stale-trace reset test: " << error << "\n";
+            return 1;
+        }
+        if (seeded.trace.steps.size() != 1) {
+            std::cerr << "Expected seeded sidecar state to carry a first slime-trace step before reset test\n";
+            return 1;
+        }
+
+        SidecarSlimeTrace staleTrace = seeded.trace;
+        staleTrace.fractal_type_id = "mandelbrot";
+        host.fail = true;
+        if (BuildExplainoSidecarWindowState(
+                BuildControllerEligibleCatalog(),
+                ctx,
+                &host,
+                nullptr,
+                nullptr,
+                nullptr,
+                &staleTrace,
+                &policy,
+                &state,
+                &error)) {
+            std::cerr << "Expected incompatible stale-trace preservation test to fail on the measurement host error\n";
+            return 1;
+        }
+        if (error.find("fake measurement host failure") == std::string::npos) {
+            std::cerr << "Expected stale-trace preservation test to surface the measurement host failure, got: " << error << "\n";
+            return 1;
+        }
+        if (!state.trace_error_message.empty() || !state.trace.steps.empty()) {
+            std::cerr << "Expected measurement-failure paths to drop incompatible stale slime traces instead of preserving them across identity mismatches\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeMeasurementHost host;
+        ExplainoSidecarWindowState seeded;
+        ExplainoSidecarWindowState state;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildControllerEligibleCatalog(), ctx, &host, nullptr, nullptr, nullptr, &policy, &seeded, &error)) {
+            std::cerr << "Expected seeded proposal-ready sidecar state before stale-path reset test: " << error << "\n";
+            return 1;
+        }
+
+        SidecarSlimeTrace staleTrace = seeded.trace;
+        staleTrace.steps[0].path = "fractal.params.not_real";
+        staleTrace.latest_path = "fractal.params.not_real";
+        staleTrace.visit_counts[0].path = "fractal.params.not_real";
+        host.fail = true;
+        if (BuildExplainoSidecarWindowState(
+                BuildControllerEligibleCatalog(),
+                ctx,
+                &host,
+                nullptr,
+                nullptr,
+                nullptr,
+                &staleTrace,
+                &policy,
+                &state,
+                &error)) {
+            std::cerr << "Expected stale-path preservation test to fail on the measurement host error\n";
+            return 1;
+        }
+        if (error.find("fake measurement host failure") == std::string::npos) {
+            std::cerr << "Expected stale-path preservation test to surface the measurement host failure, got: " << error << "\n";
+            return 1;
+        }
+        if (!state.trace_error_message.empty() || !state.trace.steps.empty()) {
+            std::cerr << "Expected measurement-failure paths to drop stale slime traces whose paths are not on the current window surface\n";
             return 1;
         }
     }

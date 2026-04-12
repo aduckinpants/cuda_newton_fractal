@@ -9,6 +9,7 @@
 #include "explaino_sidecar_lens.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
+#include "explaino_sidecar_trace.h"
 
 #include <string>
 #include <vector>
@@ -32,6 +33,7 @@ struct ExplainoSidecarWindowState {
     std::string controller_error_message;
     std::string divergence_error_message;
     std::string energy_error_message;
+    std::string trace_error_message;
     bool has_orientation{false};
     SidecarOrientationVector orientation{};
     SidecarAutoDemoControllerPolicy controller_policy{};
@@ -40,6 +42,7 @@ struct ExplainoSidecarWindowState {
     SidecarLensProjection lens{};
     SidecarEnergyLandscape energy_landscape{};
     SidecarExplorationCompleteness completeness{};
+    SidecarSlimeTrace trace{};
     bool has_action_recommendation{false};
     SidecarActionRecommendation action_recommendation{};
     SidecarAutoDemoControllerDecision controller_decision{};
@@ -64,6 +67,18 @@ bool BuildExplainoSidecarWindowState(
     const SidecarBudgetState* previousBudget,
     const SidecarExplorationCompleteness* previousCompleteness,
     const SidecarOrientationVector* previousOrientation,
+    const SidecarAutoDemoControllerPolicy* controllerPolicy,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError);
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
+    const SidecarOrientationVector* previousOrientation,
+    const SidecarSlimeTrace* previousTrace,
     const SidecarAutoDemoControllerPolicy* controllerPolicy,
     ExplainoSidecarWindowState* outState,
     std::string* outError);

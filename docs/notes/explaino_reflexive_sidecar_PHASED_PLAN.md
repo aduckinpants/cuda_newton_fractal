@@ -16,9 +16,9 @@ Phase 5 - R4 divergence, energy, and persistence
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - extract the R4-C slime-trace seam on top of the now-landed R4-B energy profile surface
-  - decide whether the first trace is a headless path log only or also a viewer-side overlay on the energy table/profile
-  - keep runtime parameter mutation and orientation persistence out of scope until the trace seam proves durable under hostile audit
+  - extract the R4-D orientation-persistence seam on top of the now-landed divergence, energy, and slime-trace surfaces
+  - decide the first persistence contract for save/load/compare without inventing live mutation or a second source of truth
+  - keep runtime parameter mutation deferred until orientation persistence proves durable under hostile audit
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -87,14 +87,20 @@ Phase 5 - R4 divergence, energy, and persistence
   - sidecar window state and rendering now expose an explicit energy profile over the measured budget/lens surface
   - sidecar action selection now reuses the energy landscape as the single `importance - cost` source instead of carrying a second formula
   - hostile-audit repair for unavailable energy rows: missing-cost or inactive rows no longer silently expose fake zero energy/cost values
+  - `ui_app/src/explaino_sidecar_trace.h/.cpp`
+  - `ui_app/tests/test_explaino_sidecar_trace.cpp`
+  - sidecar window state and rendering now expose a slime-trace table plus per-row trace overlays on the energy profile
+  - runtime sidecar refresh now threads prior trace state into rebuilds when the current sidecar state actually carries a trace identity
+  - hostile-audit repair for stale prior trace identity: incompatible prior traces now reset instead of failing the current trace build
+  - hostile-audit repair for stale prior trace paths on error paths: measurement/controller failures no longer preserve traces whose paths are absent from the current window surface
 - Validation achieved for the current Phase 5 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
-  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_energy_code_quality_report.json`
+  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
 - Next bounded slice for Phase 5:
-  - extract the R4-C slime-trace seam from the now-landed energy surface and controller decisions
-  - decide whether the first trace surface is a headless path log only or also a viewer-side overlay while preserving the headless seam
-  - keep orientation persistence deferred until the trace surface is validated and audited
+  - extract the R4-D orientation vector persistence seam from the now-landed divergence surface and reusable sidecar orientation state
+  - define the first save/load/compare contract for exploration states without introducing a second editable truth source
+  - keep live auto-demonstration mutation deferred until persistence survives the same hostile-audit loop
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - live auto-demonstration parameter mutation

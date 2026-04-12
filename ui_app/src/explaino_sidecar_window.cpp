@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
 
 namespace {
 
@@ -57,6 +58,25 @@ std::string EnergyStatusText(SidecarEnergyLandscapeRowStatus status) {
         return "unsupported_type";
     }
     return "unknown";
+}
+
+std::string FormatTraceOverlay(
+    const std::string& path,
+    const SidecarSlimeTrace& trace) {
+    for (const auto& visit : trace.visit_counts) {
+        if (visit.path != path) {
+            continue;
+        }
+        std::ostringstream out;
+        out << "x" << visit.visit_count << " @#" << visit.latest_step_index;
+        if (visit.latest_should_mutate) {
+            out << " apply";
+        } else {
+            out << " proposal";
+        }
+        return out.str();
+    }
+    return "--";
 }
 
 void RenderOrientationSection(const ExplainoSidecarWindowState& state) {
@@ -207,7 +227,7 @@ void RenderEnergySection(const ExplainoSidecarWindowState& state) {
         ImGui::BulletText("peak_path: %s", state.energy_landscape.peak_path.c_str());
     }
 
-    if (!ImGui::BeginTable("sidecar_energy", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+    if (!ImGui::BeginTable("sidecar_energy", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
         return;
     }
 
@@ -218,6 +238,7 @@ void RenderEnergySection(const ExplainoSidecarWindowState& state) {
     ImGui::TableSetupColumn("Cost");
     ImGui::TableSetupColumn("Zone");
     ImGui::TableSetupColumn("Status");
+    ImGui::TableSetupColumn("Trace");
     ImGui::TableHeadersRow();
 
     for (const auto& row : state.energy_landscape.rows) {
@@ -237,6 +258,53 @@ void RenderEnergySection(const ExplainoSidecarWindowState& state) {
         ImGui::TextUnformatted(FormatActiveZone(zoneRow).c_str());
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(row.summary.c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(FormatTraceOverlay(row.path, state.trace).c_str());
+    }
+
+    ImGui::EndTable();
+}
+
+void RenderTraceSection(const ExplainoSidecarWindowState& state) {
+    ImGui::Separator();
+    ImGui::Text("Slime Trace");
+    if (!state.trace_error_message.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Trace error");
+        ImGui::TextWrapped("%s", state.trace_error_message.c_str());
+        return;
+    }
+    if (state.trace.steps.empty()) {
+        ImGui::TextDisabled("Trace unavailable.");
+        return;
+    }
+
+    ImGui::BulletText("proposal_steps: %d", state.trace.proposal_step_count);
+    ImGui::BulletText("apply_steps: %d", state.trace.apply_step_count);
+    ImGui::BulletText("latest_path: %s", state.trace.latest_path.c_str());
+
+    if (!ImGui::BeginTable("sidecar_trace", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        return;
+    }
+
+    ImGui::TableSetupColumn("Step");
+    ImGui::TableSetupColumn("Path");
+    ImGui::TableSetupColumn("Mode");
+    ImGui::TableSetupColumn("Target");
+    ImGui::TableSetupColumn("Energy");
+    ImGui::TableHeadersRow();
+
+    for (const auto& step : state.trace.steps) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("#%d", step.step_index);
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(step.path.c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(step.summary.c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(FormatOptionalNumber(step.target_value).c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(FormatOptionalNumber(step.energy).c_str());
     }
 
     ImGui::EndTable();
@@ -406,6 +474,63 @@ void PopulateEnergyLandscape(
     }
 }
 
+bool PreviousTraceCompatibleWithWindowState(
+    const SidecarSlimeTrace& trace,
+    const ExplainoSidecarWindowState& state) {
+    if (trace.function_id.empty() || trace.fractal_type_id.empty()) {
+        return false;
+    }
+    if (trace.function_id != state.function_id || trace.fractal_type_id != state.fractal_type_id) {
+        return false;
+    }
+
+    std::unordered_map<std::string, bool> rowPathSet;
+    rowPathSet.reserve(state.rows.size());
+    for (const auto& row : state.rows) {
+        rowPathSet.emplace(row.path, true);
+    }
+    for (const auto& step : trace.steps) {
+        if (rowPathSet.find(step.path) == rowPathSet.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void PopulateSlimeTrace(
+    const SidecarSlimeTrace* previousTrace,
+    ExplainoSidecarWindowState* ioState) {
+    if (!ioState) {
+        return;
+    }
+
+    ioState->trace_error_message.clear();
+    ioState->trace = {};
+    if (!ioState->controller_error_message.empty() || !ioState->energy_error_message.empty()) {
+        if (previousTrace && PreviousTraceCompatibleWithWindowState(*previousTrace, *ioState)) {
+            ioState->trace = *previousTrace;
+        }
+        return;
+    }
+    if (ioState->energy_landscape.function_id.empty()) {
+        if (previousTrace && PreviousTraceCompatibleWithWindowState(*previousTrace, *ioState)) {
+            ioState->trace = *previousTrace;
+        }
+        return;
+    }
+
+    std::string traceError;
+    if (!BuildSidecarSlimeTrace(
+            ioState->energy_landscape,
+            ioState->controller_decision,
+            previousTrace,
+            &ioState->trace,
+            &traceError)) {
+        ioState->trace = {};
+        ioState->trace_error_message = traceError;
+    }
+}
+
 void PopulateDivergenceState(
     const SidecarOrientationVector* previousOrientation,
     ExplainoSidecarWindowState* ioState) {
@@ -445,6 +570,7 @@ bool BuildExplainoSidecarWindowState(
         previousBudget,
         previousCompleteness,
         nullptr,
+        nullptr,
         controllerPolicy,
         outState,
         outError);
@@ -457,6 +583,30 @@ bool BuildExplainoSidecarWindowState(
     const SidecarBudgetState* previousBudget,
     const SidecarExplorationCompleteness* previousCompleteness,
     const SidecarOrientationVector* previousOrientation,
+    const SidecarAutoDemoControllerPolicy* controllerPolicy,
+    ExplainoSidecarWindowState* outState,
+    std::string* outError) {
+    return BuildExplainoSidecarWindowState(
+        catalog,
+        ctx,
+        measurementHost,
+        previousBudget,
+        previousCompleteness,
+        previousOrientation,
+        nullptr,
+        controllerPolicy,
+        outState,
+        outError);
+}
+
+bool BuildExplainoSidecarWindowState(
+    const EngineFunctionCatalog& catalog,
+    const BindingContext& ctx,
+    const SidecarMeasurementHost* measurementHost,
+    const SidecarBudgetState* previousBudget,
+    const SidecarExplorationCompleteness* previousCompleteness,
+    const SidecarOrientationVector* previousOrientation,
+    const SidecarSlimeTrace* previousTrace,
     const SidecarAutoDemoControllerPolicy* controllerPolicy,
     ExplainoSidecarWindowState* outState,
     std::string* outError) {
@@ -506,6 +656,7 @@ bool BuildExplainoSidecarWindowState(
             }
             PopulateCompletenessFromBudget(space, previousCompleteness, &next);
             PopulateControllerDecision(&next);
+            PopulateSlimeTrace(previousTrace, &next);
             PopulateDivergenceState(previousOrientation, &next);
             *outState = std::move(next);
             if (outError) *outError = measurementError;
@@ -520,6 +671,7 @@ bool BuildExplainoSidecarWindowState(
             }
             PopulateCompletenessFromBudget(space, previousCompleteness, &next);
             PopulateControllerDecision(&next);
+            PopulateSlimeTrace(previousTrace, &next);
             PopulateDivergenceState(previousOrientation, &next);
             *outState = std::move(next);
             if (outError) *outError = budgetError;
@@ -540,6 +692,7 @@ bool BuildExplainoSidecarWindowState(
             }
             PopulateCompletenessFromBudget(space, previousCompleteness, &next);
             PopulateControllerDecision(&next);
+            PopulateSlimeTrace(previousTrace, &next);
             PopulateDivergenceState(previousOrientation, &next);
             *outState = std::move(next);
             if (outError) *outError = lensError;
@@ -570,10 +723,16 @@ bool BuildExplainoSidecarWindowState(
         }
 
         PopulateControllerDecision(&next);
+        PopulateSlimeTrace(previousTrace, &next);
         PopulateDivergenceState(previousOrientation, &next);
         if (!next.controller_error_message.empty()) {
             *outState = std::move(next);
             if (outError) *outError = outState->controller_error_message;
+            return false;
+        }
+        if (!next.trace_error_message.empty()) {
+            *outState = std::move(next);
+            if (outError) *outError = outState->trace_error_message;
             return false;
         }
         if (!next.divergence_error_message.empty()) {
@@ -584,7 +743,13 @@ bool BuildExplainoSidecarWindowState(
     }
 
     if (!measurementHost) {
+        PopulateSlimeTrace(previousTrace, &next);
         PopulateDivergenceState(previousOrientation, &next);
+        if (!next.trace_error_message.empty()) {
+            *outState = std::move(next);
+            if (outError) *outError = outState->trace_error_message;
+            return false;
+        }
         if (!next.divergence_error_message.empty()) {
             *outState = std::move(next);
             if (outError) *outError = outState->divergence_error_message;
@@ -610,7 +775,8 @@ bool BuildExplainoSidecarWindowState(
         measurementHost,
         previousBudget,
         previousCompleteness,
-    nullptr,
+        nullptr,
+        nullptr,
         nullptr,
         outState,
         outError);
@@ -652,6 +818,7 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
     RenderOrientationSection(state);
     RenderBudgetSection(state);
     RenderEnergySection(state);
+    RenderTraceSection(state);
     RenderCompletenessSection(state);
     RenderDivergenceSection(state);
     RenderControllerSection(state);
