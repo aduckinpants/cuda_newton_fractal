@@ -8,6 +8,17 @@ static bool NearlyEqual(double a, double b, double eps = 1.0e-9) {
     return std::fabs(a - b) <= eps;
 }
 
+static bool ControllerPoliciesMatch(const SidecarAutoDemoControllerPolicy& lhs,
+  const SidecarAutoDemoControllerPolicy& rhs,
+  double eps = 1.0e-9) {
+  return lhs.enabled == rhs.enabled &&
+       lhs.allow_runtime_mutation == rhs.allow_runtime_mutation &&
+       lhs.run_paced_loop == rhs.run_paced_loop &&
+       NearlyEqual(lhs.paced_loop_interval_seconds, rhs.paced_loop_interval_seconds, eps) &&
+       NearlyEqual(lhs.stop_demonstrated_fraction, rhs.stop_demonstrated_fraction, eps) &&
+       lhs.stop_uncertain_count == rhs.stop_uncertain_count;
+}
+
 static void WriteMinimalStateWithExtraParams(const std::filesystem::path& statePath, const std::string& extraParamsJson) {
   std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
   file << "{\n"
@@ -137,13 +148,28 @@ int main() {
         RenderSettings render{};
         SidecarOrientationVector orientation{};
         bool hasOrientation = true;
+        SidecarAutoDemoControllerPolicy controllerPolicy{};
+        bool hasControllerPolicy = true;
         std::string error;
-        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &orientation, &hasOrientation, &error)) {
+        if (!LoadDiagnosticsStateFile(
+                statePath.string(),
+                &view,
+                &params,
+                &render,
+                &orientation,
+                &hasOrientation,
+                &controllerPolicy,
+                &hasControllerPolicy,
+                &error)) {
             std::cerr << "LoadDiagnosticsStateFile failed: " << error << "\n";
             return 1;
         }
         if (hasOrientation) {
           std::cerr << "Expected legacy diagnostics state loads without sidecar_orientation to report no persisted orientation\n";
+          return 1;
+        }
+        if (hasControllerPolicy) {
+          std::cerr << "Expected legacy diagnostics state loads without sidecar_auto_demo_policy to report no persisted controller policy\n";
           return 1;
         }
 
@@ -374,6 +400,228 @@ int main() {
             !NearlyEqual(orientation.decode_stability, 0.5) ||
             !NearlyEqual(orientation.diff_magnitude, 2.0)) {
             std::cerr << "Expected persisted sidecar orientation values to round-trip through diagnostics state loading\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "sidecar_controller_policy_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_dual",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 6.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_auto_demo_policy": {
+    "enabled": true,
+    "allow_runtime_mutation": true,
+    "run_paced_loop": true,
+    "paced_loop_interval_seconds": 2.5,
+    "stop_demonstrated_fraction": 0.75,
+    "stop_uncertain_count": 3
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = true;
+        SidecarAutoDemoControllerPolicy controllerPolicy{};
+        bool hasControllerPolicy = false;
+        std::string error;
+        if (!LoadDiagnosticsStateFile(
+                statePath.string(),
+                &view,
+                &params,
+                &render,
+                &orientation,
+                &hasOrientation,
+                &controllerPolicy,
+                &hasControllerPolicy,
+                &error)) {
+            std::cerr << "Expected sidecar controller policy state to load: " << error << "\n";
+            return 1;
+        }
+        if (hasOrientation) {
+            std::cerr << "Expected controller-policy state without sidecar_orientation to report no persisted orientation\n";
+            return 1;
+        }
+        if (!hasControllerPolicy) {
+            std::cerr << "Expected diagnostics state load to report persisted sidecar controller policy when present\n";
+            return 1;
+        }
+
+        SidecarAutoDemoControllerPolicy expectedPolicy{};
+        expectedPolicy.enabled = true;
+        expectedPolicy.allow_runtime_mutation = true;
+        expectedPolicy.run_paced_loop = true;
+        expectedPolicy.paced_loop_interval_seconds = 2.5;
+        expectedPolicy.stop_demonstrated_fraction = 0.75;
+        expectedPolicy.stop_uncertain_count = 3;
+        if (!ControllerPoliciesMatch(controllerPolicy, expectedPolicy)) {
+            std::cerr << "Expected persisted sidecar controller policy values to round-trip through diagnostics state loading\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "invalid_sidecar_controller_policy_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_dual",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 6.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_auto_demo_policy": {
+    "enabled": true,
+    "allow_runtime_mutation": true,
+    "run_paced_loop": true,
+    "paced_loop_interval_seconds": 0.0,
+    "stop_demonstrated_fraction": 0.75,
+    "stop_uncertain_count": 3
+  }
+})";
+        file.close();
+
+        std::string observedError;
+        if (!ExpectLoadDiagnosticsStateFailure(
+                statePath,
+                "sidecar_auto_demo_policy.paced_loop_interval_seconds must be > 0",
+                &observedError)) {
+            std::cerr << "Unexpected invalid controller-policy error text: " << observedError << "\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "fractional_sidecar_controller_policy_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_dual",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 6.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_auto_demo_policy": {
+    "enabled": true,
+    "allow_runtime_mutation": true,
+    "run_paced_loop": true,
+    "paced_loop_interval_seconds": 1.0,
+    "stop_demonstrated_fraction": 0.75,
+    "stop_uncertain_count": 3.5
+  }
+})";
+        file.close();
+
+        std::string observedError;
+        if (!ExpectLoadDiagnosticsStateFailure(
+                statePath,
+                "Invalid integer field: stop_uncertain_count",
+                &observedError)) {
+            std::cerr << "Unexpected fractional controller-policy error text: " << observedError << "\n";
             return 1;
         }
     }

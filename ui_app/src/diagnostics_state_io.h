@@ -1,5 +1,6 @@
 #pragma once
 
+#include "explaino_sidecar_controller.h"
 #include "explaino_sidecar_model.h"
 #include "fractal_types.h"
 
@@ -19,6 +20,16 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     bool* outHasOrientation,
     std::string* outError);
 
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    std::string* outError);
+
 bool LoadDiagnosticsStateFile(const std::string& path,
     ViewState* ioView,
     KernelParams* ioParams,
@@ -31,6 +42,16 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     RenderSettings* ioRender,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
+    std::string* outError);
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
     std::string* outError);
 
 bool ResolveFindingStateJsonPath(const std::string& selectedPath,

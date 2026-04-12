@@ -208,6 +208,8 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
     assert reloaded_state["params"]["ripple_amplitude"] == pytest.approx(0.0, abs=1e-6)
     assert "sidecar_orientation" in initial_state
     assert reloaded_state["sidecar_orientation"] == initial_state["sidecar_orientation"]
+    assert "sidecar_auto_demo_policy" in initial_state
+    assert reloaded_state["sidecar_auto_demo_policy"] == initial_state["sidecar_auto_demo_policy"]
     assert reloaded_capture["frame_hash"] == initial_capture["frame_hash"]
     assert reloaded_state["render"]["width"] == initial_state["render"]["width"]
     assert reloaded_state["render"]["height"] == initial_state["render"]["height"]

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "diagnostics_capture.h"
+#include "explaino_sidecar_controller.h"
 #include "explaino_sidecar_model.h"
 #include "fractal_types.h"
 
@@ -59,6 +60,7 @@ bool CaptureAndArchiveFindingBundle(
     const uint32_t* rgba,
     std::size_t rgbaPixelCount,
     const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
     const std::string& group,
     const std::string& why,
     std::string* outFindingDir,

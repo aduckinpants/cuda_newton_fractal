@@ -405,7 +405,8 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
 static int RunHeadlessDiagnosticCapture(
     const std::string& exeDir, const ViewState& view,
     const KernelParams& params, const RenderSettings& render,
-    const SidecarOrientationVector* sidecarOrientation) {
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy) {
     std::vector<uint32_t> headlessRgba;
     headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
     const char* err = nullptr;
@@ -416,7 +417,7 @@ static int RunHeadlessDiagnosticCapture(
     std::string captureError;
     DiagnosticsCaptureResult captureResult;
     if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &captureResult, &captureError)) {
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, &captureResult, &captureError)) {
         return 1;
     }
     return 0;
@@ -425,7 +426,8 @@ static int RunHeadlessDiagnosticCapture(
 static int RunHeadlessFindingCapture(
     const std::string& exeDir, const ViewerCliArgs& cli,
     const ViewState& view, const KernelParams& params, const RenderSettings& render,
-    const SidecarOrientationVector* sidecarOrientation) {
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy) {
     ClearHeadlessErrorFile(exeDir, "capture_finding_error.txt");
     RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
     std::vector<uint32_t> headlessRgba;
@@ -442,7 +444,7 @@ static int RunHeadlessFindingCapture(
     const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
     const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
     if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation,
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy,
             findingGroup, findingWhy, &findingDir, &findingError)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
             findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
@@ -458,6 +460,7 @@ static void RunInLoopDiagnosticCapture(
     const RenderSettings& render, const RenderStats& stats,
     const std::vector<uint32_t>& rgba, const RenderedFrameState& renderedFrame,
     const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
     std::string& findingStatus) {
     std::string captureError;
     RenderSettings captureRender = render;
@@ -467,7 +470,7 @@ static void RunInLoopDiagnosticCapture(
     } else {
         DiagnosticsCaptureResult captureResult;
         if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats,
-                rgba.data(), rgba.size(), sidecarOrientation, &captureResult, &captureError)) {
+                rgba.data(), rgba.size(), sidecarOrientation, &sidecarControllerPolicy, &captureResult, &captureError)) {
             findingStatus = "Capture diagnostic failed: " + captureError;
         } else {
             findingStatus = "Diagnostic captured.";
@@ -479,6 +482,7 @@ static bool RunInLoopFindingCapture(
     const std::string& exeDir, ViewState& view, KernelParams& params,
     const RenderSettings& render,
     const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
     std::string& findingStatus, std::string& lastFindingPath) {
     std::string findingDir;
     std::string captureError;
@@ -492,7 +496,7 @@ static bool RunInLoopFindingCapture(
         findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
         return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
-            findingRgba.data(), findingRgba.size(), sidecarOrientation,
+            findingRgba.data(), findingRgba.size(), sidecarOrientation, &sidecarControllerPolicy,
             "manual_capture", "Manual viewer capture.",
             &findingDir, &captureError)) {
         findingStatus = "Capture finding failed: " + captureError;
@@ -856,6 +860,7 @@ static void DispatchUiActions(HWND hwnd,
                               bool resetViewAction, bool resetAllAction, bool loadStateAction,
                               bool nextSeedAction, bool prevSeedAction,
                               ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
+                              SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                               bool& dirty, bool& interactionChanged,
                               ExplainoSidecarWindowState& sidecarState,
                               bool& sidecarStateValid,
@@ -888,6 +893,8 @@ static void DispatchUiActions(HWND hwnd,
             std::string loadError;
             SidecarOrientationVector loadedOrientation{};
             bool hasLoadedOrientation = false;
+            SidecarAutoDemoControllerPolicy loadedControllerPolicy{};
+            bool hasLoadedControllerPolicy = false;
             if (!LoadFindingSelectionIntoRuntime(
                     selectedPath,
                     &view,
@@ -895,10 +902,13 @@ static void DispatchUiActions(HWND hwnd,
                     &render,
                     &loadedOrientation,
                     &hasLoadedOrientation,
+                    &loadedControllerPolicy,
+                    &hasLoadedControllerPolicy,
                     &resolvedStatePath,
                     &loadError)) {
                 findingStatus = "Load state failed: " + loadError;
             } else {
+                sidecarControllerPolicy = hasLoadedControllerPolicy ? loadedControllerPolicy : SidecarAutoDemoControllerPolicy{};
                 loadedOrientationBaseline = loadedOrientation;
                 loadedOrientationBaselineValid = hasLoadedOrientation;
                 sidecarState = {};
@@ -1008,8 +1018,8 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     const SidecarOrientationVector* sidecarOrientation =
         (sidecarStateValid && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr;
     if (cli.validate_ui_only) return 0;
-    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render, sidecarOrientation);
-    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, sidecarOrientation);
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render, sidecarOrientation, sidecarControllerPolicy);
+    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, sidecarOrientation, sidecarControllerPolicy);
     return -1;
 }
 
@@ -1085,6 +1095,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
                                              const std::vector<std::string>& schemaCandidates,
                                              ViewState& view, KernelParams& params,
                                              RenderSettings& render, LensSettings& lens,
+                                             SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                                              SidecarOrientationVector& loadedOrientationBaseline,
                                              bool& loadedOrientationBaselineValid,
                                              bool& dirty, UISchema& uiSchema,
@@ -1114,6 +1125,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         view,
         params,
         render,
+        &sidecarControllerPolicy,
         &loadedOrientationBaseline,
         &loadedOrientationBaselineValid,
         &dirty);
@@ -1217,6 +1229,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
                                      const RenderedFrameState& renderedFrame,
                                      const ExplainoSidecarWindowState& sidecarState,
                                      bool haveSidecarState,
+                                     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                                      std::string& findingStatus,
                                      std::string& lastFindingPath,
                                      bool& ioSidecarStateValid,
@@ -1224,11 +1237,11 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     const SidecarOrientationVector* sidecarOrientation =
         (haveSidecarState && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr;
     if (actions.captureDiagnostic) {
-        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, sidecarOrientation, findingStatus);
+        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, sidecarOrientation, sidecarControllerPolicy, findingStatus);
     }
 
     if (actions.captureFinding) {
-        if (RunInLoopFindingCapture(exeDir, view, params, render, sidecarOrientation, findingStatus, lastFindingPath)) {
+        if (RunInLoopFindingCapture(exeDir, view, params, render, sidecarOrientation, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
             ioSidecarStateValid = false;
             ioSidecarBudgetStateValid = false;
         }
@@ -1342,7 +1355,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     SidecarOrientationVector loadedOrientationBaseline{};
     bool loadedOrientationBaselineValid = false;
 
-    { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
+        { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
+            sidecarControllerPolicy,
           loadedOrientationBaseline, loadedOrientationBaselineValid,
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
@@ -1419,6 +1433,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
             actions.nextSeed, actions.prevSeed, view, params, render, lens,
+            sidecarControllerPolicy,
             dirty, actions.interactionChanged,
             sidecarState, sidecarStateValid,
             sidecarBudgetState, sidecarBudgetStateValid,
@@ -1459,6 +1474,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
         RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
             renderedFrame, sidecarState, sidecarStateValid,
+            sidecarControllerPolicy,
             findingStatus, lastFindingPath,
             sidecarStateValid, sidecarBudgetStateValid);
 

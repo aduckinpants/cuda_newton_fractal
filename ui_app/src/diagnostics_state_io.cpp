@@ -227,11 +227,61 @@ bool ParseColoringMode(const std::string& text, ColoringMode* outMode) {
 bool ParseIntField(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
     double rawValue = 0.0;
     if (!GetRequiredNumber(object, key, &rawValue, outError)) return false;
+    if (!std::isfinite(rawValue) || std::floor(rawValue) != rawValue) {
+        if (outError) *outError = std::string("Invalid integer field: ") + key;
+        return false;
+    }
     if (rawValue < static_cast<double>(INT_MIN) || rawValue > static_cast<double>(INT_MAX)) {
         if (outError) *outError = std::string("Out-of-range integer field: ") + key;
         return false;
     }
     if (outValue) *outValue = static_cast<int>(rawValue);
+    return true;
+}
+
+bool SidecarAutoDemoPolicyFieldsAreValid(const SidecarAutoDemoControllerPolicy& policy, std::string* outError) {
+    if (!std::isfinite(policy.paced_loop_interval_seconds) || policy.paced_loop_interval_seconds <= 0.0) {
+        if (outError) *outError = "sidecar_auto_demo_policy.paced_loop_interval_seconds must be > 0";
+        return false;
+    }
+    if (!std::isfinite(policy.stop_demonstrated_fraction) ||
+        policy.stop_demonstrated_fraction < 0.0 ||
+        policy.stop_demonstrated_fraction > 1.0) {
+        if (outError) *outError = "sidecar_auto_demo_policy.stop_demonstrated_fraction must be within [0, 1]";
+        return false;
+    }
+    if (policy.stop_uncertain_count < 0) {
+        if (outError) *outError = "sidecar_auto_demo_policy.stop_uncertain_count must be >= 0";
+        return false;
+    }
+    return true;
+}
+
+bool ParseOptionalSidecarAutoDemoPolicy(const json_min::Value& root,
+    SidecarAutoDemoControllerPolicy* outPolicy,
+    bool* outHasPolicy,
+    std::string* outError) {
+    if (outPolicy) *outPolicy = {};
+    if (outHasPolicy) *outHasPolicy = false;
+
+    const json_min::Value* policyObject = root.get("sidecar_auto_demo_policy");
+    if (!policyObject) return true;
+    if (!policyObject->is_object()) {
+        if (outError) *outError = "Missing or invalid object field: sidecar_auto_demo_policy";
+        return false;
+    }
+
+    SidecarAutoDemoControllerPolicy policy{};
+    if (!GetRequiredBool(*policyObject, "enabled", &policy.enabled, outError)) return false;
+    if (!GetRequiredBool(*policyObject, "allow_runtime_mutation", &policy.allow_runtime_mutation, outError)) return false;
+    if (!GetRequiredBool(*policyObject, "run_paced_loop", &policy.run_paced_loop, outError)) return false;
+    if (!GetRequiredNumber(*policyObject, "paced_loop_interval_seconds", &policy.paced_loop_interval_seconds, outError)) return false;
+    if (!GetRequiredNumber(*policyObject, "stop_demonstrated_fraction", &policy.stop_demonstrated_fraction, outError)) return false;
+    if (!ParseIntField(*policyObject, "stop_uncertain_count", &policy.stop_uncertain_count, outError)) return false;
+    if (!SidecarAutoDemoPolicyFieldsAreValid(policy, outError)) return false;
+
+    if (outPolicy) *outPolicy = policy;
+    if (outHasPolicy) *outHasPolicy = true;
     return true;
 }
 
@@ -261,7 +311,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
-    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, outError);
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, outError);
 }
 
 bool LoadDiagnosticsStateJson(const std::string& text,
@@ -271,9 +321,32 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     std::string* outError) {
+    return LoadDiagnosticsStateJson(
+        text,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        nullptr,
+        nullptr,
+        outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    std::string* outError) {
     if (outError) outError->clear();
     if (outOrientation) *outOrientation = {};
     if (outHasOrientation) *outHasOrientation = false;
+    if (outControllerPolicy) *outControllerPolicy = {};
+    if (outHasControllerPolicy) *outHasControllerPolicy = false;
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadDiagnosticsStateJson requires non-null output pointers";
         return false;
@@ -291,6 +364,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
 
     const json_min::Value& root = parseResult.value;
     if (!ParseOptionalSidecarOrientation(root, outOrientation, outHasOrientation, outError)) return false;
+    if (!ParseOptionalSidecarAutoDemoPolicy(root, outControllerPolicy, outHasControllerPolicy, outError)) return false;
     int stateVersion = 0;
     if (!ParseIntField(root, "state_version", &stateVersion, outError)) return false;
     if (stateVersion != 1 && stateVersion != 2 && stateVersion != 3) {
@@ -597,7 +671,7 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
-    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, outError);
+    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, outError);
 }
 
 bool LoadDiagnosticsStateFile(const std::string& path,
@@ -607,10 +681,40 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     std::string* outError) {
+    return LoadDiagnosticsStateFile(
+        path,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        nullptr,
+        nullptr,
+        outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    std::string* outError) {
     if (outError) outError->clear();
     std::string text;
     if (!ReadTextFile(std::filesystem::path(path), &text, outError)) return false;
-    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, outOrientation, outHasOrientation, outError);
+    return LoadDiagnosticsStateJson(
+        text,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        outError);
 }
 
 bool ResolveFindingStateJsonPath(const std::string& selectedPath,

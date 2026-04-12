@@ -13,9 +13,34 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     bool* outHasOrientation,
     std::string* outResolvedStatePath,
     std::string* outError) {
+    return LoadFindingSelectionIntoRuntime(
+        selectedPath,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        nullptr,
+        nullptr,
+        outResolvedStatePath,
+        outError);
+}
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    std::string* outResolvedStatePath,
+    std::string* outError) {
     if (outError) outError->clear();
     if (outOrientation) *outOrientation = {};
     if (outHasOrientation) *outHasOrientation = false;
+    if (outControllerPolicy) *outControllerPolicy = {};
+    if (outHasControllerPolicy) *outHasControllerPolicy = false;
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadFindingSelectionIntoRuntime requires non-null output pointers";
         return false;
@@ -31,6 +56,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     RenderSettings nextRender = *ioRender;
     SidecarOrientationVector nextOrientation{};
     bool nextHasOrientation = false;
+    SidecarAutoDemoControllerPolicy nextControllerPolicy{};
+    bool nextHasControllerPolicy = false;
     if (!LoadDiagnosticsStateFile(
             resolvedStatePath,
             &nextView,
@@ -38,6 +65,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
             &nextRender,
             &nextOrientation,
             &nextHasOrientation,
+            &nextControllerPolicy,
+            &nextHasControllerPolicy,
             outError)) {
         return false;
     }
@@ -52,6 +81,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     *ioRender = nextRender;
     if (outOrientation) *outOrientation = nextOrientation;
     if (outHasOrientation) *outHasOrientation = nextHasOrientation;
+    if (outControllerPolicy) *outControllerPolicy = nextControllerPolicy;
+    if (outHasControllerPolicy) *outHasControllerPolicy = nextHasControllerPolicy;
     if (outResolvedStatePath) *outResolvedStatePath = resolvedStatePath;
     return true;
 }
@@ -67,6 +98,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
         ioView,
         ioParams,
         ioRender,
+        nullptr,
+        nullptr,
         nullptr,
         nullptr,
         outResolvedStatePath,

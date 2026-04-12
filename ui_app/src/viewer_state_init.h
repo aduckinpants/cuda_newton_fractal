@@ -1,5 +1,6 @@
 #pragma once
 
+#include "explaino_sidecar_controller.h"
 #include "explaino_sidecar_model.h"
 #include "fractal_types.h"
 #include "viewer_cli.h"
@@ -9,6 +10,7 @@
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render,
+                      SidecarAutoDemoControllerPolicy* ioSidecarControllerPolicy,
                       SidecarOrientationVector* outLoadedOrientation,
                       bool* outHasLoadedOrientation,
                       bool* dirty);

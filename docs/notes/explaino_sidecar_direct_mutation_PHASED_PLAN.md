@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - persistence and capture integration
+Complete - direct-mutation persistence slice closed; use a new follow-on plan for any further replay or mutation-history work
 
 ## Phase Checklist
 
 - [x] Phase 1 - explicit policy controls and single-step apply
 - [x] Phase 2 - paced autonomous loop
-- [ ] Phase 3 - persistence and capture integration
+- [x] Phase 3 - persistence and capture integration
 
 ## Notes
 
@@ -76,6 +76,31 @@ Phase 3 - persistence and capture integration
 	- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
 	- `ui_app/build_vsdevcmd.cmd`
 	- `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui`
+- Phase 3 target:
+	- persist the sidecar auto-demo controller policy through the existing diagnostics `state.json` contract anywhere `sidecar_orientation` already round-trips
+	- keep the persisted state on the existing diagnostics/finding/load-state seam instead of inventing a second sidecar-state authority
+	- preserve atomic load behavior so malformed persisted policy blocks fail without partially mutating the runtime
+- Delivered in Phase 3:
+	- `ui_app/src/diagnostics_capture.h/.cpp`
+	- `ui_app/src/diagnostics_state_io.h/.cpp`
+	- `ui_app/src/finding_archive_actions.h/.cpp`
+	- `ui_app/src/finding_state_actions.h/.cpp`
+	- `ui_app/src/viewer_state_init.h/.cpp`
+	- `ui_app/src/main.cpp`
+	- `ui_app/tests/test_diagnostics_state_io.cpp`
+	- `ui_app/tests/test_finding_state_actions.cpp`
+	- `ui_app/tests/test_viewer_state_init.cpp`
+	- `tests/test_fractal_runtime_explaino_escape_variants.py`
+	- diagnostics and finding captures now persist `sidecar_auto_demo_policy` alongside `sidecar_orientation`
+	- CLI `--load-state-json` startup, in-app state/finding load, headless captures, and archived finding captures now all thread the persisted controller policy through the same `state.json` seam
+	- legacy states without a persisted controller policy now reset the live controller policy to defaults instead of leaking stale in-memory settings across loads
+	- diagnostics-state integer fields now fail fast on fractional JSON numbers instead of silently truncating during load
+- Validation achieved for Phase 3:
+	- `py -3.14 tools/viewer_host_run_logged_command.py --label phase3-native-post-audit --log artifacts/phase3_native_post_audit.log -- .\ui_app\build_tests_vsdevcmd.cmd`
+	- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
+	- `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -q`
+	- targeted published-runtime republish of changed C++ units against the existing CUDA objects via the temporary `phase3_publish_cpp_only.cmd` workaround after `ui_app/build_vsdevcmd.cmd` hung without reaching `nvcc`/`cl` output in this session
 - Deferred to later phases:
-	- persistence or replay of controller policy / mutation traces
-	- headless capture or diagnostics surfaces for explicit mutation actions
+	- mutation-trace persistence or replay beyond the controller policy snapshot
+	- dedicated diagnostics or archive surfaces for explicit mutation-action history
+	- a checked-in reliable C++-only publish helper or a repaired `ui_app/build_vsdevcmd.cmd` path so future non-CUDA slices do not need the temporary targeted republish workaround

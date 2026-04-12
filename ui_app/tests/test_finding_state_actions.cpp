@@ -16,6 +16,17 @@ bool NearlyEqual(double a, double b, double eps = 1.0e-9) {
     return std::fabs(a - b) <= eps;
 }
 
+bool ControllerPoliciesMatch(const SidecarAutoDemoControllerPolicy& lhs,
+    const SidecarAutoDemoControllerPolicy& rhs,
+    double eps = 1.0e-9) {
+    return lhs.enabled == rhs.enabled &&
+        lhs.allow_runtime_mutation == rhs.allow_runtime_mutation &&
+        lhs.run_paced_loop == rhs.run_paced_loop &&
+        NearlyEqual(lhs.paced_loop_interval_seconds, rhs.paced_loop_interval_seconds, eps) &&
+        NearlyEqual(lhs.stop_demonstrated_fraction, rhs.stop_demonstrated_fraction, eps) &&
+        lhs.stop_uncertain_count == rhs.stop_uncertain_count;
+}
+
 void WriteTextFile(const std::filesystem::path& path, const char* text) {
     std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     file << text;
@@ -212,6 +223,14 @@ int main() {
         "busy_beaver_metrics": 0.75,
         "decode_stability": 0.5,
         "diff_magnitude": 2.0
+    },
+    "sidecar_auto_demo_policy": {
+        "enabled": true,
+        "allow_runtime_mutation": true,
+        "run_paced_loop": true,
+        "paced_loop_interval_seconds": 2.5,
+        "stop_demonstrated_fraction": 0.75,
+        "stop_uncertain_count": 3
     }
 })");
 
@@ -220,6 +239,8 @@ int main() {
         RenderSettings render{};
         SidecarOrientationVector orientation{};
         bool hasOrientation = false;
+        SidecarAutoDemoControllerPolicy controllerPolicy{};
+        bool hasControllerPolicy = false;
         std::string resolvedStatePath;
         std::string error;
         if (!LoadFindingSelectionIntoRuntime(
@@ -229,6 +250,8 @@ int main() {
             &render,
             &orientation,
             &hasOrientation,
+            &controllerPolicy,
+            &hasControllerPolicy,
             &resolvedStatePath,
             &error)) {
             std::cerr << "Expected state load with persisted sidecar orientation to succeed: " << error << "\n";
@@ -252,9 +275,105 @@ int main() {
             std::cerr << "Expected persisted sidecar orientation to round-trip through finding-state load\n";
             return 1;
         }
+        if (!hasControllerPolicy) {
+            std::cerr << "Expected state load to report persisted sidecar controller policy when present\n";
+            return 1;
+        }
+        SidecarAutoDemoControllerPolicy expectedPolicy{};
+        expectedPolicy.enabled = true;
+        expectedPolicy.allow_runtime_mutation = true;
+        expectedPolicy.run_paced_loop = true;
+        expectedPolicy.paced_loop_interval_seconds = 2.5;
+        expectedPolicy.stop_demonstrated_fraction = 0.75;
+        expectedPolicy.stop_uncertain_count = 3;
+        if (!ControllerPoliciesMatch(controllerPolicy, expectedPolicy)) {
+            std::cerr << "Expected persisted sidecar controller policy to round-trip through finding-state load\n";
+            return 1;
+        }
         }
 
     {
+        const fs::path findingDir = tempRoot / "invalid_sidecar_controller_policy_state";
+        fs::create_directories(findingDir);
+        const fs::path statePath = findingDir / "state.json";
+                WriteTextFile(statePath, R"({
+    "state_version": 3,
+    "fractal_type": "explaino_dual",
+    "view": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "zoom": 1.0,
+        "rotation_degrees": 0.0,
+        "center_hp_x": 0.0,
+        "center_hp_y": 0.0,
+        "log2_zoom": 0.0,
+        "explaino_phase": 0.0,
+        "explaino_seed_drift": 0.0,
+        "explaino_seed_tween": true
+    },
+    "params": {
+        "max_iter": 500,
+        "epsilon": 0.000001,
+        "exposure": 1.0,
+        "poly_kind": 2,
+        "coloring_mode": "joy_basins",
+        "nova_alpha": 0.5,
+        "phoenix_p_real": 0.0,
+        "phoenix_p_imag": 0.0,
+        "multibrot_power": 3,
+        "multibrot_power_float": 3.0,
+        "lambda_real": 0.0,
+        "lambda_imag": 0.0,
+        "explaino_seed": 6.0,
+        "explaino_warp_strength": 0.0,
+        "explaino_root_count": 4,
+        "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+    },
+    "render": {
+        "width": 1024,
+        "height": 768,
+        "block_size": 256,
+        "device_id": 0
+    },
+    "sidecar_auto_demo_policy": {
+        "enabled": true,
+        "allow_runtime_mutation": true,
+        "run_paced_loop": true,
+        "paced_loop_interval_seconds": 1.5,
+        "stop_demonstrated_fraction": 1.25,
+        "stop_uncertain_count": 3
+    }
+})");
+
+                ViewState view{};
+                view.center = {31.0f, -32.0f};
+                view.zoom = 33.0f;
+                KernelParams params{};
+                params.max_iter = 444;
+                RenderSettings render{};
+                render.resolution = {902, 702};
+
+                std::string resolvedStatePath = "sentinel";
+                std::string error;
+                if (LoadFindingSelectionIntoRuntime(statePath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+                        std::cerr << "Expected invalid persisted sidecar controller policy payload to fail atomically\n";
+                        return 1;
+                }
+                if (error.find("sidecar_auto_demo_policy.stop_demonstrated_fraction must be within [0, 1]") == std::string::npos) {
+                        std::cerr << "Unexpected invalid-controller-policy error text: " << error << "\n";
+                        return 1;
+                }
+                if (!NearlyEqual(view.center.x, 31.0f, 1.0e-6) || !NearlyEqual(view.center.y, -32.0f, 1.0e-6) || !NearlyEqual(view.zoom, 33.0f, 1.0e-6)) {
+                        std::cerr << "View state mutated on invalid persisted sidecar controller policy payload\n";
+                        return 1;
+                }
+                if (params.max_iter != 444 || render.resolution.x != 902 || render.resolution.y != 702) {
+                        std::cerr << "Runtime state mutated on invalid persisted sidecar controller policy payload\n";
+                        return 1;
+                }
+        }
+
+        {
         ViewState view{};
         view.center = {3.0f, -4.0f};
         view.zoom = 2.0f;

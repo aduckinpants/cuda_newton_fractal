@@ -29,6 +29,7 @@ bool CliOverridesLoadedStateSnapshot(const ViewerCliArgs& cli) {
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render,
+                      SidecarAutoDemoControllerPolicy* ioSidecarControllerPolicy,
                       SidecarOrientationVector* outLoadedOrientation,
                       bool* outHasLoadedOrientation,
                       bool* dirty) {
@@ -42,6 +43,8 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         std::string loadedStatePath;
         SidecarOrientationVector loadedOrientation{};
         bool hasLoadedOrientation = false;
+        SidecarAutoDemoControllerPolicy loadedControllerPolicy{};
+        bool hasLoadedControllerPolicy = false;
         if (!LoadFindingSelectionIntoRuntime(
                 cli.load_state_json,
                 &view,
@@ -49,11 +52,16 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                 &render,
                 &loadedOrientation,
                 &hasLoadedOrientation,
+                &loadedControllerPolicy,
+                &hasLoadedControllerPolicy,
                 &loadedStatePath,
                 &loadError)) {
             return 1;
         }
         loadedState = true;
+        if (ioSidecarControllerPolicy) {
+            *ioSidecarControllerPolicy = hasLoadedControllerPolicy ? loadedControllerPolicy : SidecarAutoDemoControllerPolicy{};
+        }
         if (outLoadedOrientation) *outLoadedOrientation = loadedOrientation;
         if (outHasLoadedOrientation) *outHasLoadedOrientation = hasLoadedOrientation;
         if (dirty) *dirty = true;
@@ -114,5 +122,5 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render, bool* dirty) {
-    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, dirty);
+    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, dirty);
 }
