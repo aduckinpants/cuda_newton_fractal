@@ -280,7 +280,18 @@ int main() {
         }
 
         SidecarEnergyLandscape reduced = energy;
-        reduced.rows.erase(reduced.rows.begin());
+        const std::string stalePath = previous.latest_path;
+        const auto staleRow = std::find_if(
+            reduced.rows.begin(),
+            reduced.rows.end(),
+            [&stalePath](const SidecarEnergyLandscapeRow& row) {
+                return row.path == stalePath;
+            });
+        if (staleRow == reduced.rows.end()) {
+            std::cerr << "Expected surface-reset fixture to find the stale slime-trace path on the current energy surface\n";
+            return 1;
+        }
+        reduced.rows.erase(staleRow);
 
         SidecarSlimeTrace reset;
         if (!BuildSidecarSlimeTrace(
