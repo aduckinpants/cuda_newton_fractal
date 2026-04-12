@@ -23,6 +23,11 @@ from tools.viewer_host_checkpoint_guard import (
     validation_receipt_path,
     write_validation_receipt,
 )
+from tools.viewer_host_checkpoint_dirty_prompt_guard import (
+    build_dirty_prompt_message,
+    build_userprompt_response,
+    build_validation_receipt_prompt_message,
+)
 
 
 def _snapshot(*, unstaged: dict[str, str] | None = None, staged: dict[str, str] | None = None, untracked: dict[str, str] | None = None) -> dict[str, object]:
@@ -209,10 +214,62 @@ def test_summarize_changed_paths_truncates_long_lists() -> None:
     assert text == "file_0.txt, file_1.txt, file_2.txt, ... (+5 more)"
 
 
+def test_build_userprompt_response_warns_when_state_differs_from_baseline() -> None:
+    baseline = _snapshot()
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+
+    response = build_userprompt_response(baseline, current, "Please do the next task")
+
+    assert response is not None
+    assert response["continue"] is True
+    assert "session baseline" in response["systemMessage"]
+    assert "ui_app/src/main.cpp" in response["systemMessage"]
+    assert "Please do the next task" in response["systemMessage"]
+
+
+def test_build_userprompt_response_ignores_clean_state() -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    assert build_userprompt_response(baseline, current, "fresh prompt") is None
+
+
+def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_path: Path) -> None:
+    baseline = _snapshot()
+    baseline["head"] = "abc123"
+    current = _snapshot()
+    current["head"] = "def456"
+
+    response = build_userprompt_response(baseline, current, "do another task", tmp_path)
+
+    assert response is not None
+    assert response["continue"] is True
+    assert "validation receipt" in response["systemMessage"]
+    assert "def456.json" in response["systemMessage"]
+
+
+def test_build_dirty_prompt_message_mentions_closure_flow() -> None:
+    text = build_dirty_prompt_message(["HANDOFF_LOG.md", "ui_app/src/main.cpp"], "continue the next thing")
+
+    assert "HANDOFF_LOG.md" in text
+    assert "validation receipt" in text
+    assert "continue the next thing" in text
+
+
+def test_build_validation_receipt_prompt_message_mentions_expected_receipt_path(tmp_path: Path) -> None:
+    text = build_validation_receipt_prompt_message("continue the next thing", tmp_path, "abc123")
+
+    assert "validation receipt" in text
+    assert "abc123.json" in text
+    assert "continue the next thing" in text
+
+
 def test_hook_config_wires_checkpoint_guard_events() -> None:
     payload = json.loads((REPO_ROOT / ".github" / "hooks" / "checkpoint_guard.json").read_text(encoding="utf-8"))
 
-    assert set(payload["hooks"]) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
+    assert set(payload["hooks"]) == {"UserPromptSubmit", "SessionStart", "PreToolUse", "PostToolUse", "Stop"}
+    prompt_command = payload["hooks"]["UserPromptSubmit"][0]["windows"]
+    assert prompt_command == "py -3.14 tools\\viewer_host_checkpoint_dirty_prompt_guard.py"
     for event_name in ("SessionStart", "PreToolUse", "PostToolUse", "Stop"):
         command = payload["hooks"][event_name][0]["windows"]
         assert command == "py -3.14 tools\\viewer_host_checkpoint_guard.py"

@@ -1,5 +1,12 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "windows": "py -3.14 tools\\viewer_host_checkpoint_dirty_prompt_guard.py",
+        "timeout": 15
+      }
+    ],
     "SessionStart": [
       {
         "type": "command",

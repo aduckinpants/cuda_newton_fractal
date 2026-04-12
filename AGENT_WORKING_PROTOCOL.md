@@ -15,6 +15,8 @@ Use it as the concise bootstrap checklist and session-transition surface for thi
 Treat `AGENT_WORKING_PROTOCOL.md` as the detailed rules document and `AGENTS.md`
 as the short operational bootstrap.
 
+Read `AGENT_TERMINAL_PROTOCOL.md` before running heavy validation or runtime commands.
+
 Repeatable bootstrap command:
 `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`
 
@@ -107,6 +109,17 @@ The checkpoint guard enforces this deterministically:
 - `PostToolUse` reminds immediately when `HEAD` advanced without a receipt
 - `PreToolUse` denies `task_complete` for a clean-but-unreceipted committed state
 - `Stop` blocks ending the slice until the receipt exists
+
+### 2.4 Carryover Prompt Rule
+
+If a new user prompt arrives while the repository still differs from the session baseline, that is a prior-slice closure problem first.
+
+Required posture:
+- do not treat the new prompt as permission to leave the prior slice half-closed
+- update the continuity surfaces, finish the validation/checkpoint chain, and return the repo to a clean state before broadening scope
+- if the prior slice and the new prompt are truly the same work thread, say so in the plan/handoff instead of silently mixing them
+
+This repo now carries a `UserPromptSubmit` warning hook in `.github/hooks/checkpoint_guard.json` to surface that condition immediately. It is a warning surface, not a substitute for judgment.
 
 ### 3. No Implicit Fallback
 
@@ -299,11 +312,14 @@ repo-specific `viewer_host_*` adapter when local repo context is required.
 
 ## Terminal Discipline
 
-- Reuse existing terminals; do not proliferate
-- Default to `isBackground: false` — wait for output
-- Target ~3 active terminals maximum
-- If a terminal is stuck or contaminated, refresh that one terminal only
-- Use `py -3.14` explicitly for Python commands in this repo
+- `AGENT_TERMINAL_PROTOCOL.md` is the repo's dedicated terminal-discipline surface. Follow it.
+- Reuse existing terminals; do not proliferate.
+- Default to foreground terminal execution for finite commands.
+- Prefer `py -3.14 tools/viewer_host_run_logged_command.py --label ... --log artifacts/... -- <command ...>` for large-output validation lanes.
+- Target roughly three active terminals maximum.
+- If a terminal is stuck or contaminated, refresh that one terminal only.
+- If a command destabilizes VS Code or the wrapper, switch to crash-safe mode for the rest of the session: one command at a time, no parallel terminal work, logs to `artifacts/`, and task/wrapper surfaces preferred over raw transcript streaming.
+- Use `py -3.14` explicitly for Python commands in this repo.
 
 ---
 
@@ -324,12 +340,13 @@ When beginning work in a new session:
 1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`
 2. Read `AGENTS.md`
 3. Read `AGENT_WORKING_PROTOCOL.md` (this file)
-4. Read `spec_intake/_STATUS.md` for current phase
-5. Read `DEFERRED_THREADS.md` for paused work
-6. Read `KNOWN_ISSUES.md` for known bugs
-7. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
-8. Read the relevant spec intake doc for the current initiative
-9. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
-10. Create or update the nearest phased plan and assert sync if you touch it
-11. Check git status — if the worktree is dirty, assess and checkpoint carryover
-12. Identify the bounded next slice and proceed
+4. Read `AGENT_TERMINAL_PROTOCOL.md`
+5. Read `spec_intake/_STATUS.md` for current phase
+6. Read `DEFERRED_THREADS.md` for paused work
+7. Read `KNOWN_ISSUES.md` for known bugs
+8. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
+9. Read the relevant spec intake doc for the current initiative
+10. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
+11. Create or update the nearest phased plan and assert sync if you touch it
+12. Check git status — if the worktree is dirty, assess and checkpoint carryover
+13. Identify the bounded next slice and proceed

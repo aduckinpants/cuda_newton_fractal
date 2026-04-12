@@ -11,15 +11,16 @@ Do these before making architecture claims or starting broad edits:
 1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`.
 2. Read `C:\code\salticid-cuda\docs\testing_cheat_sheet.md`.
 3. Read `AGENT_WORKING_PROTOCOL.md`.
-4. Read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `KNOWN_ISSUES.md`.
-5. Read the last few entries of `HANDOFF_LOG.md`.
-6. If you are starting a meaningful work slice, append a pending breadcrumb first:
+4. Read `AGENT_TERMINAL_PROTOCOL.md`.
+5. Read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `KNOWN_ISSUES.md`.
+6. Read the last few entries of `HANDOFF_LOG.md`.
+7. If you are starting a meaningful work slice, append a pending breadcrumb first:
    - `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>`
-7. Create or update a detailed, checklisted phased plan in the repo.
+8. Create or update a detailed, checklisted phased plan in the repo.
    - Prefer the nearest existing plan doc.
    - Otherwise create `docs/notes/<slug>_PHASED_PLAN.md`.
    - Protocol: `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`.
-8. Read `.github/copilot-instructions.md` after this file, not instead of it.
+9. Read `.github/copilot-instructions.md` after this file, not instead of it.
 
 The VS Code task surface mirrors these commands:
 - `agent: session bootstrap`
@@ -39,6 +40,12 @@ The VS Code task surface mirrors these commands:
 - Do not leave a plan saying a later phase is current while earlier phases are still unchecked.
 - Do not leave stale blocker text in a phased plan after another checked-in slice already closed that blocker.
 - Deterministic check surface: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` or task `agent: assert phased plan sync`.
+
+## Carryover Rule
+
+- If a new user prompt arrives while the repo still differs from the session baseline, treat that as prior-slice closure debt first.
+- Do not smear a new request across an uncheckpointed carryover slice.
+- The `UserPromptSubmit` warning in `.github/hooks/checkpoint_guard.json` now surfaces this condition immediately, but the agent is still responsible for resolving the carryover cleanly.
 
 ## Mandatory Audit Rule
 
@@ -99,8 +106,10 @@ The VS Code task surface is the canonical profile surface under `verify: profile
 
 ## VS Code Stability Rule
 
+- Follow `AGENT_TERMINAL_PROTOCOL.md` for terminal-count limits and crash recovery.
 - Prefer one terminal command at a time for heavy build/test flows.
 - If terminal output is likely to be large, redirect to an `artifacts/` log and inspect the file instead of streaming everything through the wrapper.
+- If a command destabilizes VS Code or the terminal wrapper, switch to crash-safe mode for the rest of the session: one command at a time, no parallel terminal work, and prefer the logged-command wrapper or task surfaces.
 - Reuse the public task and tool surfaces instead of opening extra ad hoc terminals.
 
 ## End Of Slice
@@ -114,5 +123,6 @@ Before ending a meaningful work slice:
 5. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
 6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
 7. Do not say done unless the explicit closure standard above is satisfied end-to-end.
+8. If the current prompt arrived while the repo already differed from the session baseline, resolve that carryover before treating any new request as a fresh slice.
 
 Do not treat validated-but-undocumented work as finished.

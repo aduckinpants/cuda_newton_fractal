@@ -4,6 +4,7 @@
 - Read `AGENTS.md` first. It is the concise startup checklist and session-transition surface.
 - Then read `AGENT_WORKING_PROTOCOL.md`. It contains the full working rules,
     build commands, slice workflow, and handoff discipline.
+- Then read `AGENT_TERMINAL_PROTOCOL.md` before running heavy build/test/runtime commands.
 - Use `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8` or the
     VS Code task `agent: session bootstrap` as the repeatable new-session bootstrap.
 - Then read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`,
@@ -31,6 +32,7 @@
     after touching a phased plan.
 - Follow strict TDD for behavioral changes: add or extend the focused test first, then implement the minimal fix, then refactor.
 - Prefer deterministic scripts, tests, and generated reports over ad hoc runtime speculation.
+- If a new user prompt arrives while the repo still differs from the session baseline, treat that as carryover checkpoint debt first instead of silently blending the next request into a dirty slice.
 - For every meaningful code slice, run a distrust-first audit automatically before declaring the work done.
 - Default audit posture: assume the implementation is wrong, keep reviewing until a real defect or workflow mistake is found, repair it, then re-audit the repaired state; only stop after 2-3 deliberate passes fail to find another real issue.
 - Do not wait for the user to request this review explicitly. Treat it as part of normal slice closure.
@@ -60,3 +62,9 @@
 - Keep tone direct, concise, and protocol-driven.
 - Default to ASCII.
 - Add comments only when they explain non-obvious constraints or math.
+
+## Terminal Discipline
+- Follow `AGENT_TERMINAL_PROTOCOL.md`.
+- Prefer foreground terminal runs for finite commands.
+- Prefer `py -3.14 tools/viewer_host_run_logged_command.py --label ... --log artifacts/... -- <command ...>` when build/test output is large.
+- If a command destabilizes VS Code or the wrapper, switch to crash-safe mode for the rest of the session: one command at a time, no parallel terminal work, and inspect captured logs instead of streaming large transcripts.
