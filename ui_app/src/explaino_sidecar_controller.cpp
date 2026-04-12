@@ -75,7 +75,12 @@ double ResolveTargetValue(const SidecarActionRecommendation& recommendation) {
     if (minus && !plus) {
         return recommendation.active_min;
     }
-    return 0.5 * (recommendation.active_min + recommendation.active_max);
+    const double minMagnitude = std::fabs(recommendation.active_min);
+    const double maxMagnitude = std::fabs(recommendation.active_max);
+    if (maxMagnitude >= minMagnitude) {
+        return recommendation.active_max;
+    }
+    return recommendation.active_min;
 }
 
 bool MutationRequiresViewHpSync(const std::string& path) {

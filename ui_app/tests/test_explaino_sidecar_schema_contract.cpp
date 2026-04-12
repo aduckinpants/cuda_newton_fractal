@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 std::string ReadTextFile(const char* path) {
     std::ifstream input(path, std::ios::in | std::ios::binary);
@@ -51,17 +52,24 @@ public:
         for (const Double2& coord : coords) {
             const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
             const double explainoSignal =
-                std::fabs(params.explaino_seed) * 0.07 +
-                std::fabs(static_cast<double>(view.explaino_seed_drift)) * 0.9 +
-                std::fabs(static_cast<double>(view.explaino_phase)) * 0.05 +
-                std::fabs(static_cast<double>(view.explaino_phase_strength) - 1.0) * 0.06 +
-                std::fabs(static_cast<double>(params.explaino_damping) - 1.0f) * 1.4 +
-                std::fabs(static_cast<double>(params.explaino_warp_strength)) * 1.1 +
-                std::fabs(static_cast<double>(params.explaino_root_spread) - 0.5f) * 0.8 +
+                std::fabs(params.explaino_seed) * 250.0 +
+                std::fabs(params.explaino_seed_b) * 250.0 +
+                std::fabs(static_cast<double>(view.explaino_seed_drift)) * 220.0 +
+                std::fabs(static_cast<double>(view.explaino_phase)) * 40.0 +
+                std::fabs(static_cast<double>(view.explaino_phase_strength) - 1.0) * 15.0 +
+                std::fabs(static_cast<double>(params.explaino_damping) - 1.0f) * 25.0 +
+                std::fabs(static_cast<double>(params.explaino_warp_strength)) * 20.0 +
+                std::fabs(static_cast<double>(params.explaino_root_spread) - 0.5f) * 20.0 +
+                std::fabs(static_cast<double>(params.explaino_mix) - 0.5) * 140.0 +
+                std::fabs(static_cast<double>(params.explaino_cluster_radius)) * 120.0 +
+                std::fabs(static_cast<double>(params.momentum_beta)) * 140.0 +
+                std::fabs(static_cast<double>(params.joy_coupling)) * 160.0 +
+                std::fabs(static_cast<double>(params.fold_coupling)) * 150.0 +
+                std::fabs(static_cast<double>(params.bell_coupling)) * 150.0 +
                 std::fabs(static_cast<double>(params.ripple_amplitude)) * 120.0 +
-                std::fabs(static_cast<double>(params.splice_offset)) * 0.5 +
-                std::fabs(static_cast<double>(params.vortex_strength)) * 2.0 +
-                std::fabs(static_cast<double>(params.tension_strength)) * 18.0;
+                std::fabs(static_cast<double>(params.splice_offset)) * 80.0 +
+                std::fabs(static_cast<double>(params.vortex_strength)) * 120.0 +
+                std::fabs(static_cast<double>(params.tension_strength)) * 600.0;
 
             FractalSampleResult sample{};
             sample.iterations = static_cast<int>(std::lround(40.0 + explainoSignal * 18.0 + coordSpan * 12.0 + static_cast<double>(render.device_id)));
@@ -122,23 +130,74 @@ bool LoadRealCatalog(BindingContext& bind, EngineFunctionCatalog* outCatalog, st
     return true;
 }
 
+bool IsBaselineExplainoCommonPath(const std::string& path) {
+    return path == "fractal.params.explaino_seed" ||
+        path == "fractal.view.explaino_seed_drift" ||
+        path == "fractal.view.explaino_phase" ||
+        path == "fractal.view.explaino_phase_strength" ||
+        path == "fractal.params.explaino_damping" ||
+        path == "fractal.params.explaino_warp_strength" ||
+        path == "fractal.params.explaino_root_spread";
+}
+
+BindingContext BuildBindingContext(
+    ViewState* view,
+    KernelParams* params,
+    RenderSettings* render,
+    LensSettings* lens) {
+    BindingContext bind;
+    bind.view = view;
+    bind.params = params;
+    bind.render = render;
+    bind.lens = lens;
+    return bind;
+}
+
+double ReadBoundNumericValue(const BindingContext& bind, const std::string& path, const std::string& type) {
+    if (type == "double") {
+        double value = 0.0;
+        if (bind.GetDoubleValue(path, value)) {
+            return value;
+        }
+    }
+    if (type == "float") {
+        float value = 0.0f;
+        if (bind.GetFloatValue(path, value)) {
+            return static_cast<double>(value);
+        }
+    }
+    if (type == "int") {
+        int value = 0;
+        if (bind.GetIntValue(path, value)) {
+            return static_cast<double>(value);
+        }
+    }
+    return 0.0;
+}
+
+double CaptureResidual(
+    const ContractMeasurementHost& host,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render) {
+    std::vector<Double2> coords = {{view.center_hp_x, view.center_hp_y}};
+    std::vector<FractalSampleResult> results;
+    std::string error;
+    if (!host.Sample(coords, view, params, render, &results, &error) || results.size() != 1) {
+        return -1.0;
+    }
+    return static_cast<double>(results[0].residual);
+}
+
 } // namespace
 
 int main() {
-    ViewState view{};
-    KernelParams params{};
-    RenderSettings render{};
-    LensSettings lens{};
-    view.fractal_type = FractalType::explaino;
-    view.zoom = 10.0f;
-    params.explaino_seed = 7.0;
-    view.explaino_seed_drift = 0.125f;
-
-    BindingContext bind;
-    bind.view = &view;
-    bind.params = &params;
-    bind.render = &render;
-    bind.lens = &lens;
+    ViewState loadView{};
+    KernelParams loadParams{};
+    RenderSettings loadRender{};
+    LensSettings loadLens{};
+    loadView.fractal_type = FractalType::explaino;
+    BindingContext bind = BuildBindingContext(&loadView, &loadParams, &loadRender, &loadLens);
 
     EngineFunctionCatalog catalog;
     std::string error;
@@ -156,74 +215,149 @@ int main() {
     {
         const FunctionParamDescriptor* explainoSeed = FindParam(*fractalSample, "fractal.params.explaino_seed");
         const FunctionParamDescriptor* rippleAmplitude = FindParam(*fractalSample, "fractal.params.ripple_amplitude");
-        if (!explainoSeed || !rippleAmplitude) {
-            std::cerr << "Expected real viewer catalog to expose both baseline and variant Explaino params\n";
+        const FunctionParamDescriptor* explainoMix = FindParam(*fractalSample, "fractal.params.explaino_mix");
+        const FunctionParamDescriptor* momentumBeta = FindParam(*fractalSample, "fractal.params.momentum_beta");
+        const FunctionParamDescriptor* joyCoupling = FindParam(*fractalSample, "fractal.params.joy_coupling");
+        const FunctionParamDescriptor* foldCoupling = FindParam(*fractalSample, "fractal.params.fold_coupling");
+        const FunctionParamDescriptor* bellCoupling = FindParam(*fractalSample, "fractal.params.bell_coupling");
+        if (!explainoSeed || !rippleAmplitude || !explainoMix || !momentumBeta || !joyCoupling || !foldCoupling || !bellCoupling) {
+            std::cerr << "Expected real viewer catalog to expose baseline, dual, inertial, and explaino-family variant params\n";
             return 1;
         }
-        if (explainoSeed->has_cost_hint) {
-            std::cerr << "Expected baseline Explaino seed to lack cost metadata in the shipped schema-derived catalog\n";
+        if (!explainoSeed->has_cost_hint) {
+            std::cerr << "Expected baseline Explaino seed to carry sidecar cost metadata in the shipped schema-derived catalog\n";
             return 1;
         }
         if (!rippleAmplitude->has_cost_hint) {
             std::cerr << "Expected Explaino Ripple strength to retain shipped cost metadata in the schema-derived catalog\n";
             return 1;
         }
+        if (!explainoMix->has_cost_hint || !momentumBeta->has_cost_hint || !joyCoupling->has_cost_hint ||
+            !foldCoupling->has_cost_hint || !bellCoupling->has_cost_hint) {
+            std::cerr << "Expected Explaino-family variant controls to carry sidecar cost metadata in the shipped schema-derived catalog\n";
+            return 1;
+        }
+        if (explainoSeed->has_sensitivity_report || joyCoupling->has_sensitivity_report ||
+            foldCoupling->has_sensitivity_report || bellCoupling->has_sensitivity_report ||
+            momentumBeta->has_sensitivity_report || explainoMix->has_sensitivity_report) {
+            std::cerr << "Expected generic Explaino-family sidecar cost metadata to remain distinct from measured sensitivity reports\n";
+            return 1;
+        }
     }
 
     {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        view.fractal_type = FractalType::explaino;
+        view.zoom = 10.0f;
+        params.explaino_seed = 7.0;
+        view.explaino_seed_drift = 0.125f;
+        BindingContext stateBind = BuildBindingContext(&view, &params, &render, &lens);
+
         ContractMeasurementHost host;
         SidecarAutoDemoControllerPolicy policy;
         policy.enabled = true;
         policy.allow_runtime_mutation = true;
 
         ExplainoSidecarWindowState state;
-        if (!BuildExplainoSidecarWindowState(catalog, bind, &host, nullptr, nullptr, nullptr, &policy, &state, &error)) {
+        if (!BuildExplainoSidecarWindowState(catalog, stateBind, &host, nullptr, nullptr, nullptr, &policy, &state, &error)) {
             std::cerr << "Expected real-schema baseline Explaino sidecar state to build: " << error << "\n";
             return 1;
         }
-        if (state.has_action_recommendation) {
-            std::cerr << "Expected baseline Explaino on the real schema-derived surface to have no passive recommendation yet\n";
-            return 1;
-        }
-        if (state.action_error_message.find("no eligible cost-annotated numeric param") == std::string::npos) {
-            std::cerr << "Expected baseline Explaino to report the missing-cost recommendation gap, got: "
+        if (!state.has_action_recommendation) {
+            std::cerr << "Expected baseline Explaino on the real schema-derived surface to expose an actionable recommendation: "
                       << state.action_error_message << "\n";
             return 1;
         }
-        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::blocked_no_action ||
-            state.controller_decision.should_mutate) {
-            std::cerr << "Expected baseline Explaino controller to remain blocked on the real schema-derived surface\n";
+        if (!IsBaselineExplainoCommonPath(state.action_recommendation.path)) {
+            std::cerr << "Expected baseline Explaino recommendation to target a real common Explaino control after the real-schema repair, got: "
+                      << state.action_recommendation.path << "\n";
+            return 1;
+        }
+        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::apply_ready ||
+            !state.controller_decision.should_mutate) {
+            std::cerr << "Expected baseline Explaino controller to arm a real-schema mutation-ready decision"
+                      << " status=" << static_cast<int>(state.controller_decision.status)
+                      << " should_mutate=" << state.controller_decision.should_mutate
+                      << " reason=" << state.controller_decision.reason << "\n";
+            return 1;
+        }
+
+        const double beforeValue = ReadBoundNumericValue(stateBind, state.controller_decision.path, state.controller_decision.type);
+        const double beforeResidual = CaptureResidual(host, view, params, render);
+        if (!ApplySidecarAutoDemoControllerDecision(state.controller_decision, stateBind, &error)) {
+            std::cerr << "Expected baseline Explaino real-schema controller decision to mutate the bound state: " << error << "\n";
+            return 1;
+        }
+        const double afterValue = ReadBoundNumericValue(stateBind, state.controller_decision.path, state.controller_decision.type);
+        const double afterResidual = CaptureResidual(host, view, params, render);
+        if (beforeValue == afterValue) {
+            std::cerr << "Expected baseline Explaino auto-demo mutation to change the bound param value\n";
+            return 1;
+        }
+        if (beforeResidual == afterResidual) {
+            std::cerr << "Expected baseline Explaino auto-demo mutation to change sampled output residual\n";
             return 1;
         }
     }
 
     {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        view.fractal_type = FractalType::explaino_joy;
+        view.zoom = 10.0f;
+        params.explaino_seed = 7.0;
+        view.explaino_seed_drift = 0.125f;
+        params.joy_coupling = 0.3f;
+        BindingContext stateBind = BuildBindingContext(&view, &params, &render, &lens);
+
         ContractMeasurementHost host;
         SidecarAutoDemoControllerPolicy policy;
         policy.enabled = true;
         policy.allow_runtime_mutation = true;
 
-        view.fractal_type = FractalType::explaino_ripple;
-        params.ripple_amplitude = 0.15f;
-
         ExplainoSidecarWindowState state;
-        if (!BuildExplainoSidecarWindowState(catalog, bind, &host, nullptr, nullptr, nullptr, &policy, &state, &error)) {
-            std::cerr << "Expected real-schema Explaino Ripple sidecar state to build: " << error << "\n";
+        if (!BuildExplainoSidecarWindowState(catalog, stateBind, &host, nullptr, nullptr, nullptr, &policy, &state, &error)) {
+            std::cerr << "Expected real-schema Explaino Joy sidecar state to build: " << error << "\n";
             return 1;
         }
         if (!state.has_action_recommendation) {
-            std::cerr << "Expected Explaino Ripple on the real schema-derived surface to expose a passive recommendation: "
+            std::cerr << "Expected Explaino Joy on the real schema-derived surface to expose an actionable recommendation: "
                       << state.action_error_message << "\n";
             return 1;
         }
-        if (state.action_recommendation.path != "fractal.params.ripple_amplitude") {
-            std::cerr << "Expected real-schema Explaino Ripple recommendation to target ripple_amplitude, got: "
+        if (state.action_recommendation.path != "fractal.params.joy_coupling") {
+            std::cerr << "Expected real-schema Explaino Joy recommendation to target joy_coupling, got: "
                       << state.action_recommendation.path << "\n";
             return 1;
         }
-        if (!state.controller_error_message.empty()) {
-            std::cerr << "Expected real-schema Explaino Ripple controller evaluation to remain valid, got: "
-                      << state.controller_error_message << "\n";
+        if (state.controller_decision.status != SidecarAutoDemoControllerStatus::apply_ready ||
+            !state.controller_decision.should_mutate) {
+            std::cerr << "Expected real-schema Explaino Joy controller to arm a mutation-ready decision"
+                      << " status=" << static_cast<int>(state.controller_decision.status)
+                      << " should_mutate=" << state.controller_decision.should_mutate
+                      << " reason=" << state.controller_decision.reason << "\n";
+            return 1;
+        }
+
+        const double beforeValue = ReadBoundNumericValue(stateBind, state.controller_decision.path, state.controller_decision.type);
+        const double beforeResidual = CaptureResidual(host, view, params, render);
+        if (!ApplySidecarAutoDemoControllerDecision(state.controller_decision, stateBind, &error)) {
+            std::cerr << "Expected Explaino Joy real-schema controller decision to mutate the bound state: " << error << "\n";
+            return 1;
+        }
+        const double afterValue = ReadBoundNumericValue(stateBind, state.controller_decision.path, state.controller_decision.type);
+        const double afterResidual = CaptureResidual(host, view, params, render);
+        if (beforeValue == afterValue) {
+            std::cerr << "Expected Explaino Joy auto-demo mutation to change joy_coupling\n";
+            return 1;
+        }
+        if (beforeResidual == afterResidual) {
+            std::cerr << "Expected Explaino Joy auto-demo mutation to change sampled output residual\n";
             return 1;
         }
     }

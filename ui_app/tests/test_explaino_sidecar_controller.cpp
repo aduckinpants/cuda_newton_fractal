@@ -143,6 +143,28 @@ int main() {
         SidecarAutoDemoControllerPolicy policy;
         policy.enabled = true;
         policy.allow_runtime_mutation = true;
+        SidecarActionRecommendation recommendation = MakeRecommendation("fractal.view.explaino_phase", "explore", -0.30, 0.30);
+        SidecarAutoDemoControllerDecision decision;
+        std::string error;
+        if (!BuildSidecarAutoDemoControllerDecision(
+            &recommendation,
+                BuildIncompleteCompleteness(),
+                policy,
+                &decision,
+                &error)) {
+            std::cerr << "Expected neutral-guidance controller decision to build: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(decision.target_value, 0.30)) {
+            std::cerr << "Expected neutral-guidance controller decision to target the outer active-zone edge instead of the midpoint\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
         SidecarAutoDemoControllerDecision decision;
         std::string error;
         if (!BuildSidecarAutoDemoControllerDecision(

@@ -64,6 +64,11 @@ struct FunctionParamSensitivityReportData {
     size_t sample_count;
 };
 
+struct FunctionParamCostHintData {
+    const char* path;
+    double cost_hint;
+};
+
 constexpr FunctionParamSensitivitySampleData kRippleSensitivity[] = {
     {0.0, 0.0, 9.84375, 0.0, 1.0, 0.0, 0.0, 1.6793929348105143},
     {0.25, 0.0375, 206.9921875, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -103,6 +108,23 @@ constexpr FunctionParamSensitivityReportData kOptimizationStagingSensitivity[] =
     {"fractal.params.tension_strength", 2.42, "explaino_baseline", "explaino_tension_zero", "explaino_tension_default", kTensionSensitivity, sizeof(kTensionSensitivity) / sizeof(kTensionSensitivity[0])},
 };
 
+constexpr FunctionParamCostHintData kExplainoSidecarCostHints[] = {
+    {"fractal.params.explaino_seed", 0.0},
+    {"fractal.params.explaino_seed_b", 0.0},
+    {"fractal.params.explaino_mix", 0.0},
+    {"fractal.params.explaino_warp_strength", 0.0},
+    {"fractal.params.explaino_root_spread", 0.0},
+    {"fractal.view.explaino_phase_strength", 0.0},
+    {"fractal.params.explaino_damping", 0.0},
+    {"fractal.view.explaino_phase", 0.0},
+    {"fractal.view.explaino_seed_drift", 0.0},
+    {"fractal.params.explaino_cluster_radius", 0.0},
+    {"fractal.params.momentum_beta", 0.0},
+    {"fractal.params.joy_coupling", 0.0},
+    {"fractal.params.fold_coupling", 0.0},
+    {"fractal.params.bell_coupling", 0.0},
+};
+
 const FunctionParamSensitivityReportData* FindOptimizationStagingSensitivity(const std::string& path) {
     for (const auto& report : kOptimizationStagingSensitivity) {
         if (path == report.path) return &report;
@@ -110,10 +132,25 @@ const FunctionParamSensitivityReportData* FindOptimizationStagingSensitivity(con
     return nullptr;
 }
 
+const FunctionParamCostHintData* FindExplainoSidecarCostHint(const std::string& path) {
+    for (const auto& costHint : kExplainoSidecarCostHints) {
+        if (path == costHint.path) return &costHint;
+    }
+    return nullptr;
+}
+
 void AttachOptimizationStagingMetadata(FunctionParamDescriptor* ioParam) {
     if (!ioParam) return;
     const FunctionParamSensitivityReportData* report = FindOptimizationStagingSensitivity(ioParam->path);
-    if (!report) return;
+    if (!report) {
+        const FunctionParamCostHintData* genericCostHint = FindExplainoSidecarCostHint(ioParam->path);
+        if (!genericCostHint) {
+            return;
+        }
+        ioParam->has_cost_hint = true;
+        ioParam->cost_hint = genericCostHint->cost_hint;
+        return;
+    }
 
     ioParam->has_cost_hint = true;
     ioParam->cost_hint = report->cost_hint;
