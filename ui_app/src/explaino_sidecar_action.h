@@ -1,7 +1,6 @@
 #pragma once
 
-#include "explaino_sidecar_lens.h"
-#include "explaino_sidecar_model.h"
+#include "explaino_sidecar_energy.h"
 
 #include <string>
 
@@ -23,6 +22,11 @@ struct SidecarActionRecommendation {
     double active_fraction{0.0};
     int observation_count{0};
 };
+
+bool BuildSidecarActionRecommendation(
+    const SidecarEnergyLandscape& energyLandscape,
+    SidecarActionRecommendation* outRecommendation,
+    std::string* outError);
 
 bool BuildSidecarActionRecommendation(
     const SidecarHypothesisSpace& space,

@@ -258,6 +258,18 @@ int main() {
             std::cerr << "Expected sidecar window state to expose positive measurement information gain\n";
             return 1;
         }
+        if (!state.energy_error_message.empty() ||
+            state.energy_landscape.available_row_count != 1 ||
+            state.energy_landscape.peak_path != "fractal.params.explaino_mix") {
+            std::cerr << "Expected sidecar window state to expose the first energy profile on the measured surface\n";
+            return 1;
+        }
+        if (state.energy_landscape.rows.size() != 2 ||
+            state.energy_landscape.rows[0].status != SidecarEnergyLandscapeRowStatus::available ||
+            state.energy_landscape.rows[1].status != SidecarEnergyLandscapeRowStatus::missing_cost_hint) {
+            std::cerr << "Expected sidecar window state to keep both available and unavailable energy rows explicit\n";
+            return 1;
+        }
         if (!NearlyEqual(state.orientation.slime_energy_delta, state.measurement.total_information_gain_estimate)) {
             std::cerr << "Expected sidecar orientation to ingest measurement information gain\n";
             return 1;

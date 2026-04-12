@@ -16,9 +16,9 @@ Phase 5 - R4 divergence, energy, and persistence
 
 - Spec source: `spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md`
 - Current bounded slice:
-  - extract the R4-B energy-landscape seam on top of the now-landed R4-A divergence surface
-  - decide whether the first energy presentation is a ranked/profile surface or needs an explicit 2D heatmap in the sidecar window
-  - keep runtime parameter mutation and orientation persistence out of scope until the energy seam proves durable under hostile audit
+  - extract the R4-C slime-trace seam on top of the now-landed R4-B energy profile surface
+  - decide whether the first trace is a headless path log only or also a viewer-side overlay on the energy table/profile
+  - keep runtime parameter mutation and orientation persistence out of scope until the trace seam proves durable under hostile audit
 - Exit criteria for Phase 1:
   - `SidecarOrientationVector` exists as a testable type
   - sidecar model code can derive applicable parameters from `FunctionDescriptor`
@@ -82,14 +82,19 @@ Phase 5 - R4 divergence, energy, and persistence
   - runtime sidecar refresh now threads prior orientation state into divergence comparison across valid rebuilds
   - hostile-audit repair for prior model-error states: zero/default orientation is no longer reused as the previous divergence baseline during recovery
   - hostile-audit repair for the divergence slice code-quality regression by extracting focused sidecar render sections out of `RenderExplainoSidecarWindow()`
+  - `ui_app/src/explaino_sidecar_energy.h/.cpp`
+  - `ui_app/tests/test_explaino_sidecar_energy.cpp`
+  - sidecar window state and rendering now expose an explicit energy profile over the measured budget/lens surface
+  - sidecar action selection now reuses the energy landscape as the single `importance - cost` source instead of carrying a second formula
+  - hostile-audit repair for unavailable energy rows: missing-cost or inactive rows no longer silently expose fake zero energy/cost values
 - Validation achieved for the current Phase 5 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
-  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_divergence_code_quality_report.json`
+  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/sidecar_energy_code_quality_report.json`
 - Next bounded slice for Phase 5:
-  - extract the R4-B energy-landscape seam from the existing budget + lens + action surfaces
-  - decide whether the first energy view is table/profile-only or a true heatmap while preserving the headless test seam
-  - keep slime-trace recording and orientation persistence deferred until the energy surface is validated and audited
+  - extract the R4-C slime-trace seam from the now-landed energy surface and controller decisions
+  - decide whether the first trace surface is a headless path log only or also a viewer-side overlay while preserving the headless seam
+  - keep orientation persistence deferred until the trace surface is validated and audited
 - Deferred to later phases:
   - direct CUDA micro-sweep calls
   - live auto-demonstration parameter mutation

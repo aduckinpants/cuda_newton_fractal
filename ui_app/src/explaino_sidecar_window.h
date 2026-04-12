@@ -5,6 +5,7 @@
 #include "explaino_sidecar_completeness.h"
 #include "explaino_sidecar_controller.h"
 #include "explaino_sidecar_divergence.h"
+#include "explaino_sidecar_energy.h"
 #include "explaino_sidecar_lens.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_model.h"
@@ -30,12 +31,14 @@ struct ExplainoSidecarWindowState {
     std::string completeness_error_message;
     std::string controller_error_message;
     std::string divergence_error_message;
+    std::string energy_error_message;
     bool has_orientation{false};
     SidecarOrientationVector orientation{};
     SidecarAutoDemoControllerPolicy controller_policy{};
     SidecarMeasurementBatch measurement{};
     SidecarBudgetState budget{};
     SidecarLensProjection lens{};
+    SidecarEnergyLandscape energy_landscape{};
     SidecarExplorationCompleteness completeness{};
     bool has_action_recommendation{false};
     SidecarActionRecommendation action_recommendation{};

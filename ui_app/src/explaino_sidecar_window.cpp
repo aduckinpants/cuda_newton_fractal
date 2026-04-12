@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 
@@ -35,6 +36,27 @@ std::string FormatRange(const SidecarParamSurfaceEntry& entry) {
 
 std::string FormatActiveZone(const SidecarLensProjectionRow& row) {
     return "[" + FormatNumber(row.active_min) + ", " + FormatNumber(row.active_max) + "]";
+}
+
+std::string FormatOptionalNumber(double value) {
+    if (!std::isfinite(value)) {
+        return "--";
+    }
+    return FormatNumber(value);
+}
+
+std::string EnergyStatusText(SidecarEnergyLandscapeRowStatus status) {
+    switch (status) {
+    case SidecarEnergyLandscapeRowStatus::available:
+        return "available";
+    case SidecarEnergyLandscapeRowStatus::inactive:
+        return "inactive";
+    case SidecarEnergyLandscapeRowStatus::missing_cost_hint:
+        return "missing_cost_hint";
+    case SidecarEnergyLandscapeRowStatus::unsupported_type:
+        return "unsupported_type";
+    }
+    return "unknown";
 }
 
 void RenderOrientationSection(const ExplainoSidecarWindowState& state) {
@@ -159,6 +181,62 @@ void RenderCompletenessSection(const ExplainoSidecarWindowState& state) {
         ImGui::Text("%d", row.observation_count);
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(row.coverage_bucket.c_str());
+    }
+
+    ImGui::EndTable();
+}
+
+void RenderEnergySection(const ExplainoSidecarWindowState& state) {
+    ImGui::Separator();
+    ImGui::Text("Energy Landscape");
+    if (!state.energy_error_message.empty()) {
+        ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Energy error");
+        ImGui::TextWrapped("%s", state.energy_error_message.c_str());
+        return;
+    }
+    if (state.energy_landscape.rows.empty()) {
+        ImGui::TextDisabled("Energy unavailable.");
+        return;
+    }
+
+    ImGui::BulletText("available_rows: %d", state.energy_landscape.available_row_count);
+    ImGui::BulletText("recommendation_eligible_rows: %d", state.energy_landscape.recommendation_eligible_count);
+    ImGui::BulletText("peak_energy: %.3f", state.energy_landscape.peak_energy);
+    ImGui::BulletText("mean_energy: %.3f", state.energy_landscape.mean_energy);
+    if (!state.energy_landscape.peak_path.empty()) {
+        ImGui::BulletText("peak_path: %s", state.energy_landscape.peak_path.c_str());
+    }
+
+    if (!ImGui::BeginTable("sidecar_energy", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        return;
+    }
+
+    ImGui::TableSetupColumn("Label");
+    ImGui::TableSetupColumn("Path");
+    ImGui::TableSetupColumn("Energy");
+    ImGui::TableSetupColumn("Eff IG");
+    ImGui::TableSetupColumn("Cost");
+    ImGui::TableSetupColumn("Zone");
+    ImGui::TableSetupColumn("Status");
+    ImGui::TableHeadersRow();
+
+    for (const auto& row : state.energy_landscape.rows) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(row.label.c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(row.path.c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(FormatOptionalNumber(row.energy).c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(FormatOptionalNumber(row.effective_information_gain).c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(FormatOptionalNumber(row.cost_hint).c_str());
+        ImGui::TableNextColumn();
+        const SidecarLensProjectionRow zoneRow{row.label, row.path, row.type, 0.0, row.active_min, row.active_max, row.active_fraction, 0.0, 0.0, false, row.guidance};
+        ImGui::TextUnformatted(FormatActiveZone(zoneRow).c_str());
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted(row.summary.c_str());
     }
 
     ImGui::EndTable();
@@ -303,6 +381,31 @@ void PopulateControllerDecision(ExplainoSidecarWindowState* ioState) {
     }
 }
 
+void PopulateEnergyLandscape(
+    const SidecarHypothesisSpace& space,
+    ExplainoSidecarWindowState* ioState) {
+    if (!ioState) {
+        return;
+    }
+
+    ioState->energy_error_message.clear();
+    ioState->energy_landscape = {};
+    if (ioState->budget.function_id.empty() || ioState->lens.function_id.empty()) {
+        return;
+    }
+
+    std::string energyError;
+    if (!BuildSidecarEnergyLandscape(
+            space,
+            ioState->budget,
+            ioState->lens,
+            &ioState->energy_landscape,
+            &energyError)) {
+        ioState->energy_landscape = {};
+        ioState->energy_error_message = energyError;
+    }
+}
+
 void PopulateDivergenceState(
     const SidecarOrientationVector* previousOrientation,
     ExplainoSidecarWindowState* ioState) {
@@ -443,6 +546,13 @@ bool BuildExplainoSidecarWindowState(
             return false;
         }
 
+        PopulateEnergyLandscape(space, &next);
+        if (!next.energy_error_message.empty()) {
+            *outState = std::move(next);
+            if (outError) *outError = outState->energy_error_message;
+            return false;
+        }
+
         std::string completenessError;
         if (!BuildSidecarExplorationCompleteness(space, next.budget, &next.completeness, &completenessError)) {
             next.completeness_error_message = completenessError;
@@ -453,7 +563,7 @@ bool BuildExplainoSidecarWindowState(
         }
 
         std::string actionError;
-        if (BuildSidecarActionRecommendation(space, next.budget, next.lens, &next.action_recommendation, &actionError)) {
+        if (BuildSidecarActionRecommendation(next.energy_landscape, &next.action_recommendation, &actionError)) {
             next.has_action_recommendation = true;
         } else {
             next.action_error_message = actionError;
@@ -541,6 +651,7 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
     }
     RenderOrientationSection(state);
     RenderBudgetSection(state);
+    RenderEnergySection(state);
     RenderCompletenessSection(state);
     RenderDivergenceSection(state);
     RenderControllerSection(state);
