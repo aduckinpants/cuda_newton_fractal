@@ -165,42 +165,6 @@ static bool PromptOpenFindingStatePath(HWND owner, std::string* outPath) {
     return true;
 }
 
-static bool TryLoadPersistedSidecarOrientation(const std::string& selectedPath,
-                                               SidecarOrientationVector* outOrientation,
-                                               bool* outHasOrientation,
-                                               std::string* outResolvedStatePath,
-                                               std::string* outError) {
-    if (outError) outError->clear();
-    if (outOrientation) *outOrientation = {};
-    if (outHasOrientation) *outHasOrientation = false;
-
-    std::string resolvedStatePath;
-    if (!ResolveFindingStateJsonPath(selectedPath, &resolvedStatePath, outError)) {
-        return false;
-    }
-
-    ViewState ignoredView{};
-    KernelParams ignoredParams{};
-    RenderSettings ignoredRender{};
-    SidecarOrientationVector orientation{};
-    bool hasOrientation = false;
-    if (!LoadDiagnosticsStateFile(
-            resolvedStatePath,
-            &ignoredView,
-            &ignoredParams,
-            &ignoredRender,
-            &orientation,
-            &hasOrientation,
-            outError)) {
-        return false;
-    }
-
-    if (outResolvedStatePath) *outResolvedStatePath = resolvedStatePath;
-    if (outOrientation) *outOrientation = orientation;
-    if (outHasOrientation) *outHasOrientation = hasOrientation;
-    return true;
-}
-
 static void CreateRenderTarget() {
     ID3D11Texture2D* pBackBuffer = nullptr;
     g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
@@ -921,24 +885,21 @@ static void DispatchUiActions(HWND hwnd,
         if (PromptOpenFindingStatePath(hwnd, &selectedPath)) {
             std::string resolvedStatePath;
             std::string loadError;
-            if (!LoadFindingSelectionIntoRuntime(selectedPath, &view, &params, &render, &resolvedStatePath, &loadError)) {
+            SidecarOrientationVector loadedOrientation{};
+            bool hasLoadedOrientation = false;
+            if (!LoadFindingSelectionIntoRuntime(
+                    selectedPath,
+                    &view,
+                    &params,
+                    &render,
+                    &loadedOrientation,
+                    &hasLoadedOrientation,
+                    &resolvedStatePath,
+                    &loadError)) {
                 findingStatus = "Load state failed: " + loadError;
             } else {
-                SidecarOrientationVector loadedOrientation{};
-                bool hasLoadedOrientation = false;
-                std::string orientationError;
-                if (TryLoadPersistedSidecarOrientation(
-                        resolvedStatePath,
-                        &loadedOrientation,
-                        &hasLoadedOrientation,
-                        nullptr,
-                        &orientationError)) {
-                    loadedOrientationBaseline = loadedOrientation;
-                    loadedOrientationBaselineValid = hasLoadedOrientation;
-                } else {
-                    loadedOrientationBaseline = {};
-                    loadedOrientationBaselineValid = false;
-                }
+                loadedOrientationBaseline = loadedOrientation;
+                loadedOrientationBaselineValid = hasLoadedOrientation;
                 sidecarState = {};
                 sidecarStateValid = false;
                 sidecarBudgetState = {};
@@ -1123,6 +1084,8 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
                                              const std::vector<std::string>& schemaCandidates,
                                              ViewState& view, KernelParams& params,
                                              RenderSettings& render, LensSettings& lens,
+                                             SidecarOrientationVector& loadedOrientationBaseline,
+                                             bool& loadedOrientationBaselineValid,
                                              bool& dirty, UISchema& uiSchema,
                                              std::string& schemaPath,
                                              std::string& schemaWarning,
@@ -1145,7 +1108,14 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
     if (params.poly_kind != PolyKind::custom) {
         SetPolyPreset(params);
     }
-    return ApplyCliOverrides(cli, view, params, render, &dirty);
+    return ApplyCliOverrides(
+        cli,
+        view,
+        params,
+        render,
+        &loadedOrientationBaseline,
+        &loadedOrientationBaselineValid,
+        &dirty);
 }
 
 static bool InitializeViewerWindowAndImGui(HINSTANCE hInstance, const std::string& exeDir,
@@ -1258,6 +1228,30 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     }
 }
 
+static void ApplyPendingSidecarAutoDemoMutation(
+    const ExplainoSidecarWindowState& sidecarState,
+    bool applyArmedDecision,
+    BindingContext& bind,
+    bool& dirty,
+    bool& interactionChanged,
+    ViewerRenderPacingState& renderPacingState,
+    std::string& findingStatus) {
+    if (!applyArmedDecision) {
+        return;
+    }
+
+    std::string mutationError;
+    if (!ApplySidecarAutoDemoControllerDecision(sidecarState.controller_decision, bind, &mutationError)) {
+        findingStatus = "Auto-demo apply failed: " + mutationError;
+        return;
+    }
+
+    dirty = true;
+    interactionChanged = true;
+    findingStatus = "Applied auto-demo step: " + sidecarState.controller_decision.path;
+    NoteViewerInteraction(&renderPacingState);
+}
+
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     if (ApplyAutoDiveStep(view)) {
         if (ioDirty) *ioDirty = true;
@@ -1297,20 +1291,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool loadedOrientationBaselineValid = false;
 
     { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
+          loadedOrientationBaseline, loadedOrientationBaselineValid,
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
-
-    if (cli.have_load_state_json) {
-        std::string loadError;
-        if (!TryLoadPersistedSidecarOrientation(
-                cli.load_state_json,
-                &loadedOrientationBaseline,
-                &loadedOrientationBaselineValid,
-                nullptr,
-                &loadError)) {
-            return 1;
-        }
-    }
 
     BindingContext bind;
     bind.view = &view;
@@ -1427,7 +1410,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             findingStatus, lastFindingPath,
             sidecarStateValid, sidecarBudgetStateValid);
 
-        RenderExplainoSidecarWindow(sidecarState);
+        bool applySidecarAutoDemoDecision = false;
+        if (RenderExplainoSidecarWindow(sidecarState, &sidecarControllerPolicy, &applySidecarAutoDemoDecision)) {
+            actions.interactionChanged = true;
+            NoteViewerInteraction(&renderPacingState);
+        }
+        ApplyPendingSidecarAutoDemoMutation(
+            sidecarState,
+            applySidecarAutoDemoDecision,
+            bind,
+            dirty,
+            actions.interactionChanged,
+            renderPacingState,
+            findingStatus);
 
         RenderFractalViewport(io, render, view, dirty, actions.interactionChanged);
 

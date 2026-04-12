@@ -105,4 +105,9 @@ bool BuildExplainoSidecarWindowState(
     ExplainoSidecarWindowState* outState,
     std::string* outError);
 
+bool RenderExplainoSidecarWindow(
+    const ExplainoSidecarWindowState& state,
+    SidecarAutoDemoControllerPolicy* ioPolicy,
+    bool* outApplyArmedDecision);
+
 void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state);

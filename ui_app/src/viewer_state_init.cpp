@@ -7,18 +7,55 @@
 #include "fractal_family_rules.h"
 #include "view_hp_sync.h"
 
+namespace {
+
+bool CliOverridesLoadedStateSnapshot(const ViewerCliArgs& cli) {
+    return cli.have_fractal_type ||
+        cli.have_explaino_seed ||
+        cli.have_explaino_phase ||
+        cli.have_explaino_seed_drift ||
+        cli.have_explaino_seed_b ||
+        cli.have_explaino_mix ||
+        cli.have_explaino_warp_strength ||
+        cli.have_lambda_real ||
+        cli.have_lambda_imag ||
+        cli.have_width ||
+        cli.have_height ||
+        cli.sweep_config.enabled;
+}
+
+} // namespace
+
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
-                      RenderSettings& render, bool* dirty) {
+                      RenderSettings& render,
+                      SidecarOrientationVector* outLoadedOrientation,
+                      bool* outHasLoadedOrientation,
+                      bool* dirty) {
+    if (outLoadedOrientation) *outLoadedOrientation = {};
+    if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
+
     bool loadedState = false;
 
     if (cli.have_load_state_json) {
         std::string loadError;
         std::string loadedStatePath;
-        if (!LoadFindingSelectionIntoRuntime(cli.load_state_json, &view, &params, &render, &loadedStatePath, &loadError)) {
+        SidecarOrientationVector loadedOrientation{};
+        bool hasLoadedOrientation = false;
+        if (!LoadFindingSelectionIntoRuntime(
+                cli.load_state_json,
+                &view,
+                &params,
+                &render,
+                &loadedOrientation,
+                &hasLoadedOrientation,
+                &loadedStatePath,
+                &loadError)) {
             return 1;
         }
         loadedState = true;
+        if (outLoadedOrientation) *outLoadedOrientation = loadedOrientation;
+        if (outHasLoadedOrientation) *outHasLoadedOrientation = hasLoadedOrientation;
         if (dirty) *dirty = true;
     }
 
@@ -66,5 +103,16 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         UpdateExplainoPolynomial(view, params, dirty);
     }
 
+    if (loadedState && CliOverridesLoadedStateSnapshot(cli)) {
+        if (outLoadedOrientation) *outLoadedOrientation = {};
+        if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
+    }
+
     return 0;
+}
+
+int ApplyCliOverrides(const ViewerCliArgs& cli,
+                      ViewState& view, KernelParams& params,
+                      RenderSettings& render, bool* dirty) {
+    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, dirty);
 }

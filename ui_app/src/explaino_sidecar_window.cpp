@@ -326,24 +326,79 @@ void RenderDivergenceSection(const ExplainoSidecarWindowState& state) {
     ImGui::BulletText("projection_changed: %s", state.divergence.projection_changed ? "true" : "false");
 }
 
-void RenderControllerSection(const ExplainoSidecarWindowState& state) {
+bool RenderControllerSection(
+    const ExplainoSidecarWindowState& state,
+    SidecarAutoDemoControllerPolicy* ioPolicy,
+    bool* outApplyArmedDecision) {
+    if (outApplyArmedDecision) *outApplyArmedDecision = false;
+    bool interacted = false;
+    SidecarAutoDemoControllerPolicy displayPolicy = state.controller_policy;
+    if (ioPolicy) {
+        displayPolicy = *ioPolicy;
+    }
+
     ImGui::Separator();
     ImGui::Text("Auto Demonstration");
+    if (ioPolicy) {
+        bool enabled = displayPolicy.enabled;
+        if (ImGui::Checkbox("Enable Auto Demonstration", &enabled)) {
+            ioPolicy->enabled = enabled;
+            displayPolicy.enabled = enabled;
+            interacted = true;
+        }
+
+        bool allowRuntimeMutation = displayPolicy.allow_runtime_mutation;
+        if (ImGui::Checkbox("Allow Runtime Mutation", &allowRuntimeMutation)) {
+            ioPolicy->allow_runtime_mutation = allowRuntimeMutation;
+            displayPolicy.allow_runtime_mutation = allowRuntimeMutation;
+            interacted = true;
+        }
+
+        float stopDemonstratedFraction = static_cast<float>(displayPolicy.stop_demonstrated_fraction);
+        if (ImGui::SliderFloat("Stop Demonstrated Fraction", &stopDemonstratedFraction, 0.0f, 1.0f, "%.2f")) {
+            ioPolicy->stop_demonstrated_fraction = stopDemonstratedFraction;
+            displayPolicy.stop_demonstrated_fraction = stopDemonstratedFraction;
+            interacted = true;
+        }
+
+        int stopUncertainCount = displayPolicy.stop_uncertain_count;
+        if (ImGui::InputInt("Stop Uncertain Count", &stopUncertainCount)) {
+            if (stopUncertainCount < 0) stopUncertainCount = 0;
+            ioPolicy->stop_uncertain_count = stopUncertainCount;
+            displayPolicy.stop_uncertain_count = stopUncertainCount;
+            interacted = true;
+        }
+    }
+
     if (!state.controller_error_message.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Controller error");
         ImGui::TextWrapped("%s", state.controller_error_message.c_str());
-        return;
+        return interacted;
     }
 
     ImGui::BulletText("status: %s", state.controller_decision.summary.c_str());
     ImGui::BulletText("reason: %s", state.controller_decision.reason.c_str());
-    ImGui::BulletText("enabled: %s", state.controller_policy.enabled ? "true" : "false");
-    ImGui::BulletText("mutation_opt_in: %s", state.controller_policy.allow_runtime_mutation ? "true" : "false");
+    ImGui::BulletText("enabled: %s", displayPolicy.enabled ? "true" : "false");
+    ImGui::BulletText("mutation_opt_in: %s", displayPolicy.allow_runtime_mutation ? "true" : "false");
+    ImGui::BulletText("stop_demonstrated_fraction: %.2f", displayPolicy.stop_demonstrated_fraction);
+    ImGui::BulletText("stop_uncertain_count: %d", displayPolicy.stop_uncertain_count);
     if (state.controller_decision.has_target_value) {
         ImGui::BulletText("path: %s", state.controller_decision.path.c_str());
         ImGui::BulletText("target_value: %.6f", state.controller_decision.target_value);
         ImGui::BulletText("guidance: %s", state.controller_decision.guidance.c_str());
+        if (ioPolicy) {
+            if (state.controller_decision.should_mutate) {
+                if (ImGui::Button("Apply Armed Step")) {
+                    if (outApplyArmedDecision) *outApplyArmedDecision = true;
+                    interacted = true;
+                }
+            } else {
+                ImGui::TextDisabled("Enable runtime mutation to arm apply.");
+            }
+        }
     }
+
+    return interacted;
 }
 
 void RenderRecommendationSection(const ExplainoSidecarWindowState& state) {
@@ -799,14 +854,19 @@ bool BuildExplainoSidecarWindowState(
     return BuildExplainoSidecarWindowState(catalog, ctx, nullptr, nullptr, nullptr, nullptr, outState, outError);
 }
 
-void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
+bool RenderExplainoSidecarWindow(
+    const ExplainoSidecarWindowState& state,
+    SidecarAutoDemoControllerPolicy* ioPolicy,
+    bool* outApplyArmedDecision) {
+    if (outApplyArmedDecision) *outApplyArmedDecision = false;
+    bool interacted = false;
     ImGui::Begin(state.title.c_str());
 
     if (!state.error_message.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Sidecar model error");
         ImGui::TextWrapped("%s", state.error_message.c_str());
         ImGui::End();
-        return;
+        return interacted;
     }
 
     ImGui::Text("Function: %s", state.function_id.c_str());
@@ -821,9 +881,17 @@ void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
     RenderTraceSection(state);
     RenderCompletenessSection(state);
     RenderDivergenceSection(state);
-    RenderControllerSection(state);
+    if (RenderControllerSection(state, ioPolicy, outApplyArmedDecision)) {
+        interacted = true;
+    }
     RenderRecommendationSection(state);
     RenderApplicableParamsSection(state);
 
     ImGui::End();
+    return interacted;
+}
+
+void RenderExplainoSidecarWindow(const ExplainoSidecarWindowState& state) {
+    bool ignoredApply = false;
+    RenderExplainoSidecarWindow(state, nullptr, &ignoredApply);
 }

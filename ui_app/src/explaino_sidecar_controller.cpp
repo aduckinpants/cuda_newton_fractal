@@ -1,8 +1,18 @@
 #include "explaino_sidecar_controller.h"
 
+#include "schema_binding.h"
+#include "view_hp_sync.h"
+
 #include <cmath>
+#include <limits>
 
 namespace {
+
+std::string UnsupportedMutationTypePathPair(
+    const SidecarAutoDemoControllerDecision& decision) {
+    return "Unsupported sidecar auto-demo mutation type/path pair: " +
+        decision.type + " -> " + decision.path;
+}
 
 bool ValidateControllerPolicy(
     const SidecarAutoDemoControllerPolicy& policy,
@@ -57,6 +67,59 @@ double ResolveTargetValue(const SidecarActionRecommendation& recommendation) {
         return recommendation.active_min;
     }
     return 0.5 * (recommendation.active_min + recommendation.active_max);
+}
+
+bool MutationRequiresViewHpSync(const std::string& path) {
+    return path == "fractal.view.center.x" ||
+        path == "fractal.view.center.y" ||
+        path == "fractal.view.zoom" ||
+        path == "fractal.view.rotation";
+}
+
+bool ApplyFloatMutation(const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
+    std::string* outError) {
+    float* value = nullptr;
+    if (!ctx.BindFloat(decision.path, &value) || !value) {
+        if (outError) *outError = UnsupportedMutationTypePathPair(decision);
+        return false;
+    }
+    *value = static_cast<float>(decision.target_value);
+    if (ctx.view && MutationRequiresViewHpSync(decision.path)) {
+        SyncViewHpFromUi(*ctx.view);
+    }
+    return true;
+}
+
+bool ApplyDoubleMutation(const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
+    std::string* outError) {
+    double* value = nullptr;
+    if (!ctx.BindDouble(decision.path, &value) || !value) {
+        if (outError) *outError = UnsupportedMutationTypePathPair(decision);
+        return false;
+    }
+    *value = decision.target_value;
+    return true;
+}
+
+bool ApplyIntMutation(const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
+    std::string* outError) {
+    if (!std::isfinite(decision.target_value) ||
+        decision.target_value < static_cast<double>(INT_MIN) ||
+        decision.target_value > static_cast<double>(INT_MAX)) {
+        if (outError) *outError = "Sidecar auto-demo target_value is out of int range";
+        return false;
+    }
+
+    int* value = nullptr;
+    if (!ctx.BindInt(decision.path, &value) || !value) {
+        if (outError) *outError = UnsupportedMutationTypePathPair(decision);
+        return false;
+    }
+    *value = static_cast<int>(std::lround(decision.target_value));
+    return true;
 }
 
 } // namespace
@@ -144,4 +207,37 @@ bool BuildSidecarAutoDemoControllerDecision(
     next.should_mutate = true;
     *outDecision = std::move(next);
     return true;
+}
+
+bool ApplySidecarAutoDemoControllerDecision(
+    const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
+    std::string* outError) {
+    if (outError) outError->clear();
+
+    if (decision.path.empty()) {
+        if (outError) *outError = "Sidecar auto-demo mutation requires a bound path";
+        return false;
+    }
+    if (!decision.has_target_value || !std::isfinite(decision.target_value)) {
+        if (outError) *outError = "Sidecar auto-demo mutation requires a target_value";
+        return false;
+    }
+    if (!decision.should_mutate) {
+        if (outError) *outError = "Sidecar auto-demo mutation requires an armed mutation decision";
+        return false;
+    }
+
+    if (decision.type == "int") {
+        return ApplyIntMutation(decision, ctx, outError);
+    }
+    if (decision.type == "double") {
+        return ApplyDoubleMutation(decision, ctx, outError);
+    }
+    if (decision.type == "float") {
+        return ApplyFloatMutation(decision, ctx, outError);
+    }
+
+    if (outError) *outError = "Unsupported sidecar auto-demo mutation type: " + decision.type;
+    return false;
 }

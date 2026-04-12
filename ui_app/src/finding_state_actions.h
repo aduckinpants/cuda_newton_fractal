@@ -1,8 +1,18 @@
 #pragma once
 
+#include "explaino_sidecar_model.h"
 #include "fractal_types.h"
 
 #include <string>
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    std::string* outResolvedStatePath,
+    std::string* outError);
 
 bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     ViewState* ioView,

@@ -3,12 +3,26 @@
 #include "../src/fractal_types.h"
 #include "../src/fractal_family_rules.h"
 
-// Stub: LoadFindingSelectionIntoRuntime is not exercised by these tests
-// (all test cases leave cli.have_load_state_json = false).  Providing
-// a link stub avoids pulling in the heavy JSON/IO dependency chain.
+#include <cstdint>
+
+// Stub: keep viewer-state-init tests lightweight while covering the
+// load-state baseline outputs introduced for persisted sidecar orientation.
 #include "../src/finding_state_actions.h"
+static bool gLoadStateShouldSucceed = true;
+static bool gLoadStateHasOrientation = false;
+static SidecarOrientationVector gLoadedOrientationStub{};
+
 bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParams*,
-    RenderSettings*, std::string*, std::string*) { return false; }
+    RenderSettings*, SidecarOrientationVector* outOrientation, bool* outHasOrientation,
+    std::string*, std::string*) {
+    if (!gLoadStateShouldSucceed) return false;
+    if (outOrientation) *outOrientation = gLoadedOrientationStub;
+    if (outHasOrientation) *outHasOrientation = gLoadStateHasOrientation;
+    return true;
+}
+
+bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParams*,
+    RenderSettings*, std::string*, std::string*) { return gLoadStateShouldSucceed; }
 
 #include <cmath>
 #include <cstdio>
@@ -253,6 +267,64 @@ static void TestNullDirtyPointer() {
     CHECK("NullDirtyPtr_Type", view.fractal_type == FractalType::burning_ship);
 }
 
+static void TestLoadStateReturnsPersistedOrientationBaseline() {
+    ViewerCliArgs cli{};
+    cli.have_load_state_json = true;
+    cli.load_state_json = "state.json";
+
+    gLoadStateShouldSucceed = true;
+    gLoadStateHasOrientation = true;
+    gLoadedOrientationStub = {};
+    gLoadedOrientationStub.import_signature = 101u;
+    gLoadedOrientationStub.pack_projection_hash = 202u;
+    gLoadedOrientationStub.field_embedding_stats = 3.5;
+    gLoadedOrientationStub.slime_energy_delta = 1.25;
+    gLoadedOrientationStub.busy_beaver_metrics = 0.75;
+    gLoadedOrientationStub.decode_stability = 0.5;
+    gLoadedOrientationStub.diff_magnitude = 2.0;
+
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    SidecarOrientationVector loadedOrientation{};
+    bool hasLoadedOrientation = false;
+
+    int rc = ApplyCliOverrides(cli, view, params, render, &loadedOrientation, &hasLoadedOrientation, &dirty);
+    CHECK("LoadStateBaseline_ReturnCode", rc == 0);
+    CHECK("LoadStateBaseline_HasOrientation", hasLoadedOrientation == true);
+    CHECK("LoadStateBaseline_ImportSignature", loadedOrientation.import_signature == 101u);
+    CHECK("LoadStateBaseline_PackProjectionHash", loadedOrientation.pack_projection_hash == 202u);
+    CHECK("LoadStateBaseline_Dirty", dirty == true);
+}
+
+static void TestFractalOverrideClearsLoadedOrientationBaseline() {
+    ViewerCliArgs cli{};
+    cli.have_load_state_json = true;
+    cli.load_state_json = "state.json";
+    cli.have_fractal_type = true;
+    cli.fractal_type = FractalType::mandelbrot;
+
+    gLoadStateShouldSucceed = true;
+    gLoadStateHasOrientation = true;
+    gLoadedOrientationStub = {};
+    gLoadedOrientationStub.import_signature = 505u;
+
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    render.resolution = {800, 600};
+    bool dirty = false;
+    SidecarOrientationVector loadedOrientation{};
+    bool hasLoadedOrientation = false;
+
+    int rc = ApplyCliOverrides(cli, view, params, render, &loadedOrientation, &hasLoadedOrientation, &dirty);
+    CHECK("LoadStateOverride_ReturnCode", rc == 0);
+    CHECK("LoadStateOverride_Type", view.fractal_type == FractalType::mandelbrot);
+    CHECK("LoadStateOverride_ClearsBaseline", hasLoadedOrientation == false);
+}
+
 int main() {
     TestDefaultsNoChange();
     TestFractalTypeOverride();
@@ -267,6 +339,8 @@ int main() {
     TestWarpStrengthOverride();
     TestFractalTypeTakesPriority();
     TestNullDirtyPointer();
+    TestLoadStateReturnsPersistedOrientationBaseline();
+    TestFractalOverrideClearsLoadedOrientationBaseline();
     printf("test_viewer_state_init: %d passed, %d failed\n", gPass, gFail);
     return gFail > 0 ? 1 : 0;
 }

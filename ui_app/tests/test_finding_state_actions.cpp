@@ -163,6 +163,98 @@ int main() {
     }
 
     {
+        const fs::path findingDir = tempRoot / "explaino_finding_with_orientation";
+        fs::create_directories(findingDir);
+
+        const fs::path statePath = findingDir / "state.json";
+        WriteTextFile(statePath, R"({
+    "state_version": 3,
+    "fractal_type": "explaino_dual",
+    "view": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "zoom": 1.0,
+        "rotation_degrees": 0.0,
+        "center_hp_x": 0.0,
+        "center_hp_y": 0.0,
+        "log2_zoom": 0.0,
+        "explaino_phase": 0.0,
+        "explaino_seed_drift": 0.0,
+        "explaino_seed_tween": true
+    },
+    "params": {
+        "max_iter": 500,
+        "epsilon": 0.000001,
+        "exposure": 1.0,
+        "poly_kind": 2,
+        "coloring_mode": "joy_basins",
+        "nova_alpha": 0.5,
+        "phoenix_p_real": 0.0,
+        "phoenix_p_imag": 0.0,
+        "multibrot_power": 3,
+        "explaino_seed": 6.0,
+        "explaino_seed_b": 2.0,
+        "explaino_warp_strength": 0.0,
+        "explaino_root_count": 4,
+        "poly_coeffs": [1, 0, 0, 1, 1]
+    },
+    "render": {
+        "width": 1024,
+        "height": 768,
+        "block_size": 256,
+        "device_id": 0
+    },
+    "sidecar_orientation": {
+        "import_signature": "9007199254740993",
+        "pack_projection_hash": "18446744073709551614",
+        "field_embedding_stats": 3.5,
+        "slime_energy_delta": 1.25,
+        "busy_beaver_metrics": 0.75,
+        "decode_stability": 0.5,
+        "diff_magnitude": 2.0
+    }
+})");
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = false;
+        std::string resolvedStatePath;
+        std::string error;
+        if (!LoadFindingSelectionIntoRuntime(
+            statePath.string(),
+            &view,
+            &params,
+            &render,
+            &orientation,
+            &hasOrientation,
+            &resolvedStatePath,
+            &error)) {
+            std::cerr << "Expected state load with persisted sidecar orientation to succeed: " << error << "\n";
+            return 1;
+        }
+        if (!hasOrientation) {
+            std::cerr << "Expected state load to report persisted sidecar orientation when present\n";
+            return 1;
+        }
+        if (resolvedStatePath != statePath.string()) {
+            std::cerr << "Resolved state path mismatch for direct state load\n";
+            return 1;
+        }
+        if (orientation.import_signature != 9007199254740993ull ||
+            orientation.pack_projection_hash != 18446744073709551614ull ||
+            !NearlyEqual(orientation.field_embedding_stats, 3.5) ||
+            !NearlyEqual(orientation.slime_energy_delta, 1.25) ||
+            !NearlyEqual(orientation.busy_beaver_metrics, 0.75) ||
+            !NearlyEqual(orientation.decode_stability, 0.5) ||
+            !NearlyEqual(orientation.diff_magnitude, 2.0)) {
+            std::cerr << "Expected persisted sidecar orientation to round-trip through finding-state load\n";
+            return 1;
+        }
+        }
+
+    {
         ViewState view{};
         view.center = {3.0f, -4.0f};
         view.zoom = 2.0f;
@@ -317,6 +409,86 @@ int main() {
         }
         if (params.max_iter != 222 || render.resolution.x != 900 || render.resolution.y != 700) {
             std::cerr << "Runtime state mutated on invalid finding state payload\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path findingDir = tempRoot / "invalid_sidecar_orientation_payload";
+        fs::create_directories(findingDir);
+
+        const fs::path statePath = findingDir / "state.json";
+        WriteTextFile(statePath, R"({
+    "state_version": 3,
+    "fractal_type": "explaino",
+    "view": {
+        "center_x": 0,
+        "center_y": 0,
+        "zoom": 1,
+        "rotation_degrees": 0,
+        "center_hp_x": 0,
+        "center_hp_y": 0,
+        "log2_zoom": 0,
+        "explaino_phase": 0,
+        "explaino_seed_drift": 0,
+        "explaino_seed_tween": true
+    },
+    "params": {
+        "max_iter": 500,
+        "epsilon": 0.000001,
+        "exposure": 1.0,
+        "poly_kind": 2,
+        "coloring_mode": "joy_basins",
+        "nova_alpha": 0.5,
+        "phoenix_p_real": 0.0,
+        "phoenix_p_imag": 0.0,
+        "multibrot_power": 3,
+        "explaino_seed": 1,
+        "explaino_warp_strength": 0,
+        "explaino_root_count": 4,
+        "poly_coeffs": [-1, 0, 0, 1, 0]
+    },
+    "render": {
+        "width": 1024,
+        "height": 768,
+        "block_size": 256,
+        "device_id": 0
+    },
+    "sidecar_orientation": {
+        "import_signature": "not-a-u64",
+        "pack_projection_hash": "17",
+        "field_embedding_stats": 3.5,
+        "slime_energy_delta": 1.25,
+        "busy_beaver_metrics": 0.75,
+        "decode_stability": 0.5,
+        "diff_magnitude": 2.0
+    }
+})");
+
+        ViewState view{};
+        view.center = {21.0f, -22.0f};
+        view.zoom = 23.0f;
+        KernelParams params{};
+        params.max_iter = 333;
+        RenderSettings render{};
+        render.resolution = {901, 701};
+
+        std::string resolvedStatePath = "sentinel";
+        std::string error;
+        if (LoadFindingSelectionIntoRuntime(statePath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+            std::cerr << "Expected invalid persisted sidecar orientation payload to fail atomically\n";
+            return 1;
+        }
+        if (error.find("Invalid sidecar_orientation field: import_signature") == std::string::npos) {
+            std::cerr << "Unexpected invalid-sidecar error text: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.center.x, 21.0f, 1.0e-6) || !NearlyEqual(view.center.y, -22.0f, 1.0e-6) || !NearlyEqual(view.zoom, 23.0f, 1.0e-6)) {
+            std::cerr << "View state mutated on invalid persisted sidecar orientation payload\n";
+            return 1;
+        }
+        if (params.max_iter != 333 || render.resolution.x != 901 || render.resolution.y != 701) {
+            std::cerr << "Runtime state mutated on invalid persisted sidecar orientation payload\n";
             return 1;
         }
     }

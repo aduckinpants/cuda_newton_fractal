@@ -5,6 +5,8 @@
 
 #include <string>
 
+struct BindingContext;
+
 enum class SidecarAutoDemoControllerStatus {
     disabled,
     blocked_no_action,
@@ -41,4 +43,9 @@ bool BuildSidecarAutoDemoControllerDecision(
     const SidecarExplorationCompleteness& completeness,
     const SidecarAutoDemoControllerPolicy& policy,
     SidecarAutoDemoControllerDecision* outDecision,
+    std::string* outError);
+
+bool ApplySidecarAutoDemoControllerDecision(
+    const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
     std::string* outError);

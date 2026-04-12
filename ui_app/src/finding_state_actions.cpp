@@ -9,9 +9,13 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
     std::string* outResolvedStatePath,
     std::string* outError) {
     if (outError) outError->clear();
+    if (outOrientation) *outOrientation = {};
+    if (outHasOrientation) *outHasOrientation = false;
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadFindingSelectionIntoRuntime requires non-null output pointers";
         return false;
@@ -25,7 +29,16 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     ViewState nextView = *ioView;
     KernelParams nextParams = *ioParams;
     RenderSettings nextRender = *ioRender;
-    if (!LoadDiagnosticsStateFile(resolvedStatePath, &nextView, &nextParams, &nextRender, outError)) {
+    SidecarOrientationVector nextOrientation{};
+    bool nextHasOrientation = false;
+    if (!LoadDiagnosticsStateFile(
+            resolvedStatePath,
+            &nextView,
+            &nextParams,
+            &nextRender,
+            &nextOrientation,
+            &nextHasOrientation,
+            outError)) {
         return false;
     }
 
@@ -37,6 +50,25 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     *ioView = nextView;
     *ioParams = nextParams;
     *ioRender = nextRender;
+    if (outOrientation) *outOrientation = nextOrientation;
+    if (outHasOrientation) *outHasOrientation = nextHasOrientation;
     if (outResolvedStatePath) *outResolvedStatePath = resolvedStatePath;
     return true;
+}
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    std::string* outResolvedStatePath,
+    std::string* outError) {
+    return LoadFindingSelectionIntoRuntime(
+        selectedPath,
+        ioView,
+        ioParams,
+        ioRender,
+        nullptr,
+        nullptr,
+        outResolvedStatePath,
+        outError);
 }

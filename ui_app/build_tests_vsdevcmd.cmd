@@ -266,7 +266,9 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\explaino_sidecar_controller.cpp .\tests\test_explaino_sidecar_controller.cpp ^
+  .\src\json_min.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\explaino_sidecar_controller.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_explaino_sidecar_controller.cpp ^
   /Fe:"%TESTROOT%\test_explaino_sidecar_controller.exe"
 if errorlevel 1 exit /b 1
 

@@ -1,4 +1,5 @@
 #include "../src/explaino_sidecar_controller.h"
+#include "../src/schema_binding.h"
 
 #include <cmath>
 #include <iostream>
@@ -162,6 +163,215 @@ int main() {
         }
         if (decision.status != SidecarAutoDemoControllerStatus::stopped_complete || decision.should_mutate) {
             std::cerr << "Expected controller stop conditions to prevent further mutation once completeness is satisfied\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.path = "fractal.params.ripple_amplitude";
+        decision.type = "float";
+        decision.target_value = 0.125;
+        decision.has_target_value = true;
+        decision.should_mutate = true;
+
+        std::string error;
+        if (!ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected float controller mutation apply to succeed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.ripple_amplitude, 0.125f, 1.0e-6)) {
+            std::cerr << "Expected float controller mutation to update ripple_amplitude\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.path = "fractal.params.explaino_seed";
+        decision.type = "double";
+        decision.target_value = 7.25;
+        decision.has_target_value = true;
+        decision.should_mutate = true;
+
+        std::string error;
+        if (!ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected double controller mutation apply to succeed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, 7.25, 1.0e-9)) {
+            std::cerr << "Expected double controller mutation to update explaino_seed\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.path = "fractal.params.max_iter";
+        decision.type = "int";
+        decision.target_value = 513.4;
+        decision.has_target_value = true;
+        decision.should_mutate = true;
+
+        std::string error;
+        if (!ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected int controller mutation apply to succeed: " << error << "\n";
+            return 1;
+        }
+        if (params.max_iter != 513) {
+            std::cerr << "Expected int controller mutation to round target_value to max_iter\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.path = "fractal.params.unknown";
+        decision.type = "float";
+        decision.target_value = 1.0;
+        decision.has_target_value = true;
+        decision.should_mutate = true;
+
+        std::string error;
+        if (ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected unsupported controller mutation path to fail\n";
+            return 1;
+        }
+        if (error.find("Unsupported sidecar auto-demo mutation type/path pair") == std::string::npos) {
+            std::cerr << "Unexpected unsupported-path error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.path = "fractal.params.ripple_amplitude";
+        decision.type = "float";
+
+        std::string error;
+        if (ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected targetless controller mutation apply to fail\n";
+            return 1;
+        }
+        if (error.find("requires a target_value") == std::string::npos) {
+            std::cerr << "Unexpected targetless error text: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.status = SidecarAutoDemoControllerStatus::proposal_ready;
+        decision.path = "fractal.params.ripple_amplitude";
+        decision.type = "float";
+        decision.target_value = 0.25;
+        decision.has_target_value = true;
+
+        std::string error;
+        if (ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected proposal-ready controller mutation apply to fail without an armed mutation\n";
+            return 1;
+        }
+        if (error.find("requires an armed mutation decision") == std::string::npos) {
+            std::cerr << "Unexpected proposal-ready error text: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.ripple_amplitude, 0.0f, 1.0e-6)) {
+            std::cerr << "Unarmed controller mutation unexpectedly changed ripple_amplitude\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.status = SidecarAutoDemoControllerStatus::apply_ready;
+        decision.path = "fractal.params.ripple_amplitude";
+        decision.type = "int";
+        decision.target_value = 2.0;
+        decision.has_target_value = true;
+        decision.should_mutate = true;
+
+        std::string error;
+        if (ApplySidecarAutoDemoControllerDecision(decision, ctx, &error)) {
+            std::cerr << "Expected controller mutation type/path drift to fail fast\n";
+            return 1;
+        }
+        if (error.find("Unsupported sidecar auto-demo mutation type/path pair") == std::string::npos) {
+            std::cerr << "Unexpected type/path mismatch error text: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.ripple_amplitude, 0.0f, 1.0e-6)) {
+            std::cerr << "Type/path mismatch unexpectedly changed ripple_amplitude\n";
             return 1;
         }
     }

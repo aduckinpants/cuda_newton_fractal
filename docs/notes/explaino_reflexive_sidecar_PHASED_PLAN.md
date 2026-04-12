@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - Phase 5 checkpoint and handoff
+Complete - Phase 5A audit follow-up for persisted orientation load consistency
 
 ## Phase Checklist
 
@@ -11,6 +11,7 @@ Complete - Phase 5 checkpoint and handoff
 - [x] Phase 3 - R2 CUDA demonstration engine
 - [x] Phase 4 - R3 lens and action selection
 - [x] Phase 5 - R4 divergence, energy, and persistence
+- [x] Phase 5A - audit follow-up for atomic load-state orientation semantics
 
 ## Notes
 
@@ -98,11 +99,28 @@ Complete - Phase 5 checkpoint and handoff
   - manual viewer capture, finding archive capture, and headless `--load-state-json` capture flows now preserve persisted orientation across save/load/capture round-trips
   - hostile-audit repair for headless round-trip omission: headless diagnostic/finding capture now rebuilds current sidecar orientation before writing `state.json`
   - hostile-audit repair for exact 64-bit persistence: sidecar hash fields now serialize as quoted decimal strings while the loader remains backward compatible with older safe numeric payloads
+- Phase 5A audit-follow-up scope:
+  - make runtime state load and optional persisted `sidecar_orientation` load succeed or fail together instead of silently degrading in the manual UI load path
+  - prevent a `--load-state-json` orientation baseline from surviving later CLI mutations that no longer match the loaded state snapshot
+- Delivered in Phase 5A:
+  - `ui_app/src/finding_state_actions.h/.cpp`
+  - `ui_app/src/viewer_state_init.h/.cpp`
+  - `ui_app/src/main.cpp`
+  - `ui_app/tests/test_finding_state_actions.cpp`
+  - `ui_app/tests/test_viewer_state_init.cpp`
+  - runtime state loads and persisted `sidecar_orientation` loads now succeed or fail together for both CLI startup and manual viewer load-state flows
+  - `--load-state-json` persisted baselines now clear when later CLI overrides mutate the loaded snapshot
 - Validation achieved for the current Phase 5 slice:
   - `ui_app/build_tests_vsdevcmd.cmd`
   - `ui_app/build_vsdevcmd.cmd`
   - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
   - `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k load_state_json -q`
+- Validation achieved for Phase 5A:
+  - `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`
+  - `ui_app/build_tests_vsdevcmd.cmd`
+  - `ui_app/build_vsdevcmd.cmd`
+  - `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k load_state_json -q`
+  - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
 - Next bounded slice after this plan:
   - choose a new phased plan or follow-on phase for sidecar work; direct auto-demonstration mutation is still deferred
   - preserve the diagnostics `state.json` contract as the first and only persisted orientation authority unless a new spec explicitly broadens it
