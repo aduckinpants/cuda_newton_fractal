@@ -1,5 +1,6 @@
 #include "explaino_sidecar_controller.h"
 
+#include "explaino_seed_curve.h"
 #include "schema_binding.h"
 #include "view_hp_sync.h"
 
@@ -48,6 +49,12 @@ bool ValidateCompleteness(
         if (outError) *outError = "Sidecar auto-demo requires demonstrated_fraction in [0,1]";
         return false;
     }
+    if (!std::isfinite(completeness.mean_coverage_score) ||
+        completeness.mean_coverage_score < 0.0 ||
+        completeness.mean_coverage_score > 1.0) {
+        if (outError) *outError = "Sidecar auto-demo requires mean_coverage_score in [0,1]";
+        return false;
+    }
     if (completeness.demonstrated_count < 0 || completeness.uncertain_count < 0) {
         if (outError) *outError = "Sidecar auto-demo requires non-negative completeness counts";
         return false;
@@ -58,7 +65,7 @@ bool ValidateCompleteness(
 bool HasCompletenessStopPoint(
     const SidecarExplorationCompleteness& completeness,
     const SidecarAutoDemoControllerPolicy& policy) {
-    return completeness.demonstrated_fraction >= policy.stop_demonstrated_fraction ||
+    return completeness.mean_coverage_score >= policy.stop_demonstrated_fraction ||
         completeness.uncertain_count <= policy.stop_uncertain_count;
 }
 
@@ -67,20 +74,37 @@ bool PolicyEnablesPacedLoop(const SidecarAutoDemoControllerPolicy& policy) {
 }
 
 double ResolveTargetValue(const SidecarActionRecommendation& recommendation) {
+    constexpr double kExploreStepPhase = 0.65;
+    constexpr double kRefineStepPhase = 0.35;
+
     const bool plus = recommendation.guidance.find('+') != std::string::npos;
     const bool minus = recommendation.guidance.find('-') != std::string::npos;
+    double edgeTarget = 0.0;
     if (plus && !minus) {
-        return recommendation.active_max;
+        edgeTarget = recommendation.active_max;
+    } else if (minus && !plus) {
+        edgeTarget = recommendation.active_min;
+    } else {
+        const double minMagnitude = std::fabs(recommendation.active_min);
+        const double maxMagnitude = std::fabs(recommendation.active_max);
+        edgeTarget = maxMagnitude >= minMagnitude
+            ? recommendation.active_max
+            : recommendation.active_min;
     }
-    if (minus && !plus) {
-        return recommendation.active_min;
+
+    if (recommendation.type == "int" || !std::isfinite(recommendation.current_value)) {
+        return edgeTarget;
     }
-    const double minMagnitude = std::fabs(recommendation.active_min);
-    const double maxMagnitude = std::fabs(recommendation.active_max);
-    if (maxMagnitude >= minMagnitude) {
-        return recommendation.active_max;
+
+    const bool refineStep = recommendation.guidance.find("refine") != std::string::npos;
+    const double blend = ExplainoWedgeTween(refineStep ? kRefineStepPhase : kExploreStepPhase);
+    const double steppedTarget = recommendation.current_value +
+        (edgeTarget - recommendation.current_value) * blend;
+
+    if (edgeTarget >= recommendation.current_value) {
+        return std::min(edgeTarget, steppedTarget);
     }
-    return recommendation.active_min;
+    return std::max(edgeTarget, steppedTarget);
 }
 
 bool MutationRequiresViewHpSync(const std::string& path) {
@@ -206,6 +230,7 @@ bool BuildSidecarAutoDemoControllerDecision(
 
     SidecarAutoDemoControllerDecision next;
     next.demonstrated_fraction = completeness.demonstrated_fraction;
+    next.coverage_score = completeness.mean_coverage_score;
     next.uncertain_count = completeness.uncertain_count;
 
     if (!policy.enabled) {

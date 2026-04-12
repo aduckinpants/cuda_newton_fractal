@@ -10,6 +10,8 @@ struct SidecarLensProjectionRow {
     std::string path;
     std::string type;
     double current_value{0.0};
+    double information_gradient{0.0};
+    double information_curvature{0.0};
     double active_min{0.0};
     double active_max{0.0};
     double active_fraction{0.0};

@@ -9,9 +9,12 @@ struct SidecarActionRecommendation {
     std::string path;
     std::string type;
     std::string guidance;
+    double current_value{0.0};
     double estimated_information_gain{0.0};
     double effective_information_gain{0.0};
     double cumulative_information_gain{0.0};
+    double information_gradient{0.0};
+    double information_curvature{0.0};
     double posterior_uncertainty{1.0};
     double decode_stability{1.0};
     double cost_hint{0.0};

@@ -39,9 +39,12 @@ bool BuildSidecarActionRecommendation(
         candidate.path = energyRow.path;
         candidate.type = energyRow.type;
         candidate.guidance = energyRow.guidance;
+        candidate.current_value = energyRow.current_value;
         candidate.estimated_information_gain = energyRow.estimated_information_gain;
         candidate.effective_information_gain = energyRow.effective_information_gain;
         candidate.cumulative_information_gain = energyRow.cumulative_information_gain;
+        candidate.information_gradient = energyRow.information_gradient;
+        candidate.information_curvature = energyRow.information_curvature;
         candidate.posterior_uncertainty = energyRow.posterior_uncertainty;
         candidate.decode_stability = energyRow.decode_stability;
         candidate.cost_hint = energyRow.cost_hint;

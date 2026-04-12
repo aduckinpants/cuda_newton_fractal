@@ -31,12 +31,14 @@ SidecarActionRecommendation MakeRecommendation(
     const char* path,
     const char* guidance,
     double activeMin,
-    double activeMax) {
+    double activeMax,
+    double currentValue = 0.06) {
     SidecarActionRecommendation recommendation;
     recommendation.label = "Ripple";
     recommendation.path = path;
     recommendation.type = "float";
     recommendation.guidance = guidance;
+    recommendation.current_value = currentValue;
     recommendation.utility = 1.5;
     recommendation.active_min = activeMin;
     recommendation.active_max = activeMax;
@@ -107,8 +109,9 @@ int main() {
             std::cerr << "Expected enabled controller without mutation opt-in to expose a proposal but not mutate\n";
             return 1;
         }
-        if (decision.path != "fractal.params.ripple_amplitude" || !NearlyEqual(decision.target_value, 0.12)) {
-            std::cerr << "Expected plus-guided controller decision to target the active max\n";
+        if (decision.path != "fractal.params.ripple_amplitude" ||
+            !(decision.target_value > recommendation.current_value && decision.target_value < 0.12)) {
+            std::cerr << "Expected plus-guided controller decision to advance smoothly toward the active max\n";
             return 1;
         }
     }
@@ -133,8 +136,8 @@ int main() {
             std::cerr << "Expected explicit opt-in to arm a mutation-ready controller decision\n";
             return 1;
         }
-        if (!NearlyEqual(decision.target_value, 0.02)) {
-            std::cerr << "Expected minus-guided controller decision to target the active min\n";
+        if (!(decision.target_value > 0.02 && decision.target_value < recommendation.current_value)) {
+            std::cerr << "Expected minus-guided controller decision to advance smoothly toward the active min\n";
             return 1;
         }
     }
@@ -155,8 +158,35 @@ int main() {
             std::cerr << "Expected neutral-guidance controller decision to build: " << error << "\n";
             return 1;
         }
-        if (!NearlyEqual(decision.target_value, 0.30)) {
-            std::cerr << "Expected neutral-guidance controller decision to target the outer active-zone edge instead of the midpoint\n";
+        if (!(decision.target_value > recommendation.current_value && decision.target_value < 0.30)) {
+            std::cerr << "Expected neutral-guidance controller decision to bias toward the outer active-zone edge with a smooth partial step\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        policy.stop_demonstrated_fraction = 0.40;
+        SidecarActionRecommendation recommendation = MakeRecommendation("fractal.params.ripple_amplitude", "explore +", 0.02, 0.12);
+        SidecarAutoDemoControllerDecision decision;
+        std::string error;
+        if (!BuildSidecarAutoDemoControllerDecision(
+            &recommendation,
+                BuildIncompleteCompleteness(),
+                policy,
+                &decision,
+                &error)) {
+            std::cerr << "Expected continuous-coverage stop controller decision to build: " << error << "\n";
+            return 1;
+        }
+        if (decision.status != SidecarAutoDemoControllerStatus::stopped_complete || decision.should_mutate) {
+            std::cerr << "Expected mean coverage score to stop auto-demo before demonstrated-count jumps catch up\n";
+            return 1;
+        }
+        if (!NearlyEqual(decision.coverage_score, 0.45)) {
+            std::cerr << "Expected controller decision to surface the continuous coverage score\n";
             return 1;
         }
     }

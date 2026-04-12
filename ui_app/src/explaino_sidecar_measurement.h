@@ -20,6 +20,8 @@ struct SidecarMeasurementRow {
     double current_value{0.0};
     double step_value{0.0};
     double information_gain_estimate{0.0};
+    double information_gradient{0.0};
+    double information_curvature{0.0};
     double decode_stability{1.0};
     SidecarMeasurementAggregate baseline{};
     SidecarMeasurementAggregate minus_variant{};

@@ -265,6 +265,20 @@ double ComputeAggregateDelta(const SidecarMeasurementAggregate& baseline,
     return score;
 }
 
+double ComputeInformationGradient(double minusDelta, double plusDelta, double stepValue) {
+    if (!(stepValue > 0.0) || !std::isfinite(stepValue)) {
+        return 0.0;
+    }
+    return (plusDelta - minusDelta) / (2.0 * stepValue);
+}
+
+double ComputeInformationCurvature(double minusDelta, double plusDelta, double stepValue) {
+    if (!(stepValue > 0.0) || !std::isfinite(stepValue)) {
+        return 0.0;
+    }
+    return (plusDelta + minusDelta) / (stepValue * stepValue);
+}
+
 double ComputeDiffMagnitude(const SidecarParamSurfaceEntry& entry,
     double currentValue,
     double minusValue,
@@ -400,6 +414,8 @@ bool BuildSidecarMeasurementBatch(
         row.minus_variant = minusAggregate;
         row.plus_variant = plusAggregate;
         row.information_gain_estimate = 0.5 * totalDelta;
+        row.information_gradient = ComputeInformationGradient(minusDelta, plusDelta, requestedStep);
+        row.information_curvature = ComputeInformationCurvature(minusDelta, plusDelta, requestedStep);
         row.decode_stability = totalDelta <= kGainEpsilon
             ? 1.0
             : std::max(0.0, 1.0 - (std::fabs(plusDelta - minusDelta) / totalDelta));

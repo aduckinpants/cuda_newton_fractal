@@ -74,9 +74,12 @@ void PopulateRowFields(
     outRow->path = budgetRow.path;
     outRow->type = budgetRow.type;
     outRow->guidance = lensRow.guidance;
+    outRow->current_value = lensRow.current_value;
     outRow->estimated_information_gain = budgetRow.estimated_information_gain;
     outRow->effective_information_gain = kUnavailableNumeric;
     outRow->cumulative_information_gain = budgetRow.cumulative_information_gain;
+    outRow->information_gradient = lensRow.information_gradient;
+    outRow->information_curvature = lensRow.information_curvature;
     outRow->posterior_uncertainty = ClampUnit(budgetRow.posterior_uncertainty);
     outRow->decode_stability = ClampUnit(budgetRow.decode_stability);
     outRow->cost_hint = kUnavailableNumeric;

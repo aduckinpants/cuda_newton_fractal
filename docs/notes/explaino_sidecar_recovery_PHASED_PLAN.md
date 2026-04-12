@@ -21,6 +21,7 @@ Phase 3 - runtime motion proof surface (runtime UX/jitter repair landed; proof c
 - Current known mismatch to close:
   - the real-schema contract is now repaired at the native helper level: baseline `explaino` and `explaino_joy` both expose actionable controller decisions under the shipped schema/catalog path
   - the Phase 3 runtime UX repair now landed: the slime trace is clipped into a fixed-height child pane so the controller stays reachable, the controller copy is explained in product-facing terms, and no-op paced-loop applies no longer dirty the viewer or reset render pacing
+  - the Phase 3 motion repair now targets three concrete seams under the shipped runtime path: the stop slider must respond to continuous mean coverage instead of waiting for the first demonstrated-fraction jump, the sidecar must expose first/second local information-response channels from the existing centered micro-sweep, and controller motion must advance smoothly from the current value instead of snapping straight to an active-zone edge
   - the remaining gap is runtime-visible proof that explicit apply and paced-loop motion behave as real product motion, not just headless contract mutation
 
 - Phase 1 exit criteria:
@@ -38,6 +39,7 @@ Phase 3 - runtime motion proof surface (runtime UX/jitter repair landed; proof c
   - add runtime proof that the user-visible motion contract is real, not inferred
   - required proofs: default-startup path behavior, explicit Apply Armed Step behavior, and paced-loop behavior
   - these proofs must measure both parameter delta and rendered-frame delta
+  - the runtime proof must also show that a stop threshold below the first demonstrated-fraction jump changes behavior via continuous coverage progress, and that controller motion advances through visible partial steps rather than edge-snap oscillation
 
 - Phase 4 exit criteria:
   - hostile re-audit the repaired seams against the spec rows and the runtime proofs

@@ -11,6 +11,17 @@ bool NearlyEqual(double left, double right, double eps = 1.0e-9) {
     return delta < eps && delta > -eps;
 }
 
+double ComputeAggregateDeltaForTest(
+    const SidecarMeasurementAggregate& baseline,
+    const SidecarMeasurementAggregate& variant) {
+    double score = 0.0;
+    score += std::fabs(variant.mean_iterations - baseline.mean_iterations);
+    score += std::log1p(std::fabs(variant.mean_residual - baseline.mean_residual));
+    score += 25.0 * std::fabs(variant.converged_fraction - baseline.converged_fraction);
+    score += 25.0 * std::fabs(variant.escaped_fraction - baseline.escaped_fraction);
+    return score;
+}
+
 FunctionParamDescriptor MakeParam(
     const char* path,
     const char* type,
@@ -233,6 +244,19 @@ int main() {
         }
         if (batch.rows[0].information_gain_estimate <= batch.rows[1].information_gain_estimate) {
             std::cerr << "Expected ranked measurement rows to sort by descending information gain\n";
+            return 1;
+        }
+        const SidecarMeasurementRow& rankedRow = batch.rows[0];
+        const double minusDelta = ComputeAggregateDeltaForTest(rankedRow.baseline, rankedRow.minus_variant);
+        const double plusDelta = ComputeAggregateDeltaForTest(rankedRow.baseline, rankedRow.plus_variant);
+        const double expectedGradient = (plusDelta - minusDelta) / (2.0 * rankedRow.step_value);
+        const double expectedCurvature = (plusDelta + minusDelta) / (rankedRow.step_value * rankedRow.step_value);
+        if (!NearlyEqual(rankedRow.information_gradient, expectedGradient)) {
+            std::cerr << "Expected measurement row to expose the centered information gradient\n";
+            return 1;
+        }
+        if (!NearlyEqual(rankedRow.information_curvature, expectedCurvature)) {
+            std::cerr << "Expected measurement row to expose the centered information curvature\n";
             return 1;
         }
         bool sawZoom = false;

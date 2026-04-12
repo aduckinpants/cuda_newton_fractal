@@ -20,9 +20,12 @@ struct SidecarEnergyLandscapeRow {
     std::string guidance;
     std::string summary;
     std::string reason;
+    double current_value{0.0};
     double estimated_information_gain{0.0};
     double effective_information_gain{0.0};
     double cumulative_information_gain{0.0};
+    double information_gradient{0.0};
+    double information_curvature{0.0};
     double posterior_uncertainty{1.0};
     double decode_stability{1.0};
     double cost_hint{0.0};

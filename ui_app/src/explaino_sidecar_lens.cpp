@@ -158,6 +158,8 @@ bool BuildSidecarLensProjection(
         row.path = budgetRow.path;
         row.type = budgetRow.type;
         row.current_value = measurementRow.current_value;
+        row.information_gradient = measurementRow.information_gradient;
+        row.information_curvature = measurementRow.information_curvature;
         row.posterior_uncertainty = ClampUnit(budgetRow.posterior_uncertainty);
         row.decode_stability = ClampUnit(measurementRow.decode_stability);
         row.guidance = BuildGuidance(totalDelta, row.posterior_uncertainty, row.decode_stability, minusDelta, plusDelta);

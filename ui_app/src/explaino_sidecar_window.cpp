@@ -280,7 +280,17 @@ void RenderEnergySection(const ExplainoSidecarWindowState& state) {
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(FormatOptionalNumber(row.cost_hint).c_str());
         ImGui::TableNextColumn();
-        const SidecarLensProjectionRow zoneRow{row.label, row.path, row.type, 0.0, row.active_min, row.active_max, row.active_fraction, 0.0, 0.0, false, row.guidance};
+        SidecarLensProjectionRow zoneRow;
+        zoneRow.label = row.label;
+        zoneRow.path = row.path;
+        zoneRow.type = row.type;
+        zoneRow.current_value = row.current_value;
+        zoneRow.information_gradient = row.information_gradient;
+        zoneRow.information_curvature = row.information_curvature;
+        zoneRow.active_min = row.active_min;
+        zoneRow.active_max = row.active_max;
+        zoneRow.active_fraction = row.active_fraction;
+        zoneRow.guidance = row.guidance;
         ImGui::TextUnformatted(FormatActiveZone(zoneRow).c_str());
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(row.summary.c_str());
@@ -419,13 +429,13 @@ bool RenderControllerSection(
         }
         RenderInlineHelp("How long the sidecar waits before repeating the currently armed step when Repeat Armed Step is enabled.");
 
-        float stopDemonstratedFraction = static_cast<float>(displayPolicy.stop_demonstrated_fraction);
-        if (ImGui::SliderFloat("Stop After Coverage Reaches", &stopDemonstratedFraction, 0.0f, 1.0f, "%.2f")) {
-            ioPolicy->stop_demonstrated_fraction = stopDemonstratedFraction;
-            displayPolicy.stop_demonstrated_fraction = stopDemonstratedFraction;
+        float stopCoverageScore = static_cast<float>(displayPolicy.stop_demonstrated_fraction);
+        if (ImGui::SliderFloat("Stop After Mean Coverage Reaches", &stopCoverageScore, 0.0f, 1.0f, "%.2f")) {
+            ioPolicy->stop_demonstrated_fraction = stopCoverageScore;
+            displayPolicy.stop_demonstrated_fraction = stopCoverageScore;
             interacted = true;
         }
-        RenderInlineHelp("Stops the repeat loop once this fraction of the applicable parameter surface has been demonstrated.");
+        RenderInlineHelp("Stops the repeat loop once the continuous mean coverage score across the applicable parameter surface reaches this threshold. This moves before whole parameters flip buckets.");
 
         int stopUncertainCount = displayPolicy.stop_uncertain_count;
         if (ImGui::InputInt("Stop When Uncertain Params <=", &stopUncertainCount)) {
@@ -450,6 +460,7 @@ bool RenderControllerSection(
     ImGui::BulletText("repeat_loop: %s", displayPolicy.run_paced_loop ? "true" : "false");
     ImGui::BulletText("repeat_interval_seconds: %.2f", displayPolicy.paced_loop_interval_seconds);
     ImGui::BulletText("coverage_stop_fraction: %.2f", displayPolicy.stop_demonstrated_fraction);
+    ImGui::BulletText("coverage_progress: %.2f", state.controller_decision.coverage_score);
     ImGui::BulletText("uncertain_param_stop_count: %d", displayPolicy.stop_uncertain_count);
     if (state.controller_decision.has_target_value) {
         ImGui::BulletText("armed_parameter: %s", state.controller_decision.path.c_str());
@@ -478,10 +489,24 @@ void RenderRecommendationSection(const ExplainoSidecarWindowState& state) {
         const SidecarActionRecommendation& action = state.action_recommendation;
         ImGui::BulletText("parameter: %s", action.label.c_str());
         ImGui::BulletText("binding_path: %s", action.path.c_str());
+        ImGui::BulletText("current_value: %.6f", action.current_value);
         ImGui::BulletText("utility: %.3f", action.utility);
         ImGui::BulletText("expected_information_gain: %.3f", action.effective_information_gain);
+        ImGui::BulletText("local_information_gradient: %.3f", action.information_gradient);
+        ImGui::BulletText("local_information_curvature: %.3f", action.information_curvature);
         ImGui::BulletText("estimated_cost: %.3f", action.cost_hint);
-        ImGui::BulletText("active_zone: %s", FormatActiveZone({action.label, action.path, action.type, 0.0, action.active_min, action.active_max, action.active_fraction, 0.0, 0.0, false, action.guidance}).c_str());
+        SidecarLensProjectionRow actionZone;
+        actionZone.label = action.label;
+        actionZone.path = action.path;
+        actionZone.type = action.type;
+        actionZone.current_value = action.current_value;
+        actionZone.information_gradient = action.information_gradient;
+        actionZone.information_curvature = action.information_curvature;
+        actionZone.active_min = action.active_min;
+        actionZone.active_max = action.active_max;
+        actionZone.active_fraction = action.active_fraction;
+        actionZone.guidance = action.guidance;
+        ImGui::BulletText("active_zone: %s", FormatActiveZone(actionZone).c_str());
         ImGui::BulletText("suggested_direction: %s", action.guidance.c_str());
         return;
     }

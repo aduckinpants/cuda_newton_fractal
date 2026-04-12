@@ -45,6 +45,7 @@ struct SidecarAutoDemoControllerDecision {
     bool has_target_value{false};
     bool should_mutate{false};
     double demonstrated_fraction{1.0};
+    double coverage_score{1.0};
     int uncertain_count{0};
 };
 
