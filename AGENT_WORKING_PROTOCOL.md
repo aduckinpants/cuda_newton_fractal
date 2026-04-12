@@ -35,6 +35,16 @@ No behavioral change lands without a test that exercises it.
 No test is written after the implementation it covers.
 No "I'll add a test later" — that is tech debt, not progress.
 
+### 1.1 Explicit Closure Standard
+
+For every meaningful slice, the minimum closure chain is:
+1. identify a real named bug, risk, or bounded behavior gap
+2. add a focused proving test or regression for it
+3. make the relevant validation rails pass
+4. checkpoint the slice in a commit
+
+If any link in that chain is missing, the slice is not done.
+
 ### 2. Pit of Success
 
 The right thing must be easy; the wrong thing must be hard or impossible.
@@ -186,6 +196,7 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 5. Write the validation receipt for the final committed `HEAD`
 6. Update `HANDOFF_LOG.md` with checkpoint entry
 7. Update the active phased plan checklist if one exists
+8. Verify the explicit closure standard: named gap, proving test, green validation, checkpoint commit
 
 ---
 

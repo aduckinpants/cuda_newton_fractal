@@ -51,6 +51,15 @@ The VS Code task surface mirrors these commands:
 - Do not wait for the user to ask for this review explicitly; it is part of normal slice closure in this repo.
 - Record audit findings and follow-up checkpoint commits in `HANDOFF_LOG.md`.
 
+## Explicit Closure Standard
+
+- No slice is done unless all four of these are true:
+   1. a real named bug, risk, or bounded behavior gap was identified
+   2. a focused proving test or regression covers that gap
+   3. the relevant checked-in validation rails are green
+   4. the slice is checkpointed in a commit
+- Treat any missing item in that chain as not done.
+
 ## Public Validation Profiles
 
 Use the public task/profile surface instead of reconstructing command bundles from memory:
@@ -104,5 +113,6 @@ Before ending a meaningful work slice:
 4. Append `HANDOFF_LOG.md` with the handoff append helper.
 5. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
 6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
+7. Do not say done unless the explicit closure standard above is satisfied end-to-end.
 
 Do not treat validated-but-undocumented work as finished.

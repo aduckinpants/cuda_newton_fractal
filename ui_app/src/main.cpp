@@ -1231,6 +1231,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
 static void ApplyPendingSidecarAutoDemoMutation(
     const ExplainoSidecarWindowState& sidecarState,
     bool applyArmedDecision,
+    bool pacedLoopTriggered,
     BindingContext& bind,
     bool& dirty,
     bool& interactionChanged,
@@ -1248,8 +1249,51 @@ static void ApplyPendingSidecarAutoDemoMutation(
 
     dirty = true;
     interactionChanged = true;
-    findingStatus = "Applied auto-demo step: " + sidecarState.controller_decision.path;
+    findingStatus = (pacedLoopTriggered ? "Applied paced auto-demo step: " : "Applied armed sidecar step: ") + sidecarState.controller_decision.path;
     NoteViewerInteraction(&renderPacingState);
+}
+
+static void ProcessSidecarAutoDemoPerFrame(
+    ExplainoSidecarWindowState& sidecarState,
+    SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarAutoDemoLoopState& sidecarAutoDemoLoopState,
+    double deltaSeconds,
+    BindingContext& bind,
+    bool& dirty,
+    bool& interactionChanged,
+    ViewerRenderPacingState& renderPacingState,
+    std::string& findingStatus) {
+    bool applySidecarAutoDemoDecision = false;
+    if (RenderExplainoSidecarWindow(sidecarState, &sidecarControllerPolicy, &applySidecarAutoDemoDecision)) {
+        interactionChanged = true;
+        NoteViewerInteraction(&renderPacingState);
+    }
+
+    bool applyPacedSidecarAutoDemoDecision = false;
+    std::string pacedLoopError;
+    if (!AdvanceSidecarAutoDemoLoop(
+            sidecarState.controller_decision,
+            sidecarControllerPolicy,
+            deltaSeconds,
+            interactionChanged,
+            &sidecarAutoDemoLoopState,
+            &applyPacedSidecarAutoDemoDecision,
+            &pacedLoopError)) {
+        findingStatus = "Auto-demo loop failed: " + pacedLoopError;
+    }
+
+    ApplyPendingSidecarAutoDemoMutation(
+        sidecarState,
+        applySidecarAutoDemoDecision || applyPacedSidecarAutoDemoDecision,
+        applyPacedSidecarAutoDemoDecision && !applySidecarAutoDemoDecision,
+        bind,
+        dirty,
+        interactionChanged,
+        renderPacingState,
+        findingStatus);
+    if (applySidecarAutoDemoDecision || applyPacedSidecarAutoDemoDecision) {
+        ResetSidecarAutoDemoLoopState(&sidecarAutoDemoLoopState);
+    }
 }
 
 static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
@@ -1283,6 +1327,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     EngineFunctionCatalog engineCatalog;
     CudaSidecarMeasurementHost sidecarMeasurementHost;
     SidecarAutoDemoControllerPolicy sidecarControllerPolicy;
+    SidecarAutoDemoLoopState sidecarAutoDemoLoopState;
     ExplainoSidecarWindowState sidecarState;
     bool sidecarStateValid = false;
     SidecarBudgetState sidecarBudgetState;
@@ -1410,14 +1455,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             findingStatus, lastFindingPath,
             sidecarStateValid, sidecarBudgetStateValid);
 
-        bool applySidecarAutoDemoDecision = false;
-        if (RenderExplainoSidecarWindow(sidecarState, &sidecarControllerPolicy, &applySidecarAutoDemoDecision)) {
-            actions.interactionChanged = true;
-            NoteViewerInteraction(&renderPacingState);
-        }
-        ApplyPendingSidecarAutoDemoMutation(
+        ProcessSidecarAutoDemoPerFrame(
             sidecarState,
-            applySidecarAutoDemoDecision,
+            sidecarControllerPolicy,
+            sidecarAutoDemoLoopState,
+            static_cast<double>(io.DeltaTime),
             bind,
             dirty,
             actions.interactionChanged,

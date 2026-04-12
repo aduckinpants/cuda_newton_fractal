@@ -18,8 +18,18 @@ enum class SidecarAutoDemoControllerStatus {
 struct SidecarAutoDemoControllerPolicy {
     bool enabled{false};
     bool allow_runtime_mutation{false};
+    bool run_paced_loop{false};
+    double paced_loop_interval_seconds{1.0};
     double stop_demonstrated_fraction{1.0};
     int stop_uncertain_count{0};
+};
+
+struct SidecarAutoDemoLoopState {
+    double armed_idle_seconds{0.0};
+    std::string armed_path;
+    std::string armed_type;
+    double armed_target_value{0.0};
+    bool armed_has_target_value{false};
 };
 
 struct SidecarAutoDemoControllerDecision {
@@ -48,4 +58,16 @@ bool BuildSidecarAutoDemoControllerDecision(
 bool ApplySidecarAutoDemoControllerDecision(
     const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
+    std::string* outError);
+
+void ResetSidecarAutoDemoLoopState(
+    SidecarAutoDemoLoopState* ioState);
+
+bool AdvanceSidecarAutoDemoLoop(
+    const SidecarAutoDemoControllerDecision& decision,
+    const SidecarAutoDemoControllerPolicy& policy,
+    double deltaSeconds,
+    bool interactionChanged,
+    SidecarAutoDemoLoopState* ioState,
+    bool* outShouldApply,
     std::string* outError);

@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Complete - Phase 1 explicit policy controls and single-step apply with audit repair
+Phase 3 - persistence and capture integration
 
 ## Phase Checklist
 
 - [x] Phase 1 - explicit policy controls and single-step apply
-- [ ] Phase 2 - paced autonomous loop
+- [x] Phase 2 - paced autonomous loop
 - [ ] Phase 3 - persistence and capture integration
 
 ## Notes
@@ -45,7 +45,31 @@ Complete - Phase 1 explicit policy controls and single-step apply with audit rep
 	- `ui_app/build_tests_vsdevcmd.cmd`
 	- `ui_app/build_vsdevcmd.cmd`
 	- `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui`
+- Phase 2 target:
+	- add a separate paced-loop opt-in instead of overloading the existing mutation opt-in
+	- add a dwell/interval control so autonomous mutation happens at a visible, bounded cadence
+	- keep the pacing decision in a headless controller seam rather than pushing more state logic into `main.cpp`
+	- reset the paced-loop timer on explicit user interaction and on controller-decision changes so a new armed recommendation does not fire immediately
+	- prove the loop behavior with focused native tests before wiring it into the viewer runtime
+- Delivered in Phase 2:
+	- `ui_app/src/explaino_sidecar_controller.h/.cpp`
+	- `ui_app/src/explaino_sidecar_window.cpp`
+	- `ui_app/src/main.cpp`
+	- `ui_app/tests/test_explaino_sidecar_controller.cpp`
+	- the controller policy now separates explicit mutation opt-in from a paced autonomous-loop opt-in and dwell interval
+	- the paced-loop timer lives in the controller seam and only auto-applies armed decisions after the configured dwell interval
+	- the loop timer resets on explicit user interaction, on controller-decision changes, and after any successful sidecar mutation so a prior dwell window cannot leak into the next step
+	- `main.cpp` now delegates the sidecar render/loop/apply block to a focused helper instead of expanding `WinMain()` further
+- Audit repair after the initial Phase 2 implementation:
+	- preserved the current frame's dwell time when a newly armed decision first appears so the loop fires on the configured cadence instead of one tick late
+	- reset the paced-loop state after manual applies so a previous dwell window cannot make the next autonomous step fire early
+	- repaired the temporary `WinMain()` line-count ratchet regression by extracting the per-frame sidecar auto-demo block into a dedicated helper
+- Validation achieved for Phase 2:
+	- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/phase2_paced_loop_code_quality.json`
+	- `py -3.14 tools/viewer_host_run_logged_command.py --label phase2-native-after-audit-fix --log artifacts/phase2_paced_loop_build_tests.log -- ui_app\build_tests_vsdevcmd.cmd`
+	- `py -3.14 tools/viewer_host_run_logged_command.py --label phase2-runtime-final --log artifacts/phase2_paced_loop_runtime_build.log -- ui_app\build_vsdevcmd.cmd`
+	- `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui`
+	- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
 - Deferred to later phases:
-	- paced autonomous mutation loops
 	- persistence or replay of controller policy / mutation traces
 	- headless capture or diagnostics surfaces for explicit mutation actions

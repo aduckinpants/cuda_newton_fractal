@@ -354,6 +354,20 @@ bool RenderControllerSection(
             interacted = true;
         }
 
+        bool runPacedLoop = displayPolicy.run_paced_loop;
+        if (ImGui::Checkbox("Run Paced Loop", &runPacedLoop)) {
+            ioPolicy->run_paced_loop = runPacedLoop;
+            displayPolicy.run_paced_loop = runPacedLoop;
+            interacted = true;
+        }
+
+        float pacedLoopIntervalSeconds = static_cast<float>(displayPolicy.paced_loop_interval_seconds);
+        if (ImGui::SliderFloat("Paced Loop Interval (s)", &pacedLoopIntervalSeconds, 0.1f, 5.0f, "%.2f s")) {
+            ioPolicy->paced_loop_interval_seconds = pacedLoopIntervalSeconds;
+            displayPolicy.paced_loop_interval_seconds = pacedLoopIntervalSeconds;
+            interacted = true;
+        }
+
         float stopDemonstratedFraction = static_cast<float>(displayPolicy.stop_demonstrated_fraction);
         if (ImGui::SliderFloat("Stop Demonstrated Fraction", &stopDemonstratedFraction, 0.0f, 1.0f, "%.2f")) {
             ioPolicy->stop_demonstrated_fraction = stopDemonstratedFraction;
@@ -380,6 +394,8 @@ bool RenderControllerSection(
     ImGui::BulletText("reason: %s", state.controller_decision.reason.c_str());
     ImGui::BulletText("enabled: %s", displayPolicy.enabled ? "true" : "false");
     ImGui::BulletText("mutation_opt_in: %s", displayPolicy.allow_runtime_mutation ? "true" : "false");
+    ImGui::BulletText("paced_loop: %s", displayPolicy.run_paced_loop ? "true" : "false");
+    ImGui::BulletText("paced_loop_interval_seconds: %.2f", displayPolicy.paced_loop_interval_seconds);
     ImGui::BulletText("stop_demonstrated_fraction: %.2f", displayPolicy.stop_demonstrated_fraction);
     ImGui::BulletText("stop_uncertain_count: %d", displayPolicy.stop_uncertain_count);
     if (state.controller_decision.has_target_value) {

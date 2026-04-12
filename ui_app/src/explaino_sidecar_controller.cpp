@@ -17,6 +17,11 @@ std::string UnsupportedMutationTypePathPair(
 bool ValidateControllerPolicy(
     const SidecarAutoDemoControllerPolicy& policy,
     std::string* outError) {
+    if (!std::isfinite(policy.paced_loop_interval_seconds) ||
+        policy.paced_loop_interval_seconds <= 0.0) {
+        if (outError) *outError = "Invalid sidecar auto-demo paced_loop_interval_seconds";
+        return false;
+    }
     if (!std::isfinite(policy.stop_demonstrated_fraction) ||
         policy.stop_demonstrated_fraction < 0.0 ||
         policy.stop_demonstrated_fraction > 1.0) {
@@ -57,6 +62,10 @@ bool HasCompletenessStopPoint(
         completeness.uncertain_count <= policy.stop_uncertain_count;
 }
 
+bool PolicyEnablesPacedLoop(const SidecarAutoDemoControllerPolicy& policy) {
+    return policy.enabled && policy.allow_runtime_mutation && policy.run_paced_loop;
+}
+
 double ResolveTargetValue(const SidecarActionRecommendation& recommendation) {
     const bool plus = recommendation.guidance.find('+') != std::string::npos;
     const bool minus = recommendation.guidance.find('-') != std::string::npos;
@@ -74,6 +83,35 @@ bool MutationRequiresViewHpSync(const std::string& path) {
         path == "fractal.view.center.y" ||
         path == "fractal.view.zoom" ||
         path == "fractal.view.rotation";
+}
+
+bool DecisionMatchesLoopState(
+    const SidecarAutoDemoControllerDecision& decision,
+    const SidecarAutoDemoLoopState& state) {
+    return decision.path == state.armed_path &&
+        decision.type == state.armed_type &&
+        decision.has_target_value == state.armed_has_target_value &&
+        (!decision.has_target_value || decision.target_value == state.armed_target_value);
+}
+
+void SeedLoopState(
+    const SidecarAutoDemoControllerDecision& decision,
+    SidecarAutoDemoLoopState* ioState) {
+    if (!ioState) {
+        return;
+    }
+    ioState->armed_idle_seconds = 0.0;
+    ioState->armed_path = decision.path;
+    ioState->armed_type = decision.type;
+    ioState->armed_target_value = decision.target_value;
+    ioState->armed_has_target_value = decision.has_target_value;
+}
+
+void ResetLoopState(SidecarAutoDemoLoopState* ioState) {
+    if (!ioState) {
+        return;
+    }
+    *ioState = {};
 }
 
 bool ApplyFloatMutation(const SidecarAutoDemoControllerDecision& decision,
@@ -240,4 +278,57 @@ bool ApplySidecarAutoDemoControllerDecision(
 
     if (outError) *outError = "Unsupported sidecar auto-demo mutation type: " + decision.type;
     return false;
+}
+
+void ResetSidecarAutoDemoLoopState(
+    SidecarAutoDemoLoopState* ioState) {
+    ResetLoopState(ioState);
+}
+
+bool AdvanceSidecarAutoDemoLoop(
+    const SidecarAutoDemoControllerDecision& decision,
+    const SidecarAutoDemoControllerPolicy& policy,
+    double deltaSeconds,
+    bool interactionChanged,
+    SidecarAutoDemoLoopState* ioState,
+    bool* outShouldApply,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!ioState || !outShouldApply) {
+        if (outError) *outError = "AdvanceSidecarAutoDemoLoop requires non-null state and output pointers";
+        return false;
+    }
+
+    *outShouldApply = false;
+    if (!ValidateControllerPolicy(policy, outError)) {
+        ResetLoopState(ioState);
+        return false;
+    }
+    if (!std::isfinite(deltaSeconds) || deltaSeconds < 0.0) {
+        ResetLoopState(ioState);
+        if (outError) *outError = "AdvanceSidecarAutoDemoLoop requires a finite non-negative deltaSeconds";
+        return false;
+    }
+    if (!PolicyEnablesPacedLoop(policy) ||
+        !decision.should_mutate ||
+        decision.path.empty() ||
+        !decision.has_target_value ||
+        !std::isfinite(decision.target_value)) {
+        ResetLoopState(ioState);
+        return true;
+    }
+    if (interactionChanged || !DecisionMatchesLoopState(decision, *ioState)) {
+        SeedLoopState(decision, ioState);
+        ioState->armed_idle_seconds = deltaSeconds;
+        return true;
+    }
+
+    ioState->armed_idle_seconds += deltaSeconds;
+    if (ioState->armed_idle_seconds + 1.0e-12 < policy.paced_loop_interval_seconds) {
+        return true;
+    }
+
+    ioState->armed_idle_seconds = 0.0;
+    *outShouldApply = true;
+    return true;
 }
