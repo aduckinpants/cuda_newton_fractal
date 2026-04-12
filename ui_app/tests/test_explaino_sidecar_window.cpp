@@ -1,5 +1,8 @@
 #include "../src/explaino_sidecar_window.h"
 
+#include "../third_party/imgui/imgui.h"
+#include "../third_party/imgui/imgui_internal.h"
+
 #include <iostream>
 #include <string>
 
@@ -8,6 +11,49 @@ namespace {
 bool NearlyEqual(double left, double right, double eps = 1.0e-9) {
     const double delta = left - right;
     return delta < eps && delta > -eps;
+}
+
+struct ImGuiTestContext {
+    ImGuiContext* context = nullptr;
+
+    ImGuiTestContext() {
+        context = ImGui::CreateContext();
+        ImGui::SetCurrentContext(context);
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2(640.0f, 480.0f);
+        io.DeltaTime = 1.0f / 60.0f;
+        unsigned char* pixels = nullptr;
+        int width = 0;
+        int height = 0;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    }
+
+    ~ImGuiTestContext() {
+        if (context) {
+            ImGui::SetCurrentContext(context);
+            ImGui::DestroyContext(context);
+        }
+    }
+};
+
+struct CollapsedRenderFrameState {
+    int current_window_stack_size{0};
+    ImGuiID within_end_child_id{0};
+};
+
+CollapsedRenderFrameState RenderCollapsedSidecarFrame(const ExplainoSidecarWindowState& state) {
+    ImGui::NewFrame();
+    ImGui::SetNextWindowCollapsed(true, ImGuiCond_Always);
+    RenderExplainoSidecarWindow(state);
+
+    CollapsedRenderFrameState frameState;
+    ImGuiContext* context = ImGui::GetCurrentContext();
+    if (context) {
+        frameState.current_window_stack_size = context->CurrentWindowStack.Size;
+        frameState.within_end_child_id = context->WithinEndChildID;
+    }
+    ImGui::Render();
+    return frameState;
 }
 
 class FakeMeasurementHost : public SidecarMeasurementHost {
@@ -184,6 +230,75 @@ BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderS
 } // namespace
 
 int main() {
+    {
+        SidecarSlimeTrace trace;
+        for (int index = 0; index < 64; ++index) {
+            SidecarSlimeTraceStep step;
+            step.step_index = index + 1;
+            step.path = "fractal.params.explaino_mix";
+            trace.steps.push_back(std::move(step));
+        }
+
+        const ExplainoSidecarTraceRenderSlice capped = ComputeExplainoSidecarTraceRenderSlice(trace, 16);
+        if (capped.first_visible_step_index != 48 || capped.visible_step_count != 16 || capped.hidden_step_count != 48) {
+            std::cerr << "Expected trace render slice to keep only the newest visible steps in-bounds for the sidecar window"
+                      << " first=" << capped.first_visible_step_index
+                      << " visible=" << capped.visible_step_count
+                      << " hidden=" << capped.hidden_step_count << "\n";
+            return 1;
+        }
+
+        const ExplainoSidecarTraceRenderSlice uncapped = ComputeExplainoSidecarTraceRenderSlice(trace, 0);
+        if (uncapped.first_visible_step_index != 0 || uncapped.visible_step_count != trace.steps.size() || uncapped.hidden_step_count != 0) {
+            std::cerr << "Expected zero trace cap to keep the full trace visible without hiding rows\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        view.fractal_type = FractalType::explaino;
+        BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildCatalog(), ctx, &state, &error)) {
+            std::cerr << "Expected collapsed-window render state to build: " << error << "\n";
+            return 1;
+        }
+
+        SidecarSlimeTraceStep step;
+        step.step_index = 1;
+        step.path = "fractal.params.explaino_mix";
+        step.summary = "apply";
+        state.trace.steps.push_back(step);
+        state.trace.proposal_step_count = 1;
+        state.trace.latest_path = step.path;
+        state.title = "Collapsed Explaino Sidecar";
+
+        ImGuiTestContext imgui;
+        ExplainoSidecarWindowState baselineState = state;
+        baselineState.trace = {};
+
+        const CollapsedRenderFrameState baselineFrame = RenderCollapsedSidecarFrame(baselineState);
+        const CollapsedRenderFrameState traceFrame = RenderCollapsedSidecarFrame(state);
+        if (traceFrame.current_window_stack_size != baselineFrame.current_window_stack_size) {
+            std::cerr << "Expected collapsed sidecar trace render to leave the same window stack depth as the collapsed baseline"
+                      << " baseline=" << baselineFrame.current_window_stack_size
+                      << " trace=" << traceFrame.current_window_stack_size << "\n";
+            return 1;
+        }
+        if (traceFrame.within_end_child_id != baselineFrame.within_end_child_id) {
+            std::cerr << "Expected collapsed sidecar trace render to preserve child-window cleanup state relative to the collapsed baseline"
+                      << " baseline=" << baselineFrame.within_end_child_id
+                      << " trace=" << traceFrame.within_end_child_id << "\n";
+            return 1;
+        }
+    }
+
     ViewState view{};
     KernelParams params{};
     RenderSettings render{};

@@ -1262,8 +1262,13 @@ static void ApplyPendingSidecarAutoDemoMutation(
     }
 
     std::string mutationError;
-    if (!ApplySidecarAutoDemoControllerDecision(sidecarState.controller_decision, bind, &mutationError)) {
+    bool mutationChanged = false;
+    if (!ApplySidecarAutoDemoControllerDecision(sidecarState.controller_decision, bind, &mutationChanged, &mutationError)) {
         findingStatus = "Auto-demo apply failed: " + mutationError;
+        return;
+    }
+    if (!mutationChanged) {
+        findingStatus = "Auto-demo step already at target: " + sidecarState.controller_decision.path;
         return;
     }
 

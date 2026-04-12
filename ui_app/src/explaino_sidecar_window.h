@@ -11,6 +11,7 @@
 #include "explaino_sidecar_model.h"
 #include "explaino_sidecar_trace.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -49,6 +50,16 @@ struct ExplainoSidecarWindowState {
     SidecarStateDivergence divergence{};
     std::vector<ExplainoSidecarWindowRow> rows;
 };
+
+struct ExplainoSidecarTraceRenderSlice {
+    size_t first_visible_step_index{0};
+    size_t visible_step_count{0};
+    size_t hidden_step_count{0};
+};
+
+ExplainoSidecarTraceRenderSlice ComputeExplainoSidecarTraceRenderSlice(
+    const SidecarSlimeTrace& trace,
+    size_t maxVisibleStepCount);
 
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,

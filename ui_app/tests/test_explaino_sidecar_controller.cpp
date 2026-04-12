@@ -309,6 +309,41 @@ int main() {
         ctx.params = &params;
         ctx.render = &render;
         ctx.lens = &lens;
+        params.ripple_amplitude = 0.125f;
+
+        SidecarAutoDemoControllerDecision decision;
+        decision.path = "fractal.params.ripple_amplitude";
+        decision.type = "float";
+        decision.target_value = 0.125;
+        decision.has_target_value = true;
+        decision.should_mutate = true;
+
+        bool changed = true;
+        std::string error;
+        if (!ApplySidecarAutoDemoControllerDecision(decision, ctx, &changed, &error)) {
+            std::cerr << "Expected no-op float controller mutation apply to succeed: " << error << "\n";
+            return 1;
+        }
+        if (changed) {
+            std::cerr << "Expected controller mutation apply to report a no-op when the target already matches the bound float value\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.ripple_amplitude, 0.125f, 1.0e-6)) {
+            std::cerr << "Expected no-op float controller mutation apply to leave ripple_amplitude unchanged\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        BindingContext ctx;
+        ctx.view = &view;
+        ctx.params = &params;
+        ctx.render = &render;
+        ctx.lens = &lens;
 
         SidecarAutoDemoControllerDecision decision;
         decision.path = "fractal.params.explaino_seed";

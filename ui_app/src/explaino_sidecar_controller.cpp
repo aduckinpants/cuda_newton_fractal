@@ -121,13 +121,21 @@ void ResetLoopState(SidecarAutoDemoLoopState* ioState) {
 
 bool ApplyFloatMutation(const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
+    bool* outChanged,
     std::string* outError) {
+    if (outChanged) *outChanged = false;
     float* value = nullptr;
     if (!ctx.BindFloat(decision.path, &value) || !value) {
         if (outError) *outError = UnsupportedMutationTypePathPair(decision);
         return false;
     }
-    *value = static_cast<float>(decision.target_value);
+    const float nextValue = static_cast<float>(decision.target_value);
+    const bool changed = !std::isfinite(static_cast<double>(*value)) || *value != nextValue;
+    if (!changed) {
+        return true;
+    }
+    *value = nextValue;
+    if (outChanged) *outChanged = true;
     if (ctx.view && MutationRequiresViewHpSync(decision.path)) {
         SyncViewHpFromUi(*ctx.view);
     }
@@ -136,19 +144,28 @@ bool ApplyFloatMutation(const SidecarAutoDemoControllerDecision& decision,
 
 bool ApplyDoubleMutation(const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
+    bool* outChanged,
     std::string* outError) {
+    if (outChanged) *outChanged = false;
     double* value = nullptr;
     if (!ctx.BindDouble(decision.path, &value) || !value) {
         if (outError) *outError = UnsupportedMutationTypePathPair(decision);
         return false;
     }
+    const bool changed = !std::isfinite(*value) || *value != decision.target_value;
+    if (!changed) {
+        return true;
+    }
     *value = decision.target_value;
+    if (outChanged) *outChanged = true;
     return true;
 }
 
 bool ApplyIntMutation(const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
+    bool* outChanged,
     std::string* outError) {
+    if (outChanged) *outChanged = false;
     if (!std::isfinite(decision.target_value) ||
         decision.target_value < static_cast<double>(INT_MIN) ||
         decision.target_value > static_cast<double>(INT_MAX)) {
@@ -161,7 +178,12 @@ bool ApplyIntMutation(const SidecarAutoDemoControllerDecision& decision,
         if (outError) *outError = UnsupportedMutationTypePathPair(decision);
         return false;
     }
-    *value = static_cast<int>(std::lround(decision.target_value));
+    const int nextValue = static_cast<int>(std::lround(decision.target_value));
+    if (*value == nextValue) {
+        return true;
+    }
+    *value = nextValue;
+    if (outChanged) *outChanged = true;
     return true;
 }
 
@@ -255,7 +277,9 @@ bool BuildSidecarAutoDemoControllerDecision(
 bool ApplySidecarAutoDemoControllerDecision(
     const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
+    bool* outChanged,
     std::string* outError) {
+    if (outChanged) *outChanged = false;
     if (outError) outError->clear();
 
     if (decision.path.empty()) {
@@ -272,17 +296,24 @@ bool ApplySidecarAutoDemoControllerDecision(
     }
 
     if (decision.type == "int") {
-        return ApplyIntMutation(decision, ctx, outError);
+        return ApplyIntMutation(decision, ctx, outChanged, outError);
     }
     if (decision.type == "double") {
-        return ApplyDoubleMutation(decision, ctx, outError);
+        return ApplyDoubleMutation(decision, ctx, outChanged, outError);
     }
     if (decision.type == "float") {
-        return ApplyFloatMutation(decision, ctx, outError);
+        return ApplyFloatMutation(decision, ctx, outChanged, outError);
     }
 
     if (outError) *outError = "Unsupported sidecar auto-demo mutation type: " + decision.type;
     return false;
+}
+
+bool ApplySidecarAutoDemoControllerDecision(
+    const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
+    std::string* outError) {
+    return ApplySidecarAutoDemoControllerDecision(decision, ctx, nullptr, outError);
 }
 
 void ResetSidecarAutoDemoLoopState(

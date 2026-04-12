@@ -9,6 +9,10 @@
 
 namespace {
 
+constexpr size_t kMaxVisibleTraceSteps = 48;
+constexpr float kTraceSectionHeight = 220.0f;
+constexpr float kHelpWrapWidth = 360.0f;
+
 std::string FormatNumber(double value) {
     std::ostringstream out;
     out << std::setprecision(6) << value;
@@ -79,21 +83,41 @@ std::string FormatTraceOverlay(
     return "--";
 }
 
+void RenderSectionExplanation(const char* text) {
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextDisabled("%s", text);
+    ImGui::PopTextWrapPos();
+}
+
+void RenderInlineHelp(const char* text) {
+    ImGui::SameLine();
+    ImGui::TextDisabled("?");
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(kHelpWrapWidth);
+        ImGui::TextUnformatted(text);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
+
 void RenderOrientationSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Orientation");
-    ImGui::BulletText("import_signature: %llu", static_cast<unsigned long long>(state.orientation.import_signature));
-    ImGui::BulletText("pack_projection_hash: %llu", static_cast<unsigned long long>(state.orientation.pack_projection_hash));
-    ImGui::BulletText("field_embedding_stats: %.3f", state.orientation.field_embedding_stats);
-    ImGui::BulletText("slime_energy_delta: %.3f", state.orientation.slime_energy_delta);
-    ImGui::BulletText("busy_beaver_metrics: %.3f", state.orientation.busy_beaver_metrics);
+    ImGui::Text("Raw Orientation Metrics");
+    RenderSectionExplanation("These are internal model-state diagnostics. Ignore them unless you are debugging the sidecar itself.");
+    ImGui::BulletText("surface_signature: %llu", static_cast<unsigned long long>(state.orientation.import_signature));
+    ImGui::BulletText("parameter_surface_hash: %llu", static_cast<unsigned long long>(state.orientation.pack_projection_hash));
+    ImGui::BulletText("average_information_gain: %.3f", state.orientation.field_embedding_stats);
+    ImGui::BulletText("recent_information_gain: %.3f", state.orientation.slime_energy_delta);
+    ImGui::BulletText("explored_fraction_signal: %.3f", state.orientation.busy_beaver_metrics);
     ImGui::BulletText("decode_stability: %.3f", state.orientation.decode_stability);
-    ImGui::BulletText("diff_magnitude: %.3f", state.orientation.diff_magnitude);
+    ImGui::BulletText("state_delta: %.3f", state.orientation.diff_magnitude);
 }
 
 void RenderBudgetSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Information Budget");
+    ImGui::Text("Measured Parameter Surface");
+    RenderSectionExplanation("This table shows which parameters changed the sampled output most, how much evidence has been accumulated, and which active zone the sidecar currently trusts.");
     if (state.budget.rows.empty()) {
         ImGui::TextDisabled("Measurement unavailable.");
         return;
@@ -157,7 +181,8 @@ void RenderBudgetSection(const ExplainoSidecarWindowState& state) {
 
 void RenderCompletenessSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Exploration Completeness");
+    ImGui::Text("Coverage");
+    RenderSectionExplanation("Coverage tracks how much of the currently applicable parameter surface has been demonstrated enough to stop feeling unknown.");
     if (!state.completeness_error_message.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Completeness error");
         ImGui::TextWrapped("%s", state.completeness_error_message.c_str());
@@ -208,7 +233,8 @@ void RenderCompletenessSection(const ExplainoSidecarWindowState& state) {
 
 void RenderEnergySection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Energy Landscape");
+    ImGui::Text("Why This Suggestion Wins");
+    RenderSectionExplanation("Higher energy means the sidecar expects more useful visual change for the current view after subtracting the control's estimated cost.");
     if (!state.energy_error_message.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Energy error");
         ImGui::TextWrapped("%s", state.energy_error_message.c_str());
@@ -267,7 +293,8 @@ void RenderEnergySection(const ExplainoSidecarWindowState& state) {
 
 void RenderTraceSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Slime Trace");
+    ImGui::Text("Action History (Slime Trace)");
+    RenderSectionExplanation("This is the running history of armed suggestions and applied steps. It stays in a fixed-height pane so the controller controls do not get pushed out of reach.");
     if (!state.trace_error_message.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Trace error");
         ImGui::TextWrapped("%s", state.trace_error_message.c_str());
@@ -282,7 +309,22 @@ void RenderTraceSection(const ExplainoSidecarWindowState& state) {
     ImGui::BulletText("apply_steps: %d", state.trace.apply_step_count);
     ImGui::BulletText("latest_path: %s", state.trace.latest_path.c_str());
 
+    const ExplainoSidecarTraceRenderSlice traceSlice =
+        ComputeExplainoSidecarTraceRenderSlice(state.trace, kMaxVisibleTraceSteps);
+    if (traceSlice.hidden_step_count > 0) {
+        ImGui::TextDisabled("Showing newest %d of %d steps.",
+            static_cast<int>(traceSlice.visible_step_count),
+            static_cast<int>(state.trace.steps.size()));
+    }
+
+    const bool traceChildVisible = ImGui::BeginChild("sidecar_trace_scroll", ImVec2(0.0f, kTraceSectionHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
+    if (!traceChildVisible) {
+        ImGui::EndChild();
+        return;
+    }
+
     if (!ImGui::BeginTable("sidecar_trace", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        ImGui::EndChild();
         return;
     }
 
@@ -293,7 +335,9 @@ void RenderTraceSection(const ExplainoSidecarWindowState& state) {
     ImGui::TableSetupColumn("Energy");
     ImGui::TableHeadersRow();
 
-    for (const auto& step : state.trace.steps) {
+    const size_t traceEnd = traceSlice.first_visible_step_index + traceSlice.visible_step_count;
+    for (size_t index = traceSlice.first_visible_step_index; index < traceEnd; ++index) {
+        const auto& step = state.trace.steps[index];
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         ImGui::Text("#%d", step.step_index);
@@ -308,11 +352,13 @@ void RenderTraceSection(const ExplainoSidecarWindowState& state) {
     }
 
     ImGui::EndTable();
+    ImGui::EndChild();
 }
 
 void RenderDivergenceSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Divergence Indicator");
+    ImGui::Text("State Change Summary");
+    RenderSectionExplanation("This compares the current sidecar orientation against the last reusable orientation so you can tell whether the viewed system actually changed or just re-measured.");
     if (!state.divergence_error_message.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Divergence error");
         ImGui::TextWrapped("%s", state.divergence_error_message.c_str());
@@ -338,50 +384,57 @@ bool RenderControllerSection(
     }
 
     ImGui::Separator();
-    ImGui::Text("Auto Demonstration");
+    ImGui::Text("How To Run It");
+    RenderSectionExplanation("The sidecar can explain the next recommended parameter without changing the live fractal, or it can move that parameter for you. Start by enabling the controller. Then opt into parameter movement only if you want the fractal to change.");
     if (ioPolicy) {
         bool enabled = displayPolicy.enabled;
-        if (ImGui::Checkbox("Enable Auto Demonstration", &enabled)) {
+        if (ImGui::Checkbox("Enable Recommendation Controller", &enabled)) {
             ioPolicy->enabled = enabled;
             displayPolicy.enabled = enabled;
             interacted = true;
         }
+        RenderInlineHelp("Turns the sidecar controller on so it can arm a recommendation instead of staying permanently disabled.");
 
         bool allowRuntimeMutation = displayPolicy.allow_runtime_mutation;
-        if (ImGui::Checkbox("Allow Runtime Mutation", &allowRuntimeMutation)) {
+        if (ImGui::Checkbox("Allow Parameter Movement", &allowRuntimeMutation)) {
             ioPolicy->allow_runtime_mutation = allowRuntimeMutation;
             displayPolicy.allow_runtime_mutation = allowRuntimeMutation;
             interacted = true;
         }
+        RenderInlineHelp("Lets the armed step write into the live fractal state. Leave this off if you only want to inspect suggestions.");
 
         bool runPacedLoop = displayPolicy.run_paced_loop;
-        if (ImGui::Checkbox("Run Paced Loop", &runPacedLoop)) {
+        if (ImGui::Checkbox("Repeat Armed Step", &runPacedLoop)) {
             ioPolicy->run_paced_loop = runPacedLoop;
             displayPolicy.run_paced_loop = runPacedLoop;
             interacted = true;
         }
+        RenderInlineHelp("Re-applies the current armed step after the interval below. Use this when one meaningful step is already visible and you want it to keep exploring.");
 
         float pacedLoopIntervalSeconds = static_cast<float>(displayPolicy.paced_loop_interval_seconds);
-        if (ImGui::SliderFloat("Paced Loop Interval (s)", &pacedLoopIntervalSeconds, 0.1f, 5.0f, "%.2f s")) {
+        if (ImGui::SliderFloat("Repeat Interval (s)", &pacedLoopIntervalSeconds, 0.1f, 5.0f, "%.2f s")) {
             ioPolicy->paced_loop_interval_seconds = pacedLoopIntervalSeconds;
             displayPolicy.paced_loop_interval_seconds = pacedLoopIntervalSeconds;
             interacted = true;
         }
+        RenderInlineHelp("How long the sidecar waits before repeating the currently armed step when Repeat Armed Step is enabled.");
 
         float stopDemonstratedFraction = static_cast<float>(displayPolicy.stop_demonstrated_fraction);
-        if (ImGui::SliderFloat("Stop Demonstrated Fraction", &stopDemonstratedFraction, 0.0f, 1.0f, "%.2f")) {
+        if (ImGui::SliderFloat("Stop After Coverage Reaches", &stopDemonstratedFraction, 0.0f, 1.0f, "%.2f")) {
             ioPolicy->stop_demonstrated_fraction = stopDemonstratedFraction;
             displayPolicy.stop_demonstrated_fraction = stopDemonstratedFraction;
             interacted = true;
         }
+        RenderInlineHelp("Stops the repeat loop once this fraction of the applicable parameter surface has been demonstrated.");
 
         int stopUncertainCount = displayPolicy.stop_uncertain_count;
-        if (ImGui::InputInt("Stop Uncertain Count", &stopUncertainCount)) {
+        if (ImGui::InputInt("Stop When Uncertain Params <=", &stopUncertainCount)) {
             if (stopUncertainCount < 0) stopUncertainCount = 0;
             ioPolicy->stop_uncertain_count = stopUncertainCount;
             displayPolicy.stop_uncertain_count = stopUncertainCount;
             interacted = true;
         }
+        RenderInlineHelp("Secondary stop rule: halt the repeat loop once only this many parameters remain uncertain.");
     }
 
     if (!state.controller_error_message.empty()) {
@@ -390,26 +443,26 @@ bool RenderControllerSection(
         return interacted;
     }
 
-    ImGui::BulletText("status: %s", state.controller_decision.summary.c_str());
-    ImGui::BulletText("reason: %s", state.controller_decision.reason.c_str());
-    ImGui::BulletText("enabled: %s", displayPolicy.enabled ? "true" : "false");
-    ImGui::BulletText("mutation_opt_in: %s", displayPolicy.allow_runtime_mutation ? "true" : "false");
-    ImGui::BulletText("paced_loop: %s", displayPolicy.run_paced_loop ? "true" : "false");
-    ImGui::BulletText("paced_loop_interval_seconds: %.2f", displayPolicy.paced_loop_interval_seconds);
-    ImGui::BulletText("stop_demonstrated_fraction: %.2f", displayPolicy.stop_demonstrated_fraction);
-    ImGui::BulletText("stop_uncertain_count: %d", displayPolicy.stop_uncertain_count);
+    ImGui::BulletText("controller_state: %s", state.controller_decision.summary.c_str());
+    ImGui::BulletText("why: %s", state.controller_decision.reason.c_str());
+    ImGui::BulletText("controller_enabled: %s", displayPolicy.enabled ? "true" : "false");
+    ImGui::BulletText("parameter_movement: %s", displayPolicy.allow_runtime_mutation ? "true" : "false");
+    ImGui::BulletText("repeat_loop: %s", displayPolicy.run_paced_loop ? "true" : "false");
+    ImGui::BulletText("repeat_interval_seconds: %.2f", displayPolicy.paced_loop_interval_seconds);
+    ImGui::BulletText("coverage_stop_fraction: %.2f", displayPolicy.stop_demonstrated_fraction);
+    ImGui::BulletText("uncertain_param_stop_count: %d", displayPolicy.stop_uncertain_count);
     if (state.controller_decision.has_target_value) {
-        ImGui::BulletText("path: %s", state.controller_decision.path.c_str());
-        ImGui::BulletText("target_value: %.6f", state.controller_decision.target_value);
-        ImGui::BulletText("guidance: %s", state.controller_decision.guidance.c_str());
+        ImGui::BulletText("armed_parameter: %s", state.controller_decision.path.c_str());
+        ImGui::BulletText("armed_target_value: %.6f", state.controller_decision.target_value);
+        ImGui::BulletText("suggested_direction: %s", state.controller_decision.guidance.c_str());
         if (ioPolicy) {
             if (state.controller_decision.should_mutate) {
-                if (ImGui::Button("Apply Armed Step")) {
+                if (ImGui::Button("Apply One Step Now")) {
                     if (outApplyArmedDecision) *outApplyArmedDecision = true;
                     interacted = true;
                 }
             } else {
-                ImGui::TextDisabled("Enable runtime mutation to arm apply.");
+                ImGui::TextDisabled("Turn on Allow Parameter Movement to enable Apply One Step Now.");
             }
         }
     }
@@ -419,16 +472,17 @@ bool RenderControllerSection(
 
 void RenderRecommendationSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Recommended Action");
+    ImGui::Text("Current Recommendation");
+    RenderSectionExplanation("This is the parameter the sidecar currently believes will teach the most about the visible fractal for the least measured cost.");
     if (state.has_action_recommendation) {
         const SidecarActionRecommendation& action = state.action_recommendation;
-        ImGui::BulletText("label: %s", action.label.c_str());
-        ImGui::BulletText("path: %s", action.path.c_str());
+        ImGui::BulletText("parameter: %s", action.label.c_str());
+        ImGui::BulletText("binding_path: %s", action.path.c_str());
         ImGui::BulletText("utility: %.3f", action.utility);
-        ImGui::BulletText("effective_information_gain: %.3f", action.effective_information_gain);
-        ImGui::BulletText("cost_hint: %.3f", action.cost_hint);
-        ImGui::BulletText("zone: %s", FormatActiveZone({action.label, action.path, action.type, 0.0, action.active_min, action.active_max, action.active_fraction, 0.0, 0.0, false, action.guidance}).c_str());
-        ImGui::BulletText("guidance: %s", action.guidance.c_str());
+        ImGui::BulletText("expected_information_gain: %.3f", action.effective_information_gain);
+        ImGui::BulletText("estimated_cost: %.3f", action.cost_hint);
+        ImGui::BulletText("active_zone: %s", FormatActiveZone({action.label, action.path, action.type, 0.0, action.active_min, action.active_max, action.active_fraction, 0.0, 0.0, false, action.guidance}).c_str());
+        ImGui::BulletText("suggested_direction: %s", action.guidance.c_str());
         return;
     }
 
@@ -440,7 +494,8 @@ void RenderRecommendationSection(const ExplainoSidecarWindowState& state) {
 
 void RenderApplicableParamsSection(const ExplainoSidecarWindowState& state) {
     ImGui::Separator();
-    ImGui::Text("Applicable Parameters");
+    ImGui::Text("Available Parameters");
+    RenderSectionExplanation("These are the parameters currently visible on the active fractal surface. The controller and measurement tables only work within this filtered set.");
 
     if (state.rows.empty()) {
         ImGui::TextDisabled("No applicable parameters.");
@@ -624,6 +679,22 @@ void PopulateDivergenceState(
 }
 
 } // namespace
+
+ExplainoSidecarTraceRenderSlice ComputeExplainoSidecarTraceRenderSlice(
+    const SidecarSlimeTrace& trace,
+    size_t maxVisibleStepCount) {
+    ExplainoSidecarTraceRenderSlice slice;
+    const size_t stepCount = trace.steps.size();
+    if (maxVisibleStepCount == 0 || stepCount <= maxVisibleStepCount) {
+        slice.visible_step_count = stepCount;
+        return slice;
+    }
+
+    slice.first_visible_step_index = stepCount - maxVisibleStepCount;
+    slice.visible_step_count = maxVisibleStepCount;
+    slice.hidden_step_count = slice.first_visible_step_index;
+    return slice;
+}
 
 bool BuildExplainoSidecarWindowState(
     const EngineFunctionCatalog& catalog,
@@ -891,17 +962,17 @@ bool RenderExplainoSidecarWindow(
         ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.2f, 1.0f), "Measurement error");
         ImGui::TextWrapped("%s", state.measurement_error_message.c_str());
     }
-    RenderOrientationSection(state);
-    RenderBudgetSection(state);
-    RenderEnergySection(state);
-    RenderTraceSection(state);
-    RenderCompletenessSection(state);
-    RenderDivergenceSection(state);
     if (RenderControllerSection(state, ioPolicy, outApplyArmedDecision)) {
         interacted = true;
     }
     RenderRecommendationSection(state);
+    RenderDivergenceSection(state);
+    RenderBudgetSection(state);
+    RenderEnergySection(state);
+    RenderTraceSection(state);
+    RenderCompletenessSection(state);
     RenderApplicableParamsSection(state);
+    RenderOrientationSection(state);
 
     ImGui::End();
     return interacted;

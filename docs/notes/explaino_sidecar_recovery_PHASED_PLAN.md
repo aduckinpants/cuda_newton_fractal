@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 - runtime motion proof surface
+Phase 3 - runtime motion proof surface (runtime UX/jitter repair landed; proof capture still open)
 
 ## Phase Checklist
 
@@ -20,6 +20,7 @@ Phase 3 - runtime motion proof surface
   - keep the recovery fail-closed: if baseline `explaino` cannot auto-demonstrate under the real schema, the sidecar must either be repaired to do so or state that limitation explicitly
 - Current known mismatch to close:
   - the real-schema contract is now repaired at the native helper level: baseline `explaino` and `explaino_joy` both expose actionable controller decisions under the shipped schema/catalog path
+  - the Phase 3 runtime UX repair now landed: the slime trace is clipped into a fixed-height child pane so the controller stays reachable, the controller copy is explained in product-facing terms, and no-op paced-loop applies no longer dirty the viewer or reset render pacing
   - the remaining gap is runtime-visible proof that explicit apply and paced-loop motion behave as real product motion, not just headless contract mutation
 
 - Phase 1 exit criteria:

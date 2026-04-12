@@ -58,6 +58,12 @@ bool BuildSidecarAutoDemoControllerDecision(
 bool ApplySidecarAutoDemoControllerDecision(
     const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
+    bool* outChanged,
+    std::string* outError);
+
+bool ApplySidecarAutoDemoControllerDecision(
+    const SidecarAutoDemoControllerDecision& decision,
+    BindingContext& ctx,
     std::string* outError);
 
 void ResetSidecarAutoDemoLoopState(
