@@ -12,6 +12,20 @@ bool NearlyEqual(double left, double right, double eps = 1.0e-9) {
     return delta < eps && delta > -eps;
 }
 
+SidecarAutoDemoControllerDecision MakeArmedDecision(
+    const char* path = "fractal.params.ripple_amplitude",
+    const char* type = "float",
+    double targetValue = 0.12) {
+    SidecarAutoDemoControllerDecision decision;
+    decision.status = SidecarAutoDemoControllerStatus::apply_ready;
+    decision.path = path;
+    decision.type = type;
+    decision.target_value = targetValue;
+    decision.has_target_value = true;
+    decision.should_mutate = true;
+    return decision;
+}
+
 SidecarActionRecommendation MakeRecommendation(
     const char* path,
     const char* guidance,
@@ -372,6 +386,162 @@ int main() {
         }
         if (!NearlyEqual(params.ripple_amplitude, 0.0f, 1.0e-6)) {
             std::cerr << "Type/path mismatch unexpectedly changed ripple_amplitude\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        policy.run_paced_loop = true;
+        policy.paced_loop_interval_seconds = 0.5;
+        SidecarAutoDemoLoopState loopState;
+        bool shouldApply = false;
+        std::string error;
+
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.2, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced auto-demo loop tick to succeed below interval: " << error << "\n";
+            return 1;
+        }
+        if (shouldApply) {
+            std::cerr << "Expected paced auto-demo loop not to fire before the dwell interval\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.3, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced auto-demo loop tick to succeed at interval: " << error << "\n";
+            return 1;
+        }
+        if (!shouldApply) {
+            std::cerr << "Expected paced auto-demo loop to fire after accumulating the dwell interval\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        policy.run_paced_loop = true;
+        policy.paced_loop_interval_seconds = 0.5;
+        SidecarAutoDemoLoopState loopState;
+        bool shouldApply = false;
+        std::string error;
+
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.4, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected initial paced loop tick to succeed before interaction reset: " << error << "\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.0, true, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop interaction reset to succeed: " << error << "\n";
+            return 1;
+        }
+        if (shouldApply) {
+            std::cerr << "Expected user interaction to reset the paced loop timer instead of firing immediately\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.4, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick after interaction reset to succeed: " << error << "\n";
+            return 1;
+        }
+        if (shouldApply) {
+            std::cerr << "Expected paced loop to require a full fresh interval after user interaction\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.1, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed once the post-interaction interval completes: " << error << "\n";
+            return 1;
+        }
+        if (!shouldApply) {
+            std::cerr << "Expected paced loop to fire once the post-interaction dwell interval completes\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        policy.run_paced_loop = true;
+        policy.paced_loop_interval_seconds = 0.5;
+        SidecarAutoDemoLoopState loopState;
+        bool shouldApply = false;
+        std::string error;
+
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision("fractal.params.ripple_amplitude", "float", 0.12), policy, 0.4, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed before decision-change reset: " << error << "\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision("fractal.params.ripple_amplitude", "float", 0.24), policy, 0.1, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed after the armed decision changes: " << error << "\n";
+            return 1;
+        }
+        if (shouldApply) {
+            std::cerr << "Expected a changed armed decision to reset the paced loop timer\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision("fractal.params.ripple_amplitude", "float", 0.24), policy, 0.5, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed after the new decision dwells long enough: " << error << "\n";
+            return 1;
+        }
+        if (!shouldApply) {
+            std::cerr << "Expected the new armed decision to fire after its own dwell interval\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        policy.run_paced_loop = true;
+        policy.paced_loop_interval_seconds = 0.5;
+        SidecarAutoDemoLoopState loopState;
+        bool shouldApply = false;
+        std::string error;
+
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.4, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed before reset test: " << error << "\n";
+            return 1;
+        }
+        ResetSidecarAutoDemoLoopState(&loopState);
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.4, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed after explicit reset: " << error << "\n";
+            return 1;
+        }
+        if (shouldApply) {
+            std::cerr << "Expected explicit loop-state reset to require a fresh dwell interval\n";
+            return 1;
+        }
+        if (!AdvanceSidecarAutoDemoLoop(MakeArmedDecision(), policy, 0.1, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed once the post-reset dwell interval completes: " << error << "\n";
+            return 1;
+        }
+        if (!shouldApply) {
+            std::cerr << "Expected explicit loop-state reset to restart paced auto-demo timing from zero\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+        policy.run_paced_loop = true;
+        policy.paced_loop_interval_seconds = 0.5;
+        SidecarAutoDemoLoopState loopState;
+        bool shouldApply = true;
+        std::string error;
+
+        SidecarAutoDemoControllerDecision proposal = MakeArmedDecision();
+        proposal.should_mutate = false;
+        proposal.status = SidecarAutoDemoControllerStatus::proposal_ready;
+        if (!AdvanceSidecarAutoDemoLoop(proposal, policy, 1.0, false, &loopState, &shouldApply, &error)) {
+            std::cerr << "Expected paced loop tick to succeed for a proposal-only decision: " << error << "\n";
+            return 1;
+        }
+        if (shouldApply) {
+            std::cerr << "Expected paced loop not to fire when the controller decision is not armed\n";
             return 1;
         }
     }
