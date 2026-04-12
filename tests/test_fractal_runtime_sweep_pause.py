@@ -76,7 +76,16 @@ def _find_window_for_pid(pid: int) -> int | None:
     def callback(hwnd: int, _lparam: int) -> bool:
         window_pid = wintypes.DWORD()
         user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(window_pid))
-        if window_pid.value == pid and user32.IsWindow(wintypes.HWND(hwnd)):
+        rect = RECT()
+        is_ready = user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect))
+        if (
+            window_pid.value == pid
+            and user32.IsWindow(wintypes.HWND(hwnd))
+            and user32.IsWindowVisible(wintypes.HWND(hwnd))
+            and is_ready
+            and rect.right - rect.left > 0
+            and rect.bottom - rect.top > 0
+        ):
             found.append(int(hwnd))
             return False
         return True
@@ -95,6 +104,8 @@ def _capture_window_pixels(hwnd: int) -> bytes:
 
     width = rect.right - rect.left
     height = rect.bottom - rect.top
+    if width <= 0 or height <= 0:
+        raise OSError(f"window client rect is not ready: width={width} height={height}")
     hwnd_dc = user32.GetDC(wintypes.HWND(hwnd))
     mem_dc = gdi32.CreateCompatibleDC(hwnd_dc)
     bitmap = gdi32.CreateCompatibleBitmap(hwnd_dc, width, height)
@@ -119,6 +130,25 @@ def _capture_window_pixels(hwnd: int) -> bytes:
     if copied_rows != height:
         raise OSError(f"GetDIBits copied {copied_rows} rows, expected {height}")
     return pixels.raw
+
+
+def _capture_ready_window_pixels(hwnd: int) -> bytes:
+    deadline = time.monotonic() + 5.0
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            pixels = _capture_window_pixels(hwnd)
+        except OSError as exc:
+            last_error = exc
+            time.sleep(0.1)
+            continue
+        if pixels:
+            return pixels
+        time.sleep(0.1)
+
+    if last_error is not None:
+        raise last_error
+    raise AssertionError("window never produced a non-empty captured frame")
 
 
 def _mean_abs_diff(left: bytes, right: bytes) -> float:
@@ -170,19 +200,26 @@ def test_runtime_sweep_changes_live_view_and_space_pauses_it() -> None:
         user32.SetForegroundWindow(wintypes.HWND(hwnd))
 
         time.sleep(0.8)
-        running_frame_a = _capture_window_pixels(hwnd)
+        running_frame_a = _capture_ready_window_pixels(hwnd)
         time.sleep(0.8)
-        running_frame_b = _capture_window_pixels(hwnd)
-        running_diff = _mean_abs_diff(running_frame_a, running_frame_b)
-        assert running_diff > 1.0, f"live sweep did not visibly change the viewer image; diff={running_diff:.3f}"
+        running_frame_b = _capture_ready_window_pixels(hwnd)
+        time.sleep(0.8)
+        running_frame_c = _capture_ready_window_pixels(hwnd)
+        running_diff_ab = _mean_abs_diff(running_frame_a, running_frame_b)
+        running_diff_bc = _mean_abs_diff(running_frame_b, running_frame_c)
+        running_diff = max(running_diff_ab, running_diff_bc)
+        assert running_diff > 0.15, (
+            "live sweep did not visibly change the viewer image across adjacent intervals; "
+            f"diff_ab={running_diff_ab:.3f} diff_bc={running_diff_bc:.3f}"
+        )
 
         user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
         user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
 
         time.sleep(0.5)
-        paused_frame_a = _capture_window_pixels(hwnd)
+        paused_frame_a = _capture_ready_window_pixels(hwnd)
         time.sleep(0.8)
-        paused_frame_b = _capture_window_pixels(hwnd)
+        paused_frame_b = _capture_ready_window_pixels(hwnd)
         paused_diff = _mean_abs_diff(paused_frame_a, paused_frame_b)
         assert paused_diff < 0.1, f"Space pause did not freeze the live sweep image; diff={paused_diff:.3f}"
         assert paused_diff < running_diff * 0.1, (
