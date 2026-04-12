@@ -983,7 +983,7 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
                                     ViewState& view, KernelParams& params, RenderSettings& render, bool& dirty,
                                     const EngineFunctionCatalog& engineCatalog,
-                                    const BindingContext& bind,
+                                    BindingContext& bind,
                                     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                                     CudaSidecarMeasurementHost& sidecarMeasurementHost,
                                     SidecarOrientationVector& loadedOrientationBaseline,
@@ -1014,6 +1014,35 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
             sidecarStateValid,
             sidecarBudgetState,
             sidecarBudgetStateValid);
+
+        SidecarHeadlessProofConfig sidecarHeadlessProofConfig;
+        if (cli.have_sidecar_apply_armed_step_count) {
+            sidecarHeadlessProofConfig.apply_armed_step_count = cli.sidecar_apply_armed_step_count;
+        }
+        if (cli.have_sidecar_pump_paced_loop_seconds) {
+            sidecarHeadlessProofConfig.pump_paced_loop_seconds = cli.sidecar_pump_paced_loop_seconds;
+        }
+        if (cli.have_sidecar_apply_armed_step_count || cli.have_sidecar_pump_paced_loop_seconds) {
+            std::string sidecarProofError;
+            if (!ApplyHeadlessSidecarProofActions(
+                    sidecarHeadlessProofConfig,
+                    view,
+                    params,
+                    engineCatalog,
+                    bind,
+                    sidecarMeasurementHost,
+                    sidecarControllerPolicy,
+                    loadedOrientationBaseline,
+                    loadedOrientationBaselineValid,
+                    sidecarState,
+                    sidecarStateValid,
+                    sidecarBudgetState,
+                    sidecarBudgetStateValid,
+                    &sidecarProofError)) {
+                std::fprintf(stderr, "%s\n", sidecarProofError.c_str());
+                return 1;
+            }
+        }
     }
     const SidecarOrientationVector* sidecarOrientation =
         (sidecarStateValid && sidecarState.has_orientation) ? &sidecarState.orientation : nullptr;

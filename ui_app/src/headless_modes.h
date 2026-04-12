@@ -7,6 +7,16 @@
 
 #include "fractal_probe_contract.h"
 
+struct BindingContext;
+struct EngineFunctionCatalog;
+struct ExplainoSidecarWindowState;
+struct KernelParams;
+struct SidecarAutoDemoControllerPolicy;
+struct SidecarBudgetState;
+struct SidecarOrientationVector;
+struct ViewState;
+class SidecarMeasurementHost;
+
 // --- File I/O utilities ---
 std::string ReadTextFile(const char* path);
 bool TryReadTextFileExact(const std::string& path, std::string* outText, std::string* outError);
@@ -42,6 +52,29 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath);
 // Returns 0 on success, 1 on error.
 int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     const std::vector<std::string>& schemaCandidates);
+
+struct SidecarHeadlessProofConfig {
+    int apply_armed_step_count = 0;
+    double pump_paced_loop_seconds = 0.0;
+};
+
+bool HasSidecarHeadlessProofActions(const SidecarHeadlessProofConfig& config);
+
+bool ApplyHeadlessSidecarProofActions(
+    const SidecarHeadlessProofConfig& config,
+    ViewState& view,
+    KernelParams& params,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarOrientationVector& loadedOrientationBaseline,
+    bool& loadedOrientationBaselineValid,
+    ExplainoSidecarWindowState& sidecarState,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid,
+    std::string* outError);
 
 // --- V2-C: Override merge ---
 

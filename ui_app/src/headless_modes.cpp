@@ -2,17 +2,248 @@
 
 #include <Windows.h>
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <sstream>
 
+#include "explaino_sidecar_controller.h"
+#include "explaino_sidecar_measurement.h"
+#include "explaino_sidecar_window.h"
+#include "fractal_derived_fields.h"
+#include "fractal_family_rules.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
 #include "json_min.h"
+#include "schema_binding.h"
 #include "ui_schema.h"
 #include "viewer_schema_load.h"
+
+namespace {
+
+void PrepareHeadlessSidecarState(ViewState& view, KernelParams& params) {
+    if (IsExplainoFamily(view.fractal_type)) {
+        UpdateExplainoPolynomial(view, params, nullptr);
+    }
+    if (view.auto_max_iter) {
+        params.max_iter = ComputeAutoMaxIter(view.log2_zoom, view.fractal_type);
+    }
+}
+
+bool RebuildHeadlessSidecarState(
+    ViewState& view,
+    KernelParams& params,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarOrientationVector& loadedOrientationBaseline,
+    bool& loadedOrientationBaselineValid,
+    ExplainoSidecarWindowState& sidecarState,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid,
+    std::string* outError) {
+    PrepareHeadlessSidecarState(view, params);
+
+    const bool usingLoadedOrientationBaseline = !sidecarStateValid && loadedOrientationBaselineValid;
+    const SidecarOrientationVector* previousOrientation = nullptr;
+    if (sidecarStateValid && sidecarState.has_orientation) {
+        previousOrientation = &sidecarState.orientation;
+    } else if (usingLoadedOrientationBaseline) {
+        previousOrientation = &loadedOrientationBaseline;
+    }
+
+    ExplainoSidecarWindowState nextState;
+    if (!BuildExplainoSidecarWindowState(
+            engineCatalog,
+            bind,
+            &measurementHost,
+            sidecarBudgetStateValid ? &sidecarBudgetState : nullptr,
+            sidecarStateValid ? &sidecarState.completeness : nullptr,
+            previousOrientation,
+            (sidecarStateValid && !sidecarState.trace.function_id.empty()) ? &sidecarState.trace : nullptr,
+            &sidecarControllerPolicy,
+            &nextState,
+            outError)) {
+        return false;
+    }
+
+    sidecarState = std::move(nextState);
+    if (!sidecarState.budget.function_id.empty()) {
+        sidecarBudgetState = sidecarState.budget;
+        sidecarBudgetStateValid = true;
+    } else {
+        sidecarBudgetState = {};
+        sidecarBudgetStateValid = false;
+    }
+    sidecarStateValid = true;
+    if (usingLoadedOrientationBaseline && sidecarState.has_orientation) {
+        loadedOrientationBaseline = {};
+        loadedOrientationBaselineValid = false;
+    }
+    return true;
+}
+
+bool ApplyHeadlessArmedSteps(
+    int stepCount,
+    ViewState& view,
+    KernelParams& params,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarOrientationVector& loadedOrientationBaseline,
+    bool& loadedOrientationBaselineValid,
+    ExplainoSidecarWindowState& sidecarState,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid,
+    std::string* outError) {
+    for (int stepIndex = 0; stepIndex < stepCount; ++stepIndex) {
+        if (!RebuildHeadlessSidecarState(
+                view,
+                params,
+                engineCatalog,
+                bind,
+                measurementHost,
+                sidecarControllerPolicy,
+                loadedOrientationBaseline,
+                loadedOrientationBaselineValid,
+                sidecarState,
+                sidecarStateValid,
+                sidecarBudgetState,
+                sidecarBudgetStateValid,
+                outError)) {
+            return false;
+        }
+
+        if (!sidecarState.controller_decision.should_mutate) {
+            return true;
+        }
+
+        bool changed = false;
+        if (!ApplySidecarAutoDemoControllerDecision(sidecarState.controller_decision, bind, &changed, outError)) {
+            return false;
+        }
+        if (!changed) {
+            return true;
+        }
+
+        if (!RebuildHeadlessSidecarState(
+                view,
+                params,
+                engineCatalog,
+                bind,
+                measurementHost,
+                sidecarControllerPolicy,
+                loadedOrientationBaseline,
+                loadedOrientationBaselineValid,
+                sidecarState,
+                sidecarStateValid,
+                sidecarBudgetState,
+                sidecarBudgetStateValid,
+                outError)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool PumpHeadlessPacedLoop(
+    double totalSeconds,
+    ViewState& view,
+    KernelParams& params,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarOrientationVector& loadedOrientationBaseline,
+    bool& loadedOrientationBaselineValid,
+    ExplainoSidecarWindowState& sidecarState,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid,
+    std::string* outError) {
+    constexpr double kHeadlessLoopTickSeconds = 1.0 / 60.0;
+
+    if (!RebuildHeadlessSidecarState(
+            view,
+            params,
+            engineCatalog,
+            bind,
+            measurementHost,
+            sidecarControllerPolicy,
+            loadedOrientationBaseline,
+            loadedOrientationBaselineValid,
+            sidecarState,
+            sidecarStateValid,
+            sidecarBudgetState,
+            sidecarBudgetStateValid,
+            outError)) {
+        return false;
+    }
+
+    SidecarAutoDemoLoopState loopState{};
+    double elapsedSeconds = 0.0;
+    while (elapsedSeconds + 1.0e-12 < totalSeconds) {
+        const double remainingSeconds = totalSeconds - elapsedSeconds;
+        const double deltaSeconds = remainingSeconds < kHeadlessLoopTickSeconds
+            ? remainingSeconds
+            : kHeadlessLoopTickSeconds;
+        elapsedSeconds += deltaSeconds;
+
+        bool shouldApply = false;
+        if (!AdvanceSidecarAutoDemoLoop(
+                sidecarState.controller_decision,
+                sidecarControllerPolicy,
+                deltaSeconds,
+                false,
+                &loopState,
+                &shouldApply,
+                outError)) {
+            return false;
+        }
+
+        if (!shouldApply) {
+            continue;
+        }
+
+        bool changed = false;
+        if (!ApplySidecarAutoDemoControllerDecision(sidecarState.controller_decision, bind, &changed, outError)) {
+            return false;
+        }
+        ResetSidecarAutoDemoLoopState(&loopState);
+        if (!changed) {
+            continue;
+        }
+
+        if (!RebuildHeadlessSidecarState(
+                view,
+                params,
+                engineCatalog,
+                bind,
+                measurementHost,
+                sidecarControllerPolicy,
+                loadedOrientationBaseline,
+                loadedOrientationBaselineValid,
+                sidecarState,
+                sidecarStateValid,
+                sidecarBudgetState,
+                sidecarBudgetStateValid,
+                outError)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+} // namespace
 
 // --- File I/O utilities ---
 
@@ -311,6 +542,79 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
         }
     }
     return 0;
+}
+
+bool HasSidecarHeadlessProofActions(const SidecarHeadlessProofConfig& config) {
+    return config.apply_armed_step_count > 0 || config.pump_paced_loop_seconds > 0.0;
+}
+
+bool ApplyHeadlessSidecarProofActions(
+    const SidecarHeadlessProofConfig& config,
+    ViewState& view,
+    KernelParams& params,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost,
+    const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarOrientationVector& loadedOrientationBaseline,
+    bool& loadedOrientationBaselineValid,
+    ExplainoSidecarWindowState& sidecarState,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid,
+    std::string* outError) {
+    if (outError) outError->clear();
+
+    if (config.apply_armed_step_count < 0) {
+        if (outError) *outError = "sidecar headless proof apply_armed_step_count must be >= 0";
+        return false;
+    }
+    if (!std::isfinite(config.pump_paced_loop_seconds) || config.pump_paced_loop_seconds < 0.0) {
+        if (outError) *outError = "sidecar headless proof pump_paced_loop_seconds must be finite and >= 0";
+        return false;
+    }
+
+    if (config.apply_armed_step_count > 0) {
+        if (!ApplyHeadlessArmedSteps(
+                config.apply_armed_step_count,
+                view,
+                params,
+                engineCatalog,
+                bind,
+                measurementHost,
+                sidecarControllerPolicy,
+                loadedOrientationBaseline,
+                loadedOrientationBaselineValid,
+                sidecarState,
+                sidecarStateValid,
+                sidecarBudgetState,
+                sidecarBudgetStateValid,
+                outError)) {
+            return false;
+        }
+    }
+
+    if (config.pump_paced_loop_seconds > 0.0) {
+        if (!PumpHeadlessPacedLoop(
+                config.pump_paced_loop_seconds,
+                view,
+                params,
+                engineCatalog,
+                bind,
+                measurementHost,
+                sidecarControllerPolicy,
+                loadedOrientationBaseline,
+                loadedOrientationBaselineValid,
+                sidecarState,
+                sidecarStateValid,
+                sidecarBudgetState,
+                sidecarBudgetStateValid,
+                outError)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // --- Session mode (V2-B / V2-C) ---

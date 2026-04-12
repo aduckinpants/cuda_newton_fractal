@@ -48,6 +48,39 @@ def _run_headless_capture(*args: str) -> dict[str, object]:
     }
 
 
+def _write_state_bundle(tmp_path: Path, state: dict[str, object]) -> Path:
+    state_path = tmp_path / "state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    return state_path
+
+
+def _configure_sidecar_policy(state: dict[str, object], **updates: object) -> dict[str, object]:
+    configured_state = json.loads(json.dumps(state))
+    policy = configured_state["sidecar_auto_demo_policy"]
+    assert isinstance(policy, dict)
+    policy.update(updates)
+    return configured_state
+
+
+def _numeric_state_deltas(before: dict[str, object], after: dict[str, object], *, abs_tol: float = 1.0e-7) -> list[str]:
+    changed: list[str] = []
+    for section_name in ("view", "params"):
+        before_section = before[section_name]
+        after_section = after[section_name]
+        assert isinstance(before_section, dict)
+        assert isinstance(after_section, dict)
+        for key, before_value in before_section.items():
+            after_value = after_section.get(key)
+            if not isinstance(before_value, (int, float)) or isinstance(before_value, bool):
+                continue
+            if not isinstance(after_value, (int, float)) or isinstance(after_value, bool):
+                continue
+            if abs(float(after_value) - float(before_value)) > abs_tol:
+                changed.append(f"{section_name}.{key}")
+    return changed
+
+
 def test_explaino_lambda_cli_overrides_survive_headless_capture() -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-Lambda runtime regression is Windows-only")
@@ -213,3 +246,119 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
     assert reloaded_capture["frame_hash"] == initial_capture["frame_hash"]
     assert reloaded_state["render"]["width"] == initial_state["render"]["width"]
     assert reloaded_state["render"]["height"] == initial_state["render"]["height"]
+
+
+def test_explaino_sidecar_headless_apply_step_changes_state_and_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino sidecar runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    configured_state = _configure_sidecar_policy(
+        baseline_capture["state"],
+        enabled=True,
+        allow_runtime_mutation=True,
+        run_paced_loop=False,
+        paced_loop_interval_seconds=0.1,
+        stop_demonstrated_fraction=1.0,
+        stop_uncertain_count=0,
+    )
+    state_path = _write_state_bundle(tmp_path, configured_state)
+
+    applied_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--sidecar-apply-armed-step-count",
+        "1",
+        "--capture-diagnostic",
+    )
+
+    changed_fields = _numeric_state_deltas(baseline_capture["state"], applied_capture["state"])
+    assert changed_fields, "expected headless armed-step proof to mutate at least one numeric state field"
+    assert applied_capture["frame_hash"] != baseline_capture["frame_hash"], (
+        "expected headless armed-step proof to change the rendered frame hash"
+    )
+
+
+def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino sidecar runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    moving_state_path = _write_state_bundle(
+        tmp_path / "moving",
+        _configure_sidecar_policy(
+            baseline_capture["state"],
+            enabled=True,
+            allow_runtime_mutation=True,
+            run_paced_loop=True,
+            paced_loop_interval_seconds=0.05,
+            stop_demonstrated_fraction=1.0,
+            stop_uncertain_count=0,
+        ),
+    )
+    stopped_state_path = _write_state_bundle(
+        tmp_path / "stopped",
+        _configure_sidecar_policy(
+            baseline_capture["state"],
+            enabled=True,
+            allow_runtime_mutation=True,
+            run_paced_loop=True,
+            paced_loop_interval_seconds=0.05,
+            stop_demonstrated_fraction=0.0,
+            stop_uncertain_count=0,
+        ),
+    )
+
+    moving_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(moving_state_path),
+        "--sidecar-pump-paced-loop-seconds",
+        "0.20",
+        "--capture-diagnostic",
+    )
+    stopped_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(stopped_state_path),
+        "--sidecar-pump-paced-loop-seconds",
+        "0.20",
+        "--capture-diagnostic",
+    )
+
+    moving_fields = _numeric_state_deltas(baseline_capture["state"], moving_capture["state"])
+    stopped_fields = _numeric_state_deltas(baseline_capture["state"], stopped_capture["state"])
+
+    assert moving_fields, "expected paced-loop proof to mutate at least one numeric state field"
+    assert moving_capture["frame_hash"] != baseline_capture["frame_hash"], (
+        "expected paced-loop proof to change the rendered frame hash"
+    )
+    assert not stopped_fields, (
+        "expected zero-coverage stop threshold to halt the paced loop before mutating state"
+    )
+    assert stopped_capture["frame_hash"] == baseline_capture["frame_hash"], (
+        "expected zero-coverage stop threshold to leave the rendered frame unchanged"
+    )

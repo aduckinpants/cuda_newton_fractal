@@ -276,6 +276,34 @@ static void TestLoadStateJson() {
     Check(cli.load_state_json == "state.json", "TestLoadStateJson_Path");
 }
 
+static void TestSidecarApplyArmedStepCount() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sidecar-apply-armed-step-count", "2"}), &cli);
+    Check(rc == 0, "TestSidecarApplyArmedStepCount_ReturnCode");
+    Check(cli.have_sidecar_apply_armed_step_count, "TestSidecarApplyArmedStepCount_Have");
+    Check(cli.sidecar_apply_armed_step_count == 2, "TestSidecarApplyArmedStepCount_Value");
+}
+
+static void TestSidecarApplyArmedStepCountMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sidecar-apply-armed-step-count"}), &cli);
+    Check(rc != 0, "TestSidecarApplyArmedStepCountMissingValue_Fails");
+}
+
+static void TestSidecarPumpPacedLoopSeconds() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sidecar-pump-paced-loop-seconds", "0.25"}), &cli);
+    Check(rc == 0, "TestSidecarPumpPacedLoopSeconds_ReturnCode");
+    Check(cli.have_sidecar_pump_paced_loop_seconds, "TestSidecarPumpPacedLoopSeconds_Have");
+    Check(std::fabs(cli.sidecar_pump_paced_loop_seconds - 0.25) < 1e-9, "TestSidecarPumpPacedLoopSeconds_Value");
+}
+
+static void TestSidecarPumpPacedLoopSecondsMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sidecar-pump-paced-loop-seconds"}), &cli);
+    Check(rc != 0, "TestSidecarPumpPacedLoopSecondsMissingValue_Fails");
+}
+
 static void TestFindingGroup() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--finding-group", "test_group"}), &cli);
@@ -398,6 +426,10 @@ int main() {
     TestDescribeFunctionsJson();
     TestDescribeFunctionsJsonMissingValue();
     TestLoadStateJson();
+    TestSidecarApplyArmedStepCount();
+    TestSidecarApplyArmedStepCountMissingValue();
+    TestSidecarPumpPacedLoopSeconds();
+    TestSidecarPumpPacedLoopSecondsMissingValue();
     TestFindingGroup();
     TestExplainoWarpStrength();
     TestLambdaOverrides();

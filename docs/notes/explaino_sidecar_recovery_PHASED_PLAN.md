@@ -22,7 +22,8 @@ Phase 3 - runtime motion proof surface (runtime UX/jitter repair landed; proof c
   - the real-schema contract is now repaired at the native helper level: baseline `explaino` and `explaino_joy` both expose actionable controller decisions under the shipped schema/catalog path
   - the Phase 3 runtime UX repair now landed: the slime trace is clipped into a fixed-height child pane so the controller stays reachable, the controller copy is explained in product-facing terms, and no-op paced-loop applies no longer dirty the viewer or reset render pacing
   - the Phase 3 motion repair now targets three concrete seams under the shipped runtime path: the stop slider must respond to continuous mean coverage instead of waiting for the first demonstrated-fraction jump, the sidecar must expose first/second local information-response channels from the existing centered micro-sweep, and controller motion must advance smoothly from the current value instead of snapping straight to an active-zone edge
-  - the remaining gap is runtime-visible proof that explicit apply and paced-loop motion behave as real product motion, not just headless contract mutation
+  - a new headless executable proof surface now exists for runtime-sidecar motion: `--sidecar-apply-armed-step-count` and `--sidecar-pump-paced-loop-seconds` run against the published exe after `--load-state-json`, and the runtime pytest lane now proves explicit apply state/frame delta plus paced-loop state/frame delta and low-threshold stop behavior
+  - the remaining gap is the default-startup path proof and a visible partial-step multi-step proof under the live runtime/window surface; explicit apply and paced-loop no longer rely only on helper-level or manual claims
 
 - Phase 1 exit criteria:
   - a native helper test loads the checked-in schema, builds the real engine catalog, and proves the current baseline `explaino` sidecar state under that real surface
