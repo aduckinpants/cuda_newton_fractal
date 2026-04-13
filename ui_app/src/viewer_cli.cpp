@@ -105,6 +105,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     // State loading
     if (!TryStr(args, "--load-state-json", &out->have_load_state_json, &out->load_state_json)) return 1;
     if (!TryInt(args, "--sidecar-apply-armed-step-count", &out->have_sidecar_apply_armed_step_count, &out->sidecar_apply_armed_step_count)) return 1;
+    if (!TryInt(args, "--sidecar-replay-mutation-history-count", &out->have_sidecar_replay_mutation_history_count, &out->sidecar_replay_mutation_history_count)) return 1;
     if (!TryDouble(args, "--sidecar-pump-paced-loop-seconds", &out->have_sidecar_pump_paced_loop_seconds, &out->sidecar_pump_paced_loop_seconds)) return 1;
 
     // Finding overrides

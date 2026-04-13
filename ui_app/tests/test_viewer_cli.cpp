@@ -290,6 +290,20 @@ static void TestSidecarApplyArmedStepCountMissingValue() {
     Check(rc != 0, "TestSidecarApplyArmedStepCountMissingValue_Fails");
 }
 
+static void TestSidecarReplayMutationHistoryCount() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sidecar-replay-mutation-history-count", "2"}), &cli);
+    Check(rc == 0, "TestSidecarReplayMutationHistoryCount_ReturnCode");
+    Check(cli.have_sidecar_replay_mutation_history_count, "TestSidecarReplayMutationHistoryCount_Have");
+    Check(cli.sidecar_replay_mutation_history_count == 2, "TestSidecarReplayMutationHistoryCount_Value");
+}
+
+static void TestSidecarReplayMutationHistoryCountMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--sidecar-replay-mutation-history-count"}), &cli);
+    Check(rc != 0, "TestSidecarReplayMutationHistoryCountMissingValue_Fails");
+}
+
 static void TestSidecarPumpPacedLoopSeconds() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--sidecar-pump-paced-loop-seconds", "0.25"}), &cli);
@@ -428,6 +442,8 @@ int main() {
     TestLoadStateJson();
     TestSidecarApplyArmedStepCount();
     TestSidecarApplyArmedStepCountMissingValue();
+    TestSidecarReplayMutationHistoryCount();
+    TestSidecarReplayMutationHistoryCountMissingValue();
     TestSidecarPumpPacedLoopSeconds();
     TestSidecarPumpPacedLoopSecondsMissingValue();
     TestFindingGroup();

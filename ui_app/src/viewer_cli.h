@@ -79,6 +79,9 @@ struct ViewerCliArgs {
     bool have_sidecar_apply_armed_step_count = false;
     int sidecar_apply_armed_step_count = 0;
 
+    bool have_sidecar_replay_mutation_history_count = false;
+    int sidecar_replay_mutation_history_count = 0;
+
     bool have_sidecar_pump_paced_loop_seconds = false;
     double sidecar_pump_paced_loop_seconds = 0.0;
 

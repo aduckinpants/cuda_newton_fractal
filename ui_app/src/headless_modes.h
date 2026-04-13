@@ -55,10 +55,19 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
 
 struct SidecarHeadlessProofConfig {
     int apply_armed_step_count = 0;
+    int replay_mutation_history_count = 0;
     double pump_paced_loop_seconds = 0.0;
 };
 
 bool HasSidecarHeadlessProofActions(const SidecarHeadlessProofConfig& config);
+
+bool ReplayLoadedSidecarMutationHistory(
+    int replayMutationHistoryCount,
+    ViewState& view,
+    KernelParams& params,
+    BindingContext& bind,
+    const SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    std::string* outError);
 
 bool ApplyHeadlessSidecarProofActions(
     const SidecarHeadlessProofConfig& config,

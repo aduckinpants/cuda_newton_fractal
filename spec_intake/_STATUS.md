@@ -38,7 +38,7 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
-| ExplainoSidecarMutationReplay | Phase 1 mutation-history persistence/load contract is landed; replay phases remain active in [docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md](docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md) | Builds on ExplainoAll_Reflexive; next work is headless then live replay proof |
+| ExplainoSidecarMutationReplay | Phase 1 persistence is landed, and Phase 2A now proves ordered headless parameter replay from loaded `sidecar_mutation_history`; Phase 2B frame-delta proof and live replay remain active in [docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md](docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md) | Builds on ExplainoAll_Reflexive; next work is headless frame-delta proof, then live replay proof |
 | CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-F/V2-G DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming for single/session requests, describe-functions sensitivity metadata, and a Windows named-pipe alternate transport. Broader multi-client/socket transport remains deferred. | No remaining active phases in this repo; broader multi-client/socket transport stays deferred |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)

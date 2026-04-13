@@ -63,6 +63,17 @@ def _configure_sidecar_policy(state: dict[str, object], **updates: object) -> di
     return configured_state
 
 
+def _with_sidecar_mutation_history(
+    state: dict[str, object], history: list[dict[str, object]], **param_updates: object
+) -> dict[str, object]:
+    configured_state = json.loads(json.dumps(state))
+    configured_state["sidecar_mutation_history"] = history
+    params = configured_state["params"]
+    assert isinstance(params, dict)
+    params.update(param_updates)
+    return configured_state
+
+
 def _numeric_state_deltas(before: dict[str, object], after: dict[str, object], *, abs_tol: float = 1.0e-7) -> list[str]:
     changed: list[str] = []
     for section_name in ("view", "params"):
@@ -346,6 +357,70 @@ def test_explaino_sidecar_headless_apply_step_persists_mutation_history(tmp_path
 
     assert reloaded_capture["state"].get("sidecar_mutation_history") == mutation_history
     assert reloaded_capture["frame_hash"] == applied_capture["frame_hash"]
+
+
+def test_explaino_sidecar_headless_replay_mutation_history_count_replays_ordered_targets(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino sidecar runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    mutation_history = [
+        {
+            "label": "replay-step-1",
+            "path": "fractal.params.ripple_amplitude",
+            "type": "float",
+            "target_value": 0.12,
+            "utility": 1.0,
+        },
+        {
+            "label": "replay-step-2",
+            "path": "fractal.params.ripple_amplitude",
+            "type": "float",
+            "target_value": 0.24,
+            "utility": 1.0,
+        },
+    ]
+    replay_state_path = _write_state_bundle(
+        tmp_path / "replay",
+        _with_sidecar_mutation_history(
+            baseline_capture["state"],
+            mutation_history,
+            ripple_amplitude=0.5,
+        ),
+    )
+
+    replay_one_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(replay_state_path),
+        "--sidecar-replay-mutation-history-count",
+        "1",
+        "--capture-diagnostic",
+    )
+    assert replay_one_capture["state"]["params"]["ripple_amplitude"] == pytest.approx(0.12, abs=1e-6)
+    assert replay_one_capture["state"].get("sidecar_mutation_history") == mutation_history
+
+    replay_two_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(replay_state_path),
+        "--sidecar-replay-mutation-history-count",
+        "2",
+        "--capture-diagnostic",
+    )
+    assert replay_two_capture["state"]["params"]["ripple_amplitude"] == pytest.approx(0.24, abs=1e-6)
+    assert replay_two_capture["state"].get("sidecar_mutation_history") == mutation_history
 
 
 def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path) -> None:

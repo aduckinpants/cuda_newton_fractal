@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -7,6 +8,7 @@
 #include <Windows.h>
 #include "../src/headless_modes.h"
 #include "../src/json_min.h"
+#include "../src/schema_binding.h"
 
 static int g_passed = 0;
 static int g_failed = 0;
@@ -25,6 +27,23 @@ static std::vector<std::string> SplitLines(const std::string& text);
     } while (0)
 
 static const char* kExePath = "D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe";
+
+static bool NearlyEqual(double lhs, double rhs, double eps = 1.0e-6) {
+    return std::fabs(lhs - rhs) <= eps;
+}
+
+static BindingContext BuildTestBindingContext(
+    ViewState* view,
+    KernelParams* params,
+    RenderSettings* render,
+    LensSettings* lens) {
+    BindingContext bind;
+    bind.view = view;
+    bind.params = params;
+    bind.render = render;
+    bind.lens = lens;
+    return bind;
+}
 
 static std::string TempPath(const char* name) {
     const char* tmp = std::getenv("TEMP");
@@ -124,6 +143,59 @@ bool TestEmitProbeResponseToFile() {
 bool TestEmitProbeResponseEmptyPath() {
     std::string err;
     ASSERT(EmitProbeResponse("{}", false, "", &err), "empty path + no stdout should succeed (no-op)");
+    return true;
+}
+
+bool TestReplayLoadedSidecarMutationHistoryAppliesOrderedTargets() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    view.fractal_type = FractalType::explaino;
+    params.ripple_amplitude = 0.5f;
+    BindingContext bind = BuildTestBindingContext(&view, &params, &render, &lens);
+
+    const SidecarAutoDemoMutationHistory history = {
+        {"replay-step-1", "fractal.params.ripple_amplitude", "float", 0.12, 1.0},
+        {"replay-step-2", "fractal.params.ripple_amplitude", "float", 0.24, 1.0},
+    };
+
+    std::string error;
+    ASSERT(ReplayLoadedSidecarMutationHistory(1, view, params, bind, history, &error),
+        "replaying the first persisted mutation should succeed");
+    ASSERT(error.empty(), "successful replay should not emit an error");
+    ASSERT(NearlyEqual(params.ripple_amplitude, 0.12),
+        "replay count 1 should leave the bound parameter at the first target value");
+
+    params.ripple_amplitude = 0.5f;
+    ASSERT(ReplayLoadedSidecarMutationHistory(2, view, params, bind, history, &error),
+        "replaying the full persisted mutation history should succeed");
+    ASSERT(NearlyEqual(params.ripple_amplitude, 0.24),
+        "replay count 2 should leave the bound parameter at the second target value");
+    ASSERT(history.size() == 2,
+        "replay should treat the persisted mutation history as read-only input");
+    return true;
+}
+
+bool TestReplayLoadedSidecarMutationHistoryRejectsOutOfRangeCount() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    view.fractal_type = FractalType::explaino;
+    params.ripple_amplitude = 0.5f;
+    BindingContext bind = BuildTestBindingContext(&view, &params, &render, &lens);
+
+    const SidecarAutoDemoMutationHistory history = {
+        {"replay-step-1", "fractal.params.ripple_amplitude", "float", 0.12, 1.0},
+    };
+
+    std::string error;
+    ASSERT(!ReplayLoadedSidecarMutationHistory(2, view, params, bind, history, &error),
+        "replay count beyond the available persisted history should fail");
+    ASSERT(!error.empty(), "out-of-range replay failure should explain the problem");
+    ASSERT(NearlyEqual(params.ripple_amplitude, 0.5),
+        "out-of-range replay should leave the bound parameter unchanged");
     return true;
 }
 
@@ -1907,6 +1979,8 @@ int main() {
     RUN(TestBuildProbeErrorResponseFields);
     RUN(TestEmitProbeResponseToFile);
     RUN(TestEmitProbeResponseEmptyPath);
+    RUN(TestReplayLoadedSidecarMutationHistoryAppliesOrderedTargets);
+    RUN(TestReplayLoadedSidecarMutationHistoryRejectsOutOfRangeCount);
     RUN(TestSampleModeNoSource);
     RUN(TestSampleModeNoSink);
     RUN(TestSampleModeDualSource);

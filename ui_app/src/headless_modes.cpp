@@ -34,6 +34,20 @@ void PrepareHeadlessSidecarState(ViewState& view, KernelParams& params) {
     }
 }
 
+SidecarAutoDemoControllerDecision BuildReplayDecision(
+    const SidecarAutoDemoMutationRecord& record) {
+    SidecarAutoDemoControllerDecision decision;
+    decision.status = SidecarAutoDemoControllerStatus::apply_ready;
+    decision.label = record.label;
+    decision.path = record.path;
+    decision.type = record.type;
+    decision.utility = record.utility;
+    decision.target_value = record.target_value;
+    decision.has_target_value = true;
+    decision.should_mutate = true;
+    return decision;
+}
+
 bool RebuildHeadlessSidecarState(
     ViewState& view,
     KernelParams& params,
@@ -269,6 +283,47 @@ bool PumpHeadlessPacedLoop(
 }
 
 } // namespace
+
+bool ReplayLoadedSidecarMutationHistory(
+    int replayMutationHistoryCount,
+    ViewState& view,
+    KernelParams& params,
+    BindingContext& bind,
+    const SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    std::string* outError) {
+    if (outError) outError->clear();
+
+    if (replayMutationHistoryCount < 0) {
+        if (outError) *outError = "sidecar headless proof replay_mutation_history_count must be >= 0";
+        return false;
+    }
+    if (replayMutationHistoryCount == 0) {
+        return true;
+    }
+    if (sidecarMutationHistory.empty()) {
+        if (outError) *outError = "sidecar headless proof replay_mutation_history_count requires persisted sidecar mutation history";
+        return false;
+    }
+
+    const size_t replayCount = static_cast<size_t>(replayMutationHistoryCount);
+    if (replayCount > sidecarMutationHistory.size()) {
+        if (outError) {
+            *outError = "sidecar headless proof replay_mutation_history_count exceeds persisted sidecar mutation history length";
+        }
+        return false;
+    }
+
+    for (size_t index = 0; index < replayCount; ++index) {
+        bool changed = false;
+        const SidecarAutoDemoControllerDecision decision = BuildReplayDecision(sidecarMutationHistory[index]);
+        if (!ApplySidecarAutoDemoControllerDecision(decision, bind, &changed, outError)) {
+            return false;
+        }
+        PrepareHeadlessSidecarState(view, params);
+    }
+
+    return true;
+}
 
 // --- File I/O utilities ---
 
@@ -570,7 +625,9 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
 }
 
 bool HasSidecarHeadlessProofActions(const SidecarHeadlessProofConfig& config) {
-    return config.apply_armed_step_count > 0 || config.pump_paced_loop_seconds > 0.0;
+    return config.apply_armed_step_count > 0 ||
+        config.replay_mutation_history_count > 0 ||
+        config.pump_paced_loop_seconds > 0.0;
 }
 
 bool ApplyHeadlessSidecarProofActions(
@@ -596,9 +653,53 @@ bool ApplyHeadlessSidecarProofActions(
         if (outError) *outError = "sidecar headless proof apply_armed_step_count must be >= 0";
         return false;
     }
+    if (config.replay_mutation_history_count < 0) {
+        if (outError) *outError = "sidecar headless proof replay_mutation_history_count must be >= 0";
+        return false;
+    }
     if (!std::isfinite(config.pump_paced_loop_seconds) || config.pump_paced_loop_seconds < 0.0) {
         if (outError) *outError = "sidecar headless proof pump_paced_loop_seconds must be finite and >= 0";
         return false;
+    }
+
+    if (config.replay_mutation_history_count > 0) {
+        if (!sidecarMutationHistoryValid) {
+            if (outError) *outError = "sidecar headless proof replay_mutation_history_count requires loaded sidecar mutation history";
+            return false;
+        }
+        if (!ReplayLoadedSidecarMutationHistory(
+                config.replay_mutation_history_count,
+                view,
+                params,
+                bind,
+                sidecarMutationHistory,
+                outError)) {
+            return false;
+        }
+
+        sidecarState = {};
+        sidecarStateValid = false;
+        sidecarBudgetState = {};
+        sidecarBudgetStateValid = false;
+
+        if (config.apply_armed_step_count == 0 && config.pump_paced_loop_seconds == 0.0) {
+            if (!RebuildHeadlessSidecarState(
+                    view,
+                    params,
+                    engineCatalog,
+                    bind,
+                    measurementHost,
+                    sidecarControllerPolicy,
+                    loadedOrientationBaseline,
+                    loadedOrientationBaselineValid,
+                    sidecarState,
+                    sidecarStateValid,
+                    sidecarBudgetState,
+                    sidecarBudgetStateValid,
+                    outError)) {
+                return false;
+            }
+        }
     }
 
     if (config.apply_armed_step_count > 0) {

@@ -1035,10 +1035,15 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
         if (cli.have_sidecar_apply_armed_step_count) {
             sidecarHeadlessProofConfig.apply_armed_step_count = cli.sidecar_apply_armed_step_count;
         }
+        if (cli.have_sidecar_replay_mutation_history_count) {
+            sidecarHeadlessProofConfig.replay_mutation_history_count = cli.sidecar_replay_mutation_history_count;
+        }
         if (cli.have_sidecar_pump_paced_loop_seconds) {
             sidecarHeadlessProofConfig.pump_paced_loop_seconds = cli.sidecar_pump_paced_loop_seconds;
         }
-        if (cli.have_sidecar_apply_armed_step_count || cli.have_sidecar_pump_paced_loop_seconds) {
+        if (cli.have_sidecar_apply_armed_step_count ||
+                cli.have_sidecar_replay_mutation_history_count ||
+                cli.have_sidecar_pump_paced_loop_seconds) {
             std::string sidecarProofError;
             if (!ApplyHeadlessSidecarProofActions(
                     sidecarHeadlessProofConfig,
