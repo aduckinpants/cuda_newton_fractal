@@ -19,6 +19,26 @@ static bool ControllerPoliciesMatch(const SidecarAutoDemoControllerPolicy& lhs,
        lhs.stop_uncertain_count == rhs.stop_uncertain_count;
 }
 
+static bool MutationRecordsMatch(const SidecarAutoDemoMutationRecord& lhs,
+  const SidecarAutoDemoMutationRecord& rhs,
+  double eps = 1.0e-9) {
+  return lhs.label == rhs.label &&
+       lhs.path == rhs.path &&
+       lhs.type == rhs.type &&
+       NearlyEqual(lhs.target_value, rhs.target_value, eps) &&
+       NearlyEqual(lhs.utility, rhs.utility, eps);
+}
+
+static bool MutationHistoriesMatch(const SidecarAutoDemoMutationHistory& lhs,
+  const SidecarAutoDemoMutationHistory& rhs,
+  double eps = 1.0e-9) {
+  if (lhs.size() != rhs.size()) return false;
+  for (size_t index = 0; index < lhs.size(); ++index) {
+    if (!MutationRecordsMatch(lhs[index], rhs[index], eps)) return false;
+  }
+  return true;
+}
+
 static void WriteMinimalStateWithExtraParams(const std::filesystem::path& statePath, const std::string& extraParamsJson) {
   std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
   file << "{\n"
@@ -496,6 +516,186 @@ int main() {
         expectedPolicy.stop_uncertain_count = 3;
         if (!ControllerPoliciesMatch(controllerPolicy, expectedPolicy)) {
             std::cerr << "Expected persisted sidecar controller policy values to round-trip through diagnostics state loading\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "sidecar_mutation_history_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 7.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_mutation_history": [
+    {
+      "label": "Ripple amplitude",
+      "path": "fractal.params.ripple_amplitude",
+      "type": "float",
+      "target_value": 0.15,
+      "utility": 1.25
+    },
+    {
+      "label": "Seed",
+      "path": "fractal.params.explaino_seed",
+      "type": "double",
+      "target_value": 3.5,
+      "utility": 0.75
+    },
+    {
+      "label": "Max Iter",
+      "path": "fractal.params.max_iter",
+      "type": "int",
+      "target_value": 650,
+      "utility": 0.25
+    }
+  ]
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = false;
+        SidecarAutoDemoControllerPolicy controllerPolicy{};
+        bool hasControllerPolicy = false;
+        SidecarAutoDemoMutationHistory mutationHistory;
+        bool hasMutationHistory = false;
+        std::string error;
+        if (!LoadDiagnosticsStateFile(
+                statePath.string(),
+                &view,
+                &params,
+                &render,
+                &orientation,
+                &hasOrientation,
+                &controllerPolicy,
+                &hasControllerPolicy,
+                &mutationHistory,
+                &hasMutationHistory,
+                &error)) {
+            std::cerr << "Expected sidecar mutation history state to load: " << error << "\n";
+            return 1;
+        }
+        if (hasOrientation) {
+            std::cerr << "Expected mutation-history state without sidecar_orientation to report no persisted orientation\n";
+            return 1;
+        }
+        if (hasControllerPolicy) {
+            std::cerr << "Expected mutation-history state without sidecar_auto_demo_policy to report no persisted controller policy\n";
+            return 1;
+        }
+        if (!hasMutationHistory) {
+            std::cerr << "Expected diagnostics state load to report persisted sidecar mutation history when present\n";
+            return 1;
+        }
+
+        SidecarAutoDemoMutationHistory expectedHistory;
+        expectedHistory.push_back({"Ripple amplitude", "fractal.params.ripple_amplitude", "float", 0.15, 1.25});
+        expectedHistory.push_back({"Seed", "fractal.params.explaino_seed", "double", 3.5, 0.75});
+        expectedHistory.push_back({"Max Iter", "fractal.params.max_iter", "int", 650.0, 0.25});
+        if (!MutationHistoriesMatch(mutationHistory, expectedHistory)) {
+            std::cerr << "Expected persisted sidecar mutation history values to round-trip through diagnostics state loading\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "invalid_sidecar_mutation_history_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 7.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 800,
+    "height": 600,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "sidecar_mutation_history": [
+    {
+      "label": "Ripple amplitude",
+      "path": "fractal.params.ripple_amplitude",
+      "type": "float",
+      "target_value": "oops",
+      "utility": 1.25
+    }
+  ]
+})";
+        file.close();
+
+        std::string observedError;
+        if (!ExpectLoadDiagnosticsStateFailure(
+                statePath,
+                "Invalid sidecar_mutation_history[0].target_value",
+                &observedError)) {
+            std::cerr << "Unexpected invalid mutation-history error text: " << observedError << "\n";
             return 1;
         }
     }

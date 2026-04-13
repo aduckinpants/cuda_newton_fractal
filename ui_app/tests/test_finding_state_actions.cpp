@@ -27,6 +27,26 @@ bool ControllerPoliciesMatch(const SidecarAutoDemoControllerPolicy& lhs,
         lhs.stop_uncertain_count == rhs.stop_uncertain_count;
 }
 
+bool MutationRecordsMatch(const SidecarAutoDemoMutationRecord& lhs,
+    const SidecarAutoDemoMutationRecord& rhs,
+    double eps = 1.0e-9) {
+    return lhs.label == rhs.label &&
+        lhs.path == rhs.path &&
+        lhs.type == rhs.type &&
+        NearlyEqual(lhs.target_value, rhs.target_value, eps) &&
+        NearlyEqual(lhs.utility, rhs.utility, eps);
+}
+
+bool MutationHistoriesMatch(const SidecarAutoDemoMutationHistory& lhs,
+    const SidecarAutoDemoMutationHistory& rhs,
+    double eps = 1.0e-9) {
+    if (lhs.size() != rhs.size()) return false;
+    for (size_t index = 0; index < lhs.size(); ++index) {
+        if (!MutationRecordsMatch(lhs[index], rhs[index], eps)) return false;
+    }
+    return true;
+}
+
 void WriteTextFile(const std::filesystem::path& path, const char* text) {
     std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     file << text;
@@ -231,7 +251,23 @@ int main() {
         "paced_loop_interval_seconds": 2.5,
         "stop_demonstrated_fraction": 0.75,
         "stop_uncertain_count": 3
-    }
+    },
+    "sidecar_mutation_history": [
+        {
+            "label": "Ripple amplitude",
+            "path": "fractal.params.ripple_amplitude",
+            "type": "float",
+            "target_value": 0.15,
+            "utility": 1.25
+        },
+        {
+            "label": "Seed",
+            "path": "fractal.params.explaino_seed",
+            "type": "double",
+            "target_value": 3.5,
+            "utility": 0.75
+        }
+    ]
 })");
 
         ViewState view{};
@@ -241,6 +277,8 @@ int main() {
         bool hasOrientation = false;
         SidecarAutoDemoControllerPolicy controllerPolicy{};
         bool hasControllerPolicy = false;
+        SidecarAutoDemoMutationHistory mutationHistory;
+        bool hasMutationHistory = false;
         std::string resolvedStatePath;
         std::string error;
         if (!LoadFindingSelectionIntoRuntime(
@@ -252,6 +290,8 @@ int main() {
             &hasOrientation,
             &controllerPolicy,
             &hasControllerPolicy,
+            &mutationHistory,
+            &hasMutationHistory,
             &resolvedStatePath,
             &error)) {
             std::cerr << "Expected state load with persisted sidecar orientation to succeed: " << error << "\n";
@@ -288,6 +328,17 @@ int main() {
         expectedPolicy.stop_uncertain_count = 3;
         if (!ControllerPoliciesMatch(controllerPolicy, expectedPolicy)) {
             std::cerr << "Expected persisted sidecar controller policy to round-trip through finding-state load\n";
+            return 1;
+        }
+        if (!hasMutationHistory) {
+            std::cerr << "Expected state load to report persisted sidecar mutation history when present\n";
+            return 1;
+        }
+        SidecarAutoDemoMutationHistory expectedHistory;
+        expectedHistory.push_back({"Ripple amplitude", "fractal.params.ripple_amplitude", "float", 0.15, 1.25});
+        expectedHistory.push_back({"Seed", "fractal.params.explaino_seed", "double", 3.5, 0.75});
+        if (!MutationHistoriesMatch(mutationHistory, expectedHistory)) {
+            std::cerr << "Expected persisted sidecar mutation history to round-trip through finding-state load\n";
             return 1;
         }
         }
@@ -608,6 +659,88 @@ int main() {
         }
         if (params.max_iter != 333 || render.resolution.x != 901 || render.resolution.y != 701) {
             std::cerr << "Runtime state mutated on invalid persisted sidecar orientation payload\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path findingDir = tempRoot / "invalid_sidecar_mutation_history_state";
+        fs::create_directories(findingDir);
+        const fs::path statePath = findingDir / "state.json";
+        WriteTextFile(statePath, R"({
+    "state_version": 3,
+    "fractal_type": "explaino_dual",
+    "view": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "zoom": 1.0,
+        "rotation_degrees": 0.0,
+        "center_hp_x": 0.0,
+        "center_hp_y": 0.0,
+        "log2_zoom": 0.0,
+        "explaino_phase": 0.0,
+        "explaino_seed_drift": 0.0,
+        "explaino_seed_tween": true
+    },
+    "params": {
+        "max_iter": 500,
+        "epsilon": 0.000001,
+        "exposure": 1.0,
+        "poly_kind": 2,
+        "coloring_mode": "joy_basins",
+        "nova_alpha": 0.5,
+        "phoenix_p_real": 0.0,
+        "phoenix_p_imag": 0.0,
+        "multibrot_power": 3,
+        "multibrot_power_float": 3.0,
+        "lambda_real": 0.0,
+        "lambda_imag": 0.0,
+        "explaino_seed": 6.0,
+        "explaino_warp_strength": 0.0,
+        "explaino_root_count": 4,
+        "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+    },
+    "render": {
+        "width": 1024,
+        "height": 768,
+        "block_size": 256,
+        "device_id": 0
+    },
+    "sidecar_mutation_history": [
+        {
+            "label": "Ripple amplitude",
+            "path": "fractal.params.ripple_amplitude",
+            "type": "float",
+            "target_value": 0.15,
+            "utility": "oops"
+        }
+    ]
+})");
+
+        ViewState view{};
+        view.center = {41.0f, -42.0f};
+        view.zoom = 43.0f;
+        KernelParams params{};
+        params.max_iter = 555;
+        RenderSettings render{};
+        render.resolution = {903, 703};
+
+        std::string resolvedStatePath = "sentinel";
+        std::string error;
+        if (LoadFindingSelectionIntoRuntime(statePath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+            std::cerr << "Expected invalid persisted sidecar mutation history payload to fail atomically\n";
+            return 1;
+        }
+        if (error.find("Invalid sidecar_mutation_history[0].utility") == std::string::npos) {
+            std::cerr << "Unexpected invalid-mutation-history error text: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.center.x, 41.0f, 1.0e-6) || !NearlyEqual(view.center.y, -42.0f, 1.0e-6) || !NearlyEqual(view.zoom, 43.0f, 1.0e-6)) {
+            std::cerr << "View state mutated on invalid persisted sidecar mutation history payload\n";
+            return 1;
+        }
+        if (params.max_iter != 555 || render.resolution.x != 903 || render.resolution.y != 703) {
+            std::cerr << "Runtime state mutated on invalid persisted sidecar mutation history payload\n";
             return 1;
         }
     }

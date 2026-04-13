@@ -1,6 +1,6 @@
 # Spec Intake — Status Index
 
-Last updated: 2026-04-10
+Last updated: 2026-04-13
 
 ## Implemented
 
@@ -17,6 +17,8 @@ These specs are fully landed on the branch with tests, schema bindings, and prob
 | FractalTypeDropdown_and_MultiFractalKernel | Multi-fractal kernel routing + grouped selector | schema extraction |
 | GenericCudaSamplerBridge | Probe sampling API for all 27 types | probe/pipeline commits |
 | RealtimeCliSampling_OperatorCallIn | Headless --sample-request-stdin/stdout contract | headless mode extraction |
+| OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, benchmark/sensitivity exposure, variant crossfade, and internal composed Explaino routing | multiple |
+| ExplainoAll_Reflexive | Reflexive sidecar, direct mutation, runtime proof closure, and continuity audit | multiple |
 | LambdaQuadraticConjugacy_DesignNote | Lambda kept as FractalType::lambda_map (reserved word) | Lambda commits |
 | CommonFractalCatalog_Deferred_2026-04-06 | Wave 1: Spider, Celtic MB, Perpendicular BS | common-fractal wave |
 | No_Implicit_Fallback_General_Directive | Fail-fast for unknown bindings/enums/params | adopted throughout |
@@ -36,9 +38,8 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
-| OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, cost/sensitivity tables, variant crossfade; Phase 1 feeds kernel extraction validation | No external deps (Phase 1); CUDA sample_fn K1-K3 (Phase 2) |
+| ExplainoSidecarMutationReplay | Phase 1 mutation-history persistence/load contract is landed; replay phases remain active in [docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md](docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md) | Builds on ExplainoAll_Reflexive; next work is headless then live replay proof |
 | CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-F/V2-G DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming for single/session requests, describe-functions sensitivity metadata, and a Windows named-pipe alternate transport. Broader multi-client/socket transport remains deferred. | No remaining active phases in this repo; broader multi-client/socket transport stays deferred |
-| ExplainoAll_Reflexive | Engine explaining itself: CarlBrain single-tick instance over param manifold; in-process CUDA sample calls | CUDA sample_fn K1-K3 (done) + Optimization Staging Phase 2 |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)
 

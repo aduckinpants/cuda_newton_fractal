@@ -191,13 +191,33 @@ void WriteSidecarAutoDemoPolicyJson(std::ostringstream& js, const SidecarAutoDem
     js << "  }";
 }
 
+void WriteSidecarMutationHistoryJson(std::ostringstream& js, const SidecarAutoDemoMutationHistory& history) {
+    js << "  \"sidecar_mutation_history\": [\n";
+    for (size_t index = 0; index < history.size(); ++index) {
+        const SidecarAutoDemoMutationRecord& record = history[index];
+        js << "    {\n";
+        js << "      \"label\": \"" << record.label << "\",\n";
+        js << "      \"path\": \"" << record.path << "\",\n";
+        js << "      \"type\": \"" << record.type << "\",\n";
+        js << "      \"target_value\": " << record.target_value << ",\n";
+        js << "      \"utility\": " << record.utility << "\n";
+        js << "    }";
+        if (index + 1 < history.size()) {
+            js << ",";
+        }
+        js << "\n";
+    }
+    js << "  ]";
+}
+
 std::string BuildStateJson(
     const ViewState& view,
     const KernelParams& params,
     const RenderSettings& render,
     const RenderStats& stats,
     const SidecarOrientationVector* sidecarOrientation,
-    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy) {
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory) {
     std::ostringstream js;
     js << "{\n";
     js << "  \"state_version\": 3,\n";
@@ -272,6 +292,10 @@ std::string BuildStateJson(
         js << ",\n";
         WriteSidecarAutoDemoPolicyJson(js, *sidecarControllerPolicy);
     }
+    if (sidecarMutationHistory) {
+        js << ",\n";
+        WriteSidecarMutationHistoryJson(js, *sidecarMutationHistory);
+    }
     js << "}\n";
     return js.str();
 }
@@ -336,6 +360,33 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
     if (outError) outError->clear();
     if (!HasExactRenderPixelCount(render, rgbaPixelCount, outError)) {
         return false;
@@ -358,7 +409,7 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
         return false;
     }
 
-    std::string stateJson = BuildStateJson(view, params, render, stats, sidecarOrientation, sidecarControllerPolicy);
+    std::string stateJson = BuildStateJson(view, params, render, stats, sidecarOrientation, sidecarControllerPolicy, sidecarMutationHistory);
     if (!WriteTextFile(statePath, stateJson, outError)) {
         return false;
     }

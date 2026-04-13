@@ -291,6 +291,63 @@ def test_explaino_sidecar_headless_apply_step_changes_state_and_frame(tmp_path: 
     )
 
 
+def test_explaino_sidecar_headless_apply_step_persists_mutation_history(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino sidecar runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    configured_state = _configure_sidecar_policy(
+        baseline_capture["state"],
+        enabled=True,
+        allow_runtime_mutation=True,
+        run_paced_loop=False,
+        paced_loop_interval_seconds=0.1,
+        stop_demonstrated_fraction=1.0,
+        stop_uncertain_count=0,
+    )
+    state_path = _write_state_bundle(tmp_path / "apply", configured_state)
+
+    applied_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--sidecar-apply-armed-step-count",
+        "1",
+        "--capture-diagnostic",
+    )
+
+    mutation_history = applied_capture["state"].get("sidecar_mutation_history")
+    assert isinstance(mutation_history, list) and mutation_history, (
+        "expected headless armed-step proof to persist at least one sidecar mutation-history record"
+    )
+    first_record = mutation_history[0]
+    assert first_record["path"], "expected persisted mutation-history record to include a bound path"
+    assert first_record["type"], "expected persisted mutation-history record to include a bound type"
+    assert isinstance(first_record["target_value"], (int, float))
+
+    reloaded_state_path = _write_state_bundle(tmp_path / "reload", applied_capture["state"])
+    reloaded_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(reloaded_state_path),
+        "--capture-diagnostic",
+    )
+
+    assert reloaded_capture["state"].get("sidecar_mutation_history") == mutation_history
+    assert reloaded_capture["frame_hash"] == applied_capture["frame_hash"]
+
+
 def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino sidecar runtime regression is Windows-only")

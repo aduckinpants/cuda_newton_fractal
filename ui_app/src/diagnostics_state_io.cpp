@@ -285,6 +285,77 @@ bool ParseOptionalSidecarAutoDemoPolicy(const json_min::Value& root,
     return true;
 }
 
+bool ParseSidecarMutationStringField(const json_min::Value& object,
+    size_t index,
+    const char* key,
+    std::string* outValue,
+    std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_string()) {
+        if (outError) {
+            *outError = "Invalid sidecar_mutation_history[" + std::to_string(index) + "]." + key;
+        }
+        return false;
+    }
+    if (outValue) *outValue = value->as_string();
+    return true;
+}
+
+bool ParseSidecarMutationNumberField(const json_min::Value& object,
+    size_t index,
+    const char* key,
+    double* outValue,
+    std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_number() || !std::isfinite(value->as_number())) {
+        if (outError) {
+            *outError = "Invalid sidecar_mutation_history[" + std::to_string(index) + "]." + key;
+        }
+        return false;
+    }
+    if (outValue) *outValue = value->as_number();
+    return true;
+}
+
+bool ParseOptionalSidecarMutationHistory(const json_min::Value& root,
+    SidecarAutoDemoMutationHistory* outHistory,
+    bool* outHasHistory,
+    std::string* outError) {
+    if (outHistory) outHistory->clear();
+    if (outHasHistory) *outHasHistory = false;
+
+    const json_min::Value* historyArray = root.get("sidecar_mutation_history");
+    if (!historyArray) return true;
+    if (!historyArray->is_array()) {
+        if (outError) *outError = "Missing or invalid array field: sidecar_mutation_history";
+        return false;
+    }
+
+    SidecarAutoDemoMutationHistory parsedHistory;
+    parsedHistory.reserve(historyArray->as_array().size());
+    for (size_t index = 0; index < historyArray->as_array().size(); ++index) {
+        const json_min::Value& entry = historyArray->as_array()[index];
+        if (!entry.is_object()) {
+            if (outError) {
+                *outError = "Invalid sidecar_mutation_history[" + std::to_string(index) + "]";
+            }
+            return false;
+        }
+
+        SidecarAutoDemoMutationRecord record;
+        if (!ParseSidecarMutationStringField(entry, index, "label", &record.label, outError)) return false;
+        if (!ParseSidecarMutationStringField(entry, index, "path", &record.path, outError)) return false;
+        if (!ParseSidecarMutationStringField(entry, index, "type", &record.type, outError)) return false;
+        if (!ParseSidecarMutationNumberField(entry, index, "target_value", &record.target_value, outError)) return false;
+        if (!ParseSidecarMutationNumberField(entry, index, "utility", &record.utility, outError)) return false;
+        parsedHistory.push_back(std::move(record));
+    }
+
+    if (outHistory) *outHistory = std::move(parsedHistory);
+    if (outHasHistory) *outHasHistory = true;
+    return true;
+}
+
 bool RequirePositiveIntField(int value, const char* key, std::string* outError) {
     if (value > 0) return true;
     if (outError) *outError = std::string(key) + " must be > 0";
@@ -311,7 +382,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
-    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, outError);
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outError);
 }
 
 bool LoadDiagnosticsStateJson(const std::string& text,
@@ -330,6 +401,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         outHasOrientation,
         nullptr,
         nullptr,
+        nullptr,
+        nullptr,
         outError);
 }
 
@@ -342,11 +415,38 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     SidecarAutoDemoControllerPolicy* outControllerPolicy,
     bool* outHasControllerPolicy,
     std::string* outError) {
+    return LoadDiagnosticsStateJson(
+        text,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        nullptr,
+        nullptr,
+        outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    std::string* outError) {
     if (outError) outError->clear();
     if (outOrientation) *outOrientation = {};
     if (outHasOrientation) *outHasOrientation = false;
     if (outControllerPolicy) *outControllerPolicy = {};
     if (outHasControllerPolicy) *outHasControllerPolicy = false;
+    if (outMutationHistory) outMutationHistory->clear();
+    if (outHasMutationHistory) *outHasMutationHistory = false;
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadDiagnosticsStateJson requires non-null output pointers";
         return false;
@@ -365,6 +465,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     const json_min::Value& root = parseResult.value;
     if (!ParseOptionalSidecarOrientation(root, outOrientation, outHasOrientation, outError)) return false;
     if (!ParseOptionalSidecarAutoDemoPolicy(root, outControllerPolicy, outHasControllerPolicy, outError)) return false;
+    if (!ParseOptionalSidecarMutationHistory(root, outMutationHistory, outHasMutationHistory, outError)) return false;
     int stateVersion = 0;
     if (!ParseIntField(root, "state_version", &stateVersion, outError)) return false;
     if (stateVersion != 1 && stateVersion != 2 && stateVersion != 3) {
@@ -671,7 +772,7 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
-    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, outError);
+    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outError);
 }
 
 bool LoadDiagnosticsStateFile(const std::string& path,
@@ -690,6 +791,8 @@ bool LoadDiagnosticsStateFile(const std::string& path,
         outHasOrientation,
         nullptr,
         nullptr,
+        nullptr,
+        nullptr,
         outError);
 }
 
@@ -701,6 +804,31 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy,
     bool* outHasControllerPolicy,
+    std::string* outError) {
+    return LoadDiagnosticsStateFile(
+        path,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        nullptr,
+        nullptr,
+        outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
     std::string* outError) {
     if (outError) outError->clear();
     std::string text;
@@ -714,6 +842,8 @@ bool LoadDiagnosticsStateFile(const std::string& path,
         outHasOrientation,
         outControllerPolicy,
         outHasControllerPolicy,
+        outMutationHistory,
+        outHasMutationHistory,
         outError);
 }
 

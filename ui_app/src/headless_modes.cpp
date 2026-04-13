@@ -89,6 +89,17 @@ bool RebuildHeadlessSidecarState(
     return true;
 }
 
+void RecordAppliedSidecarMutation(
+    const SidecarAutoDemoControllerDecision& decision,
+    SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    bool& sidecarMutationHistoryValid) {
+    if (!sidecarMutationHistoryValid) {
+        sidecarMutationHistory.clear();
+        sidecarMutationHistoryValid = true;
+    }
+    sidecarMutationHistory.push_back(BuildSidecarAutoDemoMutationRecord(decision));
+}
+
 bool ApplyHeadlessArmedSteps(
     int stepCount,
     ViewState& view,
@@ -99,6 +110,8 @@ bool ApplyHeadlessArmedSteps(
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
     SidecarOrientationVector& loadedOrientationBaseline,
     bool& loadedOrientationBaselineValid,
+    SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    bool& sidecarMutationHistoryValid,
     ExplainoSidecarWindowState& sidecarState,
     bool& sidecarStateValid,
     SidecarBudgetState& sidecarBudgetState,
@@ -134,6 +147,11 @@ bool ApplyHeadlessArmedSteps(
             return true;
         }
 
+        RecordAppliedSidecarMutation(
+            sidecarState.controller_decision,
+            sidecarMutationHistory,
+            sidecarMutationHistoryValid);
+
         if (!RebuildHeadlessSidecarState(
                 view,
                 params,
@@ -164,6 +182,8 @@ bool PumpHeadlessPacedLoop(
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
     SidecarOrientationVector& loadedOrientationBaseline,
     bool& loadedOrientationBaselineValid,
+    SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    bool& sidecarMutationHistoryValid,
     ExplainoSidecarWindowState& sidecarState,
     bool& sidecarStateValid,
     SidecarBudgetState& sidecarBudgetState,
@@ -221,6 +241,11 @@ bool PumpHeadlessPacedLoop(
         if (!changed) {
             continue;
         }
+
+        RecordAppliedSidecarMutation(
+            sidecarState.controller_decision,
+            sidecarMutationHistory,
+            sidecarMutationHistoryValid);
 
         if (!RebuildHeadlessSidecarState(
                 view,
@@ -558,6 +583,8 @@ bool ApplyHeadlessSidecarProofActions(
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
     SidecarOrientationVector& loadedOrientationBaseline,
     bool& loadedOrientationBaselineValid,
+    SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    bool& sidecarMutationHistoryValid,
     ExplainoSidecarWindowState& sidecarState,
     bool& sidecarStateValid,
     SidecarBudgetState& sidecarBudgetState,
@@ -585,6 +612,8 @@ bool ApplyHeadlessSidecarProofActions(
                 sidecarControllerPolicy,
                 loadedOrientationBaseline,
                 loadedOrientationBaselineValid,
+                sidecarMutationHistory,
+                sidecarMutationHistoryValid,
                 sidecarState,
                 sidecarStateValid,
                 sidecarBudgetState,
@@ -605,6 +634,8 @@ bool ApplyHeadlessSidecarProofActions(
                 sidecarControllerPolicy,
                 loadedOrientationBaseline,
                 loadedOrientationBaselineValid,
+                sidecarMutationHistory,
+                sidecarMutationHistoryValid,
                 sidecarState,
                 sidecarStateValid,
                 sidecarBudgetState,

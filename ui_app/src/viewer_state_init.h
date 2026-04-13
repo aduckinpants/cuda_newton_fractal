@@ -13,6 +13,8 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                       SidecarAutoDemoControllerPolicy* ioSidecarControllerPolicy,
                       SidecarOrientationVector* outLoadedOrientation,
                       bool* outHasLoadedOrientation,
+                      SidecarAutoDemoMutationHistory* outLoadedMutationHistory,
+                      bool* outHasLoadedMutationHistory,
                       bool* dirty);
 
 // Apply CLI overrides (fractal type, explaino params, resolution, sweep, etc.)

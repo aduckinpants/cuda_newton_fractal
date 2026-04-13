@@ -4,6 +4,7 @@
 #include "explaino_sidecar_completeness.h"
 
 #include <string>
+#include <vector>
 
 struct BindingContext;
 
@@ -31,6 +32,16 @@ struct SidecarAutoDemoLoopState {
     double armed_target_value{0.0};
     bool armed_has_target_value{false};
 };
+
+struct SidecarAutoDemoMutationRecord {
+    std::string label;
+    std::string path;
+    std::string type;
+    double target_value{0.0};
+    double utility{0.0};
+};
+
+using SidecarAutoDemoMutationHistory = std::vector<SidecarAutoDemoMutationRecord>;
 
 struct SidecarAutoDemoControllerDecision {
     SidecarAutoDemoControllerStatus status{SidecarAutoDemoControllerStatus::disabled};
@@ -66,6 +77,9 @@ bool ApplySidecarAutoDemoControllerDecision(
     const SidecarAutoDemoControllerDecision& decision,
     BindingContext& ctx,
     std::string* outError);
+
+SidecarAutoDemoMutationRecord BuildSidecarAutoDemoMutationRecord(
+    const SidecarAutoDemoControllerDecision& decision);
 
 void ResetSidecarAutoDemoLoopState(
     SidecarAutoDemoLoopState* ioState);

@@ -22,6 +22,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
         outHasOrientation,
         nullptr,
         nullptr,
+        nullptr,
+        nullptr,
         outResolvedStatePath,
         outError);
 }
@@ -34,6 +36,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy,
     bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
     std::string* outResolvedStatePath,
     std::string* outError) {
     if (outError) outError->clear();
@@ -41,6 +45,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     if (outHasOrientation) *outHasOrientation = false;
     if (outControllerPolicy) *outControllerPolicy = {};
     if (outHasControllerPolicy) *outHasControllerPolicy = false;
+    if (outMutationHistory) outMutationHistory->clear();
+    if (outHasMutationHistory) *outHasMutationHistory = false;
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadFindingSelectionIntoRuntime requires non-null output pointers";
         return false;
@@ -58,6 +64,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     bool nextHasOrientation = false;
     SidecarAutoDemoControllerPolicy nextControllerPolicy{};
     bool nextHasControllerPolicy = false;
+    SidecarAutoDemoMutationHistory nextMutationHistory;
+    bool nextHasMutationHistory = false;
     if (!LoadDiagnosticsStateFile(
             resolvedStatePath,
             &nextView,
@@ -67,6 +75,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
             &nextHasOrientation,
             &nextControllerPolicy,
             &nextHasControllerPolicy,
+            &nextMutationHistory,
+            &nextHasMutationHistory,
             outError)) {
         return false;
     }
@@ -83,6 +93,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     if (outHasOrientation) *outHasOrientation = nextHasOrientation;
     if (outControllerPolicy) *outControllerPolicy = nextControllerPolicy;
     if (outHasControllerPolicy) *outHasControllerPolicy = nextHasControllerPolicy;
+    if (outMutationHistory) *outMutationHistory = nextMutationHistory;
+    if (outHasMutationHistory) *outHasMutationHistory = nextHasMutationHistory;
     if (outResolvedStatePath) *outResolvedStatePath = resolvedStatePath;
     return true;
 }
@@ -98,6 +110,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
         ioView,
         ioParams,
         ioRender,
+        nullptr,
+        nullptr,
         nullptr,
         nullptr,
         nullptr,

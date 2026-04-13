@@ -23,6 +23,8 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy,
     bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
     std::string* outResolvedStatePath,
     std::string* outError);
 

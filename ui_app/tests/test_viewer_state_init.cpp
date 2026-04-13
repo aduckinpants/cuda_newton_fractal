@@ -13,16 +13,21 @@ static bool gLoadStateHasOrientation = false;
 static SidecarOrientationVector gLoadedOrientationStub{};
 static bool gLoadStateHasControllerPolicy = false;
 static SidecarAutoDemoControllerPolicy gLoadedControllerPolicyStub{};
+static bool gLoadStateHasMutationHistory = false;
+static SidecarAutoDemoMutationHistory gLoadedMutationHistoryStub{};
 
 bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParams*,
     RenderSettings*, SidecarOrientationVector* outOrientation, bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy, bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory, bool* outHasMutationHistory,
     std::string*, std::string*) {
     if (!gLoadStateShouldSucceed) return false;
     if (outOrientation) *outOrientation = gLoadedOrientationStub;
     if (outHasOrientation) *outHasOrientation = gLoadStateHasOrientation;
     if (outControllerPolicy) *outControllerPolicy = gLoadedControllerPolicyStub;
     if (outHasControllerPolicy) *outHasControllerPolicy = gLoadStateHasControllerPolicy;
+    if (outMutationHistory) *outMutationHistory = gLoadedMutationHistoryStub;
+    if (outHasMutationHistory) *outHasMutationHistory = gLoadStateHasMutationHistory;
     return true;
 }
 
@@ -50,6 +55,26 @@ static bool ControllerPoliciesMatch(const SidecarAutoDemoControllerPolicy& lhs,
         NearlyEqual(lhs.paced_loop_interval_seconds, rhs.paced_loop_interval_seconds, eps) &&
         NearlyEqual(lhs.stop_demonstrated_fraction, rhs.stop_demonstrated_fraction, eps) &&
         lhs.stop_uncertain_count == rhs.stop_uncertain_count;
+}
+
+static bool MutationRecordsMatch(const SidecarAutoDemoMutationRecord& lhs,
+    const SidecarAutoDemoMutationRecord& rhs,
+    double eps = 1.0e-9) {
+    return lhs.label == rhs.label &&
+        lhs.path == rhs.path &&
+        lhs.type == rhs.type &&
+        NearlyEqual(lhs.target_value, rhs.target_value, eps) &&
+        NearlyEqual(lhs.utility, rhs.utility, eps);
+}
+
+static bool MutationHistoriesMatch(const SidecarAutoDemoMutationHistory& lhs,
+    const SidecarAutoDemoMutationHistory& rhs,
+    double eps = 1.0e-9) {
+    if (lhs.size() != rhs.size()) return false;
+    for (size_t index = 0; index < lhs.size(); ++index) {
+        if (!MutationRecordsMatch(lhs[index], rhs[index], eps)) return false;
+    }
+    return true;
 }
 
 // --- Defaults (no CLI overrides) ---
@@ -310,6 +335,11 @@ static void TestLoadStateReturnsPersistedOrientationBaseline() {
     gLoadedControllerPolicyStub.paced_loop_interval_seconds = 2.5;
     gLoadedControllerPolicyStub.stop_demonstrated_fraction = 0.75;
     gLoadedControllerPolicyStub.stop_uncertain_count = 3;
+    gLoadStateHasMutationHistory = true;
+    gLoadedMutationHistoryStub = {
+        {"Ripple amplitude", "fractal.params.ripple_amplitude", "float", 0.15, 1.25},
+        {"Seed", "fractal.params.explaino_seed", "double", 3.5, 0.75},
+    };
 
     ViewState view{};
     KernelParams params{};
@@ -319,13 +349,27 @@ static void TestLoadStateReturnsPersistedOrientationBaseline() {
     bool dirty = false;
     SidecarOrientationVector loadedOrientation{};
     bool hasLoadedOrientation = false;
+    SidecarAutoDemoMutationHistory loadedMutationHistory;
+    bool hasLoadedMutationHistory = false;
 
-    int rc = ApplyCliOverrides(cli, view, params, render, &controllerPolicy, &loadedOrientation, &hasLoadedOrientation, &dirty);
+    int rc = ApplyCliOverrides(
+        cli,
+        view,
+        params,
+        render,
+        &controllerPolicy,
+        &loadedOrientation,
+        &hasLoadedOrientation,
+        &loadedMutationHistory,
+        &hasLoadedMutationHistory,
+        &dirty);
     CHECK("LoadStateBaseline_ReturnCode", rc == 0);
     CHECK("LoadStateBaseline_HasOrientation", hasLoadedOrientation == true);
     CHECK("LoadStateBaseline_ImportSignature", loadedOrientation.import_signature == 101u);
     CHECK("LoadStateBaseline_PackProjectionHash", loadedOrientation.pack_projection_hash == 202u);
     CHECK("LoadStateBaseline_ControllerPolicy", ControllerPoliciesMatch(controllerPolicy, gLoadedControllerPolicyStub));
+    CHECK("LoadStateBaseline_HasMutationHistory", hasLoadedMutationHistory == true);
+    CHECK("LoadStateBaseline_MutationHistory", MutationHistoriesMatch(loadedMutationHistory, gLoadedMutationHistoryStub));
     CHECK("LoadStateBaseline_Dirty", dirty == true);
 }
 
@@ -344,6 +388,10 @@ static void TestFractalOverrideClearsLoadedOrientationBaseline() {
     gLoadedControllerPolicyStub = {};
     gLoadedControllerPolicyStub.enabled = true;
     gLoadedControllerPolicyStub.stop_uncertain_count = 7;
+    gLoadStateHasMutationHistory = true;
+    gLoadedMutationHistoryStub = {
+        {"Ripple amplitude", "fractal.params.ripple_amplitude", "float", 0.15, 1.25},
+    };
 
     ViewState view{};
     KernelParams params{};
@@ -353,11 +401,24 @@ static void TestFractalOverrideClearsLoadedOrientationBaseline() {
     bool dirty = false;
     SidecarOrientationVector loadedOrientation{};
     bool hasLoadedOrientation = false;
+    SidecarAutoDemoMutationHistory loadedMutationHistory;
+    bool hasLoadedMutationHistory = false;
 
-    int rc = ApplyCliOverrides(cli, view, params, render, &controllerPolicy, &loadedOrientation, &hasLoadedOrientation, &dirty);
+    int rc = ApplyCliOverrides(
+        cli,
+        view,
+        params,
+        render,
+        &controllerPolicy,
+        &loadedOrientation,
+        &hasLoadedOrientation,
+        &loadedMutationHistory,
+        &hasLoadedMutationHistory,
+        &dirty);
     CHECK("LoadStateOverride_ReturnCode", rc == 0);
     CHECK("LoadStateOverride_Type", view.fractal_type == FractalType::mandelbrot);
     CHECK("LoadStateOverride_ClearsBaseline", hasLoadedOrientation == false);
+    CHECK("LoadStateOverride_ClearsMutationHistory", hasLoadedMutationHistory == false);
     CHECK("LoadStateOverride_PreservesControllerPolicy", ControllerPoliciesMatch(controllerPolicy, gLoadedControllerPolicyStub));
 }
 
@@ -371,6 +432,8 @@ static void TestLegacyLoadStateResetsControllerPolicy() {
     gLoadedOrientationStub = {};
     gLoadStateHasControllerPolicy = false;
     gLoadedControllerPolicyStub = {};
+    gLoadStateHasMutationHistory = false;
+    gLoadedMutationHistoryStub = {};
 
     ViewState view{};
     KernelParams params{};
@@ -386,10 +449,23 @@ static void TestLegacyLoadStateResetsControllerPolicy() {
     bool dirty = false;
     SidecarOrientationVector loadedOrientation{};
     bool hasLoadedOrientation = false;
+    SidecarAutoDemoMutationHistory loadedMutationHistory;
+    bool hasLoadedMutationHistory = false;
 
-    int rc = ApplyCliOverrides(cli, view, params, render, &controllerPolicy, &loadedOrientation, &hasLoadedOrientation, &dirty);
+    int rc = ApplyCliOverrides(
+        cli,
+        view,
+        params,
+        render,
+        &controllerPolicy,
+        &loadedOrientation,
+        &hasLoadedOrientation,
+        &loadedMutationHistory,
+        &hasLoadedMutationHistory,
+        &dirty);
     CHECK("LegacyLoadStatePolicy_ReturnCode", rc == 0);
     CHECK("LegacyLoadStatePolicy_ClearsOrientationBaseline", hasLoadedOrientation == false);
+    CHECK("LegacyLoadStatePolicy_ClearsMutationHistory", hasLoadedMutationHistory == false);
     CHECK("LegacyLoadStatePolicy_ResetsControllerPolicy", ControllerPoliciesMatch(controllerPolicy, SidecarAutoDemoControllerPolicy{}));
 }
 

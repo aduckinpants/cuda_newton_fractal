@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
+#include "explaino_sidecar_controller.h"
 #include "fractal_probe_contract.h"
 
 struct BindingContext;
 struct EngineFunctionCatalog;
 struct ExplainoSidecarWindowState;
 struct KernelParams;
-struct SidecarAutoDemoControllerPolicy;
 struct SidecarBudgetState;
 struct SidecarOrientationVector;
 struct ViewState;
@@ -70,6 +70,8 @@ bool ApplyHeadlessSidecarProofActions(
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
     SidecarOrientationVector& loadedOrientationBaseline,
     bool& loadedOrientationBaselineValid,
+    SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    bool& sidecarMutationHistoryValid,
     ExplainoSidecarWindowState& sidecarState,
     bool& sidecarStateValid,
     SidecarBudgetState& sidecarBudgetState,

@@ -30,6 +30,18 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     bool* outHasControllerPolicy,
     std::string* outError);
 
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    std::string* outError);
+
 bool LoadDiagnosticsStateFile(const std::string& path,
     ViewState* ioView,
     KernelParams* ioParams,
@@ -52,6 +64,18 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy,
     bool* outHasControllerPolicy,
+    std::string* outError);
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
     std::string* outError);
 
 bool ResolveFindingStateJsonPath(const std::string& selectedPath,

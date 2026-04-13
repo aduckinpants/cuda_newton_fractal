@@ -341,6 +341,17 @@ bool ApplySidecarAutoDemoControllerDecision(
     return ApplySidecarAutoDemoControllerDecision(decision, ctx, nullptr, outError);
 }
 
+SidecarAutoDemoMutationRecord BuildSidecarAutoDemoMutationRecord(
+    const SidecarAutoDemoControllerDecision& decision) {
+    SidecarAutoDemoMutationRecord record;
+    record.label = decision.label;
+    record.path = decision.path;
+    record.type = decision.type;
+    record.target_value = decision.target_value;
+    record.utility = decision.utility;
+    return record;
+}
+
 void ResetSidecarAutoDemoLoopState(
     SidecarAutoDemoLoopState* ioState) {
     ResetLoopState(ioState);

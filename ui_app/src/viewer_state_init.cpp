@@ -32,9 +32,13 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                       SidecarAutoDemoControllerPolicy* ioSidecarControllerPolicy,
                       SidecarOrientationVector* outLoadedOrientation,
                       bool* outHasLoadedOrientation,
+                      SidecarAutoDemoMutationHistory* outLoadedMutationHistory,
+                      bool* outHasLoadedMutationHistory,
                       bool* dirty) {
     if (outLoadedOrientation) *outLoadedOrientation = {};
     if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
+    if (outLoadedMutationHistory) outLoadedMutationHistory->clear();
+    if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = false;
 
     bool loadedState = false;
 
@@ -45,6 +49,8 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         bool hasLoadedOrientation = false;
         SidecarAutoDemoControllerPolicy loadedControllerPolicy{};
         bool hasLoadedControllerPolicy = false;
+        SidecarAutoDemoMutationHistory loadedMutationHistory;
+        bool hasLoadedMutationHistory = false;
         if (!LoadFindingSelectionIntoRuntime(
                 cli.load_state_json,
                 &view,
@@ -54,6 +60,8 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                 &hasLoadedOrientation,
                 &loadedControllerPolicy,
                 &hasLoadedControllerPolicy,
+            &loadedMutationHistory,
+            &hasLoadedMutationHistory,
                 &loadedStatePath,
                 &loadError)) {
             return 1;
@@ -64,6 +72,8 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         }
         if (outLoadedOrientation) *outLoadedOrientation = loadedOrientation;
         if (outHasLoadedOrientation) *outHasLoadedOrientation = hasLoadedOrientation;
+        if (outLoadedMutationHistory) *outLoadedMutationHistory = loadedMutationHistory;
+        if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = hasLoadedMutationHistory;
         if (dirty) *dirty = true;
     }
 
@@ -114,6 +124,8 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
     if (loadedState && CliOverridesLoadedStateSnapshot(cli)) {
         if (outLoadedOrientation) *outLoadedOrientation = {};
         if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
+        if (outLoadedMutationHistory) outLoadedMutationHistory->clear();
+        if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = false;
     }
 
     return 0;
@@ -122,5 +134,5 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render, bool* dirty) {
-    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, dirty);
+    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
 }
