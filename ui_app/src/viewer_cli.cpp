@@ -81,6 +81,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
 
     // Describe-functions JSON
     if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return 1;
+    if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return 1;
 
     // Fractal type
     out->have_fractal_type = TryParseFractalTypeArg(args, &out->fractal_type);

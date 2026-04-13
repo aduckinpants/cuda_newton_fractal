@@ -214,6 +214,22 @@ static void TestDescribeFunctionsJson() {
     Check(cli.describe_functions_json_path == "out.json", "TestDescribeFunctionsJson_Path");
 }
 
+static void TestExploreRecommendJson() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--explore-recommend-json", "advisor.json"
+    }), &cli);
+    Check(rc == 0, "TestExploreRecommendJson_ReturnCode");
+    Check(cli.have_explore_recommend_json, "TestExploreRecommendJson_Have");
+    Check(cli.explore_recommend_json_path == "advisor.json", "TestExploreRecommendJson_Path");
+}
+
+static void TestExploreRecommendJsonMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--explore-recommend-json"}), &cli);
+    Check(rc != 0, "TestExploreRecommendJsonMissingValue_Fails");
+}
+
 static void TestSampleSession() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({ "--sample-session" }), &cli);
@@ -432,6 +448,8 @@ int main() {
     TestSweepConfigDescendingBoundsFails();
     TestSampleModeStdio();
     TestSampleModeJsonPaths();
+    TestExploreRecommendJson();
+    TestExploreRecommendJsonMissingValue();
     TestSampleSession();
     TestSampleSessionPipe();
     TestSampleSessionPipeRequiresSession();

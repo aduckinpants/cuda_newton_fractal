@@ -17,6 +17,8 @@ struct SidecarOrientationVector;
 struct ViewState;
 class SidecarMeasurementHost;
 
+struct RenderSettings;
+
 // --- File I/O utilities ---
 std::string ReadTextFile(const char* path);
 bool TryReadTextFileExact(const std::string& path, std::string* outText, std::string* outError);
@@ -52,6 +54,16 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath);
 // Returns 0 on success, 1 on error.
 int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     const std::vector<std::string>& schemaCandidates);
+
+// Returns 0 on success, 1 on error.
+int RunExploreRecommendMode(
+    const std::string& jsonPath,
+    ViewState& view,
+    KernelParams& params,
+    RenderSettings& render,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost);
 
 struct SidecarHeadlessProofConfig {
     int apply_armed_step_count = 0;

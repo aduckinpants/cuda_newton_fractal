@@ -34,6 +34,10 @@ struct ViewerCliArgs {
     bool have_describe_functions_json = false;
     std::string describe_functions_json_path;
 
+    // Headless advisor report
+    bool have_explore_recommend_json = false;
+    std::string explore_recommend_json_path;
+
     // Fractal type
     bool have_fractal_type = false;
     FractalType fractal_type = FractalType::newton;

@@ -991,6 +991,7 @@ static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float de
 static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    if (cli.have_explore_recommend_json && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     return true;
 }
 
@@ -1008,6 +1009,32 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
                                     bool& sidecarStateValid,
                                     SidecarBudgetState& sidecarBudgetState,
                                     bool& sidecarBudgetStateValid) {
+    SidecarHeadlessProofConfig sidecarHeadlessProofConfig;
+    if (cli.have_sidecar_apply_armed_step_count) {
+        sidecarHeadlessProofConfig.apply_armed_step_count = cli.sidecar_apply_armed_step_count;
+    }
+    if (cli.have_sidecar_replay_mutation_history_count) {
+        sidecarHeadlessProofConfig.replay_mutation_history_count = cli.sidecar_replay_mutation_history_count;
+    }
+    if (cli.have_sidecar_pump_paced_loop_seconds) {
+        sidecarHeadlessProofConfig.pump_paced_loop_seconds = cli.sidecar_pump_paced_loop_seconds;
+    }
+
+    if (cli.have_explore_recommend_json) {
+        if (HasSidecarHeadlessProofActions(sidecarHeadlessProofConfig)) {
+            std::fprintf(stderr, "--explore-recommend-json is mutually exclusive with sidecar proof mutation verbs\n");
+            return 1;
+        }
+        return RunExploreRecommendMode(
+            cli.explore_recommend_json_path,
+            view,
+            params,
+            render,
+            engineCatalog,
+            bind,
+            sidecarMeasurementHost);
+    }
+
     if (cli.capture_diagnostic_only || cli.capture_finding_only) {
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, &dirty);
@@ -1031,16 +1058,6 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
             sidecarBudgetState,
             sidecarBudgetStateValid);
 
-        SidecarHeadlessProofConfig sidecarHeadlessProofConfig;
-        if (cli.have_sidecar_apply_armed_step_count) {
-            sidecarHeadlessProofConfig.apply_armed_step_count = cli.sidecar_apply_armed_step_count;
-        }
-        if (cli.have_sidecar_replay_mutation_history_count) {
-            sidecarHeadlessProofConfig.replay_mutation_history_count = cli.sidecar_replay_mutation_history_count;
-        }
-        if (cli.have_sidecar_pump_paced_loop_seconds) {
-            sidecarHeadlessProofConfig.pump_paced_loop_seconds = cli.sidecar_pump_paced_loop_seconds;
-        }
         if (cli.have_sidecar_apply_armed_step_count ||
                 cli.have_sidecar_replay_mutation_history_count ||
                 cli.have_sidecar_pump_paced_loop_seconds) {
@@ -1121,6 +1138,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
                                        const std::string& exeDir) {
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
+            cli.have_explore_recommend_json ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
             return 1;
@@ -1129,11 +1147,16 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
+        if (cli.have_explore_recommend_json) {
+            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend-json\n");
+            return 1;
+        }
         return RunSampleMode(BuildSampleModeArgs(cli), exePath);
     }
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
-        if (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg) {
+        if (cli.have_explore_recommend_json ||
+                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
             return 1;
         }
@@ -1401,6 +1424,19 @@ static void ApplyAutoDivePerFrame(ViewState& view, bool* ioDirty) {
     }
 }
 
+static BindingContext BuildViewerBindingContext(
+    ViewState& view,
+    KernelParams& params,
+    RenderSettings& render,
+    LensSettings& lens) {
+    BindingContext bind;
+    bind.view = &view;
+    bind.params = &params;
+    bind.render = &render;
+    bind.lens = &lens;
+    return bind;
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<std::string> args = GetCommandLineArgsUtf8();
     ViewerCliArgs cli{};
@@ -1443,11 +1479,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
 
-    BindingContext bind;
-    bind.view = &view;
-    bind.params = &params;
-    bind.render = &render;
-    bind.lens = &lens;
+    BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
     { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty,
           engineCatalog, bind, sidecarControllerPolicy, sidecarMeasurementHost,

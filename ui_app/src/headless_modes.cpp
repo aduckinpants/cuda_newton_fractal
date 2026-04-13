@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "explaino_sidecar_controller.h"
+#include "explaino_exploration_advisor.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_window.h"
 #include "fractal_derived_fields.h"
@@ -620,6 +621,37 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
             std::fprintf(stderr, "%s\n", writeError.c_str());
             return 1;
         }
+    }
+    return 0;
+}
+
+int RunExploreRecommendMode(
+    const std::string& jsonPath,
+    ViewState& view,
+    KernelParams& params,
+    RenderSettings& render,
+    const EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    SidecarMeasurementHost& measurementHost) {
+    if (jsonPath.empty()) {
+        std::fprintf(stderr, "explore-recommend mode requires an explicit JSON output path\n");
+        return 1;
+    }
+
+    PrepareHeadlessSidecarState(view, params);
+
+    ExplainoExplorationAdvisorReport report;
+    std::string error;
+    if (!BuildExplainoExplorationAdvisorReport(engineCatalog, bind, measurementHost, &report, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+
+    const std::string reportJson = SerializeExplainoExplorationAdvisorReportJson(report);
+    std::string writeError;
+    if (!WriteTextFileExact(jsonPath, reportJson, &writeError)) {
+        std::fprintf(stderr, "%s\n", writeError.c_str());
+        return 1;
     }
     return 0;
 }

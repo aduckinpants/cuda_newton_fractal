@@ -20,6 +20,7 @@ These specs are fully landed on the branch with tests, schema bindings, and prob
 | OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, benchmark/sensitivity exposure, variant crossfade, and internal composed Explaino routing | multiple |
 | ExplainoAll_Reflexive | Reflexive sidecar, direct mutation, runtime proof closure, and continuity audit | multiple |
 | ExplainoSidecarMutationReplay | Persisted sidecar mutation history plus deterministic ordered headless parameter replay from loaded `state.json`; future frame-delta/live replay proof is deferred | multiple |
+| HeadlessExplorationAdvisor | Explaino-only `--explore-recommend-json` report mode that emits a deterministic next-best-observation artifact from the existing sidecar intelligence seams | advisor slice |
 | LambdaQuadraticConjugacy_DesignNote | Lambda kept as FractalType::lambda_map (reserved word) | Lambda commits |
 | CommonFractalCatalog_Deferred_2026-04-06 | Wave 1: Spider, Celtic MB, Perpendicular BS | common-fractal wave |
 | No_Implicit_Fallback_General_Directive | Fail-fast for unknown bindings/enums/params | adopted throughout |
