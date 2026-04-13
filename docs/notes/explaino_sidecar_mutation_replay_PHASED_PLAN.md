@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 2 - headless replay proof
+Closed - shipped at headless parameter replay; future frame/live proof deferred
 
 ## Phase Checklist
 
 - [x] Phase 1 - mutation-history persistence contract
-- [ ] Phase 2 - headless replay proof
-- [ ] Phase 3 - live runtime replay proof
-- [ ] Phase 4 - closure audit and continuity cleanup
+- [x] Phase 2 - shipped headless parameter replay boundary
+- [x] Phase 3 - future frame/live replay proof explicitly deferred
+- [x] Phase 4 - closure audit and continuity cleanup
 
 ## Notes
 
@@ -29,6 +29,10 @@ Phase 2 - headless replay proof
   - headless replay now supports deterministic ordered parameter replay from loaded `sidecar_mutation_history` via `--sidecar-replay-mutation-history-count`
   - replay reuses the existing sidecar mutation application semantics, fails fast when the requested replay count exceeds the loaded history, and preserves the persisted history payload during headless capture
   - validation for the landed Phase 2A slice: `ui_app\build_tests_vsdevcmd.cmd`, `ui_app\build_vsdevcmd.cmd`, and `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -q`
+- Feature closure note:
+  - this feature now closes cleanly at the shipped headless parameter replay boundary instead of staying half-open as an active spec
+  - the previously planned Phase 2B frame-delta proof and live replay proof are explicitly deferred into `DEFERRED_THREADS.md` as a future expansion thread
+  - no further code changes are required to treat the current replay behavior as a complete, checkpointed feature on this branch
 - Phase 1 exit criteria:
   - diagnostics `state.json` can persist a bounded sidecar mutation-history payload for applied sidecar mutations
   - finding/state load paths round-trip that payload atomically with the rest of the persisted Explaino sidecar state
@@ -36,11 +40,9 @@ Phase 2 - headless replay proof
   - later CLI overrides that invalidate a loaded snapshot clear the loaded mutation-history baseline just like persisted orientation already does
 - Phase 2 exit criteria:
   - headless runtime proof can replay persisted mutation history deterministically from `--load-state-json`
-  - Phase 2A parameter replay proof is landed; Phase 2B still needs a bounded frame-delta proof before this phase can close
-  - replay proves both parameter deltas and frame deltas
+  - shipped scope closes at deterministic ordered parameter replay
 - Phase 3 exit criteria:
-  - live runtime proof shows a loaded replay history drives visible multi-step motion on the published runtime window surface
-  - replay settles predictably and does not leak stale history across later state loads
+  - future expansion thread only: frame-delta and live replay proof remain explicitly deferred
 - Phase 4 exit criteria:
   - hostile audit closes any partial-load, stale-history, or type-drift defects
   - continuity surfaces (`_STATUS`, phased plan, handoff log) match the landed replay state

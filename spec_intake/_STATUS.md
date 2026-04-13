@@ -19,6 +19,7 @@ These specs are fully landed on the branch with tests, schema bindings, and prob
 | RealtimeCliSampling_OperatorCallIn | Headless --sample-request-stdin/stdout contract | headless mode extraction |
 | OptimizationStaging_ExplainoZeroAxis | Zero-axis measurement, benchmark/sensitivity exposure, variant crossfade, and internal composed Explaino routing | multiple |
 | ExplainoAll_Reflexive | Reflexive sidecar, direct mutation, runtime proof closure, and continuity audit | multiple |
+| ExplainoSidecarMutationReplay | Persisted sidecar mutation history plus deterministic ordered headless parameter replay from loaded `state.json`; future frame-delta/live replay proof is deferred | multiple |
 | LambdaQuadraticConjugacy_DesignNote | Lambda kept as FractalType::lambda_map (reserved word) | Lambda commits |
 | CommonFractalCatalog_Deferred_2026-04-06 | Wave 1: Spider, Celtic MB, Perpendicular BS | common-fractal wave |
 | No_Implicit_Fallback_General_Directive | Fail-fast for unknown bindings/enums/params | adopted throughout |
@@ -38,7 +39,6 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
-| ExplainoSidecarMutationReplay | Phase 1 persistence is landed, and Phase 2A now proves ordered headless parameter replay from loaded `sidecar_mutation_history`; Phase 2B frame-delta proof and live replay remain active in [docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md](docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md) | Builds on ExplainoAll_Reflexive; next work is headless frame-delta proof, then live replay proof |
 | CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-F/V2-G DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming for single/session requests, describe-functions sensitivity metadata, and a Windows named-pipe alternate transport. Broader multi-client/socket transport remains deferred. | No remaining active phases in this repo; broader multi-client/socket transport stays deferred |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)

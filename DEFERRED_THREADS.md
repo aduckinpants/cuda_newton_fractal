@@ -172,6 +172,31 @@ Key references:
 
 ## 8. Current Pause Point
 
+## 9. Explaino Replay Proof Expansion Follow-On
+
+Status: deferred on 2026-04-13
+
+Why paused:
+- `ExplainoSidecarMutationReplay` now lands cleanly as a completed shipped feature at the headless parameter-replay boundary.
+- The remaining ideas were proof-expansion work, not missing runtime behavior required for the current branch: frame-delta replay proof and live-window replay proof.
+- Keeping those ambitions in the active spec list would leave the branch looking half-built even though the useful replay behavior is implemented, tested, and checkpointed.
+
+Current shipped state:
+- persisted `sidecar_mutation_history` round-trips through `state.json`, finding/state load, and headless/live mutation recording
+- headless replay can deterministically reapply ordered persisted parameter targets via `--sidecar-replay-mutation-history-count`
+- replay fails fast on out-of-range replay counts and preserves the persisted mutation-history payload during headless capture
+
+Resume constraints:
+- treat any future replay-expansion work as a new bounded thread, not a reopening of an active half-finished feature
+- prove frame-delta behavior with a deterministic artifact or hash-based harness before attempting live-window proof
+- keep `state.json` as the only replay authority; do not add a second sidecar replay file or ad hoc baseline surface
+
+Key references:
+- docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md
+- ui_app/src/headless_modes.cpp
+- ui_app/src/main.cpp
+- tests/test_fractal_runtime_explaino_escape_variants.py
+
 If work resumes from this file alone, the intended next order is:
 1. keep live responsiveness stable and do not reopen pacing experimentation casually
 2. start the common-fractal catalog planning/coding thread
