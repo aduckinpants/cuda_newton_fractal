@@ -14,7 +14,7 @@ Do these before making architecture claims or starting broad edits:
 4. Read `AGENT_TERMINAL_PROTOCOL.md`.
 5. Read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `KNOWN_ISSUES.md`.
 6. Read the last few entries of `HANDOFF_LOG.md`.
-7. If you are starting a meaningful work slice, append a pending breadcrumb first:
+7. If you are starting a meaningful work slice, append a session-start breadcrumb first:
    - `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>`
 8. Create or update a detailed, checklisted phased plan in the repo.
    - Prefer the nearest existing plan doc.
@@ -120,7 +120,7 @@ Before ending a meaningful work slice:
 1. Update the active phased plan, if one exists.
 2. Respect the workspace checkpoint guard hook in `.github/hooks/checkpoint_guard.json`; completion/stop is blocked if repo state differs from the session baseline.
 3. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
-4. Append `HANDOFF_LOG.md` with `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"` before the final commit; omit `--commit` for the normal checkpoint-id flow and include the printed `ck:` token in the commit message.
+4. Append `HANDOFF_LOG.md` with `py -3.14 tools\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"` before the final commit; reuse the token printed by `viewer_host_begin_work_slice.py` for the normal flow and keep `--resolve-last-pending` only for legacy pending-entry repair.
 5. If the session advanced `HEAD`, write a validation receipt for the current committed state with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...` after the final clean commit.
 6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
 7. Do not say done unless the explicit closure standard above is satisfied end-to-end.

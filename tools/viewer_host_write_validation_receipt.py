@@ -7,7 +7,7 @@ from viewer_host_checkpoint_guard import write_validation_receipt
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Write a validation receipt for the current clean HEAD")
+    parser = argparse.ArgumentParser(description="Write a validation receipt for the current clean committed HEAD after the checkpoint commit")
     parser.add_argument("--summary", required=True, help="Short summary of what was validated")
     parser.add_argument("--command", action="append", dest="commands", help="Validation command that was run; may be repeated")
     parser.add_argument("--note", action="append", dest="notes", help="Optional note to store with the receipt; may be repeated")

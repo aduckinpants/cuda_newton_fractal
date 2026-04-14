@@ -72,10 +72,10 @@ At session start:
 1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`.
 2. Reopen the active phased plan, if one exists.
 3. Confirm that `## Current Phase` and `## Phase Checklist` still agree.
-4. Append a pending slice breadcrumb with `py -3.14 tools/viewer_host_begin_work_slice.py ...` before broad new work.
+4. Append a session-start slice breadcrumb with `py -3.14 tools/viewer_host_begin_work_slice.py ...` before broad new work; the helper now prints the `ck:` token to reuse at checkpoint time.
 
 At session end:
 
 1. Update the phased plan with the real stop point.
-2. Append `HANDOFF_LOG.md` with the validated checkpoint or pending breadcrumb.
+2. Append `HANDOFF_LOG.md` with the validated checkpoint entry, or if the slice is intentionally paused ensure the session-start breadcrumb already exists and the phased plan records the real stop point.
 3. Leave enough evidence in the plan that a fresh agent can continue from the repo alone.

@@ -115,12 +115,12 @@ def _print_checkpoint_guidance(plan: BreadcrumbAppendPlan) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Repo-specific breadcrumb helper that appends a session-start HANDOFF_LOG entry using the local checkpoint-id flow.",
+        description="Repo-specific breadcrumb helper that appends a session-start HANDOFF_LOG entry, prints checkpoint-id reuse guidance, and uses the local checkpoint-id flow.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     ap.add_argument("--intent", required=True, help="Short intent for this work slice")
     ap.add_argument("--profile", default="native", choices=PROFILE_CHOICES, help="Expected validation profile/task lane")
-    ap.add_argument("--dry-run", action="store_true", help="Print the handoff message and command without appending")
+    ap.add_argument("--dry-run", action="store_true", help="Print the session-start message, checkpoint-id guidance, and delegated command without appending")
     ns = ap.parse_args(argv)
 
     branch = _capture_git("rev-parse", "--abbrev-ref", "HEAD")

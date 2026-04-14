@@ -235,6 +235,42 @@ def test_runtime_pytest_task_uses_runtime_lane_helper() -> None:
     assert '"tools/viewer_host_runtime_pytest_lane.py"' in tasks_json
 
 
+def test_core_workflow_docs_advertise_session_start_checkpoint_flow() -> None:
+    expected = {
+        REPO_ROOT / "AGENTS.md": [
+            "append a session-start breadcrumb first",
+            'py -3.14 tools\\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"',
+        ],
+        REPO_ROOT / "AGENT_WORKING_PROTOCOL.md": [
+            "session-start breadcrumb",
+            'py -3.14 tools\\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"',
+        ],
+        REPO_ROOT / ".github" / "copilot-instructions.md": [
+            "append a session-start breadcrumb first",
+        ],
+        REPO_ROOT / "docs" / "PHASED_PLAN_CONTINUITY_PROTOCOL.md": [
+            "session-start slice breadcrumb",
+        ],
+    }
+
+    unexpected = {
+        REPO_ROOT / "AGENTS.md": ["append a pending breadcrumb first"],
+        REPO_ROOT / "AGENT_WORKING_PROTOCOL.md": [
+            'py -3.14 tools\\viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"',
+            "omit `--commit` for the normal checkpoint-id flow",
+        ],
+        REPO_ROOT / ".github" / "copilot-instructions.md": ["append a pending breadcrumb first"],
+        REPO_ROOT / "docs" / "PHASED_PLAN_CONTINUITY_PROTOCOL.md": ["Append a pending slice breadcrumb"],
+    }
+
+    for path, snippets in expected.items():
+        text = path.read_text(encoding="utf-8")
+        for snippet in snippets:
+            assert snippet in text, f"{path} missing expected workflow-doc snippet: {snippet}"
+        for snippet in unexpected.get(path, []):
+            assert snippet not in text, f"{path} still contains stale workflow-doc snippet: {snippet}"
+
+
 def test_build_validation_profiles_uses_explicit_repo_root(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     tasks_dir = repo_root / ".vscode"

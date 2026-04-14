@@ -22,7 +22,7 @@
 
 ## Workflow
 - For any non-trivial slice, read the relevant planning material first and restate the current phase plus exit criteria before editing.
-- For any meaningful slice, append a pending breadcrumb first with
+- For any meaningful slice, append a session-start breadcrumb first with
     `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>`
     or the VS Code task `agent: begin work slice`.
 - Do not rely on chat history as the durable plan. Reuse the nearest phased plan or create

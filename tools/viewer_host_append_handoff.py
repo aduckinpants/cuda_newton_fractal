@@ -76,13 +76,13 @@ def build_handoff_append_commands(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Repo-local handoff wrapper that can resolve the pending breadcrumb and append the final checkpoint entry in one invocation.",
+        description="Repo-local handoff wrapper for final checkpoint entries. Prefer `--commit <checkpoint_id>` using the token printed by viewer_host_begin_work_slice.py; keep --resolve-last-pending for legacy breadcrumb repair.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("message", nargs="?", help="Checkpoint message to append after any pending-resolution step")
-    parser.add_argument("--commit", help="Explicit checkpoint token or legacy commit hash to record; omit for the normal generated checkpoint-id flow")
+    parser.add_argument("--commit", help="Preferred explicit checkpoint token from viewer_host_begin_work_slice.py, or a legacy commit/hash for repair flows")
     parser.add_argument("--score", type=int, help="Optional code-quality score to attach to the appended entry")
-    parser.add_argument("--resolve-last-pending", action="store_true", help="Resolve the most recent pending breadcrumb before appending the message")
+    parser.add_argument("--resolve-last-pending", action="store_true", help="Legacy repair path: resolve the most recent pending breadcrumb before appending the message")
     parser.add_argument("--auto-score", action="store_true", help="Pass through to the mainline helper for slow audit-based score capture")
     parser.add_argument("--no-auto-rotate", action="store_true", help="Pass through to the mainline helper to disable automatic log rotation")
     parser.add_argument("--dry-run", action="store_true", help="Print the delegated commands without executing them")

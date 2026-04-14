@@ -63,6 +63,10 @@ Complete
   - begin-work-slice dry-runs and normal runs now print the generated checkpoint id plus the explicit `viewer_host_append_handoff.py --commit <checkpoint_id>` closure guidance
   - hostile audit found a real mismatch in `tools/viewer_host_session_bootstrap.py`, which still advertised `--resolve-last-pending` as the default close command even after the helper switched to explicit token reuse; the repair now makes bootstrap prefer the explicit checkpoint-id close command and keeps the pending-resolution command as a legacy-repair surface
   - `tests/test_agent_workflow_tools.py` and `tests/test_viewer_host_handoff_append.py` now lock breadcrumb plan generation, dry-run output, bootstrap close-command guidance, and begin-to-end checkpoint token reuse across the workflow helpers
+- Documentation refresh snapshot:
+  - `AGENTS.md`, `AGENT_WORKING_PROTOCOL.md`, `.github/copilot-instructions.md`, and `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md` now describe begin-work-slice as a session-start breadcrumb surface instead of a literal pending-breadcrumb flow
+  - the workflow docs now advertise `py -3.14 tools\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"` as the default close ritual after `viewer_host_begin_work_slice.py`, while leaving `--resolve-last-pending` documented only as a legacy repair path
+  - helper help text now matches the same operator-facing story: `viewer_host_begin_work_slice.py` prints checkpoint-id reuse guidance, `viewer_host_append_handoff.py` prefers explicit checkpoint ids from begin-work-slice, and `viewer_host_write_validation_receipt.py` is described as the post-checkpoint clean-head receipt surface
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`
