@@ -55,6 +55,7 @@ bool TestNewtonKnownRoots() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-newton-roots";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("newton")});
     for (const auto& root : roots) {
@@ -93,6 +94,7 @@ bool TestHalleyKnownRoots() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-halley-roots";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("halley")});
     for (const auto& root : roots) {
@@ -124,6 +126,7 @@ bool TestExplainoYBasinContinuity() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-explaino-y-continuity";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_y")});
     request.overrides.push_back({"fractal.params.explaino_warp_strength", FractalProbeScalar::Number(0.16)});
@@ -164,6 +167,7 @@ bool TestGridProbeStructure() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-grid-structure";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::grid;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("newton")});
     request.has_region = true;
@@ -201,6 +205,7 @@ bool TestResponseSerialization() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-serialize";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("newton")});
     request.points.push_back({0.5, 0.0});
@@ -240,6 +245,7 @@ bool TestMandelbrotEscape() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-mandelbrot-escape";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("mandelbrot")});
     // c = 2+0i is well outside the Mandelbrot set.
@@ -272,6 +278,7 @@ bool TestNovaZeroDerivative() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-nova-zero-deriv";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("nova")});
     // z=0 for z^3-1 has f'(0)=0. Nova should skip Newton step and apply +c.
@@ -316,6 +323,7 @@ bool TestSequenceGridZip() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-sequence-grid-zip";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::sequence_grid;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("newton")});
     request.has_region = true;
@@ -366,6 +374,7 @@ bool TestBasinColoringRootIndex() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = std::string("pipeline-basin-") + type;
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(type)});
         request.points.push_back({0.5, 0.3});
@@ -399,6 +408,7 @@ bool TestExplainoYFourBasins() {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = "pipeline-explaino-y-four-basins";
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::grid;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_y")});
     request.overrides.push_back({"fractal.params.explaino_warp_strength", FractalProbeScalar::Number(0.16)});

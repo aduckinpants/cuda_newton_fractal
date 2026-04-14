@@ -1864,7 +1864,11 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
         return false;
     }
 
-    const std::string resolvedFunctionId = request.function_id.empty() ? "fractal.sample" : request.function_id;
+    if (request.function_id.empty()) {
+        if (outError) *outError = "function_id is required; valid: " + DescribeRegisteredEngineFunctionIds();
+        return false;
+    }
+    const std::string& resolvedFunctionId = request.function_id;
     const EngineFunctionRegistration* registration = FindEngineFunctionRegistration(resolvedFunctionId);
     if (!registration) {
         if (outError) *outError = "Unknown function_id: " + resolvedFunctionId + "; valid: " + DescribeRegisteredEngineFunctionIds();
@@ -1873,6 +1877,10 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
 
     if (registration->execution_kind == EngineFunctionExecutionKind::generic_sampler) {
         return RunGenericSampleRequest(request, exePath, outResponse, outError);
+    }
+    if (registration->execution_kind != EngineFunctionExecutionKind::fractal_sampler) {
+        if (outError) *outError = "Unhandled execution_kind " + std::to_string(static_cast<int>(registration->execution_kind)) + " for function_id: " + resolvedFunctionId;
+        return false;
     }
 
     const ProbeClock::time_point startedAt = ProbeClock::now();

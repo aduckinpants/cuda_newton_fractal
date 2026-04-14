@@ -89,6 +89,7 @@ bool RunExplainoPointProbe(const std::string& requestId,
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = requestId;
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(fractalType)});
     request.overrides.push_back({"fractal.params.ripple_amplitude", FractalProbeScalar::Number(rippleAmplitude)});
@@ -279,6 +280,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "point-set-lambda";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_lambda")});
         request.overrides.push_back({"fractal.params.lambda_real", FractalProbeScalar::Number(2.9685855)});
@@ -346,6 +348,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "sequence-grid-rational-escape";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::sequence_grid;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_rational_escape")});
         request.overrides.push_back({"fractal.params.explaino_warp_strength", FractalProbeScalar::Number(0.35)});
@@ -384,6 +387,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "sequence-grid-variant-crossfade";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::sequence_grid;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino")});
         request.overrides.push_back({"fractal.params.explaino_seed", FractalProbeScalar::Number(3.0)});
@@ -639,6 +643,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "load-base-state";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.base_state_load_path = statePath.string();
         request.points.push_back({0.5, 0.0});
@@ -803,6 +808,7 @@ int main() {
             FractalProbeRequest request{};
             request.request_version = 1;
             request.request_id = std::string("probe-") + probeCase.fractal_type;
+            request.function_id = "fractal.sample";
             request.mode = FractalProbeMode::point_set;
             request.overrides = probeCase.overrides;
             request.points.push_back({0.125, 0.0});
@@ -829,6 +835,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "probe-nova-zero-derivative";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("nova")});
         request.points.push_back({0.125, 0.0});
@@ -870,6 +877,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "probe-newton-known-roots";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("newton")});
         for (const auto& item : expected) {
@@ -912,6 +920,7 @@ int main() {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "probe-explaino-y-nonfinite-status";
+        request.function_id = "fractal.sample";
         request.mode = FractalProbeMode::point_set;
         request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino_y")});
         request.points.push_back({1.0e300, 0.0});

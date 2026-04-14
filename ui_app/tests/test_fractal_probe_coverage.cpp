@@ -105,6 +105,7 @@ bool TestPointSetSmokeForType(const FractalProbeCase& c) {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = std::string("coverage-smoke-") + c.type_id;
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(c.type_id)});
     for (const auto& ov : c.extra_overrides) {
@@ -153,6 +154,7 @@ bool TestBasinTypesAssignRoots(const FractalProbeCase& c) {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = std::string("coverage-basin-") + c.type_id;
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::point_set;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(c.type_id)});
     for (const auto& ov : c.extra_overrides) {
@@ -185,6 +187,7 @@ bool TestGridModeForType(const FractalProbeCase& c) {
     FractalProbeRequest request{};
     request.request_version = 1;
     request.request_id = std::string("coverage-grid-") + c.type_id;
+    request.function_id = "fractal.sample";
     request.mode = FractalProbeMode::grid;
     request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(c.type_id)});
     for (const auto& ov : c.extra_overrides) {

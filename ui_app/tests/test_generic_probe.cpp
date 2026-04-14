@@ -337,29 +337,27 @@ int main() {
         passed++;
     }
 
-    // 8. Backward compat: fractal.sample still routes (empty function_id) -----
+    // 8. Empty function_id must be rejected (no-implicit-fallback) ----------
     {
-        // This just validates that RunFractalProbeRequest still accepts the
-        // fractal.sample path. We don't need a GPU so we expect it to fail
-        // at the rendering stage, not at dispatch. The key check is that it
-        // does NOT produce "Unknown function_id".
         FractalProbeRequest request{};
         request.request_version = 1;
-        request.request_id = "gf-compat-fractal";
-        request.function_id = ""; // should default to fractal.sample
+        request.request_id = "gf-empty-fid-reject";
+        request.function_id = ""; // must be rejected, not silently defaulted
         request.mode = FractalProbeMode::point_set;
         request.points.push_back({0.0, 0.0});
 
         FractalProbeResponse response{};
         std::string error;
-        // This will fail because we don't have the runtime, but the error
-        // should NOT be "Unknown function_id".
-        RunFractalProbeRequest(request, "nonexistent_exe", &response, &error);
-        if (error.find("Unknown function_id") != std::string::npos) {
-            std::cerr << "[8] empty function_id should default to fractal.sample\n";
+        const bool ok = RunFractalProbeRequest(request, "nonexistent_exe", &response, &error);
+        if (ok) {
+            std::cerr << "[8] empty function_id should be rejected, not silently routed\n";
             return 1;
         }
-        std::cout << "[8] backward compat: passed\n";
+        if (error.find("function_id") == std::string::npos) {
+            std::cerr << "[8] error should mention function_id: " << error << "\n";
+            return 1;
+        }
+        std::cout << "[8] empty function_id rejection: passed\n";
         passed++;
     }
 
