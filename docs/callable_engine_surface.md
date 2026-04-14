@@ -3,6 +3,8 @@
 This document is the current reference for the repo's callable headless engine surface.
 
 For a practical can/cannot-do guide focused on dynamic function solving and sweep shapes, see [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).
+For the matching real-runtime fractal probe guide, see [docs/callable_engine_fractal_sample_cheatsheet.md](docs/callable_engine_fractal_sample_cheatsheet.md).
+For copy-paste request JSON, see [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md).
 
 It answers three questions:
 
@@ -100,6 +102,8 @@ Important boundary:
 
 ### `fractal.sample`
 
+For a practical POC guide focused on the real runtime fractal probe surface, supported sweep shapes, and current limits, see [docs/callable_engine_fractal_sample_cheatsheet.md](docs/callable_engine_fractal_sample_cheatsheet.md).
+
 This is the runtime-authoritative fractal sampler over the existing binding-path vocabulary:
 
 - `fractal.view.*`
@@ -111,6 +115,7 @@ Callers should discover applicable parameters through `--describe-functions` rat
 ### `generic.sample`
 
 For a current POC cheatsheet focused on dynamic function solving, supported expression forms, and supported sweep modes, see [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).
+Copy-paste request JSON lives under [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md).
 
 This is the current preview surface for request-supplied function expressions.
 

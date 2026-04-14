@@ -1,0 +1,32 @@
+{
+  "request_version": 1,
+  "request_id": "fractal-variant-crossfade-grid",
+  "function_id": "fractal.sample",
+  "mode": "sequence_grid",
+  "overrides": [
+    {"path": "fractal.view.fractal_type", "value": "explaino"},
+    {"path": "fractal.params.explaino_seed", "value": 3.0},
+    {"path": "fractal.params.explaino_warp_strength", "value": 0.25},
+    {"path": "fractal.view.explaino_seed_drift", "value": 0.1}
+  ],
+  "region": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "span_x": 0.2,
+    "span_y": 0.2,
+    "grid_width": 16,
+    "grid_height": 16
+  },
+  "sequence": {
+    "mode": "variant_crossfade",
+    "from_variant": "explaino_ripple",
+    "to_variant": "explaino_splice",
+    "steps": 5
+  },
+  "metrics": [
+    "iterations",
+    "status",
+    "summary_mean_iterations",
+    "summary_best_sequence_index"
+  ]
+}

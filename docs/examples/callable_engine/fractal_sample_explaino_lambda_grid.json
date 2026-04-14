@@ -1,0 +1,30 @@
+{
+  "request_version": 1,
+  "request_id": "fractal-explaino-lambda-grid",
+  "function_id": "fractal.sample",
+  "mode": "grid",
+  "overrides": [
+    {"path": "fractal.view.fractal_type", "value": "explaino_lambda"},
+    {"path": "fractal.params.lambda_real", "value": 2.9685855},
+    {"path": "fractal.params.lambda_imag", "value": -0.27446103},
+    {"path": "fractal.params.explaino_seed", "value": 3.0},
+    {"path": "fractal.view.explaino_seed_drift", "value": 0.25},
+    {"path": "fractal.params.explaino_warp_strength", "value": 0.2}
+  ],
+  "region": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "span_x": 0.4,
+    "span_y": 0.4,
+    "grid_width": 32,
+    "grid_height": 32
+  },
+  "metrics": [
+    "iterations",
+    "status",
+    "final_z",
+    "final_abs2",
+    "summary_mean_iterations",
+    "summary_best_sequence_index"
+  ]
+}

@@ -3,6 +3,7 @@
 This is the practical can/cannot-do guide for the current callable POC.
 
 If you need the transport and registry reference, read [docs/callable_engine_surface.md](docs/callable_engine_surface.md).
+If you want copy-paste request JSON, read [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md).
 If you need the short version: `generic.sample` lets you send a complex-valued expression in the request, evaluate it over points, grids, and sequence sweeps, and get value/derivative/summary data back. It does not yet create new named callables or dynamic CUDA kernels.
 
 ## Mental Model
@@ -250,3 +251,8 @@ That broader handoff belongs to the later transpiler and kernel-registration thr
 
 - `generic.sample` is the preview and stress-test surface for dynamic callable math
 - it is not yet the finished dynamic callable backend
+
+## Copy-Paste Examples
+
+- [docs/examples/callable_engine/generic_sample_newton_z3m1_point_set.json](docs/examples/callable_engine/generic_sample_newton_z3m1_point_set.json)
+- [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md)

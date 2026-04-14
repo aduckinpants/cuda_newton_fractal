@@ -24,6 +24,7 @@ Phase 4 - handoff to transpiler/kernel registration thread
   - shipped advisor surface: `--explore-recommend`, `--explore-recommend-json`
   - landed wrap/doc surface: advisor stdout symmetry plus [docs/callable_engine_surface.md](docs/callable_engine_surface.md) as the current callable-surface reference and generic/lambda boundary note
   - current operator-facing cheatsheet: [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md) summarizes what `generic.sample` can actually solve and sweep today, plus the current POC limits
+  - current runtime-probe companion docs: [docs/callable_engine_fractal_sample_cheatsheet.md](docs/callable_engine_fractal_sample_cheatsheet.md) plus [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md) give the matching `fractal.sample` can/cannot-do view and copy-paste request examples
   - phase-3 registry result: a built-in callable registry now acts as the single authority for shipped function ids, execution kinds, and descriptor builders, so descriptor emission, fail-fast `function_id` validation, and fractal-vs-generic dispatch no longer duplicate `fractal.sample` / `generic.sample` in separate seams
 - Phase 1 exit criteria:
   - advisor mode supports stdout and optional file output with the same deterministic payload
