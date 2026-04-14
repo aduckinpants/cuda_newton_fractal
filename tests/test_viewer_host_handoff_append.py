@@ -14,6 +14,7 @@ from tools.viewer_host_append_handoff import (
     build_handoff_append_commands,
     capture_repo_status,
     format_repo_status_summary,
+    resolve_handoff_checkpoint_token,
 )
 from tools.viewer_host_repo_status import repo_is_dirty
 
@@ -69,6 +70,50 @@ def test_build_handoff_append_commands_uses_single_append_without_resolve() -> N
         "--no-auto-rotate",
         "checkpoint message",
     ]]
+
+
+def test_resolve_handoff_checkpoint_token_generates_checkpoint_id_for_message_without_commit(monkeypatch) -> None:
+    monkeypatch.setattr("tools.viewer_host_append_handoff.uuid.uuid4", lambda: type("_Uuid", (), {"hex": "flow1234abcdef"})())
+
+    token, generated = resolve_handoff_checkpoint_token(commit=None, message="checkpoint message")
+
+    assert token == "ck:flow1234"
+    assert generated is True
+
+
+def test_build_handoff_append_commands_reuses_generated_checkpoint_id_for_resolve_and_append(monkeypatch) -> None:
+    monkeypatch.setattr("tools.viewer_host_append_handoff.uuid.uuid4", lambda: type("_Uuid", (), {"hex": "flow1234abcdef"})())
+
+    commands = build_handoff_append_commands(
+        py="py",
+        message="checkpoint message",
+        commit=None,
+        resolve_last_pending=True,
+        score=97,
+    )
+
+    assert commands == [
+        [
+            "py",
+            str(MAINLINE_HANDOFF_APPEND),
+            "--repo-root",
+            str(REPO_ROOT),
+            "--commit",
+            "ck:flow1234",
+            "--resolve-last-pending",
+        ],
+        [
+            "py",
+            str(MAINLINE_HANDOFF_APPEND),
+            "--repo-root",
+            str(REPO_ROOT),
+            "--commit",
+            "ck:flow1234",
+            "--score",
+            "97",
+            "checkpoint message",
+        ],
+    ]
 
 
 def _init_git_repo(repo_root: Path) -> None:

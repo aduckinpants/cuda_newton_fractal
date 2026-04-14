@@ -119,9 +119,9 @@ Before ending a meaningful work slice:
 
 1. Update the active phased plan, if one exists.
 2. Respect the workspace checkpoint guard hook in `.github/hooks/checkpoint_guard.json`; completion/stop is blocked if repo state differs from the session baseline.
-3. If the session advanced `HEAD`, write a validation receipt for the current committed state with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`.
-4. Append `HANDOFF_LOG.md` with the handoff append helper.
-5. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
+3. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
+4. Append `HANDOFF_LOG.md` with `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"` before the final commit; omit `--commit` for the normal checkpoint-id flow and include the printed `ck:` token in the commit message.
+5. If the session advanced `HEAD`, write a validation receipt for the current committed state with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...` after the final clean commit.
 6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
 7. Do not say done unless the explicit closure standard above is satisfied end-to-end.
 8. If the current prompt arrived while the repo already differed from the session baseline, resolve that carryover before treating any new request as a fresh slice.

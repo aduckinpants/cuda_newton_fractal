@@ -161,7 +161,7 @@ Public workflow surface:
 |------|---------|-------|
 | Session bootstrap | `py -3.14 tools\viewer_host_session_bootstrap.py --audit --tail-handoff 8` | Repeatable new-session start surface |
 | Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>` | Repo-specific adapter that delegates to mainline `handoff_append.py` |
-| Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> "<message>"` | Repo-specific adapter that resolves the active pending breadcrumb and appends the final checkpoint summary in one invocation. It now prints an explicit staged/unstaged/untracked summary afterward so auto-rotated HANDOFF_LOG archive files are visible before the checkpoint commit. |
+| Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"` | Repo-specific adapter that resolves the active pending breadcrumb and appends the final checkpoint summary in one invocation using a shared generated `ck:` token when `--commit` is omitted. Include that printed token in the upcoming commit message so the handoff note and commit stay searchable without a follow-up continuity commit. Use `--commit <hash>` only for legacy repair or after-the-fact linkage. |
 | Plan sync check | `py -3.14 tools\viewer_host_assert_phased_plan_sync.py` | Deterministic phased-plan continuity adapter |
 | Native helper tests | `ui_app\build_tests_vsdevcmd.cmd` | Must pass before any commit |
 | Full viewer build | `ui_app\build_vsdevcmd.cmd` | Must pass before any commit |
@@ -197,7 +197,7 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 3. Write the test first (Red)
 4. Implement (Green)
 5. Validate with build commands
-6. Commit with a descriptive message
+6. Prepare the final checkpoint note with `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"`, then commit once with a descriptive message that includes the printed `ck:` token
 
 ### During a slice
 
@@ -212,10 +212,10 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 1. Both build scripts pass
 2. Relevant Python tests pass
 3. Run the mandatory distrust-first audit loop and repair anything it finds
-4. Commit with clear message explaining what landed
-5. Write the validation receipt for the final committed `HEAD`
-6. Update `HANDOFF_LOG.md` with checkpoint entry
-7. Update the active phased plan checklist if one exists
+4. Update the active phased plan checklist if one exists
+5. Append `HANDOFF_LOG.md` with the handoff helper before the final commit; omit `--commit` for the normal checkpoint-id flow and include the printed `ck:` token in the commit message
+6. Commit with clear message explaining what landed and what was validated
+7. Write the validation receipt for the final committed `HEAD`
 8. Verify the explicit closure standard: named gap, proving test, green validation, checkpoint commit
 
 ---
@@ -258,7 +258,7 @@ For every meaningful work slice:
 ### HANDOFF_LOG.md
 
 Append-only checkpoint log. Each entry records:
-- Checkpoint hash
+- Checkpoint id (generated `ck:` token or legacy hash-linked id)
 - UTC timestamp
 - What landed
 - What was validated
@@ -297,8 +297,10 @@ If information would be lost when the chat session ends, it belongs in one of:
 
 Cross-repo tooling: the mainline append implementation still lives in `salticid-cuda`, but this repo's canonical append surface is the thin local adapter:
 ```
-py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> "message"
+py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --score <n> "message"
 ```
+
+Omit `--commit` for the normal checkpoint-id flow so the helper generates one shared `ck:` token for pending resolution and the final checkpoint note, then include that printed token in the upcoming commit message.
 
 Do not fork core workflow tools from mainline into this repo under the same names.
 Use the mainline helper directly when it supports `--repo-root`, or use a thin

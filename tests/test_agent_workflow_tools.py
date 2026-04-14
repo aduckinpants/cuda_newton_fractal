@@ -9,7 +9,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.viewer_host_begin_work_slice import build_breadcrumb_message
-from tools.viewer_host_session_bootstrap import legacy_pending_handoff_entries, tail_handoff_entries
+from tools.viewer_host_session_bootstrap import build_bootstrap_state, legacy_pending_handoff_entries, tail_handoff_entries
 from tools.viewer_host_assert_phased_plan_sync import validate_plan_text
 
 
@@ -132,3 +132,11 @@ def test_repo_workflow_surface_does_not_reintroduce_removed_core_tool_names() ->
         text = path.read_text(encoding="utf-8")
         for old_name in old_names:
             assert old_name not in text, f"{path} unexpectedly references removed tool {old_name}"
+
+
+def test_bootstrap_surface_advertises_checkpoint_id_handoff_flow() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    assert state["next_commands"]["append_handoff"] == (
+        'py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"'
+    )

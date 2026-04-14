@@ -91,7 +91,7 @@ def _run_audit(py: str) -> AuditSummary:
     return AuditSummary(command=cmd, returncode=int(proc.returncode), output_tail=lines[-20:])
 
 
-def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> dict[str, Any]:
+def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_handoff: int) -> dict[str, Any]:
     branch = _capture_git("rev-parse", "--abbrev-ref", "HEAD")
     head = _capture_git("rev-parse", "--short", "HEAD")
     dirty = repo_is_dirty(REPO_ROOT)
@@ -111,11 +111,15 @@ def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> d
         "audit": asdict(audit) if audit is not None else None,
         "next_commands": {
             "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified>",
-            "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> \"<message>\"",
+            "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> \"<message>\"",
             "assert_plan_sync": "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
             "profiles": "Use the VS Code tasks under verify: profile ...",
         },
     }
+
+
+def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> dict[str, Any]:
+    return build_bootstrap_state(py=py, run_audit=run_audit, tail_handoff=tail_handoff)
 
 
 def print_bootstrap_report(state: dict[str, Any]) -> None:
@@ -161,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--python", default=sys.executable, help="Python executable to use for Python-backed helper commands")
     ns = ap.parse_args(argv)
 
-    state = collect_bootstrap_state(py=ns.python, run_audit=ns.audit, tail_handoff=ns.tail_handoff)
+    state = build_bootstrap_state(py=ns.python, run_audit=ns.audit, tail_handoff=ns.tail_handoff)
     print_bootstrap_report(state)
     if ns.json_out:
         out_path = Path(ns.json_out)
