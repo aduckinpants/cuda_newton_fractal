@@ -27,6 +27,7 @@ Phase 4 - handoff to transpiler/kernel registration thread
   - current runtime-probe companion docs: [docs/callable_engine_fractal_sample_cheatsheet.md](docs/callable_engine_fractal_sample_cheatsheet.md) plus [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md) give the matching `fractal.sample` can/cannot-do view and copy-paste request examples
   - current transport companion docs: [docs/callable_engine_transport_session_cheatsheet.md](docs/callable_engine_transport_session_cheatsheet.md) plus the transport examples under [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md) cover stdin/stdout, file I/O, batch arrays, NDJSON, session `state_token` diffs, and the named-pipe alternate transport
   - phase-3 registry result: a built-in callable registry now acts as the single authority for shipped function ids, execution kinds, and descriptor builders, so descriptor emission, fail-fast `function_id` validation, and fractal-vs-generic dispatch no longer duplicate `fractal.sample` / `generic.sample` in separate seams
+  - current Phase 4 wrap target: `generic.sample` now grows through a low-prominence execution seam rather than a new math parameter: request-side `execution.backend_preference = default | cpu | cuda`, response-side `runtime.backend_used`, and an internal transport-agnostic backend dispatcher in the runner that later in-process callers can reuse directly
 - Phase 1 exit criteria:
   - advisor mode supports stdout and optional file output with the same deterministic payload
   - focused native/runtime tests cover the stdout path
@@ -40,6 +41,7 @@ Phase 4 - handoff to transpiler/kernel registration thread
   - landed: the static registry now owns descriptor builders as well as execution kinds, making additional built-in callable registrations a single-registry-surface change instead of a registry row plus a separate descriptor switch
 - Phase 4 exit criteria:
   - the follow-on handoff into the Salticid transpiler/kernel-registration thread is documented with the engine-side responsibilities clearly separated from the sibling-repo CUDA backend work
+  - the repo continuity docs make it explicit that the new backend-preference surface is execution metadata, not a new function parameter or a CLI-owned contract
 
 ## Validation
 

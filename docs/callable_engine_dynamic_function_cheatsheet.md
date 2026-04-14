@@ -152,6 +152,14 @@ Supported higher-level helpers:
 6. Ask only for the outputs and summary metrics you actually need.
 7. Add a `sequence` block if you want a sweep.
 
+Optional execution control:
+
+- use `execution.backend_preference` only when you need to pin the backend for debugging or parity work
+- allowed values are `default`, `cpu`, and `cuda`
+- current runtime policy resolves `default` to the CPU path
+- successful responses report the actual executor in `runtime.backend_used`
+- an explicitly requested unavailable backend fails fast; it does not silently fall back
+
 Minimal Newton-style point-set sketch:
 
 ```json
@@ -231,7 +239,7 @@ Minimal parameter sweep sketch:
 Two practical limitations matter a lot right now:
 
 - `generic.sample` is effectively a stateless math surface, not a view-state-driven runtime surface
-- the current public request path evaluates the expression on the CPU, even though the repo also contains lower-level generic CUDA evaluation seams
+- the runtime-owned default path currently resolves to CPU, but the public request surface can now pin `execution.backend_preference` to `cpu` or `cuda` and the response reports `runtime.backend_used`
 - the current generic gallery helper and `gallery_manifest.json` output path are temporary scaffolding for proof work; they are useful today, but they are not the future formal output contract
 
 ## Good Fit Vs Bad Fit
@@ -247,11 +255,12 @@ Do not treat it as the final backend when:
 
 - you need a reusable named callable to show up as a new engine function
 - you need runtime/kernel registration instead of request-supplied expressions
-- you need full dynamic CUDA execution rather than the current POC evaluation path
+- you need `--describe-functions` to machine-advertise execution preferences; the override exists in the request contract today, but it is intentionally kept out of the normal math-parameter list
 
 That broader handoff belongs to the later transpiler and kernel-registration thread. For the current branch, the right mental model is:
 
 - `generic.sample` is the preview and stress-test surface for dynamic callable math
+- its backend choice is a low-prominence execution control, not part of the math signature
 - it is not yet the finished dynamic callable backend
 
 ## Copy-Paste Examples

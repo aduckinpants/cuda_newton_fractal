@@ -19,6 +19,12 @@ enum class FractalProbeOutputMode {
     ndjson = 1,
 };
 
+enum class FractalProbeExecutionBackendPreference {
+    default_backend = 0,
+    cpu = 1,
+    cuda = 2,
+};
+
 enum class FractalProbeSequenceMode {
     axes = 0,
     variant_crossfade = 1,
@@ -110,6 +116,11 @@ struct FractalProbeOperatorContext {
     std::string why;
 };
 
+struct FractalProbeExecutionOptions {
+    FractalProbeExecutionBackendPreference backend_preference{
+        FractalProbeExecutionBackendPreference::default_backend};
+};
+
 struct FractalProbeRequest {
     int request_version{0};
     std::string request_id;
@@ -117,6 +128,7 @@ struct FractalProbeRequest {
     std::string state_token; // V2-C: references accumulated session state
     FractalProbeMode mode{FractalProbeMode::point_set};
     FractalProbeOutputMode output_mode{FractalProbeOutputMode::json};
+    FractalProbeExecutionOptions execution;
     std::string base_state_load_path;
     std::vector<FractalProbeOverride> overrides;
     bool has_region{false};
@@ -139,6 +151,7 @@ struct FractalProbeRuntimeInfo {
     std::string exe_path;
     std::string fractal_type;
     int device_id{0};
+    std::string backend_used;
 };
 
 struct FractalProbeCost {

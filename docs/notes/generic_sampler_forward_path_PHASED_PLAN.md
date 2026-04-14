@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - expose an explicit opt-in CUDA backend
+Phase 4 - add execution-level backend preference and provenance
 
 ## Phase Checklist
 
 - [x] Phase 1 - lock contract and build CPU/CUDA parity rails
 - [x] Phase 2 - extract shared execution and response marshalling seams
 - [x] Phase 3 - professionalize iterate count semantics
-- [ ] Phase 4 - expose an explicit opt-in CUDA backend
+- [ ] Phase 4 - add execution-level backend preference and provenance
 - [ ] Phase 5 - document temporary gallery scaffolding and close continuity
 
 ## Notes
@@ -21,7 +21,9 @@ Phase 4 - expose an explicit opt-in CUDA backend
   - keep this initiative on the existing `generic.sample` callable surface, its CPU/CUDA execution seams, and the minimal documentation needed to mark the current gallery helper as temporary scaffolding
   - do not reopen dynamic kernel registration, add a new fractal family, or formalize a permanent gallery audit contract in the same slice
 - Requirements locked on 2026-04-14:
-  - the initial public CUDA rollout for `generic.sample` must be explicit opt-in, not an immediate auto-select default
+  - the public backend control for `generic.sample` should stay low-prominence: request-side `execution.backend_preference` with `default | cpu | cuda`, not a permanent hard-coded CPU/CUDA function parameter
+  - the runtime owns the meaning of `default`; current policy may resolve it to CPU today and later to CUDA without breaking callers that omit the field
+  - successful responses must report the actual executor via `runtime.backend_used`
   - `iterate(body, count)` needs professional semantics: count should become strict and inspectable rather than silently clamped or repaired
   - the current generic gallery output path remains useful temporary scaffolding; it should be written down and used, but not enshrined as the long-term output contract
 - Current stop point:
@@ -36,7 +38,7 @@ Phase 4 - expose an explicit opt-in CUDA backend
   - extended the parser, native probe, CLI, and CPU/CUDA parity rails to cover valid parameterized counts plus missing, zero, negative, fractional, oversized, and non-finite count failures
   - hostile-review finding: the first Phase 3 rerun exposed a bad new acceptance test rather than a runtime bug. The test incorrectly expected repeated squaring from `iterate(z, steps)`, which is the identity map; the acceptance surface was corrected to use `iterate(z * z, steps)` with a 4-step count so the assertion actually proves parameterized iteration semantics
   - validation confirmed the strict-count change across the native rail, published runtime build, and focused CLI regression file
-  - next step: wire the already-proven CUDA sampler core behind an explicit, observable public backend-selection surface without weakening the shared response contract
+  - next step: validate the landed execution-preference surface and close the Phase 4 continuity with the low-prominence `execution.backend_preference` request shape, explicit `runtime.backend_used` provenance, and the build wiring needed to link the standalone generic CUDA sampler into the public runner
 - Phase 1 exit criteria:
   - an in-repo plan records the rollout and semantics decisions above
   - a focused native parity harness compares the current public CPU semantics against the existing CUDA sampler core for representative shipped expressions
@@ -48,8 +50,9 @@ Phase 4 - expose an explicit opt-in CUDA backend
   - iterate-count handling is strict enough for a professional scientific tool: invalid counts hard-error instead of silently clamping or truncating
   - parser, evaluator, and public request regressions cover both valid parameterized counts and invalid-count failures
 - Phase 4 exit criteria:
-  - the public `generic.sample` path can be run explicitly on CUDA while preserving the same response semantics proven by the parity suite
-  - backend selection is observable and documented; failure to use CUDA when requested is not silently hidden
+  - the public `generic.sample` path accepts `execution.backend_preference = default | cpu | cuda`, with `default` remaining runtime-policy-owned
+  - the path can be pinned explicitly to CUDA while preserving the same response semantics proven by the parity suite
+  - backend selection is observable through `runtime.backend_used`, documented, and explicit backend failures are not silently hidden
 - Phase 5 exit criteria:
   - the current gallery helper is documented as temporary scaffolding with its present output contract and deferred future-tool responsibilities called out explicitly
   - continuity surfaces record the validated backend/parity stop point and the output-path future TODO boundary

@@ -18,6 +18,16 @@ bool NearlyEqual(double left, double right, double eps = 1.0e-6) {
     return delta < eps && delta > -eps;
 }
 
+std::string RuntimeBackendUsedFromJson(const std::string& text) {
+    const json_min::ParseResult parsed = json_min::Parse(text);
+    if (!parsed.error.empty()) return std::string();
+    const json_min::Value* runtime = parsed.value.get("runtime");
+    if (!runtime || !runtime->is_object()) return std::string();
+    const json_min::Value* backendUsed = runtime->get("backend_used");
+    if (!backendUsed || !backendUsed->is_string()) return std::string();
+    return backendUsed->as_string();
+}
+
 } // namespace
 
 int main() {
@@ -48,6 +58,10 @@ int main() {
         }
         if (!response.ok || response.function_id != "generic.sample") {
             std::cerr << "[1] response.ok=" << response.ok << " function_id=" << response.function_id << "\n";
+            return 1;
+        }
+        if (RuntimeBackendUsedFromJson(SerializeFractalProbeResponseJson(response)) != "cpu") {
+            std::cerr << "[1] default generic.sample path should report runtime.backend_used=cpu\n";
             return 1;
         }
         if (response.samples.size() != 2) {
@@ -274,6 +288,11 @@ int main() {
         const auto* fid = parsed.value.get("function_id");
         if (!fid || fid->as_string() != "generic.sample") {
             std::cerr << "[7] function_id missing or wrong in JSON\n";
+            return 1;
+        }
+        const std::string backendUsed = RuntimeBackendUsedFromJson(json);
+        if (backendUsed != "cpu") {
+            std::cerr << "[7] runtime.backend_used missing or wrong in JSON: " << backendUsed << "\n";
             return 1;
         }
         std::cout << "[7] JSON round-trip: passed\n";
@@ -866,7 +885,163 @@ int main() {
         passed++;
     }
 
-    const int total = 22;
+    // 22. execution.backend_preference routes CPU and CUDA explicitly -------
+    {
+        const char* cpuJson = R"({
+  "request_version": 1,
+  "request_id": "gf-explicit-cpu",
+  "function_id": "generic.sample",
+  "mode": "point_set",
+  "execution": {"backend_preference": "cpu"},
+  "function": {"expression": "z^2 + z + 1"},
+  "points": [{"x": 1.0, "y": 0.0}],
+  "metrics": ["value", "abs2"]
+})";
+        FractalProbeRequest cpuRequest{};
+        std::string error;
+        if (!ParseFractalProbeRequestJson(cpuJson, &cpuRequest, &error)) {
+            std::cerr << "[22] explicit cpu request should parse: " << error << "\n";
+            return 1;
+        }
+
+        FractalProbeResponse cpuResponse{};
+        if (!RunFractalProbeRequest(cpuRequest, "unused", &cpuResponse, &error)) {
+            std::cerr << "[22] explicit cpu request should run: " << error << "\n";
+            return 1;
+        }
+        if (RuntimeBackendUsedFromJson(SerializeFractalProbeResponseJson(cpuResponse)) != "cpu") {
+            std::cerr << "[22] explicit cpu request should report runtime.backend_used=cpu\n";
+            return 1;
+        }
+        if (!NearlyEqual(cpuResponse.samples[0].final_z_x, 3.0, 1e-9)) {
+            std::cerr << "[22] explicit cpu request should preserve sampled value\n";
+            return 1;
+        }
+
+        const char* cudaJson = R"({
+  "request_version": 1,
+  "request_id": "gf-explicit-cuda",
+  "function_id": "generic.sample",
+  "mode": "point_set",
+  "execution": {"backend_preference": "cuda"},
+  "function": {"expression": "z^2 + z + 1"},
+  "points": [{"x": 1.0, "y": 0.0}],
+  "metrics": ["value", "abs2"]
+})";
+        FractalProbeRequest cudaRequest{};
+        if (!ParseFractalProbeRequestJson(cudaJson, &cudaRequest, &error)) {
+            std::cerr << "[22] explicit cuda request should parse: " << error << "\n";
+            return 1;
+        }
+
+        FractalProbeResponse cudaResponse{};
+        if (!RunFractalProbeRequest(cudaRequest, "unused", &cudaResponse, &error)) {
+            std::cerr << "[22] explicit cuda request should run: " << error << "\n";
+            return 1;
+        }
+        if (RuntimeBackendUsedFromJson(SerializeFractalProbeResponseJson(cudaResponse)) != "cuda") {
+            std::cerr << "[22] explicit cuda request should report runtime.backend_used=cuda\n";
+            return 1;
+        }
+        if (!NearlyEqual(cudaResponse.samples[0].final_z_x, cpuResponse.samples[0].final_z_x, 1e-10) ||
+            !NearlyEqual(cudaResponse.samples[0].final_z_y, cpuResponse.samples[0].final_z_y, 1e-10)) {
+            std::cerr << "[22] explicit cuda request should preserve CPU/CUDA value parity\n";
+            return 1;
+        }
+
+        const char* defaultJson = R"({
+  "request_version": 1,
+  "request_id": "gf-explicit-default",
+  "function_id": "generic.sample",
+  "mode": "point_set",
+  "execution": {"backend_preference": "default"},
+  "function": {"expression": "z^2 + z + 1"},
+  "points": [{"x": 1.0, "y": 0.0}],
+  "metrics": ["value", "abs2"]
+})";
+        FractalProbeRequest defaultRequest{};
+        if (!ParseFractalProbeRequestJson(defaultJson, &defaultRequest, &error)) {
+            std::cerr << "[22] explicit default request should parse: " << error << "\n";
+            return 1;
+        }
+
+        FractalProbeResponse defaultResponse{};
+        if (!RunFractalProbeRequest(defaultRequest, "unused", &defaultResponse, &error)) {
+            std::cerr << "[22] explicit default request should run: " << error << "\n";
+            return 1;
+        }
+        if (RuntimeBackendUsedFromJson(SerializeFractalProbeResponseJson(defaultResponse)) != "cpu") {
+            std::cerr << "[22] explicit default request should currently resolve to CPU policy\n";
+            return 1;
+        }
+
+        std::cout << "[22] execution.backend_preference routing: passed\n";
+        passed++;
+    }
+
+    // 23. execution.backend_preference rejects unknown ids ------------------
+    {
+        const char* badJson = R"({
+  "request_version": 1,
+  "request_id": "gf-bad-backend",
+  "function_id": "generic.sample",
+  "mode": "point_set",
+  "execution": {"backend_preference": "bogus"},
+  "function": {"expression": "z^2"},
+  "points": [{"x": 0.0, "y": 0.0}]
+})";
+        FractalProbeRequest request{};
+        std::string error;
+        bool ok = ParseFractalProbeRequestJson(badJson, &request, &error);
+        if (ok) {
+            std::cerr << "[23] unknown backend_preference should fail parsing\n";
+            return 1;
+        }
+        if (error.find("backend_preference") == std::string::npos) {
+            std::cerr << "[23] error should mention backend_preference: " << error << "\n";
+            return 1;
+        }
+        std::cout << "[23] execution.backend_preference rejects unknown ids: passed\n";
+        passed++;
+    }
+
+    // 24. non-generic functions reject pinned backend preference -----------
+    {
+        const char* badJson = R"({
+  "request_version": 1,
+  "request_id": "fractal-bad-backend-pin",
+  "function_id": "fractal.sample",
+  "mode": "point_set",
+  "execution": {"backend_preference": "cpu"},
+  "overrides": [
+    {"path": "fractal.view.fractal_type", "value": "newton"}
+  ],
+  "points": [{"x": 0.0, "y": 0.0}],
+  "metrics": ["iterations", "status"]
+})";
+        FractalProbeRequest request{};
+        std::string error;
+        if (!ParseFractalProbeRequestJson(badJson, &request, &error)) {
+            std::cerr << "[24] pinned backend preference for fractal.sample should parse before runtime rejection: " << error << "\n";
+            return 1;
+        }
+
+        FractalProbeResponse response{};
+        if (RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[24] fractal.sample should reject pinned backend preference\n";
+            return 1;
+        }
+        if (error.find("execution.backend_preference") == std::string::npos ||
+            error.find("generic.sample") == std::string::npos) {
+            std::cerr << "[24] rejection should mention execution.backend_preference and generic.sample: " << error << "\n";
+            return 1;
+        }
+
+        std::cout << "[24] non-generic functions reject pinned backend preference: passed\n";
+        passed++;
+    }
+
+    const int total = 25;
     std::cout << "test_generic_probe: " << passed << "/" << total << " passed\n";
     return (passed == total) ? 0 : 1;
 }

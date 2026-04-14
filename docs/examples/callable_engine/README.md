@@ -32,6 +32,7 @@ D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --sample-reques
 - Keep `request_id` meaningful.
 - Start with small grids first, then scale up.
 - Ask only for the metrics you need.
+- Use `execution.backend_preference` only when you need to pin `generic.sample` to `default`, `cpu`, or `cuda`; successful responses report the actual executor in `runtime.backend_used`.
 - For discovery of current parameter names and applicability rules, use `--describe-functions` first.
 
 ## Session Example Usage

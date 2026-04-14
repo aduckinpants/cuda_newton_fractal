@@ -587,6 +587,13 @@ bool TestSampleModeGenericSampleNdjsonIncludesFunctionId() {
     ASSERT(summary.value.as_object().find("function_id") != summary.value.as_object().end() &&
             summary.value.as_object().find("function_id")->second.as_string() == "generic.sample",
         "generic.sample summary should advertise function_id");
+    ASSERT(summary.value.as_object().find("runtime") != summary.value.as_object().end() &&
+            summary.value.as_object().find("runtime")->second.is_object(),
+        "generic.sample summary should carry runtime metadata");
+    ASSERT(summary.value.as_object().find("runtime")->second.as_object().find("backend_used") !=
+            summary.value.as_object().find("runtime")->second.as_object().end() &&
+            summary.value.as_object().find("runtime")->second.as_object().find("backend_used")->second.as_string() == "cpu",
+        "generic.sample summary should advertise runtime.backend_used for the active backend");
 
     DeleteFileA(args.request_json_path.c_str());
     DeleteFileA(args.response_json_path.c_str());

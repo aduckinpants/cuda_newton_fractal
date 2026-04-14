@@ -120,6 +120,14 @@ Copy-paste request JSON lives under [docs/examples/callable_engine/README.md](do
 
 This is the current preview surface for request-supplied function expressions.
 
+Phase 4 execution note:
+
+- `generic.sample` now accepts an optional request-side execution control at `execution.backend_preference`
+- allowed values are `default`, `cpu`, and `cuda`
+- the current runtime policy resolves `default` to CPU, but that default is intentionally runtime-owned so it can change later without breaking callers that omit the field
+- successful responses report the actual executor in `runtime.backend_used`
+- explicit backend pins fail fast when they cannot be honored; there is no silent fallback from `cuda` to `cpu`
+
 It already lets incoming sample requests carry a composed function body directly:
 
 ```json
@@ -149,6 +157,7 @@ What `generic.sample` is today:
 - a shipped expression/evaluator preview surface
 - suitable for request-supplied composed functions like `compose(...)` and `iterate(...)`
 - useful for prototyping generic/lambda-style compositions from incoming requests
+- wrapped around a transport-agnostic internal backend dispatcher so later in-process callers can reuse CPU/CUDA selection without going through the CLI transport
 
 What `generic.sample` is not yet:
 
@@ -156,6 +165,7 @@ What `generic.sample` is not yet:
 - a registry of newly named described functions
 - transpiled CUDA kernels loaded from external descriptors
 - proof that every future lambda/kernel composition should become a first-class `function_id`
+- a promise that the current runtime default will remain CPU forever
 
 ## Near-Term Wrap Rule
 
@@ -174,5 +184,5 @@ Do not pretend the engine already supports arbitrary registered kernels. That be
 Current Phase 3 stop point:
 
 - the shipped callable ids, execution kinds, and descriptor builders are now registry-backed inside this repo
-- the next step is the engine-side handoff boundary for later transpiler/kernel registration work
+- the next step is the engine-side handoff boundary for later transpiler/kernel registration work, building on the new `generic.sample` execution-preference/provenance seam rather than on the CLI transport itself
 - dynamic kernel registration and transpiler-backed external function loading remain future work

@@ -69,6 +69,7 @@ def test_generic_sample_newton_z3m1_point_set() -> None:
     assert response["ok"] is True
     assert response["request_id"] == "generic-newton-z3m1"
     assert response["function_id"] == "generic.sample"
+    assert response["runtime"]["backend_used"] == "cpu"
     assert response["summary"]["sample_count"] == 2
     assert len(response["samples"]) == 2
 
@@ -409,6 +410,62 @@ def test_generic_sample_nonfinite_payloads_keep_summary_numeric() -> None:
     assert response["summary"]["mean_abs2"] == pytest.approx(0.0)
 
 
+def test_generic_sample_backend_preference_cpu_and_cuda() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    cpu_request = {
+        "request_version": 1,
+        "request_id": "generic-explicit-cpu",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "cpu"},
+        "function": {
+            "expression": "z^2 + z + 1",
+        },
+        "points": [{"x": 1.0, "y": 0.0}],
+        "metrics": ["value", "abs2"],
+    }
+    cpu_response = _run_probe(cpu_request)
+    assert cpu_response["ok"] is True
+    assert cpu_response["runtime"]["backend_used"] == "cpu"
+    assert cpu_response["samples"][0]["value_x"] == pytest.approx(3.0)
+
+    cuda_request = {
+        "request_version": 1,
+        "request_id": "generic-explicit-cuda",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "cuda"},
+        "function": {
+            "expression": "z^2 + z + 1",
+        },
+        "points": [{"x": 1.0, "y": 0.0}],
+        "metrics": ["value", "abs2"],
+    }
+    cuda_response = _run_probe(cuda_request)
+    assert cuda_response["ok"] is True
+    assert cuda_response["runtime"]["backend_used"] == "cuda"
+    assert cuda_response["samples"][0]["value_x"] == pytest.approx(cpu_response["samples"][0]["value_x"])
+    assert cuda_response["samples"][0]["value_y"] == pytest.approx(cpu_response["samples"][0]["value_y"])
+
+    default_request = {
+        "request_version": 1,
+        "request_id": "generic-explicit-default",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "default"},
+        "function": {
+            "expression": "z^2 + z + 1",
+        },
+        "points": [{"x": 1.0, "y": 0.0}],
+        "metrics": ["value", "abs2"],
+    }
+    default_response = _run_probe(default_request)
+    assert default_response["ok"] is True
+    assert default_response["runtime"]["backend_used"] == "cpu"
+
+
 # -- Error cases --
 
 
@@ -469,6 +526,70 @@ def test_generic_sample_unknown_function_id() -> None:
     if result.returncode == 0:
         response = json.loads(result.stdout)
         assert response["ok"] is False
+
+
+def test_generic_sample_unknown_backend_preference_is_rejected() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-bad-backend",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "bogus"},
+        "function": {
+            "expression": "z^2",
+        },
+        "points": [{"x": 0.0, "y": 0.0}],
+    }
+
+    exe_path = _active_runtime_exe()
+    result = subprocess.run(
+        [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    response = json.loads(result.stdout)
+    assert result.returncode != 0
+    assert response["ok"] is False
+    assert "backend_preference" in response["error"]
+
+
+def test_fractal_sample_rejects_pinned_backend_preference() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "fractal-bad-backend-pin",
+        "function_id": "fractal.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "cpu"},
+        "overrides": [
+            {"path": "fractal.view.fractal_type", "value": "newton"},
+        ],
+        "points": [{"x": 0.0, "y": 0.0}],
+        "metrics": ["iterations", "status"],
+    }
+
+    exe_path = _active_runtime_exe()
+    result = subprocess.run(
+        [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    response = json.loads(result.stdout)
+    assert result.returncode != 0
+    assert response["ok"] is False
+    assert "execution.backend_preference" in response["error"]
+    assert "generic.sample" in response["error"]
 
 
 # -- Describe-functions: generic.sample should appear in catalog --

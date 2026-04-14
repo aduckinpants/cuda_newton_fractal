@@ -141,11 +141,25 @@ bool SampleGenericFunction(
 
     // Select CUDA device.
     int deviceCount = 0;
-    cudaGetDeviceCount(&deviceCount);
-    if (deviceCount > 0) cudaSetDevice(0);
+    cudaError_t deviceCountErr = cudaGetDeviceCount(&deviceCount);
+    if (deviceCountErr != cudaSuccess) {
+        if (outError) *outError = "CUDA backend unavailable: device enumeration failed";
+        return false;
+    }
+    if (deviceCount <= 0) {
+        if (outError) *outError = "CUDA backend unavailable: no CUDA devices detected";
+        return false;
+    }
+    if (cudaSetDevice(0) != cudaSuccess) {
+        if (outError) *outError = "CUDA backend unavailable: failed to select device 0";
+        return false;
+    }
 
     // Ensure enough stack for deep expression trees.
-    cudaDeviceSetLimit(cudaLimitStackSize, 16384);
+    if (cudaDeviceSetLimit(cudaLimitStackSize, 16384) != cudaSuccess) {
+        if (outError) *outError = "CUDA backend unavailable: failed to configure device stack size";
+        return false;
+    }
 
     // Allocate device memory.
     static_assert(sizeof(GFPoint) == sizeof(double2), "GFPoint/double2 layout mismatch");
@@ -187,7 +201,13 @@ bool SampleGenericFunction(
         return false;
     }
 
-    cudaDeviceSynchronize();
+    cudaError_t syncErr = cudaDeviceSynchronize();
+    if (syncErr != cudaSuccess) {
+        cudaFree(d_coords);
+        cudaFree(d_results);
+        if (outError) *outError = "CUDA generic sample kernel execution failed";
+        return false;
+    }
 
     // Copy results back.
     if (cudaMemcpy(outResults, d_results, resultBytes, cudaMemcpyDeviceToHost) != cudaSuccess) {

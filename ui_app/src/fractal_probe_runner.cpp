@@ -19,6 +19,7 @@
 #include "generic_function_parser.h"
 #include "generic_function_types.h"
 #include "generic_function_cpu_eval.h"
+#include "generic_sample_core.h"
 
 #include <algorithm>
 #include <chrono>
@@ -1670,6 +1671,47 @@ struct GenericSamplePreparedRequest {
     double escape_radius{1000.0};
 };
 
+enum class GenericSampleBackendKind {
+    cpu = 0,
+    cuda = 1,
+};
+
+const char* GenericSampleBackendId(GenericSampleBackendKind backend) {
+    switch (backend) {
+    case GenericSampleBackendKind::cpu: return "cpu";
+    case GenericSampleBackendKind::cuda: return "cuda";
+    }
+    return "cpu";
+}
+
+GenericSampleBackendKind ResolveDefaultGenericSampleBackend() {
+    return GenericSampleBackendKind::cpu;
+}
+
+bool ResolveGenericSampleBackend(const FractalProbeRequest& request,
+    GenericSampleBackendKind* outBackend,
+    std::string* outError) {
+    if (!outBackend) {
+        if (outError) *outError = "ResolveGenericSampleBackend requires outBackend";
+        return false;
+    }
+
+    switch (request.execution.backend_preference) {
+    case FractalProbeExecutionBackendPreference::default_backend:
+        *outBackend = ResolveDefaultGenericSampleBackend();
+        return true;
+    case FractalProbeExecutionBackendPreference::cpu:
+        *outBackend = GenericSampleBackendKind::cpu;
+        return true;
+    case FractalProbeExecutionBackendPreference::cuda:
+        *outBackend = GenericSampleBackendKind::cuda;
+        return true;
+    }
+
+    if (outError) *outError = "Unsupported generic.sample execution backend preference";
+    return false;
+}
+
 bool PrepareGenericSampleRequest(const FractalProbeRequest& request,
     GenericSamplePreparedRequest* outPrepared,
     std::string* outError) {
@@ -1713,7 +1755,8 @@ bool PrepareGenericSampleRequest(const FractalProbeRequest& request,
 
 FractalProbeResponse BuildGenericSampleResponseSkeleton(const FractalProbeRequest& request,
     const std::string& exePath,
-    const GenericSamplePreparedRequest& prepared) {
+    const GenericSamplePreparedRequest& prepared,
+    const char* backendUsed) {
     FractalProbeResponse response;
     response.request_id = request.request_id;
     response.function_id = "generic.sample";
@@ -1721,6 +1764,7 @@ FractalProbeResponse BuildGenericSampleResponseSkeleton(const FractalProbeReques
     response.runtime.exe_path = exePath;
     response.runtime.fractal_type = "generic";
     response.runtime.device_id = 0;
+    response.runtime.backend_used = backendUsed ? backendUsed : "";
     response.metric_selection = prepared.metric_selection;
     response.operator_context = request.operator_context;
     return response;
@@ -1790,6 +1834,60 @@ GenericSampleResult RunGenericSampleCpuEvaluation(
     return result;
 }
 
+bool RunGenericSampleBatchEvaluation(const GenericFunctionDesc& desc,
+    const std::vector<FractalProbePoint>& points,
+    GenericSampleBackendKind backend,
+    double epsilon,
+    double escape_radius,
+    std::vector<GenericSampleResult>* outResults,
+    std::string* outError) {
+    if (!outResults) {
+        if (outError) *outError = "RunGenericSampleBatchEvaluation requires outResults";
+        return false;
+    }
+
+    outResults->clear();
+    if (points.empty()) {
+        return true;
+    }
+
+    if (backend == GenericSampleBackendKind::cpu) {
+        outResults->reserve(points.size());
+        for (const FractalProbePoint& point : points) {
+            outResults->push_back(RunGenericSampleCpuEvaluation(
+                desc,
+                {point.x, point.y},
+                epsilon,
+                escape_radius));
+        }
+        return true;
+    }
+
+    std::vector<GFPoint> coords;
+    coords.reserve(points.size());
+    for (const FractalProbePoint& point : points) {
+        coords.push_back({point.x, point.y});
+    }
+
+    outResults->assign(points.size(), GenericSampleResult{});
+    const char* rawError = nullptr;
+    if (!SampleGenericFunction(
+            coords.data(),
+            static_cast<int>(coords.size()),
+            desc,
+            epsilon,
+            escape_radius,
+            outResults->data(),
+            &rawError)) {
+        if (outError) {
+            *outError = rawError ? rawError : "CUDA generic sample execution failed";
+        }
+        return false;
+    }
+
+    return true;
+}
+
 FractalProbeSample MarshalGenericSampleToProbeSample(
     const GenericSampleResult& gsr,
     int sequenceIndex,
@@ -1825,7 +1923,7 @@ FractalProbeSample MarshalGenericSampleToProbeSample(
 } // namespace
 
 // --- generic.sample handler ---
-// Uses the CPU expression evaluator. No CUDA dependency.
+// Supports execution-layer CPU/CUDA selection without changing the math surface.
 
 bool RunGenericSampleRequest(const FractalProbeRequest& request,
     const std::string& exePath,
@@ -1839,7 +1937,16 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
         return false;
     }
 
-    FractalProbeResponse response = BuildGenericSampleResponseSkeleton(request, exePath, prepared);
+    GenericSampleBackendKind backend = GenericSampleBackendKind::cpu;
+    if (!ResolveGenericSampleBackend(request, &backend, outError)) {
+        return false;
+    }
+
+    FractalProbeResponse response = BuildGenericSampleResponseSkeleton(
+        request,
+        exePath,
+        prepared,
+        GenericSampleBackendId(backend));
 
     int globalCount = 0;
     double globalIterationSum = 0.0;
@@ -1867,6 +1974,22 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
         double eps = prepared.epsilon;
         double esc = prepared.escape_radius;
 
+        std::vector<GenericSampleResult> batchResults;
+        std::string backendError;
+        if (!RunGenericSampleBatchEvaluation(pr.desc,
+                prepared.base_points,
+                backend,
+                eps,
+                esc,
+                &batchResults,
+                &backendError)) {
+            if (outError) {
+                *outError = std::string("generic.sample execution backend '") +
+                    GenericSampleBackendId(backend) + "' failed: " + backendError;
+            }
+            return false;
+        }
+
         FractalProbeSequenceResult sequenceResult;
         sequenceResult.sequence_index = static_cast<int>(sequenceIndex);
         sequenceResult.applied = ToAppliedPairs(prepared.sequence_variants[sequenceIndex]);
@@ -1877,9 +2000,7 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
         for (size_t pi = 0; pi < prepared.base_points.size(); ++pi) {
             double cx = prepared.base_points[pi].x;
             double cy = prepared.base_points[pi].y;
-            GFCpuComplex z = {cx, cy};
-
-            GenericSampleResult gsr = RunGenericSampleCpuEvaluation(pr.desc, z, eps, esc);
+            const GenericSampleResult& gsr = batchResults[pi];
             FractalProbeSample sample = MarshalGenericSampleToProbeSample(
                 gsr,
                 static_cast<int>(sequenceIndex),
@@ -1944,6 +2065,12 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
         return false;
     }
 
+    if (registration->execution_kind != EngineFunctionExecutionKind::generic_sampler &&
+        request.execution.backend_preference != FractalProbeExecutionBackendPreference::default_backend) {
+        if (outError) *outError = "execution.backend_preference is only supported for function_id: generic.sample";
+        return false;
+    }
+
     if (registration->execution_kind == EngineFunctionExecutionKind::generic_sampler) {
         return RunGenericSampleRequest(request, exePath, outResponse, outError);
     }
@@ -1980,6 +2107,7 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
     response.ok = true;
     response.runtime.exe_path = exePath;
     response.runtime.device_id = baseState.render.device_id;
+    response.runtime.backend_used = "cuda";
     response.metric_selection = BuildFractalProbeMetricSelection(request.metrics);
     response.operator_context = request.operator_context;
     const bool includeSamplePayloads = FractalProbeSelectionIncludesAnySampleMetrics(response.metric_selection);

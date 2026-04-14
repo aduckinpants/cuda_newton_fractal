@@ -146,6 +146,23 @@ bool ParseOutputModeId(const std::string& text, FractalProbeOutputMode* outMode)
     return false;
 }
 
+bool ParseExecutionBackendPreferenceId(const std::string& text,
+    FractalProbeExecutionBackendPreference* outPreference) {
+    if (text == "default") {
+        if (outPreference) *outPreference = FractalProbeExecutionBackendPreference::default_backend;
+        return true;
+    }
+    if (text == "cpu") {
+        if (outPreference) *outPreference = FractalProbeExecutionBackendPreference::cpu;
+        return true;
+    }
+    if (text == "cuda") {
+        if (outPreference) *outPreference = FractalProbeExecutionBackendPreference::cuda;
+        return true;
+    }
+    return false;
+}
+
 bool ParseSequenceModeId(const std::string& text, FractalProbeSequenceMode* outMode) {
     if (text == "axes") { if (outMode) *outMode = FractalProbeSequenceMode::axes; return true; }
     if (text == "variant_crossfade") { if (outMode) *outMode = FractalProbeSequenceMode::variant_crossfade; return true; }
@@ -686,7 +703,7 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
 
     const json_min::Object& root = value.as_object();
     if (!RejectUnknownKeys(root,
-            {"request_version", "request_id", "function_id", "function", "mode", "output_mode", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context", "state_token"},
+            {"request_version", "request_id", "function_id", "function", "mode", "output_mode", "execution", "base_state", "overrides", "region", "points", "sequence", "metrics", "operator_context", "state_token"},
             "request",
             outError)) return false;
 
@@ -798,6 +815,31 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
             if (!ParseOutputModeId(outputIt->second.as_string(), &request.output_mode)) {
                 if (outError) *outError = "Unsupported output_mode: " + outputIt->second.as_string();
                 return false;
+            }
+        }
+    }
+
+    {
+        auto executionIt = root.find("execution");
+        if (executionIt != root.end()) {
+            if (!executionIt->second.is_object()) {
+                if (outError) *outError = "execution must be an object";
+                return false;
+            }
+            const json_min::Object& executionObj = executionIt->second.as_object();
+            if (!RejectUnknownKeys(executionObj, {"backend_preference"}, "execution", outError)) return false;
+
+            auto backendIt = executionObj.find("backend_preference");
+            if (backendIt != executionObj.end()) {
+                if (!backendIt->second.is_string()) {
+                    if (outError) *outError = "execution.backend_preference must be a string";
+                    return false;
+                }
+                const std::string backendPreference = backendIt->second.as_string();
+                if (!ParseExecutionBackendPreferenceId(backendPreference, &request.execution.backend_preference)) {
+                    if (outError) *outError = "Unsupported execution.backend_preference: " + backendPreference;
+                    return false;
+                }
             }
         }
     }
@@ -961,7 +1003,8 @@ std::string SerializeFractalProbeResponseJson(const FractalProbeResponse& respon
     ss << "  \"runtime\": {\n";
     ss << "    \"exe_path\": \"" << EscapeJsonString(response.runtime.exe_path) << "\",\n";
     ss << "    \"fractal_type\": \"" << EscapeJsonString(response.runtime.fractal_type) << "\",\n";
-    ss << "    \"device_id\": " << response.runtime.device_id << "\n";
+    ss << "    \"device_id\": " << response.runtime.device_id << ",\n";
+    ss << "    \"backend_used\": \"" << EscapeJsonString(response.runtime.backend_used) << "\"\n";
     ss << "  },\n";
     AppendSummaryJson(ss, response.summary, response.metric_selection, 2);
     ss << ",\n";
@@ -1027,6 +1070,14 @@ std::string SerializeFractalProbeNdjsonSummaryJson(
     std::ostringstream costJson;
     AppendJsonObjectCompact(costJson, BuildCostEntries(response.cost));
 
+    std::vector<std::pair<std::string, std::string>> runtimeEntries;
+    runtimeEntries.push_back({"fractal_type", JsonStringLiteral(response.runtime.fractal_type)});
+    runtimeEntries.push_back({"device_id", std::to_string(response.runtime.device_id)});
+    runtimeEntries.push_back({"backend_used", JsonStringLiteral(response.runtime.backend_used)});
+
+    std::ostringstream runtimeJson;
+    AppendJsonObjectCompact(runtimeJson, runtimeEntries);
+
     std::vector<std::pair<std::string, std::string>> entries;
     entries.push_back({"type", JsonStringLiteral("summary")});
     entries.push_back({"request_id", JsonStringLiteral(response.request_id)});
@@ -1034,6 +1085,7 @@ std::string SerializeFractalProbeNdjsonSummaryJson(
         entries.push_back({"function_id", JsonStringLiteral(response.function_id)});
     }
     entries.push_back({"ok", response.ok ? "true" : "false"});
+    entries.push_back({"runtime", runtimeJson.str()});
     entries.push_back({"summary", summaryJson.str()});
     entries.push_back({"cost", costJson.str()});
     if (!stateToken.empty()) {
