@@ -412,10 +412,46 @@ int main() {
             return 1;
         }
 
+        const char* nullableFractalOutputs[] = {"final_z_x", "final_z_y", "final_abs2"};
+        for (const char* outputName : nullableFractalOutputs) {
+            bool found = false;
+            for (const auto& output : fractalDescriptor.outputs) {
+                if (output.name != outputName) continue;
+                found = true;
+                if (!output.nullable) {
+                    std::cerr << "Expected fractal output " << outputName << " to be marked nullable for nonfinite payloads\n";
+                    return 1;
+                }
+                break;
+            }
+            if (!found) {
+                std::cerr << "Expected fractal descriptor output " << outputName << "\n";
+                return 1;
+            }
+        }
+
         FunctionDescriptor genericDescriptor = genericRegistration->descriptor_builder(schema);
         if (genericDescriptor.id != "generic.sample") {
             std::cerr << "Expected generic registry builder to emit the generic sampler descriptor\n";
             return 1;
+        }
+
+        const char* nullableOutputs[] = {"value_x", "value_y", "abs2", "derivative_x", "derivative_y"};
+        for (const char* outputName : nullableOutputs) {
+            bool found = false;
+            for (const auto& output : genericDescriptor.outputs) {
+                if (output.name != outputName) continue;
+                found = true;
+                if (!output.nullable) {
+                    std::cerr << "Expected generic output " << outputName << " to be marked nullable for nonfinite payloads\n";
+                    return 1;
+                }
+                break;
+            }
+            if (!found) {
+                std::cerr << "Expected generic descriptor output " << outputName << "\n";
+                return 1;
+            }
         }
 
         for (const auto& function : catalog.functions) {

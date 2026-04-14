@@ -280,7 +280,7 @@ int main() {
         passed++;
     }
 
-    // 8. Backward compat: fractal.sample still routes (empty function_id) -----
+    // 7b. Nonfinite sample payloads stay parseable without poisoning summary metrics.
     {
         FractalProbeRequest request{};
         request.request_version = 1;
@@ -291,7 +291,7 @@ int main() {
         request.generic_expression = "iterate(z - 1 + exp(-z), 60)";
         request.generic_epsilon = 1e-9;
         request.generic_escape_radius = 1000.0;
-        request.metrics = {"iterations", "status", "value", "abs2", "derivative"};
+        request.metrics = {"iterations", "status", "value", "abs2", "derivative", "summary_mean_abs2"};
         request.points.push_back({-6.5, -9.5});
 
         FractalProbeResponse response{};
@@ -321,6 +321,16 @@ int main() {
         }
         if (!derivativeX || !derivativeX->is_null() || !derivativeY || !derivativeY->is_null()) {
             std::cerr << "[7b] derivative components should serialize as null when nonfinite\n";
+            return 1;
+        }
+        const auto* summary = parsed.value.get("summary");
+        if (!summary || !summary->is_object()) {
+            std::cerr << "[7b] expected serialized summary object\n";
+            return 1;
+        }
+        const auto* meanAbs2 = summary->get("mean_abs2");
+        if (!meanAbs2 || !meanAbs2->is_number() || !NearlyEqual(meanAbs2->as_number(), 0.0, 1e-12)) {
+            std::cerr << "[7b] summary.mean_abs2 should stay finite and collapse to 0 when every sampled abs2 is nonfinite\n";
             return 1;
         }
         std::cout << "[7b] nonfinite JSON sanitize: passed\n";

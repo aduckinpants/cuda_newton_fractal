@@ -455,9 +455,9 @@ FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema) {
         {"nonfinite", "Non-finite"},
         {"invalid_param", "Invalid Parameter"},
     }});
-    desc.outputs.push_back({"final_z_x", "double", false, {}});
-    desc.outputs.push_back({"final_z_y", "double", false, {}});
-    desc.outputs.push_back({"final_abs2", "double", false, {}});
+    desc.outputs.push_back({"final_z_x", "double", true, {}});
+    desc.outputs.push_back({"final_z_y", "double", true, {}});
+    desc.outputs.push_back({"final_abs2", "double", true, {}});
     desc.outputs.push_back({"residual", "double", true, {}});
     desc.outputs.push_back({"root_index", "int", true, {}});
     desc.summary_metrics.push_back({"mean_iterations"});
@@ -479,11 +479,11 @@ FunctionDescriptor BuildGenericSamplerDescriptor() {
     // Outputs.
     desc.outputs.push_back({"iterations", "int", false, {}});
     desc.outputs.push_back({"status", "enum", false, {{"escaped"}, {"converged"}, {"bounded"}, {"nonfinite"}}});
-    desc.outputs.push_back({"value_x", "double", false, {}});
-    desc.outputs.push_back({"value_y", "double", false, {}});
-    desc.outputs.push_back({"abs2", "double", false, {}});
-    desc.outputs.push_back({"derivative_x", "double", false, {}});
-    desc.outputs.push_back({"derivative_y", "double", false, {}});
+    desc.outputs.push_back({"value_x", "double", true, {}});
+    desc.outputs.push_back({"value_y", "double", true, {}});
+    desc.outputs.push_back({"abs2", "double", true, {}});
+    desc.outputs.push_back({"derivative_x", "double", true, {}});
+    desc.outputs.push_back({"derivative_y", "double", true, {}});
 
     // Summary metrics.
     desc.summary_metrics.push_back({"mean_iterations"});

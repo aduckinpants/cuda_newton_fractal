@@ -151,6 +151,33 @@ def test_generic_sample_direct_eval() -> None:
     assert abs(s["value_y"]) < 1e-9
 
 
+def test_generic_sample_nonfinite_payloads_keep_summary_numeric() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-nonfinite-json-contract",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "function": {
+            "expression": "iterate(z - 1 + exp(-z), 60)",
+            "epsilon": 1e-9,
+            "escape_radius": 1000.0,
+        },
+        "points": [{"x": -6.5, "y": -9.5}],
+        "metrics": ["iterations", "status", "value", "abs2", "derivative", "summary_mean_abs2"],
+    }
+
+    response = _run_probe(request)
+    assert response["ok"] is True
+    sample = response["samples"][0]
+    assert sample["abs2"] is None
+    assert sample["derivative_x"] is None
+    assert sample["derivative_y"] is None
+    assert response["summary"]["mean_abs2"] == pytest.approx(0.0)
+
+
 # -- Error cases --
 
 

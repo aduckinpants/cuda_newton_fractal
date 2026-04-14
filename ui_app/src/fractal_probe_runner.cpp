@@ -1712,6 +1712,7 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
     int globalNonfinite = 0;
     int globalPole = 0;
     double globalAbs2Sum = 0.0;
+    int globalFiniteAbs2Count = 0;
     double bestMeanIterations = -1.0;
     int bestSequenceIndex = -1;
 
@@ -1746,8 +1747,6 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
         int seqCount = 0;
         double seqIterationSum = 0.0;
         int seqEscaped = 0, seqConverged = 0, seqNonfinite = 0, seqPole = 0;
-        double seqAbs2Sum = 0.0;
-
         for (size_t pi = 0; pi < basePoints.size(); ++pi) {
             double cx = basePoints[pi].x;
             double cy = basePoints[pi].y;
@@ -1825,8 +1824,10 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
             }
             AccumulateSummary(sample, &seqCount, &seqIterationSum, &seqEscaped, &seqConverged, &seqNonfinite, &seqPole);
             AccumulateSummary(sample, &globalCount, &globalIterationSum, &globalEscaped, &globalConverged, &globalNonfinite, &globalPole);
-            seqAbs2Sum += gsr.abs2;
-            globalAbs2Sum += gsr.abs2;
+            if (std::isfinite(gsr.abs2)) {
+                globalAbs2Sum += gsr.abs2;
+                globalFiniteAbs2Count += 1;
+            }
         }
 
         FinalizeSummary(seqCount, seqIterationSum, seqEscaped, seqConverged, seqNonfinite, seqPole,
@@ -1845,7 +1846,7 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
         &response.summary.mean_iterations, &response.summary.escape_fraction,
         &response.summary.converged_fraction, &response.summary.nonfinite_fraction, &response.summary.pole_fraction);
     response.summary.best_sequence_index = bestSequenceIndex < 0 ? 0 : bestSequenceIndex;
-    response.summary.mean_abs2 = globalCount > 0 ? globalAbs2Sum / globalCount : 0.0;
+    response.summary.mean_abs2 = globalFiniteAbs2Count > 0 ? globalAbs2Sum / static_cast<double>(globalFiniteAbs2Count) : 0.0;
     response.summary.diverged_fraction = globalCount > 0 ? static_cast<double>(globalEscaped) / globalCount : 0.0;
     response.cost.gpu_ms = ElapsedMilliseconds(startedAt);
 

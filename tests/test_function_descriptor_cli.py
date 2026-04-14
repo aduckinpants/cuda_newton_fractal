@@ -123,6 +123,15 @@ def test_describe_functions_emits_valid_catalog() -> None:
     residual_out = next(o for o in func["outputs"] if o["name"] == "residual")
     assert residual_out.get("nullable") is True
 
+    for output_name in ["final_z_x", "final_z_y", "final_abs2"]:
+        fractal_output = next(o for o in func["outputs"] if o["name"] == output_name)
+        assert fractal_output.get("nullable") is True
+
+    generic_func = next(f for f in catalog["functions"] if f["id"] == "generic.sample")
+    for output_name in ["value_x", "value_y", "abs2", "derivative_x", "derivative_y"]:
+        generic_output = next(o for o in generic_func["outputs"] if o["name"] == output_name)
+        assert generic_output.get("nullable") is True
+
 
 def test_describe_functions_json_file_output() -> None:
     if sys.platform != "win32":

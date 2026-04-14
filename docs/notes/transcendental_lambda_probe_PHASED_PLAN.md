@@ -19,6 +19,7 @@ Phase 3 - hostile audit and continuity closure (complete)
   - one known-good archived Explaino state acts as the hero frame
   - three new `generic.sample` sidecars provide the actual lambda/composition stress cases over a shared complex-plane region
   - this slice should stay inside the current runtime + composite tooling surface
+  - audit correction: this slice validated the callable/JSON surface and caught a real serialization bug, but the archived hero frame means it does not count as a novel mathematical exploration result
 - Phase 1 exit criteria:
   - a checked-in manifest exists for the transcendental probe
   - the published runtime passes the existing `generic.sample` CLI regression surface before the new manifest is run
@@ -26,7 +27,7 @@ Phase 3 - hostile audit and continuity closure (complete)
   - the composite run captures the base finding, writes all three sidecar request/response pairs, and writes the local analyzer outputs
   - the summary JSON shows non-null sidecar results with non-zero sample counts for all three expressions
 - Phase 3 exit criteria:
-  - hostile review confirms the slice tested what it claimed: transcendental Newton ladders plus `compose(...)` inside `iterate(...)`
+  - hostile review confirms the slice validated transcendental Newton ladders plus `compose(...)` inside `iterate(...)` as callable-surface stress cases without overstating the result as novel exploration
   - continuity surfaces record the final stop point, diagnostics, and validated command set
 
 ## Validation
