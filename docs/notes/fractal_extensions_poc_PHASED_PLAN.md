@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 3 - gallery scene sheet and sidecar proof
+Phase 4 - hostile review and continuity closure
 
 - [x] Phase 1 - composite contract and dry-run scaffold
 - [x] Phase 2 - live capture/archive/analyzer integration
-- [ ] Phase 3 - gallery scene sheet and sidecar proof
+- [x] Phase 3 - gallery scene sheet and sidecar proof
 - [ ] Phase 4 - hostile review and continuity closure
 
 ## Notes
@@ -26,7 +26,7 @@ Phase 3 - gallery scene sheet and sidecar proof
   - landed: `fractal_extensions.py` core module, `run_fractal_extensions_composite.py` CLI entrypoint, package exports, and focused tests for manifest loading, dry-run planning, and live capture/archive/sidecar/analyzer orchestration with stubbed runtime seams
   - validated live: a pilot manifest using the archived `explaino_dual` state now captures to `D:/salt-fractal/cuda_newton_fractal_clone/findings/fractal_extensions_gallery_2026-04-13/explaino_dual_demo/`, writes a `newton_z3m1` sidecar request/response pair, and generates local analysis artifacts under `<finding>/analysis`
   - audit repair: `--dry-run` no longer resolves the published runtime path eagerly, so planning-only runs now work even when no runtime is installed for the repo name under `D:/salt-fractal`
-  - next step: build the actual 3-5 scene sheet, decide which Collatz-flavored frame survives the scout pass, and strengthen the sidecar stories so the gallery reads as a tool concept instead of a single demo
+  - next step: hostile review of gallery output — check reproducibility, sidecar metadata clarity, and output-dir completeness before declaring the tool concept proven
 - Phase 2 exit criteria:
   - the runner can drive headless capture through the published runtime, archive the diagnostics bundle to an explicit finding directory, and optionally run the finding analyzer on the archived result
   - live execution uses deterministic output paths and explicit finding ids instead of scraping ad hoc runtime output

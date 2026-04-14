@@ -1,0 +1,122 @@
+{
+  "finding_group": "fractal_extensions_gallery",
+  "scenes": [
+    {
+      "scene_id": "vortex_cobalt",
+      "state_json": "D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-04-09/160728_876__explaino_vortex/state.json",
+      "why": "Explaino-Vortex with rotational perturbation produces fractal flowers on escape-time-coloured cobalt background; ideal for demonstrating how a Newton-family kernel can produce Mandelbrot-like visual language",
+      "region": {
+        "center_x": -0.671064,
+        "center_y": -0.712195,
+        "span_x": 0.8,
+        "span_y": 0.8,
+        "grid_width": 10,
+        "grid_height": 10
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "newton_cathedral",
+          "expression": "iterate(z - (z^3 - 1) / (3 * z^2), 60)",
+          "notes": "Classic z^3-1 Newton iteration over the same region; basin triangles contrast with vortex escape-time boundaries"
+        },
+        {
+          "sidecar_id": "sine_field",
+          "expression": "compose(sin(z), z^2)",
+          "notes": "Composed sine-of-square field; measures oscillatory interference at Newton convergence boundaries"
+        }
+      ]
+    },
+    {
+      "scene_id": "rational_escape_globe",
+      "state_json": "D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-04-12/185430_545__explaino_rational_escape/state.json",
+      "why": "Explaino-Rational-Escape deep in the real-axis arm at zoom ~14.6 with high max_iter (1200) and smooth_escape coloring produces an orbital globe texture unlike any other fractal in the catalog",
+      "region": {
+        "center_x": -11.0148,
+        "center_y": -0.588302,
+        "span_x": 1.2,
+        "span_y": 1.2,
+        "grid_width": 8,
+        "grid_height": 8
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "exp_interference",
+          "expression": "compose(exp(z), z^2 + c)",
+          "params": {"c_real": -0.745, "c_imag": 0.113},
+          "notes": "exp(z^2+c) interference field; exponential growth rate at the rational-escape boundary reveals basin sensitivity"
+        },
+        {
+          "sidecar_id": "abs_fold",
+          "expression": "iterate(abs(z) - z^2, 40)",
+          "notes": "Absolute-value fold iteration; folds the complex plane onto the real axis and exposes hidden symmetry axes in the rational regime"
+        }
+      ]
+    },
+    {
+      "scene_id": "joy_scallop",
+      "state_json": "D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-04-12/163724_306__explaino_joy/state.json",
+      "why": "Explaino-Joy with joy_coupling=0.668 and a tuned poly creates scalloped basin boundaries; the bold yellow-green vs purple colour field is the strongest visual case for joy_basins coloring",
+      "region": {
+        "center_x": -0.864583,
+        "center_y": -0.203125,
+        "span_x": 3.0,
+        "span_y": 3.0,
+        "grid_width": 8,
+        "grid_height": 8
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "mandelbrot_tile",
+          "expression": "iterate(z^2 + c, 50)",
+          "params": {"c_real": -0.75, "c_imag": 0.0},
+          "notes": "Mandelbrot-style z^2+c iteration at the joy-basin boundary shows how quadratic escape-time geometry overlaps Newton-convergence regions"
+        }
+      ]
+    },
+    {
+      "scene_id": "phoenix_bifurcation",
+      "state_json": "D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-04-09/120630_792__explaino_phoenix/state.json",
+      "why": "Explaino-Phoenix with p=(0.4, -0.42) and complex polynomial produces bifurcated basin structure; the phoenix coupling creates memory-feedback orbits absent in pure Newton fractals",
+      "region": {
+        "center_x": 0.575178,
+        "center_y": -0.451912,
+        "span_x": 2.5,
+        "span_y": 2.5,
+        "grid_width": 8,
+        "grid_height": 8
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "newton_z3m1",
+          "expression": "iterate(z - (z^3 - 1) / (3 * z^2), 60)",
+          "notes": "Classic Newton z^3-1 at the phoenix bifurcation location; reveals how memory-coupling flips convergence zones vs pure Newton"
+        },
+        {
+          "sidecar_id": "conj_twist",
+          "expression": "iterate(z_conj * z + z^2, 30)",
+          "notes": "Conjugate-twist iteration; mixes anti-holomorphic feedback similar to phoenix memory but with purely geometric conjugation"
+        }
+      ]
+    },
+    {
+      "scene_id": "dual_explaino",
+      "state_json": "D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-04-05/220722_840__explaino_dual/state.json",
+      "why": "Explaino-Dual with seed_b and mix interpolation active; two-seed blending is the canonical demo of the dual-polynomial sidecar mechanism that the fractal extensions PoC was built from",
+      "region": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "span_x": 3.0,
+        "span_y": 3.0,
+        "grid_width": 6,
+        "grid_height": 6
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "newton_z3m1",
+          "expression": "iterate(z - (z^3 - 1) / (3 * z^2), 60)",
+          "notes": "Newton z^3-1 as baseline over the dual-seed blend region; measures how much the dual blending departs from classical Newton basins"
+        }
+      ]
+    }
+  ]
+}
