@@ -81,9 +81,9 @@ Use the public task/profile surface instead of reconstructing command bundles fr
 Current profiles:
 
 - `native` — code-quality audit plus `ui_app/build_tests_vsdevcmd.cmd`
-- `runtime` — code-quality audit plus `ui_app/build_vsdevcmd.cmd` and the focused probe/session runtime pytest lane
+- `runtime` — code-quality audit plus `ui_app/build_vsdevcmd.cmd` and the focused probe/session runtime pytest helper lane, which preflights the published runtime and fails ambiguous zero-pass skip-only runs
 - `catalog` — code-quality audit plus `ui_app/build_vsdevcmd.cmd` and strict catalog smoke
-- `checkpoint` — code-quality audit plus native helper tests, runtime publish, and focused probe/session runtime pytest
+- `checkpoint` — code-quality audit plus native helper tests, runtime publish, and the same focused probe/session runtime pytest helper lane
 
 The VS Code task surface is the canonical profile surface under `verify: profile ...`.
 

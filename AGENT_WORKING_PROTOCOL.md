@@ -165,6 +165,7 @@ Public workflow surface:
 | Plan sync check | `py -3.14 tools\viewer_host_assert_phased_plan_sync.py` | Deterministic phased-plan continuity adapter |
 | Native helper tests | `ui_app\build_tests_vsdevcmd.cmd` | Must pass before any commit |
 | Full viewer build | `ui_app\build_vsdevcmd.cmd` | Must pass before any commit |
+| Runtime probe/session pytest lane | `py -3.14 tools\viewer_host_runtime_pytest_lane.py` | Published-runtime pytest helper for `tests/test_fractal_runtime_probe_cli.py`, `tests/test_fractal_runtime_session.py`, `tests/test_function_descriptor_cli.py`, and `tests/test_generic_probe_cli.py`. It preflights the active runtime metadata and fails ambiguous zero-pass skip-only runs. |
 | Probe catalog smoke | `py -3.14 tools\reality_toolkit\scripts\run_fractal_catalog_smoke.py --strict --out-dir <task-dir>` | For probe/descriptor changes |
 | Python test suite | `py -3.14 -m pytest tests/ -q` | For Python-side changes |
 | Specific test file | `py -3.14 -m pytest tests/<test_file>.py -q` | Targeted validation |

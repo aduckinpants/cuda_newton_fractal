@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - reduce runtime pytest ambiguity
+Phase 6 - harden helper defaults and carryover ritual
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - reduce runtime pytest ambiguity
 - [x] Phase 2 - repair handoff helper checkpoint-id flow
 - [x] Phase 3 - audit deterministic closure enforcement seam
 - [x] Phase 4 - improve build and validation visibility
-- [ ] Phase 5 - reduce runtime pytest ambiguity
+- [x] Phase 5 - reduce runtime pytest ambiguity
 - [ ] Phase 6 - harden helper defaults and carryover ritual
 
 ## Notes
@@ -49,6 +49,10 @@ Phase 5 - reduce runtime pytest ambiguity
   - `tools/viewer_host_session_bootstrap.py` now reads the canonical `.vscode/tasks.json` verify profiles and exposes each profile's concrete dependent steps plus artifact outputs instead of only saying to use the `verify: profile ...` tasks
   - the bootstrap report now shows where code-quality JSON, build logs, runtime publish logs, and catalog-smoke outputs land before the operator runs those rails
   - `tests/test_agent_workflow_tools.py` now locks the checkpoint and catalog profile breakdowns and includes an audit-follow-up regression proving the new profile parser respects an explicit repo root instead of only the workspace-global tasks path
+- Phase 5 completion snapshot:
+  - `.vscode/tasks.json` now routes `verify: runtime probe/session pytest` through `tools/viewer_host_runtime_pytest_lane.py` instead of invoking pytest directly
+  - `tools/viewer_host_runtime_pytest_lane.py` now preflights the published runtime metadata, prints the active runtime plus canonical test-file list, and fails zero-pass skip-only runs instead of letting them look like successful runtime validation
+  - `tests/test_viewer_host_runtime_pytest_lane.py` locks the helper's summary parsing, missing-runtime preflight, zero-pass failure mode, and normal passing behavior, while `tests/test_agent_workflow_tools.py` locks the task wiring
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`

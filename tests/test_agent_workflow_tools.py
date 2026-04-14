@@ -177,6 +177,13 @@ def test_bootstrap_surface_describes_catalog_smoke_log_and_output_dir() -> None:
     }
 
 
+def test_runtime_pytest_task_uses_runtime_lane_helper() -> None:
+    tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
+
+    assert '"label": "verify: runtime probe/session pytest"' in tasks_json
+    assert '"tools/viewer_host_runtime_pytest_lane.py"' in tasks_json
+
+
 def test_build_validation_profiles_uses_explicit_repo_root(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     tasks_dir = repo_root / ".vscode"
