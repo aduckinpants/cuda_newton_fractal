@@ -1,0 +1,37 @@
+{
+  "finding_group": "maxwell_rh_probe",
+  "scenes": [
+    {
+      "scene_id": "rh_critical_strip",
+      "state_json": "D:\\salt-fractal\\cuda_newton_fractal_clone\\manual_probe\\maxwell_rh_probe\\state.json",
+      "why": "explaino_joy base frame (natural attractor reference) + generic.sample Newton basins scanned through the Riemann critical strip; sidecar region covers Im=[-23,23] to show basin geometry for all four conjugate RH zero pairs",
+      "region": {
+        "center_x": 0.5,
+        "center_y": 0.0,
+        "span_x": 5.0,
+        "span_y": 46.0,
+        "grid_width": 10,
+        "grid_height": 23
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "zeta_pair1_newton",
+          "expression": "iterate(z - (z^2 - z + 200.04) / (2*z - 1), 80)",
+          "epsilon": 1e-9,
+          "notes": "Newton z^2-z+200.04 -- roots are the conjugate pair 0.5+/-14.1347i (first non-trivial Riemann zeta zero). Basin boundary lies on the real axis; convergence rate encodes distance to each root."
+        },
+        {
+          "sidecar_id": "zeta_pair12_newton",
+          "expression": "iterate(z - (z^4 - 2*z^3 + 643.214*z^2 - 642.214*z + 88465.7) / (4*z^3 - 6*z^2 + 1286.428*z - 642.214), 80)",
+          "epsilon": 1e-9,
+          "notes": "Newton for P1*P2 = (z^2-z+200.04)*(z^2-z+442.17) -- all four roots are the conjugate pairs for the first two zeta zeros (Im=+/-14.1347 and Im=+/-21.022). Four-basin geometry in the critical strip."
+        },
+        {
+          "sidecar_id": "critical_line_sin",
+          "expression": "compose(sin(z), z - 0.5)",
+          "notes": "sin(z-0.5) evaluated at strip coordinates -- sin has zeros at s=0.5+n*pi which are NOT zeta zeros; control for what a simple analytic zero looks like vs the Newton basins above"
+        }
+      ]
+    }
+  ]
+}
