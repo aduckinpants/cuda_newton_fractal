@@ -26,6 +26,9 @@ Shipped function ids today:
 - `fractal.sample`
 - `generic.sample`
 
+The built-in callable registry is the authority for those shipped ids.
+`--describe-functions` and headless `function_id` validation/dispatch now consume the same registry instead of carrying separate hardcoded lists.
+
 ### 2. Stateless sample requests
 
 Use the sample request/response contract for deterministic point, grid, and sequence sampling.
@@ -156,3 +159,9 @@ Do not pretend the engine already supports arbitrary registered kernels. That be
 - [docs/notes/callable_engine_surface_wrap_PHASED_PLAN.md](docs/notes/callable_engine_surface_wrap_PHASED_PLAN.md)
 - [spec_intake/GenericCudaSamplerBridge_SpecIntake.md](spec_intake/GenericCudaSamplerBridge_SpecIntake.md)
 - [spec_intake/RealtimeCliSampling_OperatorCallIn_DesignNote.md](spec_intake/RealtimeCliSampling_OperatorCallIn_DesignNote.md)
+
+Current Phase 3 stop point:
+
+- the shipped callable ids are now registry-backed inside this repo
+- the next step is to grow that registry as the single built-in callable surface
+- dynamic kernel registration and transpiler-backed external function loading remain future work

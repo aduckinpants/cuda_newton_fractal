@@ -70,15 +70,6 @@ bool ValidateSidecarContext(const BindingContext& ctx, std::string* outError) {
     return true;
 }
 
-const FunctionDescriptor* FindFunctionDescriptor(
-    const EngineFunctionCatalog& catalog,
-    const std::string& functionId) {
-    for (const auto& function : catalog.functions) {
-        if (function.id == functionId) return &function;
-    }
-    return nullptr;
-}
-
 bool TryBuildSurfaceEntry(
     const FunctionParamDescriptor& param,
     SidecarParamSurfaceEntry* outEntry,

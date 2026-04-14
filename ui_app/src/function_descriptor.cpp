@@ -1,5 +1,5 @@
 #include "function_descriptor.h"
-#include "fractal_probe_runner.h"
+#include "enum_id_utils.h"
 
 #include <cctype>
 #include <iomanip>
@@ -7,6 +7,51 @@
 #include <vector>
 
 namespace {
+
+constexpr EngineFunctionRegistration kRegisteredEngineFunctions[] = {
+    {"fractal.sample", EngineFunctionExecutionKind::fractal_sampler},
+    {"generic.sample", EngineFunctionExecutionKind::generic_sampler},
+};
+
+constexpr FractalType kSupportedProbeFractalTypes[] = {
+    FractalType::newton,
+    FractalType::nova,
+    FractalType::mandelbrot,
+    FractalType::julia,
+    FractalType::burning_ship,
+    FractalType::multibrot,
+    FractalType::phoenix,
+    FractalType::explaino,
+    FractalType::explaino_y,
+    FractalType::explaino_fp,
+    FractalType::explaino_nova,
+    FractalType::explaino_halley,
+    FractalType::explaino_dual,
+    FractalType::explaino_mult,
+    FractalType::explaino_phoenix,
+    FractalType::explaino_joy,
+    FractalType::explaino_fold,
+    FractalType::explaino_bell,
+    FractalType::explaino_ripple,
+    FractalType::explaino_splice,
+    FractalType::explaino_vortex,
+    FractalType::explaino_tension,
+    FractalType::explaino_transcendental,
+    FractalType::explaino_inertial,
+    FractalType::explaino_julia,
+    FractalType::explaino_rational,
+    FractalType::multicorn,
+    FractalType::halley,
+    FractalType::collatz,
+    FractalType::explaino_collatz,
+    FractalType::mcmullen,
+    FractalType::lambda_map,
+    FractalType::explaino_lambda,
+    FractalType::explaino_rational_escape,
+    FractalType::spider,
+    FractalType::celtic_mandelbrot,
+    FractalType::perpendicular_burning_ship,
+};
 
 std::string TrimAscii(const std::string& value) {
     size_t start = 0;
@@ -18,6 +63,13 @@ std::string TrimAscii(const std::string& value) {
         --end;
     }
     return value.substr(start, end - start);
+}
+
+bool IsSupportedProbeFractalType(FractalType fractalType) {
+    for (FractalType candidate : kSupportedProbeFractalTypes) {
+        if (fractalType == candidate) return true;
+    }
+    return false;
 }
 
 std::vector<std::string> SplitCsvValues(const std::string& text) {
@@ -345,7 +397,29 @@ void EmitOutput(std::ostringstream& out, const FunctionOutputDescriptor& output)
     out << "}";
 }
 
+FunctionDescriptor BuildRegisteredFunctionDescriptor(
+    const EngineFunctionRegistration& registration,
+    const UISchema& schema) {
+    switch (registration.execution_kind) {
+    case EngineFunctionExecutionKind::fractal_sampler:
+        return BuildFractalSamplerDescriptor(schema);
+    case EngineFunctionExecutionKind::generic_sampler:
+        return BuildGenericSamplerDescriptor();
+    }
+
+    FunctionDescriptor descriptor;
+    descriptor.id = registration.id;
+    descriptor.name = registration.id;
+    descriptor.description = "Unsupported callable registration";
+    return descriptor;
+}
+
 } // namespace
+
+bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId) {
+    FractalType fractalType = FractalType::newton;
+    return TryParseFractalTypeId(fractalTypeId, &fractalType) && IsSupportedProbeFractalType(fractalType);
+}
 
 FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema) {
     FunctionDescriptor desc;
@@ -435,11 +509,35 @@ FunctionDescriptor BuildGenericSamplerDescriptor() {
     return desc;
 }
 
+const EngineFunctionRegistration* FindEngineFunctionRegistration(const std::string& functionId) {
+    for (const auto& registration : kRegisteredEngineFunctions) {
+        if (functionId == registration.id) return &registration;
+    }
+    return nullptr;
+}
+
+std::string DescribeRegisteredEngineFunctionIds() {
+    std::ostringstream out;
+    for (size_t index = 0; index < sizeof(kRegisteredEngineFunctions) / sizeof(kRegisteredEngineFunctions[0]); ++index) {
+        if (index > 0) out << ", ";
+        out << kRegisteredEngineFunctions[index].id;
+    }
+    return out.str();
+}
+
+const FunctionDescriptor* FindFunctionDescriptor(const EngineFunctionCatalog& catalog, const std::string& functionId) {
+    for (const auto& function : catalog.functions) {
+        if (function.id == functionId) return &function;
+    }
+    return nullptr;
+}
+
 EngineFunctionCatalog BuildEngineCatalog(const UISchema& schema) {
     EngineFunctionCatalog catalog;
     catalog.engine_version = 1;
-    catalog.functions.push_back(BuildFractalSamplerDescriptor(schema));
-    catalog.functions.push_back(BuildGenericSamplerDescriptor());
+    for (const auto& registration : kRegisteredEngineFunctions) {
+        catalog.functions.push_back(BuildRegisteredFunctionDescriptor(registration, schema));
+    }
     return catalog;
 }
 

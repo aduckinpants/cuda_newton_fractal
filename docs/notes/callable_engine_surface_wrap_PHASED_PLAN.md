@@ -23,6 +23,7 @@ Phase 3 - design registry-backed callable-surface generalization
   - shipped sample transport: `--sample-request-stdin/json`, `--sample-response-stdout/json`, `--sample-session`
   - shipped advisor surface: `--explore-recommend`, `--explore-recommend-json`
   - landed wrap/doc surface: advisor stdout symmetry plus [docs/callable_engine_surface.md](docs/callable_engine_surface.md) as the current callable-surface reference and generic/lambda boundary note
+  - phase-3 registry progress: a built-in callable registry now acts as the single authority for shipped function ids, so descriptor emission, fail-fast `function_id` validation, and fractal-vs-generic dispatch no longer duplicate `fractal.sample` / `generic.sample` in separate seams
 - Phase 1 exit criteria:
   - advisor mode supports stdout and optional file output with the same deterministic payload
   - focused native/runtime tests cover the stdout path
@@ -33,6 +34,7 @@ Phase 3 - design registry-backed callable-surface generalization
 - Phase 3 exit criteria:
   - the repo has a concrete design for a registry-backed callable surface that can host more than `fractal.sample` and `generic.sample` without forking the request contract
   - fail-fast behavior, descriptor derivation rules, and function-id authority are explicit
+  - current stop point: the built-in registry authority is landed for the existing callable ids; remaining work is to turn that static registry into the explicit generalization surface for additional built-in callables before any transpiler-backed registration thread starts
 - Phase 4 exit criteria:
   - the follow-on handoff into the Salticid transpiler/kernel-registration thread is documented with the engine-side responsibilities clearly separated from the sibling-repo CUDA backend work
 
@@ -41,3 +43,5 @@ Phase 3 - design registry-backed callable-surface generalization
 - `ui_app/build_tests_vsdevcmd.cmd`
 - `ui_app/build_vsdevcmd.cmd`
 - `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py tests/test_function_descriptor_cli.py tests/test_generic_probe_cli.py -q`
+- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`

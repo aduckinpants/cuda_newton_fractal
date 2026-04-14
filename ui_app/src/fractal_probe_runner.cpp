@@ -12,6 +12,7 @@
 #include "fractal_family_rules.h"
 #include "polynomial_eval_real_coeffs.h"
 #include "fractal_runtime_validation.h"
+#include "function_descriptor.h"
 #include "runtime_reset.h"
 #include "schema_binding.h"
 #include "view_hp_sync.h"
@@ -1651,63 +1652,11 @@ std::string CurrentFractalTypeId(const ProbeState& state) {
 
 using ProbeClock = std::chrono::steady_clock;
 
-const FractalType kSupportedProbeFractalTypes[] = {
-    FractalType::newton,
-    FractalType::nova,
-    FractalType::mandelbrot,
-    FractalType::julia,
-    FractalType::burning_ship,
-    FractalType::multibrot,
-    FractalType::phoenix,
-    FractalType::explaino,
-    FractalType::explaino_y,
-    FractalType::explaino_fp,
-    FractalType::explaino_nova,
-    FractalType::explaino_halley,
-    FractalType::explaino_dual,
-    FractalType::explaino_mult,
-    FractalType::explaino_phoenix,
-    FractalType::explaino_joy,
-    FractalType::explaino_fold,
-    FractalType::explaino_bell,
-    FractalType::explaino_ripple,
-    FractalType::explaino_splice,
-    FractalType::explaino_vortex,
-    FractalType::explaino_tension,
-    FractalType::explaino_transcendental,
-    FractalType::explaino_inertial,
-    FractalType::explaino_julia,
-    FractalType::explaino_rational,
-    FractalType::multicorn,
-    FractalType::halley,
-    FractalType::collatz,
-    FractalType::explaino_collatz,
-    FractalType::mcmullen,
-    FractalType::lambda_map,
-    FractalType::explaino_lambda,
-    FractalType::explaino_rational_escape,
-    FractalType::spider,
-    FractalType::celtic_mandelbrot,
-    FractalType::perpendicular_burning_ship,
-};
-
-bool IsSupportedProbeFractalType(FractalType fractalType) {
-    for (FractalType candidate : kSupportedProbeFractalTypes) {
-        if (fractalType == candidate) return true;
-    }
-    return false;
-}
-
 double ElapsedMilliseconds(ProbeClock::time_point startedAt) {
     return std::chrono::duration<double, std::milli>(ProbeClock::now() - startedAt).count();
 }
 
 } // namespace
-
-bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId) {
-    FractalType fractalType = FractalType::newton;
-    return TryParseFractalTypeId(fractalTypeId, &fractalType) && IsSupportedProbeFractalType(fractalType);
-}
 
 // --- generic.sample handler ---
 // Uses the CPU expression evaluator. No CUDA dependency.
@@ -1914,15 +1863,14 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
         return false;
     }
 
-    // Validate function_id.
     const std::string resolvedFunctionId = request.function_id.empty() ? "fractal.sample" : request.function_id;
-    if (resolvedFunctionId != "fractal.sample" && resolvedFunctionId != "generic.sample") {
-        if (outError) *outError = "Unknown function_id: " + resolvedFunctionId + "; valid: fractal.sample, generic.sample";
+    const EngineFunctionRegistration* registration = FindEngineFunctionRegistration(resolvedFunctionId);
+    if (!registration) {
+        if (outError) *outError = "Unknown function_id: " + resolvedFunctionId + "; valid: " + DescribeRegisteredEngineFunctionIds();
         return false;
     }
 
-    // Dispatch generic.sample through the expression evaluator path.
-    if (resolvedFunctionId == "generic.sample") {
+    if (registration->execution_kind == EngineFunctionExecutionKind::generic_sampler) {
         return RunGenericSampleRequest(request, exePath, outResponse, outError);
     }
 

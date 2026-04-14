@@ -84,6 +84,16 @@ def _run_exploration_advisor_stdout(*args: str) -> dict[str, object]:
     return json.loads(result.stdout)
 
 
+def _run_exploration_advisor_failure(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(args),
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
 def _configure_sidecar_policy(state: dict[str, object], **updates: object) -> dict[str, object]:
     configured_state = json.loads(json.dumps(state))
     policy = configured_state["sidecar_auto_demo_policy"]
@@ -527,6 +537,37 @@ def test_explaino_exploration_advisor_stdout_matches_json_output_for_loaded_stat
     )
 
     assert stdout_report == file_report
+
+
+def test_explaino_exploration_advisor_rejects_non_explaino_loaded_state(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advisor runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "mandelbrot",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    state_path = _write_state_bundle(tmp_path / "advisor_non_explaino_state", baseline_capture["state"])
+    report_path = tmp_path / "advisor_non_explaino.json"
+
+    result = _run_exploration_advisor_failure(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--explore-recommend-json",
+        str(report_path),
+    )
+
+    assert result.returncode != 0
+    assert "Explaino" in (result.stderr or result.stdout)
+    assert not report_path.exists()
 
 
 def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path) -> None:

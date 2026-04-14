@@ -81,6 +81,22 @@ struct EngineFunctionCatalog {
     std::vector<FunctionDescriptor> functions;
 };
 
+enum class EngineFunctionExecutionKind {
+    fractal_sampler,
+    generic_sampler,
+};
+
+// A built-in callable registration that acts as the authority for known
+// function ids and their execution path.
+struct EngineFunctionRegistration {
+    const char* id = "";
+    EngineFunctionExecutionKind execution_kind = EngineFunctionExecutionKind::fractal_sampler;
+};
+
+// Return whether the given fractal type id is currently sampleable through the
+// probe surface.
+bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId);
+
 // Build a function descriptor for the built-in fractal sampler from the UI
 // schema. The schema is the metadata authority; this function derives the
 // descriptor from it rather than inventing a second source of truth.
@@ -88,6 +104,15 @@ FunctionDescriptor BuildFractalSamplerDescriptor(const UISchema& schema);
 
 // Build a function descriptor for the generic function sampler.
 FunctionDescriptor BuildGenericSamplerDescriptor();
+
+// Resolve a built-in callable registration by function id.
+const EngineFunctionRegistration* FindEngineFunctionRegistration(const std::string& functionId);
+
+// Return the deterministic list of built-in callable ids for error messages.
+std::string DescribeRegisteredEngineFunctionIds();
+
+// Resolve a described function from a built catalog.
+const FunctionDescriptor* FindFunctionDescriptor(const EngineFunctionCatalog& catalog, const std::string& functionId);
 
 // Build the full engine catalog.
 EngineFunctionCatalog BuildEngineCatalog(const UISchema& schema);

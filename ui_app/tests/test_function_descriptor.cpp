@@ -343,7 +343,69 @@ int main() {
         }
     }
 
-    // --- Test 3: function_id in probe request parsing ---
+    // --- Test 3: built-in callable registration is the function-id authority ---
+    {
+        const EngineFunctionRegistration* fractalRegistration = FindEngineFunctionRegistration("fractal.sample");
+        if (!fractalRegistration) {
+            std::cerr << "Expected fractal.sample to be present in the built-in callable registry\n";
+            return 1;
+        }
+        if (fractalRegistration->execution_kind != EngineFunctionExecutionKind::fractal_sampler) {
+            std::cerr << "Expected fractal.sample to dispatch through the fractal sampler kind\n";
+            return 1;
+        }
+
+        const EngineFunctionRegistration* genericRegistration = FindEngineFunctionRegistration("generic.sample");
+        if (!genericRegistration) {
+            std::cerr << "Expected generic.sample to be present in the built-in callable registry\n";
+            return 1;
+        }
+        if (genericRegistration->execution_kind != EngineFunctionExecutionKind::generic_sampler) {
+            std::cerr << "Expected generic.sample to dispatch through the generic sampler kind\n";
+            return 1;
+        }
+
+        if (FindEngineFunctionRegistration("nonexistent.function") != nullptr) {
+            std::cerr << "Unknown function ids must not resolve through the built-in callable registry\n";
+            return 1;
+        }
+
+        if (DescribeRegisteredEngineFunctionIds() != "fractal.sample, generic.sample") {
+            std::cerr << "Expected a deterministic built-in callable id listing\n";
+            return 1;
+        }
+
+        UISchema schema;
+        schema.schema_version = "1";
+        schema.name_space = "fractal";
+        UISchemaPanel panel;
+        panel.id = "view";
+        UISchemaControl control;
+        control.id = "fractal_type";
+        control.type = "combo";
+        control.label = "Fractal Type";
+        control.value_type = "enum";
+        control.has_binding = true;
+        control.binding.kind = "param";
+        control.binding.path = "fractal.view.fractal_type";
+        control.options.push_back({"newton", "Newton"});
+        panel.controls.push_back(control);
+        schema.panels.push_back(panel);
+
+        EngineFunctionCatalog catalog = BuildEngineCatalog(schema);
+        if (catalog.functions.size() != 2) {
+            std::cerr << "Expected BuildEngineCatalog to emit every registered callable function\n";
+            return 1;
+        }
+        for (const auto& function : catalog.functions) {
+            if (!FindEngineFunctionRegistration(function.id)) {
+                std::cerr << "Catalog emitted function without a matching built-in registration: " << function.id << "\n";
+                return 1;
+            }
+        }
+    }
+
+    // --- Test 4: function_id in probe request parsing ---
     {
         // With explicit function_id
         const std::string withFid = R"({
@@ -382,7 +444,7 @@ int main() {
         }
     }
 
-    // --- Test 4: unknown function_id fails fast ---
+    // --- Test 5: unknown function_id fails fast ---
     {
         FractalProbeRequest request{};
         request.request_version = 1;
@@ -402,9 +464,13 @@ int main() {
             std::cerr << "Expected error to mention the unknown function_id\n";
             return 1;
         }
+        if (error.find("fractal.sample, generic.sample") == std::string::npos) {
+            std::cerr << "Expected error to advertise the registered callable ids\n";
+            return 1;
+        }
     }
 
-    // --- Test 5: function_id echoed in response ---
+    // --- Test 6: function_id echoed in response ---
     {
         FractalProbeRequest request{};
         request.request_version = 1;
@@ -439,7 +505,7 @@ int main() {
         }
     }
 
-    // --- Test 6: summary-only metrics omit sample payload and unrequested summary fields ---
+    // --- Test 7: summary-only metrics omit sample payload and unrequested summary fields ---
     {
         FractalProbeRequest request{};
         request.request_version = 1;
@@ -507,7 +573,7 @@ int main() {
         }
     }
 
-    // --- Test 7: sample metric subsets omit unrequested sample fields ---
+    // --- Test 8: sample metric subsets omit unrequested sample fields ---
     {
         FractalProbeRequest request{};
         request.request_version = 1;
