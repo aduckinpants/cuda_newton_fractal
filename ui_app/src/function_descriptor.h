@@ -86,11 +86,14 @@ enum class EngineFunctionExecutionKind {
     generic_sampler,
 };
 
+using EngineFunctionDescriptorBuilder = FunctionDescriptor (*)(const UISchema& schema);
+
 // A built-in callable registration that acts as the authority for known
 // function ids and their execution path.
 struct EngineFunctionRegistration {
     const char* id = "";
     EngineFunctionExecutionKind execution_kind = EngineFunctionExecutionKind::fractal_sampler;
+    EngineFunctionDescriptorBuilder descriptor_builder = nullptr;
 };
 
 // Return whether the given fractal type id is currently sampleable through the

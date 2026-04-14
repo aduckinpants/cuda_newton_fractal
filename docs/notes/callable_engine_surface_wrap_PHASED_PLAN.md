@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - design registry-backed callable-surface generalization
+Phase 4 - handoff to transpiler/kernel registration thread
 
 ## Phase Checklist
 
 - [x] Phase 1 - wrap current callable surface and advisor stdout
 - [x] Phase 2 - document generic/lambda request-composition boundary
-- [ ] Phase 3 - design registry-backed callable-surface generalization
+- [x] Phase 3 - design registry-backed callable-surface generalization
 - [ ] Phase 4 - handoff to transpiler/kernel registration thread
 
 ## Notes
@@ -23,7 +23,7 @@ Phase 3 - design registry-backed callable-surface generalization
   - shipped sample transport: `--sample-request-stdin/json`, `--sample-response-stdout/json`, `--sample-session`
   - shipped advisor surface: `--explore-recommend`, `--explore-recommend-json`
   - landed wrap/doc surface: advisor stdout symmetry plus [docs/callable_engine_surface.md](docs/callable_engine_surface.md) as the current callable-surface reference and generic/lambda boundary note
-  - phase-3 registry progress: a built-in callable registry now acts as the single authority for shipped function ids, so descriptor emission, fail-fast `function_id` validation, and fractal-vs-generic dispatch no longer duplicate `fractal.sample` / `generic.sample` in separate seams
+  - phase-3 registry result: a built-in callable registry now acts as the single authority for shipped function ids, execution kinds, and descriptor builders, so descriptor emission, fail-fast `function_id` validation, and fractal-vs-generic dispatch no longer duplicate `fractal.sample` / `generic.sample` in separate seams
 - Phase 1 exit criteria:
   - advisor mode supports stdout and optional file output with the same deterministic payload
   - focused native/runtime tests cover the stdout path
@@ -34,7 +34,7 @@ Phase 3 - design registry-backed callable-surface generalization
 - Phase 3 exit criteria:
   - the repo has a concrete design for a registry-backed callable surface that can host more than `fractal.sample` and `generic.sample` without forking the request contract
   - fail-fast behavior, descriptor derivation rules, and function-id authority are explicit
-  - current stop point: the built-in registry authority is landed for the existing callable ids; remaining work is to turn that static registry into the explicit generalization surface for additional built-in callables before any transpiler-backed registration thread starts
+  - landed: the static registry now owns descriptor builders as well as execution kinds, making additional built-in callable registrations a single-registry-surface change instead of a registry row plus a separate descriptor switch
 - Phase 4 exit criteria:
   - the follow-on handoff into the Salticid transpiler/kernel-registration thread is documented with the engine-side responsibilities clearly separated from the sibling-repo CUDA backend work
 

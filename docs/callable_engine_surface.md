@@ -28,6 +28,7 @@ Shipped function ids today:
 
 The built-in callable registry is the authority for those shipped ids.
 `--describe-functions` and headless `function_id` validation/dispatch now consume the same registry instead of carrying separate hardcoded lists.
+That registry also owns the descriptor-builder callback for each shipped callable, so adding another built-in callable is now a single registry-surface change instead of a registry row plus a separate descriptor switch.
 
 ### 2. Stateless sample requests
 
@@ -162,6 +163,6 @@ Do not pretend the engine already supports arbitrary registered kernels. That be
 
 Current Phase 3 stop point:
 
-- the shipped callable ids are now registry-backed inside this repo
-- the next step is to grow that registry as the single built-in callable surface
+- the shipped callable ids, execution kinds, and descriptor builders are now registry-backed inside this repo
+- the next step is the engine-side handoff boundary for later transpiler/kernel registration work
 - dynamic kernel registration and transpiler-backed external function loading remain future work

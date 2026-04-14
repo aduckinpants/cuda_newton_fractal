@@ -8,9 +8,13 @@
 
 namespace {
 
+FunctionDescriptor BuildGenericSamplerDescriptorFromRegistry(const UISchema&) {
+    return BuildGenericSamplerDescriptor();
+}
+
 constexpr EngineFunctionRegistration kRegisteredEngineFunctions[] = {
-    {"fractal.sample", EngineFunctionExecutionKind::fractal_sampler},
-    {"generic.sample", EngineFunctionExecutionKind::generic_sampler},
+    {"fractal.sample", EngineFunctionExecutionKind::fractal_sampler, &BuildFractalSamplerDescriptor},
+    {"generic.sample", EngineFunctionExecutionKind::generic_sampler, &BuildGenericSamplerDescriptorFromRegistry},
 };
 
 constexpr FractalType kSupportedProbeFractalTypes[] = {
@@ -397,23 +401,6 @@ void EmitOutput(std::ostringstream& out, const FunctionOutputDescriptor& output)
     out << "}";
 }
 
-FunctionDescriptor BuildRegisteredFunctionDescriptor(
-    const EngineFunctionRegistration& registration,
-    const UISchema& schema) {
-    switch (registration.execution_kind) {
-    case EngineFunctionExecutionKind::fractal_sampler:
-        return BuildFractalSamplerDescriptor(schema);
-    case EngineFunctionExecutionKind::generic_sampler:
-        return BuildGenericSamplerDescriptor();
-    }
-
-    FunctionDescriptor descriptor;
-    descriptor.id = registration.id;
-    descriptor.name = registration.id;
-    descriptor.description = "Unsupported callable registration";
-    return descriptor;
-}
-
 } // namespace
 
 bool IsProbeSamplingImplementedForFractalTypeId(const std::string& fractalTypeId) {
@@ -536,7 +523,8 @@ EngineFunctionCatalog BuildEngineCatalog(const UISchema& schema) {
     EngineFunctionCatalog catalog;
     catalog.engine_version = 1;
     for (const auto& registration : kRegisteredEngineFunctions) {
-        catalog.functions.push_back(BuildRegisteredFunctionDescriptor(registration, schema));
+        if (!registration.descriptor_builder) continue;
+        catalog.functions.push_back(registration.descriptor_builder(schema));
     }
     return catalog;
 }

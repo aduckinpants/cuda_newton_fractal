@@ -354,6 +354,10 @@ int main() {
             std::cerr << "Expected fractal.sample to dispatch through the fractal sampler kind\n";
             return 1;
         }
+        if (!fractalRegistration->descriptor_builder) {
+            std::cerr << "Expected fractal.sample to provide a descriptor builder callback\n";
+            return 1;
+        }
 
         const EngineFunctionRegistration* genericRegistration = FindEngineFunctionRegistration("generic.sample");
         if (!genericRegistration) {
@@ -362,6 +366,10 @@ int main() {
         }
         if (genericRegistration->execution_kind != EngineFunctionExecutionKind::generic_sampler) {
             std::cerr << "Expected generic.sample to dispatch through the generic sampler kind\n";
+            return 1;
+        }
+        if (!genericRegistration->descriptor_builder) {
+            std::cerr << "Expected generic.sample to provide a descriptor builder callback\n";
             return 1;
         }
 
@@ -397,6 +405,19 @@ int main() {
             std::cerr << "Expected BuildEngineCatalog to emit every registered callable function\n";
             return 1;
         }
+
+        FunctionDescriptor fractalDescriptor = fractalRegistration->descriptor_builder(schema);
+        if (fractalDescriptor.id != "fractal.sample") {
+            std::cerr << "Expected fractal registry builder to emit the fractal sampler descriptor\n";
+            return 1;
+        }
+
+        FunctionDescriptor genericDescriptor = genericRegistration->descriptor_builder(schema);
+        if (genericDescriptor.id != "generic.sample") {
+            std::cerr << "Expected generic registry builder to emit the generic sampler descriptor\n";
+            return 1;
+        }
+
         for (const auto& function : catalog.functions) {
             if (!FindEngineFunctionRegistration(function.id)) {
                 std::cerr << "Catalog emitted function without a matching built-in registration: " << function.id << "\n";
