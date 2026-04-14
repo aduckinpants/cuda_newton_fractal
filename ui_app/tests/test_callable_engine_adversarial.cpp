@@ -211,6 +211,121 @@ int main() {
         passed++;
     }
 
+    // --- 7. Grid dimensions that would cause DoS must be rejected ---
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "adversarial-grid-dos";
+        request.function_id = "fractal.sample";
+        request.mode = FractalProbeMode::grid;
+        request.has_region = true;
+        // 5000x5000 = 25M points — exceeds any reasonable grid cap.
+        request.region = {0.0, 0.0, 1.0, 1.0, 5000, 5000};
+
+        FractalProbeResponse response{};
+        std::string error;
+        const bool ok = RunFractalProbeRequest(request, "unused", &response, &error);
+        if (ok) {
+            std::cerr << "[7] FAIL: enormous grid should be rejected, not allocated\n";
+            return 1;
+        }
+        if (error.find("grid") == std::string::npos && error.find("Grid") == std::string::npos) {
+            std::cerr << "[7] FAIL: error should mention grid: " << error << "\n";
+            return 1;
+        }
+        std::cout << "[7] grid dimension DoS rejection: passed\n";
+        passed++;
+    }
+
+    // --- 8. Grid at the boundary (4M points = 2000x2000) should succeed ---
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "adversarial-grid-boundary";
+        request.function_id = "fractal.sample";
+        request.mode = FractalProbeMode::grid;
+        request.has_region = true;
+        request.region = {0.0, 0.0, 1.0, 1.0, 2000, 2000}; // 4M points, within cap
+
+        FractalProbeResponse response{};
+        std::string error;
+        const bool ok = RunFractalProbeRequest(request, "unused", &response, &error);
+        if (!ok) {
+            std::cerr << "[8] FAIL: 2000x2000 grid should succeed: " << error << "\n";
+            return 1;
+        }
+        if (response.summary.sample_count != 4000000) {
+            std::cerr << "[8] FAIL: expected 4M samples, got " << response.summary.sample_count << "\n";
+            return 1;
+        }
+        std::cout << "[8] grid boundary 4M points: passed\n";
+        passed++;
+    }
+
+    // --- 9. Deeply nested generic expression must fail, not stack-overflow ---
+    {
+        // Build "-(-(-(- ... z ... )))" 200 levels deep
+        std::string expr;
+        for (int i = 0; i < 200; ++i) expr += "-(";
+        expr += "z";
+        for (int i = 0; i < 200; ++i) expr += ")";
+
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "adversarial-parser-depth";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.points.push_back({0.5, 0.5});
+        request.has_function = true;
+        request.generic_expression = expr;
+        request.generic_epsilon = 1e-6;
+        request.generic_escape_radius = 100.0;
+
+        FractalProbeResponse response{};
+        std::string error;
+        const bool ok = RunFractalProbeRequest(request, "unused", &response, &error);
+        if (ok) {
+            std::cerr << "[9] FAIL: deeply nested expression should be rejected\n";
+            return 1;
+        }
+        if (error.find("depth") == std::string::npos && error.find("nested") == std::string::npos &&
+            error.find("deep") == std::string::npos) {
+            std::cerr << "[9] FAIL: error should mention depth/nesting: " << error << "\n";
+            return 1;
+        }
+        std::cout << "[9] parser recursion depth limit: passed\n";
+        passed++;
+    }
+
+    // --- 10. Deeply nested parentheses must also fail ---
+    {
+        std::string expr;
+        for (int i = 0; i < 200; ++i) expr += "(";
+        expr += "z";
+        for (int i = 0; i < 200; ++i) expr += ")";
+
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "adversarial-paren-depth";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.points.push_back({0.5, 0.5});
+        request.has_function = true;
+        request.generic_expression = expr;
+        request.generic_epsilon = 1e-6;
+        request.generic_escape_radius = 100.0;
+
+        FractalProbeResponse response{};
+        std::string error;
+        const bool ok = RunFractalProbeRequest(request, "unused", &response, &error);
+        if (ok) {
+            std::cerr << "[10] FAIL: deeply nested parens should be rejected\n";
+            return 1;
+        }
+        std::cout << "[10] parenthesized depth limit: passed\n";
+        passed++;
+    }
+
     std::cout << passed << " passed, 0 failed\n";
     return 0;
 }

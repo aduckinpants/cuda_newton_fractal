@@ -1627,7 +1627,11 @@ void FinalizeSummary(int count,
 std::vector<FractalProbePoint> BuildGridPoints(const FractalProbeRegion& region, std::vector<std::pair<int, int>>* outGridIndices) {
     std::vector<FractalProbePoint> points;
     if (outGridIndices) outGridIndices->clear();
-    points.reserve(static_cast<size_t>(region.grid_width) * static_cast<size_t>(region.grid_height));
+    // Defense-in-depth: cap grid size even if JSON parser already validated.
+    constexpr int64_t kMaxGridPoints = 4'000'000;
+    const int64_t totalPoints = static_cast<int64_t>(region.grid_width) * static_cast<int64_t>(region.grid_height);
+    if (totalPoints > kMaxGridPoints || totalPoints <= 0) return points;
+    points.reserve(static_cast<size_t>(totalPoints));
     for (int gy = 0; gy < region.grid_height; ++gy) {
         for (int gx = 0; gx < region.grid_width; ++gx) {
             const double nx = (static_cast<double>(gx) + 0.5) / static_cast<double>(region.grid_width) - 0.5;
@@ -1682,6 +1686,10 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
     std::vector<std::pair<int, int>> gridIndices;
     if (request.mode == FractalProbeMode::grid || request.mode == FractalProbeMode::sequence_grid) {
         basePoints = BuildGridPoints(request.region, &gridIndices);
+        if (basePoints.empty()) {
+            if (outError) *outError = "Grid too large: grid_width * grid_height must be <= 4000000";
+            return false;
+        }
     } else {
         basePoints = request.points;
         gridIndices.assign(basePoints.size(), {-1, -1});
@@ -1896,6 +1904,10 @@ bool RunFractalProbeRequest(const FractalProbeRequest& request,
     std::vector<std::pair<int, int>> gridIndices;
     if (request.mode == FractalProbeMode::grid || request.mode == FractalProbeMode::sequence_grid) {
         basePoints = BuildGridPoints(request.region, &gridIndices);
+        if (basePoints.empty()) {
+            if (outError) *outError = "Grid too large: grid_width * grid_height must be <= 4000000";
+            return false;
+        }
     } else {
         basePoints = request.points;
         gridIndices.assign(basePoints.size(), {-1, -1});

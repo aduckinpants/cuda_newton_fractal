@@ -1,6 +1,7 @@
 #include "fractal_probe_contract.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <iomanip>
 #include <set>
@@ -229,6 +230,12 @@ bool ParseRegion(const json_min::Value& value,
     }
     if (region.grid_width <= 0 || region.grid_height <= 0) {
         if (outError) *outError = "Region grid_width/grid_height must be > 0";
+        return false;
+    }
+    // Cap total grid points to prevent DoS via excessive memory allocation.
+    constexpr int64_t kMaxGridPoints = 4'000'000;
+    if (static_cast<int64_t>(region.grid_width) * static_cast<int64_t>(region.grid_height) > kMaxGridPoints) {
+        if (outError) *outError = "Grid too large: grid_width * grid_height must be <= " + std::to_string(kMaxGridPoints);
         return false;
     }
 

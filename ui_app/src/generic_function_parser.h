@@ -105,8 +105,11 @@ struct Parser {
     int error_pos;
     bool failed;
 
+    int recursion_depth;
+    static constexpr int kMaxRecursionDepth = 50;
+
     Parser(const char* src, int len, const std::map<std::string, double>* p)
-        : lexer(src, len), params(p), error_pos(0), failed(false)
+        : lexer(src, len), params(p), error_pos(0), failed(false), recursion_depth(0)
     {
         std::memset(&desc, 0, sizeof(desc));
         desc.max_iterate = 1;
@@ -200,19 +203,25 @@ struct Parser {
 
     // expr := term (('+' | '-') term)*
     int parse_expr() {
+        if (++recursion_depth > kMaxRecursionDepth) {
+            fail("expression too deeply nested (max depth " + std::to_string(kMaxRecursionDepth) + ")");
+            --recursion_depth;
+            return -1;
+        }
         int left = parse_term();
-        if (failed) return -1;
+        if (failed) { --recursion_depth; return -1; }
 
         while (!failed && (cur.kind == TokKind::Plus || cur.kind == TokKind::Minus)) {
             GFNodeOp op = (cur.kind == TokKind::Plus) ? GFNodeOp::gf_add : GFNodeOp::gf_sub;
             advance();
             int right = parse_term();
-            if (failed) return -1;
+            if (failed) { --recursion_depth; return -1; }
             int ni = alloc_node();
-            if (ni < 0) return -1;
+            if (ni < 0) { --recursion_depth; return -1; }
             desc.nodes[ni] = {op, left, right, -1};
             left = ni;
         }
+        --recursion_depth;
         return left;
     }
 
@@ -237,8 +246,14 @@ struct Parser {
     // unary := '-' unary | power
     int parse_unary() {
         if (cur.kind == TokKind::Minus) {
+            if (++recursion_depth > kMaxRecursionDepth) {
+                fail("expression too deeply nested (max depth " + std::to_string(kMaxRecursionDepth) + ")");
+                --recursion_depth;
+                return -1;
+            }
             advance();
             int child = parse_unary();
+            --recursion_depth;
             if (failed) return -1;
             int ni = alloc_node();
             if (ni < 0) return -1;
