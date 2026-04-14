@@ -66,6 +66,6 @@ If a command destabilizes VS Code, the chat session, or the terminal wrapper, sw
 ## Recovery Checklist
 
 1. Kill terminals that are no longer needed.
-2. Confirm the repo state with `git status`.
+2. Confirm the repo state with `py -3.14 tools/viewer_host_repo_status.py`.
 3. Resume with one bounded command at a time.
 4. Prefer the logged-command wrapper or task surface before retrying a heavy validation lane.

@@ -156,7 +156,7 @@ Public workflow surface:
 |------|---------|-------|
 | Session bootstrap | `py -3.14 tools\viewer_host_session_bootstrap.py --audit --tail-handoff 8` | Repeatable new-session start surface |
 | Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>` | Repo-specific adapter that delegates to mainline `handoff_append.py` |
-| Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> "<message>"` | Repo-specific adapter that resolves the active pending breadcrumb and appends the final checkpoint summary in one invocation |
+| Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --resolve-last-pending --commit <hash> --score <n> "<message>"` | Repo-specific adapter that resolves the active pending breadcrumb and appends the final checkpoint summary in one invocation. It now prints an explicit staged/unstaged/untracked summary afterward so auto-rotated HANDOFF_LOG archive files are visible before the checkpoint commit. |
 | Plan sync check | `py -3.14 tools\viewer_host_assert_phased_plan_sync.py` | Deterministic phased-plan continuity adapter |
 | Native helper tests | `ui_app\build_tests_vsdevcmd.cmd` | Must pass before any commit |
 | Full viewer build | `ui_app\build_vsdevcmd.cmd` | Must pass before any commit |
@@ -350,5 +350,5 @@ When beginning work in a new session:
 9. Read the relevant spec intake doc for the current initiative
 10. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
 11. Create or update the nearest phased plan and assert sync if you touch it
-12. Check git status — if the worktree is dirty, assess and checkpoint carryover
+12. Check repo state with `py -3.14 tools/viewer_host_repo_status.py` — if the worktree is dirty, assess and checkpoint carryover
 13. Identify the bounded next slice and proceed

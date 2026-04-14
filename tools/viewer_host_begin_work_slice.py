@@ -6,6 +6,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    from tools.viewer_host_repo_status import repo_is_dirty
+except ModuleNotFoundError:
+    from viewer_host_repo_status import repo_is_dirty
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAINLINE_AGENT_BEGIN = Path(r"C:\code\salticid-cuda\tools\agent_begin_work_slice.py")
@@ -89,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
 
     branch = _capture_git("rev-parse", "--abbrev-ref", "HEAD")
     head = _capture_git("rev-parse", "--short", "HEAD")
-    dirty = bool(_capture_git("status", "--porcelain=v1"))
+    dirty = repo_is_dirty(REPO_ROOT)
     message = build_breadcrumb_message(
         branch=branch,
         head=head,

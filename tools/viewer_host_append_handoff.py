@@ -5,6 +5,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    from tools.viewer_host_repo_status import capture_repo_status, format_repo_status_summary
+except ModuleNotFoundError:
+    from viewer_host_repo_status import capture_repo_status, format_repo_status_summary
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAINLINE_HANDOFF_APPEND = Path(r"C:\code\salticid-cuda\tools\handoff_append.py")
@@ -90,6 +95,11 @@ def main(argv: list[str] | None = None) -> int:
         proc = subprocess.run(command, cwd=str(REPO_ROOT), check=False)
         if proc.returncode != 0:
             return int(proc.returncode)
+
+    try:
+        print(format_repo_status_summary(capture_repo_status(REPO_ROOT), prefix="viewer_host_append_handoff"))
+    except RuntimeError as exc:
+        print(f"viewer_host_append_handoff: repo-status unavailable: {exc}")
     return 0
 
 

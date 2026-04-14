@@ -8,6 +8,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from tools.viewer_host_repo_status import repo_is_dirty
+except ModuleNotFoundError:
+    from viewer_host_repo_status import repo_is_dirty
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXTERNAL_TESTING_CHEAT_SHEET = Path(r"C:\code\salticid-cuda\docs\testing_cheat_sheet.md")
@@ -89,7 +94,7 @@ def _run_audit(py: str) -> AuditSummary:
 def collect_bootstrap_state(*, py: str, run_audit: bool, tail_handoff: int) -> dict[str, Any]:
     branch = _capture_git("rev-parse", "--abbrev-ref", "HEAD")
     head = _capture_git("rev-parse", "--short", "HEAD")
-    dirty = bool(_capture_git("status", "--porcelain=v1"))
+    dirty = repo_is_dirty(REPO_ROOT)
     handoff_log = (REPO_ROOT / "HANDOFF_LOG.md").read_text(encoding="utf-8")
     legacy_pending = legacy_pending_handoff_entries(handoff_log)
     audit = _run_audit(py) if run_audit else None
