@@ -1660,6 +1660,171 @@ double ElapsedMilliseconds(ProbeClock::time_point startedAt) {
     return std::chrono::duration<double, std::milli>(ProbeClock::now() - startedAt).count();
 }
 
+struct GenericSamplePreparedRequest {
+    std::vector<FractalProbePoint> base_points;
+    std::vector<std::pair<int, int>> grid_indices;
+    std::vector<std::vector<FractalProbeOverride>> sequence_variants;
+    FractalProbeMetricSelection metric_selection;
+    bool include_sample_payloads{false};
+    double epsilon{1.0e-6};
+    double escape_radius{1000.0};
+};
+
+bool PrepareGenericSampleRequest(const FractalProbeRequest& request,
+    GenericSamplePreparedRequest* outPrepared,
+    std::string* outError) {
+    if (!request.has_function || request.generic_expression.empty()) {
+        if (outError) *outError = "generic.sample requires a 'function' block with 'expression'";
+        return false;
+    }
+    if (request.has_sequence && request.sequence.mode == FractalProbeSequenceMode::variant_crossfade) {
+        if (outError) *outError = "generic.sample does not support sequence.mode=variant_crossfade";
+        return false;
+    }
+
+    GenericSamplePreparedRequest prepared;
+    if (request.mode == FractalProbeMode::grid || request.mode == FractalProbeMode::sequence_grid) {
+        prepared.base_points = BuildGridPoints(request.region, &prepared.grid_indices);
+        if (prepared.base_points.empty()) {
+            if (outError) *outError = "Grid too large: grid_width * grid_height must be <= 4000000";
+            return false;
+        }
+    } else {
+        prepared.base_points = request.points;
+        prepared.grid_indices.assign(prepared.base_points.size(), {-1, -1});
+    }
+
+    if (request.has_sequence) {
+        if (!ExpandSequenceOverrides(request, &prepared.sequence_variants, outError)) {
+            return false;
+        }
+    }
+    if (prepared.sequence_variants.empty()) {
+        prepared.sequence_variants.push_back({});
+    }
+
+    prepared.metric_selection = BuildFractalProbeMetricSelection(request.metrics);
+    prepared.include_sample_payloads = FractalProbeSelectionIncludesAnySampleMetrics(prepared.metric_selection);
+    prepared.epsilon = request.generic_epsilon;
+    prepared.escape_radius = request.generic_escape_radius;
+    *outPrepared = std::move(prepared);
+    return true;
+}
+
+FractalProbeResponse BuildGenericSampleResponseSkeleton(const FractalProbeRequest& request,
+    const std::string& exePath,
+    const GenericSamplePreparedRequest& prepared) {
+    FractalProbeResponse response;
+    response.request_id = request.request_id;
+    response.function_id = "generic.sample";
+    response.ok = true;
+    response.runtime.exe_path = exePath;
+    response.runtime.fractal_type = "generic";
+    response.runtime.device_id = 0;
+    response.metric_selection = prepared.metric_selection;
+    response.operator_context = request.operator_context;
+    return response;
+}
+
+std::map<std::string, double> BuildGenericSampleStepParams(
+    const std::map<std::string, double>& baseParams,
+    const std::vector<FractalProbeOverride>& overrides) {
+    std::map<std::string, double> stepParams = baseParams;
+    for (const auto& ov : overrides) {
+        const std::string prefix = "function.params.";
+        if (ov.path.size() > prefix.size() && ov.path.substr(0, prefix.size()) == prefix) {
+            std::string key = ov.path.substr(prefix.size());
+            if (ov.value.kind == FractalProbeScalar::Kind::number) {
+                stepParams[key] = ov.value.number_value;
+            }
+        }
+    }
+    return stepParams;
+}
+
+GenericSampleResult RunGenericSampleCpuEvaluation(
+    const GenericFunctionDesc& desc,
+    GFCpuComplex z,
+    double epsilon,
+    double escape_radius) {
+    const GFNode& rootNode = desc.nodes[desc.root_node];
+    if (rootNode.op != GFNodeOp::gf_iterate) {
+        return gf_cpu_sample(desc, z, epsilon, escape_radius);
+    }
+
+    int maxIter = (rootNode.param_index >= 0 && rootNode.param_index < desc.param_count)
+        ? (int)desc.params[rootNode.param_index] : desc.max_iterate;
+    if (maxIter <= 0) maxIter = desc.max_iterate;
+    if (maxIter <= 0) maxIter = 1;
+    if (maxIter > 10000) maxIter = 10000;
+
+    int subtree = rootNode.child_left;
+    double eps2 = epsilon * epsilon;
+    double esc2 = escape_radius * escape_radius;
+    int iter = 0;
+    bool conv = false;
+    bool div = false;
+
+    for (; iter < maxIter; ++iter) {
+        GFCpuComplex z_new = gf_cpu_eval_recursive(desc, subtree, z);
+        double dx = z_new.x - z.x;
+        double dy = z_new.y - z.y;
+        double delta2 = dx * dx + dy * dy;
+        z = z_new;
+        if (delta2 < eps2) { conv = true; iter++; break; }
+        double a2 = gf_cpu_abs2(z);
+        if (a2 > esc2) { div = true; iter++; break; }
+    }
+
+    double mag = std::sqrt(gf_cpu_abs2(z));
+    double h = 1e-8 * (std::max)(mag, 1.0);
+    GFCpuComplex fz  = gf_cpu_eval_recursive(desc, subtree, z);
+    GFCpuComplex fzh = gf_cpu_eval_recursive(desc, subtree, {z.x + h, z.y});
+
+    GenericSampleResult result{};
+    result.value_x = z.x;
+    result.value_y = z.y;
+    result.abs2 = gf_cpu_abs2(z);
+    result.derivative_x = (fzh.x - fz.x) / h;
+    result.derivative_y = (fzh.y - fz.y) / h;
+    result.iterations = iter;
+    result.converged = conv;
+    result.diverged = div;
+    return result;
+}
+
+FractalProbeSample MarshalGenericSampleToProbeSample(
+    const GenericSampleResult& gsr,
+    int sequenceIndex,
+    int gridX,
+    int gridY,
+    double coordX,
+    double coordY) {
+    FractalProbeSample sample;
+    sample.sequence_index = sequenceIndex;
+    sample.grid_x = gridX;
+    sample.grid_y = gridY;
+    sample.coord_x = coordX;
+    sample.coord_y = coordY;
+    sample.iterations = gsr.iterations;
+    sample.final_z_x = gsr.value_x;
+    sample.final_z_y = gsr.value_y;
+    sample.final_abs2 = gsr.abs2;
+    sample.derivative_x = gsr.derivative_x;
+    sample.derivative_y = gsr.derivative_y;
+
+    if (gsr.converged) {
+        sample.status = FractalProbeSampleStatus::converged;
+    } else if (gsr.diverged) {
+        sample.status = FractalProbeSampleStatus::escaped;
+    } else if (!std::isfinite(gsr.value_x) || !std::isfinite(gsr.value_y)) {
+        sample.status = FractalProbeSampleStatus::nonfinite;
+    } else {
+        sample.status = FractalProbeSampleStatus::bounded;
+    }
+    return sample;
+}
+
 } // namespace
 
 // --- generic.sample handler ---
@@ -1672,46 +1837,12 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
 
     const ProbeClock::time_point startedAt = ProbeClock::now();
 
-    if (!request.has_function || request.generic_expression.empty()) {
-        if (outError) *outError = "generic.sample requires a 'function' block with 'expression'";
-        return false;
-    }
-    if (request.has_sequence && request.sequence.mode == FractalProbeSequenceMode::variant_crossfade) {
-        if (outError) *outError = "generic.sample does not support sequence.mode=variant_crossfade";
+    GenericSamplePreparedRequest prepared;
+    if (!PrepareGenericSampleRequest(request, &prepared, outError)) {
         return false;
     }
 
-    // Generate coordinates (reuse same grid/point logic).
-    std::vector<FractalProbePoint> basePoints;
-    std::vector<std::pair<int, int>> gridIndices;
-    if (request.mode == FractalProbeMode::grid || request.mode == FractalProbeMode::sequence_grid) {
-        basePoints = BuildGridPoints(request.region, &gridIndices);
-        if (basePoints.empty()) {
-            if (outError) *outError = "Grid too large: grid_width * grid_height must be <= 4000000";
-            return false;
-        }
-    } else {
-        basePoints = request.points;
-        gridIndices.assign(basePoints.size(), {-1, -1});
-    }
-
-    // Expand sequence overrides.
-    std::vector<std::vector<FractalProbeOverride>> sequenceVariants;
-    if (request.has_sequence) {
-        if (!ExpandSequenceOverrides(request, &sequenceVariants, outError)) return false;
-    }
-    if (sequenceVariants.empty()) sequenceVariants.push_back({});
-
-    FractalProbeResponse response;
-    response.request_id = request.request_id;
-    response.function_id = "generic.sample";
-    response.ok = true;
-    response.runtime.exe_path = exePath;
-    response.runtime.fractal_type = "generic";
-    response.runtime.device_id = 0;
-    response.metric_selection = BuildFractalProbeMetricSelection(request.metrics);
-    response.operator_context = request.operator_context;
-    const bool includeSamplePayloads = FractalProbeSelectionIncludesAnySampleMetrics(response.metric_selection);
+    FractalProbeResponse response = BuildGenericSampleResponseSkeleton(request, exePath, prepared);
 
     int globalCount = 0;
     double globalIterationSum = 0.0;
@@ -1724,19 +1855,10 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
     double bestMeanIterations = -1.0;
     int bestSequenceIndex = -1;
 
-    for (size_t sequenceIndex = 0; sequenceIndex < sequenceVariants.size(); ++sequenceIndex) {
-        // Build params for this sequence step: start from base params, apply overrides.
-        std::map<std::string, double> stepParams = request.generic_params;
-        for (const auto& ov : sequenceVariants[sequenceIndex]) {
-            // Expect paths like "function.params.c_real" → key = "c_real"
-            const std::string prefix = "function.params.";
-            if (ov.path.size() > prefix.size() && ov.path.substr(0, prefix.size()) == prefix) {
-                std::string key = ov.path.substr(prefix.size());
-                if (ov.value.kind == FractalProbeScalar::Kind::number) {
-                    stepParams[key] = ov.value.number_value;
-                }
-            }
-        }
+    for (size_t sequenceIndex = 0; sequenceIndex < prepared.sequence_variants.size(); ++sequenceIndex) {
+        std::map<std::string, double> stepParams = BuildGenericSampleStepParams(
+            request.generic_params,
+            prepared.sequence_variants[sequenceIndex]);
 
         // Parse expression with this step's params.
         GFParseResult pr = ParseGenericFunctionExpression(request.generic_expression, stepParams);
@@ -1745,89 +1867,31 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
             return false;
         }
 
-        double eps = request.generic_epsilon;
-        double esc = request.generic_escape_radius;
+        double eps = prepared.epsilon;
+        double esc = prepared.escape_radius;
 
         FractalProbeSequenceResult sequenceResult;
         sequenceResult.sequence_index = static_cast<int>(sequenceIndex);
-        sequenceResult.applied = ToAppliedPairs(sequenceVariants[sequenceIndex]);
+        sequenceResult.applied = ToAppliedPairs(prepared.sequence_variants[sequenceIndex]);
 
         int seqCount = 0;
         double seqIterationSum = 0.0;
         int seqEscaped = 0, seqConverged = 0, seqNonfinite = 0, seqPole = 0;
-        for (size_t pi = 0; pi < basePoints.size(); ++pi) {
-            double cx = basePoints[pi].x;
-            double cy = basePoints[pi].y;
+        for (size_t pi = 0; pi < prepared.base_points.size(); ++pi) {
+            double cx = prepared.base_points[pi].x;
+            double cy = prepared.base_points[pi].y;
             GFCpuComplex z = {cx, cy};
 
-            // Check if root is iterate — use iteration loop with convergence tracking.
-            const GFNode& rootNode = pr.desc.nodes[pr.desc.root_node];
-            GenericSampleResult gsr;
+            GenericSampleResult gsr = RunGenericSampleCpuEvaluation(pr.desc, z, eps, esc);
+            FractalProbeSample sample = MarshalGenericSampleToProbeSample(
+                gsr,
+                static_cast<int>(sequenceIndex),
+                prepared.grid_indices[pi].first,
+                prepared.grid_indices[pi].second,
+                cx,
+                cy);
 
-            if (rootNode.op == GFNodeOp::gf_iterate) {
-                int maxIter = (rootNode.param_index >= 0 && rootNode.param_index < pr.desc.param_count)
-                    ? (int)pr.desc.params[rootNode.param_index] : pr.desc.max_iterate;
-                if (maxIter <= 0) maxIter = pr.desc.max_iterate;
-                if (maxIter <= 0) maxIter = 1;
-                if (maxIter > 10000) maxIter = 10000;
-
-                int subtree = rootNode.child_left;
-                double eps2 = eps * eps;
-                double esc2 = esc * esc;
-                int iter = 0;
-                bool conv = false, div = false;
-
-                for (; iter < maxIter; ++iter) {
-                    GFCpuComplex z_new = gf_cpu_eval_recursive(pr.desc, subtree, z);
-                    double dx = z_new.x - z.x;
-                    double dy = z_new.y - z.y;
-                    double delta2 = dx * dx + dy * dy;
-                    z = z_new;
-                    if (delta2 < eps2) { conv = true; iter++; break; }
-                    double a2 = gf_cpu_abs2(z);
-                    if (a2 > esc2) { div = true; iter++; break; }
-                }
-
-                // Derivative of one-step function at final z.
-                double mag = std::sqrt(gf_cpu_abs2(z));
-                double h = 1e-8 * (std::max)(mag, 1.0);
-                GFCpuComplex fz  = gf_cpu_eval_recursive(pr.desc, subtree, z);
-                GFCpuComplex fzh = gf_cpu_eval_recursive(pr.desc, subtree, {z.x + h, z.y});
-
-                gsr.value_x = z.x;
-                gsr.value_y = z.y;
-                gsr.abs2 = gf_cpu_abs2(z);
-                gsr.derivative_x = (fzh.x - fz.x) / h;
-                gsr.derivative_y = (fzh.y - fz.y) / h;
-                gsr.iterations = iter;
-                gsr.converged = conv;
-                gsr.diverged = div;
-            } else {
-                // Direct evaluation (non-iterate).
-                gsr = gf_cpu_sample(pr.desc, z, eps, esc);
-            }
-
-            // Map GenericSampleResult to FractalProbeSample.
-            FractalProbeSample sample;
-            sample.sequence_index = static_cast<int>(sequenceIndex);
-            sample.grid_x = gridIndices[pi].first;
-            sample.grid_y = gridIndices[pi].second;
-            sample.coord_x = cx;
-            sample.coord_y = cy;
-            sample.iterations = gsr.iterations;
-            sample.final_z_x = gsr.value_x;
-            sample.final_z_y = gsr.value_y;
-            sample.final_abs2 = gsr.abs2;
-            sample.derivative_x = gsr.derivative_x;
-            sample.derivative_y = gsr.derivative_y;
-
-            if (gsr.converged) sample.status = FractalProbeSampleStatus::converged;
-            else if (gsr.diverged) sample.status = FractalProbeSampleStatus::escaped;
-            else if (!std::isfinite(gsr.value_x) || !std::isfinite(gsr.value_y))
-                sample.status = FractalProbeSampleStatus::nonfinite;
-            else sample.status = FractalProbeSampleStatus::bounded;
-
-            if (includeSamplePayloads) {
+            if (prepared.include_sample_payloads) {
                 response.samples.push_back(sample);
             }
             AccumulateSummary(sample, &seqCount, &seqIterationSum, &seqEscaped, &seqConverged, &seqNonfinite, &seqPole);

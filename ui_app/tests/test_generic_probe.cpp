@@ -782,7 +782,44 @@ int main() {
         passed++;
     }
 
-    const int total = 20;
+    // 20. summary-only metrics suppress sample payloads ----------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-summary-only";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "iterate(z^2, 20)";
+        request.generic_epsilon = 1e-8;
+        request.generic_escape_radius = 4.0;
+        request.metrics = {"summary_mean_iterations", "summary_diverged_fraction"};
+        request.points.push_back({0.5, 0.0});
+        request.points.push_back({3.0, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[20] summary-only request failed: " << error << "\n";
+            return 1;
+        }
+        if (!response.samples.empty()) {
+            std::cerr << "[20] expected summary-only request to suppress sample payloads\n";
+            return 1;
+        }
+        if (response.summary.sample_count != 2) {
+            std::cerr << "[20] expected summary.sample_count=2, got " << response.summary.sample_count << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(response.summary.diverged_fraction, 0.5, 0.01)) {
+            std::cerr << "[20] diverged_fraction=" << response.summary.diverged_fraction << " expected ~0.5\n";
+            return 1;
+        }
+        std::cout << "[20] summary-only payload suppression: passed\n";
+        passed++;
+    }
+
+    const int total = 21;
     std::cout << "test_generic_probe: " << passed << "/" << total << " passed\n";
     return (passed == total) ? 0 : 1;
 }
