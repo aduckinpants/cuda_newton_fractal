@@ -4,6 +4,7 @@ This document is the current reference for the repo's callable headless engine s
 
 For a practical can/cannot-do guide focused on dynamic function solving and sweep shapes, see [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).
 For the matching real-runtime fractal probe guide, see [docs/callable_engine_fractal_sample_cheatsheet.md](docs/callable_engine_fractal_sample_cheatsheet.md).
+For transport, batch, NDJSON, and session behavior, see [docs/callable_engine_transport_session_cheatsheet.md](docs/callable_engine_transport_session_cheatsheet.md).
 For copy-paste request JSON, see [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md).
 
 It answers three questions:

@@ -1,0 +1,4 @@
+{"session":"open","request_id":"init"}
+{"request_version":1,"request_id":"r1","function_id":"fractal.sample","mode":"point_set","overrides":[{"path":"fractal.view.fractal_type","value":"mandelbrot"}],"points":[{"x":-0.5,"y":0.0}],"metrics":["iterations","status","summary_mean_iterations"]}
+{"request_version":1,"request_id":"r2","state_token":"s1","function_id":"fractal.sample","mode":"point_set","overrides":[{"path":"fractal.view.zoom","value":2.0}],"points":[{"x":-0.5,"y":0.0}],"metrics":["iterations","status","summary_mean_iterations"]}
+{"session":"close"}

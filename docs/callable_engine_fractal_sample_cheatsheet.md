@@ -3,6 +3,7 @@
 This is the practical can/cannot-do guide for the shipped `fractal.sample` surface.
 
 If you need request-supplied formulas, read [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).
+If you need transport/session behavior, read [docs/callable_engine_transport_session_cheatsheet.md](docs/callable_engine_transport_session_cheatsheet.md).
 If you need the transport and registry reference, read [docs/callable_engine_surface.md](docs/callable_engine_surface.md).
 If you want copy-paste JSON, read [docs/examples/callable_engine/README.md](docs/examples/callable_engine/README.md).
 

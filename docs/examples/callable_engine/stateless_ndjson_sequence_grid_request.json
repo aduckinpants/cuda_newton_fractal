@@ -1,0 +1,28 @@
+{
+  "request_version": 1,
+  "request_id": "probe-ndjson-sequence-grid",
+  "function_id": "fractal.sample",
+  "mode": "sequence_grid",
+  "output_mode": "ndjson",
+  "overrides": [
+    {"path": "fractal.view.fractal_type", "value": "mandelbrot"}
+  ],
+  "region": {
+    "center_x": -0.75,
+    "center_y": 0.0,
+    "span_x": 0.5,
+    "span_y": 0.5,
+    "grid_width": 2,
+    "grid_height": 2
+  },
+  "sequence": {
+    "zip_paths": true,
+    "vary": [
+      {
+        "path": "fractal.view.zoom",
+        "values": [1.0, 2.0]
+      }
+    ]
+  },
+  "metrics": ["iterations", "status", "summary_mean_iterations"]
+}

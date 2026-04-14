@@ -1,0 +1,29 @@
+[
+  {
+    "request_version": 1,
+    "request_id": "batch-newton",
+    "function_id": "fractal.sample",
+    "mode": "point_set",
+    "overrides": [
+      {"path": "fractal.view.fractal_type", "value": "newton"}
+    ],
+    "points": [
+      {"x": 0.5, "y": 0.3}
+    ],
+    "metrics": ["iterations", "status", "summary_mean_iterations"]
+  },
+  {
+    "request_version": 1,
+    "request_id": "batch-mandelbrot",
+    "function_id": "fractal.sample",
+    "mode": "point_set",
+    "overrides": [
+      {"path": "fractal.view.fractal_type", "value": "mandelbrot"}
+    ],
+    "points": [
+      {"x": -0.5, "y": 0.0},
+      {"x": -1.0, "y": 0.0}
+    ],
+    "metrics": ["iterations", "status", "summary_mean_iterations"]
+  }
+]
