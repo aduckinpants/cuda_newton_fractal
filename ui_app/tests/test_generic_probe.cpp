@@ -282,6 +282,53 @@ int main() {
 
     // 8. Backward compat: fractal.sample still routes (empty function_id) -----
     {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-json-nonfinite-sanitize";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "iterate(z - 1 + exp(-z), 60)";
+        request.generic_epsilon = 1e-9;
+        request.generic_escape_radius = 1000.0;
+        request.metrics = {"iterations", "status", "value", "abs2", "derivative"};
+        request.points.push_back({-6.5, -9.5});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[7b] nonfinite sanitize request failed: " << error << "\n";
+            return 1;
+        }
+        std::string json = SerializeFractalProbeResponseJson(response);
+        auto parsed = json_min::Parse(json);
+        if (!parsed.error.empty()) {
+            std::cerr << "[7b] response JSON invalid: " << parsed.error << "\n";
+            return 1;
+        }
+        const auto* samples = parsed.value.get("samples");
+        if (!samples || !samples->is_array() || samples->as_array().size() != 1) {
+            std::cerr << "[7b] expected one serialized sample\n";
+            return 1;
+        }
+        const json_min::Value& sample = samples->as_array()[0];
+        const auto* abs2 = sample.get("abs2");
+        const auto* derivativeX = sample.get("derivative_x");
+        const auto* derivativeY = sample.get("derivative_y");
+        if (!abs2 || !abs2->is_null()) {
+            std::cerr << "[7b] abs2 should serialize as null when nonfinite\n";
+            return 1;
+        }
+        if (!derivativeX || !derivativeX->is_null() || !derivativeY || !derivativeY->is_null()) {
+            std::cerr << "[7b] derivative components should serialize as null when nonfinite\n";
+            return 1;
+        }
+        std::cout << "[7b] nonfinite JSON sanitize: passed\n";
+        passed++;
+    }
+
+    // 8. Backward compat: fractal.sample still routes (empty function_id) -----
+    {
         // This just validates that RunFractalProbeRequest still accepts the
         // fractal.sample path. We don't need a GPU so we expect it to fail
         // at the rendering stage, not at dispatch. The key check is that it
@@ -590,7 +637,7 @@ int main() {
         passed++;
     }
 
-    const int total = 16;
+    const int total = 17;
     std::cout << "test_generic_probe: " << passed << "/" << total << " passed\n";
     return (passed == total) ? 0 : 1;
 }

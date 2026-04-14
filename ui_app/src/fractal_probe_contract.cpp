@@ -399,6 +399,9 @@ std::string ScalarToJson(const FractalProbeScalar& scalar) {
 }
 
 std::string DoubleToJson(double value) {
+    if (!std::isfinite(value)) {
+        return "null";
+    }
     std::ostringstream ss;
     ss << std::setprecision(17) << value;
     return ss.str();

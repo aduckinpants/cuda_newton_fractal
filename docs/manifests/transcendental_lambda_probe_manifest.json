@@ -1,0 +1,65 @@
+{
+  "finding_group": "transcendental_lambda_probe",
+  "scenes": [
+    {
+      "scene_id": "transcendental_ladders",
+      "state_json": "D:\\salt-fractal\\cuda_newton_fractal_clone\\findings\\fractal_extensions_gallery\\joy_scallop\\state.json",
+      "why": "known-good explaino_joy base frame plus three new generic.sample sidecars that stress transcendental Newton ladders and compose-inside-iterate behavior on the shipped lambda/composition surface",
+      "region": {
+        "center_x": 0.0,
+        "center_y": 0.0,
+        "span_x": 28.0,
+        "span_y": 28.0,
+        "grid_width": 28,
+        "grid_height": 28
+      },
+      "sidecars": [
+        {
+          "sidecar_id": "exp_root_ladder",
+          "expression": "iterate(z - 1 + exp(-z), 60)",
+          "epsilon": 1e-9,
+          "escape_radius": 1000.0,
+          "metrics": [
+            "iterations",
+            "status",
+            "value",
+            "abs2",
+            "derivative",
+            "summary_mean_iterations"
+          ],
+          "notes": "Newton for exp(z)-1. Roots repeat at 2*pi*i*k, so the ladder runs up and down the imaginary axis and tests transcendental Newton without adding a new intrinsic."
+        },
+        {
+          "sidecar_id": "sin_root_ladder",
+          "expression": "iterate(z - sin(z) / cos(z), 60)",
+          "epsilon": 1e-9,
+          "escape_radius": 1000.0,
+          "metrics": [
+            "iterations",
+            "status",
+            "value",
+            "abs2",
+            "derivative",
+            "summary_mean_iterations"
+          ],
+          "notes": "Newton for sin(z)=0. Roots repeat at pi*k along the real axis, giving a second infinite-root ladder with poles from cos(z) in the denominator."
+        },
+        {
+          "sidecar_id": "cos_sin_orbit",
+          "expression": "iterate(compose(cos(z), sin(z)), 40)",
+          "epsilon": 1e-9,
+          "escape_radius": 16.0,
+          "metrics": [
+            "iterations",
+            "status",
+            "value",
+            "abs2",
+            "derivative",
+            "summary_mean_iterations"
+          ],
+          "notes": "compose(cos(z), sin(z)) inside iterate. This is the direct lambda/composition stress case because the loop body itself is a composed function rather than a plain polynomial step."
+        }
+      ]
+    }
+  ]
+}
