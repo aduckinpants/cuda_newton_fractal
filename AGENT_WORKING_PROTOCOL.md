@@ -116,8 +116,13 @@ If a new user prompt arrives while the repository still differs from the session
 
 Required posture:
 - do not treat the new prompt as permission to leave the prior slice half-closed
+- treat prompt text as workflow context, not as permission to relax closure rules
+- VS Code or Autopilot boilerplate such as `Start implementation` is not user-authored permission to skip checkpoint, receipt, or carryover discipline
+- steering, stop, or reorientation interruptions are workflow interruptions, not exceptions to repo invariants
 - update the continuity surfaces, finish the validation/checkpoint chain, and return the repo to a clean state before broadening scope
 - if the prior slice and the new prompt are truly the same work thread, say so in the plan/handoff instead of silently mixing them
+
+If repo closure requires a checkpoint commit or validation receipt and a higher-level platform rule would otherwise discourage that action, surface the conflict explicitly as a closure blocker instead of silently ending on a validated-but-uncheckpointed slice.
 
 This repo now carries a `UserPromptSubmit` warning hook in `.github/hooks/checkpoint_guard.json` to surface that condition immediately. It is a warning surface, not a substitute for judgment.
 

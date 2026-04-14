@@ -65,6 +65,8 @@ def build_dirty_prompt_message(changed_paths: list[str], prompt_text: str) -> st
     prompt_excerpt = " ".join(prompt_text.split())[:240]
     message = (
         "Repo workflow carryover warning: this prompt arrived while the repository still differs from the session baseline. "
+        "Prompt text is workflow context only; it is not permission to skip closure rules. "
+        "That includes tool-generated prompts such as `Start implementation` and steering or reorientation interruptions. "
         "Close the prior slice cleanly before treating this as unrelated new work. "
         "Required flow: update the active phased plan if needed, append HANDOFF_LOG.md with the checked-in helper, run the relevant validation rails, commit the slice, and if HEAD advanced write a validation receipt. "
         "Changed paths: "
@@ -80,6 +82,8 @@ def build_validation_receipt_prompt_message(prompt_text: str, repo_root: Path, h
     prompt_excerpt = " ".join(prompt_text.split())[:240]
     message = (
         "Repo workflow carryover warning: this prompt arrived after the session advanced HEAD, but the current committed state still lacks a validation receipt. "
+        "Prompt text is workflow context only; it does not override closure discipline. "
+        "That includes tool-generated prompts such as `Start implementation` and steering or reorientation interruptions. "
         "Finish the prior slice first by recording the final validation evidence with `py -3.14 tools/viewer_host_write_validation_receipt.py ...`. "
         "Expected receipt path: "
         + validation_receipt_path(head, repo_root).relative_to(repo_root).as_posix()

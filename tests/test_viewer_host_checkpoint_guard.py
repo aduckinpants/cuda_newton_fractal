@@ -249,19 +249,23 @@ def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_
 
 
 def test_build_dirty_prompt_message_mentions_closure_flow() -> None:
-    text = build_dirty_prompt_message(["HANDOFF_LOG.md", "ui_app/src/main.cpp"], "continue the next thing")
+    text = build_dirty_prompt_message(["HANDOFF_LOG.md", "ui_app/src/main.cpp"], "Start implementation")
 
     assert "HANDOFF_LOG.md" in text
+    assert "workflow context only" in text
+    assert "Start implementation" in text
+    assert "tool-generated prompts" in text
     assert "validation receipt" in text
-    assert "continue the next thing" in text
 
 
 def test_build_validation_receipt_prompt_message_mentions_expected_receipt_path(tmp_path: Path) -> None:
-    text = build_validation_receipt_prompt_message("continue the next thing", tmp_path, "abc123")
+    text = build_validation_receipt_prompt_message("Start implementation", tmp_path, "abc123")
 
     assert "validation receipt" in text
+    assert "does not override closure discipline" in text
+    assert "Start implementation" in text
+    assert "tool-generated prompts" in text
     assert "abc123.json" in text
-    assert "continue the next thing" in text
 
 
 def test_hook_config_wires_checkpoint_guard_events() -> None:

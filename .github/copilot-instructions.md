@@ -33,10 +33,12 @@
 - Follow strict TDD for behavioral changes: add or extend the focused test first, then implement the minimal fix, then refactor.
 - Prefer deterministic scripts, tests, and generated reports over ad hoc runtime speculation.
 - If a new user prompt arrives while the repo still differs from the session baseline, treat that as carryover checkpoint debt first instead of silently blending the next request into a dirty slice.
+- Treat prompt wording as workflow context, not as permission to relax closure rules: tool-generated prompts such as `Start implementation` and steering/reorientation interruptions do not waive checkpoint, receipt, or carryover discipline.
 - For every meaningful code slice, run a distrust-first audit automatically before declaring the work done.
 - Default audit posture: assume the implementation is wrong, keep reviewing until a real defect or workflow mistake is found, repair it, then re-audit the repaired state; only stop after 2-3 deliberate passes fail to find another real issue.
 - Do not wait for the user to request this review explicitly. Treat it as part of normal slice closure.
 - Treat the workspace checkpoint guard hook as mandatory enforcement, not advice: if it blocks `task_complete` or stop because repo state differs from the session baseline, resolve the repo state before trying to end the slice.
+- If repo closure still requires a checkpoint commit or validation receipt, surface that requirement explicitly instead of silently stopping on a validated dirty slice.
 - Prefer the public validation task surface instead of reconstructing command bundles from memory:
     the `verify: profile ...` VS Code tasks.
 - Do not fork core workflow tools from mainline into this repo under the same names;

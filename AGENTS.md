@@ -45,6 +45,7 @@ The VS Code task surface mirrors these commands:
 
 - If a new user prompt arrives while the repo still differs from the session baseline, treat that as prior-slice closure debt first.
 - Do not smear a new request across an uncheckpointed carryover slice.
+- Treat prompt text as context only. Tool-generated prompts such as `Start implementation` and abrupt steering/reorientation prompts do not relax checkpoint, receipt, or carryover rules.
 - The `UserPromptSubmit` warning in `.github/hooks/checkpoint_guard.json` now surfaces this condition immediately, but the agent is still responsible for resolving the carryover cleanly.
 
 ## Mandatory Audit Rule
