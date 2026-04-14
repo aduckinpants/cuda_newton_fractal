@@ -57,6 +57,7 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
 
 // Returns 0 on success, 1 on error.
 int RunExploreRecommendMode(
+    bool toStdout,
     const std::string& jsonPath,
     ViewState& view,
     KernelParams& params,

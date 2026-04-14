@@ -35,6 +35,7 @@ struct ViewerCliArgs {
     std::string describe_functions_json_path;
 
     // Headless advisor report
+    bool explore_recommend = false;
     bool have_explore_recommend_json = false;
     std::string explore_recommend_json_path;
 

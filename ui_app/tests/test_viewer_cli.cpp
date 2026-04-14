@@ -224,6 +224,15 @@ static void TestExploreRecommendJson() {
     Check(cli.explore_recommend_json_path == "advisor.json", "TestExploreRecommendJson_Path");
 }
 
+static void TestExploreRecommendStdout() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--explore-recommend"
+    }), &cli);
+    Check(rc == 0, "TestExploreRecommendStdout_ReturnCode");
+    Check(cli.explore_recommend, "TestExploreRecommendStdout_Flag");
+}
+
 static void TestExploreRecommendJsonMissingValue() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--explore-recommend-json"}), &cli);
@@ -449,6 +458,7 @@ int main() {
     TestSampleModeStdio();
     TestSampleModeJsonPaths();
     TestExploreRecommendJson();
+    TestExploreRecommendStdout();
     TestExploreRecommendJsonMissingValue();
     TestSampleSession();
     TestSampleSessionPipe();

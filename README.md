@@ -55,6 +55,7 @@ D:\salt-fractal\cuda_newton_fractal_clone\smoke\newton_fractal.exe --width 1024 
 | [TDD_SLICE_PROTOCOL_2026-04-05.md](TDD_SLICE_PROTOCOL_2026-04-05.md) | Working discipline: Red → Isolate → Green → Regression → Checkpoint |
 | [HANDOFF_LOG.md](HANDOFF_LOG.md) | Agent-continuity audit trail — append-only session log |
 | [spec_intake/_STATUS.md](spec_intake/_STATUS.md) | Spec index: implemented / deferred / research |
+| [docs/callable_engine_surface.md](docs/callable_engine_surface.md) | Current reference for callable headless functions, transports, and advisor/report mode |
 
 ## Fractal Types (27 advertised)
 

@@ -64,6 +64,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->capture_diagnostic_only = HasArg(args, "--capture-diagnostic");
     out->capture_finding_only = HasArg(args, "--capture-finding");
     out->describe_functions = HasArg(args, "--describe-functions");
+    out->explore_recommend = HasArg(args, "--explore-recommend");
 
     // Sample mode
     out->sample_request_stdin = HasArg(args, "--sample-request-stdin");

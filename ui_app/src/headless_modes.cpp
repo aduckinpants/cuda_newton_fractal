@@ -398,7 +398,7 @@ bool EmitProbeResponse(const std::string& responseJson,
     std::string* outError) {
     if (toStdout) {
         if (std::fwrite(responseJson.data(), 1, responseJson.size(), stdout) != responseJson.size()) {
-            if (outError) *outError = "Failed to write sample response to stdout";
+            if (outError) *outError = "Failed to write JSON output to stdout";
             return false;
         }
         std::fflush(stdout);
@@ -612,20 +612,16 @@ int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,
     EngineFunctionCatalog catalog = BuildEngineCatalog(schemaResult.schema);
     std::string catalogJson = SerializeEngineCatalogJson(catalog);
 
-    if (toStdout) {
-        std::cout << catalogJson;
-    }
-    if (!jsonPath.empty()) {
-        std::string writeError;
-        if (!WriteTextFileExact(jsonPath, catalogJson, &writeError)) {
-            std::fprintf(stderr, "%s\n", writeError.c_str());
-            return 1;
-        }
+    std::string emitError;
+    if (!EmitProbeResponse(catalogJson, toStdout, jsonPath, &emitError)) {
+        std::fprintf(stderr, "%s\n", emitError.c_str());
+        return 1;
     }
     return 0;
 }
 
 int RunExploreRecommendMode(
+    bool toStdout,
     const std::string& jsonPath,
     ViewState& view,
     KernelParams& params,
@@ -633,8 +629,8 @@ int RunExploreRecommendMode(
     const EngineFunctionCatalog& engineCatalog,
     BindingContext& bind,
     SidecarMeasurementHost& measurementHost) {
-    if (jsonPath.empty()) {
-        std::fprintf(stderr, "explore-recommend mode requires an explicit JSON output path\n");
+    if (!toStdout && jsonPath.empty()) {
+        std::fprintf(stderr, "explore-recommend mode requires at least one output sink\n");
         return 1;
     }
 
@@ -648,9 +644,9 @@ int RunExploreRecommendMode(
     }
 
     const std::string reportJson = SerializeExplainoExplorationAdvisorReportJson(report);
-    std::string writeError;
-    if (!WriteTextFileExact(jsonPath, reportJson, &writeError)) {
-        std::fprintf(stderr, "%s\n", writeError.c_str());
+    std::string emitError;
+    if (!EmitProbeResponse(reportJson, toStdout, jsonPath, &emitError)) {
+        std::fprintf(stderr, "%s\n", emitError.c_str());
         return 1;
     }
     return 0;

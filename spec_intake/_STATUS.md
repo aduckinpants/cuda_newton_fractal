@@ -40,6 +40,7 @@ These are planned for a dedicated fractal-toolkit branch, not this merge.
 
 | Spec | Summary | Dependencies |
 |------|---------|-------------|
+| CallableEngineSurfaceWrap | Active callable-surface generalization thread: advisor stdout symmetry plus the current callable-surface reference doc are landed, and the next phase is the registry-backed design that can grow beyond `fractal.sample` and `generic.sample` without pretending dynamic kernel registration already exists yet | Builds on RealtimeCliSampling_OperatorCallIn, GenericCudaSamplerBridge, and HeadlessExplorationAdvisor; near-term follow-on is registry/function-id design, not transpiler/backend execution yet |
 | CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-F/V2-G DONE.** CLI session V2 now has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming for single/session requests, describe-functions sensitivity metadata, and a Windows named-pipe alternate transport. Broader multi-client/socket transport remains deferred. | No remaining active phases in this repo; broader multi-client/socket transport stays deferred |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)

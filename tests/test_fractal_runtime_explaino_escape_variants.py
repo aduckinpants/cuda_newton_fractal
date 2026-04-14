@@ -71,6 +71,19 @@ def _run_exploration_advisor(*args: str, report_path: Path) -> dict[str, object]
     return json.loads(report_path.read_text(encoding="utf-8"))
 
 
+def _run_exploration_advisor_stdout(*args: str) -> dict[str, object]:
+    result = subprocess.run(
+        list(args),
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert result.stdout.strip(), "missing advisor stdout payload"
+    return json.loads(result.stdout)
+
+
 def _configure_sidecar_policy(state: dict[str, object], **updates: object) -> dict[str, object]:
     configured_state = json.loads(json.dumps(state))
     policy = configured_state["sidecar_auto_demo_policy"]
@@ -479,6 +492,41 @@ def test_explaino_exploration_advisor_report_is_deterministic_for_loaded_state(t
     assert report_one["recommendations"]
     assert report_one["recommended_observation"]["rank"] == 1
     assert report_one["recommended_observation"]["path"] == report_one["recommendations"][0]["path"]
+
+
+def test_explaino_exploration_advisor_stdout_matches_json_output_for_loaded_state(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advisor runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    state_path = _write_state_bundle(tmp_path / "advisor_stdout_state", baseline_capture["state"])
+
+    file_report = _run_exploration_advisor(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--explore-recommend-json",
+        str(tmp_path / "advisor_stdout_file.json"),
+        report_path=tmp_path / "advisor_stdout_file.json",
+    )
+    stdout_report = _run_exploration_advisor_stdout(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--explore-recommend",
+    )
+
+    assert stdout_report == file_report
 
 
 def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path) -> None:

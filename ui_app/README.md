@@ -51,6 +51,17 @@ D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --load-state-js
 D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --capture-finding --finding-group manual_capture --finding-why "Headless review capture."
 ```
 
+Callable headless surface reference:
+
+- [../docs/callable_engine_surface.md](../docs/callable_engine_surface.md)
+
+Representative callable examples:
+
+```powershell
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --describe-functions
+D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.cmd --load-state-json state.json --explore-recommend
+```
+
 Diagnostics bundle output:
 
 ```powershell
