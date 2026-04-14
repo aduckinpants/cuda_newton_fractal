@@ -232,6 +232,7 @@ Two practical limitations matter a lot right now:
 
 - `generic.sample` is effectively a stateless math surface, not a view-state-driven runtime surface
 - the current public request path evaluates the expression on the CPU, even though the repo also contains lower-level generic CUDA evaluation seams
+- the current generic gallery helper and `gallery_manifest.json` output path are temporary scaffolding for proof work; they are useful today, but they are not the future formal output contract
 
 ## Good Fit Vs Bad Fit
 
