@@ -2,6 +2,8 @@
 
 This document is the current reference for the repo's callable headless engine surface.
 
+For a practical can/cannot-do guide focused on dynamic function solving and sweep shapes, see [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).
+
 It answers three questions:
 
 1. what callable surfaces ship today
@@ -107,6 +109,8 @@ This is the runtime-authoritative fractal sampler over the existing binding-path
 Callers should discover applicable parameters through `--describe-functions` rather than guessing.
 
 ### `generic.sample`
+
+For a current POC cheatsheet focused on dynamic function solving, supported expression forms, and supported sweep modes, see [docs/callable_engine_dynamic_function_cheatsheet.md](docs/callable_engine_dynamic_function_cheatsheet.md).
 
 This is the current preview surface for request-supplied function expressions.
 
