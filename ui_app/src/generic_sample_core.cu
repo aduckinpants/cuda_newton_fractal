@@ -31,9 +31,6 @@ __global__ void generic_sample_kernel(
         // Iterative evaluation with fixed-point convergence / escape divergence.
         int maxIter = (root.param_index >= 0 && root.param_index < func.param_count)
             ? (int)func.params[root.param_index] : func.max_iterate;
-        if (maxIter <= 0) maxIter = func.max_iterate;
-        if (maxIter <= 0) maxIter = 1;
-        if (maxIter > 10000) maxIter = 10000;
 
         int subtree = root.child_left;
         double eps2 = epsilon * epsilon;

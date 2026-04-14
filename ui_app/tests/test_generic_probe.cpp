@@ -755,34 +755,81 @@ int main() {
         passed++;
     }
 
-    // 19. iterate() count must stay an integer literal -----------------------
+    // 19. iterate() count can come from a scalar param -----------------------
     {
         FractalProbeRequest request{};
         request.request_version = 1;
-        request.request_id = "gf-iterate-param-count-reject";
+        request.request_id = "gf-iterate-param-count-accept";
         request.function_id = "generic.sample";
         request.mode = FractalProbeMode::point_set;
         request.has_function = true;
-        request.generic_expression = "iterate(z, steps)";
-        request.generic_params = {{"steps", 8.0}};
+        request.generic_expression = "iterate(z * z, steps)";
+        request.generic_params = {{"steps", 4.0}};
         request.metrics = {"value"};
-        request.points.push_back({0.5, 0.0});
+        request.points.push_back({2.0, 0.0});
 
         FractalProbeResponse response{};
         std::string error;
-        if (RunFractalProbeRequest(request, "unused", &response, &error)) {
-            std::cerr << "[19] iterate(z, steps) should be rejected in the current parser\n";
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[19] iterate(z*z, steps) should succeed: " << error << "\n";
             return 1;
         }
-        if (error.find("integer literal") == std::string::npos) {
-            std::cerr << "[19] error should mention integer literal: " << error << "\n";
+        if (response.samples.size() != 1) {
+            std::cerr << "[19] expected one sample, got " << response.samples.size() << "\n";
             return 1;
         }
-        std::cout << "[19] iterate() literal-count restriction: passed\n";
+        if (!NearlyEqual(response.samples[0].final_z_x, 65536.0, 1e-3) ||
+            !NearlyEqual(response.samples[0].final_z_y, 0.0, 1e-9)) {
+            std::cerr << "[19] iterate(z*z, steps) at z=2 should give 65536, got "
+                      << response.samples[0].final_z_x << "+" << response.samples[0].final_z_y << "i\n";
+            return 1;
+        }
+        std::cout << "[19] iterate() scalar param count: passed\n";
         passed++;
     }
 
-    // 20. summary-only metrics suppress sample payloads ----------------------
+    // 20. invalid iterate() counts fail fast ---------------------------------
+    {
+        const struct Case {
+            const char* request_id;
+            std::map<std::string, double> params;
+            const char* expected;
+        } cases[] = {
+            {"gf-iterate-missing-param", {}, "unknown iterate count parameter"},
+            {"gf-iterate-zero", {{"steps", 0.0}}, "at least 1"},
+            {"gf-iterate-negative", {{"steps", -2.0}}, "at least 1"},
+            {"gf-iterate-fractional", {{"steps", 8.5}}, "integer"},
+            {"gf-iterate-huge", {{"steps", 50001.0}}, "10000"},
+        };
+
+        for (const auto& testCase : cases) {
+            FractalProbeRequest request{};
+            request.request_version = 1;
+            request.request_id = testCase.request_id;
+            request.function_id = "generic.sample";
+            request.mode = FractalProbeMode::point_set;
+            request.has_function = true;
+            request.generic_expression = "iterate(z, steps)";
+            request.generic_params = testCase.params;
+            request.metrics = {"value"};
+            request.points.push_back({0.5, 0.0});
+
+            FractalProbeResponse response{};
+            std::string error;
+            if (RunFractalProbeRequest(request, "unused", &response, &error)) {
+                std::cerr << "[20] invalid iterate count should fail for " << testCase.request_id << "\n";
+                return 1;
+            }
+            if (error.find(testCase.expected) == std::string::npos) {
+                std::cerr << "[20] error for " << testCase.request_id << " should mention '" << testCase.expected << "': " << error << "\n";
+                return 1;
+            }
+        }
+        std::cout << "[20] iterate() invalid counts fail fast: passed\n";
+        passed++;
+    }
+
+    // 21. summary-only metrics suppress sample payloads ----------------------
     {
         FractalProbeRequest request{};
         request.request_version = 1;
@@ -800,26 +847,26 @@ int main() {
         FractalProbeResponse response{};
         std::string error;
         if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
-            std::cerr << "[20] summary-only request failed: " << error << "\n";
+            std::cerr << "[21] summary-only request failed: " << error << "\n";
             return 1;
         }
         if (!response.samples.empty()) {
-            std::cerr << "[20] expected summary-only request to suppress sample payloads\n";
+            std::cerr << "[21] expected summary-only request to suppress sample payloads\n";
             return 1;
         }
         if (response.summary.sample_count != 2) {
-            std::cerr << "[20] expected summary.sample_count=2, got " << response.summary.sample_count << "\n";
+            std::cerr << "[21] expected summary.sample_count=2, got " << response.summary.sample_count << "\n";
             return 1;
         }
         if (!NearlyEqual(response.summary.diverged_fraction, 0.5, 0.01)) {
-            std::cerr << "[20] diverged_fraction=" << response.summary.diverged_fraction << " expected ~0.5\n";
+            std::cerr << "[21] diverged_fraction=" << response.summary.diverged_fraction << " expected ~0.5\n";
             return 1;
         }
-        std::cout << "[20] summary-only payload suppression: passed\n";
+        std::cout << "[21] summary-only payload suppression: passed\n";
         passed++;
     }
 
-    const int total = 21;
+    const int total = 22;
     std::cout << "test_generic_probe: " << passed << "/" << total << " passed\n";
     return (passed == total) ? 0 : 1;
 }

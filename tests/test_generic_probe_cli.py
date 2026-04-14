@@ -242,18 +242,85 @@ def test_generic_sample_sequence_grid_param_variation() -> None:
     assert sorted({sample["sequence_index"] for sample in response["samples"]}) == [0, 1, 2]
 
 
-def test_generic_sample_iterate_count_parameter_is_rejected() -> None:
+def test_generic_sample_iterate_count_parameter_is_accepted() -> None:
     if sys.platform != "win32":
         pytest.skip("probe CLI runtime regression is Windows-only")
 
     request = {
         "request_version": 1,
-        "request_id": "generic-iterate-param-count-reject",
+        "request_id": "generic-iterate-param-count-accept",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "function": {
+            "expression": "iterate(z * z, steps)",
+            "params": {"steps": 4.0},
+        },
+        "points": [{"x": 2.0, "y": 0.0}],
+        "metrics": ["value"],
+    }
+
+    response = _run_probe(request)
+    assert response["ok"] is True
+    assert response["samples"][0]["value_x"] == pytest.approx(65536.0)
+    assert response["samples"][0]["value_y"] == pytest.approx(0.0)
+
+
+def test_generic_sample_sequence_grid_iterate_count_variation() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-iterate-sequence-count",
+        "function_id": "generic.sample",
+        "mode": "sequence_grid",
+        "function": {
+            "expression": "iterate(z^2 + c, steps)",
+            "params": {
+                "c_real": -0.75,
+                "c_imag": 0.0,
+                "steps": 10.0,
+            },
+            "epsilon": 1e-8,
+            "escape_radius": 4.0,
+        },
+        "region": {
+            "center_x": 0.0,
+            "center_y": 0.0,
+            "span_x": 2.0,
+            "span_y": 2.0,
+            "grid_width": 3,
+            "grid_height": 3,
+        },
+        "sequence": {
+            "zip_paths": False,
+            "vary": [
+                {"path": "function.params.steps", "values": [10.0, 20.0, 30.0]}
+            ],
+        },
+        "metrics": ["iterations", "status", "summary_mean_iterations"],
+    }
+
+    response = _run_probe(request)
+    assert response["ok"] is True
+    assert response["summary"]["sample_count"] == 27
+    assert len(response["sequence_results"]) == 3
+    assert response["sequence_results"][0]["applied"]["function.params.steps"] == pytest.approx(10.0)
+    assert response["sequence_results"][2]["applied"]["function.params.steps"] == pytest.approx(30.0)
+
+
+def test_generic_sample_unknown_iterate_count_param_is_rejected() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-iterate-missing-param",
         "function_id": "generic.sample",
         "mode": "point_set",
         "function": {
             "expression": "iterate(z, steps)",
-            "params": {"steps": 8.0},
+            "params": {},
         },
         "points": [{"x": 0.5, "y": 0.0}],
         "metrics": ["value"],
@@ -271,7 +338,48 @@ def test_generic_sample_iterate_count_parameter_is_rejected() -> None:
     response = json.loads(result.stdout)
     assert result.returncode != 0
     assert response["ok"] is False
-    assert "integer literal" in response["error"]
+    assert "unknown iterate count parameter" in response["error"]
+
+
+@pytest.mark.parametrize(
+    ("steps", "expected_message"),
+    [
+        (0.0, "at least 1"),
+        (-2.0, "at least 1"),
+        (8.5, "integer"),
+        (50001.0, "10000"),
+    ],
+)
+def test_generic_sample_invalid_iterate_counts_are_rejected(steps: float, expected_message: str) -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": f"generic-iterate-invalid-{steps}",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "function": {
+            "expression": "iterate(z, steps)",
+            "params": {"steps": steps},
+        },
+        "points": [{"x": 0.5, "y": 0.0}],
+        "metrics": ["value"],
+    }
+
+    exe_path = _active_runtime_exe()
+    result = subprocess.run(
+        [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    response = json.loads(result.stdout)
+    assert result.returncode != 0
+    assert response["ok"] is False
+    assert expected_message in response["error"]
 
 
 def test_generic_sample_nonfinite_payloads_keep_summary_numeric() -> None:

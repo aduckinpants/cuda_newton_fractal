@@ -5,6 +5,7 @@
 #include "generic_function_cpu_eval.h"
 #include <cstdio>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <string>
 
@@ -185,6 +186,62 @@ static void test_iterate_expression() {
         CHECK(std::fabs(result.x) < 1e-6 || std::fabs(result.x + 1.0) < 1e-6,
               "iterate(z^2+c,10) at z=0,c=-1 is periodic {0,-1}");
     }
+
+    std::map<std::string, double> stepParam;
+    stepParam["steps"] = 3.0;
+    pr = ParseGenericFunctionExpression("iterate(z * z, steps)", stepParam);
+    CHECK(pr.ok, "parse iterate(z*z, steps) succeeds");
+    if (pr.ok) {
+        GFCpuComplex result = gf_cpu_eval(pr.desc, {2.0, 0.0});
+        CHECK(std::fabs(result.x - 256.0) < 1e-6, "iterate(z*z,steps) at z=2 = 256");
+    }
+}
+
+static void test_iterate_count_validation() {
+    printf("--- test_iterate_count_validation ---\n");
+
+    std::map<std::string, double> params;
+    params["steps"] = 8.0;
+    params["fractional"] = 8.5;
+    params["zero"] = 0.0;
+    params["negative"] = -3.0;
+    params["huge"] = 50001.0;
+    params["nan_count"] = std::numeric_limits<double>::quiet_NaN();
+
+    GFParseResult pr = ParseGenericFunctionExpression("iterate(z, steps)", params);
+    CHECK(pr.ok, "iterate(z, steps) with scalar param succeeds");
+
+    pr = ParseGenericFunctionExpression("iterate(z, missing_steps)", params);
+    CHECK(!pr.ok, "unknown iterate count param fails");
+    CHECK(pr.error.find("unknown iterate count parameter") != std::string::npos, "unknown iterate param error is descriptive");
+
+    pr = ParseGenericFunctionExpression("iterate(z, fractional)", params);
+    CHECK(!pr.ok, "fractional iterate count fails");
+    CHECK(pr.error.find("integer") != std::string::npos, "fractional iterate count mentions integer");
+
+    pr = ParseGenericFunctionExpression("iterate(z, zero)", params);
+    CHECK(!pr.ok, "zero iterate count fails");
+    CHECK(pr.error.find("at least 1") != std::string::npos, "zero iterate count mentions minimum");
+
+    pr = ParseGenericFunctionExpression("iterate(z, negative)", params);
+    CHECK(!pr.ok, "negative iterate count fails");
+    CHECK(pr.error.find("at least 1") != std::string::npos, "negative iterate count mentions minimum");
+
+    pr = ParseGenericFunctionExpression("iterate(z, huge)", params);
+    CHECK(!pr.ok, "oversized iterate count fails");
+    CHECK(pr.error.find("10000") != std::string::npos, "oversized iterate count mentions maximum");
+
+    pr = ParseGenericFunctionExpression("iterate(z, nan_count)", params);
+    CHECK(!pr.ok, "non-finite iterate count fails");
+    CHECK(pr.error.find("finite") != std::string::npos, "non-finite iterate count mentions finiteness");
+
+    pr = ParseGenericFunctionExpression("iterate(z, 1e309)", params);
+    CHECK(!pr.ok, "infinite iterate literal fails");
+    CHECK(pr.error.find("finite") != std::string::npos, "infinite iterate literal mentions finiteness");
+
+    pr = ParseGenericFunctionExpression("iterate(z, -5)", params);
+    CHECK(!pr.ok, "negative iterate literal fails");
+    CHECK(pr.error.find("at least 1") != std::string::npos, "negative iterate literal mentions minimum");
 }
 
 static void test_compose_expression() {
@@ -344,6 +401,7 @@ int main() {
     test_division();
     test_newton_expression();
     test_iterate_expression();
+    test_iterate_count_validation();
     test_compose_expression();
     test_parse_errors();
     test_operator_precedence();

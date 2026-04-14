@@ -119,10 +119,14 @@ struct Parser {
     void advance() { cur = lexer.next(); }
 
     void fail(const std::string& msg) {
+        fail_at(cur.pos, msg);
+    }
+
+    void fail_at(int pos, const std::string& msg) {
         if (!failed) {
             failed = true;
             error = msg;
-            error_pos = cur.pos;
+            error_pos = pos;
         }
     }
 
@@ -197,6 +201,81 @@ struct Parser {
 
         fail("unknown identifier '" + name + "'; valid: z, z_conj, sin, cos, exp, log, abs, conj, iterate, compose, or a param name");
         return -1;
+    }
+
+    bool try_resolve_iterate_count_param(const std::string& name, int name_pos, double* out_value) {
+        if (params) {
+            auto it = params->find(name);
+            if (it != params->end()) {
+                *out_value = it->second;
+                return true;
+            }
+
+            auto re_it = params->find(name + "_real");
+            auto im_it = params->find(name + "_imag");
+            if (re_it != params->end() && im_it != params->end()) {
+                fail_at(name_pos, "iterate() count parameter '" + name + "' must be scalar");
+                return false;
+            }
+        }
+
+        fail_at(name_pos, "unknown iterate count parameter '" + name + "'");
+        return false;
+    }
+
+    bool validate_iterate_count(double raw_count, int value_pos, int* out_count) {
+        if (!std::isfinite(raw_count)) {
+            fail_at(value_pos, "iterate() count must be finite");
+            return false;
+        }
+        if (raw_count < 1.0) {
+            fail_at(value_pos, "iterate() count must be at least 1");
+            return false;
+        }
+        if (raw_count > 10000.0) {
+            fail_at(value_pos, "iterate() count must be at most 10000");
+            return false;
+        }
+
+        double integral = std::floor(raw_count);
+        if (raw_count != integral) {
+            fail_at(value_pos, "iterate() count must be an integer");
+            return false;
+        }
+
+        *out_count = (int)integral;
+        return true;
+    }
+
+    bool parse_iterate_count(int* out_count) {
+        int value_pos = cur.pos;
+        bool negate_number = false;
+        if (cur.kind == TokKind::Minus) {
+            negate_number = true;
+            value_pos = cur.pos;
+            advance();
+        }
+
+        double raw_count = 0.0;
+        if (cur.kind == TokKind::Number) {
+            raw_count = cur.num_value;
+            if (negate_number) raw_count = -raw_count;
+            advance();
+            return validate_iterate_count(raw_count, value_pos, out_count);
+        }
+
+        if (!negate_number && cur.kind == TokKind::Ident) {
+            std::string name = cur.text;
+            int name_pos = cur.pos;
+            advance();
+            if (!try_resolve_iterate_count_param(name, name_pos, &raw_count)) {
+                return false;
+            }
+            return validate_iterate_count(raw_count, name_pos, out_count);
+        }
+
+        fail_at(value_pos, "iterate() count must be an integer literal or scalar param name");
+        return false;
     }
 
     // --- Grammar rules ---
@@ -394,14 +473,8 @@ struct Parser {
             }
             advance(); // consume ','
 
-            if (cur.kind != TokKind::Number) {
-                fail("iterate() count must be an integer literal");
-                return -1;
-            }
-            int count = (int)cur.num_value;
-            if (count <= 0) count = 1;
-            if (count > 10000) count = 10000;
-            advance();
+            int count = 0;
+            if (!parse_iterate_count(&count)) return -1;
 
             if (!expect(TokKind::RParen, "')' after iterate arguments")) return -1;
 
@@ -409,7 +482,7 @@ struct Parser {
             if (pi < 0) return -1;
 
             // Update max_iterate as well.
-            desc.max_iterate = count;
+            desc.max_iterate = (std::max)(desc.max_iterate, count);
 
             int ni = alloc_node();
             if (ni < 0) return -1;

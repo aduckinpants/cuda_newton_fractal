@@ -139,7 +139,7 @@ Supported unary functions:
 
 Supported higher-level helpers:
 
-- `iterate(body, count)`
+- `iterate(body, count)` where `count` is an integer literal or a bare scalar param name
 - `compose(f, g)`
 
 ## High-Level Request Recipe
@@ -211,7 +211,7 @@ Minimal parameter sweep sketch:
 - expression tree size is capped at 64 nodes
 - stored parameter slots are capped at 32
 - parser nesting depth is capped at 50
-- `iterate(..., count)` is clamped into `[1, 10000]`
+- `iterate(..., count)` requires a finite integer in `[1, 10000]` and fails fast otherwise
 - grids are capped at 4,000,000 points
 - malformed expressions and unknown function ids fail fast instead of falling back
 

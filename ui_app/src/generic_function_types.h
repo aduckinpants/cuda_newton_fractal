@@ -102,6 +102,14 @@ GF_HOST_DEVICE inline GFValidationResult ValidateGenericFunctionDesc(const Gener
             return {false, "param_index out of range"};
         if (uses_param2 && (n.param_index < 0 || n.param_index + 1 >= desc.param_count))
             return {false, "param_index+1 out of range for complex constant"};
+        if (n.op == GFNodeOp::gf_iterate) {
+            double count = desc.params[n.param_index];
+            if (!(count >= 1.0 && count <= 10000.0))
+                return {false, "iterate count out of range [1, 10000]"};
+            int count_int = (int)count;
+            if (count != (double)count_int)
+                return {false, "iterate count must be an integer"};
+        }
     }
     return {true, nullptr};
 }

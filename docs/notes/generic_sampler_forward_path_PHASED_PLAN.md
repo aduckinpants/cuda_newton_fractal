@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - professionalize iterate count semantics
+Phase 4 - expose an explicit opt-in CUDA backend
 
 ## Phase Checklist
 
 - [x] Phase 1 - lock contract and build CPU/CUDA parity rails
 - [x] Phase 2 - extract shared execution and response marshalling seams
-- [ ] Phase 3 - professionalize iterate count semantics
+- [x] Phase 3 - professionalize iterate count semantics
 - [ ] Phase 4 - expose an explicit opt-in CUDA backend
 - [ ] Phase 5 - document temporary gallery scaffolding and close continuity
 
@@ -32,7 +32,11 @@ Phase 3 - professionalize iterate count semantics
   - landed Phase 2 seam extraction inside `ui_app/src/fractal_probe_runner.cpp`: generic.sample request preparation, response skeleton creation, per-sequence parameter application, root-level CPU evaluation, and GenericSampleResult-to-FractalProbeSample marshalling now live in dedicated internal helpers while the public path stays CPU-default
   - added a characterization guard in `ui_app/tests/test_generic_probe.cpp` proving that summary-only generic.sample requests suppress sample payloads while preserving summary metrics, which protects the extracted response-skeleton and metric-selection seams
   - validation confirmed no public behavior change across the native rail, runtime build, focused Python regressions, and the existing parity harness
-  - next step: make `iterate(body, count)` strict and parameterizable for a scientific-tool surface, then extend the parity harness and public request regressions around that semantics change
+  - landed Phase 3 strict iterate-count semantics across the parser, descriptor validation, CPU reference path, public generic.sample runner, CUDA sampler core, and the parity mirror: `iterate(body, count)` now accepts only finite integers in `[1, 10000]`, supports bare scalar-param counts, and fails fast instead of silently clamping or truncating invalid values
+  - extended the parser, native probe, CLI, and CPU/CUDA parity rails to cover valid parameterized counts plus missing, zero, negative, fractional, oversized, and non-finite count failures
+  - hostile-review finding: the first Phase 3 rerun exposed a bad new acceptance test rather than a runtime bug. The test incorrectly expected repeated squaring from `iterate(z, steps)`, which is the identity map; the acceptance surface was corrected to use `iterate(z * z, steps)` with a 4-step count so the assertion actually proves parameterized iteration semantics
+  - validation confirmed the strict-count change across the native rail, published runtime build, and focused CLI regression file
+  - next step: wire the already-proven CUDA sampler core behind an explicit, observable public backend-selection surface without weakening the shared response contract
 - Phase 1 exit criteria:
   - an in-repo plan records the rollout and semantics decisions above
   - a focused native parity harness compares the current public CPU semantics against the existing CUDA sampler core for representative shipped expressions
@@ -54,5 +58,5 @@ Phase 3 - professionalize iterate count semantics
 
 - `ui_app\build_tests_vsdevcmd.cmd`
 - `ui_app\build_vsdevcmd.cmd`
-- `py -3.14 -m pytest tests/test_generic_probe_cli.py tests/test_generic_sampler_gallery.py -q`
+- `py -3.14 -m pytest tests/test_generic_probe_cli.py -q`
 - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`

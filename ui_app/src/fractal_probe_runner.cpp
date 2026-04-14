@@ -1754,9 +1754,6 @@ GenericSampleResult RunGenericSampleCpuEvaluation(
 
     int maxIter = (rootNode.param_index >= 0 && rootNode.param_index < desc.param_count)
         ? (int)desc.params[rootNode.param_index] : desc.max_iterate;
-    if (maxIter <= 0) maxIter = desc.max_iterate;
-    if (maxIter <= 0) maxIter = 1;
-    if (maxIter > 10000) maxIter = 10000;
 
     int subtree = rootNode.child_left;
     double eps2 = epsilon * epsilon;

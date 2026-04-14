@@ -51,15 +51,6 @@ static GenericSampleResult cpu_public_sample(
     int max_iter = (root.param_index >= 0 && root.param_index < desc.param_count)
         ? static_cast<int>(desc.params[root.param_index])
         : desc.max_iterate;
-    if (max_iter <= 0) {
-        max_iter = desc.max_iterate;
-    }
-    if (max_iter <= 0) {
-        max_iter = 1;
-    }
-    if (max_iter > 10000) {
-        max_iter = 10000;
-    }
 
     const int subtree = root.child_left;
     const double eps2 = epsilon * epsilon;
@@ -267,6 +258,15 @@ static void test_iterate_parity() {
     check_expression_parity(
         "quadratic iterate with c",
         "iterate(z ^ 2 + c, 25)",
+        params,
+        coords,
+        1e-9,
+        1000.0);
+
+    params["steps"] = 25.0;
+    check_expression_parity(
+        "quadratic iterate with parameterized count",
+        "iterate(z ^ 2 + c, steps)",
         params,
         coords,
         1e-9,

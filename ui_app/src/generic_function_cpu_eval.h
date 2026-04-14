@@ -98,7 +98,6 @@ inline GFCpuComplex gf_cpu_eval_recursive(
     }
     case GFNodeOp::gf_iterate: {
         int N = (n.param_index >= 0) ? (int)desc.params[n.param_index] : desc.max_iterate;
-        N = (std::max)(1, (std::min)(N, 10000));
         GFCpuComplex cur = z;
         for (int k = 0; k < N; ++k)
             cur = gf_cpu_eval_recursive(desc, n.child_left, cur, depth + 1);
