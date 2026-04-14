@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import subprocess
 import sys
@@ -9,6 +11,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+import tools.viewer_host_checkpoint_guard as checkpoint_guard
 
 from tools.viewer_host_checkpoint_guard import (
     build_posttool_response,
@@ -124,6 +128,74 @@ def test_build_pretool_response_blocks_clean_head_without_validation_receipt(tmp
     assert payload["permissionDecision"] == "deny"
     assert "validation receipt" in payload["permissionDecisionReason"]
     assert "def456.json" in payload["additionalContext"]
+
+
+def test_main_pretool_blocks_task_complete_via_recipient_name(monkeypatch) -> None:
+    baseline = _snapshot()
+    current = _snapshot(staged={"HANDOFF_LOG.md": "blob-1"})
+
+    monkeypatch.setattr(checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(checkpoint_guard, "load_session_baseline", lambda session_id, repo_root=checkpoint_guard.REPO_ROOT: baseline)
+    monkeypatch.setattr(checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
+
+    payload = {
+        "hookEventName": "PreToolUse",
+        "sessionId": "session-1",
+        "cwd": str(REPO_ROOT),
+        "recipient_name": "functions.task_complete",
+        "parameters": {"summary": "done"},
+    }
+
+    old_stdin = sys.stdin
+    sys.stdin = io.StringIO(json.dumps(payload))
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = checkpoint_guard.main()
+        output = json.loads(buf.getvalue())
+    finally:
+        sys.stdin = old_stdin
+
+    assert rc == 0
+    hook = output["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "session baseline" in hook["permissionDecisionReason"]
+    assert "HANDOFF_LOG.md" in hook["additionalContext"]
+
+
+def test_main_pretool_blocks_missing_validation_receipt_via_recipient_name(monkeypatch, tmp_path: Path) -> None:
+    baseline = _snapshot()
+    baseline["head"] = "abc123"
+    current = _snapshot()
+    current["head"] = "def456"
+
+    monkeypatch.setattr(checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(checkpoint_guard, "load_session_baseline", lambda session_id, repo_root=checkpoint_guard.REPO_ROOT: baseline)
+    monkeypatch.setattr(checkpoint_guard, "discover_repo_root", lambda start_path: tmp_path)
+
+    payload = {
+        "hookEventName": "PreToolUse",
+        "sessionId": "session-1",
+        "cwd": str(tmp_path),
+        "recipient_name": "functions.task_complete",
+        "parameters": {"summary": "done"},
+    }
+
+    old_stdin = sys.stdin
+    sys.stdin = io.StringIO(json.dumps(payload))
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = checkpoint_guard.main()
+        output = json.loads(buf.getvalue())
+    finally:
+        sys.stdin = old_stdin
+
+    assert rc == 0
+    hook = output["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "validation receipt" in hook["permissionDecisionReason"]
+    assert "def456.json" in hook["additionalContext"]
 
 
 def test_build_posttool_response_reminds_when_head_advanced_without_validation_receipt(tmp_path: Path) -> None:

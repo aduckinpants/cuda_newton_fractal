@@ -83,6 +83,38 @@ def _current_head(repo_root: Path) -> str:
     return _git_output(repo_root, "rev-parse", "HEAD").strip()
 
 
+def _find_values(obj: Any, key: str) -> list[Any]:
+    out: list[Any] = []
+    if isinstance(obj, dict):
+        for current_key, value in obj.items():
+            if current_key == key:
+                out.append(value)
+            out.extend(_find_values(value, key))
+    elif isinstance(obj, list):
+        for item in obj:
+            out.extend(_find_values(item, key))
+    return out
+
+
+def _payload_tool_candidates(payload: Any) -> list[str]:
+    candidates: list[str] = []
+    for key in ("toolName", "tool_name", "tool", "name", "recipient_name", "recipientName"):
+        candidates.extend(str(value) for value in _find_values(payload, key) if isinstance(value, (str, int, float)))
+    return candidates
+
+
+def _extract_payload_tool_name(payload: Any, *, default: str = "") -> str:
+    candidates = _payload_tool_candidates(payload)
+    if not candidates:
+        return default
+    return str(candidates[0]).strip() or default
+
+
+def _payload_requests_task_complete(payload: Any) -> bool:
+    haystack = " ".join(_payload_tool_candidates(payload)).lower()
+    return "task_complete" in haystack or "taskcomplete" in haystack
+
+
 def discover_repo_root(start_path: Path) -> Path:
     candidate = start_path.resolve()
     proc = _run_git(candidate, "rev-parse", "--show-toplevel")
@@ -428,16 +460,16 @@ def main(argv: list[str] | None = None) -> int:
         if event_name not in ("PreToolUse", "PostToolUse", "Stop"):
             return 0
 
-        if event_name == "PreToolUse" and str(payload.get("tool_name", "")) != TASK_COMPLETE_TOOL:
+        if event_name == "PreToolUse" and not _payload_requests_task_complete(payload):
             return 0
 
         current = capture_repo_snapshot(repo_root)
         baseline = _bootstrap_missing_baseline_if_clean(session_id, current, repo_root)
 
         if event_name == "PreToolUse":
-            response = build_pretool_response(str(payload.get("tool_name", "")), baseline, current, repo_root)
+            response = build_pretool_response(TASK_COMPLETE_TOOL, baseline, current, repo_root)
         elif event_name == "PostToolUse":
-            response = build_posttool_response(str(payload.get("tool_name", "unknown_tool")), baseline, current, repo_root)
+            response = build_posttool_response(_extract_payload_tool_name(payload, default="unknown_tool"), baseline, current, repo_root)
         else:
             response = build_stop_response(baseline, current, repo_root)
 

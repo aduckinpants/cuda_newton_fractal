@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - audit deterministic closure enforcement seam
+Phase 4 - improve build and validation visibility
 
 ## Phase Checklist
 
 - [x] Phase 1 - clarify prompt and closure wording
 - [x] Phase 2 - repair handoff helper checkpoint-id flow
-- [ ] Phase 3 - audit deterministic closure enforcement seam
+- [x] Phase 3 - audit deterministic closure enforcement seam
 - [ ] Phase 4 - improve build and validation visibility
 - [ ] Phase 5 - reduce runtime pytest ambiguity
 - [ ] Phase 6 - harden helper defaults and carryover ritual
@@ -41,6 +41,10 @@ Phase 3 - audit deterministic closure enforcement seam
   - the audit follow-up corrected `AGENTS.md` so validation still precedes handoff preparation and receipt writing
 - Phase 3 target:
   - reproduce and prove the exact closure-enforcement miss path before changing hook behavior
+- Phase 3 completion snapshot:
+  - hostile audit confirmed the local guard only recognized `task_complete` through `payload["tool_name"]`, while the host can surface completion via fields such as `recipient_name`
+  - `tools/viewer_host_checkpoint_guard.py` now normalizes tool-identification fields before deciding whether `PreToolUse` should run the completion guard, so the dirty-baseline and validation-receipt gates both activate on the real host payload shape
+  - `tests/test_viewer_host_checkpoint_guard.py` now includes end-to-end `main()` regressions proving `recipient_name: functions.task_complete` blocks both dirty-state completion and clean-head-without-receipt completion
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`
