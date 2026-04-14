@@ -1,0 +1,22 @@
+{
+  "request_version": 1,
+  "request_id": "generic-conjugate-wave-grid",
+  "function_id": "generic.sample",
+  "mode": "grid",
+  "function": {
+    "expression": "compose(sin(z), z_conj * z + z^2)"
+  },
+  "region": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "span_x": 3.5,
+    "span_y": 3.5,
+    "grid_width": 192,
+    "grid_height": 192
+  },
+  "metrics": [
+    "status",
+    "value",
+    "abs2"
+  ]
+}

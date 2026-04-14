@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -149,6 +150,128 @@ def test_generic_sample_direct_eval() -> None:
     # f(1) = 1 + 1 + 1 = 3
     assert abs(s["value_x"] - 3.0) < 1e-9
     assert abs(s["value_y"]) < 1e-9
+
+
+def test_generic_sample_log_abs_and_conj_builtins() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    log_request = {
+        "request_version": 1,
+        "request_id": "generic-log-builtin",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "function": {
+            "expression": "log(z)",
+        },
+        "points": [
+            {"x": math.e, "y": 0.0},
+        ],
+        "metrics": ["value", "abs2"],
+    }
+
+    log_response = _run_probe(log_request)
+    assert log_response["ok"] is True
+    log_sample = log_response["samples"][0]
+    assert abs(log_sample["value_x"] - 1.0) < 1e-9
+    assert abs(log_sample["value_y"]) < 1e-9
+
+    abs_request = {
+        "request_version": 1,
+        "request_id": "generic-abs-conj-builtin",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "function": {
+            "expression": "abs(z_conj)",
+        },
+        "points": [
+            {"x": 3.0, "y": 4.0},
+        ],
+        "metrics": ["value", "abs2"],
+    }
+
+    abs_response = _run_probe(abs_request)
+    assert abs_response["ok"] is True
+    abs_sample = abs_response["samples"][0]
+    assert abs(abs_sample["value_x"] - 5.0) < 1e-9
+    assert abs(abs_sample["value_y"]) < 1e-9
+
+
+def test_generic_sample_sequence_grid_param_variation() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-sequence-grid-scale-real",
+        "function_id": "generic.sample",
+        "mode": "sequence_grid",
+        "function": {
+            "expression": "compose(exp(z), scale * log(z + shift))",
+            "params": {
+                "scale_real": 1.0,
+                "scale_imag": 0.0,
+                "shift_real": 0.35,
+                "shift_imag": 0.0,
+            },
+        },
+        "region": {
+            "center_x": 0.0,
+            "center_y": 0.0,
+            "span_x": 4.0,
+            "span_y": 4.0,
+            "grid_width": 4,
+            "grid_height": 4,
+        },
+        "sequence": {
+            "zip_paths": False,
+            "vary": [
+                {"path": "function.params.scale_real", "values": [0.5, 1.0, 1.5]}
+            ],
+        },
+        "metrics": ["status", "value", "abs2"],
+    }
+
+    response = _run_probe(request)
+    assert response["ok"] is True
+    assert response["summary"]["sample_count"] == 48
+    assert len(response["samples"]) == 48
+    assert len(response["sequence_results"]) == 3
+    assert response["sequence_results"][0]["applied"]["function.params.scale_real"] == pytest.approx(0.5)
+    assert response["sequence_results"][2]["applied"]["function.params.scale_real"] == pytest.approx(1.5)
+    assert sorted({sample["sequence_index"] for sample in response["samples"]}) == [0, 1, 2]
+
+
+def test_generic_sample_iterate_count_parameter_is_rejected() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-iterate-param-count-reject",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "function": {
+            "expression": "iterate(z, steps)",
+            "params": {"steps": 8.0},
+        },
+        "points": [{"x": 0.5, "y": 0.0}],
+        "metrics": ["value"],
+    }
+
+    exe_path = _active_runtime_exe()
+    result = subprocess.run(
+        [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    response = json.loads(result.stdout)
+    assert result.returncode != 0
+    assert response["ok"] is False
+    assert "integer literal" in response["error"]
 
 
 def test_generic_sample_nonfinite_payloads_keep_summary_numeric() -> None:

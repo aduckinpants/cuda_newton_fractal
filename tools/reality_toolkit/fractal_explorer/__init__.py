@@ -36,6 +36,7 @@ from .fractal_extensions import (
     run_fractal_extensions_composite,
     run_headless_capture_diagnostic,
 )
+from .generic_sampler_gallery import write_generic_sample_gallery
 from .param_probe_sweep import (
     DEFAULT_SAMPLE_METRICS,
     DEFAULT_SAMPLE_POINT_METRICS,
@@ -92,6 +93,7 @@ __all__ = [
     "generate_probe_states",
     "generate_probe_ticks",
     "generate_finding_charts",
+    "write_generic_sample_gallery",
     "load_fractal_extensions_manifest",
     "publish_root",
     "repo_publish_root",

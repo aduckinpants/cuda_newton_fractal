@@ -1,0 +1,25 @@
+{
+  "request_version": 1,
+  "request_id": "generic-sine-newton-grid",
+  "function_id": "generic.sample",
+  "mode": "grid",
+  "function": {
+    "expression": "iterate(z - sin(z) / cos(z), 40)",
+    "epsilon": 1e-9,
+    "escape_radius": 1000.0
+  },
+  "region": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "span_x": 12.0,
+    "span_y": 12.0,
+    "grid_width": 192,
+    "grid_height": 192
+  },
+  "metrics": [
+    "iterations",
+    "status",
+    "value",
+    "abs2"
+  ]
+}

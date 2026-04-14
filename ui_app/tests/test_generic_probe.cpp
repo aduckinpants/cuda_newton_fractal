@@ -645,7 +645,144 @@ int main() {
         passed++;
     }
 
-    const int total = 17;
+    // 17. log / abs / z_conj built-ins ---------------------------------------
+    {
+        FractalProbeRequest logRequest{};
+        logRequest.request_version = 1;
+        logRequest.request_id = "gf-log-builtin";
+        logRequest.function_id = "generic.sample";
+        logRequest.mode = FractalProbeMode::point_set;
+        logRequest.has_function = true;
+        logRequest.generic_expression = "log(z)";
+        logRequest.metrics = {"value", "abs2"};
+        logRequest.points.push_back({std::exp(1.0), 0.0});
+
+        FractalProbeResponse logResponse{};
+        std::string error;
+        if (!RunFractalProbeRequest(logRequest, "unused", &logResponse, &error)) {
+            std::cerr << "[17] log(z) failed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(logResponse.samples[0].final_z_x, 1.0, 1e-9) ||
+            !NearlyEqual(logResponse.samples[0].final_z_y, 0.0, 1e-9)) {
+            std::cerr << "[17] log(e)=" << logResponse.samples[0].final_z_x << "+" << logResponse.samples[0].final_z_y << "i expected 1\n";
+            return 1;
+        }
+
+        FractalProbeRequest absRequest{};
+        absRequest.request_version = 1;
+        absRequest.request_id = "gf-abs-conj-builtin";
+        absRequest.function_id = "generic.sample";
+        absRequest.mode = FractalProbeMode::point_set;
+        absRequest.has_function = true;
+        absRequest.generic_expression = "abs(z_conj)";
+        absRequest.metrics = {"value", "abs2"};
+        absRequest.points.push_back({3.0, 4.0});
+
+        FractalProbeResponse absResponse{};
+        if (!RunFractalProbeRequest(absRequest, "unused", &absResponse, &error)) {
+            std::cerr << "[17] abs(z_conj) failed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(absResponse.samples[0].final_z_x, 5.0, 1e-9) ||
+            !NearlyEqual(absResponse.samples[0].final_z_y, 0.0, 1e-9)) {
+            std::cerr << "[17] abs(z_conj)(3+4i)=" << absResponse.samples[0].final_z_x << "+" << absResponse.samples[0].final_z_y << "i expected 5\n";
+            return 1;
+        }
+        std::cout << "[17] log / abs / z_conj built-ins: passed\n";
+        passed++;
+    }
+
+    // 18. sequence_grid over generic params ----------------------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-sequence-grid-scale-real";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::sequence_grid;
+        request.has_function = true;
+        request.generic_expression = "compose(exp(z), scale * log(z + shift))";
+        request.generic_params = {
+            {"scale_real", 1.0},
+            {"scale_imag", 0.0},
+            {"shift_real", 0.35},
+            {"shift_imag", 0.0},
+        };
+        request.metrics = {"status", "value", "abs2"};
+        request.has_region = true;
+        request.region.center_x = 0.0;
+        request.region.center_y = 0.0;
+        request.region.span_x = 4.0;
+        request.region.span_y = 4.0;
+        request.region.grid_width = 4;
+        request.region.grid_height = 4;
+
+        request.has_sequence = true;
+        FractalProbeSequenceAxis axis;
+        axis.path = "function.params.scale_real";
+        axis.values.push_back(FractalProbeScalar::Number(0.5));
+        axis.values.push_back(FractalProbeScalar::Number(1.0));
+        axis.values.push_back(FractalProbeScalar::Number(1.5));
+        request.sequence.axes.push_back(axis);
+        request.sequence.zip_paths = false;
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (!RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[18] sequence_grid params failed: " << error << "\n";
+            return 1;
+        }
+        if (response.sequence_results.size() != 3) {
+            std::cerr << "[18] expected 3 sequence results, got " << response.sequence_results.size() << "\n";
+            return 1;
+        }
+        if (response.samples.size() != 48) {
+            std::cerr << "[18] expected 48 samples, got " << response.samples.size() << "\n";
+            return 1;
+        }
+        if (response.sequence_results[0].applied.size() != 1 ||
+            response.sequence_results[0].applied[0].first != "function.params.scale_real" ||
+            !NearlyEqual(response.sequence_results[0].applied[0].second.number_value, 0.5, 1e-12)) {
+            std::cerr << "[18] first applied override missing expected scale_real=0.5\n";
+            return 1;
+        }
+        if (response.sequence_results[2].applied.size() != 1 ||
+            !NearlyEqual(response.sequence_results[2].applied[0].second.number_value, 1.5, 1e-12)) {
+            std::cerr << "[18] third applied override missing expected scale_real=1.5\n";
+            return 1;
+        }
+        std::cout << "[18] sequence_grid generic params: passed\n";
+        passed++;
+    }
+
+    // 19. iterate() count must stay an integer literal -----------------------
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "gf-iterate-param-count-reject";
+        request.function_id = "generic.sample";
+        request.mode = FractalProbeMode::point_set;
+        request.has_function = true;
+        request.generic_expression = "iterate(z, steps)";
+        request.generic_params = {{"steps", 8.0}};
+        request.metrics = {"value"};
+        request.points.push_back({0.5, 0.0});
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (RunFractalProbeRequest(request, "unused", &response, &error)) {
+            std::cerr << "[19] iterate(z, steps) should be rejected in the current parser\n";
+            return 1;
+        }
+        if (error.find("integer literal") == std::string::npos) {
+            std::cerr << "[19] error should mention integer literal: " << error << "\n";
+            return 1;
+        }
+        std::cout << "[19] iterate() literal-count restriction: passed\n";
+        passed++;
+    }
+
+    const int total = 20;
     std::cout << "test_generic_probe: " << passed << "/" << total << " passed\n";
     return (passed == total) ? 0 : 1;
 }
