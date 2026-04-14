@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 - harden helper defaults and carryover ritual
+Complete
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Phase 6 - harden helper defaults and carryover ritual
 - [x] Phase 3 - audit deterministic closure enforcement seam
 - [x] Phase 4 - improve build and validation visibility
 - [x] Phase 5 - reduce runtime pytest ambiguity
-- [ ] Phase 6 - harden helper defaults and carryover ritual
+- [x] Phase 6 - harden helper defaults and carryover ritual
 
 ## Notes
 
@@ -53,6 +53,16 @@ Phase 6 - harden helper defaults and carryover ritual
   - `.vscode/tasks.json` now routes `verify: runtime probe/session pytest` through `tools/viewer_host_runtime_pytest_lane.py` instead of invoking pytest directly
   - `tools/viewer_host_runtime_pytest_lane.py` now preflights the published runtime metadata, prints the active runtime plus canonical test-file list, and fails zero-pass skip-only runs instead of letting them look like successful runtime validation
   - `tests/test_viewer_host_runtime_pytest_lane.py` locks the helper's summary parsing, missing-runtime preflight, zero-pass failure mode, and normal passing behavior, while `tests/test_agent_workflow_tools.py` locks the task wiring
+- Phase 6 exit criteria:
+  - `tools/viewer_host_begin_work_slice.py` no longer hardcodes `--commit pending`; it must reuse the checkpoint-id generation flow from `tools/viewer_host_append_handoff.py`
+  - begin-work-slice dry-run and normal output surface the generated `ck:` token so the closing handoff can reuse it explicitly with `--commit <checkpoint_id>`
+  - `tools/viewer_host_session_bootstrap.py` advertises the explicit checkpoint-id close command as the default next step and keeps `--resolve-last-pending` visible only as a legacy repair path
+  - focused workflow tests prove breadcrumb token generation, dry-run output, bootstrap command guidance, and token reuse with the append helper
+- Phase 6 completion snapshot:
+  - `tools/viewer_host_begin_work_slice.py` now builds a breadcrumb append plan through `tools/viewer_host_append_handoff.py`'s checkpoint-id helpers, so begin-slice breadcrumbs use generated `ck:` tokens instead of the older literal pending commit marker
+  - begin-work-slice dry-runs and normal runs now print the generated checkpoint id plus the explicit `viewer_host_append_handoff.py --commit <checkpoint_id>` closure guidance
+  - hostile audit found a real mismatch in `tools/viewer_host_session_bootstrap.py`, which still advertised `--resolve-last-pending` as the default close command even after the helper switched to explicit token reuse; the repair now makes bootstrap prefer the explicit checkpoint-id close command and keeps the pending-resolution command as a legacy-repair surface
+  - `tests/test_agent_workflow_tools.py` and `tests/test_viewer_host_handoff_append.py` now lock breadcrumb plan generation, dry-run output, bootstrap close-command guidance, and begin-to-end checkpoint token reuse across the workflow helpers
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`

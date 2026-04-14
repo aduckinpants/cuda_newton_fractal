@@ -16,6 +16,7 @@ from tools.viewer_host_append_handoff import (
     format_repo_status_summary,
     resolve_handoff_checkpoint_token,
 )
+from tools.viewer_host_begin_work_slice import build_breadcrumb_append_plan
 from tools.viewer_host_repo_status import repo_is_dirty
 
 
@@ -55,7 +56,7 @@ def test_build_handoff_append_commands_uses_single_append_without_resolve() -> N
     commands = build_handoff_append_commands(
         py="py",
         message="checkpoint message",
-        commit="abc1234",
+        commit="ck:flow1234",
         resolve_last_pending=False,
         no_auto_rotate=True,
     )
@@ -66,8 +67,37 @@ def test_build_handoff_append_commands_uses_single_append_without_resolve() -> N
         "--repo-root",
         str(REPO_ROOT),
         "--commit",
-        "abc1234",
+        "ck:flow1234",
         "--no-auto-rotate",
+        "checkpoint message",
+    ]]
+
+
+def test_begin_work_slice_breadcrumb_token_can_be_reused_for_final_append(monkeypatch) -> None:
+    monkeypatch.setattr("tools.viewer_host_append_handoff.uuid.uuid4", lambda: type("_Uuid", (), {"hex": "flow1234abcdef"})())
+
+    breadcrumb = build_breadcrumb_append_plan(
+        py="py",
+        message="session-start | branch=feature/test | head=abc123 | status=clean | profile=checkpoint | intent=workflow closeout",
+    )
+    commands = build_handoff_append_commands(
+        py="py",
+        message="checkpoint message",
+        commit=breadcrumb.checkpoint_id,
+        resolve_last_pending=False,
+        score=97,
+    )
+
+    assert breadcrumb.checkpoint_id == "ck:flow1234"
+    assert commands == [[
+        "py",
+        str(MAINLINE_HANDOFF_APPEND),
+        "--repo-root",
+        str(REPO_ROOT),
+        "--commit",
+        "ck:flow1234",
+        "--score",
+        "97",
         "checkpoint message",
     ]]
 

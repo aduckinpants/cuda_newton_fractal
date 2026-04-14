@@ -4,11 +4,14 @@ import argparse
 import importlib.util
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 try:
+    from tools.viewer_host_append_handoff import build_handoff_append_commands, resolve_handoff_checkpoint_token
     from tools.viewer_host_repo_status import repo_is_dirty
 except ModuleNotFoundError:
+    from viewer_host_append_handoff import build_handoff_append_commands, resolve_handoff_checkpoint_token
     from viewer_host_repo_status import repo_is_dirty
 
 
@@ -17,6 +20,14 @@ MAINLINE_AGENT_BEGIN = Path(r"C:\code\salticid-cuda\tools\agent_begin_work_slice
 MAINLINE_HANDOFF_APPEND = Path(r"C:\code\salticid-cuda\tools\handoff_append.py")
 MAINLINE_REPO_ROOT = MAINLINE_AGENT_BEGIN.parents[1]
 PROFILE_CHOICES = ("native", "runtime", "catalog", "checkpoint", "unspecified")
+
+
+@dataclass(frozen=True)
+class BreadcrumbAppendPlan:
+    message: str
+    command: list[str]
+    checkpoint_id: str | None
+    generated_checkpoint_id: bool
 
 
 def build_breadcrumb_message(*, branch: str, head: str, dirty: bool, intent: str, profile: str) -> str:
@@ -68,23 +79,43 @@ def _capture_git(*args: str) -> str:
     return (proc.stdout or "").strip()
 
 
+def build_breadcrumb_append_plan(*, py: str, message: str) -> BreadcrumbAppendPlan:
+    checkpoint_id, generated_checkpoint_id = resolve_handoff_checkpoint_token(commit=None, message=message)
+    commands = build_handoff_append_commands(
+        py=py,
+        message=message,
+        commit=checkpoint_id,
+        resolve_last_pending=False,
+        repo_root=REPO_ROOT,
+    )
+    if len(commands) != 1:
+        raise RuntimeError("viewer_host_begin_work_slice expected a single breadcrumb append command")
+    return BreadcrumbAppendPlan(
+        message=message,
+        command=commands[0],
+        checkpoint_id=checkpoint_id,
+        generated_checkpoint_id=generated_checkpoint_id,
+    )
+
+
 def build_handoff_append_cmd(*, py: str, message: str) -> list[str]:
-    if not MAINLINE_HANDOFF_APPEND.exists():
-        raise FileNotFoundError(f"Mainline handoff helper not found: {MAINLINE_HANDOFF_APPEND}")
-    return [
-        py,
-        str(MAINLINE_HANDOFF_APPEND),
-        "--repo-root",
-        str(REPO_ROOT),
-        "--commit",
-        "pending",
-        message,
-    ]
+    return build_breadcrumb_append_plan(py=py, message=message).command
+
+
+def _print_checkpoint_guidance(plan: BreadcrumbAppendPlan) -> None:
+    if not plan.generated_checkpoint_id or not plan.checkpoint_id:
+        return
+    print(f"viewer_host_begin_work_slice: checkpoint_id={plan.checkpoint_id}")
+    print(
+        "viewer_host_begin_work_slice: reuse this token with "
+        f'py -3.14 tools/viewer_host_append_handoff.py --commit {plan.checkpoint_id} --score <n> "<message>" '
+        "when checkpointing this slice"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Repo-specific breadcrumb helper that delegates to mainline handoff_append.py.",
+        description="Repo-specific breadcrumb helper that appends a session-start HANDOFF_LOG entry using the local checkpoint-id flow.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     ap.add_argument("--intent", required=True, help="Short intent for this work slice")
@@ -102,12 +133,15 @@ def main(argv: list[str] | None = None) -> int:
         intent=ns.intent,
         profile=ns.profile,
     )
-    cmd = build_handoff_append_cmd(py=sys.executable, message=message)
+    plan = build_breadcrumb_append_plan(py=sys.executable, message=message)
     if ns.dry_run:
         print(message)
-        print(subprocess.list2cmdline(cmd))
+        _print_checkpoint_guidance(plan)
+        print(subprocess.list2cmdline(plan.command))
         return 0
-    proc = subprocess.run(cmd, cwd=str(REPO_ROOT), check=False)
+    proc = subprocess.run(plan.command, cwd=str(REPO_ROOT), check=False)
+    if proc.returncode == 0:
+        _print_checkpoint_guidance(plan)
     return int(proc.returncode)
 
 

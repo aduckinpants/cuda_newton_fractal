@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.viewer_host_begin_work_slice import build_breadcrumb_message
+from tools.viewer_host_begin_work_slice import build_breadcrumb_append_plan, build_breadcrumb_message, main as begin_work_slice_main
 from tools.viewer_host_session_bootstrap import build_bootstrap_state, build_validation_profiles, legacy_pending_handoff_entries, tail_handoff_entries
 from tools.viewer_host_assert_phased_plan_sync import validate_plan_text
 
@@ -25,6 +25,54 @@ def test_build_handoff_message_normalizes_fields() -> None:
         "session-start | branch=feature/test | head=abc123 | status=dirty | "
         "profile=runtime | intent=tighten session / bootstrap"
     )
+
+
+def test_build_breadcrumb_append_plan_uses_generated_checkpoint_id(monkeypatch) -> None:
+    monkeypatch.setattr("tools.viewer_host_append_handoff.uuid.uuid4", lambda: type("_Uuid", (), {"hex": "flow1234abcdef"})())
+
+    plan = build_breadcrumb_append_plan(
+        py="py",
+        message="session-start | branch=feature/test | head=abc123 | status=clean | profile=checkpoint | intent=workflow closeout",
+    )
+
+    assert plan.checkpoint_id == "ck:flow1234"
+    assert plan.generated_checkpoint_id is True
+    assert plan.command == [
+        "py",
+        "C:\\code\\salticid-cuda\\tools\\handoff_append.py",
+        "--repo-root",
+        str(REPO_ROOT),
+        "--commit",
+        "ck:flow1234",
+        "session-start | branch=feature/test | head=abc123 | status=clean | profile=checkpoint | intent=workflow closeout",
+    ]
+
+
+def test_begin_work_slice_dry_run_surfaces_generated_checkpoint_id(monkeypatch, capsys) -> None:
+    def fake_capture_git(*args: str) -> str:
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "feature/test"
+        if args == ("rev-parse", "--short", "HEAD"):
+            return "abc123"
+        raise AssertionError(args)
+
+    monkeypatch.setattr("tools.viewer_host_begin_work_slice._capture_git", fake_capture_git)
+    monkeypatch.setattr("tools.viewer_host_begin_work_slice.repo_is_dirty", lambda _repo_root: False)
+    monkeypatch.setattr("tools.viewer_host_append_handoff.uuid.uuid4", lambda: type("_Uuid", (), {"hex": "flow1234abcdef"})())
+
+    assert begin_work_slice_main([
+        "--intent",
+        "workflow closeout",
+        "--profile",
+        "checkpoint",
+        "--dry-run",
+    ]) == 0
+
+    out = capsys.readouterr().out
+    assert "session-start | branch=feature/test | head=abc123 | status=clean | profile=checkpoint | intent=workflow closeout" in out
+    assert "viewer_host_begin_work_slice: checkpoint_id=ck:flow1234" in out
+    assert "--commit ck:flow1234" in out
+    assert "--commit pending" not in out
 
 
 def test_tail_handoff_entries_returns_latest_checkpoint_lines() -> None:
@@ -138,6 +186,9 @@ def test_bootstrap_surface_advertises_checkpoint_id_handoff_flow() -> None:
     state = build_bootstrap_state(run_audit=False, tail_handoff=1)
 
     assert state["next_commands"]["append_handoff"] == (
+        'py -3.14 tools/viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"'
+    )
+    assert state["next_commands"]["append_handoff_legacy_pending"] == (
         'py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"'
     )
 

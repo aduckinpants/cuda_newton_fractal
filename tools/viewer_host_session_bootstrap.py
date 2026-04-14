@@ -181,7 +181,8 @@ def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_han
         "validation_profiles": validation_profiles,
         "next_commands": {
             "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified>",
-            "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> \"<message>\"",
+            "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> \"<message>\"",
+            "append_handoff_legacy_pending": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> \"<message>\"",
             "assert_plan_sync": "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
             "profiles": "Use the VS Code tasks under verify: profile ...; bootstrap now lists each profile's steps and artifact paths.",
         },
