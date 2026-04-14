@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete
+Phase 8 - final overall hostile workflow review
 
 ## Phase Checklist
 
@@ -12,6 +12,8 @@ Complete
 - [x] Phase 4 - improve build and validation visibility
 - [x] Phase 5 - reduce runtime pytest ambiguity
 - [x] Phase 6 - harden helper defaults and carryover ritual
+- [x] Phase 7 - dedicated hostile documentation review
+- [ ] Phase 8 - final overall hostile workflow review
 
 ## Notes
 
@@ -67,6 +69,18 @@ Complete
   - `AGENTS.md`, `AGENT_WORKING_PROTOCOL.md`, `.github/copilot-instructions.md`, and `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md` now describe begin-work-slice as a session-start breadcrumb surface instead of a literal pending-breadcrumb flow
   - the workflow docs now advertise `py -3.14 tools\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"` as the default close ritual after `viewer_host_begin_work_slice.py`, while leaving `--resolve-last-pending` documented only as a legacy repair path
   - helper help text now matches the same operator-facing story: `viewer_host_begin_work_slice.py` prints checkpoint-id reuse guidance, `viewer_host_append_handoff.py` prefers explicit checkpoint ids from begin-work-slice, and `viewer_host_write_validation_receipt.py` is described as the post-checkpoint clean-head receipt surface
+- Phase 7 exit criteria:
+  - re-read the refreshed workflow documentation stack cold and compare it against the live helper output, task surface, and current checkpoint ritual
+  - treat any mismatch that would mislead a fresh agent during onboarding or slice closure as a real bug
+  - if a mismatch is found, add a focused regression or deterministic check first, repair the doc/tooling seam, and revalidate before advancing the initiative
+- Phase 7 completion snapshot:
+  - dedicated hostile review found a continuity defect in this plan itself: after the documentation refresh landed, the initiative was marked `Complete` even though the agreed endgame still required this documentation hostile-review turn plus one final overall workflow hostile review turn
+  - `tests/test_agent_workflow_tools.py` now locks that the workflow closure plan must carry explicit post-refresh hostile-review phases instead of signaling that the initiative is already finished
+  - this plan now tracks the documentation hostile review as closed work and advances the real stop point to `Phase 8 - final overall hostile workflow review`, so a fresh agent can resume the actual remaining step from repo state alone
+- Phase 8 target:
+  - perform one final end-to-end hostile review of the full workflow_cli_friction_closure initiative after the documentation stack survives its own dedicated audit
+  - use the live helper and task surfaces as the proof source: bootstrap, begin-work-slice, append-handoff, validation-receipt expectations, phased-plan sync, and checkpoint-guard closure semantics
+  - treat any remaining mismatch as a bounded repair slice instead of blending it into the audit checkpoint
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`

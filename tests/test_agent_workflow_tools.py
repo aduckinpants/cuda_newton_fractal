@@ -271,6 +271,15 @@ def test_core_workflow_docs_advertise_session_start_checkpoint_flow() -> None:
             assert snippet not in text, f"{path} still contains stale workflow-doc snippet: {snippet}"
 
 
+def test_workflow_cli_friction_plan_tracks_remaining_review_turns() -> None:
+    plan_path = REPO_ROOT / "docs" / "notes" / "workflow_cli_friction_closure_PHASED_PLAN.md"
+    text = plan_path.read_text(encoding="utf-8")
+
+    assert "Phase 7 - dedicated hostile documentation review" in text
+    assert "Phase 8 - final overall hostile workflow review" in text
+    assert "## Current Phase\n\nComplete" not in text
+
+
 def test_build_validation_profiles_uses_explicit_repo_root(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     tasks_dir = repo_root / ".vscode"
