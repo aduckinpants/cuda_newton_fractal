@@ -9,7 +9,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.viewer_host_begin_work_slice import build_breadcrumb_message
-from tools.viewer_host_session_bootstrap import build_bootstrap_state, legacy_pending_handoff_entries, tail_handoff_entries
+from tools.viewer_host_session_bootstrap import build_bootstrap_state, build_validation_profiles, legacy_pending_handoff_entries, tail_handoff_entries
 from tools.viewer_host_assert_phased_plan_sync import validate_plan_text
 
 
@@ -140,3 +140,79 @@ def test_bootstrap_surface_advertises_checkpoint_id_handoff_flow() -> None:
     assert state["next_commands"]["append_handoff"] == (
         'py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"'
     )
+
+
+def test_bootstrap_surface_describes_checkpoint_profile_steps_and_outputs() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    checkpoint = state["validation_profiles"]["checkpoint"]
+
+    assert checkpoint["task_label"] == "verify: profile checkpoint"
+    assert checkpoint["steps"][0] == {
+        "label": "verify: code quality audit",
+        "outputs": ["artifacts/code_quality_report.json"],
+    }
+    assert checkpoint["steps"][1] == {
+        "label": "verify: native helper tests",
+        "outputs": ["artifacts/verify_native_helper_tests.log"],
+    }
+    assert checkpoint["steps"][3] == {
+        "label": "verify: runtime probe/session pytest",
+        "outputs": ["artifacts/verify_runtime_probe_session_pytest.log"],
+    }
+
+
+def test_bootstrap_surface_describes_catalog_smoke_log_and_output_dir() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    catalog = state["validation_profiles"]["catalog"]
+    smoke_step = catalog["steps"][2]
+
+    assert smoke_step == {
+        "label": "verify: catalog smoke",
+        "outputs": [
+            "artifacts/verify_catalog_smoke.log",
+            "artifacts/fractal_catalog_smoke_profile",
+        ],
+    }
+
+
+def test_build_validation_profiles_uses_explicit_repo_root(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    tasks_dir = repo_root / ".vscode"
+    tasks_dir.mkdir(parents=True)
+    (tasks_dir / "tasks.json").write_text(
+        """
+{
+    "tasks": [
+        {
+            "label": "verify: sample step",
+            "type": "shell",
+            "command": "py",
+            "args": ["-3.14", "tool.py", "--log", "artifacts/sample.log", "--out-dir", "artifacts/sample_out"]
+        },
+        {
+            "label": "verify: profile sample",
+            "type": "shell",
+            "command": "py",
+            "dependsOn": ["verify: sample step"]
+        }
+    ]
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    profiles = build_validation_profiles(repo_root)
+
+    assert profiles == {
+        "sample": {
+            "task_label": "verify: profile sample",
+            "steps": [
+                {
+                    "label": "verify: sample step",
+                    "outputs": ["artifacts/sample.log", "artifacts/sample_out"],
+                }
+            ],
+        }
+    }

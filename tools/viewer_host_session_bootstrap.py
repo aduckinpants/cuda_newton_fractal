@@ -32,6 +32,74 @@ class AuditSummary:
     output_tail: list[str]
 
 
+def _extract_task_output_paths(task: dict[str, Any]) -> list[str]:
+    args = task.get("args", [])
+    if not isinstance(args, list):
+        return []
+
+    outputs: list[str] = []
+    output_flags = {"--log", "--out", "--out-dir", "--json-out"}
+    for index, raw in enumerate(args[:-1]):
+        if str(raw) not in output_flags:
+            continue
+        value = args[index + 1]
+        if not isinstance(value, (str, int, float)):
+            continue
+        outputs.append(str(value))
+    return list(dict.fromkeys(outputs))
+
+
+def build_validation_profiles(repo_root: Path = REPO_ROOT) -> dict[str, Any]:
+    tasks_json_path = repo_root / ".vscode" / "tasks.json"
+    if not tasks_json_path.exists():
+        return {}
+
+    payload = json.loads(tasks_json_path.read_text(encoding="utf-8"))
+    raw_tasks = payload.get("tasks", [])
+    if not isinstance(raw_tasks, list):
+        return {}
+
+    tasks_by_label: dict[str, dict[str, Any]] = {}
+    for task in raw_tasks:
+        if not isinstance(task, dict):
+            continue
+        label = task.get("label")
+        if not isinstance(label, str) or not label.strip():
+            continue
+        tasks_by_label[label] = task
+
+    profiles: dict[str, Any] = {}
+    for label, task in tasks_by_label.items():
+        if not label.startswith("verify: profile "):
+            continue
+
+        profile_name = label.removeprefix("verify: profile ")
+        depends_on = task.get("dependsOn", [])
+        if isinstance(depends_on, str):
+            depends = [depends_on]
+        elif isinstance(depends_on, list):
+            depends = [str(item) for item in depends_on]
+        else:
+            depends = []
+
+        steps: list[dict[str, Any]] = []
+        for step_label in depends:
+            step_task = tasks_by_label.get(step_label, {})
+            steps.append(
+                {
+                    "label": step_label,
+                    "outputs": _extract_task_output_paths(step_task),
+                }
+            )
+
+        profiles[profile_name] = {
+            "task_label": label,
+            "steps": steps,
+        }
+
+    return profiles
+
+
 def required_docs(repo_root: Path) -> list[BootstrapDoc]:
     docs = [
         ("Testing cheat sheet", EXTERNAL_TESTING_CHEAT_SHEET),
@@ -99,6 +167,7 @@ def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_han
     legacy_pending = legacy_pending_handoff_entries(handoff_log)
     audit = _run_audit(py) if run_audit else None
     docs = [asdict(doc) for doc in required_docs(REPO_ROOT)]
+    validation_profiles = build_validation_profiles(REPO_ROOT)
     return {
         "repo_root": str(REPO_ROOT),
         "git": {"branch": branch, "head": head, "dirty": dirty},
@@ -109,11 +178,12 @@ def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_han
             "legacy_pending_entries": legacy_pending[-tail_handoff:] if tail_handoff > 0 else [],
         },
         "audit": asdict(audit) if audit is not None else None,
+        "validation_profiles": validation_profiles,
         "next_commands": {
             "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified>",
             "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> \"<message>\"",
             "assert_plan_sync": "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-            "profiles": "Use the VS Code tasks under verify: profile ...",
+            "profiles": "Use the VS Code tasks under verify: profile ...; bootstrap now lists each profile's steps and artifact paths.",
         },
     }
 
@@ -149,6 +219,21 @@ def print_bootstrap_report(state: dict[str, Any]) -> None:
         print(f"code quality audit: {result}")
         for line in audit["output_tail"]:
             print(f"  {line}")
+    print("validation profiles:")
+    profiles = state.get("validation_profiles", {}) or {}
+    if profiles:
+        for profile_name, profile in profiles.items():
+            step_summaries = []
+            for step in profile.get("steps", []):
+                outputs = step.get("outputs", []) or []
+                suffix = f" -> {', '.join(outputs)}" if outputs else ""
+                step_summaries.append(f"{step.get('label', '<unknown>')}{suffix}")
+            if step_summaries:
+                print(f"- {profile_name}: " + " | ".join(step_summaries))
+            else:
+                print(f"- {profile_name}: {profile.get('task_label', '<unknown>')}")
+    else:
+        print("- <no validation profiles found>")
     print("next commands:")
     for label, command in state["next_commands"].items():
         print(f"- {label}: {command}")
