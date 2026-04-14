@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 4 - hostile review and continuity closure
+Phase 4 - hostile review and continuity closure (complete)
 
 - [x] Phase 1 - composite contract and dry-run scaffold
 - [x] Phase 2 - live capture/archive/analyzer integration
 - [x] Phase 3 - gallery scene sheet and sidecar proof
-- [ ] Phase 4 - hostile review and continuity closure
+- [x] Phase 4 - hostile review and continuity closure
 
 ## Notes
 
@@ -26,7 +26,10 @@ Phase 4 - hostile review and continuity closure
   - landed: `fractal_extensions.py` core module, `run_fractal_extensions_composite.py` CLI entrypoint, package exports, and focused tests for manifest loading, dry-run planning, and live capture/archive/sidecar/analyzer orchestration with stubbed runtime seams
   - validated live: a pilot manifest using the archived `explaino_dual` state now captures to `D:/salt-fractal/cuda_newton_fractal_clone/findings/fractal_extensions_gallery_2026-04-13/explaino_dual_demo/`, writes a `newton_z3m1` sidecar request/response pair, and generates local analysis artifacts under `<finding>/analysis`
   - audit repair: `--dry-run` no longer resolves the published runtime path eagerly, so planning-only runs now work even when no runtime is installed for the repo name under `D:/salt-fractal`
-  - next step: hostile review of gallery output — check reproducibility, sidecar metadata clarity, and output-dir completeness before declaring the tool concept proven
+  - hostile review closure: reran the full five-scene gallery to `D:/salt-fractal/cuda_newton_fractal_clone/findings/render_proof_gallery_2026-04-14_1350utc`, confirmed all five `frame.png` files have unique SHA-256 hashes with no duplicate-hash groups, and spot-checked `joy_scallop`, `rational_escape_globe`, `phoenix_bifurcation`, and `dual_explaino` as visually distinct outputs rather than reused imagery
+  - hostile review closure: output completeness now has a concrete proof path via `fractal_extensions_summary.json`, per-scene `analysis/analysis.json`, and the local hash audit artifact `artifacts/render_proof_gallery_distinctness.json`
+  - boundary clarified: `maxwell_rh_probe` and `transcendental_lambda_probe` remain valid `generic.sample` sidecar proofs, but they are single-base-state manifests and should not be used as evidence of multiple distinct rendered frames
+  - next step: choose whether repeated gallery-proof audits need a dedicated checked-in reporter script or whether the current rerun-plus-hash-audit path is sufficient
 - Phase 2 exit criteria:
   - the runner can drive headless capture through the published runtime, archive the diagnostics bundle to an explicit finding directory, and optionally run the finding analyzer on the archived result
   - live execution uses deterministic output paths and explicit finding ids instead of scraping ad hoc runtime output
