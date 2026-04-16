@@ -1,4 +1,4 @@
-# FlashlightProbe Review And Extraction Plan
+# Lens And Flashlight Writeup
 
 ## Current Phase
 
@@ -6,45 +6,30 @@ Complete
 
 ## Phase Checklist
 
-- [x] Phase 1 - Re-audit the real `flashlight` implementation seam and correct the earlier misidentification
-- [x] Phase 2 - Trace how runtime lens/SDF participates in `FlashlightProbe` and collect current vs. historical evidence
-- [x] Phase 3 - Write the replacement review covering original intent, coastline behavior, current viability, and separate external-tool extraction plan
-- [x] Phase 4 - Verify plan/doc sync and basic diff hygiene
+- [x] Phase 1 - Trace runtime lens SDF implementation and call path
+- [x] Phase 2 - Trace Explaino sidecar lens/action/controller path and resolve the likely "flashlight" meaning
+- [x] Phase 3 - Write and verify checked-in documentation
 
 ## Notes
 
-- Writable work stays in this repo.
-- `C:\code\salticid-cuda` is read-only implementation evidence for the current flashlight runtime.
-- The earlier draft was wrong because it mapped "flashlight" to the Explaino sidecar lens/controller stack.
-- The replacement doc keeps the existing path `docs/notes/lens_and_flashlight_writeup.md` so downstream references do not break, but the content now documents the real `FlashlightProbe` feature.
-
-## Evidence Summary
-
-- Code seams reviewed in mainline:
-  - `ide_ui_dx11/ui_app/src/main.cpp`
-  - `ide_ui_dx11/ui_app/src/flashlight_probe_init.cpp`
-  - `ide_ui_dx11/ui_app/src/flashlight_tuning_cli.cpp`
-  - `ide_ui_dx11/ui_app/src/conversation_seed_spectrum.cpp`
-  - `ide_ui_dx11/ui_app/src/lens_sdf.cpp`
-  - `ide_ui_dx11/ui_app/src/lens_sdf_chamfer.cpp`
-- Architecture/context reviewed in this repo:
-  - `spec_intake/CliBridgeV2_GpuSampleFn_SpecIntake.md`
-  - `ui_app/tests/test_fractal_sample_pipeline.cpp`
-- Historical / artifact evidence reviewed:
-  - `C:\Users\Adam\Desktop\cuda_newton_fractal\ui\diagnostics\last\flashlight_probe.json`
-  - `C:\Users\Adam\Downloads\flashlight_trace.stl`
-  - `C:\Users\Adam\Downloads\flashlight_trace_frame.bmp`
-  - `C:\Users\Adam\Downloads\flashlight_trace_overlay.bmp`
-  - `C:\Users\Adam\Downloads\suspect_forensic_manifest\diffs\directives__Probe_-_FlashlightProbe_(CUDA_Runtime_Sampling).md.diff`
-
-## Current Findings
-
-- `FlashlightProbe` is real, explicitly named, and uses the runtime lens/SDF as part of the probe signal.
-- The strongest defensible interpretation is geometric drift/coherence probing over an Explaino working map, not literal latent-space access.
-- The coastline / island complexity behavior should be treated as a real observed property from the original work.
-- Current mainline still contains the manifold, render, lens, and live-trace machinery, but present-day headless artifact emission could not be fully re-proven from the obvious diagnostics path in this slice.
-
-## Verification
-
-- `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
-- `git diff --check`
+- User request for the original thread:
+  - produce a clear detailed writeup of exactly how the `lens` SDF and flashlight features work
+- Historical terminology note for that thread:
+  - there was no checked-in symbol or UI surface literally named `flashlight`
+  - that earlier writeup therefore treated "flashlight" as the Explaino sidecar guidance/action/controller path because it was the only matching feature family in the branch at the time
+- Primary code seams used for the original descriptive writeup:
+  - `ui_app/src/fractal_renderer.cu`
+  - `ui_app/src/fractal_family_rules.h`
+  - `ui_app/src/lens_sdf.cpp`
+  - `ui_app/src/main.cpp`
+  - `ui_app/src/explaino_sidecar_lens.cpp`
+  - `ui_app/src/explaino_sidecar_energy.cpp`
+  - `ui_app/src/explaino_sidecar_action.cpp`
+  - `ui_app/src/explaino_sidecar_controller.cpp`
+- Historical verification target:
+  - phased-plan sync
+  - `git diff --check`
+- Historical note:
+  - this file is preserved as the original descriptive-plan surface only
+  - the active thread is now `docs/notes/lens_sdf_report_then_modernization_PHASED_PLAN.md`
+  - the current evidence-backed report is `docs/notes/lens_and_flashlight_writeup.md`
