@@ -1,5 +1,6 @@
 #include "viewer_cli.h"
 #include "cli_args.h"
+#include "enum_id_utils.h"
 
 // Helper: parse a double arg with the standard "present but invalid => fail" contract.
 static bool TryDouble(const std::vector<std::string>& args, const char* flag, bool* haveOut, double* valOut) {
@@ -65,6 +66,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->capture_finding_only = HasArg(args, "--capture-finding");
     out->describe_functions = HasArg(args, "--describe-functions");
     out->explore_recommend = HasArg(args, "--explore-recommend");
+    out->flashlight_probe = HasArg(args, "--flashlight-probe");
 
     // Sample mode
     out->sample_request_stdin = HasArg(args, "--sample-request-stdin");
@@ -83,6 +85,22 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     // Describe-functions JSON
     if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return 1;
     if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return 1;
+    if (!TryStr(args, "--flashlight-probe", &out->have_flashlight_probe_path, &out->flashlight_probe_path)) return 1;
+    if (out->flashlight_probe && !out->have_flashlight_probe_path) return 1;
+    if (!TryInt(args, "--flashlight-ticks", &out->have_flashlight_ticks, &out->flashlight_ticks)) return 1;
+    if (!TryDouble(args, "--flashlight-radius", &out->have_flashlight_radius, &out->flashlight_radius)) return 1;
+    if (!TryDouble(args, "--flashlight-zoom-radius", &out->have_flashlight_zoom_radius, &out->flashlight_zoom_radius)) return 1;
+    if (!TryDouble(args, "--flashlight-warp", &out->have_flashlight_warp, &out->flashlight_warp)) return 1;
+    out->flashlight_closure_last = HasArg(args, "--flashlight-closure") || HasArg(args, "--flashlight-closure-last");
+    {
+        std::string flashlightFractalTypeId;
+        bool haveFlashlightFractalTypeId = false;
+        if (!TryStr(args, "--flashlight-fractal-type", &haveFlashlightFractalTypeId, &flashlightFractalTypeId)) return 1;
+        if (haveFlashlightFractalTypeId) {
+            out->have_flashlight_fractal_type = TryParseFractalTypeId(flashlightFractalTypeId, &out->flashlight_fractal_type);
+            if (!out->have_flashlight_fractal_type) return 1;
+        }
+    }
 
     // Fractal type
     out->have_fractal_type = TryParseFractalTypeArg(args, &out->fractal_type);

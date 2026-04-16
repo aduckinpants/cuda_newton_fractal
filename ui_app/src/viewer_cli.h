@@ -39,6 +39,22 @@ struct ViewerCliArgs {
     bool have_explore_recommend_json = false;
     std::string explore_recommend_json_path;
 
+    // Flashlight headless probe
+    bool flashlight_probe = false;
+    bool have_flashlight_probe_path = false;
+    std::string flashlight_probe_path;
+    bool have_flashlight_ticks = false;
+    int flashlight_ticks = 8;
+    bool have_flashlight_radius = false;
+    double flashlight_radius = 0.75;
+    bool have_flashlight_zoom_radius = false;
+    double flashlight_zoom_radius = 0.25;
+    bool have_flashlight_warp = false;
+    double flashlight_warp = 0.0;
+    bool flashlight_closure_last = false;
+    bool have_flashlight_fractal_type = false;
+    FractalType flashlight_fractal_type = FractalType::explaino_fp;
+
     // Fractal type
     bool have_fractal_type = false;
     FractalType fractal_type = FractalType::newton;

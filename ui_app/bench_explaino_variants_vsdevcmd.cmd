@@ -1,14 +1,8 @@
 @echo off
 setlocal
 
-call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+call "%~dp0..\tools\call_vsdevcmd.cmd"
 if errorlevel 1 exit /b 1
-
-where cl >NUL 2>NUL
-if errorlevel 1 (
-  echo cl.exe not found after VsDevCmd
-  exit /b 1
-)
 
 cd /d C:\code\cuda_newton_fractal_clone\ui_app
 

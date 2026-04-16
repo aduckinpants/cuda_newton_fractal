@@ -1,12 +1,7 @@
 @echo off
 setlocal
-call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+call "%~dp0tools\call_vsdevcmd.cmd"
 if errorlevel 1 exit /b 1
-where cl
-if errorlevel 1 (
-  echo cl.exe still not found after VsDevCmd
-  exit /b 1
-)
 
 if "%SALT_FRACTAL_ROOT%"=="" set SALT_FRACTAL_ROOT=D:\salt-fractal
 set OUTROOT=%SALT_FRACTAL_ROOT%\cuda_newton_fractal_clone\smoke

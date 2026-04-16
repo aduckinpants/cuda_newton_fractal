@@ -233,6 +233,44 @@ static void TestExploreRecommendStdout() {
     Check(cli.explore_recommend, "TestExploreRecommendStdout_Flag");
 }
 
+static void TestFlashlightProbe() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--flashlight-probe", "seed.txt",
+        "--flashlight-ticks", "9",
+        "--flashlight-radius", "0.61",
+        "--flashlight-zoom-radius", "0.19",
+        "--flashlight-warp", "0.3",
+        "--flashlight-fractal-type", "explaino_fp",
+        "--flashlight-closure-last"
+    }), &cli);
+    Check(rc == 0, "TestFlashlightProbe_ReturnCode");
+    Check(cli.flashlight_probe, "TestFlashlightProbe_Flag");
+    Check(cli.have_flashlight_probe_path, "TestFlashlightProbe_HavePath");
+    Check(cli.flashlight_probe_path == "seed.txt", "TestFlashlightProbe_Path");
+    Check(cli.have_flashlight_ticks && cli.flashlight_ticks == 9, "TestFlashlightProbe_Ticks");
+    Check(cli.have_flashlight_radius && std::fabs(cli.flashlight_radius - 0.61) < 1e-9, "TestFlashlightProbe_Radius");
+    Check(cli.have_flashlight_zoom_radius && std::fabs(cli.flashlight_zoom_radius - 0.19) < 1e-9, "TestFlashlightProbe_ZoomRadius");
+    Check(cli.have_flashlight_warp && std::fabs(cli.flashlight_warp - 0.3) < 1e-9, "TestFlashlightProbe_Warp");
+    Check(cli.have_flashlight_fractal_type && cli.flashlight_fractal_type == FractalType::explaino_fp, "TestFlashlightProbe_FractalType");
+    Check(cli.flashlight_closure_last, "TestFlashlightProbe_Closure");
+}
+
+static void TestFlashlightProbeMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--flashlight-probe"}), &cli);
+    Check(rc != 0, "TestFlashlightProbeMissingValue_Fails");
+}
+
+static void TestFlashlightProbeBadFractalType() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--flashlight-probe", "seed.txt",
+        "--flashlight-fractal-type", "not_a_fractal"
+    }), &cli);
+    Check(rc != 0, "TestFlashlightProbeBadFractalType_Fails");
+}
+
 static void TestExploreRecommendJsonMissingValue() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--explore-recommend-json"}), &cli);
@@ -459,6 +497,9 @@ int main() {
     TestSampleModeJsonPaths();
     TestExploreRecommendJson();
     TestExploreRecommendStdout();
+    TestFlashlightProbe();
+    TestFlashlightProbeMissingValue();
+    TestFlashlightProbeBadFractalType();
     TestExploreRecommendJsonMissingValue();
     TestSampleSession();
     TestSampleSessionPipe();

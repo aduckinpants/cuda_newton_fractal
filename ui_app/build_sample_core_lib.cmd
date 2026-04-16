@@ -9,7 +9,7 @@ REM   1. Include ui_app/src/fractal_types.h, fractal_sample_result.h
 REM   2. Link fractal_sample_core.lib + cudart.lib + cuda.lib
 REM   3. Call SampleFractalPoints() from host code
 
-call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+call "%~dp0..\tools\call_vsdevcmd.cmd"
 if errorlevel 1 exit /b 1
 
 cd /d C:\code\cuda_newton_fractal_clone\ui_app

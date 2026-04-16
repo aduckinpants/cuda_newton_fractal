@@ -35,6 +35,7 @@
 #include "explaino_sidecar_window.h"
 #include "explaino_seed_dynamics.h"
 #include "param_anim_dynamics.h"
+#include "flashlight_probe.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "fractal_probe_contract.h"
@@ -990,14 +991,16 @@ static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float de
 
 static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
+    const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend)) return false;
     return true;
 }
 
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
-                                    ViewState& view, KernelParams& params, RenderSettings& render, bool& dirty,
+                                    ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens, bool& dirty,
                                     const EngineFunctionCatalog& engineCatalog,
                                     BindingContext& bind,
                                     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -1036,6 +1039,23 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
             engineCatalog,
             bind,
             sidecarMeasurementHost);
+    }
+
+    if (cli.flashlight_probe) {
+        if (HasSidecarHeadlessProofActions(sidecarHeadlessProofConfig)) {
+            std::fprintf(stderr, "--flashlight-probe is mutually exclusive with sidecar proof mutation verbs\n");
+            return 1;
+        }
+        FlashlightProbeConfig flashlightConfig;
+        flashlightConfig.seed_path = cli.flashlight_probe_path;
+        flashlightConfig.ticks = cli.flashlight_ticks;
+        flashlightConfig.radius = cli.flashlight_radius;
+        flashlightConfig.zoom_radius = cli.flashlight_zoom_radius;
+        flashlightConfig.warp = cli.flashlight_warp;
+        flashlightConfig.closure_last = cli.flashlight_closure_last;
+        flashlightConfig.have_fractal_type = cli.have_flashlight_fractal_type;
+        flashlightConfig.fractal_type = cli.flashlight_fractal_type;
+        return RunFlashlightProbe(exeDir, flashlightConfig, view, params, render, lens);
     }
 
     if (cli.capture_diagnostic_only || cli.capture_finding_only) {
@@ -1142,7 +1162,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
-            exploreRecommend ||
+            exploreRecommend || cli.flashlight_probe ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
             return 1;
@@ -1151,8 +1171,8 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
-        if (exploreRecommend) {
-            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend / --explore-recommend-json\n");
+        if (exploreRecommend || cli.flashlight_probe) {
+            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend and --flashlight-probe headless verbs\n");
             return 1;
         }
         return RunSampleMode(BuildSampleModeArgs(cli), exePath);
@@ -1160,7 +1180,8 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
         if (exploreRecommend ||
-                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg) {
+                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
+                cli.flashlight_probe) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
             return 1;
         }
@@ -1485,9 +1506,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
-    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, dirty,
+    { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, lens, dirty,
           engineCatalog, bind, sidecarControllerPolicy, sidecarMeasurementHost,
-          loadedOrientationBaseline, loadedOrientationBaselineValid,
+            loadedOrientationBaseline, loadedOrientationBaselineValid,
             sidecarMutationHistory, sidecarMutationHistoryValid,
           sidecarState, sidecarStateValid, sidecarBudgetState, sidecarBudgetStateValid);
       if (headless >= 0) return headless; }
