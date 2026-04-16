@@ -11,7 +11,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
 ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
 DEFAULT_TEST_FILES = [
+    "tests/test_flashlight_bridge_runner.py",
     "tests/test_fractal_runtime_probe_cli.py",
+    "tests/test_fractal_runtime_flashlight_bridge.py",
     "tests/test_fractal_runtime_flashlight_probe.py",
     "tests/test_fractal_runtime_session.py",
     "tests/test_function_descriptor_cli.py",

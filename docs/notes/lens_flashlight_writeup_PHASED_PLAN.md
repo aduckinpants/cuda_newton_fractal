@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 14 - Hostile-review the landed flashlight slice, fix at least one real gap if found, and checkpoint the recovery
+Phase 19 - Run a fresh prompt-set proof through the recovered bridge/export path, capture the produced images/STL, and checkpoint the audited slice
 
 ## Phase Checklist
 
@@ -20,6 +20,11 @@ Phase 14 - Hostile-review the landed flashlight slice, fix at least one real gap
 - [x] Phase 12 - Harden build/runtime prerequisites so flashlight recovery is reproducible on the current machine and published runtime
 - [x] Phase 13 - Add regression coverage and runtime validation rails for the recovered headless flashlight path
 - [x] Phase 14 - Hostile-review the landed flashlight slice, fix at least one real gap if found, and checkpoint the recovery
+- [x] Phase 15 - Hostile-review the recovered flashlight core and trace the remaining bridge/export seams needed for fresh trace artifacts
+- [x] Phase 16 - Recover the in-repo bridge surfaces needed to drive trace/export without reviving legacy live UI debt
+- [x] Phase 17 - Recover or replace the trace/export path so a current published runtime can emit fresh trace imagery and STL/OBJ artifacts
+- [x] Phase 18 - Add unit/runtime regressions for bridge/export seams plus a code-smell ratchet plan for the recovered flashlight surface
+- [x] Phase 19 - Run a fresh prompt-set proof through the recovered bridge/export path, capture the produced images/STL, and checkpoint the audited slice
 
 ## Notes
 
@@ -67,6 +72,7 @@ Phase 14 - Hostile-review the landed flashlight slice, fix at least one real gap
 - `cmd /c ui_app\\build_tests_vsdevcmd.cmd`
 - `cmd /c ui_app\\build_vsdevcmd.cmd`
 - `py -3.14 tools\\viewer_host_runtime_pytest_lane.py`
+- `py -3.14 -m pytest tests/test_flashlight_bridge_runner.py -q`
 
 ## Provenance And Regression Notes
 
@@ -87,3 +93,33 @@ Phase 14 - Hostile-review the landed flashlight slice, fix at least one real gap
   - hardened MSVC toolchain discovery through `tools/call_vsdevcmd.cmd` and reused it from the public build scripts
   - added pure helper coverage plus runtime regression coverage for fresh flashlight artifact regeneration
   - hostile review found and fixed a real headless-verb routing bug: `--describe-functions` previously won over `--flashlight-probe` instead of erroring as a conflict
+- Current follow-on slice intent:
+  - review the landed flashlight core with the same distrust-first posture used for normal repo closure
+  - trace the missing bridge/export path from donor history into the current repo architecture
+  - recover enough of that path to produce a fresh prompt-set trace bundle that includes visible trace imagery and STL/OBJ proof artifacts
+  - add the usual regression/test/code-smell follow-up rails rather than treating the exporter recovery as a one-off demo patch
+- Bridge/export recovery completion notes:
+  - hostile review found the recovered headless probe still lacked the donor line's steady-view trace geometry outputs, so there was still no in-repo path to build visible trace artifacts from a fresh run
+  - repaired the omission by extending `flashlight_probe.cpp` to emit:
+    - per-tick `frame_000.bmp` style captures
+    - steady-view `flashlight_reference_frame.bmp`
+    - steady-view `flashlight_reference_lens_sdf.bmp`
+    - per-tick `reference_trace` geometry in `flashlight_probe.json`
+  - added `tools/flashlight_bridge_runner.py` as the repo-local replacement for the missing watcher/exporter seam
+  - the bridge runner now consumes `flashlight_bridge_request.json`, launches the published runtime headless probe, writes `flashlight_bridge_status.json`, and exports:
+    - `flashlight_trace_frame.bmp`
+    - `flashlight_trace_overlay.bmp`
+    - `flashlight_trace.stl`
+    - `flashlight_trace.obj`
+    - `flashlight_trace.csv`
+  - runtime proof run used `artifacts/flashlight_demo_prompt_set.txt` as the seed prompt set and regenerated the trace bundle under `D:\salt-fractal\cuda_newton_fractal_clone\runtime\diagnostics\last`
+
+## Ratchet Follow-Ups
+
+- Split `flashlight_probe.cpp` into smaller seams:
+  - reference-view sampling
+  - tick-run sampling
+  - artifact writing
+- Move bridge request/response schema handling out of the Python tool into checked-in typed helpers or a reusable JSON contract module
+- Add a direct native/unit seam for trace-mesh generation so STL geometry can be regression-tested without running the full runtime
+- Decide whether the bridge runner should stay Python-first as the external tool layer or whether a later C++/library extraction is warranted

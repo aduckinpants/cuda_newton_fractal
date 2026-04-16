@@ -45,11 +45,17 @@ def test_flashlight_probe_regenerates_probe_bundle(tmp_path: Path) -> None:
 
     probe_json = DIAGNOSTICS_LAST_DIR / "flashlight_probe.json"
     frame_bmp = DIAGNOSTICS_LAST_DIR / "frame.bmp"
+    reference_frame_bmp = DIAGNOSTICS_LAST_DIR / "flashlight_reference_frame.bmp"
+    reference_lens_sdf_bmp = DIAGNOSTICS_LAST_DIR / "flashlight_reference_lens_sdf.bmp"
+    tick0_bmp = DIAGNOSTICS_LAST_DIR / "frame_000.bmp"
     lens_sdf_bmp = DIAGNOSTICS_LAST_DIR / "lens_sdf.bmp"
     state_json = DIAGNOSTICS_LAST_DIR / "state.json"
     before = {
         probe_json: _mtime_or_zero(probe_json),
         frame_bmp: _mtime_or_zero(frame_bmp),
+        reference_frame_bmp: _mtime_or_zero(reference_frame_bmp),
+        reference_lens_sdf_bmp: _mtime_or_zero(reference_lens_sdf_bmp),
+        tick0_bmp: _mtime_or_zero(tick0_bmp),
         lens_sdf_bmp: _mtime_or_zero(lens_sdf_bmp),
         state_json: _mtime_or_zero(state_json),
     }
@@ -88,6 +94,8 @@ def test_flashlight_probe_regenerates_probe_bundle(tmp_path: Path) -> None:
     assert probe["conversation_seed32"] > 0
     assert len(probe["spectrum8_u32"]) == 8
     assert len(probe["trace"]) == 4
+    assert probe["reference_view"]["frame_bmp"] == "flashlight_reference_frame.bmp"
+    assert probe["trace"][0]["reference_trace"]["render_xy"]
     assert probe["summary"]["closure"]["enabled"] is False
 
 

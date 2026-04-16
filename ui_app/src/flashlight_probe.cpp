@@ -16,6 +16,13 @@
 
 namespace {
 
+struct FlashlightReferencePoint {
+    int low_x = 0;
+    int low_y = 0;
+    int render_x = 0;
+    int render_y = 0;
+};
+
 struct ProbeUv {
     float u;
     float v;
@@ -210,6 +217,32 @@ void DownsampleMaskPow2(const uint8_t* inMask, int inW, int inH, int downsample,
     outMask->assign(current, current + static_cast<std::size_t>(currentW) * static_cast<std::size_t>(currentH));
 }
 
+FlashlightReferencePoint WorldToReferenceLensLow(
+    double worldX,
+    double worldY,
+    double baseCx,
+    double baseCy,
+    double baseLog2,
+    double aspect,
+    const RenderSettings& render,
+    int downsample,
+    int lensW,
+    int lensH) {
+    FlashlightReferencePoint point;
+    const double zoom = SafeZoomFromLog2(baseLog2);
+    const double base = 2.0 / std::max(1.0e-30, zoom);
+    const double nx = (worldX - baseCx) / (base * aspect);
+    const double ny = (worldY - baseCy) / base;
+    const double px = (nx / 2.0 + 0.5) * static_cast<double>(render.resolution.x);
+    const double py = (ny / 2.0 + 0.5) * static_cast<double>(render.resolution.y);
+    point.render_x = std::clamp(static_cast<int>(std::floor(px)), 0, std::max(0, render.resolution.x - 1));
+    point.render_y = std::clamp(static_cast<int>(std::floor(py)), 0, std::max(0, render.resolution.y - 1));
+    const double ds = (downsample > 0) ? static_cast<double>(downsample) : 1.0;
+    point.low_x = std::clamp(static_cast<int>(std::floor(px / ds)), 0, std::max(0, lensW - 1));
+    point.low_y = std::clamp(static_cast<int>(std::floor(py / ds)), 0, std::max(0, lensH - 1));
+    return point;
+}
+
 } // namespace
 
 FlashlightProbeConfig NormalizeFlashlightProbeConfig(const FlashlightProbeConfig& config) {
@@ -335,6 +368,21 @@ int RunFlashlightProbe(const std::string& exeDir,
         ? static_cast<double>(render.resolution.x) / static_cast<double>(render.resolution.y)
         : 1.0;
 
+    std::vector<uint32_t> referenceRgba(static_cast<std::size_t>(render.resolution.x) * static_cast<std::size_t>(render.resolution.y));
+    std::vector<uint8_t> referenceMask(static_cast<std::size_t>(render.resolution.x) * static_cast<std::size_t>(render.resolution.y));
+    RenderStats referenceStats{};
+    const char* referenceError = nullptr;
+    if (!RenderFractalCUDA(view, params, render, referenceRgba.data(), referenceMask.data(), &referenceStats, &referenceError)) {
+        std::fprintf(stderr, "%s\n", referenceError ? referenceError : "RenderFractalCUDA failed during flashlight reference render");
+        return 1;
+    }
+    const int referenceDownsample = NormalizeFlashlightLensDownsamplePow2(lens.downsample);
+    std::vector<uint8_t> referenceLensMaskLow;
+    int referenceLensW = 0;
+    int referenceLensH = 0;
+    DownsampleMaskPow2(referenceMask.data(), render.resolution.x, render.resolution.y, referenceDownsample, &referenceLensMaskLow, &referenceLensW, &referenceLensH);
+    const float referenceMaxAbsPxLow = 48.0f / static_cast<float>(referenceDownsample);
+
     std::ostringstream json;
     json.setf(std::ios::fixed);
     json << std::setprecision(8);
@@ -365,6 +413,20 @@ int RunFlashlightProbe(const std::string& exeDir,
     json << "    \"center_hp_x\": " << baseCx << ",\n";
     json << "    \"center_hp_y\": " << baseCy << ",\n";
     json << "    \"log2_zoom\": " << baseLog2 << "\n";
+    json << "  },\n";
+    json << "  \"reference_view\": {\n";
+    json << "    \"render\": {\n";
+    json << "      \"last_render_ms\": " << static_cast<double>(referenceStats.last_render_ms) << ",\n";
+    json << "      \"last_iters_avg\": " << referenceStats.last_iters_avg << ",\n";
+    json << "      \"device_id\": " << referenceStats.last_device_id << "\n";
+    json << "    },\n";
+    json << "    \"lens\": {\n";
+    json << "      \"downsample\": " << referenceDownsample << ",\n";
+    json << "      \"lens_low_size\": [" << referenceLensW << ", " << referenceLensH << "],\n";
+    json << "      \"sdf_max_abs_px_low\": " << static_cast<double>(referenceMaxAbsPxLow) << "\n";
+    json << "    },\n";
+    json << "    \"frame_bmp\": \"flashlight_reference_frame.bmp\",\n";
+    json << "    \"lens_sdf_bmp\": \"flashlight_reference_lens_sdf.bmp\"\n";
     json << "  },\n";
     json << "  \"schedule\": {\n";
     json << "    \"bands\": 4,\n";
@@ -398,10 +460,23 @@ int RunFlashlightProbe(const std::string& exeDir,
         const bool closureTick = config.closure_last && (t == config.ticks - 1);
         const int walkT = closureTick ? config.closure_ref_t : t;
         const FlashlightManifoldStep step = FlashlightManifoldAt(seed32, walkT, 4, baseLog2, config.radius, config.zoom_radius, aspect);
+        const double worldX = baseCx + step.dx_world;
+        const double worldY = baseCy + step.dy_world;
+        const FlashlightReferencePoint referencePoint = WorldToReferenceLensLow(
+            worldX,
+            worldY,
+            baseCx,
+            baseCy,
+            baseLog2,
+            aspect,
+            render,
+            referenceDownsample,
+            referenceLensW,
+            referenceLensH);
 
         view.log2_zoom = step.log2_zoom_tick;
-        view.center_hp_x = baseCx + step.dx_world;
-        view.center_hp_y = baseCy + step.dy_world;
+        view.center_hp_x = worldX;
+        view.center_hp_y = worldY;
         SyncViewUiFromHp(view);
 
         view.explaino_seed_drift = static_cast<float>(walkT);
@@ -431,6 +506,37 @@ int RunFlashlightProbe(const std::string& exeDir,
         int nearCount = 0;
         int insideCount = 0;
         constexpr float kNearEpsPx = 2.0f;
+        std::array<float, 5> referenceSignedPx{};
+        std::array<uint8_t, 5> referenceInside{};
+        float referenceMinAbsSigned = 1.0e30f;
+        int referenceNearCount = 0;
+        int referenceInsideCount = 0;
+
+        {
+            static constexpr int kSampleOffset = 4;
+            const int offsets[5][2] = {
+                {0, 0},
+                {-kSampleOffset, -kSampleOffset},
+                {+kSampleOffset, -kSampleOffset},
+                {-kSampleOffset, +kSampleOffset},
+                {+kSampleOffset, +kSampleOffset},
+            };
+            for (int i = 0; i < 5; ++i) {
+                const int x = std::clamp(referencePoint.low_x + offsets[i][0], 0, std::max(0, referenceLensW - 1));
+                const int y = std::clamp(referencePoint.low_y + offsets[i][1], 0, std::max(0, referenceLensH - 1));
+                float signedPx = 0.0f;
+                bool inside = false;
+                const bool ok = SampleSignedDistanceSdfChamfer(referenceLensMaskLow.data(), referenceLensW, referenceLensH, x, y, signedPx, inside);
+                referenceSignedPx[static_cast<std::size_t>(i)] = signedPx;
+                referenceInside[static_cast<std::size_t>(i)] = inside ? 1u : 0u;
+                if (ok) {
+                    const float absSigned = std::fabs(signedPx);
+                    referenceMinAbsSigned = std::min(referenceMinAbsSigned, absSigned);
+                    if (absSigned <= kNearEpsPx) ++referenceNearCount;
+                }
+                if (inside) ++referenceInsideCount;
+            }
+        }
 
         json << "    {\n";
         json << "      \"t\": " << t << ",\n";
@@ -439,10 +545,35 @@ int RunFlashlightProbe(const std::string& exeDir,
         if (closureTick) json << "      \"closure_ref_t\": " << walkT << ",\n";
         json << "      \"explaino_seed\": " << params.explaino_seed << ",\n";
         json << "      \"explaino_seed_drift\": " << static_cast<double>(view.explaino_seed_drift) << ",\n";
+        json << "      \"world\": {\n";
+        json << "        \"x\": " << worldX << ",\n";
+        json << "        \"y\": " << worldY << "\n";
+        json << "      },\n";
         json << "      \"camera\": {\n";
         json << "        \"center_hp_x\": " << view.center_hp_x << ",\n";
         json << "        \"center_hp_y\": " << view.center_hp_y << ",\n";
         json << "        \"log2_zoom\": " << view.log2_zoom << "\n";
+        json << "      },\n";
+        json << "      \"reference_trace\": {\n";
+        json << "        \"low_xy\": [" << referencePoint.low_x << ", " << referencePoint.low_y << "],\n";
+        json << "        \"render_xy\": [" << referencePoint.render_x << ", " << referencePoint.render_y << "],\n";
+        json << "        \"saddle\": {\n";
+        json << "          \"min_abs_signed_px\": " << static_cast<double>(referenceMinAbsSigned) << ",\n";
+        json << "          \"near_count\": " << referenceNearCount << ",\n";
+        json << "          \"mixed_inside\": " << ((referenceInsideCount > 0 && referenceInsideCount < 5) ? "true" : "false") << "\n";
+        json << "        },\n";
+        json << "        \"samples_signed_px\": [";
+        for (int i = 0; i < 5; ++i) {
+            if (i) json << ", ";
+            json << static_cast<double>(referenceSignedPx[static_cast<std::size_t>(i)]);
+        }
+        json << "],\n";
+        json << "        \"samples_inside\": [";
+        for (int i = 0; i < 5; ++i) {
+            if (i) json << ", ";
+            json << (referenceInside[static_cast<std::size_t>(i)] ? "true" : "false");
+        }
+        json << "]\n";
         json << "      },\n";
         json << "      \"render\": {\n";
         json << "        \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
@@ -539,6 +670,16 @@ int RunFlashlightProbe(const std::string& exeDir,
             closureTickComparable = sampled0;
         }
 
+        {
+            char frameName[64];
+            std::snprintf(frameName, sizeof(frameName), "frame_%03d.bmp", t);
+            const std::string tickFramePath = (std::filesystem::path(exeDir) / "diagnostics" / "last" / frameName).string();
+            if (!WriteBmp32Bgra(tickFramePath, rgba.data(), render.resolution.x, render.resolution.y, &error)) {
+                std::fprintf(stderr, "%s\n", error.c_str());
+                return 1;
+            }
+        }
+
         finalRgba = rgba;
         finalMask = mask;
         finalStats = stats;
@@ -582,6 +723,19 @@ int RunFlashlightProbe(const std::string& exeDir,
     ComputeSignedDistanceSdfChamfer(finalMask.data(), render.resolution.x, render.resolution.y, 48.0f, lensSdfRgba);
     const std::string lensSdfPath = (std::filesystem::path(capture.output_dir) / "lens_sdf.bmp").string();
     if (!WriteBmp32Bgra(lensSdfPath, lensSdfRgba.data(), render.resolution.x, render.resolution.y, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+
+    const std::string referenceFramePath = (std::filesystem::path(capture.output_dir) / "flashlight_reference_frame.bmp").string();
+    if (!WriteBmp32Bgra(referenceFramePath, referenceRgba.data(), render.resolution.x, render.resolution.y, &error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
+    std::vector<uint32_t> referenceLensSdfRgba;
+    ComputeSignedDistanceSdfChamfer(referenceMask.data(), render.resolution.x, render.resolution.y, 48.0f, referenceLensSdfRgba);
+    const std::string referenceLensSdfPath = (std::filesystem::path(capture.output_dir) / "flashlight_reference_lens_sdf.bmp").string();
+    if (!WriteBmp32Bgra(referenceLensSdfPath, referenceLensSdfRgba.data(), render.resolution.x, render.resolution.y, &error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }
