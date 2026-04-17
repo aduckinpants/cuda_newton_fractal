@@ -189,6 +189,12 @@ static bool PromptOpenRuntimeWalkBundlePath(HWND owner, std::string* outPath) {
         outPath);
 }
 
+static bool PromptOpenRuntimeWalkMappingProfilePath(HWND owner, std::string* outPath) {
+    return PromptOpenJsonPath(owner,
+        "Runtime Walk Mapping Profile JSON\0*.json\0JSON Files\0*.json\0\0",
+        outPath);
+}
+
 static bool PromptOpenFitsPath(HWND owner, std::string* outPath) {
     return PromptOpenJsonPath(owner,
         "FITS Files\0*.fits;*.fit\0All Files\0*.*\0\0",
@@ -1689,7 +1695,7 @@ static bool InitializeRuntimeWalkViewerIfRequested(
         RuntimeWalkViewerImportRequest importRequest{};
         importRequest.exe_dir = exeDir;
         importRequest.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
-        importRequest.base_fractal_type = FractalType::explaino_fp;
+        importRequest.base_fractal_type = FractalType::explaino;
         importRequest.comparison_fits_path = cli.runtime_walk_viewer_fits_path;
         std::string loadedRequestPath;
         return BuildAndActivateRuntimeWalkViewerImportSession(
@@ -1751,6 +1757,7 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
             ? RuntimeWalkAuthorityMode::loaded_base_state
             : RuntimeWalkAuthorityMode::synthesized_fits_base;
         panel.status_text.clear();
+        RefreshMappingProfileDisplayState(exeDir, &panel, &panel.status_text);
     }
     if (actions.open_fits_dialog) {
         std::string selectedPath;
@@ -1759,6 +1766,14 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
             panel.request_json_path.clear();
             panel.bundle_json_path.clear();
             panel.status_text = "FITS selected.";
+        }
+    }
+    if (actions.open_mapping_profile_dialog) {
+        std::string selectedPath;
+        if (PromptOpenRuntimeWalkMappingProfilePath(hwnd, &selectedPath)) {
+            panel.mapping_profile_json_path = selectedPath;
+            panel.status_text.clear();
+            RefreshMappingProfileDisplayState(exeDir, &panel, &panel.status_text);
         }
     }
     if (actions.open_request_dialog) {
@@ -1796,13 +1811,16 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
         RuntimeWalkViewerImportRequest importRequest{};
         importRequest.exe_dir = exeDir;
         importRequest.base_state_json_path = currentLoadedStatePath;
-        importRequest.base_fractal_type = currentLoadedStateFractalType;
+        importRequest.base_fractal_type = (panel.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base)
+            ? FractalType::explaino
+            : currentLoadedStateFractalType;
         importRequest.authority_mode = panel.authority_mode;
         importRequest.comparison_fits_path = panel.comparison_fits_path;
         importRequest.request_json_path = panel.request_json_path;
         importRequest.bundle_json_path = panel.bundle_json_path;
         importRequest.mapping_profile_json_path = panel.mapping_profile_json_path;
         importRequest.mapping_profile_id = panel.mapping_profile_id;
+        importRequest.transport_options = panel.transport_options;
         if (BuildAndActivateRuntimeWalkViewerImportSession(
                 importRequest,
                 &panel,

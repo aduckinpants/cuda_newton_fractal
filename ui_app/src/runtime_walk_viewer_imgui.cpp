@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <filesystem>
 
 namespace {
 
@@ -123,6 +124,7 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
 
     ImGui::Separator();
     ImGui::TextWrapped("Request: %s", session.request_json_path.c_str());
+    ImGui::TextWrapped("Session Dir: %s", std::filesystem::path(session.request_json_path).parent_path().string().c_str());
     ImGui::TextWrapped("Authority Mode: %s", RuntimeWalkAuthorityModeId(session.authority_mode));
     ImGui::TextWrapped("Base State (authority): %s", session.resolved_state_json_path.c_str());
     if (!session.asset.authority.mapping_profile_json_path.empty()) {
@@ -132,6 +134,12 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
         ImGui::TextWrapped("Orientation Inputs: %s", session.asset.authority.orientation_inputs_json_path.c_str());
     }
     ImGui::TextWrapped("Bundle (transport): %s", session.asset.request.bundle_json_path.c_str());
+    ImGui::Text("Transport Samples: %d", static_cast<int>(session.asset.tick_snapshots.size()));
+    if (!session.asset.request.transport_generation_mode.empty()) {
+        ImGui::TextWrapped("Transport Mode: %s", session.asset.request.transport_generation_mode.c_str());
+    }
+    ImGui::Text("Motion Intensity: %.2f", session.asset.request.transport_motion_scale);
+    ImGui::Text("Warp Motion: %.2f", session.asset.request.transport_warp_scale);
     if (!session.asset.companion.comparison_fits_path.empty()) {
         ImGui::TextWrapped("Companion FITS (evidence): %s", session.asset.companion.comparison_fits_path.c_str());
     }
@@ -146,7 +154,7 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
     return interactionChanged;
 }
 
-bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState& state,
+bool RenderRuntimeWalkViewerImportPanel(RuntimeWalkViewerImportPanelState& state,
     bool importAllowed,
     const std::string& blockedReason,
     RuntimeWalkViewerImportUiActions* outActions) {
@@ -178,6 +186,26 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
         ImGui::TextWrapped("Base State: %s", state.base_state_json_path.empty() ? "(none)" : state.base_state_json_path.c_str());
     }
     ImGui::TextWrapped("FITS: %s", state.comparison_fits_path.empty() ? "(none)" : state.comparison_fits_path.c_str());
+    ImGui::TextWrapped("Mapping File: %s",
+        state.resolved_mapping_profile_json_path.empty() ? "(unresolved)" : state.resolved_mapping_profile_json_path.c_str());
+    ImGui::TextWrapped("Mapping Profile Id: %s", state.mapping_profile_id.empty() ? "explaino_default" : state.mapping_profile_id.c_str());
+    ImGui::TextWrapped("Synthesized Base Fractal: %s",
+        state.resolved_mapping_profile_base_fractal_type.empty() ? "(unknown)" : state.resolved_mapping_profile_base_fractal_type.c_str());
+    int sampleCount = static_cast<int>(state.transport_options.sample_count);
+    if (ImGui::SliderInt("Generated Samples", &sampleCount, 9, 129)) {
+        state.transport_options.sample_count = static_cast<std::size_t>(sampleCount);
+        interactionChanged = true;
+    }
+    float motionScale = static_cast<float>(state.transport_options.motion_scale);
+    if (ImGui::SliderFloat("Motion Intensity", &motionScale, 0.10f, 1.50f, "%.2f")) {
+        state.transport_options.motion_scale = static_cast<double>(motionScale);
+        interactionChanged = true;
+    }
+    float warpScale = static_cast<float>(state.transport_options.warp_scale);
+    if (ImGui::SliderFloat("Warp Motion", &warpScale, 0.0f, 0.50f, "%.2f")) {
+        state.transport_options.warp_scale = static_cast<double>(warpScale);
+        interactionChanged = true;
+    }
     if (!state.status_text.empty()) {
         ImGui::TextWrapped("%s", state.status_text.c_str());
     }
@@ -190,7 +218,7 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
         interactionChanged = true;
     }
     ImGui::SameLine();
-    const bool haveOpenInput = !state.comparison_fits_path.empty() || !state.request_json_path.empty() || !state.bundle_json_path.empty();
+    const bool haveOpenInput = !state.comparison_fits_path.empty();
     ImGui::BeginDisabled(!importAllowed);
     ImGui::BeginDisabled(!haveOpenInput);
     if (ImGui::Button("Open FITS")) {
@@ -206,6 +234,11 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
     }
 
     if (ImGui::CollapsingHeader("Advanced Overrides")) {
+        if (ImGui::Button("Browse Mapping...")) {
+            outActions->open_mapping_profile_dialog = true;
+            interactionChanged = true;
+        }
+        ImGui::SameLine();
         if (ImGui::Button("Browse Request...")) {
             outActions->open_request_dialog = true;
             interactionChanged = true;
@@ -217,8 +250,17 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
         }
         ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(none)" : state.request_json_path.c_str());
         ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(none)" : state.bundle_json_path.c_str());
-        ImGui::TextWrapped("Mapping Profile: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
-        ImGui::TextWrapped("Mapping Profile Id: %s", state.mapping_profile_id.empty() ? "explaino_default" : state.mapping_profile_id.c_str());
+        ImGui::TextWrapped("Mapping Profile Override: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
+    }
+
+    if (ImGui::CollapsingHeader("Mapping Summary", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (state.mapping_binding_summaries.empty()) {
+            ImGui::TextUnformatted("No resolved bindings.");
+        } else {
+            for (const std::string& line : state.mapping_binding_summaries) {
+                ImGui::BulletText("%s", line.c_str());
+            }
+        }
     }
 
     if (ImGui::CollapsingHeader("Recent Sessions", ImGuiTreeNodeFlags_DefaultOpen)) {

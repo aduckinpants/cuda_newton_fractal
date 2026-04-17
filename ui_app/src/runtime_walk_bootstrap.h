@@ -38,6 +38,12 @@ struct RuntimeWalkFitsOrientationInputs {
     std::map<std::string, double> signals;
 };
 
+struct RuntimeWalkTransportSynthesisOptions {
+    std::size_t sample_count = 33;
+    double motion_scale = 0.75;
+    double warp_scale = 0.10;
+};
+
 bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,
     RuntimeWalkFitsMappingCatalog* outCatalog,
     std::string* outError);
@@ -74,6 +80,7 @@ bool SynthesizeRuntimeWalkBaseState(const RuntimeWalkFitsMappingCatalog& catalog
 bool SynthesizeRuntimeWalkTransportBundle(const RuntimeWalkFitsMappingCatalog& catalog,
     const std::string& profileId,
     const RuntimeWalkFitsOrientationInputs& inputs,
+    const RuntimeWalkTransportSynthesisOptions& options,
     RuntimeWalkBundle* outBundle,
     std::string* outError);
 

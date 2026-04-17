@@ -4,7 +4,7 @@
     {
       "id": "explaino_default",
       "target_selector": "explaino",
-      "base_fractal_type": "explaino_fp",
+      "base_fractal_type": "explaino",
       "bindings": [
         {
           "target_selector": "explaino",
@@ -44,11 +44,11 @@
           "target_path": "params.explaino_warp_strength",
           "input_min": 0.0,
           "input_max": 1.0,
-          "scale": 1.0,
+          "scale": 0.35,
           "offset": 0.0,
           "weight": 1.0,
           "clamp_min": 0.0,
-          "clamp_max": 1.0
+          "clamp_max": 0.35
         },
         {
           "target_selector": "explaino",

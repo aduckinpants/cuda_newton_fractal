@@ -123,7 +123,7 @@ static void TestSynthesizedBaseStateUsesMappings() {
     RenderSettings render{};
     Check(SynthesizeRuntimeWalkBaseState(catalog, "explaino_default", inputs, &view, &params, &render, &error),
         "TestSynthesizedBaseStateUsesMappings_Synthesizes");
-    Check(view.fractal_type == FractalType::explaino_fp,
+    Check(view.fractal_type == FractalType::explaino,
         "TestSynthesizedBaseStateUsesMappings_ExplainoFamily");
     Check(render.resolution.x > 0 && render.resolution.y > 0,
         "TestSynthesizedBaseStateUsesMappings_RenderDefaults");
@@ -142,7 +142,7 @@ static void TestWriteSynthesizedStateJsonWritesLoadableShape() {
     ViewState view{};
     KernelParams params{};
     RenderSettings render{};
-    view.fractal_type = FractalType::explaino_fp;
+    view.fractal_type = FractalType::explaino;
     render.resolution = {320, 240};
     render.block_size = 256;
     render.device_id = 0;
@@ -156,7 +156,7 @@ static void TestWriteSynthesizedStateJsonWritesLoadableShape() {
     }(statePath);
     Check(text.find("\"state_version\": 3") != std::string::npos,
         "TestWriteSynthesizedStateJsonWritesLoadableShape_HasStateVersion");
-    Check(text.find("\"fractal_type\": \"explaino_fp\"") != std::string::npos,
+    Check(text.find("\"fractal_type\": \"explaino\"") != std::string::npos,
         "TestWriteSynthesizedStateJsonWritesLoadableShape_HasFractalType");
 }
 
@@ -185,13 +185,17 @@ static void TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape() {
     };
 
     RuntimeWalkBundle bundle;
-    Check(SynthesizeRuntimeWalkTransportBundle(catalog, "explaino_default", inputs, &bundle, &error),
+    RuntimeWalkTransportSynthesisOptions options{};
+    options.sample_count = 41u;
+    options.motion_scale = 0.55;
+    options.warp_scale = 0.05;
+    Check(SynthesizeRuntimeWalkTransportBundle(catalog, "explaino_default", inputs, options, &bundle, &error),
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_Synthesizes");
     Check(bundle.field_name == "mr_zipper_branch",
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_FieldName");
     Check(bundle.samples.size() >= 2u,
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_HasSamples");
-    Check(bundle.samples.size() >= 13u,
+    Check(bundle.samples.size() == 41u,
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_DenseSamples");
     Check(bundle.branch_markers.size() >= 1u,
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_HasBranchMarker");

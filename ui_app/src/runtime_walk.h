@@ -78,6 +78,11 @@ struct RuntimeWalkRequest {
     std::string mapping_profile_json_path;
     std::string mapping_profile_id;
     std::string orientation_inputs_json_path;
+    bool transport_generated = false;
+    std::string transport_generation_mode;
+    std::size_t transport_sample_count = 0;
+    double transport_motion_scale = 0.75;
+    double transport_warp_scale = 0.10;
 };
 
 const char* RuntimeWalkAuthorityModeId(RuntimeWalkAuthorityMode mode);

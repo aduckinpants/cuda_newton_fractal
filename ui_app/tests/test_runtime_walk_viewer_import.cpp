@@ -464,6 +464,10 @@ static void TestImportSessionSynthesizesBaseStateWithoutLoadedState() {
         "TestImportSessionSynthesizesBaseStateWithoutLoadedState_RequestWritten");
     Check(std::filesystem::path(record.synthesized_base_state_json_path).filename() == "state.json",
         "TestImportSessionSynthesizesBaseStateWithoutLoadedState_StateFileName");
+    std::ifstream stateIn(record.synthesized_base_state_json_path, std::ios::in | std::ios::binary);
+    const std::string stateText((std::istreambuf_iterator<char>(stateIn)), std::istreambuf_iterator<char>());
+    Check(stateText.find("\"fractal_type\": \"explaino\"") != std::string::npos,
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_DefaultFractalType");
 }
 
 static void TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest() {
@@ -568,6 +572,14 @@ static void TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState() {
 
     Check(panel.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base,
         "TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState_SynthMode");
+    Check(panel.transport_options.sample_count == 33u,
+        "TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState_DefaultSampleCount");
+    Check(!panel.resolved_mapping_profile_json_path.empty(),
+        "TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState_MappingPath");
+    Check(panel.resolved_mapping_profile_base_fractal_type == "explaino",
+        "TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState_BaseFractalType");
+    Check(!panel.mapping_binding_summaries.empty(),
+        "TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState_MappingSummary");
 }
 
 static void TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault() {
@@ -648,6 +660,117 @@ static void TestImportSessionLoadSuccessPersistsToRecentReceipt() {
         "TestImportSessionLoadSuccessPersistsToRecentReceipt_ReceiptMarkedLoaded");
 }
 
+static void TestImportSessionSynthesizedModeHonorsTransportOptions() {
+    const std::filesystem::path root = TempRoot("synth_transport_options");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+    request.transport_options.sample_count = 41u;
+    request.transport_options.motion_scale = 0.55;
+    request.transport_options.warp_scale = 0.03;
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestImportSessionSynthesizedModeHonorsTransportOptions_Builds",
+        error);
+    Check(record.transport_sample_count == 41u,
+        "TestImportSessionSynthesizedModeHonorsTransportOptions_SampleCount");
+    Check(std::fabs(record.transport_motion_scale - 0.55) < 1.0e-9,
+        "TestImportSessionSynthesizedModeHonorsTransportOptions_MotionScale");
+    Check(std::fabs(record.transport_warp_scale - 0.03) < 1.0e-9,
+        "TestImportSessionSynthesizedModeHonorsTransportOptions_WarpScale");
+}
+
+static void TestImportSessionTransportOptionsAffectSessionIdentity() {
+    const std::filesystem::path root = TempRoot("transport_identity");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest firstRequest{};
+    firstRequest.exe_dir = root.string();
+    firstRequest.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    firstRequest.comparison_fits_path = fitsPath.string();
+    firstRequest.orientation_inputs_json_path = orientationInputsPath.string();
+    firstRequest.transport_options.sample_count = 33u;
+    firstRequest.transport_options.motion_scale = 0.75;
+    firstRequest.transport_options.warp_scale = 0.10;
+
+    RuntimeWalkViewerImportRequest secondRequest = firstRequest;
+    secondRequest.transport_options.sample_count = 57u;
+    secondRequest.transport_options.motion_scale = 0.42;
+    secondRequest.transport_options.warp_scale = 0.02;
+
+    RuntimeWalkViewerImportSessionRecord firstRecord;
+    RuntimeWalkViewerImportSessionRecord secondRecord;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(firstRequest, &firstRecord, &error),
+        "TestImportSessionTransportOptionsAffectSessionIdentity_FirstBuild",
+        error);
+    CheckWithError(BuildRuntimeWalkViewerImportSession(secondRequest, &secondRecord, &error),
+        "TestImportSessionTransportOptionsAffectSessionIdentity_SecondBuild",
+        error);
+    Check(firstRecord.session_id != secondRecord.session_id,
+        "TestImportSessionTransportOptionsAffectSessionIdentity_SessionIdDiffers");
+    Check(firstRecord.request_json_path != secondRecord.request_json_path,
+        "TestImportSessionTransportOptionsAffectSessionIdentity_RequestPathDiffers");
+}
+
+static void TestPrimeImportPanelReusesLoadedSessionTransportSettings() {
+    const std::filesystem::path root = TempRoot("prime_panel_transport_settings");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+    request.transport_options.sample_count = 49u;
+    request.transport_options.motion_scale = 0.44;
+    request.transport_options.warp_scale = 0.02;
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestPrimeImportPanelReusesLoadedSessionTransportSettings_Builds",
+        error);
+
+    RuntimeWalkViewerSession session{};
+    session.loaded = true;
+    session.request_json_path = record.request_json_path;
+    session.resolved_state_json_path = record.base_state_json_path;
+    session.authority_mode = record.authority_mode;
+    session.asset.request.transport_sample_count = record.transport_sample_count;
+    session.asset.request.transport_motion_scale = record.transport_motion_scale;
+    session.asset.request.transport_warp_scale = record.transport_warp_scale;
+    session.asset.authority.mapping_profile_json_path = record.mapping_profile_json_path;
+    session.asset.authority.mapping_profile_id = record.mapping_profile_id;
+    session.asset.companion.comparison_fits_path = record.comparison_fits_path;
+    session.asset.tick_snapshots.resize(record.transport_sample_count);
+
+    RuntimeWalkViewerImportPanelState panel{};
+    PrimeRuntimeWalkViewerImportPanel(root.string(), record.base_state_json_path, session, &panel);
+
+    Check(panel.transport_options.sample_count == 49u,
+        "TestPrimeImportPanelReusesLoadedSessionTransportSettings_SampleCount");
+    Check(std::fabs(panel.transport_options.motion_scale - 0.44) < 1.0e-9,
+        "TestPrimeImportPanelReusesLoadedSessionTransportSettings_MotionScale");
+    Check(std::fabs(panel.transport_options.warp_scale - 0.02) < 1.0e-9,
+        "TestPrimeImportPanelReusesLoadedSessionTransportSettings_WarpScale");
+}
+
 int main() {
     TestImportSessionRejectsMissingBaseState();
     TestImportSessionRejectsWrongFamily();
@@ -660,6 +783,9 @@ int main() {
     TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState();
     TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault();
     TestImportSessionLoadSuccessPersistsToRecentReceipt();
+    TestImportSessionSynthesizedModeHonorsTransportOptions();
+    TestImportSessionTransportOptionsAffectSessionIdentity();
+    TestPrimeImportPanelReusesLoadedSessionTransportSettings();
     TestImportSessionPersistsDeterministicRecentLatest();
     TestImportSessionCanRediscoverFromRecentMatch();
     TestLatestRejectsStaleSession();

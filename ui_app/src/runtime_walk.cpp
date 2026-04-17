@@ -72,6 +72,17 @@ bool GetRequiredNumber(const json_min::Value& object, const char* key, double* o
     return true;
 }
 
+bool GetOptionalNumber(const json_min::Value& object, const char* key, double* outValue, std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value) return true;
+    if (!value->is_number()) {
+        if (outError) *outError = std::string("Invalid number field: ") + key;
+        return false;
+    }
+    if (outValue) *outValue = value->as_number();
+    return true;
+}
+
 bool ParseFiniteNumber(const json_min::Value& value, double* outValue, std::string* outError, const std::string& context) {
     if (!value.is_number()) {
         if (outError) *outError = "Expected number for " + context;
@@ -421,6 +432,29 @@ bool ParseRuntimeWalkRequestJson(const std::string& jsonText,
         }
         request.orientation_inputs_json_path = orientationInputsValue->as_string();
     }
+    const json_min::Value* transportGeneratedValue = parsed.value.get("transport_generated");
+    if (transportGeneratedValue) {
+        if (!transportGeneratedValue->is_bool()) {
+            if (outError) *outError = "transport_generated must be a bool";
+            return false;
+        }
+        request.transport_generated = transportGeneratedValue->as_bool();
+    }
+    const json_min::Value* transportModeValue = parsed.value.get("transport_generation_mode");
+    if (transportModeValue) {
+        if (!transportModeValue->is_string()) {
+            if (outError) *outError = "transport_generation_mode must be a string";
+            return false;
+        }
+        request.transport_generation_mode = transportModeValue->as_string();
+    }
+    double transportSampleCount = 0.0;
+    if (!GetOptionalNumber(parsed.value, "transport_sample_count", &transportSampleCount, outError)) return false;
+    if (transportSampleCount > 0.0) {
+        request.transport_sample_count = static_cast<std::size_t>(std::max(0.0, std::floor(transportSampleCount)));
+    }
+    if (!GetOptionalNumber(parsed.value, "transport_motion_scale", &request.transport_motion_scale, outError)) return false;
+    if (!GetOptionalNumber(parsed.value, "transport_warp_scale", &request.transport_warp_scale, outError)) return false;
     if (!BuildTickSchedule(parsed.value, &request.t_values, outError)) return false;
 
     if (outRequest) *outRequest = request;
@@ -478,7 +512,7 @@ bool EvaluateRuntimeWalkSnapshot(const RuntimeWalkBundle& bundle,
     snapshot.combined_seed = baseCombinedSeed + (snapshot.seed01 - 0.5) * 32.0;
     snapshot.seed_b = static_cast<double>(baseParams.explaino_seed_b) + (snapshot.channels[7] - snapshot.channels[8]) * 0.5;
     snapshot.mix = ClampD(static_cast<double>(baseParams.explaino_mix) + (mixNorm - 0.5) * 1.5, 0.0, 4.0);
-    snapshot.warp_strength = ClampD(static_cast<double>(baseParams.explaino_warp_strength) + warpNorm * 0.35, 0.0, 1.0);
+    snapshot.warp_strength = ClampD(static_cast<double>(baseParams.explaino_warp_strength) + (warpNorm - 0.5) * 0.16, 0.0, 1.0);
 
     *outSnapshot = snapshot;
     return true;

@@ -506,6 +506,7 @@ double HarmonicWave(double theta, double frequency, double phase) {
 
 std::array<double, 13> BuildClosedLoopTransportSample(const RuntimeWalkFitsOrientationInputs& inputs,
     const std::array<double, 13>& anchor,
+    const RuntimeWalkTransportSynthesisOptions& options,
     double t) {
     const double mean = NormalizeUnitSignal(inputs, "mean");
     const double stddev = NormalizeUnitSignal(inputs, "stddev");
@@ -518,8 +519,10 @@ std::array<double, 13> BuildClosedLoopTransportSample(const RuntimeWalkFitsOrien
     const double focus = NormalizeUnitSignal(inputs, "focus_ratio");
     const double theta = 6.28318530717958647692 * t;
     const double phase = 6.28318530717958647692 * Clamp01(0.35 * mean + 0.35 * focus + 0.30 * energy);
-    const double swirl = 0.18 + 0.16 * energy + 0.08 * stddev;
-    const double drift = 0.12 + 0.10 * delta;
+    const double motionScale = ClampDouble(options.motion_scale, 0.0, 2.0);
+    const double warpScale = ClampDouble(options.warp_scale, 0.0, 1.0);
+    const double swirl = (0.18 + 0.16 * energy + 0.08 * stddev) * motionScale;
+    const double drift = (0.12 + 0.10 * delta) * motionScale;
     const double loopX = std::cos(theta + phase);
     const double loopY = std::sin(theta + phase);
     const double lobeX = std::cos(2.0 * theta + center * 1.7);
@@ -530,16 +533,16 @@ std::array<double, 13> BuildClosedLoopTransportSample(const RuntimeWalkFitsOrien
     sample[0] = Clamp01(anchor[0] + swirl * loopX + 0.08 * xBias + 0.05 * lobeX);
     sample[1] = Clamp01(anchor[1] - swirl * loopX + 0.08 * (1.0 - xBias) - 0.05 * lobeX);
     sample[2] = Clamp01(anchor[2] + swirl * loopY + 0.08 * yBias + 0.05 * lobeY);
-    sample[3] = Clamp01(anchor[3] - swirl * loopY + 0.06 * energy + 0.08 * (1.0 - yBias));
-    sample[4] = Clamp01(anchor[4] + 0.20 * HarmonicWave(theta, 1.0, phase) + 0.10 * focus + 0.05 * lobeX);
-    sample[5] = Clamp01(anchor[5] + 0.18 * HarmonicWave(theta, 2.0, phase * 0.5) + 0.08 * mean);
-    sample[6] = Clamp01(anchor[6] + 0.24 * HarmonicWave(theta, 1.0, 1.0471975512 + phase) + 0.08 * energy);
-    sample[7] = Clamp01(anchor[7] + 0.20 * HarmonicWave(theta, 2.0, center * 1.2) + 0.08 * xBias + 0.04 * twist);
-    sample[8] = Clamp01(anchor[8] + 0.20 * HarmonicWave(theta, 2.0, -center * 1.2) + 0.08 * yBias - 0.04 * twist);
-    sample[9] = Clamp01(anchor[9] + drift * HarmonicWave(theta, 3.0, edge) + 0.08 * stddev);
-    sample[10] = Clamp01(anchor[10] + drift * HarmonicWave(theta, 3.0, 3.1415926535 - edge) + 0.08 * mean);
-    sample[11] = Clamp01(anchor[11] + 0.18 * HarmonicWave(theta, 1.0, 1.5707963267 + phase) + 0.10 * (1.0 - focus));
-    sample[12] = Clamp01(anchor[12] + 0.20 * HarmonicWave(theta, 2.0, 0.7853981634 + phase) + 0.08 * delta);
+    sample[3] = Clamp01(anchor[3] - swirl * loopY * (0.35 + 0.65 * warpScale) + 0.03 * energy + 0.04 * (1.0 - yBias));
+    sample[4] = Clamp01(anchor[4] + motionScale * (0.20 * HarmonicWave(theta, 1.0, phase) + 0.05 * lobeX) + 0.08 * focus);
+    sample[5] = Clamp01(anchor[5] + motionScale * 0.18 * HarmonicWave(theta, 2.0, phase * 0.5) + 0.08 * mean);
+    sample[6] = Clamp01(anchor[6] + motionScale * 0.18 * HarmonicWave(theta, 1.0, 1.0471975512 + phase) + 0.05 * energy);
+    sample[7] = Clamp01(anchor[7] + motionScale * (0.16 * HarmonicWave(theta, 2.0, center * 1.2) + 0.03 * twist) + 0.06 * xBias);
+    sample[8] = Clamp01(anchor[8] + motionScale * (0.16 * HarmonicWave(theta, 2.0, -center * 1.2) - 0.03 * twist) + 0.06 * yBias);
+    sample[9] = Clamp01(anchor[9] + drift * HarmonicWave(theta, 3.0, edge) + 0.05 * stddev);
+    sample[10] = Clamp01(anchor[10] + drift * HarmonicWave(theta, 3.0, 3.1415926535 - edge) + 0.05 * mean);
+    sample[11] = Clamp01(anchor[11] + motionScale * 0.16 * HarmonicWave(theta, 1.0, 1.5707963267 + phase) + 0.08 * (1.0 - focus));
+    sample[12] = Clamp01(anchor[12] + warpScale * (0.12 * HarmonicWave(theta, 2.0, 0.7853981634 + phase) + 0.04 * delta));
     return sample;
 }
 
@@ -891,6 +894,7 @@ bool SynthesizeRuntimeWalkBaseState(const RuntimeWalkFitsMappingCatalog& catalog
 bool SynthesizeRuntimeWalkTransportBundle(const RuntimeWalkFitsMappingCatalog& catalog,
     const std::string& profileId,
     const RuntimeWalkFitsOrientationInputs& inputs,
+    const RuntimeWalkTransportSynthesisOptions& options,
     RuntimeWalkBundle* outBundle,
     std::string* outError) {
     if (outError) outError->clear();
@@ -916,13 +920,13 @@ bool SynthesizeRuntimeWalkTransportBundle(const RuntimeWalkFitsMappingCatalog& c
     RuntimeWalkBundle bundle;
     bundle.field_name = "mr_zipper_branch";
     const std::array<double, 13> anchor = BuildTransportAnchor(inputs);
-    constexpr int kClosedLoopSegments = 16;
-    bundle.samples.reserve(static_cast<std::size_t>(kClosedLoopSegments + 1));
-    for (int index = 0; index <= kClosedLoopSegments; ++index) {
-        const double t = static_cast<double>(index) / static_cast<double>(kClosedLoopSegments);
+    const std::size_t requestedSegments = std::max<std::size_t>(8u, options.sample_count > 1u ? options.sample_count - 1u : 8u);
+    bundle.samples.reserve(requestedSegments + 1u);
+    for (std::size_t index = 0; index <= requestedSegments; ++index) {
+        const double t = static_cast<double>(index) / static_cast<double>(requestedSegments);
         std::ostringstream id;
         id << "loop_" << std::setw(2) << std::setfill('0') << index;
-        bundle.samples.push_back(RuntimeWalkBundleSample{id.str(), t, BuildClosedLoopTransportSample(inputs, anchor, t)});
+        bundle.samples.push_back(RuntimeWalkBundleSample{id.str(), t, BuildClosedLoopTransportSample(inputs, anchor, options, t)});
     }
     bundle.branch_markers = {
         RuntimeWalkBranchMarker{"entry", "entry", "main", 0.125, 0.08},

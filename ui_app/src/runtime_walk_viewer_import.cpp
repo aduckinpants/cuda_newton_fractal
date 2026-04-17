@@ -1,6 +1,7 @@
 #include "runtime_walk_viewer_import.h"
 
 #include "fractal_family_rules.h"
+#include "enum_id_utils.h"
 #include "json_min.h"
 #include "runtime_walk.h"
 #include "runtime_walk_bootstrap.h"
@@ -8,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <chrono>
 #include <ctime>
 #include <filesystem>
@@ -117,6 +119,22 @@ bool GetOptionalString(const json_min::Value& object, const char* key, std::stri
     return true;
 }
 
+bool GetOptionalNumber(const json_min::Value& object, const char* key, double* outValue, std::string* outError) {
+    const json_min::Value* value = object.get(key);
+    if (!value) return true;
+    if (!value->is_number()) {
+        if (outError) *outError = std::string("Invalid number field: ") + key;
+        return false;
+    }
+    const double number = value->as_number();
+    if (!std::isfinite(number)) {
+        if (outError) *outError = std::string("Non-finite number field: ") + key;
+        return false;
+    }
+    if (outValue) *outValue = number;
+    return true;
+}
+
 std::filesystem::path SessionsRoot(const std::string& exeDir) {
     return ResolveAbsolutePath(exeDir) / "diagnostics" / "runtime_walk_sessions";
 }
@@ -159,7 +177,7 @@ std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
     constexpr std::uint64_t kOffset = 1469598103934665603ull;
     constexpr std::uint64_t kPrime = 1099511628211ull;
     std::uint64_t hash = kOffset;
-    const std::array<std::string, 9> fields = {
+    const std::array<std::string, 12> fields = {
         RuntimeWalkAuthorityModeId(request.authority_mode),
         NormalizePathString(ResolveAbsolutePath(request.base_state_json_path)),
         NormalizePathString(ResolveAbsolutePath(resolvedBundlePath)),
@@ -169,6 +187,9 @@ std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
         NormalizePathString(ResolveAbsolutePath(request.orientation_inputs_json_path)),
         NormalizePathString(ResolveAbsolutePath(request.rtk_manifest_json_path)),
         NormalizePathString(ResolveAbsolutePath(request.rtk_harvest_summary_json_path)),
+        std::to_string(request.transport_options.sample_count),
+        std::to_string(request.transport_options.motion_scale),
+        std::to_string(request.transport_options.warp_scale),
     };
     for (const std::string& field : fields) {
         for (unsigned char ch : field) {
@@ -241,6 +262,8 @@ bool ParseRecentIndexJson(const std::string& jsonText,
         if (generatedValue && generatedValue->is_bool()) {
             record.transport_generated = generatedValue->as_bool();
         }
+        if (!GetOptionalNumber(entry, "transport_motion_scale", &record.transport_motion_scale, outError)) return false;
+        if (!GetOptionalNumber(entry, "transport_warp_scale", &record.transport_warp_scale, outError)) return false;
         const json_min::Value* loadSucceededValue = entry.get("viewer_load_succeeded");
         if (loadSucceededValue && loadSucceededValue->is_bool()) {
             record.viewer_load_succeeded = loadSucceededValue->as_bool();
@@ -263,6 +286,18 @@ bool LoadRecentIndex(const std::string& exeDir, ImportRecords* outRecords, std::
     std::string text;
     if (!ReadTextFile(path, &text, outError)) return false;
     return ParseRecentIndexJson(text, path.parent_path(), outRecords, outError);
+}
+
+const RuntimeWalkViewerImportSessionRecord* FindMatchingRecentRecord(const ImportRecords& records,
+    const std::string& requestJsonPath) {
+    const std::string normalizedRequest = NormalizePathString(ResolveAbsolutePath(requestJsonPath));
+    if (normalizedRequest.empty()) return nullptr;
+    for (const RuntimeWalkViewerImportSessionRecord& record : records) {
+        if (NormalizePathString(ResolveAbsolutePath(record.request_json_path)) == normalizedRequest) {
+            return &record;
+        }
+    }
+    return nullptr;
 }
 
 std::string SerializeRecentIndex(const ImportRecords& records) {
@@ -293,6 +328,8 @@ std::string SerializeRecentIndex(const ImportRecords& records) {
         out << "      \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
         out << "      \"transport_sample_count\": " << record.transport_sample_count << ",\n";
         out << "      \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
+        out << "      \"transport_motion_scale\": " << record.transport_motion_scale << ",\n";
+        out << "      \"transport_warp_scale\": " << record.transport_warp_scale << ",\n";
         out << "      \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << "\n";
         out << "    }";
         if (index + 1u < records.size()) out << ",";
@@ -378,6 +415,17 @@ std::string SerializeRuntimeWalkRequestJson(const RuntimeWalkRequest& request) {
     if (!request.orientation_inputs_json_path.empty()) {
         out << ",\n  \"orientation_inputs_json\": \"" << JsonEscape(request.orientation_inputs_json_path) << "\"";
     }
+    if (request.transport_generated) {
+        out << ",\n  \"transport_generated\": true";
+    }
+    if (!request.transport_generation_mode.empty()) {
+        out << ",\n  \"transport_generation_mode\": \"" << JsonEscape(request.transport_generation_mode) << "\"";
+    }
+    if (request.transport_sample_count > 0u) {
+        out << ",\n  \"transport_sample_count\": " << request.transport_sample_count;
+    }
+    out << ",\n  \"transport_motion_scale\": " << request.transport_motion_scale;
+    out << ",\n  \"transport_warp_scale\": " << request.transport_warp_scale;
     out << "\n}\n";
     return out.str();
 }
@@ -400,6 +448,8 @@ std::string SerializeImportSelectionManifest(const RuntimeWalkViewerImportSessio
     out << "  \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
     out << "  \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
     out << "  \"transport_sample_count\": " << record.transport_sample_count << ",\n";
+    out << "  \"transport_motion_scale\": " << record.transport_motion_scale << ",\n";
+    out << "  \"transport_warp_scale\": " << record.transport_warp_scale << ",\n";
     out << "  \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << ",\n";
     out << "  \"mapping_profile_json\": \"" << JsonEscape(record.mapping_profile_json_path) << "\",\n";
     out << "  \"mapping_profile_id\": \"" << JsonEscape(record.mapping_profile_id) << "\",\n";
@@ -422,6 +472,8 @@ std::string SerializeImportReceipt(const RuntimeWalkViewerImportSessionRecord& r
     out << "  \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
     out << "  \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
     out << "  \"transport_sample_count\": " << record.transport_sample_count << ",\n";
+    out << "  \"transport_motion_scale\": " << record.transport_motion_scale << ",\n";
+    out << "  \"transport_warp_scale\": " << record.transport_warp_scale << ",\n";
     out << "  \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << "\n";
     out << "}\n";
     return out.str();
@@ -439,6 +491,7 @@ struct ResolvedImportSources {
     std::string transport_generation_mode;
     std::vector<double> t_values;
     std::size_t transport_sample_count = 0;
+    RuntimeWalkTransportSynthesisOptions transport_options{};
     bool transport_generated = false;
 };
 
@@ -455,6 +508,74 @@ bool ResolveMappingProfilePath(const RuntimeWalkViewerImportRequest& request,
 std::string ResolveMappingProfileId(const RuntimeWalkViewerImportRequest& request) {
     if (!request.mapping_profile_id.empty()) return request.mapping_profile_id;
     return "explaino_default";
+}
+
+void ApplyDefaultTransportOptions(RuntimeWalkTransportSynthesisOptions* ioOptions) {
+    if (!ioOptions) return;
+    if (ioOptions->sample_count < 9u) ioOptions->sample_count = 33u;
+    if (!(ioOptions->motion_scale > 0.0)) ioOptions->motion_scale = 0.75;
+    if (ioOptions->warp_scale < 0.0) ioOptions->warp_scale = 0.0;
+    if (ioOptions->warp_scale > 1.0) ioOptions->warp_scale = 1.0;
+}
+
+bool RefreshMappingProfileDisplayStateInternal(const std::string& exeDir,
+    RuntimeWalkViewerImportPanelState* ioPanel,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!ioPanel) {
+        if (outError) *outError = "Runtime-walk FITS import panel output is required";
+        return false;
+    }
+
+    ioPanel->mapping_binding_summaries.clear();
+    ioPanel->resolved_mapping_profile_json_path.clear();
+    ioPanel->resolved_mapping_profile_base_fractal_type.clear();
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = exeDir;
+    request.mapping_profile_json_path = ioPanel->mapping_profile_json_path;
+    request.mapping_profile_id = ioPanel->mapping_profile_id;
+
+    std::string mappingProfilePath;
+    if (!ResolveMappingProfilePath(request, &mappingProfilePath, outError)) return false;
+    const std::string mappingProfileId = ResolveMappingProfileId(request);
+
+    RuntimeWalkFitsMappingCatalog catalog;
+    if (!LoadRuntimeWalkFitsMappingCatalogFile(mappingProfilePath, &catalog, outError)) return false;
+
+    const RuntimeWalkFitsMappingProfile* matchedProfile = nullptr;
+    for (const RuntimeWalkFitsMappingProfile& profile : catalog.profiles) {
+        if (profile.id == mappingProfileId) {
+            matchedProfile = &profile;
+            break;
+        }
+    }
+    if (!matchedProfile) {
+        if (outError) *outError = "Unknown runtime-walk FITS mapping profile: " + mappingProfileId;
+        return false;
+    }
+
+    ioPanel->mapping_profile_id = matchedProfile->id;
+    ioPanel->resolved_mapping_profile_json_path = mappingProfilePath;
+    ioPanel->resolved_mapping_profile_base_fractal_type = FractalTypeId(matchedProfile->base_fractal_type);
+    for (const RuntimeWalkFitsMappingBinding& binding : matchedProfile->bindings) {
+        std::ostringstream line;
+        line.setf(std::ios::fixed);
+        line.precision(3);
+        line << binding.source_signal << " -> " << binding.target_path
+             << " | selector=" << binding.target_selector
+             << " | weight=" << binding.weight
+             << " | scale=" << binding.scale
+             << " | offset=" << binding.offset;
+        if (binding.has_clamp) {
+            line << " | clamp=[" << binding.clamp_min << ", " << binding.clamp_max << "]";
+        }
+        if (!binding.enabled) {
+            line << " | disabled";
+        }
+        ioPanel->mapping_binding_summaries.push_back(line.str());
+    }
+    return true;
 }
 
 bool TryResolveRecentMatch(const RuntimeWalkViewerImportRequest& request,
@@ -535,6 +656,8 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
         return false;
     }
     *outResolved = {};
+    outResolved->transport_options = request.transport_options;
+    ApplyDefaultTransportOptions(&outResolved->transport_options);
 
     if (!ValidateRuntimeWalkViewerImportBaseState(request.authority_mode, request.base_state_json_path, request.base_fractal_type, outError)) {
         return false;
@@ -609,6 +732,12 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
 
 } // namespace
 
+bool RefreshMappingProfileDisplayState(const std::string& exeDir,
+    RuntimeWalkViewerImportPanelState* ioPanel,
+    std::string* outError) {
+    return RefreshMappingProfileDisplayStateInternal(exeDir, ioPanel, outError);
+}
+
 bool ValidateRuntimeWalkViewerImportBaseState(RuntimeWalkAuthorityMode authorityMode,
     const std::string& baseStateJsonPath,
     FractalType baseStateFractalType,
@@ -658,6 +787,11 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     generatedRequest.comparison_fits_path = resolved.comparison_fits_path;
     generatedRequest.rtk_manifest_json_path = resolved.rtk_manifest_json_path;
     generatedRequest.rtk_harvest_summary_json_path = resolved.rtk_harvest_summary_json_path;
+    generatedRequest.transport_generated = resolved.transport_generated;
+    generatedRequest.transport_generation_mode = resolved.transport_generation_mode;
+    generatedRequest.transport_sample_count = resolved.transport_sample_count;
+    generatedRequest.transport_motion_scale = resolved.transport_options.motion_scale;
+    generatedRequest.transport_warp_scale = resolved.transport_options.warp_scale;
 
     RuntimeWalkViewerImportSessionRecord record{};
     record.session_id = sessionId;
@@ -673,6 +807,8 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     record.discovery_source = resolved.discovery_source;
     record.transport_generation_mode = resolved.transport_generation_mode;
     record.transport_sample_count = resolved.transport_sample_count;
+    record.transport_motion_scale = resolved.transport_options.motion_scale;
+    record.transport_warp_scale = resolved.transport_options.warp_scale;
     record.transport_generated = resolved.transport_generated;
     record.request_exists = true;
 
@@ -739,7 +875,7 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
             return false;
         }
         RuntimeWalkBundle synthesizedBundle;
-        if (!SynthesizeRuntimeWalkTransportBundle(catalog, mappingProfileId, inputs, &synthesizedBundle, outError)) {
+        if (!SynthesizeRuntimeWalkTransportBundle(catalog, mappingProfileId, inputs, resolved.transport_options, &synthesizedBundle, outError)) {
             return false;
         }
         const std::filesystem::path bundlePath = sessionDir / "mr_zipper_branch.json";
@@ -756,7 +892,14 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
         record.discovery_source = "generated_transport";
         record.transport_generation_mode = "closed_loop_default";
         record.transport_sample_count = synthesizedBundle.samples.size();
+        record.transport_motion_scale = resolved.transport_options.motion_scale;
+        record.transport_warp_scale = resolved.transport_options.warp_scale;
         record.transport_generated = true;
+        generatedRequest.transport_generated = true;
+        generatedRequest.transport_generation_mode = record.transport_generation_mode;
+        generatedRequest.transport_sample_count = record.transport_sample_count;
+        generatedRequest.transport_motion_scale = record.transport_motion_scale;
+        generatedRequest.transport_warp_scale = record.transport_warp_scale;
     }
 
     if (!WriteTextFile(requestPath, SerializeRuntimeWalkRequestJson(generatedRequest), outError)) return false;
@@ -815,6 +958,7 @@ void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
     ioPanel->authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
     ioPanel->request_json_path.clear();
     ioPanel->bundle_json_path.clear();
+    ApplyDefaultTransportOptions(&ioPanel->transport_options);
     ioPanel->status_text.clear();
     if (session.loaded) {
         if (ioPanel->comparison_fits_path.empty()) {
@@ -826,11 +970,31 @@ void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
         if (ioPanel->mapping_profile_id.empty()) {
             ioPanel->mapping_profile_id = session.asset.authority.mapping_profile_id;
         }
+        if (session.asset.request.transport_sample_count > 0u) {
+            ioPanel->transport_options.sample_count = session.asset.request.transport_sample_count;
+        } else if (!session.asset.tick_snapshots.empty()) {
+            ioPanel->transport_options.sample_count = session.asset.tick_snapshots.size();
+        }
+        ioPanel->transport_options.motion_scale = session.asset.request.transport_motion_scale;
+        ioPanel->transport_options.warp_scale = session.asset.request.transport_warp_scale;
+    }
+    std::string mappingError;
+    if (!RefreshMappingProfileDisplayState(exeDir, ioPanel, &mappingError) && ioPanel->status_text.empty()) {
+        ioPanel->status_text = mappingError;
     }
     std::string error;
     std::vector<RuntimeWalkViewerImportSessionRecord> recent;
     if (LoadRecentRuntimeWalkViewerImportSessions(exeDir, &recent, &error)) {
         ioPanel->recent_sessions = recent;
+        if (session.loaded) {
+            if (const RuntimeWalkViewerImportSessionRecord* recentRecord = FindMatchingRecentRecord(recent, session.request_json_path)) {
+                if (recentRecord->transport_sample_count > 0u) {
+                    ioPanel->transport_options.sample_count = recentRecord->transport_sample_count;
+                }
+                ioPanel->transport_options.motion_scale = recentRecord->transport_motion_scale;
+                ioPanel->transport_options.warp_scale = recentRecord->transport_warp_scale;
+            }
+        }
     } else if (ioPanel->status_text.empty()) {
         ioPanel->status_text = error;
     }
