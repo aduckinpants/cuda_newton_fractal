@@ -46,6 +46,9 @@
 #include "lens_sdf.h"
 #include "render_capture_guard.h"
 #include "runtime_walk.h"
+#include "runtime_walk_viewer.h"
+#include "runtime_walk_viewer_imgui.h"
+#include "runtime_walk_viewer_session.h"
 #include "runtime_reset.h"
 #include "safe_mode_schema.h"
 #include "schema_binding.h"
@@ -152,20 +155,32 @@ static std::vector<std::string> GetCommandLineArgsUtf8() {
     return args;
 }
 
-static bool PromptOpenFindingStatePath(HWND owner, std::string* outPath) {
+static bool PromptOpenJsonPath(HWND owner, const char* filter, std::string* outPath) {
     char buffer[MAX_PATH] = {};
     OPENFILENAMEA dialog{};
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = owner;
     dialog.lpstrFile = buffer;
     dialog.nMaxFile = static_cast<DWORD>(sizeof(buffer));
-    dialog.lpstrFilter = "Finding or State JSON\0finding.json;state.json;*.json\0JSON Files\0*.json\0\0";
+    dialog.lpstrFilter = filter;
     dialog.nFilterIndex = 1;
     dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
     dialog.lpstrDefExt = "json";
     if (!GetOpenFileNameA(&dialog)) return false;
     if (outPath) *outPath = buffer;
     return true;
+}
+
+static bool PromptOpenFindingStatePath(HWND owner, std::string* outPath) {
+    return PromptOpenJsonPath(owner,
+        "Finding or State JSON\0finding.json;state.json;*.json\0JSON Files\0*.json\0\0",
+        outPath);
+}
+
+static bool PromptOpenRuntimeWalkRequestPath(HWND owner, std::string* outPath) {
+    return PromptOpenJsonPath(owner,
+        "Runtime Walk Request JSON\0*.json\0JSON Files\0*.json\0\0",
+        outPath);
 }
 
 static void CreateRenderTarget() {
@@ -517,7 +532,10 @@ static bool RunInLoopFindingCapture(
 
 static void RenderFractalViewport(
     const ImGuiIO& io, const RenderSettings& render,
-    ViewState& view, bool& dirty, bool& interactionChanged) {
+    ViewState& view, bool& dirty, bool& interactionChanged,
+    const RuntimeWalkViewerPlaybackState* runtimeWalkPlayback,
+    const RuntimeWalkOverlayPath* runtimeWalkPath,
+    const RuntimeWalkGradientOverlay* runtimeWalkGradientOverlay) {
     ImGui::Begin("Fractal");
     if (g_fractalSRV) {
         ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -537,7 +555,17 @@ static void RenderFractalViewport(
         ImGui::InvisibleButton("##viewport", size, ImGuiButtonFlags_MouseButtonLeft);
         ImVec2 rectMin = ImGui::GetItemRectMin();
         ImVec2 rectMax = ImGui::GetItemRectMax();
-        ImGui::GetWindowDrawList()->AddImage((ImTextureID)g_fractalSRV, rectMin, rectMax);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddImage((ImTextureID)g_fractalSRV, rectMin, rectMax);
+        if (runtimeWalkPlayback && runtimeWalkPath && runtimeWalkGradientOverlay) {
+            DrawRuntimeWalkViewerViewportOverlay(
+                *runtimeWalkPlayback,
+                *runtimeWalkPath,
+                *runtimeWalkGradientOverlay,
+                rectMin,
+                rectMax,
+                drawList);
+        }
 
         bool hovered = ImGui::IsItemHovered();
         bool active = ImGui::IsItemActive();
@@ -994,11 +1022,12 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
+    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend)) return false;
-    if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || flashlightProbe)) return false;
+    if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || flashlightProbe || runtimeWalkViewer)) return false;
     return true;
 }
 
@@ -1178,9 +1207,10 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
                                        const std::string& exeDir) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
+    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json;
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
-            exploreRecommend || cli.flashlight_probe || runtimeWalk ||
+            exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
             return 1;
@@ -1189,8 +1219,8 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
-        if (exploreRecommend || cli.flashlight_probe || runtimeWalk) {
-            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --flashlight-probe, and --runtime-walk-request-json headless verbs\n");
+        if (exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
             return 1;
         }
         return RunSampleMode(BuildSampleModeArgs(cli), exePath);
@@ -1199,7 +1229,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     if (cli.describe_functions || cli.have_describe_functions_json) {
         if (exploreRecommend ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
-                cli.flashlight_probe || runtimeWalk) {
+                cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
             return 1;
         }
@@ -1480,6 +1510,305 @@ static BindingContext BuildViewerBindingContext(
     return bind;
 }
 
+static bool InitializeRuntimeWalkViewerIfRequested(
+    const ViewerCliArgs& cli,
+    RuntimeWalkViewerSession* ioSession,
+    RuntimeWalkViewerPlaybackState* ioPlayback,
+    RenderSettings* ioRender,
+    bool* ioDirty,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!cli.have_runtime_walk_viewer_request_json) return true;
+    if (!ioSession || !ioPlayback || !ioRender || !ioDirty) {
+        if (outError) *outError = "Runtime walk viewer initialization requires valid output pointers";
+        return false;
+    }
+    RuntimeWalkViewerSession session;
+    if (!LoadRuntimeWalkViewerSession(cli.runtime_walk_viewer_request_json_path, &session, outError)) {
+        return false;
+    }
+    *ioSession = session;
+    *ioRender = ioSession->asset.base_render;
+    ioPlayback->loaded = false;
+    ioPlayback->playing = true;
+    *ioDirty = true;
+    return true;
+}
+
+static bool ProcessRuntimeWalkViewerPerFrame(
+    HWND hwnd,
+    const ImGuiIO& io,
+    RuntimeWalkViewerSession& session,
+    RuntimeWalkViewerPlaybackState& playback,
+    RuntimeWalkOverlayProviderConfig& overlayConfig,
+    const ExplainoSidecarWindowState& sidecarState,
+    bool sidecarStateValid,
+    ViewState& view,
+    KernelParams& params,
+    RenderSettings& render,
+    ViewerRenderPacingState& renderPacingState,
+    RuntimeWalkOverlayPath& outPath,
+    RuntimeWalkGradientOverlay& outGradientOverlay,
+    bool& dirty,
+    bool& interactionChanged,
+    std::string& findingStatus) {
+    if (!session.loaded) {
+        outPath = {};
+        outGradientOverlay = {};
+        return true;
+    }
+
+    RuntimeWalkSnapshot snapshot{};
+    std::string runtimeWalkError;
+    bool runtimeWalkChanged = false;
+    if (!UpdateRuntimeWalkViewerPlayback(
+            session,
+            static_cast<double>(io.DeltaTime),
+            ImGui::IsKeyPressed(ImGuiKey_Space, false),
+            ImGui::IsKeyPressed(ImGuiKey_LeftArrow, false),
+            ImGui::IsKeyPressed(ImGuiKey_RightArrow, false),
+            &playback,
+            &view,
+            &params,
+            &snapshot,
+            &runtimeWalkChanged,
+            &runtimeWalkError)) {
+        findingStatus = "Runtime walk playback failed: " + runtimeWalkError;
+        outPath = {};
+        outGradientOverlay = {};
+        return false;
+    }
+    if (runtimeWalkChanged) {
+        dirty = true;
+    }
+
+    RuntimeWalkViewerUiActions uiActions{};
+    if (RenderRuntimeWalkViewerPanel(session, &playback, &overlayConfig, &uiActions)) {
+        interactionChanged = true;
+        dirty = true;
+        NoteViewerInteraction(&renderPacingState);
+        if (!ApplyRuntimeWalkViewerPlaybackSnapshot(
+                session,
+                playback,
+                &view,
+                &params,
+                &snapshot,
+                &runtimeWalkError)) {
+            findingStatus = "Runtime walk playback failed: " + runtimeWalkError;
+        }
+    }
+
+    std::string nextRequestPath;
+    if (uiActions.open_request_dialog) {
+        PromptOpenRuntimeWalkRequestPath(hwnd, &nextRequestPath);
+    } else if (uiActions.reload_current_request) {
+        nextRequestPath = session.request_json_path;
+    }
+
+    if (!nextRequestPath.empty()) {
+        RuntimeWalkViewerSession nextSession;
+        if (!LoadRuntimeWalkViewerSession(nextRequestPath, &nextSession, &runtimeWalkError)) {
+            findingStatus = "Runtime walk load failed: " + runtimeWalkError;
+        } else {
+            session = nextSession;
+            playback.loaded = false;
+            playback.playing = true;
+            render = session.asset.base_render;
+            interactionChanged = true;
+            dirty = true;
+            if (!ApplyRuntimeWalkViewerPlaybackSnapshot(
+                    session,
+                    playback,
+                    &view,
+                    &params,
+                    &snapshot,
+                    &runtimeWalkError)) {
+                findingStatus = "Runtime walk apply failed: " + runtimeWalkError;
+            } else {
+                findingStatus = "Loaded runtime walk request: " + session.request_json_path;
+            }
+        }
+    }
+
+    BuildRuntimeWalkOverlayPath(session.asset, playback, &outPath);
+    RuntimeWalkOverlayProviderInputs overlayInputs{};
+    overlayInputs.branch_proximity = snapshot.branch.proximity;
+    if (sidecarStateValid && sidecarState.has_orientation) {
+        overlayInputs.decode_stability = sidecarState.orientation.decode_stability;
+        overlayInputs.divergence = sidecarState.divergence.scalar_divergence;
+    }
+    if (!BuildRuntimeWalkGradientOverlay(
+            session.asset,
+            playback,
+            overlayConfig,
+            overlayInputs,
+            &outGradientOverlay,
+            &runtimeWalkError)) {
+        findingStatus = "Runtime walk overlay failed: " + runtimeWalkError;
+        outGradientOverlay = {};
+    }
+    return true;
+}
+
+static void RunViewerFrame(
+    HWND hwnd,
+    const ImGuiIO& io,
+    const ViewerCliArgs& cli,
+    const std::string& exeDir,
+    const UISchema& uiSchema,
+    const std::string& schemaWarning,
+    const std::string& schemaPath,
+    EngineFunctionCatalog& engineCatalog,
+    BindingContext& bind,
+    CudaSidecarMeasurementHost& sidecarMeasurementHost,
+    ViewState& view,
+    KernelParams& params,
+    RenderSettings& render,
+    LensSettings& lens,
+    RenderStats& stats,
+    RenderedFrameState& renderedFrame,
+    ViewerRenderPacingState& renderPacingState,
+    SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
+    SidecarAutoDemoLoopState& sidecarAutoDemoLoopState,
+    ExplainoSidecarWindowState& sidecarState,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid,
+    SidecarOrientationVector& loadedOrientationBaseline,
+    bool& loadedOrientationBaselineValid,
+    SidecarAutoDemoMutationHistory& sidecarMutationHistory,
+    bool& sidecarMutationHistoryValid,
+    std::vector<uint32_t>& rgba,
+    std::vector<uint8_t>& maskBuffer,
+    std::vector<uint32_t>& lensSdfRgba,
+    PolyKind& lastPolyKind,
+    FractalType& lastFractalType,
+    std::string& findingStatus,
+    std::string& lastFindingPath,
+    SweepPlayerState& sweepState,
+    bool& sweepPaused,
+    bool& sweepSingleStep,
+    float& seedScrubAccel,
+    RuntimeWalkViewerSession& runtimeWalkViewerSession,
+    RuntimeWalkViewerPlaybackState& runtimeWalkPlayback,
+    RuntimeWalkOverlayProviderConfig& runtimeWalkOverlayConfig,
+    RuntimeWalkOverlayPath& runtimeWalkOverlayPath,
+    RuntimeWalkGradientOverlay& runtimeWalkGradientOverlay,
+    bool& dirty) {
+    if (!runtimeWalkViewerSession.loaded) {
+        ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
+    }
+
+    UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
+        view, params, render, lens, stats, renderedFrame,
+        findingStatus, lastFindingPath,
+        cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
+        lastFractalType, lastPolyKind, dirty);
+
+    DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
+        actions.nextSeed, actions.prevSeed, view, params, render, lens,
+        sidecarControllerPolicy,
+        sidecarMutationHistory, sidecarMutationHistoryValid,
+        dirty, actions.interactionChanged,
+        sidecarState, sidecarStateValid,
+        sidecarBudgetState, sidecarBudgetStateValid,
+        loadedOrientationBaseline, loadedOrientationBaselineValid,
+        lastPolyKind, lastFractalType,
+        findingStatus, lastFindingPath);
+
+    if (runtimeWalkViewerSession.loaded) {
+        if (!ProcessRuntimeWalkViewerPerFrame(
+                hwnd,
+                io,
+                runtimeWalkViewerSession,
+                runtimeWalkPlayback,
+                runtimeWalkOverlayConfig,
+                sidecarState,
+                sidecarStateValid,
+                view,
+                params,
+                render,
+                renderPacingState,
+                runtimeWalkOverlayPath,
+                runtimeWalkGradientOverlay,
+                dirty,
+                actions.interactionChanged,
+                findingStatus)) {
+            runtimeWalkOverlayPath = {};
+            runtimeWalkGradientOverlay = {};
+        }
+    } else {
+        ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
+    }
+
+    if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
+        dirty = true;
+    }
+    if (ApplyParamAnimDynamics(io.DeltaTime, view, params)) {
+        dirty = true;
+    }
+
+    if (actions.interactionChanged) {
+        NoteViewerInteraction(&renderPacingState);
+    }
+    const ViewerRenderPacingConfig renderPacingConfig = BuildViewerRenderPacingConfig(render);
+    const ViewerRenderPacingDecision renderPacing = AdvanceViewerRenderPacing(
+        render,
+        stats,
+        (double)io.DeltaTime,
+        renderPacingConfig,
+        &renderPacingState);
+
+    const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
+    RefreshSidecarStateIfNeeded(dirty || !sidecarStateValid, view, params, engineCatalog,
+        bind, sidecarControllerPolicy, sidecarMeasurementHost,
+        loadedOrientationBaseline, loadedOrientationBaselineValid,
+        sidecarState, sidecarStateValid,
+        sidecarBudgetState, sidecarBudgetStateValid);
+    DispatchRenderFrame(view, params, render, lens, renderPacing,
+        forceFullQualityRender, view.auto_refresh, dirty,
+        actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
+        rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
+
+    RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
+        renderedFrame, sidecarState, sidecarStateValid,
+        sidecarControllerPolicy,
+        sidecarMutationHistory, sidecarMutationHistoryValid,
+        findingStatus, lastFindingPath,
+        sidecarStateValid, sidecarBudgetStateValid);
+
+    ProcessSidecarAutoDemoPerFrame(
+        sidecarState,
+        sidecarControllerPolicy,
+        sidecarAutoDemoLoopState,
+        static_cast<double>(io.DeltaTime),
+        bind,
+        sidecarMutationHistory,
+        sidecarMutationHistoryValid,
+        dirty,
+        actions.interactionChanged,
+        renderPacingState,
+        findingStatus);
+
+    if (!runtimeWalkViewerSession.loaded) {
+        runtimeWalkOverlayPath = {};
+        runtimeWalkGradientOverlay = {};
+    }
+
+    RenderFractalViewport(io, render, view, dirty, actions.interactionChanged,
+        runtimeWalkViewerSession.loaded ? &runtimeWalkPlayback : nullptr,
+        runtimeWalkViewerSession.loaded ? &runtimeWalkOverlayPath : nullptr,
+        runtimeWalkViewerSession.loaded ? &runtimeWalkGradientOverlay : nullptr);
+
+    if (lens.enabled) {
+        RenderAuxImageWindow("Mask", g_maskSRV, renderedFrame);
+        RenderAuxImageWindow("Lens SDF", g_lensSdfSRV, renderedFrame);
+    }
+
+    ApplyAutoDivePerFrame(view, &dirty);
+    PresentFrame();
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<std::string> args = GetCommandLineArgsUtf8();
     ViewerCliArgs cli{};
@@ -1553,11 +1882,32 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sweepPaused = false;
     bool sweepSingleStep = false;
     float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
+    RuntimeWalkViewerSession runtimeWalkViewerSession{};
+    RuntimeWalkViewerPlaybackState runtimeWalkPlayback{};
+    RuntimeWalkOverlayProviderConfig runtimeWalkOverlayConfig{};
+    RuntimeWalkOverlayPath runtimeWalkOverlayPath{};
+    RuntimeWalkGradientOverlay runtimeWalkGradientOverlay{};
     if (!InitializeSweepIfEnabled(cli.sweep_config, sweepState, view, params, dirty)) {
         CleanupDeviceD3D();
         DestroyWindow(hwnd);
         UnregisterClass(wc.lpszClassName, wc.hInstance);
         return 1;
+    }
+    {
+        std::string runtimeWalkError;
+        if (!InitializeRuntimeWalkViewerIfRequested(
+                cli,
+                &runtimeWalkViewerSession,
+                &runtimeWalkPlayback,
+                &render,
+                &dirty,
+                &runtimeWalkError)) {
+            std::fprintf(stderr, "%s\n", runtimeWalkError.c_str());
+            CleanupDeviceD3D();
+            DestroyWindow(hwnd);
+            UnregisterClass(wc.lpszClassName, wc.hInstance);
+            return 1;
+        }
     }
 
     MSG msg;
@@ -1580,89 +1930,51 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-
-        ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
-
-        UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
-            view, params, render, lens, stats, renderedFrame,
-            findingStatus, lastFindingPath,
-            cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
-            lastFractalType, lastPolyKind, dirty);
-
-        DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
-            actions.nextSeed, actions.prevSeed, view, params, render, lens,
-            sidecarControllerPolicy,
-            sidecarMutationHistory, sidecarMutationHistoryValid,
-            dirty, actions.interactionChanged,
-            sidecarState, sidecarStateValid,
-            sidecarBudgetState, sidecarBudgetStateValid,
-            loadedOrientationBaseline, loadedOrientationBaselineValid,
-            lastPolyKind, lastFractalType,
-            findingStatus, lastFindingPath);
-
-        ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
-
-        if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
-            dirty = true;
-        }
-        if (ApplyParamAnimDynamics(io.DeltaTime, view, params)) {
-            dirty = true;
-        }
-
-        if (actions.interactionChanged) {
-            NoteViewerInteraction(&renderPacingState);
-        }
-        const ViewerRenderPacingConfig renderPacingConfig = BuildViewerRenderPacingConfig(render);
-        const ViewerRenderPacingDecision renderPacing = AdvanceViewerRenderPacing(
+        RunViewerFrame(
+            hwnd,
+            io,
+            cli,
+            exeDir,
+            uiSchema,
+            schemaWarning,
+            schemaPath,
+            engineCatalog,
+            bind,
+            sidecarMeasurementHost,
+            view,
+            params,
             render,
+            lens,
             stats,
-            (double)io.DeltaTime,
-            renderPacingConfig,
-            &renderPacingState);
-
-        const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
-        RefreshSidecarStateIfNeeded(dirty || !sidecarStateValid, view, params, engineCatalog,
-            bind, sidecarControllerPolicy, sidecarMeasurementHost,
-            loadedOrientationBaseline, loadedOrientationBaselineValid,
-            sidecarState, sidecarStateValid,
-            sidecarBudgetState, sidecarBudgetStateValid);
-        DispatchRenderFrame(view, params, render, lens, renderPacing,
-            forceFullQualityRender, view.auto_refresh, dirty,
-            actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
-            rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
-
-        RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
-            renderedFrame, sidecarState, sidecarStateValid,
-            sidecarControllerPolicy,
-            sidecarMutationHistory, sidecarMutationHistoryValid,
-            findingStatus, lastFindingPath,
-            sidecarStateValid, sidecarBudgetStateValid);
-
-        ProcessSidecarAutoDemoPerFrame(
-            sidecarState,
+            renderedFrame,
+            renderPacingState,
             sidecarControllerPolicy,
             sidecarAutoDemoLoopState,
-            static_cast<double>(io.DeltaTime),
-            bind,
+            sidecarState,
+            sidecarStateValid,
+            sidecarBudgetState,
+            sidecarBudgetStateValid,
+            loadedOrientationBaseline,
+            loadedOrientationBaselineValid,
             sidecarMutationHistory,
             sidecarMutationHistoryValid,
-            dirty,
-            actions.interactionChanged,
-            renderPacingState,
-            findingStatus);
-
-        RenderFractalViewport(io, render, view, dirty, actions.interactionChanged);
-
-        if (lens.enabled) {
-            RenderAuxImageWindow("Mask", g_maskSRV, renderedFrame);
-            RenderAuxImageWindow("Lens SDF", g_lensSdfSRV, renderedFrame);
-        }
-
-        // Camera behavior loop (per-frame deltas scaled only by dive_speed; no dt semantics).
-        // This runs after UI, so changing behavior updates immediately.
-        ApplyAutoDivePerFrame(view, &dirty);
-
-        PresentFrame();
+            rgba,
+            maskBuffer,
+            lensSdfRgba,
+            lastPolyKind,
+            lastFractalType,
+            findingStatus,
+            lastFindingPath,
+            sweepState,
+            sweepPaused,
+            sweepSingleStep,
+            seedScrubAccel,
+            runtimeWalkViewerSession,
+            runtimeWalkPlayback,
+            runtimeWalkOverlayConfig,
+            runtimeWalkOverlayPath,
+            runtimeWalkGradientOverlay,
+            dirty);
     }
 
     ShutdownViewer(hwnd, wc);

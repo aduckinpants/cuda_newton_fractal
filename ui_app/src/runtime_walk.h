@@ -67,6 +67,8 @@ struct RuntimeWalkRequest {
     std::string output_dir;
     std::vector<double> t_values;
     std::string comparison_fits_path;
+    std::string rtk_manifest_json_path;
+    std::string rtk_harvest_summary_json_path;
 };
 
 bool ParseRuntimeWalkBundleJson(const std::string& jsonText,

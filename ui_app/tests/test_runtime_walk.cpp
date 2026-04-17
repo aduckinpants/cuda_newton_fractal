@@ -162,11 +162,35 @@ static void TestApplyRuntimeWalkSnapshotWritesExplainoState() {
         "TestApplyRuntimeWalkSnapshotWritesExplainoState_Warp");
 }
 
+static void TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts() {
+    const char* requestJson = R"JSON({
+      "version": 1,
+      "base_state_json": "state.json",
+      "bundle_json": "bundle.json",
+      "out_dir": "out",
+      "comparison_fits": "comparison.fits",
+      "rtk_manifest_json": "rtk_manifest.json",
+      "rtk_harvest_summary_json": "rtk_harvest.json",
+      "ticks": 5
+    })JSON";
+    RuntimeWalkRequest request;
+    std::string error;
+    Check(ParseRuntimeWalkRequestJson(requestJson, &request, &error),
+        "TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts_Parse");
+    Check(request.comparison_fits_path == "comparison.fits",
+        "TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts_Fits");
+    Check(request.rtk_manifest_json_path == "rtk_manifest.json",
+        "TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts_RtkManifest");
+    Check(request.rtk_harvest_summary_json_path == "rtk_harvest.json",
+        "TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts_RtkHarvest");
+}
+
 int main() {
     TestParseRuntimeWalkBundleJson();
     TestParseRuntimeWalkBundleRejectsMalformedChannelCount();
     TestEvaluateRuntimeWalkSnapshotInterpolatesAndAnnotates();
     TestApplyRuntimeWalkSnapshotWritesExplainoState();
+    TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts();
 
     std::printf("test_runtime_walk: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

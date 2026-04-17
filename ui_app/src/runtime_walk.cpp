@@ -347,6 +347,22 @@ bool ParseRuntimeWalkRequestJson(const std::string& jsonText,
         }
         request.comparison_fits_path = comparisonFitsValue->as_string();
     }
+    const json_min::Value* rtkManifestValue = parsed.value.get("rtk_manifest_json");
+    if (rtkManifestValue) {
+        if (!rtkManifestValue->is_string()) {
+            if (outError) *outError = "rtk_manifest_json must be a string";
+            return false;
+        }
+        request.rtk_manifest_json_path = rtkManifestValue->as_string();
+    }
+    const json_min::Value* rtkHarvestValue = parsed.value.get("rtk_harvest_summary_json");
+    if (rtkHarvestValue) {
+        if (!rtkHarvestValue->is_string()) {
+            if (outError) *outError = "rtk_harvest_summary_json must be a string";
+            return false;
+        }
+        request.rtk_harvest_summary_json_path = rtkHarvestValue->as_string();
+    }
     if (!BuildTickSchedule(parsed.value, &request.t_values, outError)) return false;
 
     if (outRequest) *outRequest = request;

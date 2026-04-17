@@ -1,0 +1,182 @@
+#include "runtime_walk_viewer_imgui.h"
+
+#include "imgui.h"
+
+#include <algorithm>
+
+namespace {
+
+ImVec2 ToScreenPoint(Double2 point, const ImVec2& rectMin, const ImVec2& rectMax) {
+    const float width = rectMax.x - rectMin.x;
+    const float height = rectMax.y - rectMin.y;
+    return ImVec2(
+        rectMin.x + static_cast<float>(point.x) * width,
+        rectMin.y + static_cast<float>(point.y) * height);
+}
+
+void DrawPolyline(const std::vector<Double2>& points,
+    ImU32 color,
+    float thickness,
+    const ImVec2& rectMin,
+    const ImVec2& rectMax,
+    ImDrawList* drawList) {
+    if (!drawList || points.size() < 2u) return;
+    for (std::size_t index = 1; index < points.size(); ++index) {
+        drawList->AddLine(
+            ToScreenPoint(points[index - 1], rectMin, rectMax),
+            ToScreenPoint(points[index], rectMin, rectMax),
+            color,
+            thickness);
+    }
+}
+
+} // namespace
+
+bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
+    RuntimeWalkViewerPlaybackState* ioPlayback,
+    RuntimeWalkOverlayProviderConfig* ioOverlayConfig,
+    RuntimeWalkViewerUiActions* outActions) {
+    if (!ioPlayback || !ioOverlayConfig || !outActions) return false;
+    *outActions = {};
+
+    bool interactionChanged = false;
+    ImGui::Begin("Runtime Walk Playback");
+    if (!session.loaded) {
+        ImGui::TextUnformatted("No runtime-walk request loaded.");
+        if (ImGui::Button("Open Request...")) {
+            outActions->open_request_dialog = true;
+            interactionChanged = true;
+        }
+        ImGui::End();
+        return interactionChanged;
+    }
+
+    RuntimeWalkSnapshot currentSnapshot;
+    std::string snapshotError;
+    const bool haveSnapshot = EvaluateRuntimeWalkViewerCurrentSnapshot(session.asset, *ioPlayback, &currentSnapshot, &snapshotError);
+    const float minT = static_cast<float>(session.asset.tick_snapshots.front().t);
+    const float maxT = static_cast<float>(session.asset.tick_snapshots.back().t);
+    float currentT = static_cast<float>(ioPlayback->current_t);
+    float speed = static_cast<float>(ioPlayback->speed);
+
+    if (ImGui::Button("Open Request...")) {
+        outActions->open_request_dialog = true;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reload")) {
+        outActions->reload_current_request = true;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ioPlayback->playing ? "Pause" : "Play")) {
+        ioPlayback->playing = !ioPlayback->playing;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Prev")) {
+        bool changed = false;
+        StepRuntimeWalkViewerPlayback(session.asset, -1, ioPlayback, &changed);
+        interactionChanged = interactionChanged || changed;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Next")) {
+        bool changed = false;
+        StepRuntimeWalkViewerPlayback(session.asset, 1, ioPlayback, &changed);
+        interactionChanged = interactionChanged || changed;
+    }
+
+    if (ImGui::SliderFloat("t", &currentT, minT, maxT, "%.3f")) {
+        bool changed = false;
+        SeekRuntimeWalkViewerPlayback(session.asset, static_cast<double>(currentT), ioPlayback, &changed);
+        interactionChanged = interactionChanged || changed;
+    }
+    if (ImGui::SliderFloat("Speed", &speed, 0.01f, 1.25f, "%.2f")) {
+        ioPlayback->speed = static_cast<double>(speed);
+        interactionChanged = true;
+    }
+    interactionChanged = ImGui::Checkbox("Loop", &ioPlayback->loop) || interactionChanged;
+
+    ImGui::Separator();
+    ImGui::Text("Tick %d / %d", static_cast<int>(ioPlayback->nearest_tick_index + 1u), static_cast<int>(session.asset.tick_snapshots.size()));
+    if (haveSnapshot) {
+        ImGui::Text("Branch: %s%s",
+            currentSnapshot.branch.nearest_marker_label.empty() ? "(none)" : currentSnapshot.branch.nearest_marker_label.c_str(),
+            currentSnapshot.branch.sticky ? " [sticky]" : "");
+        ImGui::Text("Current t: %.3f", currentSnapshot.t);
+    } else {
+        ImGui::TextWrapped("Snapshot unavailable: %s", snapshotError.c_str());
+    }
+
+    ImGui::Separator();
+    interactionChanged = ImGui::Checkbox("Raw Path", &ioPlayback->show_raw_path) || interactionChanged;
+    interactionChanged = ImGui::Checkbox("Spline Path", &ioPlayback->show_spline_path) || interactionChanged;
+    interactionChanged = ImGui::Checkbox("Closed Loop Fit", &ioPlayback->show_closed_loop) || interactionChanged;
+    interactionChanged = ImGui::Checkbox("Branch Markers", &ioPlayback->show_branch_markers) || interactionChanged;
+    interactionChanged = ImGui::Checkbox("Gradient Flow", &ioPlayback->show_gradient_overlay) || interactionChanged;
+
+    float threshold = static_cast<float>(ioOverlayConfig->threshold);
+    if (ImGui::SliderFloat("Gradient Threshold", &threshold, 0.01f, 1.0f, "%.2f")) {
+        ioOverlayConfig->threshold = static_cast<double>(threshold);
+        interactionChanged = true;
+    }
+
+    ImGui::Separator();
+    ImGui::TextWrapped("Request: %s", session.request_json_path.c_str());
+    ImGui::TextWrapped("State: %s", session.resolved_state_json_path.c_str());
+    ImGui::TextWrapped("Bundle: %s", session.asset.request.bundle_json_path.c_str());
+    if (!session.asset.companion.comparison_fits_path.empty()) {
+        ImGui::TextWrapped("Companion FITS: %s", session.asset.companion.comparison_fits_path.c_str());
+    }
+    if (!session.asset.companion.rtk_manifest_json_path.empty()) {
+        ImGui::TextWrapped("RTK Manifest: %s", session.asset.companion.rtk_manifest_json_path.c_str());
+    }
+    if (!session.asset.companion.rtk_harvest_summary_json_path.empty()) {
+        ImGui::TextWrapped("RTK Harvest: %s", session.asset.companion.rtk_harvest_summary_json_path.c_str());
+    }
+
+    ImGui::End();
+    return interactionChanged;
+}
+
+void DrawRuntimeWalkViewerViewportOverlay(const RuntimeWalkViewerPlaybackState& playback,
+    const RuntimeWalkOverlayPath& path,
+    const RuntimeWalkGradientOverlay& overlay,
+    const ImVec2& rectMin,
+    const ImVec2& rectMax,
+    ImDrawList* drawList) {
+    if (!drawList) return;
+
+    if (playback.show_closed_loop) {
+        DrawPolyline(path.closed_loop_points, IM_COL32(70, 200, 255, 180), 2.0f, rectMin, rectMax, drawList);
+    }
+    if (playback.show_spline_path) {
+        DrawPolyline(path.spline_points, IM_COL32(255, 210, 80, 180), 2.0f, rectMin, rectMax, drawList);
+    }
+    if (playback.show_raw_path) {
+        DrawPolyline(path.raw_points, IM_COL32(255, 255, 255, 120), 1.0f, rectMin, rectMax, drawList);
+    }
+
+    if (playback.show_branch_markers) {
+        for (const Double2& point : path.branch_marker_points) {
+            drawList->AddCircleFilled(ToScreenPoint(point, rectMin, rectMax), 4.0f, IM_COL32(255, 120, 90, 220));
+        }
+    }
+
+    if (playback.show_gradient_overlay) {
+        for (const RuntimeWalkGradientOverlayGuideStroke& stroke : overlay.strokes) {
+            if (stroke.points.size() < 2u) continue;
+            const int alpha = std::clamp(static_cast<int>(70.0 + 160.0 * stroke.strength), 70, 230);
+            for (std::size_t index = 1; index < stroke.points.size(); ++index) {
+                drawList->AddLine(
+                    ToScreenPoint(stroke.points[index - 1].point, rectMin, rectMax),
+                    ToScreenPoint(stroke.points[index].point, rectMin, rectMax),
+                    IM_COL32(120, 255, 180, alpha),
+                    2.0f);
+            }
+        }
+    }
+
+    drawList->AddCircleFilled(ToScreenPoint(path.current_point, rectMin, rectMax), 6.0f, IM_COL32(255, 70, 70, 255));
+    drawList->AddCircle(ToScreenPoint(path.current_point, rectMin, rectMax), 10.0f, IM_COL32(255, 255, 255, 220), 0, 2.0f);
+}
