@@ -17,6 +17,10 @@ Completed - zero-blocker FITS open now synthesizes the full runtime-walk session
   - the previous FITS synthesis slice fixed base-state authority, but not the full operator path
   - `Load FITS...` can still fail after the first step with "could not discover a compatible runtime-walk request or bundle"
   - that is a direct Pit-of-Success violation because the default path still expects authored transport artifacts
+- Correct operator contract:
+  - FITS is the only user-facing required input for the normal path
+  - generated base-state/request/bundle/session artifacts are internal implementation detail
+  - asking the operator for `state.json`, `finding.json`, request JSON, or bundle JSON in the default path is a bug
 - Locked implementation stance for this slice:
   - FITS-only import must auto-generate the full session when no authored request/bundle exists
   - the generated session must include synthesized base-state JSON, orientation-input JSON, synthesized bundle JSON, synthesized request JSON, and import receipt/manifest

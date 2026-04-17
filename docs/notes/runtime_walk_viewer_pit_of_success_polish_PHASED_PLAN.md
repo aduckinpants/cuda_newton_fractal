@@ -17,11 +17,14 @@ Complete - runtime-walk viewer Pit-of-Success polish v2 is landed, hostile-audit
   - runtime-walk playback is live and usable once a request JSON already exists
   - the operator still has no practical in-viewer path for starting from a loaded capture state plus a companion FITS
   - the current surface violates Pit of Success because `Open Request...` is still the only practical entrypoint
+- Operator-contract rule:
+  - `Load FITS...` exists so operators coming from other programs do not need repo-native JSON inputs
+  - request/bundle/base-state artifacts may exist internally, but the default path must never ask the operator to supply them
 - Locked stance for this slice:
   - replay authority remains `state.json` plus the runtime-walk / Mr Zipper bundle
   - FITS remains companion evidence only
   - `Load FITS...` must sit beside the existing capture-state flow and open a dedicated import panel
-  - if bundle/request discovery fails, the panel must ask for one instead of guessing
+  - this historical slice stopped at import-panel/session plumbing; later slices supersede the old "ask for bundle/request" fallback with full default-path synthesis
   - recent/latest convenience is runtime-local only
 - Intended recovery surface:
   - persist the current resolved base-state path after capture-state load, startup load, and runtime-walk viewer request load

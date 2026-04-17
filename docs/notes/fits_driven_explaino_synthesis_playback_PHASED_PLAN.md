@@ -18,6 +18,10 @@ Completed - FITS-driven Explaino synthesis/import/bootstrap v1 is landed and val
   - flashlight already proves this repo can bootstrap a deterministic Explaino runtime from external structured input without a pre-existing `state.json`
   - runtime-walk/FITS import still treats `state.json` as mandatory authority, which is the wrong product boundary for the Explaino FITS workflow
   - the user clarified that "data-driven" here means schema/decorator/JSON-driven mappings from FITS-derived orientation signals onto runtime parameters, not just replaying saved snapshots
+- Default operator contract for this thread:
+  - the FITS comes from another program
+  - the viewer must accept that FITS directly
+  - any repo-native `state.json`, request JSON, or bundle JSON needed for playback must be synthesized internally
 - Locked implementation stance for this slice:
   - keep runtime-walk transport itself intact; the change is at the import/bootstrap/session-generation layer
   - add a checked-in JSON mapping-profile contract that is broad-model for the full fractal catalog but ships Explaino-first plus `all` aggregate mappings in v1

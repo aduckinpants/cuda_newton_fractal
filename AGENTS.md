@@ -93,6 +93,17 @@ The VS Code task surface is the canonical profile surface under `verify: profile
 - Use `ui_app/build_tests_vsdevcmd.cmd` and `ui_app/build_vsdevcmd.cmd` instead of hand-assembled compiler commands.
 - Prefer task or tool surfaces when they exist for bootstrap, phased-plan sync, and validation profiles.
 
+## FITS Import Contract
+
+- Treat `Load FITS...` as a foreign-import operator path.
+- Default operator contract:
+  - required user-facing input: FITS only
+  - forbidden normal-path prompts: `state.json`, `finding.json`, request JSON, bundle JSON
+  - allowed internal detail: synthesize any repo-native request/session/state artifacts automatically
+- If the default FITS-open path asks the operator for repo-native JSON from this repo, that is a bug and a Pit-of-Success violation.
+- Review and test FITS import work against the real operator invariant:
+  - given only a FITS path, the viewer reaches playback without requesting repo-native JSON inputs.
+
 ## Cross-Repo Rule
 
 - `salticid-cuda` is the mainline reference repo from this workspace.

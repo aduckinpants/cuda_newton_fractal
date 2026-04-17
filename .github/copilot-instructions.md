@@ -55,6 +55,13 @@
 - No implicit fallback: unknown bindings, enum ids, resources, or invalid params must fail fast or be made unselectable.
 - Prefer headless, testable modules for input math, colormaps, model state, and bindings.
 
+## FITS Import Default
+- Treat runtime-walk FITS open as a foreign-import workflow.
+- Default operator expectation: choose FITS, open FITS, viewer plays.
+- Do not treat repo-native `state.json`, `finding.json`, request JSON, or bundle JSON as required user inputs for that path.
+- If implementation needs those artifacts, generate them internally and keep them off the default operator path.
+- When closing FITS import work, require a proof that the published viewer reaches playback from only a FITS path without prompting for repo-native JSON.
+
 ## Build And Test
 - Use the checked-in build and doctor scripts instead of hand-assembling compiler commands when possible.
 - For UI or rendering changes, favor small headless tests around extracted modules before relying on manual GUI validation.

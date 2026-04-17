@@ -15,10 +15,16 @@ Completed - runtime-walk playback visibly animates again, FITS import status is 
 
 - Named blocker for this slice:
   - runtime-walk playback can be technically loaded but visually static, so the FITS import path reads as a no-op to the operator
+- Operator contract correction locked after follow-up review:
+  - `Load FITS...` is a foreign-import path
+  - FITS is the only normal operator input
+  - `state.json`, `finding.json`, request JSON, and bundle JSON are internal synthesized artifacts only
+  - any default-path prompt for those repo-native files is a Pit-of-Success violation
 - Locked product stance:
   - usability first, then transport/flow quality in the same bounded thread
   - generated FITS transport defaults to `closed_loop_default`
   - FITS-open must work without authored request/bundle/state
+  - the basic operator path is `pick FITS -> open FITS -> playback`
   - helper-only green is insufficient; the published runtime must visibly animate
 - Implementation focus:
   - reset newly loaded runtime-walk sessions to strong playback defaults instead of inheriting stale/weak state

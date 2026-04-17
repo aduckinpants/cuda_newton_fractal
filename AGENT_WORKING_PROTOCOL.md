@@ -60,6 +60,12 @@ Concretely:
 - Prefer headless testable modules over GUI-only verification
 - Prefer deterministic scripts over ad hoc runtime speculation
 
+Operator-path corollary:
+- For runtime-walk FITS import, the default user-facing input is the FITS file itself.
+- `state.json`, `finding.json`, request JSON, and bundle JSON are repo-native plumbing, not normal operator inputs.
+- The normal `Load FITS...` path must synthesize any needed repo-native artifacts automatically.
+- Any default-path UI that asks the operator for those JSON files is a product bug, not an acceptable intermediate state.
+
 ### 2.1 Mandatory Distrust-First Audit
 
 Every meaningful slice must go through a hostile audit before it is considered complete.
