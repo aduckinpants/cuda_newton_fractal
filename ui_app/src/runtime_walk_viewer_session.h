@@ -8,6 +8,7 @@ struct RuntimeWalkViewerSession {
     bool loaded = false;
     std::string request_json_path;
     std::string resolved_state_json_path;
+    RuntimeWalkAuthorityMode authority_mode = RuntimeWalkAuthorityMode::loaded_base_state;
     RuntimeWalkViewerAsset asset{};
 };
 

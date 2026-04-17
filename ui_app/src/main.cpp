@@ -1549,10 +1549,14 @@ static BindingContext BuildViewerBindingContext(
     return bind;
 }
 
-static std::string BuildRuntimeWalkImportBlockedReason(const std::string& currentLoadedStatePath,
+static std::string BuildRuntimeWalkImportBlockedReason(RuntimeWalkAuthorityMode authorityMode,
+    const std::string& currentLoadedStatePath,
     FractalType currentLoadedStateFractalType) {
     std::string error;
-    if (ValidateRuntimeWalkViewerImportBaseState(currentLoadedStatePath, currentLoadedStateFractalType, &error)) {
+    if (ValidateRuntimeWalkViewerImportBaseState(authorityMode, currentLoadedStatePath, currentLoadedStateFractalType, &error)) {
+        return {};
+    }
+    if (authorityMode == RuntimeWalkAuthorityMode::synthesized_fits_base) {
         return {};
     }
     if (currentLoadedStatePath.empty()) {
@@ -1581,7 +1585,11 @@ static void SeedRuntimeWalkViewerImportPanel(const std::string& exeDir,
     if (!ioPanel) return;
     ioPanel->open = true;
     ioPanel->base_state_json_path = currentLoadedStatePath;
+    if (currentLoadedStatePath.empty()) {
+        ioPanel->authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    }
     if (session.loaded) {
+        ioPanel->authority_mode = session.authority_mode;
         if (ioPanel->comparison_fits_path.empty()) {
             ioPanel->comparison_fits_path = session.asset.companion.comparison_fits_path;
         }
@@ -1590,6 +1598,12 @@ static void SeedRuntimeWalkViewerImportPanel(const std::string& exeDir,
         }
         if (ioPanel->bundle_json_path.empty()) {
             ioPanel->bundle_json_path = session.asset.request.bundle_json_path;
+        }
+        if (ioPanel->mapping_profile_json_path.empty()) {
+            ioPanel->mapping_profile_json_path = session.asset.authority.mapping_profile_json_path;
+        }
+        if (ioPanel->mapping_profile_id.empty()) {
+            ioPanel->mapping_profile_id = session.asset.authority.mapping_profile_id;
         }
     }
     RefreshRuntimeWalkViewerImportRecent(exeDir, ioPanel, &ioPanel->status_text);
@@ -1679,7 +1693,7 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
     bool& dirty,
     bool& interactionChanged,
     std::string& findingStatus) {
-    const std::string blockedReason = BuildRuntimeWalkImportBlockedReason(currentLoadedStatePath, currentLoadedStateFractalType);
+    const std::string blockedReason = BuildRuntimeWalkImportBlockedReason(panel.authority_mode, currentLoadedStatePath, currentLoadedStateFractalType);
     const bool importAllowed = blockedReason.empty();
     panel.base_state_json_path = currentLoadedStatePath;
 
@@ -1689,6 +1703,12 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
     }
 
     interactionChanged = true;
+    if (actions.toggle_authority_mode) {
+        panel.authority_mode = (panel.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base)
+            ? RuntimeWalkAuthorityMode::loaded_base_state
+            : RuntimeWalkAuthorityMode::synthesized_fits_base;
+        panel.status_text.clear();
+    }
     if (actions.open_fits_dialog) {
         std::string selectedPath;
         if (PromptOpenFitsPath(hwnd, &selectedPath)) {
@@ -1729,9 +1749,12 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
         importRequest.exe_dir = exeDir;
         importRequest.base_state_json_path = currentLoadedStatePath;
         importRequest.base_fractal_type = currentLoadedStateFractalType;
+        importRequest.authority_mode = panel.authority_mode;
         importRequest.comparison_fits_path = panel.comparison_fits_path;
         importRequest.request_json_path = panel.request_json_path;
         importRequest.bundle_json_path = panel.bundle_json_path;
+        importRequest.mapping_profile_json_path = panel.mapping_profile_json_path;
+        importRequest.mapping_profile_id = panel.mapping_profile_id;
         RuntimeWalkViewerImportSessionRecord record;
         std::string importError;
         if (!BuildRuntimeWalkViewerImportSession(importRequest, &record, &importError)) {
@@ -1930,11 +1953,11 @@ static void RunViewerFrame(
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
     }
 
-    const std::string loadFitsHint = BuildRuntimeWalkImportBlockedReason(currentLoadedStatePath, currentLoadedStateFractalType);
+    const std::string loadFitsHint;
     UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
         view, params, render, lens, stats, renderedFrame,
         findingStatus, lastFindingPath,
-        loadFitsHint.empty(), loadFitsHint,
+        true, loadFitsHint,
         cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
         lastFractalType, lastPolyKind, dirty);
 

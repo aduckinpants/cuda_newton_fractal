@@ -3,6 +3,7 @@
 #include "fractal_family_rules.h"
 #include "json_min.h"
 #include "runtime_walk.h"
+#include "runtime_walk_bootstrap.h"
 
 #include <algorithm>
 #include <array>
@@ -141,10 +142,14 @@ std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
     constexpr std::uint64_t kOffset = 1469598103934665603ull;
     constexpr std::uint64_t kPrime = 1099511628211ull;
     std::uint64_t hash = kOffset;
-    const std::array<std::string, 5> fields = {
+    const std::array<std::string, 9> fields = {
+        RuntimeWalkAuthorityModeId(request.authority_mode),
         NormalizePathString(ResolveAbsolutePath(request.base_state_json_path)),
         NormalizePathString(ResolveAbsolutePath(resolvedBundlePath)),
         NormalizePathString(ResolveAbsolutePath(resolvedFitsPath)),
+        NormalizePathString(ResolveAbsolutePath(request.mapping_profile_json_path)),
+        request.mapping_profile_id,
+        NormalizePathString(ResolveAbsolutePath(request.orientation_inputs_json_path)),
         NormalizePathString(ResolveAbsolutePath(request.rtk_manifest_json_path)),
         NormalizePathString(ResolveAbsolutePath(request.rtk_harvest_summary_json_path)),
     };
@@ -191,11 +196,22 @@ bool ParseRecentIndexJson(const std::string& jsonText,
         if (!GetRequiredString(entry, "session_dir", &sessionDir, outError)) return false;
         std::string requestPath;
         if (!GetRequiredString(entry, "request_json", &requestPath, outError)) return false;
+        std::string authorityModeText;
+        if (GetOptionalString(entry, "authority_mode", &authorityModeText)) {
+            if (!TryParseRuntimeWalkAuthorityModeId(authorityModeText, &record.authority_mode)) {
+                if (outError) *outError = "Unknown runtime-walk import recent-session authority_mode: " + authorityModeText;
+                return false;
+            }
+        }
         GetOptionalString(entry, "base_state_json", &record.base_state_json_path);
+        GetOptionalString(entry, "synthesized_base_state_json", &record.synthesized_base_state_json_path);
         GetOptionalString(entry, "comparison_fits", &record.comparison_fits_path);
         GetOptionalString(entry, "bundle_json", &record.bundle_json_path);
         GetOptionalString(entry, "rtk_manifest_json", &record.rtk_manifest_json_path);
         GetOptionalString(entry, "rtk_harvest_summary_json", &record.rtk_harvest_summary_json_path);
+        GetOptionalString(entry, "mapping_profile_json", &record.mapping_profile_json_path);
+        GetOptionalString(entry, "mapping_profile_id", &record.mapping_profile_id);
+        GetOptionalString(entry, "orientation_inputs_json", &record.orientation_inputs_json_path);
         GetOptionalString(entry, "source_request_json", &record.source_request_json_path);
         GetOptionalString(entry, "source_bundle_json", &record.source_bundle_json_path);
         GetOptionalString(entry, "discovery_source", &record.discovery_source);
@@ -231,11 +247,16 @@ std::string SerializeRecentIndex(const ImportRecords& records) {
         out << "      \"session_id\": \"" << JsonEscape(record.session_id) << "\",\n";
         out << "      \"session_dir\": \"" << JsonEscape(record.session_dir) << "\",\n";
         out << "      \"request_json\": \"" << JsonEscape(record.request_json_path) << "\",\n";
+        out << "      \"authority_mode\": \"" << JsonEscape(RuntimeWalkAuthorityModeId(record.authority_mode)) << "\",\n";
         out << "      \"base_state_json\": \"" << JsonEscape(record.base_state_json_path) << "\",\n";
+        out << "      \"synthesized_base_state_json\": \"" << JsonEscape(record.synthesized_base_state_json_path) << "\",\n";
         out << "      \"comparison_fits\": \"" << JsonEscape(record.comparison_fits_path) << "\",\n";
         out << "      \"bundle_json\": \"" << JsonEscape(record.bundle_json_path) << "\",\n";
         out << "      \"rtk_manifest_json\": \"" << JsonEscape(record.rtk_manifest_json_path) << "\",\n";
         out << "      \"rtk_harvest_summary_json\": \"" << JsonEscape(record.rtk_harvest_summary_json_path) << "\",\n";
+        out << "      \"mapping_profile_json\": \"" << JsonEscape(record.mapping_profile_json_path) << "\",\n";
+        out << "      \"mapping_profile_id\": \"" << JsonEscape(record.mapping_profile_id) << "\",\n";
+        out << "      \"orientation_inputs_json\": \"" << JsonEscape(record.orientation_inputs_json_path) << "\",\n";
         out << "      \"source_request_json\": \"" << JsonEscape(record.source_request_json_path) << "\",\n";
         out << "      \"source_bundle_json\": \"" << JsonEscape(record.source_bundle_json_path) << "\",\n";
         out << "      \"discovery_source\": \"" << JsonEscape(record.discovery_source) << "\"\n";
@@ -289,6 +310,7 @@ std::string SerializeRuntimeWalkRequestJson(const RuntimeWalkRequest& request) {
     std::ostringstream out;
     out << "{\n";
     out << "  \"version\": 1,\n";
+    out << "  \"authority_mode\": \"" << JsonEscape(RuntimeWalkAuthorityModeId(request.authority_mode)) << "\",\n";
     out << "  \"base_state_json\": \"" << JsonEscape(request.base_state_json_path) << "\",\n";
     out << "  \"bundle_json\": \"" << JsonEscape(request.bundle_json_path) << "\",\n";
     out << "  \"out_dir\": \"" << JsonEscape(request.output_dir) << "\",\n";
@@ -302,6 +324,15 @@ std::string SerializeRuntimeWalkRequestJson(const RuntimeWalkRequest& request) {
     if (!request.rtk_harvest_summary_json_path.empty()) {
         out << ",\n  \"rtk_harvest_summary_json\": \"" << JsonEscape(request.rtk_harvest_summary_json_path) << "\"";
     }
+    if (!request.mapping_profile_json_path.empty()) {
+        out << ",\n  \"mapping_profile_json\": \"" << JsonEscape(request.mapping_profile_json_path) << "\"";
+    }
+    if (!request.mapping_profile_id.empty()) {
+        out << ",\n  \"mapping_profile_id\": \"" << JsonEscape(request.mapping_profile_id) << "\"";
+    }
+    if (!request.orientation_inputs_json_path.empty()) {
+        out << ",\n  \"orientation_inputs_json\": \"" << JsonEscape(request.orientation_inputs_json_path) << "\"";
+    }
     out << "\n}\n";
     return out.str();
 }
@@ -312,13 +343,18 @@ std::string SerializeImportSelectionManifest(const RuntimeWalkViewerImportSessio
     out << "{\n";
     out << "  \"version\": 1,\n";
     out << "  \"session_id\": \"" << JsonEscape(record.session_id) << "\",\n";
+    out << "  \"authority_mode\": \"" << JsonEscape(RuntimeWalkAuthorityModeId(record.authority_mode)) << "\",\n";
     out << "  \"discovery_source\": \"" << JsonEscape(record.discovery_source) << "\",\n";
     out << "  \"base_state_json\": \"" << JsonEscape(request.base_state_json_path) << "\",\n";
+    out << "  \"synthesized_base_state_json\": \"" << JsonEscape(record.synthesized_base_state_json_path) << "\",\n";
     out << "  \"comparison_fits\": \"" << JsonEscape(record.comparison_fits_path) << "\",\n";
     out << "  \"source_request_json\": \"" << JsonEscape(record.source_request_json_path) << "\",\n";
     out << "  \"source_bundle_json\": \"" << JsonEscape(record.source_bundle_json_path) << "\",\n";
     out << "  \"generated_request_json\": \"" << JsonEscape(record.request_json_path) << "\",\n";
     out << "  \"bundle_json\": \"" << JsonEscape(request.bundle_json_path) << "\",\n";
+    out << "  \"mapping_profile_json\": \"" << JsonEscape(record.mapping_profile_json_path) << "\",\n";
+    out << "  \"mapping_profile_id\": \"" << JsonEscape(record.mapping_profile_id) << "\",\n";
+    out << "  \"orientation_inputs_json\": \"" << JsonEscape(record.orientation_inputs_json_path) << "\",\n";
     out << "  \"rtk_manifest_json\": \"" << JsonEscape(record.rtk_manifest_json_path) << "\",\n";
     out << "  \"rtk_harvest_summary_json\": \"" << JsonEscape(record.rtk_harvest_summary_json_path) << "\"\n";
     out << "}\n";
@@ -332,6 +368,7 @@ std::string SerializeImportReceipt(const RuntimeWalkViewerImportSessionRecord& r
     out << "  \"ok\": true,\n";
     out << "  \"created_utc\": \"" << BuildTimestampUtc() << "\",\n";
     out << "  \"session_id\": \"" << JsonEscape(record.session_id) << "\",\n";
+    out << "  \"authority_mode\": \"" << JsonEscape(RuntimeWalkAuthorityModeId(record.authority_mode)) << "\",\n";
     out << "  \"request_json\": \"" << JsonEscape(record.request_json_path) << "\"\n";
     out << "}\n";
     return out.str();
@@ -348,6 +385,21 @@ struct ResolvedImportSources {
     std::string discovery_source;
     std::vector<double> t_values;
 };
+
+bool ResolveMappingProfilePath(const RuntimeWalkViewerImportRequest& request,
+    std::string* outPath,
+    std::string* outError) {
+    if (!request.mapping_profile_json_path.empty()) {
+        if (outPath) *outPath = NormalizePathString(ResolveAbsolutePath(request.mapping_profile_json_path));
+        return true;
+    }
+    return ResolveDefaultRuntimeWalkFitsMappingProfilePath(request.exe_dir, outPath, outError);
+}
+
+std::string ResolveMappingProfileId(const RuntimeWalkViewerImportRequest& request) {
+    if (!request.mapping_profile_id.empty()) return request.mapping_profile_id;
+    return "explaino_default";
+}
 
 bool TryResolveRecentMatch(const RuntimeWalkViewerImportRequest& request,
     const ImportRecords& records,
@@ -418,7 +470,7 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
     }
     *outResolved = {};
 
-    if (!ValidateRuntimeWalkViewerImportBaseState(request.base_state_json_path, request.base_fractal_type, outError)) {
+    if (!ValidateRuntimeWalkViewerImportBaseState(request.authority_mode, request.base_state_json_path, request.base_fractal_type, outError)) {
         return false;
     }
 
@@ -475,10 +527,14 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
 
 } // namespace
 
-bool ValidateRuntimeWalkViewerImportBaseState(const std::string& baseStateJsonPath,
+bool ValidateRuntimeWalkViewerImportBaseState(RuntimeWalkAuthorityMode authorityMode,
+    const std::string& baseStateJsonPath,
     FractalType baseStateFractalType,
     std::string* outError) {
     if (outError) outError->clear();
+    if (authorityMode == RuntimeWalkAuthorityMode::synthesized_fits_base) {
+        return true;
+    }
     if (baseStateJsonPath.empty()) {
         if (outError) *outError = "Load FITS requires a loaded capture state first";
         return false;
@@ -509,9 +565,11 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     const std::filesystem::path selectionManifestPath = sessionDir / "runtime_walk_import_selection_manifest.json";
     const std::filesystem::path receiptPath = sessionDir / "runtime_walk_import_receipt.json";
     const std::filesystem::path outputDir = sessionDir / "output";
+    const std::filesystem::path orientationInputsPath = sessionDir / "orientation_inputs.json";
+    const std::filesystem::path synthesizedStatePath = sessionDir / "synthesized_base_state.json";
 
     RuntimeWalkRequest generatedRequest{};
-    generatedRequest.base_state_json_path = NormalizePathString(ResolveAbsolutePath(request.base_state_json_path));
+    generatedRequest.authority_mode = request.authority_mode;
     generatedRequest.bundle_json_path = resolved.bundle_json_path;
     generatedRequest.output_dir = NormalizePathString(outputDir);
     generatedRequest.t_values = resolved.t_values;
@@ -522,8 +580,8 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     RuntimeWalkViewerImportSessionRecord record{};
     record.session_id = sessionId;
     record.session_dir = NormalizePathString(sessionDir);
+    record.authority_mode = request.authority_mode;
     record.request_json_path = NormalizePathString(requestPath);
-    record.base_state_json_path = generatedRequest.base_state_json_path;
     record.comparison_fits_path = generatedRequest.comparison_fits_path;
     record.bundle_json_path = generatedRequest.bundle_json_path;
     record.rtk_manifest_json_path = generatedRequest.rtk_manifest_json_path;
@@ -532,6 +590,58 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     record.source_bundle_json_path = resolved.source_bundle_json_path;
     record.discovery_source = resolved.discovery_source;
     record.request_exists = true;
+
+    if (request.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base) {
+        if (generatedRequest.comparison_fits_path.empty()) {
+            if (outError) *outError = "Synthesized FITS runtime-walk import requires a FITS input";
+            return false;
+        }
+        std::string mappingProfilePath;
+        if (!ResolveMappingProfilePath(request, &mappingProfilePath, outError)) return false;
+        const std::string mappingProfileId = ResolveMappingProfileId(request);
+
+        RuntimeWalkFitsMappingCatalog catalog;
+        if (!LoadRuntimeWalkFitsMappingCatalogFile(mappingProfilePath, &catalog, outError)) return false;
+
+        RuntimeWalkFitsOrientationInputs inputs;
+        if (!request.orientation_inputs_json_path.empty()) {
+            if (!LoadRuntimeWalkFitsOrientationInputsFile(request.orientation_inputs_json_path, &inputs, outError)) return false;
+        } else {
+            if (!ExtractRuntimeWalkFitsOrientationInputs(request.exe_dir,
+                    generatedRequest.comparison_fits_path,
+                    orientationInputsPath.string(),
+                    outError)) {
+                return false;
+            }
+            if (!LoadRuntimeWalkFitsOrientationInputsFile(orientationInputsPath.string(), &inputs, outError)) return false;
+        }
+
+        ViewState synthView{};
+        KernelParams synthParams{};
+        RenderSettings synthRender{};
+        if (!SynthesizeRuntimeWalkBaseState(catalog, mappingProfileId, inputs, &synthView, &synthParams, &synthRender, outError)) {
+            return false;
+        }
+        if (!WriteRuntimeWalkSynthesizedStateJson(synthesizedStatePath.string(), synthView, synthParams, synthRender, outError)) {
+            return false;
+        }
+
+        generatedRequest.base_state_json_path = NormalizePathString(synthesizedStatePath);
+        generatedRequest.mapping_profile_json_path = mappingProfilePath;
+        generatedRequest.mapping_profile_id = mappingProfileId;
+        generatedRequest.orientation_inputs_json_path = !request.orientation_inputs_json_path.empty()
+            ? NormalizePathString(ResolveAbsolutePath(request.orientation_inputs_json_path))
+            : NormalizePathString(orientationInputsPath);
+
+        record.base_state_json_path = generatedRequest.base_state_json_path;
+        record.synthesized_base_state_json_path = generatedRequest.base_state_json_path;
+        record.mapping_profile_json_path = generatedRequest.mapping_profile_json_path;
+        record.mapping_profile_id = generatedRequest.mapping_profile_id;
+        record.orientation_inputs_json_path = generatedRequest.orientation_inputs_json_path;
+    } else {
+        generatedRequest.base_state_json_path = NormalizePathString(ResolveAbsolutePath(request.base_state_json_path));
+        record.base_state_json_path = generatedRequest.base_state_json_path;
+    }
 
     if (!WriteTextFile(requestPath, SerializeRuntimeWalkRequestJson(generatedRequest), outError)) return false;
     if (!WriteTextFile(selectionManifestPath, SerializeImportSelectionManifest(record, generatedRequest), outError)) return false;

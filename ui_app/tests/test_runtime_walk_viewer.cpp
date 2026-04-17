@@ -184,9 +184,23 @@ static void TestRuntimeWalkGradientOverlayFiniteAndThresholded() {
         "TestRuntimeWalkGradientOverlayFiniteAndThresholded_Build");
     Check(!overlay.strokes.empty(),
         "TestRuntimeWalkGradientOverlayFiniteAndThresholded_HasStrokes");
+    Check(overlay.strokes.size() >= 6u,
+        "TestRuntimeWalkGradientOverlayFiniteAndThresholded_FlowMapDensity");
     bool finite = true;
+    bool variedOrigins = false;
+    Double2 firstOrigin{};
+    bool haveFirstOrigin = false;
     for (const RuntimeWalkGradientOverlayGuideStroke& stroke : overlay.strokes) {
         finite = finite && stroke.points.size() >= 2u;
+        if (!stroke.points.empty()) {
+            if (!haveFirstOrigin) {
+                firstOrigin = stroke.points.front().point;
+                haveFirstOrigin = true;
+            } else if (!NearlyEqual(firstOrigin.x, stroke.points.front().point.x, 1.0e-6) ||
+                !NearlyEqual(firstOrigin.y, stroke.points.front().point.y, 1.0e-6)) {
+                variedOrigins = true;
+            }
+        }
         for (const RuntimeWalkGradientOverlayGuidePoint& point : stroke.points) {
             finite = finite &&
                 std::isfinite(point.point.x) &&
@@ -196,6 +210,7 @@ static void TestRuntimeWalkGradientOverlayFiniteAndThresholded() {
         }
     }
     Check(finite, "TestRuntimeWalkGradientOverlayFiniteAndThresholded_Finite");
+    Check(variedOrigins, "TestRuntimeWalkGradientOverlayFiniteAndThresholded_VariedOrigins");
 
     RuntimeWalkOverlayProviderConfig highThreshold = config;
     highThreshold.threshold = 10.0;

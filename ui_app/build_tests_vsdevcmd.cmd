@@ -32,12 +32,17 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\runtime_walk_bootstrap.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_runtime_walk_bootstrap.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_walk_bootstrap.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\runtime_walk.cpp .\src\runtime_walk_viewer.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\tests\test_runtime_walk_viewer.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_viewer.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\runtime_walk.cpp .\src\runtime_walk_viewer_import.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_runtime_walk_viewer_import.cpp ^
+  .\src\runtime_walk.cpp .\src\runtime_walk_bootstrap.cpp .\src\runtime_walk_viewer_import.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_runtime_walk_viewer_import.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_viewer_import.exe"
 if errorlevel 1 exit /b 1
 
@@ -393,6 +398,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_runtime_walk_bootstrap.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk_viewer.exe"

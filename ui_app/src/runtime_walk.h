@@ -61,7 +61,13 @@ struct RuntimeWalkSnapshot {
     RuntimeWalkBranchAnnotation branch;
 };
 
+enum class RuntimeWalkAuthorityMode {
+    loaded_base_state = 0,
+    synthesized_fits_base = 1,
+};
+
 struct RuntimeWalkRequest {
+    RuntimeWalkAuthorityMode authority_mode = RuntimeWalkAuthorityMode::loaded_base_state;
     std::string base_state_json_path;
     std::string bundle_json_path;
     std::string output_dir;
@@ -69,7 +75,13 @@ struct RuntimeWalkRequest {
     std::string comparison_fits_path;
     std::string rtk_manifest_json_path;
     std::string rtk_harvest_summary_json_path;
+    std::string mapping_profile_json_path;
+    std::string mapping_profile_id;
+    std::string orientation_inputs_json_path;
 };
+
+const char* RuntimeWalkAuthorityModeId(RuntimeWalkAuthorityMode mode);
+bool TryParseRuntimeWalkAuthorityModeId(const std::string& text, RuntimeWalkAuthorityMode* outMode);
 
 bool ParseRuntimeWalkBundleJson(const std::string& jsonText,
     RuntimeWalkBundle* outBundle,

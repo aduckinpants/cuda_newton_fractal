@@ -18,6 +18,15 @@ static void Check(bool cond, const char* name) {
     }
 }
 
+static void CheckWithError(bool cond, const char* name, const std::string& error) {
+    if (cond) {
+        Check(true, name);
+        return;
+    }
+    std::printf("    error: %s\n", error.c_str());
+    Check(false, name);
+}
+
 static std::filesystem::path TempRoot(const char* name) {
     const std::filesystem::path root = std::filesystem::temp_directory_path() / "cuda_newton_runtime_walk_viewer_import_tests" / name;
     std::error_code ec;
@@ -104,6 +113,25 @@ static void WriteDummyFits(const std::filesystem::path& path) {
     WriteText(path, "SIMPLE  =                    T\nEND\n");
 }
 
+static void WriteOrientationInputsJson(const std::filesystem::path& path, const std::filesystem::path& fitsPath) {
+    WriteText(path,
+        std::string("{\n") +
+        "  \"version\": 1,\n" +
+        "  \"fits_path\": \"" + fitsPath.lexically_normal().generic_string() + "\",\n" +
+        "  \"signals\": {\n" +
+        "    \"mean\": 0.75,\n" +
+        "    \"stddev\": 0.25,\n" +
+        "    \"center_bias\": 0.10,\n" +
+        "    \"residual_energy\": 0.55,\n" +
+        "    \"edge_balance\": -0.15,\n" +
+        "    \"frame_delta\": 0.65,\n" +
+        "    \"x_bias\": 0.20,\n" +
+        "    \"y_bias\": -0.30,\n" +
+        "    \"focus_ratio\": 0.70\n" +
+        "  }\n" +
+        "}\n");
+}
+
 static void TestImportSessionRejectsMissingBaseState() {
     const std::filesystem::path root = TempRoot("missing_base_state");
     const std::filesystem::path bundlePath = root / "bundle.json";
@@ -151,12 +179,14 @@ static void TestImportSessionRejectsWrongFamily() {
 
 static void TestValidateImportBaseStateUsesAuthoritativeFamily() {
     std::string error;
-    Check(ValidateRuntimeWalkViewerImportBaseState("state.json", FractalType::explaino_fp, &error),
+    Check(ValidateRuntimeWalkViewerImportBaseState(RuntimeWalkAuthorityMode::loaded_base_state, "state.json", FractalType::explaino_fp, &error),
         "TestValidateImportBaseStateUsesAuthoritativeFamily_Explaino");
-    Check(!ValidateRuntimeWalkViewerImportBaseState("state.json", FractalType::mandelbrot, &error),
+    Check(!ValidateRuntimeWalkViewerImportBaseState(RuntimeWalkAuthorityMode::loaded_base_state, "state.json", FractalType::mandelbrot, &error),
         "TestValidateImportBaseStateUsesAuthoritativeFamily_NonExplainoRejected");
     Check(error.find("Explaino-family") != std::string::npos,
         "TestValidateImportBaseStateUsesAuthoritativeFamily_Error");
+    Check(ValidateRuntimeWalkViewerImportBaseState(RuntimeWalkAuthorityMode::synthesized_fits_base, "", FractalType::newton, &error),
+        "TestValidateImportBaseStateUsesAuthoritativeFamily_SynthModeAllowsMissingState");
 }
 
 static void TestImportSessionRejectsMissingBundleOrRequest() {
@@ -286,11 +316,66 @@ static void TestLatestRejectsStaleSession() {
         "TestLatestRejectsStaleSession_Error");
 }
 
+static void TestImportSessionSynthesizesBaseStateWithoutLoadedState() {
+    const std::filesystem::path root = TempRoot("synthesized_base");
+    const std::filesystem::path bundlePath = root / "bundle.json";
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteBundleJson(bundlePath);
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.base_fractal_type = FractalType::newton;
+    request.comparison_fits_path = fitsPath.string();
+    request.bundle_json_path = bundlePath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_Builds",
+        error);
+    Check(record.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base,
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_AuthorityMode");
+    Check(!record.synthesized_base_state_json_path.empty() && std::filesystem::exists(record.synthesized_base_state_json_path),
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_StateWritten");
+    Check(!record.orientation_inputs_json_path.empty(),
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_OrientationInputsRecorded");
+    Check(std::filesystem::exists(record.request_json_path),
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_RequestWritten");
+}
+
+static void TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest() {
+    const std::filesystem::path root = TempRoot("synth_missing_bundle");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    Check(!BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest_Fails");
+    Check(error.find("could not discover") != std::string::npos,
+        "TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest_Error");
+}
+
 int main() {
     TestImportSessionRejectsMissingBaseState();
     TestImportSessionRejectsWrongFamily();
     TestValidateImportBaseStateUsesAuthoritativeFamily();
     TestImportSessionRejectsMissingBundleOrRequest();
+    TestImportSessionSynthesizesBaseStateWithoutLoadedState();
+    TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest();
     TestImportSessionPersistsDeterministicRecentLatest();
     TestImportSessionCanRediscoverFromRecentMatch();
     TestLatestRejectsStaleSession();

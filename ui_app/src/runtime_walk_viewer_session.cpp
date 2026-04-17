@@ -52,6 +52,7 @@ bool LoadRuntimeWalkViewerSession(const std::string& requestJsonPath,
     session.loaded = true;
     session.request_json_path = requestJsonPath;
     session.resolved_state_json_path = resolvedStatePath;
+    session.authority_mode = request.authority_mode;
     session.asset = asset;
     *outSession = session;
     return true;

@@ -51,6 +51,20 @@ Double2 Mul(Double2 value, double scale) {
     return {value.x * scale, value.y * scale};
 }
 
+double Length(Double2 value) {
+    return std::sqrt(value.x * value.x + value.y * value.y);
+}
+
+Double2 Rotate(Double2 value, double radians) {
+    const double s = std::sin(radians);
+    const double c = std::cos(radians);
+    return {value.x * c - value.y * s, value.x * s + value.y * c};
+}
+
+Double2 Blend(Double2 lhs, double lhsWeight, Double2 rhs, double rhsWeight) {
+    return Add(Mul(lhs, lhsWeight), Mul(rhs, rhsWeight));
+}
+
 Double2 CatmullRom(Double2 p0, Double2 p1, Double2 p2, Double2 p3, double t) {
     const double t2 = t * t;
     const double t3 = t2 * t;
@@ -131,6 +145,65 @@ double RuntimeSignal(const RuntimeWalkSnapshot& snapshot, const RuntimeWalkOverl
     return (0.35 + 0.65 * stability) * (localGradient + 0.25 * branchBoost) / (1.0 + 0.35 * divergence);
 }
 
+Double2 BuildBaseGradientDirection(const RuntimeWalkSnapshot& snapshot) {
+    return NormalizeVector({
+        (snapshot.channels[0] - snapshot.channels[1]) + 0.35 * (snapshot.channels[9] - snapshot.channels[10]),
+        (snapshot.channels[2] - snapshot.channels[3]) + 0.35 * (snapshot.channels[7] - snapshot.channels[8]),
+    });
+}
+
+Double2 BuildFlowFieldDirection(Double2 point,
+    Double2 origin,
+    Double2 tangent,
+    Double2 normal,
+    Double2 baseGradient,
+    Double2 branchVector,
+    const RuntimeWalkSnapshot& snapshot,
+    const RuntimeWalkOverlayProviderInputs& inputs,
+    double phase) {
+    const Double2 offset = Sub(point, origin);
+    const double radius = Length(offset);
+    const Double2 radial = radius > 1.0e-9 ? NormalizeVector(offset) : Rotate(tangent, phase);
+    const Double2 swirl = {-radial.y, radial.x};
+    const double branchProximity = std::clamp(snapshot.branch.proximity, 0.0, 1.0);
+    const double stability = std::clamp(inputs.decode_stability, 0.0, 1.0);
+    const double swirlWeight = 0.35 + 0.40 * branchProximity + 0.10 * std::sin(phase + radius * 12.0);
+    const double tangentWeight = 0.45 + 0.20 * stability;
+    const double gradientWeight = 0.55 + 0.25 * std::fabs(snapshot.channels[4] - snapshot.channels[11]);
+    const double branchWeight = 0.18 + 0.35 * branchProximity;
+    const double normalWeight = 0.08 + 0.18 * std::fabs(snapshot.channels[7] - snapshot.channels[8]);
+    Double2 direction = {0.0, 0.0};
+    direction = Add(direction, Mul(tangent, tangentWeight));
+    direction = Add(direction, Mul(baseGradient, gradientWeight));
+    direction = Add(direction, Mul(swirl, swirlWeight));
+    direction = Add(direction, Mul(branchVector, branchWeight));
+    direction = Add(direction, Mul(normal, normalWeight * std::sin(phase + radius * 10.0)));
+    if (radius > 1.0e-9) {
+        direction = Add(direction, Mul(radial, 0.06 * std::cos(phase + radius * 7.0)));
+    }
+    return NormalizeVector(direction);
+}
+
+std::vector<Double2> BuildSeedOrigins(Double2 currentPoint,
+    Double2 tangent,
+    Double2 normal,
+    int maxStrokeCount) {
+    std::vector<Double2> seeds;
+    const int clampedCount = std::max(4, maxStrokeCount);
+    seeds.push_back(currentPoint);
+    const int ringCount = std::max(3, clampedCount - 1);
+    for (int index = 0; index < ringCount; ++index) {
+        const double angle = (2.0 * 3.14159265358979323846 * static_cast<double>(index)) / static_cast<double>(ringCount);
+        const double radius = 0.018 + 0.018 * static_cast<double>(index % 3);
+        const Double2 seedOffset = Add(Mul(Rotate(tangent, angle), radius), Mul(Rotate(normal, angle * 0.5), radius * 0.35));
+        Double2 seed = Add(currentPoint, seedOffset);
+        seed.x = ClampUnit(seed.x);
+        seed.y = ClampUnit(seed.y);
+        seeds.push_back(seed);
+    }
+    return seeds;
+}
+
 } // namespace
 
 bool BuildRuntimeWalkViewerAsset(const RuntimeWalkRequest& request,
@@ -156,6 +229,14 @@ bool BuildRuntimeWalkViewerAsset(const RuntimeWalkRequest& request,
     asset.base_view = baseView;
     asset.base_params = baseParams;
     asset.base_render = baseRender;
+    asset.authority.mode = request.authority_mode;
+    asset.authority.resolved_base_state_json_path = request.base_state_json_path;
+    asset.authority.mapping_profile_json_path = request.mapping_profile_json_path;
+    asset.authority.mapping_profile_id = request.mapping_profile_id;
+    asset.authority.orientation_inputs_json_path = request.orientation_inputs_json_path;
+    if (request.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base) {
+        asset.authority.synthesized_base_state_json_path = request.base_state_json_path;
+    }
     asset.companion.comparison_fits_path = request.comparison_fits_path;
     asset.companion.rtk_manifest_json_path = request.rtk_manifest_json_path;
     asset.companion.rtk_harvest_summary_json_path = request.rtk_harvest_summary_json_path;
@@ -341,12 +422,10 @@ bool BuildRuntimeWalkGradientOverlay(const RuntimeWalkViewerAsset& asset,
     const Double2 nextPoint = path.raw_points[std::min(currentIndex + 1u, path.raw_points.size() - 1u)];
     Double2 tangent = NormalizeVector(Sub(nextPoint, prevPoint));
     if (std::fabs(tangent.x) < 1.0e-9 && std::fabs(tangent.y) < 1.0e-9) {
-        tangent = NormalizeVector({
-            (snapshot.channels[0] - snapshot.channels[1]) + 0.35 * (snapshot.channels[9] - snapshot.channels[10]),
-            (snapshot.channels[2] - snapshot.channels[3]) + 0.35 * (snapshot.channels[7] - snapshot.channels[8]),
-        });
+        tangent = BuildBaseGradientDirection(snapshot);
     }
     const Double2 normal = {-tangent.y, tangent.x};
+    const Double2 baseGradient = BuildBaseGradientDirection(snapshot);
     const Double2 branchVector = NormalizeVector(Mul(normal, 0.5 + config.branch_bias * std::clamp(snapshot.branch.proximity, 0.0, 1.0)));
 
     const double baseStrength = RuntimeSignal(snapshot, inputs);
@@ -354,37 +433,45 @@ bool BuildRuntimeWalkGradientOverlay(const RuntimeWalkViewerAsset& asset,
         return true;
     }
 
-    std::vector<Double2> candidateDirections;
-    candidateDirections.push_back(tangent);
-    candidateDirections.push_back(Mul(tangent, -1.0));
-    candidateDirections.push_back(Add(Mul(normal, 0.75), branchVector));
-    candidateDirections.push_back(Add(Mul(normal, -0.75), branchVector));
-
     const int maxStrokeCount = std::max(1, config.max_strokes);
     const int maxSteps = std::max(1, config.max_steps_per_stroke);
-    for (int strokeIndex = 0; strokeIndex < maxStrokeCount && strokeIndex < static_cast<int>(candidateDirections.size()); ++strokeIndex) {
-        Double2 direction = NormalizeVector(candidateDirections[strokeIndex]);
-        if (std::fabs(direction.x) < 1.0e-9 && std::fabs(direction.y) < 1.0e-9) continue;
-
+    const std::vector<Double2> seeds = BuildSeedOrigins(currentPoint, tangent, normal, maxStrokeCount);
+    for (int strokeIndex = 0; strokeIndex < static_cast<int>(seeds.size()) && strokeIndex < maxStrokeCount; ++strokeIndex) {
+        const double phase = 0.55 * static_cast<double>(strokeIndex);
+        const Double2 seed = seeds[strokeIndex];
         RuntimeWalkGradientOverlayGuideStroke stroke;
-        stroke.strength = baseStrength * (1.0 - 0.18 * static_cast<double>(strokeIndex));
+        stroke.strength = baseStrength * (1.0 - 0.045 * static_cast<double>(strokeIndex));
         if (stroke.strength < config.threshold) continue;
-        stroke.points.push_back({currentPoint, stroke.strength});
 
-        Double2 cursor = currentPoint;
-        double stepStrength = stroke.strength;
-        for (int stepIndex = 0; stepIndex < maxSteps; ++stepIndex) {
-            if (stepStrength < config.threshold) break;
-            const double stepLength = 0.035 * (0.85 + 0.15 * std::clamp(inputs.decode_stability, 0.0, 1.0));
-            cursor = Add(cursor, Mul(direction, stepLength));
-            cursor.x = ClampUnit(cursor.x);
-            cursor.y = ClampUnit(cursor.y);
-            stroke.points.push_back({cursor, stepStrength});
+        std::vector<RuntimeWalkGradientOverlayGuidePoint> backward;
+        std::vector<RuntimeWalkGradientOverlayGuidePoint> forward;
+        auto traceDirection = [&](double sign, std::vector<RuntimeWalkGradientOverlayGuidePoint>* outPoints) {
+            Double2 cursor = seed;
+            double stepStrength = stroke.strength;
+            for (int stepIndex = 0; stepIndex < maxSteps; ++stepIndex) {
+                if (stepStrength < config.threshold) break;
+                Double2 direction = BuildFlowFieldDirection(cursor, currentPoint, tangent, normal, baseGradient, branchVector, snapshot, inputs, phase + sign * 0.35 * static_cast<double>(stepIndex));
+                if (std::fabs(direction.x) < 1.0e-9 && std::fabs(direction.y) < 1.0e-9) break;
+                const double stepLength = 0.015 + 0.006 * std::clamp(inputs.decode_stability, 0.0, 1.0);
+                cursor = Add(cursor, Mul(direction, stepLength * sign));
+                cursor.x = ClampUnit(cursor.x);
+                cursor.y = ClampUnit(cursor.y);
+                outPoints->push_back({cursor, stepStrength});
+                stepStrength *= 0.82;
+            }
+        };
 
-            const double turn = (stepIndex % 2 == 0) ? 0.35 : -0.20;
-            direction = NormalizeVector(Add(Mul(direction, 1.0 - std::fabs(turn)), Mul(normal, turn)));
-            stepStrength *= 0.58;
+        traceDirection(-1.0, &backward);
+        traceDirection(1.0, &forward);
+
+        for (auto it = backward.rbegin(); it != backward.rend(); ++it) {
+            stroke.points.push_back(*it);
         }
+        stroke.points.push_back({seed, stroke.strength});
+        for (const RuntimeWalkGradientOverlayGuidePoint& point : forward) {
+            stroke.points.push_back(point);
+        }
+
         if (stroke.points.size() >= 2u) {
             outOverlay->strokes.push_back(stroke);
         }

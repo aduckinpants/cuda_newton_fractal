@@ -13,12 +13,22 @@ struct RuntimeWalkViewerCompanionArtifacts {
     std::string rtk_harvest_summary_json_path;
 };
 
+struct RuntimeWalkViewerAuthorityInfo {
+    RuntimeWalkAuthorityMode mode = RuntimeWalkAuthorityMode::loaded_base_state;
+    std::string resolved_base_state_json_path;
+    std::string synthesized_base_state_json_path;
+    std::string mapping_profile_json_path;
+    std::string mapping_profile_id;
+    std::string orientation_inputs_json_path;
+};
+
 struct RuntimeWalkViewerAsset {
     RuntimeWalkRequest request{};
     RuntimeWalkBundle bundle{};
     ViewState base_view{};
     KernelParams base_params{};
     RenderSettings base_render{};
+    RuntimeWalkViewerAuthorityInfo authority{};
     RuntimeWalkViewerCompanionArtifacts companion{};
     std::vector<RuntimeWalkSnapshot> tick_snapshots;
 };
@@ -68,8 +78,8 @@ enum class RuntimeWalkOverlayProviderKind {
 struct RuntimeWalkOverlayProviderConfig {
     RuntimeWalkOverlayProviderKind kind = RuntimeWalkOverlayProviderKind::runtime_local_gradient;
     double threshold = 0.08;
-    int max_strokes = 4;
-    int max_steps_per_stroke = 3;
+    int max_strokes = 12;
+    int max_steps_per_stroke = 8;
     double branch_bias = 0.25;
 };
 

@@ -123,7 +123,14 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
 
     ImGui::Separator();
     ImGui::TextWrapped("Request: %s", session.request_json_path.c_str());
+    ImGui::TextWrapped("Authority Mode: %s", RuntimeWalkAuthorityModeId(session.authority_mode));
     ImGui::TextWrapped("Base State (authority): %s", session.resolved_state_json_path.c_str());
+    if (!session.asset.authority.mapping_profile_json_path.empty()) {
+        ImGui::TextWrapped("Mapping Profile: %s", session.asset.authority.mapping_profile_json_path.c_str());
+    }
+    if (!session.asset.authority.orientation_inputs_json_path.empty()) {
+        ImGui::TextWrapped("Orientation Inputs: %s", session.asset.authority.orientation_inputs_json_path.c_str());
+    }
     ImGui::TextWrapped("Bundle (transport): %s", session.asset.request.bundle_json_path.c_str());
     if (!session.asset.companion.comparison_fits_path.empty()) {
         ImGui::TextWrapped("Companion FITS (evidence): %s", session.asset.companion.comparison_fits_path.c_str());
@@ -149,7 +156,21 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
 
     bool interactionChanged = false;
     ImGui::Begin("Runtime Walk FITS Import");
-    ImGui::TextWrapped("Base state remains authoritative. Bundle drives playback transport. FITS and RTK outputs remain companion evidence only.");
+    bool synthesizeDefault = state.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base;
+    if (ImGui::Checkbox("Synthesize Default Explaino State", &synthesizeDefault)) {
+        outActions->toggle_authority_mode = true;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    if (synthesizeDefault) {
+        ImGui::TextUnformatted("(FITS + mapping contract authority)");
+    } else {
+        ImGui::TextUnformatted("(loaded capture state authority)");
+    }
+    ImGui::TextWrapped(
+        synthesizeDefault
+            ? "FITS plus the checked-in mapping contract synthesize the authoritative Explaino base state. Bundle drives playback transport. RTK outputs remain companion evidence only."
+            : "Loaded capture state remains authoritative. Bundle drives playback transport. FITS and RTK outputs remain companion evidence only.");
     ImGui::Separator();
     ImGui::TextWrapped("Base State: %s", state.base_state_json_path.empty() ? "(none)" : state.base_state_json_path.c_str());
     if (!state.status_text.empty()) {
@@ -177,6 +198,8 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
     ImGui::TextWrapped("FITS: %s", state.comparison_fits_path.empty() ? "(none)" : state.comparison_fits_path.c_str());
     ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(auto-discover or browse)" : state.request_json_path.c_str());
     ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(auto-discover or browse)" : state.bundle_json_path.c_str());
+    ImGui::TextWrapped("Mapping Profile: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
+    ImGui::TextWrapped("Mapping Profile Id: %s", state.mapping_profile_id.empty() ? "explaino_default" : state.mapping_profile_id.c_str());
 
     if (ImGui::Button("Open Latest")) {
         outActions->open_latest = true;
@@ -203,7 +226,8 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
             }
             ImGui::EndDisabled();
             ImGui::SameLine();
-            ImGui::TextWrapped("%s%s",
+            ImGui::TextWrapped("[%s] %s%s",
+                RuntimeWalkAuthorityModeId(record.authority_mode),
                 record.comparison_fits_path.empty() ? record.request_json_path.c_str() : record.comparison_fits_path.c_str(),
                 record.request_exists ? "" : " [stale]");
             ImGui::PopID();

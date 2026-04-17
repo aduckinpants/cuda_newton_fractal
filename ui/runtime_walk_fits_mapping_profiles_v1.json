@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "id": "explaino_default",
+      "target_selector": "explaino",
+      "base_fractal_type": "explaino_fp",
+      "bindings": [
+        {
+          "target_selector": "explaino",
+          "source_signal": "mean",
+          "target_path": "seed.combined",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 28.0,
+          "offset": -14.0,
+          "weight": 1.0
+        },
+        {
+          "target_selector": "explaino",
+          "source_signal": "stddev",
+          "target_path": "params.explaino_seed_b",
+          "input_min": 0.0,
+          "input_max": 0.5,
+          "scale": 3.0,
+          "offset": -1.5,
+          "weight": 1.0
+        },
+        {
+          "target_selector": "explaino",
+          "source_signal": "center_bias",
+          "target_path": "params.explaino_mix",
+          "input_min": -1.0,
+          "input_max": 1.0,
+          "scale": 1.75,
+          "offset": 0.25,
+          "weight": 1.0,
+          "clamp_min": 0.0,
+          "clamp_max": 4.0
+        },
+        {
+          "target_selector": "explaino",
+          "source_signal": "residual_energy",
+          "target_path": "params.explaino_warp_strength",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 1.0,
+          "offset": 0.0,
+          "weight": 1.0,
+          "clamp_min": 0.0,
+          "clamp_max": 1.0
+        },
+        {
+          "target_selector": "explaino",
+          "source_signal": "edge_balance",
+          "target_path": "view.explaino_phase",
+          "input_min": -1.0,
+          "input_max": 1.0,
+          "scale": 6.283185307179586,
+          "offset": -3.141592653589793,
+          "weight": 1.0
+        },
+        {
+          "target_selector": "explaino",
+          "source_signal": "frame_delta",
+          "target_path": "view.explaino_seed_drift",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 1.2,
+          "offset": -0.6,
+          "weight": 1.0
+        },
+        {
+          "target_selector": "all",
+          "source_signal": "x_bias",
+          "target_path": "view.center_hp_x",
+          "input_min": -1.0,
+          "input_max": 1.0,
+          "scale": 0.9,
+          "offset": -0.45,
+          "weight": 1.0
+        },
+        {
+          "target_selector": "all",
+          "source_signal": "y_bias",
+          "target_path": "view.center_hp_y",
+          "input_min": -1.0,
+          "input_max": 1.0,
+          "scale": 0.9,
+          "offset": -0.45,
+          "weight": 1.0
+        },
+        {
+          "target_selector": "all",
+          "source_signal": "focus_ratio",
+          "target_path": "view.log2_zoom",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 5.0,
+          "offset": -2.5,
+          "weight": 1.0,
+          "clamp_min": -8.0,
+          "clamp_max": 8.0
+        }
+      ]
+    }
+  ]
+}

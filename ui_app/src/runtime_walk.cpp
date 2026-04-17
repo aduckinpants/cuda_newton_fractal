@@ -213,6 +213,29 @@ bool BuildTickSchedule(const json_min::Value& root, std::vector<double>* outTVal
 
 } // namespace
 
+const char* RuntimeWalkAuthorityModeId(RuntimeWalkAuthorityMode mode) {
+    switch (mode) {
+    case RuntimeWalkAuthorityMode::loaded_base_state:
+        return "loaded_base_state";
+    case RuntimeWalkAuthorityMode::synthesized_fits_base:
+        return "synthesized_fits_base";
+    default:
+        return "loaded_base_state";
+    }
+}
+
+bool TryParseRuntimeWalkAuthorityModeId(const std::string& text, RuntimeWalkAuthorityMode* outMode) {
+    if (text == "loaded_base_state") {
+        if (outMode) *outMode = RuntimeWalkAuthorityMode::loaded_base_state;
+        return true;
+    }
+    if (text == "synthesized_fits_base") {
+        if (outMode) *outMode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+        return true;
+    }
+    return false;
+}
+
 bool ParseRuntimeWalkBundleJson(const std::string& jsonText,
     RuntimeWalkBundle* outBundle,
     std::string* outError) {
@@ -336,6 +359,17 @@ bool ParseRuntimeWalkRequestJson(const std::string& jsonText,
         if (outError) *outError = "runtime walk request version must be 1";
         return false;
     }
+    const json_min::Value* authorityModeValue = parsed.value.get("authority_mode");
+    if (authorityModeValue) {
+        if (!authorityModeValue->is_string()) {
+            if (outError) *outError = "authority_mode must be a string";
+            return false;
+        }
+        if (!TryParseRuntimeWalkAuthorityModeId(authorityModeValue->as_string(), &request.authority_mode)) {
+            if (outError) *outError = "Unknown runtime walk authority_mode: " + authorityModeValue->as_string();
+            return false;
+        }
+    }
     if (!GetRequiredString(parsed.value, "base_state_json", &request.base_state_json_path, outError)) return false;
     if (!GetRequiredString(parsed.value, "bundle_json", &request.bundle_json_path, outError)) return false;
     if (!GetRequiredString(parsed.value, "out_dir", &request.output_dir, outError)) return false;
@@ -362,6 +396,30 @@ bool ParseRuntimeWalkRequestJson(const std::string& jsonText,
             return false;
         }
         request.rtk_harvest_summary_json_path = rtkHarvestValue->as_string();
+    }
+    const json_min::Value* mappingProfileValue = parsed.value.get("mapping_profile_json");
+    if (mappingProfileValue) {
+        if (!mappingProfileValue->is_string()) {
+            if (outError) *outError = "mapping_profile_json must be a string";
+            return false;
+        }
+        request.mapping_profile_json_path = mappingProfileValue->as_string();
+    }
+    const json_min::Value* mappingProfileIdValue = parsed.value.get("mapping_profile_id");
+    if (mappingProfileIdValue) {
+        if (!mappingProfileIdValue->is_string()) {
+            if (outError) *outError = "mapping_profile_id must be a string";
+            return false;
+        }
+        request.mapping_profile_id = mappingProfileIdValue->as_string();
+    }
+    const json_min::Value* orientationInputsValue = parsed.value.get("orientation_inputs_json");
+    if (orientationInputsValue) {
+        if (!orientationInputsValue->is_string()) {
+            if (outError) *outError = "orientation_inputs_json must be a string";
+            return false;
+        }
+        request.orientation_inputs_json_path = orientationInputsValue->as_string();
     }
     if (!BuildTickSchedule(parsed.value, &request.t_values, outError)) return false;
 
