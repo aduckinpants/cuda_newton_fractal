@@ -8,8 +8,18 @@ cd /d C:\code\cuda_newton_fractal_clone\ui_app
 
 if "%SALT_FRACTAL_ROOT%"=="" set SALT_FRACTAL_ROOT=D:\salt-fractal
 set TESTROOT=%SALT_FRACTAL_ROOT%\cuda_newton_fractal_clone\build_tests
+set OBJROOT=%TESTROOT%\obj
+set PDBROOT=%TESTROOT%\pdb
 
 if not exist "%TESTROOT%" mkdir "%TESTROOT%"
+if exist "%OBJROOT%" rmdir /s /q "%OBJROOT%"
+if exist "%PDBROOT%" rmdir /s /q "%PDBROOT%"
+mkdir "%OBJROOT%"
+if errorlevel 1 exit /b 1
+mkdir "%PDBROOT%"
+if errorlevel 1 exit /b 1
+
+set CL=/FS /Fo"%OBJROOT%\\" /Fd"%PDBROOT%\\build_tests.pdb"
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\cli_args.cpp .\tests\test_cli_args.cpp ^

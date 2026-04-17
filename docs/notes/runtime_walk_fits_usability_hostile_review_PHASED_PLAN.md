@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - hostile review complete on the repaired FITS runtime-walk control surface; only bounded coverage/workflow follow-ups remain
+Phase 4 - hostile review complete on the repaired FITS runtime-walk control surface and repaired `build_tests` validation rail; one bounded runtime click-automation gap remains
 
 ## Phase Checklist
 
 - [x] Phase 1 - reproduce and lock the user-reported control-surface/default-path failures with focused helper/runtime regressions
 - [x] Phase 2 - repair default fractal selection, expose usable mapping/transport controls in the FITS import/playback UI, and make the active generated-session artifacts discoverable
 - [x] Phase 3 - tune generated transport/mapping behavior so warp-heavy bindings do not destabilize motion, add adjustable transport density/sampling, and surface mapping profile/binding summaries in-viewer
-- [x] Phase 4 - run at least three deliberate hostile-review passes on the repaired state, close any newly found defects, and report remaining bounded coverage gaps only if they are explicitly non-blocking
+- [x] Phase 4 - repair the flaky `ui_app\build_tests_vsdevcmd.cmd` artifact/output model, rerun at least three deliberate hostile-review passes on the repaired state, and only then reclassify any remaining gaps as bounded/non-blocking
 
 ## Notes
 
@@ -42,13 +42,18 @@ Phase 4 - hostile review complete on the repaired FITS runtime-walk control surf
   - FITS-only playback was previously visually static in the published runtime even when the session built successfully; runtime playback proof is green again after the repaired activation/default-motion path
   - generated-session identity previously ignored transport options, so sample-count/motion/warp tweaks could collapse onto the same session and feel ineffective; session identity now includes transport controls and is covered by helper regression
   - reopening the FITS import panel previously discarded the active session transport settings and dropped the operator back onto defaults; the panel now reloads the current session settings and shows transport metadata in playback
-- Remaining bounded gaps after pass three:
+- Hostile-review/build-tool findings closed in this follow-up:
+  - `ui_app\\build_tests_vsdevcmd.cmd` was contaminating itself with shared compiler outputs, which made full-batch native validation intermittently fail with linker/object-file collisions; the script now stages isolated object/PDB outputs under `build_tests` and repeated full-batch runs are green
+  - the repaired FITS import panel had regressed the advanced manual override path by disabling `Open FITS` unless a FITS was selected, even when an explicit request/bundle override was present; helper coverage now locks the override path and the panel open-enable logic accepts FITS or advanced manual inputs
+- Remaining bounded gap after the final second/third audit passes:
   - no runtime-level UI automation currently drives the `Generated Samples` slider or mapping-profile browse dialog; those paths are covered at helper/session-build level, while runtime acceptance remains FITS-only open-to-playback
-  - `ui_app\\build_tests_vsdevcmd.cmd` remains susceptible to shared object-output/linker collisions in full-batch runs on this machine; slice validation used focused native helper compiles for the touched runtime-walk seams plus the runtime publish/pytest rails
 
 ## Validation
 
 - `ui_app\build_tests_vsdevcmd.cmd`
+- repeated full-batch proof via:
+  - `py -3.14 tools/viewer_host_run_logged_command.py --label build-tests-fixed-pass1 --log artifacts/build_tests_fixed_pass1.log -- ui_app\build_tests_vsdevcmd.cmd`
+  - `py -3.14 tools/viewer_host_run_logged_command.py --label build-tests-fixed-pass2 --log artifacts/build_tests_fixed_pass2.log -- ui_app\build_tests_vsdevcmd.cmd`
 - focused native helper compiles and executions for:
   - `test_runtime_walk.exe`
   - `test_runtime_walk_bootstrap.exe`

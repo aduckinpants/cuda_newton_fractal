@@ -218,7 +218,7 @@ bool RenderRuntimeWalkViewerImportPanel(RuntimeWalkViewerImportPanelState& state
         interactionChanged = true;
     }
     ImGui::SameLine();
-    const bool haveOpenInput = !state.comparison_fits_path.empty();
+    const bool haveOpenInput = RuntimeWalkViewerImportHasOpenInput(state);
     ImGui::BeginDisabled(!importAllowed);
     ImGui::BeginDisabled(!haveOpenInput);
     if (ImGui::Button("Open FITS")) {

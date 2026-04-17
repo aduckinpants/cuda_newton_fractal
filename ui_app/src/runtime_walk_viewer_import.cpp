@@ -1045,3 +1045,9 @@ bool NoteRuntimeWalkViewerImportSessionLoadSucceeded(const std::string& requestJ
     }
     return true;
 }
+
+bool RuntimeWalkViewerImportHasOpenInput(const RuntimeWalkViewerImportPanelState& state) {
+    return !state.comparison_fits_path.empty() ||
+        !state.request_json_path.empty() ||
+        !state.bundle_json_path.empty();
+}

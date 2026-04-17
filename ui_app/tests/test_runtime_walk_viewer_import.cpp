@@ -771,6 +771,26 @@ static void TestPrimeImportPanelReusesLoadedSessionTransportSettings() {
         "TestPrimeImportPanelReusesLoadedSessionTransportSettings_WarpScale");
 }
 
+static void TestImportPanelAcceptsAdvancedManualOpenInputs() {
+    RuntimeWalkViewerImportPanelState panel{};
+    Check(!RuntimeWalkViewerImportHasOpenInput(panel),
+        "TestImportPanelAcceptsAdvancedManualOpenInputs_None");
+
+    panel.request_json_path = "C:\\temp\\manual_request.json";
+    Check(RuntimeWalkViewerImportHasOpenInput(panel),
+        "TestImportPanelAcceptsAdvancedManualOpenInputs_Request");
+
+    panel.request_json_path.clear();
+    panel.bundle_json_path = "C:\\temp\\manual_bundle.json";
+    Check(RuntimeWalkViewerImportHasOpenInput(panel),
+        "TestImportPanelAcceptsAdvancedManualOpenInputs_Bundle");
+
+    panel.bundle_json_path.clear();
+    panel.comparison_fits_path = "C:\\temp\\foreign.fits";
+    Check(RuntimeWalkViewerImportHasOpenInput(panel),
+        "TestImportPanelAcceptsAdvancedManualOpenInputs_Fits");
+}
+
 int main() {
     TestImportSessionRejectsMissingBaseState();
     TestImportSessionRejectsWrongFamily();
@@ -786,6 +806,7 @@ int main() {
     TestImportSessionSynthesizedModeHonorsTransportOptions();
     TestImportSessionTransportOptionsAffectSessionIdentity();
     TestPrimeImportPanelReusesLoadedSessionTransportSettings();
+    TestImportPanelAcceptsAdvancedManualOpenInputs();
     TestImportSessionPersistsDeterministicRecentLatest();
     TestImportSessionCanRediscoverFromRecentMatch();
     TestLatestRejectsStaleSession();

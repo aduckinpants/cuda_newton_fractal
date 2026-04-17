@@ -96,3 +96,5 @@ bool RefreshMappingProfileDisplayState(const std::string& exeDir,
 
 bool NoteRuntimeWalkViewerImportSessionLoadSucceeded(const std::string& requestJsonPath,
     std::string* outError);
+
+bool RuntimeWalkViewerImportHasOpenInput(const RuntimeWalkViewerImportPanelState& state);
