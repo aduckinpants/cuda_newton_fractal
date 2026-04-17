@@ -4,6 +4,7 @@
 #include "json_min.h"
 #include "runtime_walk.h"
 #include "runtime_walk_bootstrap.h"
+#include "runtime_walk_viewer_session.h"
 
 #include <algorithm>
 #include <array>
@@ -124,6 +125,14 @@ std::filesystem::path RecentIndexPath(const std::string& exeDir) {
     return SessionsRoot(exeDir) / "recent_sessions.json";
 }
 
+std::filesystem::path ImportSelectionManifestPath(const std::string& sessionDir) {
+    return ResolveAbsolutePath(sessionDir) / "runtime_walk_import_selection_manifest.json";
+}
+
+std::filesystem::path ImportReceiptPath(const std::string& sessionDir) {
+    return ResolveAbsolutePath(sessionDir) / "runtime_walk_import_receipt.json";
+}
+
 std::string BuildTimestampUtc() {
     const auto now = std::chrono::system_clock::now();
     const std::time_t raw = std::chrono::system_clock::to_time_t(now);
@@ -223,9 +232,18 @@ bool ParseRecentIndexJson(const std::string& jsonText,
         GetOptionalString(entry, "source_request_json", &record.source_request_json_path);
         GetOptionalString(entry, "source_bundle_json", &record.source_bundle_json_path);
         GetOptionalString(entry, "discovery_source", &record.discovery_source);
+        GetOptionalString(entry, "transport_generation_mode", &record.transport_generation_mode);
+        const json_min::Value* sampleCountValue = entry.get("transport_sample_count");
+        if (sampleCountValue && sampleCountValue->is_number()) {
+            record.transport_sample_count = static_cast<std::size_t>(std::max(0.0, sampleCountValue->as_number()));
+        }
         const json_min::Value* generatedValue = entry.get("transport_generated");
         if (generatedValue && generatedValue->is_bool()) {
             record.transport_generated = generatedValue->as_bool();
+        }
+        const json_min::Value* loadSucceededValue = entry.get("viewer_load_succeeded");
+        if (loadSucceededValue && loadSucceededValue->is_bool()) {
+            record.viewer_load_succeeded = loadSucceededValue->as_bool();
         }
         record.session_dir = NormalizePathString(ResolveAbsolutePath(sessionDir, indexDir));
         record.request_json_path = NormalizePathString(ResolveAbsolutePath(requestPath, indexDir));
@@ -272,7 +290,10 @@ std::string SerializeRecentIndex(const ImportRecords& records) {
         out << "      \"source_request_json\": \"" << JsonEscape(record.source_request_json_path) << "\",\n";
         out << "      \"source_bundle_json\": \"" << JsonEscape(record.source_bundle_json_path) << "\",\n";
         out << "      \"discovery_source\": \"" << JsonEscape(record.discovery_source) << "\",\n";
-        out << "      \"transport_generated\": " << (record.transport_generated ? "true" : "false") << "\n";
+        out << "      \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
+        out << "      \"transport_sample_count\": " << record.transport_sample_count << ",\n";
+        out << "      \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
+        out << "      \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << "\n";
         out << "    }";
         if (index + 1u < records.size()) out << ",";
         out << "\n";
@@ -316,6 +337,17 @@ bool LoadBundleTValues(const std::string& bundlePath, std::vector<double>* outTV
             outTValues->push_back(sample.t);
         }
     }
+    return true;
+}
+
+bool ReadTransportSampleCount(const std::string& bundlePath,
+    std::size_t* outCount,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (outCount) *outCount = 0;
+    RuntimeWalkBundle bundle;
+    if (!LoadRuntimeWalkBundleFile(bundlePath, &bundle, outError)) return false;
+    if (outCount) *outCount = bundle.samples.size();
     return true;
 }
 
@@ -366,6 +398,9 @@ std::string SerializeImportSelectionManifest(const RuntimeWalkViewerImportSessio
     out << "  \"generated_request_json\": \"" << JsonEscape(record.request_json_path) << "\",\n";
     out << "  \"bundle_json\": \"" << JsonEscape(request.bundle_json_path) << "\",\n";
     out << "  \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
+    out << "  \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
+    out << "  \"transport_sample_count\": " << record.transport_sample_count << ",\n";
+    out << "  \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << ",\n";
     out << "  \"mapping_profile_json\": \"" << JsonEscape(record.mapping_profile_json_path) << "\",\n";
     out << "  \"mapping_profile_id\": \"" << JsonEscape(record.mapping_profile_id) << "\",\n";
     out << "  \"orientation_inputs_json\": \"" << JsonEscape(record.orientation_inputs_json_path) << "\",\n";
@@ -384,7 +419,10 @@ std::string SerializeImportReceipt(const RuntimeWalkViewerImportSessionRecord& r
     out << "  \"session_id\": \"" << JsonEscape(record.session_id) << "\",\n";
     out << "  \"authority_mode\": \"" << JsonEscape(RuntimeWalkAuthorityModeId(record.authority_mode)) << "\",\n";
     out << "  \"request_json\": \"" << JsonEscape(record.request_json_path) << "\",\n";
-    out << "  \"transport_generated\": " << (record.transport_generated ? "true" : "false") << "\n";
+    out << "  \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
+    out << "  \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
+    out << "  \"transport_sample_count\": " << record.transport_sample_count << ",\n";
+    out << "  \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << "\n";
     out << "}\n";
     return out.str();
 }
@@ -398,7 +436,9 @@ struct ResolvedImportSources {
     std::string source_request_json_path;
     std::string source_bundle_json_path;
     std::string discovery_source;
+    std::string transport_generation_mode;
     std::vector<double> t_values;
+    std::size_t transport_sample_count = 0;
     bool transport_generated = false;
 };
 
@@ -428,11 +468,15 @@ bool TryResolveRecentMatch(const RuntimeWalkViewerImportRequest& request,
         if (!record.request_json_path.empty() && std::filesystem::exists(record.request_json_path)) {
             outResolved->request_json_path = NormalizePathString(ResolveAbsolutePath(record.request_json_path));
             outResolved->discovery_source = "recent_match_request";
+            outResolved->transport_generation_mode = record.transport_generation_mode;
+            outResolved->transport_sample_count = record.transport_sample_count;
             return true;
         }
         if (!record.bundle_json_path.empty() && std::filesystem::exists(record.bundle_json_path)) {
             outResolved->bundle_json_path = NormalizePathString(ResolveAbsolutePath(record.bundle_json_path));
             outResolved->discovery_source = "recent_match_bundle";
+            outResolved->transport_generation_mode = record.transport_generation_mode;
+            outResolved->transport_sample_count = record.transport_sample_count;
             return true;
         }
     }
@@ -523,6 +567,7 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
             ResolveAbsolutePath(sourceRequest.bundle_json_path, requestDir));
         outResolved->bundle_json_path = outResolved->source_bundle_json_path;
         outResolved->t_values = sourceRequest.t_values;
+        if (!ReadTransportSampleCount(outResolved->bundle_json_path, &outResolved->transport_sample_count, outError)) return false;
         outResolved->comparison_fits_path = !request.comparison_fits_path.empty()
             ? NormalizePathString(ResolveAbsolutePath(request.comparison_fits_path))
             : NormalizePathString(ResolveAbsolutePath(sourceRequest.comparison_fits_path, requestDir));
@@ -539,6 +584,7 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
         outResolved->rtk_manifest_json_path = NormalizePathString(ResolveAbsolutePath(request.rtk_manifest_json_path));
         outResolved->rtk_harvest_summary_json_path = NormalizePathString(ResolveAbsolutePath(request.rtk_harvest_summary_json_path));
         if (!LoadBundleTValues(outResolved->bundle_json_path, &outResolved->t_values, outError)) return false;
+        outResolved->transport_sample_count = outResolved->t_values.size();
     }
 
     if (outResolved->t_values.size() < 2u) {
@@ -612,6 +658,8 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     record.source_request_json_path = resolved.source_request_json_path;
     record.source_bundle_json_path = resolved.source_bundle_json_path;
     record.discovery_source = resolved.discovery_source;
+    record.transport_generation_mode = resolved.transport_generation_mode;
+    record.transport_sample_count = resolved.transport_sample_count;
     record.transport_generated = resolved.transport_generated;
     record.request_exists = true;
 
@@ -693,6 +741,8 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
         }
         record.bundle_json_path = generatedRequest.bundle_json_path;
         record.discovery_source = "generated_transport";
+        record.transport_generation_mode = "closed_loop_default";
+        record.transport_sample_count = synthesizedBundle.samples.size();
         record.transport_generated = true;
     }
 
@@ -737,4 +787,88 @@ bool LoadRecentRuntimeWalkViewerImportSessions(const std::string& exeDir,
     std::vector<RuntimeWalkViewerImportSessionRecord>* outRecords,
     std::string* outError) {
     return LoadRecentIndex(exeDir, outRecords, outError);
+}
+
+void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
+    const std::string& currentLoadedStatePath,
+    const RuntimeWalkViewerSession& session,
+    RuntimeWalkViewerImportPanelState* ioPanel) {
+    if (!ioPanel) return;
+    ioPanel->open = true;
+    ioPanel->base_state_json_path = currentLoadedStatePath;
+    ioPanel->status_text.clear();
+    if (currentLoadedStatePath.empty()) {
+        ioPanel->authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    }
+    if (session.loaded) {
+        ioPanel->authority_mode = session.authority_mode;
+        if (ioPanel->comparison_fits_path.empty()) {
+            ioPanel->comparison_fits_path = session.asset.companion.comparison_fits_path;
+        }
+        if (ioPanel->request_json_path.empty()) {
+            ioPanel->request_json_path = session.request_json_path;
+        }
+        if (ioPanel->bundle_json_path.empty()) {
+            ioPanel->bundle_json_path = session.asset.request.bundle_json_path;
+        }
+        if (ioPanel->mapping_profile_json_path.empty()) {
+            ioPanel->mapping_profile_json_path = session.asset.authority.mapping_profile_json_path;
+        }
+        if (ioPanel->mapping_profile_id.empty()) {
+            ioPanel->mapping_profile_id = session.asset.authority.mapping_profile_id;
+        }
+    }
+    std::string error;
+    std::vector<RuntimeWalkViewerImportSessionRecord> recent;
+    if (LoadRecentRuntimeWalkViewerImportSessions(exeDir, &recent, &error)) {
+        ioPanel->recent_sessions = recent;
+    } else if (ioPanel->status_text.empty()) {
+        ioPanel->status_text = error;
+    }
+}
+
+bool NoteRuntimeWalkViewerImportSessionLoadSucceeded(const std::string& requestJsonPath,
+    std::string* outError) {
+    if (outError) outError->clear();
+    const std::filesystem::path requestPath = ResolveAbsolutePath(requestJsonPath);
+    if (requestPath.empty()) {
+        if (outError) *outError = "Runtime-walk session load receipt requires a request path";
+        return false;
+    }
+    const std::filesystem::path sessionDir = requestPath.parent_path();
+    const std::filesystem::path sessionsRoot = sessionDir.parent_path();
+    const std::filesystem::path exeDir = sessionsRoot.parent_path().parent_path();
+    const std::filesystem::path recentIndexPath = sessionsRoot / "recent_sessions.json";
+
+    RuntimeWalkViewerImportSessionRecord matched;
+    bool found = false;
+    if (std::filesystem::exists(recentIndexPath)) {
+        ImportRecords records;
+        if (!LoadRecentIndex(exeDir.string(), &records, outError)) return false;
+        for (RuntimeWalkViewerImportSessionRecord& record : records) {
+            if (NormalizePathString(ResolveAbsolutePath(record.request_json_path)) != NormalizePathString(requestPath)) continue;
+            record.viewer_load_succeeded = true;
+            matched = record;
+            found = true;
+            if (!WriteRecentIndex(exeDir.string(), records, outError)) return false;
+            break;
+        }
+    }
+    if (!found) {
+        return true;
+    }
+
+    RuntimeWalkRequest request;
+    if (!LoadRuntimeWalkRequestFile(requestJsonPath, &request, outError)) return false;
+    if (!WriteTextFile(ImportSelectionManifestPath(matched.session_dir),
+            SerializeImportSelectionManifest(matched, request),
+            outError)) {
+        return false;
+    }
+    if (!WriteTextFile(ImportReceiptPath(matched.session_dir),
+            SerializeImportReceipt(matched),
+            outError)) {
+        return false;
+    }
+    return true;
 }

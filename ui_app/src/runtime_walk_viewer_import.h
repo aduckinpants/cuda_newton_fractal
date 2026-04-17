@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+struct RuntimeWalkViewerSession;
+
 struct RuntimeWalkViewerImportRequest {
     std::string exe_dir;
     std::string base_state_json_path;
@@ -38,8 +40,24 @@ struct RuntimeWalkViewerImportSessionRecord {
     std::string source_request_json_path;
     std::string source_bundle_json_path;
     std::string discovery_source;
+    std::string transport_generation_mode;
+    std::size_t transport_sample_count = 0;
     bool transport_generated = false;
     bool request_exists = false;
+    bool viewer_load_succeeded = false;
+};
+
+struct RuntimeWalkViewerImportPanelState {
+    bool open = false;
+    std::string base_state_json_path;
+    RuntimeWalkAuthorityMode authority_mode = RuntimeWalkAuthorityMode::loaded_base_state;
+    std::string comparison_fits_path;
+    std::string request_json_path;
+    std::string bundle_json_path;
+    std::string mapping_profile_json_path;
+    std::string mapping_profile_id;
+    std::string status_text;
+    std::vector<RuntimeWalkViewerImportSessionRecord> recent_sessions;
 };
 
 bool ValidateRuntimeWalkViewerImportBaseState(RuntimeWalkAuthorityMode authorityMode,
@@ -57,4 +75,12 @@ bool LoadLatestRuntimeWalkViewerImportSession(const std::string& exeDir,
 
 bool LoadRecentRuntimeWalkViewerImportSessions(const std::string& exeDir,
     std::vector<RuntimeWalkViewerImportSessionRecord>* outRecords,
+    std::string* outError);
+
+void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
+    const std::string& currentLoadedStatePath,
+    const RuntimeWalkViewerSession& session,
+    RuntimeWalkViewerImportPanelState* ioPanel);
+
+bool NoteRuntimeWalkViewerImportSessionLoadSucceeded(const std::string& requestJsonPath,
     std::string* outError);

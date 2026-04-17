@@ -1578,37 +1578,6 @@ static void RefreshRuntimeWalkViewerImportRecent(const std::string& exeDir,
     }
 }
 
-static void SeedRuntimeWalkViewerImportPanel(const std::string& exeDir,
-    const std::string& currentLoadedStatePath,
-    const RuntimeWalkViewerSession& session,
-    RuntimeWalkViewerImportPanelState* ioPanel) {
-    if (!ioPanel) return;
-    ioPanel->open = true;
-    ioPanel->base_state_json_path = currentLoadedStatePath;
-    if (currentLoadedStatePath.empty()) {
-        ioPanel->authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
-    }
-    if (session.loaded) {
-        ioPanel->authority_mode = session.authority_mode;
-        if (ioPanel->comparison_fits_path.empty()) {
-            ioPanel->comparison_fits_path = session.asset.companion.comparison_fits_path;
-        }
-        if (ioPanel->request_json_path.empty()) {
-            ioPanel->request_json_path = session.request_json_path;
-        }
-        if (ioPanel->bundle_json_path.empty()) {
-            ioPanel->bundle_json_path = session.asset.request.bundle_json_path;
-        }
-        if (ioPanel->mapping_profile_json_path.empty()) {
-            ioPanel->mapping_profile_json_path = session.asset.authority.mapping_profile_json_path;
-        }
-        if (ioPanel->mapping_profile_id.empty()) {
-            ioPanel->mapping_profile_id = session.asset.authority.mapping_profile_id;
-        }
-    }
-    RefreshRuntimeWalkViewerImportRecent(exeDir, ioPanel, &ioPanel->status_text);
-}
-
 static bool ActivateRuntimeWalkViewerSession(const std::string& requestJsonPath,
     RuntimeWalkViewerSession* ioSession,
     RuntimeWalkViewerPlaybackState* ioPlayback,
@@ -1629,9 +1598,8 @@ static bool ActivateRuntimeWalkViewerSession(const std::string& requestJsonPath,
         return false;
     }
 
-    RuntimeWalkViewerPlaybackState nextPlayback = *ioPlayback;
-    nextPlayback.loaded = false;
-    nextPlayback.playing = true;
+    RuntimeWalkViewerPlaybackState nextPlayback{};
+    ResetRuntimeWalkViewerPlaybackForNewSession(*ioPlayback, &nextPlayback);
 
     RuntimeWalkSnapshot snapshot{};
     if (!ApplyRuntimeWalkViewerPlaybackSnapshot(nextSession, nextPlayback, ioView, ioParams, &snapshot, outError)) {
@@ -1735,6 +1703,7 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
 
     std::string requestToLoad;
     if (actions.open_latest) {
+        panel.status_text.clear();
         RuntimeWalkViewerImportSessionRecord latest;
         std::string latestError;
         if (!LoadLatestRuntimeWalkViewerImportSession(exeDir, &latest, &latestError)) {
@@ -1743,8 +1712,10 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
             requestToLoad = latest.request_json_path;
         }
     } else if (!actions.open_recent_request_json_path.empty()) {
+        panel.status_text.clear();
         requestToLoad = actions.open_recent_request_json_path;
     } else if (actions.build_and_open) {
+        panel.status_text.clear();
         RuntimeWalkViewerImportRequest importRequest{};
         importRequest.exe_dir = exeDir;
         importRequest.base_state_json_path = currentLoadedStatePath;
@@ -1781,6 +1752,11 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
             findingStatus = "Runtime walk load failed: " + loadError;
             panel.status_text = loadError;
         } else {
+            std::string receiptError;
+            if (!NoteRuntimeWalkViewerImportSessionLoadSucceeded(requestToLoad, &receiptError) &&
+                panel.status_text.empty()) {
+                panel.status_text = receiptError;
+            }
             panel.open = false;
             panel.status_text.clear();
             findingStatus = "Loaded runtime walk request: " + requestToLoad;
@@ -1974,7 +1950,7 @@ static void RunViewerFrame(
         findingStatus, lastFindingPath);
 
     if (actions.loadFits) {
-        SeedRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
+        PrimeRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
         actions.interactionChanged = true;
     }
     if (!ProcessRuntimeWalkViewerImportPerFrame(

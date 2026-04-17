@@ -7,19 +7,6 @@
 struct ImDrawList;
 struct ImVec2;
 
-struct RuntimeWalkViewerImportPanelState {
-    bool open = false;
-    std::string base_state_json_path;
-    RuntimeWalkAuthorityMode authority_mode = RuntimeWalkAuthorityMode::loaded_base_state;
-    std::string comparison_fits_path;
-    std::string request_json_path;
-    std::string bundle_json_path;
-    std::string mapping_profile_json_path;
-    std::string mapping_profile_id;
-    std::string status_text;
-    std::vector<RuntimeWalkViewerImportSessionRecord> recent_sessions;
-};
-
 struct RuntimeWalkViewerUiActions {
     bool open_request_dialog = false;
     bool reload_current_request = false;

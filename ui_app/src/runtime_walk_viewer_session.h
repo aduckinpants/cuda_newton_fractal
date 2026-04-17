@@ -34,3 +34,6 @@ bool UpdateRuntimeWalkViewerPlayback(const RuntimeWalkViewerSession& session,
     RuntimeWalkSnapshot* outSnapshot,
     bool* outChanged,
     std::string* outError);
+
+void ResetRuntimeWalkViewerPlaybackForNewSession(const RuntimeWalkViewerPlaybackState& previous,
+    RuntimeWalkViewerPlaybackState* outPlayback);

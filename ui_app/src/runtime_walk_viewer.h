@@ -37,7 +37,7 @@ struct RuntimeWalkViewerPlaybackState {
     bool loaded = false;
     bool playing = true;
     bool loop = true;
-    double speed = 0.20;
+    double speed = 0.85;
     double current_t = 0.0;
     std::size_t nearest_tick_index = 0;
     bool show_raw_path = true;

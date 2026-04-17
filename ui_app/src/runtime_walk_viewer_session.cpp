@@ -3,6 +3,19 @@
 #include "finding_state_actions.h"
 #include "fractal_family_rules.h"
 
+void ResetRuntimeWalkViewerPlaybackForNewSession(const RuntimeWalkViewerPlaybackState& previous,
+    RuntimeWalkViewerPlaybackState* outPlayback) {
+    if (!outPlayback) return;
+    RuntimeWalkViewerPlaybackState next{};
+    next.loop = previous.loop;
+    next.show_raw_path = previous.show_raw_path;
+    next.show_spline_path = previous.show_spline_path;
+    next.show_closed_loop = previous.show_closed_loop;
+    next.show_branch_markers = previous.show_branch_markers;
+    next.show_gradient_overlay = previous.show_gradient_overlay;
+    *outPlayback = next;
+}
+
 bool LoadRuntimeWalkViewerSession(const std::string& requestJsonPath,
     RuntimeWalkViewerSession* outSession,
     std::string* outError) {

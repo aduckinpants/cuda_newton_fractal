@@ -191,13 +191,29 @@ static void TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape() {
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_FieldName");
     Check(bundle.samples.size() >= 2u,
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_HasSamples");
+    Check(bundle.samples.size() >= 13u,
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_DenseSamples");
     Check(bundle.branch_markers.size() >= 1u,
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_HasBranchMarker");
     Check(bundle.samples.front().t == 0.0 && bundle.samples.back().t == 1.0,
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_TRange");
+    Check(NearlyEqual(bundle.samples.front().channels[0], bundle.samples.back().channels[0]) &&
+            NearlyEqual(bundle.samples.front().channels[6], bundle.samples.back().channels[6]),
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_ClosedLoopEndpoints");
     Check(!NearlyEqual(bundle.samples[1].channels[0], bundle.samples.front().channels[0]) ||
             !NearlyEqual(bundle.samples[1].channels[5], bundle.samples.front().channels[5]),
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_NotNeutralOnly");
+    bool varied = false;
+    for (std::size_t index = 1; index + 1u < bundle.samples.size(); ++index) {
+        if (!NearlyEqual(bundle.samples[index].channels[0], bundle.samples[index - 1].channels[0]) ||
+            !NearlyEqual(bundle.samples[index].channels[3], bundle.samples[index - 1].channels[3]) ||
+            !NearlyEqual(bundle.samples[index].channels[6], bundle.samples[index - 1].channels[6])) {
+            varied = true;
+            break;
+        }
+    }
+    Check(varied,
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_VariedIntermediateSamples");
 }
 
 int main() {
