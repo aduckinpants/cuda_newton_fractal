@@ -80,6 +80,7 @@ static bool TryParseFlashlightArgs(const std::vector<std::string>& args, ViewerC
 static bool TryParseRuntimeWalkArgs(const std::vector<std::string>& args, ViewerCliArgs* out) {
     if (!TryStr(args, "--runtime-walk-request-json", &out->have_runtime_walk_request_json, &out->runtime_walk_request_json_path)) return false;
     if (!TryStr(args, "--load-runtime-walk-request-json", &out->have_runtime_walk_viewer_request_json, &out->runtime_walk_viewer_request_json_path)) return false;
+    if (!TryStr(args, "--load-runtime-walk-fits", &out->have_runtime_walk_viewer_fits_path, &out->runtime_walk_viewer_fits_path)) return false;
     return true;
 }
 

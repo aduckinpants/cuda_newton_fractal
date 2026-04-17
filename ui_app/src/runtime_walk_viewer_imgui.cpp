@@ -172,7 +172,12 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
             ? "FITS plus the checked-in mapping contract synthesize the authoritative Explaino base state and default runtime-walk transport when no authored request or bundle exists. RTK outputs remain companion evidence only."
             : "Loaded capture state remains authoritative. If no authored request or bundle exists, FITS import synthesizes default runtime-walk transport. FITS and RTK outputs remain companion evidence only.");
     ImGui::Separator();
-    ImGui::TextWrapped("Base State: %s", state.base_state_json_path.empty() ? "(none)" : state.base_state_json_path.c_str());
+    if (synthesizeDefault) {
+        ImGui::TextUnformatted("Base State: synthesized from FITS");
+    } else {
+        ImGui::TextWrapped("Base State: %s", state.base_state_json_path.empty() ? "(none)" : state.base_state_json_path.c_str());
+    }
+    ImGui::TextWrapped("FITS: %s", state.comparison_fits_path.empty() ? "(none)" : state.comparison_fits_path.c_str());
     if (!state.status_text.empty()) {
         ImGui::TextWrapped("%s", state.status_text.c_str());
     }
@@ -180,38 +185,41 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
         ImGui::TextWrapped("%s", blockedReason.c_str());
     }
 
-    if (ImGui::Button("Browse FITS...")) {
+    if (ImGui::Button("Choose FITS...")) {
         outActions->open_fits_dialog = true;
         interactionChanged = true;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Browse Request...")) {
-        outActions->open_request_dialog = true;
-        interactionChanged = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Browse Bundle...")) {
-        outActions->open_bundle_dialog = true;
-        interactionChanged = true;
-    }
-
-    ImGui::TextWrapped("FITS: %s", state.comparison_fits_path.empty() ? "(none)" : state.comparison_fits_path.c_str());
-    ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(auto-discover, recent, or generate)" : state.request_json_path.c_str());
-    ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(auto-discover, recent, or generate)" : state.bundle_json_path.c_str());
-    ImGui::TextWrapped("Mapping Profile: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
-    ImGui::TextWrapped("Mapping Profile Id: %s", state.mapping_profile_id.empty() ? "explaino_default" : state.mapping_profile_id.c_str());
-
-    if (ImGui::Button("Open Latest")) {
-        outActions->open_latest = true;
-        interactionChanged = true;
-    }
-    ImGui::SameLine();
+    const bool haveOpenInput = !state.comparison_fits_path.empty() || !state.request_json_path.empty() || !state.bundle_json_path.empty();
     ImGui::BeginDisabled(!importAllowed);
+    ImGui::BeginDisabled(!haveOpenInput);
     if (ImGui::Button("Open FITS")) {
         outActions->build_and_open = true;
         interactionChanged = true;
     }
     ImGui::EndDisabled();
+    ImGui::EndDisabled();
+
+    if (ImGui::Button("Open Latest")) {
+        outActions->open_latest = true;
+        interactionChanged = true;
+    }
+
+    if (ImGui::CollapsingHeader("Advanced Overrides")) {
+        if (ImGui::Button("Browse Request...")) {
+            outActions->open_request_dialog = true;
+            interactionChanged = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Browse Bundle...")) {
+            outActions->open_bundle_dialog = true;
+            interactionChanged = true;
+        }
+        ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(none)" : state.request_json_path.c_str());
+        ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(none)" : state.bundle_json_path.c_str());
+        ImGui::TextWrapped("Mapping Profile: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
+        ImGui::TextWrapped("Mapping Profile Id: %s", state.mapping_profile_id.empty() ? "explaino_default" : state.mapping_profile_id.c_str());
+    }
 
     if (ImGui::CollapsingHeader("Recent Sessions", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (state.recent_sessions.empty()) {
@@ -219,7 +227,8 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
         }
         for (const RuntimeWalkViewerImportSessionRecord& record : state.recent_sessions) {
             ImGui::PushID(record.session_id.c_str());
-            ImGui::BeginDisabled(!record.request_exists);
+            const bool canOpen = record.request_exists && record.viewer_load_succeeded;
+            ImGui::BeginDisabled(!canOpen);
             if (ImGui::SmallButton("Open")) {
                 outActions->open_recent_request_json_path = record.request_json_path;
                 interactionChanged = true;
@@ -229,7 +238,7 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
             ImGui::TextWrapped("[%s] %s%s",
                 RuntimeWalkAuthorityModeId(record.authority_mode),
                 record.comparison_fits_path.empty() ? record.request_json_path.c_str() : record.comparison_fits_path.c_str(),
-                record.request_exists ? "" : " [stale]");
+                canOpen ? "" : (record.request_exists ? " [unloaded]" : " [stale]"));
             ImGui::PopID();
         }
     }

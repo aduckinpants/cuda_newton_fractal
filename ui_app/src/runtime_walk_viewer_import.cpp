@@ -483,6 +483,12 @@ bool TryResolveRecentMatch(const RuntimeWalkViewerImportRequest& request,
     return false;
 }
 
+bool ShouldForceGeneratedTransport(const RuntimeWalkViewerImportRequest& request) {
+    return request.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base &&
+        request.request_json_path.empty() &&
+        request.bundle_json_path.empty();
+}
+
 bool TryResolveSiblingCandidates(const RuntimeWalkViewerImportRequest& request, ResolvedImportSources* outResolved) {
     if (!outResolved) return false;
     if (request.comparison_fits_path.empty()) return false;
@@ -543,6 +549,13 @@ bool ResolveImportSources(const RuntimeWalkViewerImportRequest& request,
     } else if (!request.bundle_json_path.empty()) {
         outResolved->bundle_json_path = NormalizePathString(ResolveAbsolutePath(request.bundle_json_path));
         outResolved->discovery_source = "explicit_bundle";
+    } else if (ShouldForceGeneratedTransport(request) && !request.comparison_fits_path.empty()) {
+        outResolved->comparison_fits_path = NormalizePathString(ResolveAbsolutePath(request.comparison_fits_path));
+        outResolved->rtk_manifest_json_path = NormalizePathString(ResolveAbsolutePath(request.rtk_manifest_json_path));
+        outResolved->rtk_harvest_summary_json_path = NormalizePathString(ResolveAbsolutePath(request.rtk_harvest_summary_json_path));
+        outResolved->discovery_source = "generated_transport";
+        outResolved->transport_generated = true;
+        return true;
     } else if (TryResolveRecentMatch(request, records, outResolved)) {
     } else if (TryResolveSiblingCandidates(request, outResolved)) {
     } else if (!request.comparison_fits_path.empty()) {
@@ -635,7 +648,7 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     const std::filesystem::path receiptPath = sessionDir / "runtime_walk_import_receipt.json";
     const std::filesystem::path outputDir = sessionDir / "output";
     const std::filesystem::path orientationInputsPath = sessionDir / "orientation_inputs.json";
-    const std::filesystem::path synthesizedStatePath = sessionDir / "synthesized_base_state.json";
+    const std::filesystem::path synthesizedStatePath = sessionDir / "state.json";
 
     RuntimeWalkRequest generatedRequest{};
     generatedRequest.authority_mode = request.authority_mode;
@@ -775,7 +788,7 @@ bool LoadLatestRuntimeWalkViewerImportSession(const std::string& exeDir,
     }
     RuntimeWalkViewerImportSessionRecord latest = records.front();
     latest.request_exists = IsUsableImportSessionRecord(latest);
-    if (!latest.request_exists) {
+    if (!latest.request_exists || !latest.viewer_load_succeeded) {
         if (outError) *outError = "Latest runtime-walk FITS import session is stale or missing required artifacts: " + latest.request_json_path;
         return false;
     }
@@ -796,20 +809,13 @@ void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
     if (!ioPanel) return;
     ioPanel->open = true;
     ioPanel->base_state_json_path = currentLoadedStatePath;
+    ioPanel->authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    ioPanel->request_json_path.clear();
+    ioPanel->bundle_json_path.clear();
     ioPanel->status_text.clear();
-    if (currentLoadedStatePath.empty()) {
-        ioPanel->authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
-    }
     if (session.loaded) {
-        ioPanel->authority_mode = session.authority_mode;
         if (ioPanel->comparison_fits_path.empty()) {
             ioPanel->comparison_fits_path = session.asset.companion.comparison_fits_path;
-        }
-        if (ioPanel->request_json_path.empty()) {
-            ioPanel->request_json_path = session.request_json_path;
-        }
-        if (ioPanel->bundle_json_path.empty()) {
-            ioPanel->bundle_json_path = session.asset.request.bundle_json_path;
         }
         if (ioPanel->mapping_profile_json_path.empty()) {
             ioPanel->mapping_profile_json_path = session.asset.authority.mapping_profile_json_path;

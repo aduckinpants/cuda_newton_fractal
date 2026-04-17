@@ -14,6 +14,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
 ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
+REAL_FITS_PATH = Path(
+    r"D:\salt-output\results\godel_fits_entropy_campaign\core_round_20260407\core\fits\godel_g1_long\frames_delta_stack.fits"
+)
 
 WM_CLOSE = 0x0010
 WM_KEYDOWN = 0x0100
@@ -277,6 +280,11 @@ def _mean_abs_diff(left: bytes, right: bytes) -> float:
     return total / len(left)
 
 
+def _load_recent_runtime_walk_sessions() -> dict:
+    recent_path = RUNTIME_DIR / "diagnostics" / "runtime_walk_sessions" / "recent_sessions.json"
+    return json.loads(recent_path.read_text(encoding="utf-8"))
+
+
 def test_runtime_walk_viewer_replays_and_space_pauses(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("runtime-walk viewer regression is Windows-only")
@@ -393,6 +401,66 @@ def test_runtime_walk_viewer_tolerates_missing_companion_fits(tmp_path: Path) ->
             "runtime-walk viewer should keep animating when companion FITS is missing; "
             f"diff={running_diff:.3f}"
         )
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_walk_viewer_can_boot_from_fits_only_cli() -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+    if not REAL_FITS_PATH.exists():
+        pytest.skip(f"missing real FITS acceptance artifact: {REAL_FITS_PATH}")
+
+    exe_path = _active_runtime_exe()
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-runtime-walk-fits",
+            str(REAL_FITS_PATH),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            hwnd = _find_window_for_pid(proc.pid)
+            if hwnd is not None:
+                break
+            if proc.poll() is not None:
+                raise AssertionError(f"viewer exited before creating a window; returncode={proc.returncode}")
+            time.sleep(0.1)
+
+        assert hwnd is not None, f"viewer never created a top-level window for pid {proc.pid}"
+
+        user32 = ctypes.windll.user32
+        user32.ShowWindow(wintypes.HWND(hwnd), 5)
+        user32.SetForegroundWindow(wintypes.HWND(hwnd))
+
+        time.sleep(0.8)
+        running_frame_a, running_frame_b = _capture_stable_window_pixels(hwnd)
+        running_diff = _mean_abs_diff(running_frame_a, running_frame_b)
+        assert running_diff > 0.05, (
+            "FITS-only runtime-walk viewer load did not visibly animate; "
+            f"diff={running_diff:.3f}"
+        )
+
+        recent = _load_recent_runtime_walk_sessions()
+        assert recent["sessions"], "FITS-only load did not record a recent runtime-walk session"
+        latest = recent["sessions"][0]
+        assert latest["authority_mode"] == "synthesized_fits_base"
+        assert Path(latest["comparison_fits"]) == REAL_FITS_PATH
+        assert latest["transport_generated"] is True
+        assert latest["transport_generation_mode"] == "closed_loop_default"
+        assert latest["transport_sample_count"] >= 13
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)

@@ -1059,7 +1059,8 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
-    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json;
+    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
+    if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
@@ -1244,7 +1245,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
                                        const std::string& exeDir) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
-    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json;
+    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
             exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
@@ -1614,8 +1615,61 @@ static bool ActivateRuntimeWalkViewerSession(const std::string& requestJsonPath,
     return true;
 }
 
+static bool BuildAndActivateRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& importRequest,
+    RuntimeWalkViewerImportPanelState* ioPanel,
+    RuntimeWalkViewerSession* ioSession,
+    RuntimeWalkViewerPlaybackState* ioPlayback,
+    RenderSettings* ioRender,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    std::string* ioCurrentLoadedStatePath,
+    FractalType* ioCurrentLoadedStateFractalType,
+    bool* ioDirty,
+    std::string* outLoadedRequestPath,
+    std::string* outError) {
+    if (outError) outError->clear();
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string importError;
+    if (!BuildRuntimeWalkViewerImportSession(importRequest, &record, &importError)) {
+        if (ioPanel) ioPanel->status_text = importError;
+        if (outError) *outError = importError;
+        return false;
+    }
+
+    std::string loadError;
+    if (!ActivateRuntimeWalkViewerSession(
+            record.request_json_path,
+            ioSession,
+            ioPlayback,
+            ioRender,
+            ioView,
+            ioParams,
+            ioCurrentLoadedStatePath,
+            ioCurrentLoadedStateFractalType,
+            &loadError)) {
+        if (ioPanel) ioPanel->status_text = loadError;
+        if (outError) *outError = loadError;
+        return false;
+    }
+
+    std::string receiptError;
+    if (!NoteRuntimeWalkViewerImportSessionLoadSucceeded(record.request_json_path, &receiptError) &&
+            ioPanel && ioPanel->status_text.empty()) {
+        ioPanel->status_text = receiptError;
+    }
+    if (ioPanel) {
+        ioPanel->open = false;
+        ioPanel->status_text.clear();
+    }
+    if (ioDirty) *ioDirty = true;
+    if (outLoadedRequestPath) *outLoadedRequestPath = record.request_json_path;
+    return true;
+}
+
 static bool InitializeRuntimeWalkViewerIfRequested(
     const ViewerCliArgs& cli,
+    const std::string& exeDir,
+    RuntimeWalkViewerImportPanelState* ioImportPanel,
     RuntimeWalkViewerSession* ioSession,
     RuntimeWalkViewerPlaybackState* ioPlayback,
     RenderSettings* ioRender,
@@ -1626,10 +1680,31 @@ static bool InitializeRuntimeWalkViewerIfRequested(
     bool* ioDirty,
     std::string* outError) {
     if (outError) outError->clear();
-    if (!cli.have_runtime_walk_viewer_request_json) return true;
-    if (!ioSession || !ioPlayback || !ioRender || !ioView || !ioParams || !ioDirty) {
+    if (!cli.have_runtime_walk_viewer_request_json && !cli.have_runtime_walk_viewer_fits_path) return true;
+    if (!ioSession || !ioPlayback || !ioRender || !ioView || !ioParams || !ioDirty || !ioImportPanel) {
         if (outError) *outError = "Runtime walk viewer initialization requires valid output pointers";
         return false;
+    }
+    if (cli.have_runtime_walk_viewer_fits_path) {
+        RuntimeWalkViewerImportRequest importRequest{};
+        importRequest.exe_dir = exeDir;
+        importRequest.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+        importRequest.base_fractal_type = FractalType::explaino_fp;
+        importRequest.comparison_fits_path = cli.runtime_walk_viewer_fits_path;
+        std::string loadedRequestPath;
+        return BuildAndActivateRuntimeWalkViewerImportSession(
+            importRequest,
+            ioImportPanel,
+            ioSession,
+            ioPlayback,
+            ioRender,
+            ioView,
+            ioParams,
+            ioCurrentLoadedStatePath,
+            ioCurrentLoadedStateFractalType,
+            ioDirty,
+            &loadedRequestPath,
+            outError);
     }
     if (!ActivateRuntimeWalkViewerSession(
             cli.runtime_walk_viewer_request_json_path,
@@ -1681,7 +1756,9 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
         std::string selectedPath;
         if (PromptOpenFitsPath(hwnd, &selectedPath)) {
             panel.comparison_fits_path = selectedPath;
-            panel.status_text.clear();
+            panel.request_json_path.clear();
+            panel.bundle_json_path.clear();
+            panel.status_text = "FITS selected.";
         }
     }
     if (actions.open_request_dialog) {
@@ -1726,18 +1803,28 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
         importRequest.bundle_json_path = panel.bundle_json_path;
         importRequest.mapping_profile_json_path = panel.mapping_profile_json_path;
         importRequest.mapping_profile_id = panel.mapping_profile_id;
-        RuntimeWalkViewerImportSessionRecord record;
-        std::string importError;
-        if (!BuildRuntimeWalkViewerImportSession(importRequest, &record, &importError)) {
-            panel.status_text = importError;
-        } else {
-            requestToLoad = record.request_json_path;
-            panel.status_text = "Prepared runtime-walk FITS import session: " + record.session_id;
+        if (BuildAndActivateRuntimeWalkViewerImportSession(
+                importRequest,
+                &panel,
+                &session,
+                &playback,
+                &render,
+                &view,
+                &params,
+                &currentLoadedStatePath,
+                &currentLoadedStateFractalType,
+                &dirty,
+                &requestToLoad,
+                &panel.status_text)) {
+            findingStatus = "Loaded runtime walk FITS session: " + requestToLoad;
             RefreshRuntimeWalkViewerImportRecent(exeDir, &panel, &panel.status_text);
         }
     }
 
     if (!requestToLoad.empty()) {
+        if (actions.build_and_open) {
+            return true;
+        }
         std::string loadError;
         if (!ActivateRuntimeWalkViewerSession(
                 requestToLoad,
@@ -2160,6 +2247,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         std::string runtimeWalkError;
         if (!InitializeRuntimeWalkViewerIfRequested(
                 cli,
+                exeDir,
+                &runtimeWalkImportPanel,
                 &runtimeWalkViewerSession,
                 &runtimeWalkPlayback,
                 &render,

@@ -246,6 +246,8 @@ static void TestImportSessionPersistsDeterministicRecentLatest() {
     RuntimeWalkViewerImportSessionRecord second;
     Check(BuildRuntimeWalkViewerImportSession(request, &second, &error),
         "TestImportSessionPersistsDeterministicRecentLatest_SecondBuild");
+    Check(NoteRuntimeWalkViewerImportSessionLoadSucceeded(second.request_json_path, &error),
+        "TestImportSessionPersistsDeterministicRecentLatest_NoteLoaded");
     Check(first.session_id == second.session_id,
         "TestImportSessionPersistsDeterministicRecentLatest_DeterministicId");
     Check(std::filesystem::exists(first.request_json_path),
@@ -264,6 +266,8 @@ static void TestImportSessionPersistsDeterministicRecentLatest() {
         "TestImportSessionPersistsDeterministicRecentLatest_RecentCount");
     Check(recent.front().request_exists,
         "TestImportSessionPersistsDeterministicRecentLatest_RecentAvailable");
+    Check(recent.front().viewer_load_succeeded,
+        "TestImportSessionPersistsDeterministicRecentLatest_RecentLoaded");
 }
 
 static void TestImportSessionCanRediscoverFromRecentMatch() {
@@ -329,6 +333,32 @@ static void TestLatestRejectsStaleSession() {
         "TestLatestRejectsStaleSession_Error");
 }
 
+static void TestLatestRejectsUnloadedSession() {
+    const std::filesystem::path root = TempRoot("unloaded_latest");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestLatestRejectsUnloadedSession_SeedBuild",
+        error);
+
+    RuntimeWalkViewerImportSessionRecord latest;
+    Check(!LoadLatestRuntimeWalkViewerImportSession(root.string(), &latest, &error),
+        "TestLatestRejectsUnloadedSession_Fails");
+    Check(error.find("stale") != std::string::npos,
+        "TestLatestRejectsUnloadedSession_Error");
+}
+
 static void TestLatestRejectsMissingGeneratedBundle() {
     const std::filesystem::path root = TempRoot("stale_bundle_latest");
     const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
@@ -385,6 +415,8 @@ static void TestImportSessionSynthesizesBaseStateWithoutLoadedState() {
         "TestImportSessionSynthesizesBaseStateWithoutLoadedState_OrientationInputsRecorded");
     Check(std::filesystem::exists(record.request_json_path),
         "TestImportSessionSynthesizesBaseStateWithoutLoadedState_RequestWritten");
+    Check(std::filesystem::path(record.synthesized_base_state_json_path).filename() == "state.json",
+        "TestImportSessionSynthesizesBaseStateWithoutLoadedState_StateFileName");
 }
 
 static void TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest() {
@@ -478,6 +510,61 @@ static void TestPrimeImportPanelClearsStaleStatusAndKeepsFitsSelection() {
         "TestPrimeImportPanelClearsStaleStatusAndKeepsFitsSelection_FitsPreserved");
 }
 
+static void TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState() {
+    const std::filesystem::path root = TempRoot("prime_panel_loaded_state");
+    RuntimeWalkViewerImportPanelState panel{};
+    panel.authority_mode = RuntimeWalkAuthorityMode::loaded_base_state;
+    panel.base_state_json_path = (root / "state.json").string();
+
+    RuntimeWalkViewerSession session{};
+    PrimeRuntimeWalkViewerImportPanel(root.string(), panel.base_state_json_path, session, &panel);
+
+    Check(panel.authority_mode == RuntimeWalkAuthorityMode::synthesized_fits_base,
+        "TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState_SynthMode");
+}
+
+static void TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault() {
+    const std::filesystem::path root = TempRoot("synth_mode_no_recent_reuse");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    const std::filesystem::path bundlePath = root / "bundle.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+    WriteBundleJson(bundlePath);
+
+    RuntimeWalkViewerImportRequest seeded{};
+    seeded.exe_dir = root.string();
+    seeded.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    seeded.comparison_fits_path = fitsPath.string();
+    seeded.bundle_json_path = bundlePath.string();
+    seeded.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord first;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(seeded, &first, &error),
+        "TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault_SeedBuild",
+        error);
+
+    RuntimeWalkViewerImportRequest regenerated{};
+    regenerated.exe_dir = root.string();
+    regenerated.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    regenerated.comparison_fits_path = fitsPath.string();
+    regenerated.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord second;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(regenerated, &second, &error),
+        "TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault_Regenerates",
+        error);
+    Check(second.discovery_source == "generated_transport",
+        "TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault_DiscoverySource");
+    Check(second.transport_generated,
+        "TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault_TransportGenerated");
+    Check(second.transport_generation_mode == "closed_loop_default",
+        "TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault_TransportMode");
+    Check(second.transport_sample_count >= 13u,
+        "TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault_TransportSampleCount");
+}
+
 static void TestImportSessionLoadSuccessPersistsToRecentReceipt() {
     const std::filesystem::path root = TempRoot("load_success_receipt");
     const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
@@ -523,10 +610,13 @@ int main() {
     TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest();
     TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent();
     TestPrimeImportPanelClearsStaleStatusAndKeepsFitsSelection();
+    TestPrimeImportPanelDefaultsToSynthModeEvenWithLoadedState();
+    TestImportSessionSynthesizedModeDoesNotReuseRecentRequestByDefault();
     TestImportSessionLoadSuccessPersistsToRecentReceipt();
     TestImportSessionPersistsDeterministicRecentLatest();
     TestImportSessionCanRediscoverFromRecentMatch();
     TestLatestRejectsStaleSession();
+    TestLatestRejectsUnloadedSession();
     TestLatestRejectsMissingGeneratedBundle();
 
     std::printf("test_runtime_walk_viewer_import: %d passed, %d failed\n", g_passed, g_failed);
