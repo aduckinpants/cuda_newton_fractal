@@ -385,6 +385,53 @@ static void TestLatestRejectsMissingGeneratedBundle() {
         "TestLatestRejectsMissingGeneratedBundle_Error");
 }
 
+static void TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood() {
+    const std::filesystem::path root = TempRoot("latest_skips_unloaded");
+    const std::filesystem::path firstFitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path firstOrientationInputsPath = root / "orientation_inputs.json";
+    const std::filesystem::path secondFitsPath = root / "checkpoint_final_other.fits";
+    const std::filesystem::path secondOrientationInputsPath = root / "orientation_inputs_other.json";
+    WriteDummyFits(firstFitsPath);
+    WriteOrientationInputsJson(firstOrientationInputsPath, firstFitsPath);
+    WriteDummyFits(secondFitsPath);
+    WriteOrientationInputsJson(secondOrientationInputsPath, secondFitsPath);
+
+    RuntimeWalkViewerImportRequest loaded{};
+    loaded.exe_dir = root.string();
+    loaded.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    loaded.comparison_fits_path = firstFitsPath.string();
+    loaded.orientation_inputs_json_path = firstOrientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord first;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(loaded, &first, &error),
+        "TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood_FirstBuild",
+        error);
+    CheckWithError(NoteRuntimeWalkViewerImportSessionLoadSucceeded(first.request_json_path, &error),
+        "TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood_FirstLoaded",
+        error);
+
+    RuntimeWalkViewerImportRequest secondRequest{};
+    secondRequest.exe_dir = root.string();
+    secondRequest.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    secondRequest.comparison_fits_path = secondFitsPath.string();
+    secondRequest.orientation_inputs_json_path = secondOrientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord second;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(secondRequest, &second, &error),
+        "TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood_SecondBuild",
+        error);
+    Check(!second.viewer_load_succeeded,
+        "TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood_SecondUnloaded");
+
+    RuntimeWalkViewerImportSessionRecord latest;
+    CheckWithError(LoadLatestRuntimeWalkViewerImportSession(root.string(), &latest, &error),
+        "TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood_LoadLatest",
+        error);
+    Check(latest.request_json_path == first.request_json_path,
+        "TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood_ReturnsLoadedSession");
+}
+
 static void TestImportSessionSynthesizesBaseStateWithoutLoadedState() {
     const std::filesystem::path root = TempRoot("synthesized_base");
     const std::filesystem::path bundlePath = root / "bundle.json";
@@ -618,6 +665,7 @@ int main() {
     TestLatestRejectsStaleSession();
     TestLatestRejectsUnloadedSession();
     TestLatestRejectsMissingGeneratedBundle();
+    TestLatestSkipsNewerUnloadedSessionAndReturnsLastGood();
 
     std::printf("test_runtime_walk_viewer_import: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

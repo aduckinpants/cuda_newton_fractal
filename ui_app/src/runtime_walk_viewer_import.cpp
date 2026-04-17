@@ -786,14 +786,17 @@ bool LoadLatestRuntimeWalkViewerImportSession(const std::string& exeDir,
         if (outError) *outError = "No runtime-walk FITS import sessions have been generated yet";
         return false;
     }
-    RuntimeWalkViewerImportSessionRecord latest = records.front();
-    latest.request_exists = IsUsableImportSessionRecord(latest);
-    if (!latest.request_exists || !latest.viewer_load_succeeded) {
-        if (outError) *outError = "Latest runtime-walk FITS import session is stale or missing required artifacts: " + latest.request_json_path;
-        return false;
+
+    for (RuntimeWalkViewerImportSessionRecord record : records) {
+        record.request_exists = IsUsableImportSessionRecord(record);
+        if (!record.request_exists || !record.viewer_load_succeeded) continue;
+        *outRecord = record;
+        return true;
     }
-    *outRecord = latest;
-    return true;
+
+    const RuntimeWalkViewerImportSessionRecord& latest = records.front();
+    if (outError) *outError = "Latest runtime-walk FITS import session is stale or missing required artifacts: " + latest.request_json_path;
+    return false;
 }
 
 bool LoadRecentRuntimeWalkViewerImportSessions(const std::string& exeDir,

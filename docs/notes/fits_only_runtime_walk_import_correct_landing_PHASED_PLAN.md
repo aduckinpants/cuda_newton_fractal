@@ -39,6 +39,11 @@ Completed - FITS-only runtime-walk import now defaults to synthesized Explaino a
   - hostile audit found and repaired two real issues after the first implementation pass:
     - generated synthesized base state was written as `synthesized_base_state.json`, but the runtime loader only accepts `state.json` / `finding.json`, so activation failed after generation
     - recent/latest bookkeeping still trusted generated-but-never-loaded sessions, so stale JSON-oriented sessions could be reopened as if they were good
+  - hostile review follow-up found a third real issue after landing:
+    - `Open Latest` only inspected the newest recent-session record, so one newer unloaded or stale generated session poisoned the convenience path even when an older successfully loaded FITS session still existed; the loader now returns the most recent loadable successful session instead
+- Remaining explicit coverage gaps after the repaired hostile review:
+  - published runtime proof still covers FITS-only playback through the CLI boot path, not the actual file-dialog click path
+  - there is still no runtime-level proof for `Open Latest` or manual advanced request/bundle overrides; current coverage for those branches is helper-level only
 
 ## Validation
 
