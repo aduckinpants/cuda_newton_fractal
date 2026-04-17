@@ -25,7 +25,7 @@ struct RuntimeWalkFitsMappingBinding {
 struct RuntimeWalkFitsMappingProfile {
     std::string id;
     std::string target_selector;
-    FractalType base_fractal_type = FractalType::explaino_fp;
+    FractalType base_fractal_type = FractalType::explaino;
     std::vector<RuntimeWalkFitsMappingBinding> bindings;
 };
 
@@ -41,7 +41,7 @@ struct RuntimeWalkFitsOrientationInputs {
 struct RuntimeWalkTransportSynthesisOptions {
     std::size_t sample_count = 33;
     double motion_scale = 0.75;
-    double warp_scale = 0.10;
+    double warp_scale = 0.0;
 };
 
 bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,

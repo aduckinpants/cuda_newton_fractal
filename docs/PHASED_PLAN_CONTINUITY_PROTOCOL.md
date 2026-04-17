@@ -14,6 +14,8 @@ Each meaningful multi-step slice should use a phased plan document with, at mini
 - `## Phase Checklist`
 - `## Notes` or another short evidence section for blockers, proof, or next actions
 
+Meaningful slices should also carry a checked-in machine-readable contract file that references the phased plan and acts as the enforcement surface for mutation/closure guards.
+
 Preferred location:
 
 - reuse the nearest existing plan doc first
@@ -72,10 +74,13 @@ At session start:
 1. Run `py -3.14 tools/viewer_host_session_bootstrap.py --audit --tail-handoff 8`.
 2. Reopen the active phased plan, if one exists.
 3. Confirm that `## Current Phase` and `## Phase Checklist` still agree.
-4. Append a session-start slice breadcrumb with `py -3.14 tools/viewer_host_begin_work_slice.py ...` before broad new work; the helper now prints the `ck:` token to reuse at checkpoint time.
+4. Reopen or create the checked-in slice contract for the same work thread.
+5. Append a session-start slice breadcrumb with `py -3.14 tools/viewer_host_begin_work_slice.py ... --plan <plan> --contract <contract>` before broad new work; the helper now prints the `ck:` token to reuse at checkpoint time and locks the active contract.
+6. If the contract changes later in the slice, run `py -3.14 tools/viewer_host_revise_contract.py --session-id <id> --contract <contract>` before further mutation or closure.
 
 At session end:
 
 1. Update the phased plan with the real stop point.
 2. Append `HANDOFF_LOG.md` with the validated checkpoint entry, or if the slice is intentionally paused ensure the session-start breadcrumb already exists and the phased plan records the real stop point.
-3. Leave enough evidence in the plan that a fresh agent can continue from the repo alone.
+3. If `HEAD` advanced, write the validation receipt and contract proof receipt for the final clean committed state.
+4. Leave enough evidence in the plan and contract that a fresh agent can continue from the repo alone.

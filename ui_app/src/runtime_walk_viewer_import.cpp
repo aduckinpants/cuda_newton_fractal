@@ -177,7 +177,7 @@ std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
     constexpr std::uint64_t kOffset = 1469598103934665603ull;
     constexpr std::uint64_t kPrime = 1099511628211ull;
     std::uint64_t hash = kOffset;
-    const std::array<std::string, 12> fields = {
+    const std::array<std::string, 11> fields = {
         RuntimeWalkAuthorityModeId(request.authority_mode),
         NormalizePathString(ResolveAbsolutePath(request.base_state_json_path)),
         NormalizePathString(ResolveAbsolutePath(resolvedBundlePath)),
@@ -189,7 +189,6 @@ std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
         NormalizePathString(ResolveAbsolutePath(request.rtk_harvest_summary_json_path)),
         std::to_string(request.transport_options.sample_count),
         std::to_string(request.transport_options.motion_scale),
-        std::to_string(request.transport_options.warp_scale),
     };
     for (const std::string& field : fields) {
         for (unsigned char ch : field) {

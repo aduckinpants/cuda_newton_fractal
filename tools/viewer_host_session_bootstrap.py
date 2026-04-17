@@ -10,8 +10,10 @@ from typing import Any
 
 try:
     from tools.viewer_host_repo_status import repo_is_dirty
+    from tools.viewer_host_contract_state import GLOBAL_CONTRACT_SESSION_ID, build_strict_banner, load_active_contract_state
 except ModuleNotFoundError:
     from viewer_host_repo_status import repo_is_dirty
+    from viewer_host_contract_state import GLOBAL_CONTRACT_SESSION_ID, build_strict_banner, load_active_contract_state
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -168,9 +170,12 @@ def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_han
     audit = _run_audit(py) if run_audit else None
     docs = [asdict(doc) for doc in required_docs(REPO_ROOT)]
     validation_profiles = build_validation_profiles(REPO_ROOT)
+    active_contract = load_active_contract_state(GLOBAL_CONTRACT_SESSION_ID, REPO_ROOT)
     return {
         "repo_root": str(REPO_ROOT),
         "git": {"branch": branch, "head": head, "dirty": dirty},
+        "strict_banner": build_strict_banner(active_contract),
+        "active_contract": active_contract,
         "docs": docs,
         "recent_handoff": tail_handoff_entries(handoff_log, tail_handoff),
         "handoff_warnings": {
@@ -180,10 +185,11 @@ def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_han
         "audit": asdict(audit) if audit is not None else None,
         "validation_profiles": validation_profiles,
         "next_commands": {
-            "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified>",
+            "begin_work_slice": "py -3.14 tools/viewer_host_begin_work_slice.py --intent \"<slice>\" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>",
             "append_handoff": "py -3.14 tools/viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> \"<message>\"",
             "append_handoff_legacy_pending": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> \"<message>\"",
             "assert_plan_sync": "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+            "prepare_slice": "py -3.14 tools/viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>",
             "profiles": "Use the VS Code tasks under verify: profile ...; bootstrap now lists each profile's steps and artifact paths.",
         },
     }
@@ -198,6 +204,14 @@ def print_bootstrap_report(state: dict[str, Any]) -> None:
     print(f"repo: {state['repo_root']}")
     git_state = state["git"]
     print(f"git: branch={git_state['branch']} head={git_state['head']} status={'dirty' if git_state['dirty'] else 'clean'}")
+    print(f"strict banner: {state['strict_banner']}")
+    active_contract = state.get("active_contract")
+    if active_contract:
+        print(
+            "active contract: "
+            + f"{active_contract.get('contract_id', '<unknown>')} "
+            + f"({active_contract.get('contract_path', '<unknown>')})"
+        )
     print("required docs:")
     for doc in state["docs"]:
         status = "ok" if doc["exists"] else "missing"

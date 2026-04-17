@@ -23,6 +23,18 @@
         "unspecified"
       ],
       "default": "native"
+    },
+    {
+      "id": "agentSlicePlan",
+      "type": "promptString",
+      "description": "Checked-in phased plan path for this slice",
+      "default": "docs/notes/hard_denial_workflow_lock_and_fits_reclosure_PHASED_PLAN.md"
+    },
+    {
+      "id": "agentSliceContract",
+      "type": "promptString",
+      "description": "Checked-in machine-readable contract path for this slice",
+      "default": "docs/contracts/hard_denial_workflow_lock_and_fits_reclosure.contract.json"
     }
   ],
   "tasks": [
@@ -49,7 +61,11 @@
         "--intent",
         "${input:agentSliceIntent}",
         "--profile",
-        "${input:agentSliceProfile}"
+        "${input:agentSliceProfile}",
+        "--plan",
+        "${input:agentSlicePlan}",
+        "--contract",
+        "${input:agentSliceContract}"
       ],
       "problemMatcher": []
     },

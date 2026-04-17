@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "contract_id": "hard_denial_workflow_lock_and_fits_reclosure",
+  "feature_id": "viewer_host_workflow_and_runtime_walk_fits",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/hard_denial_workflow_lock_and_fits_reclosure_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md",
+    ".github/copilot-instructions.md",
+    ".github/hooks/checkpoint_guard.json",
+    ".vscode/tasks.json",
+    "docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md",
+    "docs/contracts",
+    "docs/notes/hard_denial_workflow_lock_and_fits_reclosure_PHASED_PLAN.md",
+    "docs/notes/runtime_walk_fits_usability_hostile_review_PHASED_PLAN.md",
+    "ui/runtime_walk_fits_mapping_profiles_v1.json",
+    "ui_app/src/main.cpp",
+    "ui_app/src/runtime_walk_bootstrap.cpp",
+    "ui_app/src/runtime_walk_bootstrap.h",
+    "ui_app/src/runtime_walk_viewer_imgui.cpp",
+    "ui_app/src/runtime_walk_viewer_imgui.h",
+    "ui_app/src/runtime_walk_viewer_import.cpp",
+    "ui_app/src/runtime_walk_viewer_import.h",
+    "tests",
+    "tools"
+  ],
+  "required_operator_inputs": [
+    "fits"
+  ],
+  "forbidden_operator_prompts": [
+    "state.json",
+    "finding.json",
+    "request JSON",
+    "bundle JSON"
+  ],
+  "required_defaults": {
+    "base_fractal_type": "explaino",
+    "strict_banner": "always_on",
+    "mutation_mode": "wrapper_only"
+  },
+  "forbidden_defaults": {
+    "default_warp_binding": "params.explaino_warp_strength",
+    "default_warp_ui": "Warp Motion",
+    "raw_apply_patch": "forbidden",
+    "raw_mutating_shell_command": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q",
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/hard_denial_workflow_lock_and_fits_reclosure.contract.json",
+    "py -3.14 tools/viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q"
+  ],
+  "required_validators": [
+    "fits_defaults"
+  ],
+  "required_acceptance_assertions": [
+    "strict banner appears on every prompt and post-tool event",
+    "raw apply_patch is denied",
+    "raw mutating shell_command is denied",
+    "begin_work_slice requires plan and contract",
+    "slice contract drift blocks mutation and closure",
+    "FITS default mapping does not bind warp",
+    "FITS default fractal is explaino",
+    "FITS default UI does not expose warp"
+  ],
+  "required_artifact_visibility": [
+    "generated request path visible",
+    "generated bundle path visible",
+    "generated session dir visible",
+    "mapping profile source visible"
+  ],
+  "required_control_surface": [
+    "generated samples control",
+    "motion intensity control",
+    "binding summary visible"
+  ]
+}
+

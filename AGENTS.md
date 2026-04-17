@@ -15,7 +15,8 @@ Do these before making architecture claims or starting broad edits:
 5. Read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, and `KNOWN_ISSUES.md`.
 6. Read the last few entries of `HANDOFF_LOG.md`.
 7. If you are starting a meaningful work slice, append a session-start breadcrumb first:
-   - `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>`
+   - `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>`
+   - then lock the active contract with `py -3.14 tools/viewer_host_prepare_slice.py --session-id global_active_contract --plan <plan> --contract <contract>` if the begin-slice surface was not used
 8. Create or update a detailed, checklisted phased plan in the repo.
    - Prefer the nearest existing plan doc.
    - Otherwise create `docs/notes/<slug>_PHASED_PLAN.md`.
@@ -33,6 +34,22 @@ The VS Code task surface mirrors these commands:
 - Every meaningful work slice needs a detailed, checklisted, phased plan in the repo.
 - `HANDOFF_LOG.md` is the checkpoint index, not the detailed plan surface.
 - A fresh agent should be able to resume from the repo plan, handoff log, and git state alone.
+
+## Hard-Denial Rule
+
+- The accepted checked-in phased plan plus checked-in slice contract are binding.
+- Raw repo mutation is forbidden.
+- Raw `apply_patch` is forbidden by the hook guard; use the approved `viewer_host_*` mutation wrappers.
+- Raw mutating shell commands are forbidden; only read/search/build/test/check commands may run directly.
+- The active slice contract is hash-locked. If it changes mid-slice, mutation and closure are blocked until `py -3.14 tools/viewer_host_revise_contract.py --session-id <session_id> --contract <contract>` re-locks it.
+- Viewer-first work cannot close on helper-only or CLI-only proof.
+- Closure without a machine-written contract proof receipt is forbidden.
+
+## Strict Banner Rule
+
+- The hook surface now emits a strict repo banner on every `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop` event.
+- Treat that banner as expected always-on repo state, not as exceptional noise.
+- The banner is not the enforcement layer; denial is. If the hook denies an action, route through the approved workflow wrapper instead of working around it.
 
 ## Checklist Sync Rule
 
@@ -132,7 +149,10 @@ Before ending a meaningful work slice:
 2. Respect the workspace checkpoint guard hook in `.github/hooks/checkpoint_guard.json`; completion/stop is blocked if repo state differs from the session baseline.
 3. Run the matching public validation profile or the equivalent checked-in scripts for the slice.
 4. Append `HANDOFF_LOG.md` with `py -3.14 tools\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"` before the final commit; reuse the token printed by `viewer_host_begin_work_slice.py` for the normal flow and keep `--resolve-last-pending` only for legacy pending-entry repair.
-5. If the session advanced `HEAD`, write a validation receipt for the current committed state with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...` after the final clean commit.
+5. If the session advanced `HEAD`, write the machine receipts for the current committed state after the final clean commit:
+   - `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`
+   - `py -3.14 tools\viewer_host_write_contract_proof_receipt.py --session-id global_active_contract`
+   - or use `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id global_active_contract --summary "<what passed>" --command "<validation cmd>" ...`
 6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
 7. Do not say done unless the explicit closure standard above is satisfied end-to-end.
 8. If the current prompt arrived while the repo already differed from the session baseline, resolve that carryover before treating any new request as a fresh slice.

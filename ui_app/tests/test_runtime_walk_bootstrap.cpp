@@ -131,8 +131,8 @@ static void TestSynthesizedBaseStateUsesMappings() {
         "TestSynthesizedBaseStateUsesMappings_ViewTransportMapped");
     Check(!NearlyEqual(params.explaino_mix, 0.0f),
         "TestSynthesizedBaseStateUsesMappings_MixMapped");
-    Check(!NearlyEqual(params.explaino_warp_strength, 0.0f),
-        "TestSynthesizedBaseStateUsesMappings_WarpMapped");
+    Check(NearlyEqual(params.explaino_warp_strength, 0.0f),
+        "TestSynthesizedBaseStateUsesMappings_WarpNeutralByDefault");
 }
 
 static void TestWriteSynthesizedStateJsonWritesLoadableShape() {

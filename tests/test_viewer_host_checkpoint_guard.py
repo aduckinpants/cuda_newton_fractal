@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import tools.viewer_host_checkpoint_guard as checkpoint_guard
+import tools.viewer_host_contract_state as contract_state
 
 from tools.viewer_host_checkpoint_guard import (
     build_posttool_response,
@@ -75,7 +76,7 @@ def test_build_pretool_response_denies_task_complete_when_state_changed() -> Non
     baseline = _snapshot()
     current = _snapshot(staged={"HANDOFF_LOG.md": "blob-1"})
 
-    response = build_pretool_response("task_complete", baseline, current)
+    response = build_pretool_response("task_complete", baseline, current, "session-1", {"recipient_name": "functions.task_complete"})
 
     assert response is not None
     payload = response["hookSpecificOutput"]
@@ -84,11 +85,16 @@ def test_build_pretool_response_denies_task_complete_when_state_changed() -> Non
     assert "HANDOFF_LOG.md" in payload["additionalContext"]
 
 
-def test_build_pretool_response_ignores_other_tools() -> None:
+def test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner() -> None:
     baseline = _snapshot()
     current = _snapshot(unstaged={"AGENTS.md": "hash-a"})
 
-    assert build_pretool_response("run_in_terminal", baseline, current) is None
+    response = build_pretool_response("run_in_terminal", baseline, current, "session-1", {"recipient_name": "functions.read_only"})
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
+    assert "STRICT REPO RULE" in hook["permissionDecisionReason"]
 
 
 def test_build_posttool_response_emits_checkpoint_debt_reminder() -> None:
@@ -98,10 +104,11 @@ def test_build_posttool_response_emits_checkpoint_debt_reminder() -> None:
         staged={"HANDOFF_LOG.md": "blob-1"},
     )
 
-    response = build_posttool_response("apply_patch", baseline, current)
+    response = build_posttool_response("apply_patch", baseline, current, "session-1")
 
     assert response is not None
     assert "systemMessage" in response
+    assert "STRICT REPO RULE" in response["systemMessage"]
     assert "apply_patch" in response["systemMessage"]
     assert "checkpoint commit" in response["systemMessage"] or "baseline" in response["systemMessage"]
     assert "docs/notes/plan.md" in response["systemMessage"]
@@ -112,7 +119,9 @@ def test_build_posttool_response_ignores_clean_state() -> None:
     baseline = _snapshot()
     current = _snapshot()
 
-    assert build_posttool_response("apply_patch", baseline, current) is None
+    response = build_posttool_response("read_tool", baseline, current, "session-1")
+    assert response is not None
+    assert "STRICT REPO RULE" in response["systemMessage"]
 
 
 def test_build_pretool_response_blocks_clean_head_without_validation_receipt(tmp_path: Path) -> None:
@@ -121,7 +130,7 @@ def test_build_pretool_response_blocks_clean_head_without_validation_receipt(tmp
     current = _snapshot()
     current["head"] = "def456"
 
-    response = build_pretool_response("task_complete", baseline, current, tmp_path)
+    response = build_pretool_response("task_complete", baseline, current, "session-1", {"recipient_name": "functions.task_complete"}, tmp_path)
 
     assert response is not None
     payload = response["hookSpecificOutput"]
@@ -198,13 +207,45 @@ def test_main_pretool_blocks_missing_validation_receipt_via_recipient_name(monke
     assert "def456.json" in hook["additionalContext"]
 
 
+def test_main_pretool_denies_raw_apply_patch_for_non_task_complete_tool(monkeypatch) -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    monkeypatch.setattr(checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(checkpoint_guard, "load_session_baseline", lambda session_id, repo_root=checkpoint_guard.REPO_ROOT: baseline)
+    monkeypatch.setattr(checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
+
+    payload = {
+        "hookEventName": "PreToolUse",
+        "sessionId": "session-1",
+        "cwd": str(REPO_ROOT),
+        "recipient_name": "functions.apply_patch",
+        "parameters": {"patch": "*** Begin Patch\n*** End Patch\n"},
+    }
+
+    old_stdin = sys.stdin
+    sys.stdin = io.StringIO(json.dumps(payload))
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = checkpoint_guard.main()
+        output = json.loads(buf.getvalue())
+    finally:
+        sys.stdin = old_stdin
+
+    assert rc == 0
+    hook = output["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "Raw apply_patch is forbidden" in hook["permissionDecisionReason"]
+
+
 def test_build_posttool_response_reminds_when_head_advanced_without_validation_receipt(tmp_path: Path) -> None:
     baseline = _snapshot()
     baseline["head"] = "abc123"
     current = _snapshot()
     current["head"] = "def456"
 
-    response = build_posttool_response("run_in_terminal", baseline, current, tmp_path)
+    response = build_posttool_response("run_in_terminal", baseline, current, "session-1", tmp_path)
 
     assert response is not None
     assert "Validation debt after run_in_terminal" in response["systemMessage"]
@@ -272,7 +313,7 @@ def test_build_stop_response_blocks_dirty_stop() -> None:
     baseline = _snapshot(unstaged={"AGENTS.md": "hash-a"})
     current = _snapshot(unstaged={"AGENTS.md": "hash-b"}, untracked={"artifacts/report.txt": "hash-r"})
 
-    response = build_stop_response(baseline, current)
+    response = build_stop_response(baseline, current, "session-1")
 
     assert response is not None
     payload = response["hookSpecificOutput"]
@@ -290,7 +331,7 @@ def test_build_userprompt_response_warns_when_state_differs_from_baseline() -> N
     baseline = _snapshot()
     current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
 
-    response = build_userprompt_response(baseline, current, "Please do the next task")
+    response = build_userprompt_response(baseline, current, "Please do the next task", "session-1")
 
     assert response is not None
     assert response["continue"] is True
@@ -303,7 +344,9 @@ def test_build_userprompt_response_ignores_clean_state() -> None:
     baseline = _snapshot()
     current = _snapshot()
 
-    assert build_userprompt_response(baseline, current, "fresh prompt") is None
+    response = build_userprompt_response(baseline, current, "fresh prompt", "session-1")
+    assert response is not None
+    assert "STRICT REPO RULE" in response["systemMessage"]
 
 
 def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_path: Path) -> None:
@@ -312,7 +355,7 @@ def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_
     current = _snapshot()
     current["head"] = "def456"
 
-    response = build_userprompt_response(baseline, current, "do another task", tmp_path)
+    response = build_userprompt_response(baseline, current, "do another task", "session-1", tmp_path)
 
     assert response is not None
     assert response["continue"] is True
@@ -353,3 +396,145 @@ def test_hook_config_wires_checkpoint_guard_events() -> None:
 
 def test_discover_repo_root_normalizes_subdirectory_paths() -> None:
     assert discover_repo_root(REPO_ROOT / "ui_app") == REPO_ROOT
+
+
+def test_build_pretool_response_denies_raw_apply_patch_even_when_repo_is_clean(tmp_path: Path) -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    response = build_pretool_response(
+        "unknown_tool",
+        baseline,
+        current,
+        "session-1",
+        {"recipient_name": "functions.apply_patch"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "Raw apply_patch is forbidden" in hook["permissionDecisionReason"]
+
+
+def test_build_pretool_response_denies_raw_mutating_shell_command_even_when_repo_is_clean(tmp_path: Path) -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    response = build_pretool_response(
+        "unknown_tool",
+        baseline,
+        current,
+        "session-1",
+        {"recipient_name": "functions.shell_command", "command": "git commit -m test"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "Direct handoff/receipt/git mutation is forbidden" in hook["permissionDecisionReason"]
+
+
+def test_build_pretool_response_denies_chained_shell_after_allowed_prefix(tmp_path: Path) -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    response = build_pretool_response(
+        "unknown_tool",
+        baseline,
+        current,
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q && git commit -m nope",
+        },
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "forbidden" in hook["permissionDecisionReason"].lower()
+
+
+def test_build_pretool_response_allows_prepare_slice_without_active_contract(tmp_path: Path) -> None:
+    baseline = _snapshot()
+    current = _snapshot()
+
+    response = build_pretool_response(
+        "unknown_tool",
+        baseline,
+        current,
+        "session-1",
+        {"recipient_name": "functions.shell_command", "command": "py -3.14 tools\\viewer_host_prepare_slice.py --session-id session-1 --plan foo --contract bar"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
+    assert "STRICT REPO RULE" in hook["permissionDecisionReason"]
+
+
+def test_build_pretool_response_denies_mutation_when_locked_contract_hash_drifted(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    contract_dir = repo_root / "docs" / "contracts"
+    contract_dir.mkdir(parents=True)
+    contract_path = contract_dir / "slice.contract.json"
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["fits"],
+                "forbidden_operator_prompts": ["state.json"],
+                "required_defaults": {"base_fractal_type": "explaino"},
+                "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
+                "required_validation_commands": ["pytest"],
+                "required_acceptance_assertions": ["assertion"],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text("# Plan\n\n## Current Phase\n\nPhase 1 - X\n\n## Phase Checklist\n\n- [ ] Phase 1 - X\n", encoding="utf-8")
+    state_path = contract_state.contract_state_path_for_session("session-1", repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": "stale",
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["pytest"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    response = build_pretool_response(
+        "unknown_tool",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {"recipient_name": "functions.shell_command", "command": "py -3.14 tools\\viewer_host_run_repo_mutation.py --session-id session-1 -- cmd /c echo mutate"},
+        repo_root,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "Active slice contract changed after it was locked" in hook["permissionDecisionReason"]

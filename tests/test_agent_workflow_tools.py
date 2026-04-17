@@ -65,12 +65,18 @@ def test_begin_work_slice_dry_run_surfaces_generated_checkpoint_id(monkeypatch, 
         "workflow closeout",
         "--profile",
         "checkpoint",
+        "--plan",
+        "docs/notes/hard_denial_workflow_lock_and_fits_reclosure_PHASED_PLAN.md",
+        "--contract",
+        "docs/contracts/hard_denial_workflow_lock_and_fits_reclosure.contract.json",
         "--dry-run",
     ]) == 0
 
     out = capsys.readouterr().out
     assert "session-start | branch=feature/test | head=abc123 | status=clean | profile=checkpoint | intent=workflow closeout" in out
     assert "viewer_host_begin_work_slice: checkpoint_id=ck:flow1234" in out
+    assert "viewer_host_begin_work_slice: plan=docs/notes/hard_denial_workflow_lock_and_fits_reclosure_PHASED_PLAN.md" in out
+    assert "viewer_host_begin_work_slice: contract=docs/contracts/hard_denial_workflow_lock_and_fits_reclosure.contract.json" in out
     assert "--commit ck:flow1234" in out
     assert "--commit pending" not in out
 
@@ -187,6 +193,12 @@ def test_bootstrap_surface_advertises_checkpoint_id_handoff_flow() -> None:
 
     assert state["next_commands"]["append_handoff"] == (
         'py -3.14 tools/viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"'
+    )
+    assert state["next_commands"]["begin_work_slice"] == (
+        'py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>'
+    )
+    assert state["next_commands"]["prepare_slice"] == (
+        'py -3.14 tools/viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>'
     )
     assert state["next_commands"]["append_handoff_legacy_pending"] == (
         'py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"'
@@ -319,3 +331,12 @@ def test_build_validation_profiles_uses_explicit_repo_root(tmp_path: Path) -> No
             ],
         }
     }
+
+
+def test_tasks_surface_exposes_plan_and_contract_inputs_for_begin_work_slice() -> None:
+    tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
+
+    assert '"id": "agentSlicePlan"' in tasks_json
+    assert '"id": "agentSliceContract"' in tasks_json
+    assert '"--plan"' in tasks_json
+    assert '"--contract"' in tasks_json

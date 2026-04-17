@@ -23,8 +23,10 @@
 ## Workflow
 - For any non-trivial slice, read the relevant planning material first and restate the current phase plus exit criteria before editing.
 - For any meaningful slice, append a session-start breadcrumb first with
-    `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>`
+    `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>`
     or the VS Code task `agent: begin work slice`.
+- Treat the checked-in phased plan plus checked-in contract as binding. Do not improvise around them without explicitly revising and re-locking the contract.
+- Raw repo mutation is forbidden. Use the approved `viewer_host_*` wrapper surfaces for meaningful edits, receipts, and checkpoint flow.
 - Do not rely on chat history as the durable plan. Reuse the nearest phased plan or create
     `docs/notes/<slug>_PHASED_PLAN.md`, then keep `## Current Phase` and `## Phase Checklist`
     synchronized in the same edit.
@@ -38,7 +40,9 @@
 - Default audit posture: assume the implementation is wrong, keep reviewing until a real defect or workflow mistake is found, repair it, then re-audit the repaired state; only stop after 2-3 deliberate passes fail to find another real issue.
 - Do not wait for the user to request this review explicitly. Treat it as part of normal slice closure.
 - Treat the workspace checkpoint guard hook as mandatory enforcement, not advice: if it blocks `task_complete` or stop because repo state differs from the session baseline, resolve the repo state before trying to end the slice.
+- Treat the always-on strict banner as expected repo state. The banner is not just prose: if the hook denies the action, fix the contract/receipt state or route through the approved wrapper.
 - If repo closure still requires a checkpoint commit or validation receipt, surface that requirement explicitly instead of silently stopping on a validated dirty slice.
+- For viewer-first features, helper-only or CLI-only proof is not enough. Closure requires runtime viewer-path proof and a machine-written contract proof receipt.
 - Prefer the public validation task surface instead of reconstructing command bundles from memory:
     the `verify: profile ...` VS Code tasks.
 - Do not fork core workflow tools from mainline into this repo under the same names;
@@ -61,6 +65,7 @@
 - Do not treat repo-native `state.json`, `finding.json`, request JSON, or bundle JSON as required user inputs for that path.
 - If implementation needs those artifacts, generate them internally and keep them off the default operator path.
 - When closing FITS import work, require a proof that the published viewer reaches playback from only a FITS path without prompting for repo-native JSON.
+- Default automatic warp modulation is forbidden for shipped FITS import mappings and default UI controls.
 
 ## Build And Test
 - Use the checked-in build and doctor scripts instead of hand-assembling compiler commands when possible.

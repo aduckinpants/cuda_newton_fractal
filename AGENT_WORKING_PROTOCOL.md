@@ -99,24 +99,60 @@ It exists to enforce the closure invariant at runtime, not just in prose:
 Do not treat the hook as optional guidance. If it fires, fix the repo state by committing,
 reverting to the session baseline, or otherwise resolving the discrepancy before trying to stop.
 
-### 2.3 Validation Receipt Gate
+### 2.3 Hard-Denial Mutation Guard
+
+The same hook surface now denies raw mutation paths before the repo is changed.
+
+Required posture:
+- raw `apply_patch` is forbidden
+- raw mutating `shell_command` is forbidden
+- direct `git add`, `git commit`, handoff writes, and receipt writes are forbidden
+- all meaningful repo mutation must go through the approved `viewer_host_*` wrapper surfaces
+
+Allowed raw shell is intentionally narrow:
+- read/search/inspect
+- checked-in build/test/check rails
+- explicit repo validation tools
+
+If you hit a mutation denial, do not route around it with another raw shell edit path.
+Use the approved wrapper or fix the missing contract/plan state first.
+
+### 2.4 Locked Contract Rule
+
+Every meaningful slice now requires a checked-in machine-readable contract file in addition to the phased plan.
+
+Required flow:
+1. start or update the phased plan
+2. create/update the checked-in contract JSON
+3. run `viewer_host_begin_work_slice.py ... --plan <plan> --contract <contract>` or
+   `viewer_host_prepare_slice.py --session-id <id> --plan <plan> --contract <contract>`
+4. mutate only while that contract is the active locked contract for the session
+
+If the contract file changes after being locked:
+- mutation is blocked
+- closure is blocked
+- run `py -3.14 tools\viewer_host_revise_contract.py --session-id <id> --contract <contract>` to re-lock it explicitly
+
+### 2.5 Validation And Contract-Proof Receipt Gate
 
 Clean git state alone is not enough to justify closure after a commit in the same session.
 
 If the current `HEAD` differs from the session-start `HEAD`, completion also requires a
-validation receipt for the current committed state.
+validation receipt and a machine-written contract proof receipt for the current committed state.
 
 Required flow after the final validation commands pass for the slice:
 1. ensure the repo is clean at the final committed `HEAD`
 2. write a receipt with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`
-3. only then use `task_complete` / stop the slice
+3. write contract proof with `py -3.14 tools\viewer_host_write_contract_proof_receipt.py --session-id <id>`
+   or use the combined wrapper `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id <id> ...`
+4. only then use `task_complete` / stop the slice
 
 The checkpoint guard enforces this deterministically:
 - `PostToolUse` reminds immediately when `HEAD` advanced without a receipt
 - `PreToolUse` denies `task_complete` for a clean-but-unreceipted committed state
 - `Stop` blocks ending the slice until the receipt exists
 
-### 2.4 Carryover Prompt Rule
+### 2.6 Carryover Prompt Rule
 
 If a new user prompt arrives while the repository still differs from the session baseline, that is a prior-slice closure problem first.
 
@@ -166,8 +202,13 @@ Public workflow surface:
 | Task | Command | Notes |
 |------|---------|-------|
 | Session bootstrap | `py -3.14 tools\viewer_host_session_bootstrap.py --audit --tail-handoff 8` | Repeatable new-session start surface |
-| Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified>` | Repo-specific adapter that appends a session-start breadcrumb through the local checkpoint-id flow and prints the `ck:` token to reuse at checkpoint time. |
+| Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>` | Repo-specific adapter that appends a session-start breadcrumb, validates the phased plan + contract, prints the `ck:` token to reuse at checkpoint time, and locks the active contract. |
+| Prepare / lock slice contract | `py -3.14 tools\viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>` | Validates the phased plan and checked-in contract, then locks the active contract state for mutation enforcement. |
+| Revise locked contract | `py -3.14 tools\viewer_host_revise_contract.py --session-id <session_id> --contract <contract>` | Required after a checked-in contract changes mid-slice. |
+| Contract validation | `py -3.14 tools\viewer_host_validate_slice_contract.py --contract <contract>` | Deterministic contract schema/shape validation. |
+| FITS default contract validation | `py -3.14 tools\viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json` | Blocks default warp binding, non-`explaino` fallback, and stale default warp UI. |
 | Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"` | Preferred final-checkpoint surface after `viewer_host_begin_work_slice.py`: reuse the printed `ck:` token explicitly so the session-start breadcrumb and the closing handoff stay linked without a follow-up continuity commit. Keep `--resolve-last-pending` only for legacy pending-entry repair or after-the-fact cleanup. |
+| Write validation + contract proof receipts | `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id <session_id> --summary "<what passed>" --command "<validation cmd>" ...` | Preferred post-validation receipt surface for a committed clean `HEAD`. |
 | Plan sync check | `py -3.14 tools\viewer_host_assert_phased_plan_sync.py` | Deterministic phased-plan continuity adapter |
 | Native helper tests | `ui_app\build_tests_vsdevcmd.cmd` | Must pass before any commit |
 | Full viewer build | `ui_app\build_vsdevcmd.cmd` | Must pass before any commit |
@@ -222,7 +263,7 @@ py -3.14 -m pytest tests/<relevant_tests>.py -q
 4. Update the active phased plan checklist if one exists
 5. Append `HANDOFF_LOG.md` with the handoff helper before the final commit; for the normal flow, pass `--commit <checkpoint_id>` using the token printed by `viewer_host_begin_work_slice.py`, and reserve `--resolve-last-pending` for legacy pending-entry repair
 6. Commit with clear message explaining what landed and what was validated
-7. Write the validation receipt for the final committed `HEAD`
+7. Write the validation receipt and contract proof receipt for the final committed `HEAD`
 8. Verify the explicit closure standard: named gap, proving test, green validation, checkpoint commit
 
 ---
@@ -363,6 +404,7 @@ When beginning work in a new session:
 8. Read `HANDOFF_LOG.md` (last 5-10 entries) for recent context
 9. Read the relevant spec intake doc for the current initiative
 10. If the slice is meaningful, run `py -3.14 tools/viewer_host_begin_work_slice.py --intent "<slice>" --profile <profile>`
+    plus `--plan <plan> --contract <contract>` and verify the active contract lock if the slice will mutate the repo
 11. Create or update the nearest phased plan and assert sync if you touch it
 12. Check repo state with `py -3.14 tools/viewer_host_repo_status.py` — if the worktree is dirty, assess and checkpoint carryover
 13. Identify the bounded next slice and proceed

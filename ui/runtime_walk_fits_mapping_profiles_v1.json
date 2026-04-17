@@ -40,18 +40,6 @@
         },
         {
           "target_selector": "explaino",
-          "source_signal": "residual_energy",
-          "target_path": "params.explaino_warp_strength",
-          "input_min": 0.0,
-          "input_max": 1.0,
-          "scale": 0.35,
-          "offset": 0.0,
-          "weight": 1.0,
-          "clamp_min": 0.0,
-          "clamp_max": 0.35
-        },
-        {
-          "target_selector": "explaino",
           "source_signal": "edge_balance",
           "target_path": "view.explaino_phase",
           "input_min": -1.0,

@@ -7,22 +7,30 @@ from typing import Any
 
 try:
     from tools.viewer_host_checkpoint_guard import (
+        GLOBAL_CONTRACT_SESSION_ID,
         REPO_ROOT,
+        build_strict_banner,
         capture_repo_snapshot,
         discover_repo_root,
         evaluate_checkpoint_guard,
+        evaluate_contract_proof_receipt_guard,
         evaluate_validation_receipt_guard,
+        load_active_contract_state,
         load_session_baseline,
         summarize_changed_paths,
         validation_receipt_path,
     )
 except ModuleNotFoundError:
     from viewer_host_checkpoint_guard import (
+        GLOBAL_CONTRACT_SESSION_ID,
         REPO_ROOT,
+        build_strict_banner,
         capture_repo_snapshot,
         discover_repo_root,
         evaluate_checkpoint_guard,
+        evaluate_contract_proof_receipt_guard,
         evaluate_validation_receipt_guard,
+        load_active_contract_state,
         load_session_baseline,
         summarize_changed_paths,
         validation_receipt_path,
@@ -98,22 +106,26 @@ def build_userprompt_response(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
     prompt_text: str,
+    session_id: str,
     repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
+    banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
     status = evaluate_checkpoint_guard(baseline, current)
     if status.should_block:
         return {
             "continue": True,
-            "systemMessage": build_dirty_prompt_message(status.changed_paths, prompt_text),
+            "systemMessage": banner + " " + build_dirty_prompt_message(status.changed_paths, prompt_text),
         }
 
     should_block, _reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+    if not should_block:
+        should_block, _reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
     if should_block:
         return {
             "continue": True,
-            "systemMessage": build_validation_receipt_prompt_message(prompt_text, repo_root, str(current.get("head", "")).strip()),
+            "systemMessage": banner + " " + build_validation_receipt_prompt_message(prompt_text, repo_root, str(current.get("head", "")).strip()),
         }
-    return None
+    return {"continue": True, "systemMessage": banner}
 
 
 def _resolve_repo_root(payload: dict[str, Any]) -> Path:
@@ -130,9 +142,7 @@ def main() -> int:
         repo_root = _resolve_repo_root(payload if isinstance(payload, dict) else {})
         current = capture_repo_snapshot(repo_root)
         baseline = load_session_baseline(session_id, repo_root)
-        response = build_userprompt_response(baseline, current, _extract_prompt_text(payload))
-        if response is None:
-            response = {"continue": True}
+        response = build_userprompt_response(baseline, current, _extract_prompt_text(payload), session_id, repo_root)
         print(json.dumps(response))
         return 0
     except Exception as exc:

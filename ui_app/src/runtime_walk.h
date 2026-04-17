@@ -82,7 +82,7 @@ struct RuntimeWalkRequest {
     std::string transport_generation_mode;
     std::size_t transport_sample_count = 0;
     double transport_motion_scale = 0.75;
-    double transport_warp_scale = 0.10;
+    double transport_warp_scale = 0.0;
 };
 
 const char* RuntimeWalkAuthorityModeId(RuntimeWalkAuthorityMode mode);

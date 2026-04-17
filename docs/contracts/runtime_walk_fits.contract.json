@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "contract_id": "runtime_walk_fits",
+  "feature_id": "runtime_walk_fits",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/runtime_walk_fits_usability_hostile_review_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "ui/runtime_walk_fits_mapping_profiles_v1.json",
+    "ui_app/src/main.cpp",
+    "ui_app/src/runtime_walk_bootstrap.cpp",
+    "ui_app/src/runtime_walk_bootstrap.h",
+    "ui_app/src/runtime_walk_viewer_imgui.cpp",
+    "ui_app/src/runtime_walk_viewer_imgui.h",
+    "ui_app/src/runtime_walk_viewer_import.cpp",
+    "ui_app/src/runtime_walk_viewer_import.h",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "fits"
+  ],
+  "forbidden_operator_prompts": [
+    "state.json",
+    "finding.json",
+    "request JSON",
+    "bundle JSON"
+  ],
+  "required_defaults": {
+    "base_fractal_type": "explaino",
+    "operator_input": "fits_only"
+  },
+  "forbidden_defaults": {
+    "default_warp_binding": "params.explaino_warp_strength",
+    "default_warp_ui": "Warp Motion",
+    "default_json_prompt_flow": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q"
+  ],
+  "required_validators": [
+    "fits_defaults"
+  ],
+  "required_acceptance_assertions": [
+    "FITS-only open reaches playback",
+    "default synthesized fractal is explaino",
+    "default mapping does not bind warp",
+    "default UI does not expose warp"
+  ],
+  "required_artifact_visibility": [
+    "generated request path visible",
+    "generated bundle path visible",
+    "generated session dir visible"
+  ],
+  "required_control_surface": [
+    "generated samples control",
+    "motion intensity control",
+    "binding summary visible"
+  ]
+}
+

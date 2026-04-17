@@ -139,7 +139,6 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
         ImGui::TextWrapped("Transport Mode: %s", session.asset.request.transport_generation_mode.c_str());
     }
     ImGui::Text("Motion Intensity: %.2f", session.asset.request.transport_motion_scale);
-    ImGui::Text("Warp Motion: %.2f", session.asset.request.transport_warp_scale);
     if (!session.asset.companion.comparison_fits_path.empty()) {
         ImGui::TextWrapped("Companion FITS (evidence): %s", session.asset.companion.comparison_fits_path.c_str());
     }
@@ -199,11 +198,6 @@ bool RenderRuntimeWalkViewerImportPanel(RuntimeWalkViewerImportPanelState& state
     float motionScale = static_cast<float>(state.transport_options.motion_scale);
     if (ImGui::SliderFloat("Motion Intensity", &motionScale, 0.10f, 1.50f, "%.2f")) {
         state.transport_options.motion_scale = static_cast<double>(motionScale);
-        interactionChanged = true;
-    }
-    float warpScale = static_cast<float>(state.transport_options.warp_scale);
-    if (ImGui::SliderFloat("Warp Motion", &warpScale, 0.0f, 0.50f, "%.2f")) {
-        state.transport_options.warp_scale = static_cast<double>(warpScale);
         interactionChanged = true;
     }
     if (!state.status_text.empty()) {

@@ -6,13 +6,18 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 try:
     from tools.viewer_host_append_handoff import build_handoff_append_commands, resolve_handoff_checkpoint_token
     from tools.viewer_host_repo_status import repo_is_dirty
+    from tools.viewer_host_contract_state import GLOBAL_CONTRACT_SESSION_ID, load_and_validate_slice_contract, write_active_contract_state
+    from tools.viewer_host_assert_phased_plan_sync import validate_plan_text
 except ModuleNotFoundError:
     from viewer_host_append_handoff import build_handoff_append_commands, resolve_handoff_checkpoint_token
     from viewer_host_repo_status import repo_is_dirty
+    from viewer_host_contract_state import GLOBAL_CONTRACT_SESSION_ID, load_and_validate_slice_contract, write_active_contract_state
+    from viewer_host_assert_phased_plan_sync import validate_plan_text
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -120,6 +125,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--intent", required=True, help="Short intent for this work slice")
     ap.add_argument("--profile", default="native", choices=PROFILE_CHOICES, help="Expected validation profile/task lane")
+    ap.add_argument("--plan", required=True, help="Checked-in phased plan path for this slice")
+    ap.add_argument("--contract", required=True, help="Checked-in machine-readable contract path for this slice")
+    ap.add_argument("--session-id", default=GLOBAL_CONTRACT_SESSION_ID, help="Optional contract-lock session id; defaults to the global active contract state")
     ap.add_argument("--dry-run", action="store_true", help="Print the session-start message, checkpoint-id guidance, and delegated command without appending")
     ns = ap.parse_args(argv)
 
@@ -133,15 +141,47 @@ def main(argv: list[str] | None = None) -> int:
         intent=ns.intent,
         profile=ns.profile,
     )
+    plan_path = Path(ns.plan)
+    if not plan_path.is_absolute():
+        plan_path = REPO_ROOT / plan_path
+    contract_path = Path(ns.contract)
+    if not contract_path.is_absolute():
+        contract_path = REPO_ROOT / contract_path
+    if not plan_path.exists():
+        raise SystemExit(f"Missing phased plan: {plan_path}")
+    if not contract_path.exists():
+        raise SystemExit(f"Missing slice contract: {contract_path}")
+    plan_error = validate_plan_text(plan_path.read_text(encoding="utf-8"), display_path=str(plan_path))
+    if plan_error:
+        raise SystemExit(f"Phased plan invalid: {plan_error}")
+    contract_payload, contract_result = load_and_validate_slice_contract(contract_path, REPO_ROOT)
+    if contract_payload is None or not contract_result.ok:
+        raise SystemExit(
+            "Invalid slice contract:\n" + "\n".join(f"- {error}" for error in contract_result.errors)
+        )
+    if str(contract_payload["plan_path"]).replace("\\", "/") != plan_path.relative_to(REPO_ROOT).as_posix():
+        raise SystemExit("Slice contract plan_path does not match the provided phased plan")
     plan = build_breadcrumb_append_plan(py=sys.executable, message=message)
     if ns.dry_run:
         print(message)
         _print_checkpoint_guidance(plan)
+        print(f"viewer_host_begin_work_slice: plan={plan_path.relative_to(REPO_ROOT).as_posix()}")
+        print(f"viewer_host_begin_work_slice: contract={contract_path.relative_to(REPO_ROOT).as_posix()}")
         print(subprocess.list2cmdline(plan.command))
         return 0
     proc = subprocess.run(plan.command, cwd=str(REPO_ROOT), check=False)
     if proc.returncode == 0:
+        state_path = write_active_contract_state(
+            ns.session_id,
+            repo_root=REPO_ROOT,
+            contract_path=contract_path,
+            contract_payload=contract_payload,
+        )
         _print_checkpoint_guidance(plan)
+        print(
+            "viewer_host_begin_work_slice: active contract locked at "
+            + state_path.relative_to(REPO_ROOT).as_posix()
+        )
     return int(proc.returncode)
 
 

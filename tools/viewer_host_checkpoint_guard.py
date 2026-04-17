@@ -9,6 +9,25 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from tools.viewer_host_contract_state import (
+        GLOBAL_CONTRACT_SESSION_ID,
+        build_strict_banner,
+        contract_proof_receipt_path,
+        hash_file,
+        load_active_contract_state,
+        load_contract_proof_receipt,
+    )
+except ModuleNotFoundError:
+    from viewer_host_contract_state import (
+        GLOBAL_CONTRACT_SESSION_ID,
+        build_strict_banner,
+        contract_proof_receipt_path,
+        hash_file,
+        load_active_contract_state,
+        load_contract_proof_receipt,
+    )
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_checkpoint_guard"
@@ -110,9 +129,103 @@ def _extract_payload_tool_name(payload: Any, *, default: str = "") -> str:
     return str(candidates[0]).strip() or default
 
 
+def _payload_command_candidates(payload: Any) -> list[str]:
+    candidates: list[str] = []
+    for key in ("command", "cmd", "script"):
+        candidates.extend(str(value) for value in _find_values(payload, key) if isinstance(value, (str, int, float)))
+    return candidates
+
+
+def _extract_payload_command_text(payload: Any) -> str:
+    candidates = _payload_command_candidates(payload)
+    if not candidates:
+        return ""
+    return str(candidates[0]).strip()
+
+
 def _payload_requests_task_complete(payload: Any) -> bool:
     haystack = " ".join(_payload_tool_candidates(payload)).lower()
     return "task_complete" in haystack or "taskcomplete" in haystack
+
+
+def _normalize_text(text: str) -> str:
+    return " ".join(text.replace("/", "\\").split()).lower()
+
+
+def _contains_forbidden_shell_metacharacters(command_text: str) -> bool:
+    normalized = _normalize_text(command_text)
+    forbidden_tokens = ("&&", "||", ";", "|", ">", "<", " & ")
+    return any(token in normalized for token in forbidden_tokens)
+
+
+def _is_shell_tool(tool_name: str) -> bool:
+    haystack = tool_name.lower()
+    return "shell_command" in haystack or haystack.endswith(".shell")
+
+
+def _is_apply_patch_tool(tool_name: str) -> bool:
+    return "apply_patch" in tool_name.lower()
+
+
+def _is_wrapper_shell_command(command_text: str) -> bool:
+    normalized = _normalize_text(command_text)
+    wrappers = (
+        "tools\\viewer_host_prepare_slice.py",
+        "tools\\viewer_host_revise_contract.py",
+        "tools\\viewer_host_run_repo_mutation.py",
+        "tools\\viewer_host_apply_repo_patch.py",
+        "tools\\viewer_host_checkpoint_slice.py",
+        "tools\\viewer_host_validate_slice_contract.py",
+        "tools\\viewer_host_validate_fits_contract.py",
+        "tools\\viewer_host_write_contract_proof_receipt.py",
+        "tools\\viewer_host_begin_work_slice.py",
+        "tools\\viewer_host_session_bootstrap.py",
+        "tools\\viewer_host_assert_phased_plan_sync.py",
+    )
+    return any(wrapper in normalized for wrapper in wrappers)
+
+
+def _is_allowed_raw_shell_command(command_text: str) -> bool:
+    normalized = _normalize_text(command_text)
+    if _contains_forbidden_shell_metacharacters(command_text):
+        return False
+    prefixes = (
+        "get-content ",
+        "get-childitem ",
+        "rg ",
+        "git status",
+        "git diff",
+        "git rev-parse",
+        "git ls-files",
+        "py -3.14 tools\\viewer_host_session_bootstrap.py",
+        "py -3.14 tools\\viewer_host_begin_work_slice.py",
+        "py -3.14 tools\\viewer_host_prepare_slice.py",
+        "py -3.14 tools\\viewer_host_revise_contract.py",
+        "py -3.14 tools\\viewer_host_assert_phased_plan_sync.py",
+        "py -3.14 tools\\viewer_host_validate_slice_contract.py",
+        "py -3.14 tools\\viewer_host_validate_fits_contract.py",
+        "py -3.14 tools\\viewer_host_run_logged_command.py",
+        "py -3.14 -m pytest",
+        "py -3.14 tools\\viewer_host_runtime_pytest_lane.py",
+        "py -3.14 tools\\code_quality_audit.py",
+        "cmd /c ui_app\\build_tests_vsdevcmd.cmd",
+        "cmd /c ui_app\\build_vsdevcmd.cmd",
+    )
+    if any(normalized.startswith(prefix) for prefix in prefixes):
+        return True
+    return False
+
+
+def _shell_command_is_forbidden_direct_mutation(command_text: str) -> bool:
+    normalized = _normalize_text(command_text)
+    forbidden = (
+        "tools\\viewer_host_append_handoff.py",
+        "tools\\viewer_host_write_validation_receipt.py",
+        "tools\\viewer_host_write_contract_proof_receipt.py",
+        "git commit",
+        "git add ",
+    )
+    return any(token in normalized for token in forbidden)
 
 
 def discover_repo_root(start_path: Path) -> Path:
@@ -247,6 +360,83 @@ def evaluate_validation_receipt_guard(
     return False, ""
 
 
+def evaluate_contract_proof_receipt_guard(
+    baseline: dict[str, Any] | None,
+    current: dict[str, Any],
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    if baseline is None:
+        return False, ""
+
+    baseline_head = str(baseline.get("head", "")).strip()
+    current_head = str(current.get("head", "")).strip()
+    if not baseline_head or not current_head or baseline_head == current_head:
+        return False, ""
+
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return True, "Current HEAD differs from the session baseline and no active slice contract is locked."
+
+    receipt = load_contract_proof_receipt(current_head, repo_root)
+    if receipt is None:
+        return True, (
+            "Current HEAD differs from the session baseline and lacks a contract proof receipt for the committed state. "
+            "Run the required validators and record proof with tools/viewer_host_checkpoint_slice.py write-receipts before completion."
+        )
+    if str(receipt.get("head", "")).strip() != current_head:
+        return True, "Contract proof receipt head does not match the current committed state."
+    if str(receipt.get("contract_id", "")).strip() != str(contract_state.get("contract_id", "")).strip():
+        return True, "Contract proof receipt contract_id does not match the active locked contract."
+    if str(receipt.get("contract_hash", "")).strip() != str(contract_state.get("contract_hash", "")).strip():
+        return True, "Contract proof receipt contract_hash does not match the active locked contract."
+    return False, ""
+
+
+def _contract_drift_reason(session_id: str, repo_root: Path) -> str:
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return "No active slice contract is locked. Run viewer_host_prepare_slice.py or begin_work_slice with --plan/--contract before mutation."
+    contract_path = repo_root / str(contract_state.get("contract_path", "")).strip()
+    if not contract_path.exists():
+        return "Active slice contract file is missing: " + contract_state.get("contract_path", "<unknown>")
+    current_hash = hash_file(contract_path)
+    if current_hash != str(contract_state.get("contract_hash", "")).strip():
+        return (
+            "Active slice contract changed after it was locked. "
+            "Run viewer_host_revise_contract.py before any further mutation or closure."
+        )
+    return ""
+
+
+def _evaluate_mutation_guard(payload: dict[str, Any], session_id: str, repo_root: Path) -> tuple[bool, str]:
+    tool_name = _extract_payload_tool_name(payload, default="")
+    command_text = _extract_payload_command_text(payload)
+    if _is_apply_patch_tool(tool_name):
+        return True, "Raw apply_patch is forbidden. Use tools/viewer_host_apply_repo_patch.py through shell_command instead."
+    if not _is_shell_tool(tool_name):
+        return False, ""
+    if _is_wrapper_shell_command(command_text):
+        normalized = _normalize_text(command_text)
+        if "tools\\viewer_host_prepare_slice.py" in normalized or "tools\\viewer_host_revise_contract.py" in normalized:
+            return False, ""
+        drift_reason = _contract_drift_reason(session_id, repo_root)
+        if drift_reason:
+            return True, drift_reason
+        return False, ""
+    if _shell_command_is_forbidden_direct_mutation(command_text):
+        return True, (
+            "Direct handoff/receipt/git mutation is forbidden. "
+            "Use tools/viewer_host_checkpoint_slice.py or the other approved repo wrappers."
+        )
+    if _is_allowed_raw_shell_command(command_text):
+        return False, ""
+    return True, (
+        "Raw shell mutation is forbidden. Allowed raw shell is read/search/build/test/check only; "
+        "all repo mutation must go through the approved viewer_host_* wrappers."
+    )
+
+
 def evaluate_checkpoint_guard(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
@@ -276,23 +466,52 @@ def build_pretool_response(
     tool_name: str,
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
+    session_id: str,
+    payload: dict[str, Any] | None = None,
     repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
+    payload = payload or {}
+    banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
+    mutation_block, mutation_reason = _evaluate_mutation_guard(payload, session_id, repo_root)
+    if mutation_block:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": banner + " " + mutation_reason,
+            }
+        }
     if tool_name != TASK_COMPLETE_TOOL:
-        return None
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+                "permissionDecisionReason": banner,
+            }
+        }
 
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
         should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
         if not should_block:
-            return None
+            should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
+        if not should_block:
+            return {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "permissionDecisionReason": banner,
+                }
+            }
         return {
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
-                "permissionDecisionReason": reason,
+                "permissionDecisionReason": banner + " " + reason,
                 "additionalContext": (
                     "Expected receipt path: " + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                    + " | expected contract proof receipt: "
+                    + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
                 ),
             }
         }
@@ -301,7 +520,7 @@ def build_pretool_response(
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
-            "permissionDecisionReason": status.reason,
+            "permissionDecisionReason": banner + " " + status.reason,
             "additionalContext": (
                 "Paths changed vs session baseline: " + summarize_changed_paths(status.changed_paths)
             ),
@@ -313,14 +532,17 @@ def build_posttool_response(
     tool_name: str,
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
+    session_id: str,
     repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
+    banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
     status = evaluate_checkpoint_guard(baseline, current)
     if status.should_block:
         changed_summary = summarize_changed_paths(status.changed_paths)
         return {
             "systemMessage": (
-                "Checkpoint debt after "
+                banner
+                + " Checkpoint debt after "
                 + tool_name
                 + ": repository state differs from the session baseline. "
                 + status.reason
@@ -335,16 +557,26 @@ def build_posttool_response(
 
     should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
     if not should_block:
-        return None
+        should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
+    if not should_block:
+        return {
+            "systemMessage": banner,
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+            },
+        }
 
     return {
         "systemMessage": (
-            "Validation debt after "
+            banner
+            + " Validation debt after "
             + tool_name
             + ": "
             + reason
             + " Expected receipt path: "
             + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+            + " | expected contract proof receipt: "
+            + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
             + "."
         ),
         "hookSpecificOutput": {
@@ -356,18 +588,22 @@ def build_posttool_response(
 def build_stop_response(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
+    session_id: str,
     repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
+    banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
         should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+        if not should_block:
+            should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
         if not should_block:
             return None
         return {
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
                 "decision": "block",
-                "reason": reason,
+                "reason": banner + " " + reason,
             }
         }
 
@@ -375,7 +611,7 @@ def build_stop_response(
         "hookSpecificOutput": {
             "hookEventName": "Stop",
             "decision": "block",
-            "reason": status.reason + " Changed paths: " + summarize_changed_paths(status.changed_paths),
+            "reason": banner + " " + status.reason + " Changed paths: " + summarize_changed_paths(status.changed_paths),
         }
     }
 
@@ -426,11 +662,13 @@ def _bootstrap_missing_baseline_if_clean(
 def _session_start_response(session_id: str, repo_root: Path) -> dict[str, Any]:
     snapshot = capture_repo_snapshot(repo_root)
     path = write_session_baseline(session_id, snapshot, repo_root)
+    active_contract = load_active_contract_state(GLOBAL_CONTRACT_SESSION_ID, repo_root)
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
             "additionalContext": (
-                "viewer_host_checkpoint_guard baseline captured at "
+                build_strict_banner(active_contract)
+                + " viewer_host_checkpoint_guard baseline captured at "
                 + path.relative_to(repo_root).as_posix()
                 + f" | clean={snapshot_is_clean(snapshot)} | head={snapshot.get('head', '')[:12]}"
             ),
@@ -460,18 +698,23 @@ def main(argv: list[str] | None = None) -> int:
         if event_name not in ("PreToolUse", "PostToolUse", "Stop"):
             return 0
 
-        if event_name == "PreToolUse" and not _payload_requests_task_complete(payload):
-            return 0
-
         current = capture_repo_snapshot(repo_root)
         baseline = _bootstrap_missing_baseline_if_clean(session_id, current, repo_root)
 
         if event_name == "PreToolUse":
-            response = build_pretool_response(TASK_COMPLETE_TOOL, baseline, current, repo_root)
+            tool_name = TASK_COMPLETE_TOOL if _payload_requests_task_complete(payload) else _extract_payload_tool_name(payload, default="unknown_tool")
+            response = build_pretool_response(
+                tool_name,
+                baseline,
+                current,
+                session_id,
+                payload,
+                repo_root,
+            )
         elif event_name == "PostToolUse":
-            response = build_posttool_response(_extract_payload_tool_name(payload, default="unknown_tool"), baseline, current, repo_root)
+            response = build_posttool_response(_extract_payload_tool_name(payload, default="unknown_tool"), baseline, current, session_id, repo_root)
         else:
-            response = build_stop_response(baseline, current, repo_root)
+            response = build_stop_response(baseline, current, session_id, repo_root)
 
         if response is not None:
             print(json.dumps(response))

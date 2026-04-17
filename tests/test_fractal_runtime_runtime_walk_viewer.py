@@ -462,7 +462,7 @@ def test_runtime_walk_viewer_can_boot_from_fits_only_cli() -> None:
         assert latest["transport_generation_mode"] == "closed_loop_default"
         assert latest["transport_sample_count"] >= 33
         assert latest["transport_motion_scale"] == pytest.approx(0.75)
-        assert latest["transport_warp_scale"] == pytest.approx(0.10)
+        assert latest["transport_warp_scale"] == pytest.approx(0.0)
         synthesized_state = Path(latest["synthesized_base_state_json"])
         assert synthesized_state.exists(), "FITS-only load did not write synthesized state.json"
         synthesized_payload = json.loads(synthesized_state.read_text(encoding="utf-8"))
