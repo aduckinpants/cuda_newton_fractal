@@ -35,16 +35,44 @@
     "default_json_prompt_flow": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q"
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/test_fractal_runtime_runtime_walk_viewer.junit.xml",
+    "py -3.14 tools/viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json --out-json artifacts/validation/viewer_host_validate_fits_contract.json"
   ],
   "required_validators": [
     "fits_defaults"
   ],
   "required_acceptance_assertions": [
-    "FITS-only open reaches playback",
-    "default synthesized fractal is explaino",
-    "default mapping does not bind warp",
-    "default UI does not expose warp"
+    {
+      "assertion_id": "fits_only_open_reaches_playback",
+      "description": "FITS-only open reaches live playback",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/test_fractal_runtime_runtime_walk_viewer.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_runtime_walk_viewer_can_boot_from_fits_only_cli"
+    },
+    {
+      "assertion_id": "default_synthesized_fractal_is_explaino",
+      "description": "Synthesized FITS default fractal is explaino",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_synthesized_fractal_is_explaino",
+      "equals": true
+    },
+    {
+      "assertion_id": "default_mapping_has_no_warp_binding",
+      "description": "Shipped FITS mapping has no default warp binding",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_mapping_has_no_warp_binding",
+      "equals": true
+    },
+    {
+      "assertion_id": "default_ui_has_no_warp_control",
+      "description": "Default FITS UI has no warp control",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_ui_has_no_warp_control",
+      "equals": true
+    }
   ],
   "required_artifact_visibility": [
     "generated request path visible",
@@ -57,4 +85,3 @@
     "binding summary visible"
   ]
 }
-

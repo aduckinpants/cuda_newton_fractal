@@ -13,6 +13,11 @@ CONTRACT_PROOF_RECEIPT_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_co
 GLOBAL_CONTRACT_SESSION_ID = "global_active_contract"
 
 ALLOWED_WORKFLOW_TYPES = {"viewer_first", "cli_first", "headless_only", "workflow_only"}
+SUPPORTED_ASSERTION_EVIDENCE_KINDS = {
+    "pytest_junit_case",
+    "runtime_junit_case",
+    "validator_json",
+}
 STRICT_BANNER_PREFIX = (
     "STRICT REPO RULE: the active checked-in plan/contract is binding. "
     "Raw mutation is forbidden. Contract drift is forbidden. "
@@ -146,7 +151,6 @@ def validate_slice_contract_payload(payload: dict[str, Any], repo_root: Path = R
         "allowed_mutation_scope",
         "required_operator_inputs",
         "forbidden_operator_prompts",
-        "required_acceptance_assertions",
         "required_validation_commands",
     )
     for field in required_list_fields:
@@ -160,6 +164,55 @@ def validate_slice_contract_payload(payload: dict[str, Any], repo_root: Path = R
         value = payload.get(dict_field)
         if not isinstance(value, dict) or not value:
             errors.append(f"missing required non-empty object field: {dict_field}")
+
+    assertions = payload.get("required_acceptance_assertions")
+    if not isinstance(assertions, list) or not assertions:
+        errors.append("missing required non-empty list field: required_acceptance_assertions")
+    else:
+        seen_assertion_ids: set[str] = set()
+        for index, assertion in enumerate(assertions):
+            if not isinstance(assertion, dict):
+                errors.append(
+                    "invalid list entries for field: required_acceptance_assertions "
+                    f"(index {index} must be an object)"
+                )
+                continue
+            assertion_id = assertion.get("assertion_id")
+            if not isinstance(assertion_id, str) or not assertion_id.strip():
+                errors.append(f"required_acceptance_assertions[{index}] missing assertion_id")
+            elif assertion_id in seen_assertion_ids:
+                errors.append(f"duplicate assertion_id in required_acceptance_assertions: {assertion_id}")
+            else:
+                seen_assertion_ids.add(assertion_id)
+            description = assertion.get("description")
+            if not isinstance(description, str) or not description.strip():
+                errors.append(f"required_acceptance_assertions[{index}] missing description")
+            evidence_kind = assertion.get("evidence_kind")
+            if not isinstance(evidence_kind, str) or not evidence_kind.strip():
+                errors.append(f"required_acceptance_assertions[{index}] missing evidence_kind")
+            elif evidence_kind not in SUPPORTED_ASSERTION_EVIDENCE_KINDS:
+                errors.append(
+                    f"required_acceptance_assertions[{index}] has unsupported evidence_kind: {evidence_kind}"
+                )
+            artifact_path = assertion.get("artifact_path")
+            if not isinstance(artifact_path, str) or not artifact_path.strip():
+                errors.append(f"required_acceptance_assertions[{index}] missing artifact_path")
+            if evidence_kind in {"pytest_junit_case", "runtime_junit_case"}:
+                test_nodeid = assertion.get("test_nodeid")
+                if not isinstance(test_nodeid, str) or not test_nodeid.strip():
+                    errors.append(
+                        f"required_acceptance_assertions[{index}] missing test_nodeid for evidence_kind={evidence_kind}"
+                    )
+            if evidence_kind == "validator_json":
+                json_path = assertion.get("json_path")
+                if not isinstance(json_path, str) or not json_path.strip():
+                    errors.append(
+                        f"required_acceptance_assertions[{index}] missing json_path for evidence_kind=validator_json"
+                    )
+                if "equals" not in assertion:
+                    errors.append(
+                        f"required_acceptance_assertions[{index}] missing equals for evidence_kind=validator_json"
+                    )
 
     allowed_scope = payload.get("allowed_mutation_scope")
     if isinstance(allowed_scope, list):

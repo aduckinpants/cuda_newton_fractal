@@ -15,18 +15,24 @@ try:
         build_strict_banner,
         contract_proof_receipt_path,
         hash_file,
+        load_and_validate_slice_contract,
         load_active_contract_state,
         load_contract_proof_receipt,
+        validate_locked_contract_state,
     )
+    from tools.viewer_host_contract_proof import build_validation_evidence_entries
 except ModuleNotFoundError:
     from viewer_host_contract_state import (
         GLOBAL_CONTRACT_SESSION_ID,
         build_strict_banner,
         contract_proof_receipt_path,
         hash_file,
+        load_and_validate_slice_contract,
         load_active_contract_state,
         load_contract_proof_receipt,
+        validate_locked_contract_state,
     )
+    from viewer_host_contract_proof import build_validation_evidence_entries
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -317,6 +323,7 @@ def write_validation_receipt(
         "head": head,
         "summary": summary,
         "commands": list(commands or []),
+        "evidence": build_validation_evidence_entries(list(commands or []), repo_root),
         "notes": list(notes or []),
         "clean": True,
         "written_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -374,9 +381,14 @@ def evaluate_contract_proof_receipt_guard(
     if not baseline_head or not current_head or baseline_head == current_head:
         return False, ""
 
-    contract_state = load_active_contract_state(session_id, repo_root)
-    if contract_state is None:
-        return True, "Current HEAD differs from the session baseline and no active slice contract is locked."
+    contract_state, contract_error = validate_locked_contract_state(session_id, repo_root)
+    if contract_error:
+        return True, contract_error
+
+    contract_path = repo_root / str(contract_state["contract_path"])
+    contract_payload, contract_result = load_and_validate_slice_contract(contract_path, repo_root)
+    if contract_payload is None or not contract_result.ok:
+        return True, "Active slice contract failed validation during closure."
 
     receipt = load_contract_proof_receipt(current_head, repo_root)
     if receipt is None:
@@ -390,6 +402,27 @@ def evaluate_contract_proof_receipt_guard(
         return True, "Contract proof receipt contract_id does not match the active locked contract."
     if str(receipt.get("contract_hash", "")).strip() != str(contract_state.get("contract_hash", "")).strip():
         return True, "Contract proof receipt contract_hash does not match the active locked contract."
+
+    assertion_results = receipt.get("assertion_results")
+    if not isinstance(assertion_results, list):
+        return True, "Contract proof receipt is missing assertion_results."
+    results_by_id: dict[str, dict[str, Any]] = {}
+    for item in assertion_results:
+        if not isinstance(item, dict):
+            continue
+        assertion_id = str(item.get("assertion_id", "")).strip()
+        if assertion_id:
+            results_by_id[assertion_id] = item
+    for assertion in contract_payload.get("required_acceptance_assertions", []):
+        assertion_id = str(assertion.get("assertion_id", "")).strip()
+        result = results_by_id.get(assertion_id)
+        if result is None:
+            return True, f"Contract proof receipt is missing required assertion result: {assertion_id}"
+        if not bool(result.get("ok", False)):
+            detail = str(result.get("failure_detail", "")).strip()
+            if detail:
+                return True, f"Contract proof assertion failed: {assertion_id} ({detail})"
+            return True, f"Contract proof assertion failed: {assertion_id}"
     return False, ""
 
 

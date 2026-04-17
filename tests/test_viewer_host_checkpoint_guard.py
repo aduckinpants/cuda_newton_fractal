@@ -28,6 +28,7 @@ from tools.viewer_host_checkpoint_guard import (
     validation_receipt_path,
     write_validation_receipt,
 )
+from tools.viewer_host_contract_state import contract_proof_receipt_path
 from tools.viewer_host_checkpoint_dirty_prompt_guard import (
     build_dirty_prompt_message,
     build_userprompt_response,
@@ -496,7 +497,15 @@ def test_build_pretool_response_denies_mutation_when_locked_contract_hash_drifte
                 "required_defaults": {"base_fractal_type": "explaino"},
                 "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
                 "required_validation_commands": ["pytest"],
-                "required_acceptance_assertions": ["assertion"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "assertion",
+                        "description": "placeholder",
+                        "evidence_kind": "pytest_junit_case",
+                        "artifact_path": "artifacts/pytest/banner.junit.xml",
+                        "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner",
+                    }
+                ],
             },
             indent=2,
         ),
@@ -538,3 +547,261 @@ def test_build_pretool_response_denies_mutation_when_locked_contract_hash_drifte
     hook = response["hookSpecificOutput"]
     assert hook["permissionDecision"] == "deny"
     assert "Active slice contract changed after it was locked" in hook["permissionDecisionReason"]
+
+
+def test_evaluate_contract_proof_receipt_guard_blocks_failed_assertion_results(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / "docs" / "contracts").mkdir(parents=True)
+    (repo_root / "docs" / "notes").mkdir(parents=True)
+    (repo_root / "tools").mkdir()
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["fits"],
+                "forbidden_operator_prompts": ["state.json"],
+                "required_defaults": {"base_fractal_type": "explaino"},
+                "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
+                "required_validation_commands": ["pytest"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "strict_banner_emitted",
+                        "description": "Strict banner emitted",
+                        "evidence_kind": "pytest_junit_case",
+                        "artifact_path": "artifacts/pytest/banner.junit.xml",
+                        "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner",
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md").write_text(
+        "# Plan\n\n## Current Phase\n\nPhase 1 - X\n\n## Phase Checklist\n\n- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session("session-1", repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["pytest"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    receipt_path = contract_proof_receipt_path("def456", repo_root)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(
+        json.dumps(
+            {
+                "head": "def456",
+                "contract_id": "slice",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "assertion_results": [
+                    {
+                        "assertion_id": "strict_banner_emitted",
+                        "ok": False,
+                        "failure_detail": "missing case",
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    baseline = _snapshot()
+    baseline["head"] = "abc123"
+    current = _snapshot()
+    current["head"] = "def456"
+
+    should_block, reason = checkpoint_guard.evaluate_contract_proof_receipt_guard(
+        baseline,
+        current,
+        "session-1",
+        repo_root,
+    )
+
+    assert should_block is True
+    assert "assertion" in reason.lower()
+
+
+def test_evaluate_contract_proof_receipt_guard_blocks_missing_required_assertion_result(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / "docs" / "contracts").mkdir(parents=True)
+    (repo_root / "docs" / "notes").mkdir(parents=True)
+    (repo_root / "tools").mkdir()
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["fits"],
+                "forbidden_operator_prompts": ["state.json"],
+                "required_defaults": {"base_fractal_type": "explaino"},
+                "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
+                "required_validation_commands": ["pytest"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "strict_banner_emitted",
+                        "description": "Strict banner emitted",
+                        "evidence_kind": "pytest_junit_case",
+                        "artifact_path": "artifacts/pytest/banner.junit.xml",
+                        "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner",
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md").write_text(
+        "# Plan\n\n## Current Phase\n\nPhase 1 - X\n\n## Phase Checklist\n\n- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session("session-1", repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["pytest"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    receipt_path = contract_proof_receipt_path("def456", repo_root)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(
+        json.dumps(
+            {
+                "head": "def456",
+                "contract_id": "slice",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "assertion_results": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    baseline = _snapshot()
+    baseline["head"] = "abc123"
+    current = _snapshot()
+    current["head"] = "def456"
+
+    should_block, reason = checkpoint_guard.evaluate_contract_proof_receipt_guard(
+        baseline,
+        current,
+        "session-1",
+        repo_root,
+    )
+
+    assert should_block is True
+    assert "missing" in reason.lower()
+
+
+def test_evaluate_contract_proof_receipt_guard_blocks_when_locked_contract_has_drifted(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / "docs" / "contracts").mkdir(parents=True)
+    (repo_root / "docs" / "notes").mkdir(parents=True)
+    (repo_root / "tools").mkdir()
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["fits"],
+                "forbidden_operator_prompts": ["state.json"],
+                "required_defaults": {"base_fractal_type": "explaino"},
+                "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
+                "required_validation_commands": ["pytest"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "strict_banner_emitted",
+                        "description": "Strict banner emitted",
+                        "evidence_kind": "pytest_junit_case",
+                        "artifact_path": "artifacts/pytest/banner.junit.xml",
+                        "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner",
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md").write_text(
+        "# Plan\n\n## Current Phase\n\nPhase 1 - X\n\n## Phase Checklist\n\n- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session("session-1", repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "workflow_only",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": "stale",
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["pytest"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    baseline = _snapshot()
+    baseline["head"] = "abc123"
+    current = _snapshot()
+    current["head"] = "def456"
+
+    should_block, reason = checkpoint_guard.evaluate_contract_proof_receipt_guard(
+        baseline,
+        current,
+        "session-1",
+        repo_root,
+    )
+
+    assert should_block is True
+    assert "changed after it was locked" in reason

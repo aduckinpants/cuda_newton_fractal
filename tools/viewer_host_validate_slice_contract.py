@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate a machine-readable viewer-host slice contract")
     parser.add_argument("--contract", required=True, help="Path to the checked-in contract JSON")
+    parser.add_argument("--out-json", help="Optional JSON output path")
     args = parser.parse_args(argv)
 
     contract_path = Path(args.contract)
@@ -30,15 +31,21 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"- {error}\n")
         return 2
 
-    print(
-        json.dumps(
-            {
-                "ok": True,
-                "contract": str(contract_path.relative_to(REPO_ROOT).as_posix()),
-            },
-            indent=2,
-        )
-    )
+    payload = {
+        "ok": True,
+        "contract": str(contract_path.relative_to(REPO_ROOT).as_posix()),
+        "checks": {
+            "contract_schema_valid": True,
+            "structured_assertions_required": True,
+        },
+    }
+    if args.out_json:
+        out_path = Path(args.out_json)
+        if not out_path.is_absolute():
+            out_path = REPO_ROOT / out_path
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(payload, indent=2))
     return 0
 
 

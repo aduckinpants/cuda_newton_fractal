@@ -81,6 +81,22 @@ def test_begin_work_slice_dry_run_surfaces_generated_checkpoint_id(monkeypatch, 
     assert "--commit pending" not in out
 
 
+def test_begin_work_slice_requires_plan_and_contract(capsys) -> None:
+    try:
+        begin_work_slice_main([
+            "--intent",
+            "workflow closeout",
+            "--profile",
+            "checkpoint",
+            "--dry-run",
+        ])
+        assert False, "expected begin_work_slice_main to reject missing plan/contract"
+    except SystemExit as exc:
+        assert exc.code == 2
+    err = capsys.readouterr().err
+    assert "the following arguments are required: --plan, --contract" in err
+
+
 def test_tail_handoff_entries_returns_latest_checkpoint_lines() -> None:
     text = """
 - `ck:00000001` older

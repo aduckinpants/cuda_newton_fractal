@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from tools.viewer_host_contract_state import contract_state_path_for_session
 from tools.viewer_host_prepare_slice import main as prepare_slice_main
 from tools.viewer_host_validate_slice_contract import main as validate_slice_contract_main
+from tools.viewer_host_contract_state import validate_slice_contract_payload
 
 
 def _write_minimal_plan(path: Path) -> None:
@@ -38,7 +39,15 @@ def _write_minimal_contract(path: Path, plan_relative: str) -> None:
                 "required_defaults": {"base_fractal_type": "explaino"},
                 "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
                 "required_validation_commands": ["py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q"],
-                "required_acceptance_assertions": ["strict banner present"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "strict_banner_present",
+                        "description": "Strict banner test passes",
+                        "evidence_kind": "pytest_junit_case",
+                        "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+                        "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner",
+                    }
+                ],
             },
             indent=2,
         )
@@ -113,6 +122,56 @@ def test_validate_fits_contract_passes_on_repo_defaults() -> None:
         check=False,
     )
     assert proc.returncode == 0, proc.stderr or proc.stdout
+
+
+def test_validate_slice_contract_payload_rejects_string_assertions() -> None:
+    payload = {
+        "contract_id": "example_contract",
+        "feature_id": "example_feature",
+        "workflow_type": "workflow_only",
+        "plan_path": "docs/notes/example_PHASED_PLAN.md",
+        "allowed_mutation_scope": ["tools"],
+        "required_operator_inputs": ["fits"],
+        "forbidden_operator_prompts": ["state.json"],
+        "required_defaults": {"base_fractal_type": "explaino"},
+        "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
+        "required_validation_commands": ["py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml"],
+        "required_acceptance_assertions": ["strict banner present"],
+    }
+
+    result = validate_slice_contract_payload(payload, REPO_ROOT)
+
+    assert result.ok is False
+    assert any("required_acceptance_assertions" in error for error in result.errors)
+
+
+def test_validate_slice_contract_payload_rejects_unknown_assertion_evidence_kind() -> None:
+    payload = {
+        "contract_id": "example_contract",
+        "feature_id": "example_feature",
+        "workflow_type": "workflow_only",
+        "plan_path": "docs/notes/example_PHASED_PLAN.md",
+        "allowed_mutation_scope": ["tools"],
+        "required_operator_inputs": ["fits"],
+        "forbidden_operator_prompts": ["state.json"],
+        "required_defaults": {"base_fractal_type": "explaino"},
+        "forbidden_defaults": {"default_warp_binding": "params.explaino_warp_strength"},
+        "required_validation_commands": ["py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml"],
+        "required_acceptance_assertions": [
+            {
+                "assertion_id": "strict_banner_present",
+                "description": "Strict banner test passes",
+                "evidence_kind": "not_real",
+                "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+                "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner",
+            }
+        ],
+    }
+
+    result = validate_slice_contract_payload(payload, REPO_ROOT)
+
+    assert result.ok is False
+    assert any("evidence_kind" in error for error in result.errors)
 
 
 def test_run_repo_mutation_rejects_non_wrapper_delegate(tmp_path: Path) -> None:

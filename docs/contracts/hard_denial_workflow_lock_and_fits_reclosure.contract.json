@@ -46,24 +46,84 @@
     "raw_mutating_shell_command": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q",
-    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q",
-    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/hard_denial_workflow_lock_and_fits_reclosure.contract.json",
-    "py -3.14 tools/viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json",
-    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q"
+    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_tools.py -q --junitxml artifacts/pytest/test_viewer_host_contract_tools.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/hard_denial_workflow_lock_and_fits_reclosure.contract.json --out-json artifacts/validation/viewer_host_validate_slice_contract.json",
+    "py -3.14 tools/viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json --out-json artifacts/validation/viewer_host_validate_fits_contract.json",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/test_fractal_runtime_runtime_walk_viewer.junit.xml"
   ],
   "required_validators": [
     "fits_defaults"
   ],
   "required_acceptance_assertions": [
-    "strict banner appears on every prompt and post-tool event",
-    "raw apply_patch is denied",
-    "raw mutating shell_command is denied",
-    "begin_work_slice requires plan and contract",
-    "slice contract drift blocks mutation and closure",
-    "FITS default mapping does not bind warp",
-    "FITS default fractal is explaino",
-    "FITS default UI does not expose warp"
+    {
+      "assertion_id": "strict_banner_emitted",
+      "description": "Strict banner is emitted on the guarded tool path",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner"
+    },
+    {
+      "assertion_id": "raw_apply_patch_denied",
+      "description": "Raw apply_patch is denied even when the repo is clean",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_raw_apply_patch_even_when_repo_is_clean"
+    },
+    {
+      "assertion_id": "raw_mutating_shell_denied",
+      "description": "Raw mutating shell commands are denied",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_raw_mutating_shell_command_even_when_repo_is_clean"
+    },
+    {
+      "assertion_id": "begin_work_slice_requires_plan_and_contract",
+      "description": "Begin-work-slice requires plan and contract together",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_agent_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_begin_work_slice_requires_plan_and_contract"
+    },
+    {
+      "assertion_id": "contract_drift_blocks_mutation",
+      "description": "Locked contract drift blocks further mutation",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_tools.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_contract_tools.py::test_run_repo_mutation_rejects_drifted_locked_contract"
+    },
+    {
+      "assertion_id": "contract_drift_blocks_closure",
+      "description": "Locked contract drift blocks closure",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_evaluate_contract_proof_receipt_guard_blocks_when_locked_contract_has_drifted"
+    },
+    {
+      "assertion_id": "default_mapping_has_no_warp_binding",
+      "description": "Shipped FITS mapping has no default warp binding",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_mapping_has_no_warp_binding",
+      "equals": true
+    },
+    {
+      "assertion_id": "default_synthesized_fractal_is_explaino",
+      "description": "Synthesized FITS default fractal is explaino",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_synthesized_fractal_is_explaino",
+      "equals": true
+    },
+    {
+      "assertion_id": "default_ui_has_no_warp_control",
+      "description": "Default FITS UI has no warp control",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_ui_has_no_warp_control",
+      "equals": true
+    }
   ],
   "required_artifact_visibility": [
     "generated request path visible",
@@ -77,4 +137,3 @@
     "binding summary visible"
   ]
 }
-

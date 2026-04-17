@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +14,7 @@ try:
         load_and_validate_slice_contract,
         validate_locked_contract_state,
     )
+    from tools.viewer_host_contract_proof import evaluate_assertion, validation_evidence_spec_for_command
 except ModuleNotFoundError:
     from viewer_host_checkpoint_guard import capture_repo_snapshot, discover_repo_root, load_validation_receipt
     from viewer_host_contract_state import (
@@ -23,23 +23,7 @@ except ModuleNotFoundError:
         load_and_validate_slice_contract,
         validate_locked_contract_state,
     )
-
-
-VALIDATOR_COMMANDS: dict[str, list[str]] = {
-    "fits_defaults": ["py", "-3.14", "tools/viewer_host_validate_fits_contract.py", "--contract", "docs/contracts/runtime_walk_fits.contract.json"],
-}
-
-
-def _run_validator(command: list[str], repo_root: Path) -> tuple[bool, str]:
-    proc = subprocess.run(
-        command,
-        cwd=str(repo_root),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        check=False,
-    )
-    return proc.returncode == 0, (proc.stdout or "").strip()
+    from viewer_host_contract_proof import evaluate_assertion, validation_evidence_spec_for_command
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -77,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     missing_commands = [
         command
         for command in required_commands
-        if not any(command in executed for executed in executed_commands)
+        if command not in executed_commands
     ]
     if missing_commands:
         sys.stderr.write("viewer_host_write_contract_proof_receipt: missing required validation commands\n")
@@ -85,30 +69,42 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"- {command}\n")
         return 2
 
-    validator_results: list[dict[str, object]] = []
-    for validator_id in contract_payload.get("required_validators", []):
-        command = VALIDATOR_COMMANDS.get(str(validator_id))
-        if command is None:
-            sys.stderr.write(f"viewer_host_write_contract_proof_receipt: unknown validator id: {validator_id}\n")
-            return 2
-        ok, output = _run_validator(command, repo_root)
-        validator_results.append(
-            {
-                "validator_id": str(validator_id),
-                "command": " ".join(command),
-                "ok": ok,
-                "output": output,
-            }
-        )
-        if not ok:
+    evidence_entries = list(validation_receipt.get("evidence", []) or [])
+    evidence_by_command = {
+        str(entry.get("command", "")).strip(): entry
+        for entry in evidence_entries
+        if isinstance(entry, dict) and str(entry.get("command", "")).strip()
+    }
+    missing_evidence_commands: list[str] = []
+    for command in required_commands:
+        spec = validation_evidence_spec_for_command(command)
+        if spec is None:
+            missing_evidence_commands.append(command)
+            continue
+        if command not in evidence_by_command:
+            missing_evidence_commands.append(command)
+    if missing_evidence_commands:
+        sys.stderr.write("viewer_host_write_contract_proof_receipt: missing parseable evidence for required validation commands\n")
+        for command in missing_evidence_commands:
+            sys.stderr.write(f"- {command}\n")
+        return 2
+
+    assertion_results = [
+        evaluate_assertion(assertion, repo_root, validation_receipt)
+        for assertion in contract_payload.get("required_acceptance_assertions", [])
+    ]
+    failed_results = [result for result in assertion_results if not bool(result.get("ok", False))]
+    if failed_results:
+        sys.stderr.write("viewer_host_write_contract_proof_receipt: required assertion evidence failed\n")
+        for result in failed_results:
             sys.stderr.write(
-                "viewer_host_write_contract_proof_receipt: validator failed: "
-                + str(validator_id)
-                + "\n"
-                + output
+                "- "
+                + str(result.get("assertion_id", "<unknown>"))
+                + ": "
+                + str(result.get("failure_detail", "assertion failed"))
                 + "\n"
             )
-            return 2
+        return 2
 
     receipt_path = contract_proof_receipt_path(str(snapshot["head"]), repo_root)
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
@@ -120,7 +116,8 @@ def main(argv: list[str] | None = None) -> int:
         "contract_hash": contract_state["contract_hash"],
         "validation_receipt_head": validation_receipt["head"],
         "validated_commands": executed_commands,
-        "validator_results": validator_results,
+        "validation_evidence": list(validation_receipt.get("evidence", []) or []),
+        "assertion_results": assertion_results,
         "written_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     receipt_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
