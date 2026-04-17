@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fractal_types.h"
+#include "runtime_walk.h"
 
 #include <map>
 #include <string>
@@ -68,6 +69,16 @@ bool SynthesizeRuntimeWalkBaseState(const RuntimeWalkFitsMappingCatalog& catalog
     ViewState* outView,
     KernelParams* outParams,
     RenderSettings* outRender,
+    std::string* outError);
+
+bool SynthesizeRuntimeWalkTransportBundle(const RuntimeWalkFitsMappingCatalog& catalog,
+    const std::string& profileId,
+    const RuntimeWalkFitsOrientationInputs& inputs,
+    RuntimeWalkBundle* outBundle,
+    std::string* outError);
+
+bool WriteRuntimeWalkBundleJsonFile(const std::string& path,
+    const RuntimeWalkBundle& bundle,
     std::string* outError);
 
 bool WriteRuntimeWalkSynthesizedStateJson(const std::string& path,

@@ -38,6 +38,7 @@ struct RuntimeWalkViewerImportSessionRecord {
     std::string source_request_json_path;
     std::string source_bundle_json_path;
     std::string discovery_source;
+    bool transport_generated = false;
     bool request_exists = false;
 };
 

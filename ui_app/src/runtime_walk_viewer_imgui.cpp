@@ -169,8 +169,8 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
     }
     ImGui::TextWrapped(
         synthesizeDefault
-            ? "FITS plus the checked-in mapping contract synthesize the authoritative Explaino base state. Bundle drives playback transport. RTK outputs remain companion evidence only."
-            : "Loaded capture state remains authoritative. Bundle drives playback transport. FITS and RTK outputs remain companion evidence only.");
+            ? "FITS plus the checked-in mapping contract synthesize the authoritative Explaino base state and default runtime-walk transport when no authored request or bundle exists. RTK outputs remain companion evidence only."
+            : "Loaded capture state remains authoritative. If no authored request or bundle exists, FITS import synthesizes default runtime-walk transport. FITS and RTK outputs remain companion evidence only.");
     ImGui::Separator();
     ImGui::TextWrapped("Base State: %s", state.base_state_json_path.empty() ? "(none)" : state.base_state_json_path.c_str());
     if (!state.status_text.empty()) {
@@ -196,8 +196,8 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
     }
 
     ImGui::TextWrapped("FITS: %s", state.comparison_fits_path.empty() ? "(none)" : state.comparison_fits_path.c_str());
-    ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(auto-discover or browse)" : state.request_json_path.c_str());
-    ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(auto-discover or browse)" : state.bundle_json_path.c_str());
+    ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(auto-discover, recent, or generate)" : state.request_json_path.c_str());
+    ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(auto-discover, recent, or generate)" : state.bundle_json_path.c_str());
     ImGui::TextWrapped("Mapping Profile: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
     ImGui::TextWrapped("Mapping Profile Id: %s", state.mapping_profile_id.empty() ? "explaino_default" : state.mapping_profile_id.c_str());
 
@@ -207,7 +207,7 @@ bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState&
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!importAllowed);
-    if (ImGui::Button("Build + Open")) {
+    if (ImGui::Button("Open FITS")) {
         outActions->build_and_open = true;
         interactionChanged = true;
     }

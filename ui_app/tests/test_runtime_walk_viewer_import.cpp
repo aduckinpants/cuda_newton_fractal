@@ -189,25 +189,33 @@ static void TestValidateImportBaseStateUsesAuthoritativeFamily() {
         "TestValidateImportBaseStateUsesAuthoritativeFamily_SynthModeAllowsMissingState");
 }
 
-static void TestImportSessionRejectsMissingBundleOrRequest() {
+static void TestImportSessionLoadedStateGeneratesTransportWithoutBundleOrRequest() {
     const std::filesystem::path root = TempRoot("missing_bundle");
     const std::filesystem::path statePath = root / "state.json";
     const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
     WriteStateJson(statePath);
     WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
 
     RuntimeWalkViewerImportRequest request{};
     request.exe_dir = root.string();
     request.base_state_json_path = statePath.string();
     request.base_fractal_type = FractalType::explaino_fp;
     request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
 
     RuntimeWalkViewerImportSessionRecord record;
     std::string error;
-    Check(!BuildRuntimeWalkViewerImportSession(request, &record, &error),
-        "TestImportSessionRejectsMissingBundleOrRequest_Fails");
-    Check(error.find("could not discover") != std::string::npos,
-        "TestImportSessionRejectsMissingBundleOrRequest_Error");
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestImportSessionLoadedStateGeneratesTransportWithoutBundleOrRequest_Builds",
+        error);
+    Check(record.transport_generated,
+        "TestImportSessionLoadedStateGeneratesTransportWithoutBundleOrRequest_TransportGenerated");
+    Check(record.discovery_source == "generated_transport",
+        "TestImportSessionLoadedStateGeneratesTransportWithoutBundleOrRequest_DiscoverySource");
+    Check(!record.bundle_json_path.empty() && std::filesystem::exists(record.bundle_json_path),
+        "TestImportSessionLoadedStateGeneratesTransportWithoutBundleOrRequest_BundleWritten");
 }
 
 static void TestImportSessionPersistsDeterministicRecentLatest() {
@@ -316,6 +324,32 @@ static void TestLatestRejectsStaleSession() {
         "TestLatestRejectsStaleSession_Error");
 }
 
+static void TestLatestRejectsMissingGeneratedBundle() {
+    const std::filesystem::path root = TempRoot("stale_bundle_latest");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    Check(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestLatestRejectsMissingGeneratedBundle_SeedBuild");
+    std::filesystem::remove(record.bundle_json_path);
+
+    RuntimeWalkViewerImportSessionRecord latest;
+    Check(!LoadLatestRuntimeWalkViewerImportSession(root.string(), &latest, &error),
+        "TestLatestRejectsMissingGeneratedBundle_Fails");
+    Check(error.find("stale") != std::string::npos,
+        "TestLatestRejectsMissingGeneratedBundle_Error");
+}
+
 static void TestImportSessionSynthesizesBaseStateWithoutLoadedState() {
     const std::filesystem::path root = TempRoot("synthesized_base");
     const std::filesystem::path bundlePath = root / "bundle.json";
@@ -348,7 +382,7 @@ static void TestImportSessionSynthesizesBaseStateWithoutLoadedState() {
         "TestImportSessionSynthesizesBaseStateWithoutLoadedState_RequestWritten");
 }
 
-static void TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest() {
+static void TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest() {
     const std::filesystem::path root = TempRoot("synth_missing_bundle");
     const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
     const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
@@ -363,22 +397,70 @@ static void TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest() {
 
     RuntimeWalkViewerImportSessionRecord record;
     std::string error;
-    Check(!BuildRuntimeWalkViewerImportSession(request, &record, &error),
-        "TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest_Fails");
-    Check(error.find("could not discover") != std::string::npos,
-        "TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest_Error");
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest_Builds",
+        error);
+    Check(record.transport_generated,
+        "TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest_TransportGenerated");
+    Check(record.discovery_source == "generated_transport",
+        "TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest_DiscoverySource");
+    Check(!record.bundle_json_path.empty() && std::filesystem::exists(record.bundle_json_path),
+        "TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest_BundleWritten");
+    Check(std::filesystem::exists(record.request_json_path),
+        "TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest_RequestWritten");
+}
+
+static void TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent() {
+    const std::filesystem::path root = TempRoot("stale_recent_generation");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    const std::filesystem::path bundlePath = root / "bundle.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+    WriteBundleJson(bundlePath);
+
+    RuntimeWalkViewerImportRequest seeded{};
+    seeded.exe_dir = root.string();
+    seeded.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    seeded.comparison_fits_path = fitsPath.string();
+    seeded.bundle_json_path = bundlePath.string();
+    seeded.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord first;
+    std::string error;
+    Check(BuildRuntimeWalkViewerImportSession(seeded, &first, &error),
+        "TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent_SeedBuild");
+    std::filesystem::remove(first.request_json_path);
+    std::filesystem::remove(first.bundle_json_path);
+
+    RuntimeWalkViewerImportRequest regenerated{};
+    regenerated.exe_dir = root.string();
+    regenerated.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    regenerated.comparison_fits_path = fitsPath.string();
+    regenerated.orientation_inputs_json_path = orientationInputsPath.string();
+
+    RuntimeWalkViewerImportSessionRecord second;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(regenerated, &second, &error),
+        "TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent_Regenerates",
+        error);
+    Check(second.transport_generated,
+        "TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent_TransportGenerated");
+    Check(second.discovery_source == "generated_transport",
+        "TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent_DiscoverySource");
 }
 
 int main() {
     TestImportSessionRejectsMissingBaseState();
     TestImportSessionRejectsWrongFamily();
     TestValidateImportBaseStateUsesAuthoritativeFamily();
-    TestImportSessionRejectsMissingBundleOrRequest();
+    TestImportSessionLoadedStateGeneratesTransportWithoutBundleOrRequest();
     TestImportSessionSynthesizesBaseStateWithoutLoadedState();
-    TestImportSessionSynthesizedModeRejectsMissingBundleOrRequest();
+    TestImportSessionSynthesizedModeGeneratesTransportWithoutBundleOrRequest();
+    TestImportSessionGeneratesTransportInsteadOfReusingStaleRecent();
     TestImportSessionPersistsDeterministicRecentLatest();
     TestImportSessionCanRediscoverFromRecentMatch();
     TestLatestRejectsStaleSession();
+    TestLatestRejectsMissingGeneratedBundle();
 
     std::printf("test_runtime_walk_viewer_import: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

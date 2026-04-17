@@ -146,6 +146,27 @@ double ClampDouble(double value, double minValue, double maxValue) {
     return value;
 }
 
+double Clamp01(double value) {
+    return ClampDouble(value, 0.0, 1.0);
+}
+
+double SignalOrDefault(const RuntimeWalkFitsOrientationInputs& inputs, std::string_view signalName, double defaultValue) {
+    const auto it = inputs.signals.find(std::string(signalName));
+    if (it == inputs.signals.end()) return defaultValue;
+    if (!std::isfinite(it->second)) return defaultValue;
+    return it->second;
+}
+
+double NormalizeUnitSignal(const RuntimeWalkFitsOrientationInputs& inputs, std::string_view signalName, double defaultValue = 0.5) {
+    return Clamp01(SignalOrDefault(inputs, signalName, defaultValue));
+}
+
+double NormalizeSignedSignal(const RuntimeWalkFitsOrientationInputs& inputs, std::string_view signalName, double defaultValue = 0.0, double maxAbs = 1.0) {
+    if (!(maxAbs > 0.0)) return 0.5;
+    const double value = SignalOrDefault(inputs, signalName, defaultValue);
+    return Clamp01(0.5 + 0.5 * (value / maxAbs));
+}
+
 double ResolveBindingValue(const RuntimeWalkFitsMappingBinding& binding, double signalValue) {
     const double span = binding.input_max - binding.input_min;
     double normalized = 0.0;
@@ -441,6 +462,122 @@ std::string BuildSynthesizedStateJson(const ViewState& view, const KernelParams&
     js << "  }\n";
     js << "}\n";
     return js.str();
+}
+
+std::array<double, 13> BuildTransportSample0() {
+    std::array<double, 13> channels{};
+    channels.fill(0.5);
+    return channels;
+}
+
+std::array<double, 13> BuildTransportSample1(const RuntimeWalkFitsOrientationInputs& inputs) {
+    const double mean = NormalizeUnitSignal(inputs, "mean");
+    const double stddev = NormalizeUnitSignal(inputs, "stddev");
+    const double center = NormalizeSignedSignal(inputs, "center_bias");
+    const double energy = NormalizeUnitSignal(inputs, "residual_energy");
+    const double edge = NormalizeSignedSignal(inputs, "edge_balance");
+    const double delta = NormalizeUnitSignal(inputs, "frame_delta");
+    const double xBias = NormalizeSignedSignal(inputs, "x_bias");
+    const double yBias = NormalizeSignedSignal(inputs, "y_bias");
+    const double focus = NormalizeUnitSignal(inputs, "focus_ratio");
+    const double composite = Clamp01(0.40 * mean + 0.35 * focus + 0.25 * stddev);
+
+    return {
+        Clamp01(0.15 + 0.75 * xBias),
+        Clamp01(0.15 + 0.75 * (1.0 - xBias)),
+        Clamp01(0.15 + 0.75 * yBias),
+        Clamp01(0.15 + 0.60 * (1.0 - yBias) + 0.10 * energy),
+        Clamp01(0.20 + 0.65 * focus),
+        Clamp01(0.20 + 0.65 * mean),
+        Clamp01(0.15 + 0.70 * composite),
+        Clamp01(0.15 + 0.70 * center),
+        Clamp01(0.15 + 0.70 * (1.0 - center)),
+        Clamp01(0.15 + 0.70 * edge),
+        Clamp01(0.15 + 0.70 * (1.0 - edge)),
+        Clamp01(0.20 + 0.60 * (1.0 - focus) + 0.10 * (1.0 - delta)),
+        Clamp01(0.20 + 0.65 * energy),
+    };
+}
+
+std::array<double, 13> BuildTransportSample2(const RuntimeWalkFitsOrientationInputs& inputs,
+    const std::array<double, 13>& sample1) {
+    const double mean = NormalizeUnitSignal(inputs, "mean");
+    const double stddev = NormalizeUnitSignal(inputs, "stddev");
+    const double center = NormalizeSignedSignal(inputs, "center_bias");
+    const double energy = NormalizeUnitSignal(inputs, "residual_energy");
+    const double edge = NormalizeSignedSignal(inputs, "edge_balance");
+    const double delta = NormalizeUnitSignal(inputs, "frame_delta");
+    const double xBias = NormalizeSignedSignal(inputs, "x_bias");
+    const double yBias = NormalizeSignedSignal(inputs, "y_bias");
+    const double focus = NormalizeUnitSignal(inputs, "focus_ratio");
+    const double composite = Clamp01(0.30 * mean + 0.20 * stddev + 0.25 * energy + 0.25 * delta);
+
+    return {
+        Clamp01(0.55 * sample1[0] + 0.25 * xBias + 0.20 * delta),
+        Clamp01(0.50 * sample1[1] + 0.25 * (1.0 - xBias) + 0.25 * (1.0 - delta)),
+        Clamp01(0.50 * sample1[2] + 0.20 * yBias + 0.30 * focus),
+        Clamp01(0.40 * sample1[3] + 0.20 * (1.0 - yBias) + 0.40 * energy),
+        Clamp01(0.25 + 0.45 * focus + 0.30 * delta),
+        Clamp01(0.20 + 0.45 * mean + 0.35 * stddev),
+        Clamp01(0.10 + 0.45 * composite + 0.45 * energy),
+        Clamp01(0.10 + 0.45 * center + 0.45 * xBias),
+        Clamp01(0.10 + 0.45 * (1.0 - center) + 0.45 * yBias),
+        Clamp01(0.15 + 0.45 * edge + 0.40 * stddev),
+        Clamp01(0.15 + 0.40 * (1.0 - edge) + 0.45 * mean),
+        Clamp01(0.10 + 0.55 * (1.0 - focus) + 0.25 * (1.0 - delta)),
+        Clamp01(0.15 + 0.45 * energy + 0.40 * delta),
+    };
+}
+
+std::array<double, 13> BuildTransportSample3(const std::array<double, 13>& sample1,
+    const std::array<double, 13>& sample2) {
+    std::array<double, 13> sample3{};
+    for (std::size_t i = 0; i < sample3.size(); ++i) {
+        sample3[i] = Clamp01(0.35 + 0.25 * sample1[i] + 0.40 * sample2[i]);
+    }
+    return sample3;
+}
+
+std::string SerializeRuntimeWalkBundleJson(const RuntimeWalkBundle& bundle) {
+    std::ostringstream out;
+    out.setf(std::ios::fixed);
+    out.precision(8);
+    out << "{\n";
+    out << "  \"version\": 1,\n";
+    out << "  \"field_name\": \"" << JsonEscape(bundle.field_name) << "\",\n";
+    out << "  \"samples\": [\n";
+    for (std::size_t sampleIndex = 0; sampleIndex < bundle.samples.size(); ++sampleIndex) {
+        const RuntimeWalkBundleSample& sample = bundle.samples[sampleIndex];
+        out << "    {\n";
+        out << "      \"id\": \"" << JsonEscape(sample.id) << "\",\n";
+        out << "      \"t\": " << sample.t << ",\n";
+        out << "      \"channels\": [";
+        for (std::size_t channelIndex = 0; channelIndex < sample.channels.size(); ++channelIndex) {
+            if (channelIndex > 0) out << ", ";
+            out << sample.channels[channelIndex];
+        }
+        out << "]\n";
+        out << "    }";
+        if (sampleIndex + 1u < bundle.samples.size()) out << ",";
+        out << "\n";
+    }
+    out << "  ],\n";
+    out << "  \"branch_markers\": [\n";
+    for (std::size_t markerIndex = 0; markerIndex < bundle.branch_markers.size(); ++markerIndex) {
+        const RuntimeWalkBranchMarker& marker = bundle.branch_markers[markerIndex];
+        out << "    {\n";
+        out << "      \"id\": \"" << JsonEscape(marker.id) << "\",\n";
+        out << "      \"label\": \"" << JsonEscape(marker.label) << "\",\n";
+        out << "      \"parent_id\": \"" << JsonEscape(marker.parent_id) << "\",\n";
+        out << "      \"t\": " << marker.t << ",\n";
+        out << "      \"sticky_radius\": " << marker.sticky_radius << "\n";
+        out << "    }";
+        if (markerIndex + 1u < bundle.branch_markers.size()) out << ",";
+        out << "\n";
+    }
+    out << "  ]\n";
+    out << "}\n";
+    return out.str();
 }
 
 } // namespace
@@ -744,6 +881,53 @@ bool SynthesizeRuntimeWalkBaseState(const RuntimeWalkFitsMappingCatalog& catalog
     *outParams = params;
     *outRender = render;
     return true;
+}
+
+bool SynthesizeRuntimeWalkTransportBundle(const RuntimeWalkFitsMappingCatalog& catalog,
+    const std::string& profileId,
+    const RuntimeWalkFitsOrientationInputs& inputs,
+    RuntimeWalkBundle* outBundle,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!outBundle) {
+        if (outError) *outError = "Runtime-walk transport synthesis requires a bundle output";
+        return false;
+    }
+
+    const RuntimeWalkFitsMappingProfile* profile = FindProfile(catalog, profileId);
+    if (!profile) {
+        if (outError) *outError = "Unknown runtime-walk FITS mapping profile: " + profileId;
+        return false;
+    }
+    if (!IsExplainoFamily(profile->base_fractal_type)) {
+        if (outError) *outError = "Synthesized runtime-walk transport currently requires an Explaino-family profile";
+        return false;
+    }
+    if (inputs.fits_path.empty()) {
+        if (outError) *outError = "Synthesized runtime-walk transport requires FITS-derived orientation inputs";
+        return false;
+    }
+
+    RuntimeWalkBundle bundle;
+    bundle.field_name = "mr_zipper_branch";
+    bundle.samples = {
+        RuntimeWalkBundleSample{"origin", 0.0, BuildTransportSample0()},
+        RuntimeWalkBundleSample{"orient", 0.35, BuildTransportSample1(inputs)},
+        RuntimeWalkBundleSample{"branch", 0.72, BuildTransportSample2(inputs, BuildTransportSample1(inputs))},
+        RuntimeWalkBundleSample{"settle", 1.0, BuildTransportSample3(BuildTransportSample1(inputs), BuildTransportSample2(inputs, BuildTransportSample1(inputs)))},
+    };
+    bundle.branch_markers = {
+        RuntimeWalkBranchMarker{"entry", "entry", "main", 0.35, 0.10},
+        RuntimeWalkBranchMarker{"gradient", "gradient", "main", 0.72, 0.14},
+    };
+    *outBundle = bundle;
+    return true;
+}
+
+bool WriteRuntimeWalkBundleJsonFile(const std::string& path,
+    const RuntimeWalkBundle& bundle,
+    std::string* outError) {
+    return WriteTextFile(path, SerializeRuntimeWalkBundleJson(bundle), outError);
 }
 
 bool WriteRuntimeWalkSynthesizedStateJson(const std::string& path,

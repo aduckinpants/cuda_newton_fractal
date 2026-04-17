@@ -160,11 +160,52 @@ static void TestWriteSynthesizedStateJsonWritesLoadableShape() {
         "TestWriteSynthesizedStateJsonWritesLoadableShape_HasFractalType");
 }
 
+static void TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape() {
+    RuntimeWalkFitsMappingCatalog catalog;
+    std::string error;
+    const std::filesystem::path profilePath = ResolveMappingProfilePath();
+    Check(LoadRuntimeWalkFitsMappingCatalogFile(
+            profilePath.string(),
+            &catalog,
+            &error),
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_LoadCatalog");
+
+    RuntimeWalkFitsOrientationInputs inputs;
+    inputs.fits_path = "synthetic.fits";
+    inputs.signals = {
+        {"mean", 0.72},
+        {"stddev", 0.35},
+        {"center_bias", 0.18},
+        {"residual_energy", 0.64},
+        {"edge_balance", -0.22},
+        {"frame_delta", 0.57},
+        {"x_bias", 0.24},
+        {"y_bias", -0.31},
+        {"focus_ratio", 0.68},
+    };
+
+    RuntimeWalkBundle bundle;
+    Check(SynthesizeRuntimeWalkTransportBundle(catalog, "explaino_default", inputs, &bundle, &error),
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_Synthesizes");
+    Check(bundle.field_name == "mr_zipper_branch",
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_FieldName");
+    Check(bundle.samples.size() >= 2u,
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_HasSamples");
+    Check(bundle.branch_markers.size() >= 1u,
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_HasBranchMarker");
+    Check(bundle.samples.front().t == 0.0 && bundle.samples.back().t == 1.0,
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_TRange");
+    Check(!NearlyEqual(bundle.samples[1].channels[0], bundle.samples.front().channels[0]) ||
+            !NearlyEqual(bundle.samples[1].channels[5], bundle.samples.front().channels[5]),
+        "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_NotNeutralOnly");
+}
+
 int main() {
     TestMappingCatalogRejectsUnsupportedTargetPath();
     TestOrientationInputsRequireFitsPath();
     TestSynthesizedBaseStateUsesMappings();
     TestWriteSynthesizedStateJsonWritesLoadableShape();
+    TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape();
 
     std::printf("test_runtime_walk_bootstrap: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

@@ -262,7 +262,8 @@ def _capture_stable_window_pixels(hwnd: int) -> tuple[bytes, bytes]:
 
 
 def _mean_abs_diff(left: bytes, right: bytes) -> float:
-    assert len(left) == len(right)
+    if len(left) != len(right):
+        return 255.0
     total = 0
     for left_byte, right_byte in zip(left, right):
         total += abs(left_byte - right_byte)
