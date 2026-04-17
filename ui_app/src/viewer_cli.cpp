@@ -86,6 +86,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return 1;
     if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return 1;
     if (!TryStr(args, "--flashlight-probe", &out->have_flashlight_probe_path, &out->flashlight_probe_path)) return 1;
+    if (!TryStr(args, "--runtime-walk-request-json", &out->have_runtime_walk_request_json, &out->runtime_walk_request_json_path)) return 1;
     if (out->flashlight_probe && !out->have_flashlight_probe_path) return 1;
     if (!TryInt(args, "--flashlight-ticks", &out->have_flashlight_ticks, &out->flashlight_ticks)) return 1;
     if (!TryDouble(args, "--flashlight-radius", &out->have_flashlight_radius, &out->flashlight_radius)) return 1;

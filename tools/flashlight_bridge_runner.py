@@ -43,18 +43,22 @@ def _read_bmp32(path: Path) -> tuple[int, int, list[int]]:
     height = struct.unpack_from("<i", data, 22)[0]
     bit_count = struct.unpack_from("<H", data, 28)[0]
     compression = struct.unpack_from("<I", data, 30)[0]
-    if bit_count != 32 or compression != 0:
-        raise RuntimeError(f"expected 32-bit uncompressed BMP: {path}")
+    if compression != 0 or bit_count not in (24, 32):
+        raise RuntimeError(f"expected 24-bit or 32-bit uncompressed BMP: {path}")
     top_down = height < 0
     abs_height = abs(height)
-    row_bytes = width * 4
+    row_stride = ((width * bit_count + 31) // 32) * 4
     pixels = [0] * (width * abs_height)
     for row in range(abs_height):
         src_row = row if top_down else (abs_height - 1 - row)
-        start = pixel_offset + src_row * row_bytes
-        chunk = data[start:start + row_bytes]
+        start = pixel_offset + src_row * row_stride
+        chunk = data[start:start + row_stride]
         for x in range(width):
-            b, g, r, a = chunk[x * 4:x * 4 + 4]
+            if bit_count == 32:
+                b, g, r, a = chunk[x * 4:x * 4 + 4]
+            else:
+                b, g, r = chunk[x * 3:x * 3 + 3]
+                a = 0xFF
             pixels[row * width + x] = r | (g << 8) | (b << 16) | (a << 24)
     return width, abs_height, pixels
 

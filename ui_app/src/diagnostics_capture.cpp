@@ -387,13 +387,115 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
+    const std::filesystem::path bundleDir = (std::filesystem::path(exeDir) / "diagnostics" / "last").lexically_normal();
+    return CaptureDiagnosticsBundleToDir(
+        bundleDir.string(),
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDir(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        nullptr,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDir(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDir(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
     if (outError) outError->clear();
     if (!HasExactRenderPixelCount(render, rgbaPixelCount, outError)) {
         return false;
     }
 
-    std::filesystem::path bundleDir = std::filesystem::path(exeDir) / "diagnostics" / "last";
-    bundleDir = bundleDir.lexically_normal();
+    std::filesystem::path bundleDir = std::filesystem::path(outputDir).lexically_normal();
 
     std::error_code ec;
     std::filesystem::create_directories(bundleDir, ec);

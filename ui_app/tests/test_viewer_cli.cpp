@@ -262,6 +262,16 @@ static void TestFlashlightProbeMissingValue() {
     Check(rc != 0, "TestFlashlightProbeMissingValue_Fails");
 }
 
+static void TestRuntimeWalkRequestJson() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--runtime-walk-request-json", "walk_request.json"
+    }), &cli);
+    Check(rc == 0, "TestRuntimeWalkRequestJson_ReturnCode");
+    Check(cli.have_runtime_walk_request_json, "TestRuntimeWalkRequestJson_Have");
+    Check(cli.runtime_walk_request_json_path == "walk_request.json", "TestRuntimeWalkRequestJson_Path");
+}
+
 static void TestFlashlightProbeBadFractalType() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -499,6 +509,7 @@ int main() {
     TestExploreRecommendStdout();
     TestFlashlightProbe();
     TestFlashlightProbeMissingValue();
+    TestRuntimeWalkRequestJson();
     TestFlashlightProbeBadFractalType();
     TestExploreRecommendJsonMissingValue();
     TestSampleSession();

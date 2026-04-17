@@ -45,6 +45,7 @@
 #include "json_min.h"
 #include "lens_sdf.h"
 #include "render_capture_guard.h"
+#include "runtime_walk.h"
 #include "runtime_reset.h"
 #include "safe_mode_schema.h"
 #include "schema_binding.h"
@@ -992,10 +993,12 @@ static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float de
 static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
+    const bool runtimeWalk = cli.have_runtime_walk_request_json;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend)) return false;
+    if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || flashlightProbe)) return false;
     return true;
 }
 
@@ -1056,6 +1059,20 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
         flashlightConfig.have_fractal_type = cli.have_flashlight_fractal_type;
         flashlightConfig.fractal_type = cli.flashlight_fractal_type;
         return RunFlashlightProbe(exeDir, flashlightConfig, view, params, render, lens);
+    }
+    if (cli.have_runtime_walk_request_json) {
+        if (HasSidecarHeadlessProofActions(sidecarHeadlessProofConfig)) {
+            std::fprintf(stderr, "--runtime-walk-request-json is mutually exclusive with sidecar proof mutation verbs\n");
+            return 1;
+        }
+        return RunRuntimeWalkRequest(
+            exeDir,
+            cli.runtime_walk_request_json_path,
+            engineCatalog,
+            bind,
+            sidecarMeasurementHost,
+            sidecarControllerPolicy,
+            lens);
     }
 
     if (cli.capture_diagnostic_only || cli.capture_finding_only) {
@@ -1160,9 +1177,10 @@ static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exe
 static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::string& exePath,
                                        const std::string& exeDir) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
+    const bool runtimeWalk = cli.have_runtime_walk_request_json;
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
-            exploreRecommend || cli.flashlight_probe ||
+            exploreRecommend || cli.flashlight_probe || runtimeWalk ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
             return 1;
@@ -1171,8 +1189,8 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
-        if (exploreRecommend || cli.flashlight_probe) {
-            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend and --flashlight-probe headless verbs\n");
+        if (exploreRecommend || cli.flashlight_probe || runtimeWalk) {
+            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --flashlight-probe, and --runtime-walk-request-json headless verbs\n");
             return 1;
         }
         return RunSampleMode(BuildSampleModeArgs(cli), exePath);
@@ -1181,7 +1199,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     if (cli.describe_functions || cli.have_describe_functions_json) {
         if (exploreRecommend ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
-                cli.flashlight_probe) {
+                cli.flashlight_probe || runtimeWalk) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
             return 1;
         }

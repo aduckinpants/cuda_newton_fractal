@@ -55,6 +55,10 @@ struct ViewerCliArgs {
     bool have_flashlight_fractal_type = false;
     FractalType flashlight_fractal_type = FractalType::explaino_fp;
 
+    // Saved-runtime walk
+    bool have_runtime_walk_request_json = false;
+    std::string runtime_walk_request_json_path;
+
     // Fractal type
     bool have_fractal_type = false;
     FractalType fractal_type = FractalType::newton;
