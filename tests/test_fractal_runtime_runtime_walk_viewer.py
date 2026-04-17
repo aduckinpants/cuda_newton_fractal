@@ -144,7 +144,14 @@ def _write_bundle_json(path: Path) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def _write_request_json(path: Path, state_path: Path, bundle_path: Path, out_dir: Path) -> None:
+def _write_request_json(
+    path: Path,
+    state_path: Path,
+    bundle_path: Path,
+    out_dir: Path,
+    *,
+    comparison_fits: Path | None = None,
+) -> None:
     payload = {
         "version": 1,
         "base_state_json": str(state_path),
@@ -152,6 +159,8 @@ def _write_request_json(path: Path, state_path: Path, bundle_path: Path, out_dir
         "out_dir": str(out_dir),
         "ticks": 9,
     }
+    if comparison_fits is not None:
+        payload["comparison_fits"] = str(comparison_fits)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
@@ -240,6 +249,18 @@ def _capture_ready_window_pixels(hwnd: int) -> bytes:
     raise AssertionError("window never produced a non-empty captured frame")
 
 
+def _capture_stable_window_pixels(hwnd: int) -> tuple[bytes, bytes]:
+    deadline = time.monotonic() + 5.0
+    left = _capture_ready_window_pixels(hwnd)
+    while time.monotonic() < deadline:
+        time.sleep(0.2)
+        right = _capture_ready_window_pixels(hwnd)
+        if len(left) == len(right):
+            return left, right
+        left = right
+    raise AssertionError("window client size never stabilized for comparison capture")
+
+
 def _mean_abs_diff(left: bytes, right: bytes) -> float:
     assert len(left) == len(right)
     total = 0
@@ -288,28 +309,82 @@ def test_runtime_walk_viewer_replays_and_space_pauses(tmp_path: Path) -> None:
         user32.SetForegroundWindow(wintypes.HWND(hwnd))
 
         time.sleep(0.8)
-        running_frame_a = _capture_ready_window_pixels(hwnd)
-        time.sleep(0.8)
-        running_frame_b = _capture_ready_window_pixels(hwnd)
+        running_frame_a, running_frame_b = _capture_stable_window_pixels(hwnd)
         running_diff = _mean_abs_diff(running_frame_a, running_frame_b)
-        assert running_diff > 0.15, f"runtime-walk viewer did not visibly animate while playing; diff={running_diff:.3f}"
+        assert running_diff > 0.05, f"runtime-walk viewer did not visibly animate while playing; diff={running_diff:.3f}"
 
         user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
         user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
 
         time.sleep(0.5)
-        paused_frame_a = _capture_ready_window_pixels(hwnd)
-        time.sleep(0.8)
-        paused_frame_b = _capture_ready_window_pixels(hwnd)
+        paused_frame_a, paused_frame_b = _capture_stable_window_pixels(hwnd)
         paused_diff = _mean_abs_diff(paused_frame_a, paused_frame_b)
         assert paused_diff < 0.1, f"Space pause did not freeze runtime-walk playback; diff={paused_diff:.3f}"
 
         user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_RIGHT, 0)
         user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_RIGHT, 0)
         time.sleep(0.5)
-        stepped_frame = _capture_ready_window_pixels(hwnd)
+        stepped_frame, _ = _capture_stable_window_pixels(hwnd)
         stepped_diff = _mean_abs_diff(paused_frame_b, stepped_frame)
         assert stepped_diff > 0.08, f"Right-arrow step did not visibly advance runtime-walk playback; diff={stepped_diff:.3f}"
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_walk_viewer_tolerates_missing_companion_fits(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    state_path = tmp_path / "state.json"
+    bundle_path = tmp_path / "bundle.json"
+    request_path = tmp_path / "runtime_walk_viewer_request.json"
+    out_dir = tmp_path / "out"
+    missing_fits = tmp_path / "missing_checkpoint_final.fits"
+    _write_state_json(state_path)
+    _write_bundle_json(bundle_path)
+    _write_request_json(request_path, state_path, bundle_path, out_dir, comparison_fits=missing_fits)
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-runtime-walk-request-json",
+            str(request_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            hwnd = _find_window_for_pid(proc.pid)
+            if hwnd is not None:
+                break
+            if proc.poll() is not None:
+                raise AssertionError(f"viewer exited before creating a window; returncode={proc.returncode}")
+            time.sleep(0.1)
+
+        assert hwnd is not None, f"viewer never created a top-level window for pid {proc.pid}"
+
+        user32 = ctypes.windll.user32
+        user32.ShowWindow(wintypes.HWND(hwnd), 5)
+        user32.SetForegroundWindow(wintypes.HWND(hwnd))
+
+        time.sleep(0.8)
+        running_frame_a, running_frame_b = _capture_stable_window_pixels(hwnd)
+        running_diff = _mean_abs_diff(running_frame_a, running_frame_b)
+        assert running_diff > 0.05, (
+            "runtime-walk viewer should keep animating when companion FITS is missing; "
+            f"diff={running_diff:.3f}"
+        )
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)

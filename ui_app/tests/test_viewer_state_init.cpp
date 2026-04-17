@@ -362,6 +362,7 @@ static void TestLoadStateReturnsPersistedOrientationBaseline() {
         &hasLoadedOrientation,
         &loadedMutationHistory,
         &hasLoadedMutationHistory,
+        nullptr,
         &dirty);
     CHECK("LoadStateBaseline_ReturnCode", rc == 0);
     CHECK("LoadStateBaseline_HasOrientation", hasLoadedOrientation == true);
@@ -414,6 +415,7 @@ static void TestFractalOverrideClearsLoadedOrientationBaseline() {
         &hasLoadedOrientation,
         &loadedMutationHistory,
         &hasLoadedMutationHistory,
+        nullptr,
         &dirty);
     CHECK("LoadStateOverride_ReturnCode", rc == 0);
     CHECK("LoadStateOverride_Type", view.fractal_type == FractalType::mandelbrot);
@@ -462,6 +464,7 @@ static void TestLegacyLoadStateResetsControllerPolicy() {
         &hasLoadedOrientation,
         &loadedMutationHistory,
         &hasLoadedMutationHistory,
+        nullptr,
         &dirty);
     CHECK("LegacyLoadStatePolicy_ReturnCode", rc == 0);
     CHECK("LegacyLoadStatePolicy_ClearsOrientationBaseline", hasLoadedOrientation == false);

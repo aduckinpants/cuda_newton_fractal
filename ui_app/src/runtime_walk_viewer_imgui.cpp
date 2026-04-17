@@ -123,16 +123,91 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
 
     ImGui::Separator();
     ImGui::TextWrapped("Request: %s", session.request_json_path.c_str());
-    ImGui::TextWrapped("State: %s", session.resolved_state_json_path.c_str());
-    ImGui::TextWrapped("Bundle: %s", session.asset.request.bundle_json_path.c_str());
+    ImGui::TextWrapped("Base State (authority): %s", session.resolved_state_json_path.c_str());
+    ImGui::TextWrapped("Bundle (transport): %s", session.asset.request.bundle_json_path.c_str());
     if (!session.asset.companion.comparison_fits_path.empty()) {
-        ImGui::TextWrapped("Companion FITS: %s", session.asset.companion.comparison_fits_path.c_str());
+        ImGui::TextWrapped("Companion FITS (evidence): %s", session.asset.companion.comparison_fits_path.c_str());
     }
     if (!session.asset.companion.rtk_manifest_json_path.empty()) {
-        ImGui::TextWrapped("RTK Manifest: %s", session.asset.companion.rtk_manifest_json_path.c_str());
+        ImGui::TextWrapped("RTK Manifest (evidence): %s", session.asset.companion.rtk_manifest_json_path.c_str());
     }
     if (!session.asset.companion.rtk_harvest_summary_json_path.empty()) {
-        ImGui::TextWrapped("RTK Harvest: %s", session.asset.companion.rtk_harvest_summary_json_path.c_str());
+        ImGui::TextWrapped("RTK Harvest (evidence): %s", session.asset.companion.rtk_harvest_summary_json_path.c_str());
+    }
+
+    ImGui::End();
+    return interactionChanged;
+}
+
+bool RenderRuntimeWalkViewerImportPanel(const RuntimeWalkViewerImportPanelState& state,
+    bool importAllowed,
+    const std::string& blockedReason,
+    RuntimeWalkViewerImportUiActions* outActions) {
+    if (!outActions) return false;
+    *outActions = {};
+    if (!state.open) return false;
+
+    bool interactionChanged = false;
+    ImGui::Begin("Runtime Walk FITS Import");
+    ImGui::TextWrapped("Base state remains authoritative. Bundle drives playback transport. FITS and RTK outputs remain companion evidence only.");
+    ImGui::Separator();
+    ImGui::TextWrapped("Base State: %s", state.base_state_json_path.empty() ? "(none)" : state.base_state_json_path.c_str());
+    if (!state.status_text.empty()) {
+        ImGui::TextWrapped("%s", state.status_text.c_str());
+    }
+    if (!importAllowed && !blockedReason.empty()) {
+        ImGui::TextWrapped("%s", blockedReason.c_str());
+    }
+
+    if (ImGui::Button("Browse FITS...")) {
+        outActions->open_fits_dialog = true;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Browse Request...")) {
+        outActions->open_request_dialog = true;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Browse Bundle...")) {
+        outActions->open_bundle_dialog = true;
+        interactionChanged = true;
+    }
+
+    ImGui::TextWrapped("FITS: %s", state.comparison_fits_path.empty() ? "(none)" : state.comparison_fits_path.c_str());
+    ImGui::TextWrapped("Request: %s", state.request_json_path.empty() ? "(auto-discover or browse)" : state.request_json_path.c_str());
+    ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(auto-discover or browse)" : state.bundle_json_path.c_str());
+
+    if (ImGui::Button("Open Latest")) {
+        outActions->open_latest = true;
+        interactionChanged = true;
+    }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!importAllowed);
+    if (ImGui::Button("Build + Open")) {
+        outActions->build_and_open = true;
+        interactionChanged = true;
+    }
+    ImGui::EndDisabled();
+
+    if (ImGui::CollapsingHeader("Recent Sessions", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (state.recent_sessions.empty()) {
+            ImGui::TextUnformatted("No recent FITS import sessions.");
+        }
+        for (const RuntimeWalkViewerImportSessionRecord& record : state.recent_sessions) {
+            ImGui::PushID(record.session_id.c_str());
+            ImGui::BeginDisabled(!record.request_exists);
+            if (ImGui::SmallButton("Open")) {
+                outActions->open_recent_request_json_path = record.request_json_path;
+                interactionChanged = true;
+            }
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::TextWrapped("%s%s",
+                record.comparison_fits_path.empty() ? record.request_json_path.c_str() : record.comparison_fits_path.c_str(),
+                record.request_exists ? "" : " [stale]");
+            ImGui::PopID();
+        }
     }
 
     ImGui::End();

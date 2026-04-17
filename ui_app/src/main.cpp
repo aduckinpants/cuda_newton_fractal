@@ -183,6 +183,18 @@ static bool PromptOpenRuntimeWalkRequestPath(HWND owner, std::string* outPath) {
         outPath);
 }
 
+static bool PromptOpenRuntimeWalkBundlePath(HWND owner, std::string* outPath) {
+    return PromptOpenJsonPath(owner,
+        "Runtime Walk Bundle JSON\0*.json\0JSON Files\0*.json\0\0",
+        outPath);
+}
+
+static bool PromptOpenFitsPath(HWND owner, std::string* outPath) {
+    return PromptOpenJsonPath(owner,
+        "FITS Files\0*.fits;*.fit\0All Files\0*.*\0\0",
+        outPath);
+}
+
 static void CreateRenderTarget() {
     ID3D11Texture2D* pBackBuffer = nullptr;
     g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
@@ -718,6 +730,7 @@ struct UiActionFlags {
     bool resetView = false;
     bool resetAll = false;
     bool loadState = false;
+    bool loadFits = false;
     bool captureFinding = false;
     bool captureDiagnostic = false;
     bool nextSeed = false;
@@ -725,7 +738,11 @@ struct UiActionFlags {
     bool interactionChanged = false;
 };
 
-static UiActionFlags RenderSchemaPanels(const UISchema& schema, BindingContext& bind, bool& dirty) {
+static UiActionFlags RenderSchemaPanels(const UISchema& schema,
+    BindingContext& bind,
+    bool canLoadFits,
+    const std::string& loadFitsHint,
+    bool& dirty) {
     UiActionFlags a;
     for (const auto& panel : schema.panels) {
         if (ImGui::CollapsingHeader(panel.label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -753,6 +770,17 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema, BindingContext& 
                         if (ctrl.binding.path == "fractal.actions.capture_diagnostic") a.captureDiagnostic = true;
                         if (ctrl.binding.path == "fractal.actions.next_seed") a.nextSeed = true;
                         if (ctrl.binding.path == "fractal.actions.prev_seed") a.prevSeed = true;
+                    }
+                    if (ctrl.binding.path == "fractal.actions.load_state") {
+                        ImGui::SameLine();
+                        ImGui::BeginDisabled(!canLoadFits);
+                        if (ImGui::Button("Load FITS...")) {
+                            a.loadFits = true;
+                        }
+                        ImGui::EndDisabled();
+                        if (!canLoadFits && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && !loadFitsHint.empty()) {
+                            ImGui::SetTooltip("%s", loadFitsHint.c_str());
+                        }
                     }
                     prevWasSeedButton = isSeedButton;
                 } else {
@@ -782,6 +810,7 @@ static UiActionFlags RenderControlsWindow(
         ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
         const RenderStats& stats, const RenderedFrameState& renderedFrame,
         const std::string& findingStatus, const std::string& lastFindingPath,
+        bool canLoadFits, const std::string& loadFitsHint,
         const SweepPlayerConfig& sweepConfig, SweepPlayerState& sweepState,
         bool& sweepPaused, bool& sweepSingleStep,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
@@ -799,7 +828,7 @@ static UiActionFlags RenderControlsWindow(
     bind.lens = &lens;
     Float2 uiCenterBefore = view.center;
     float uiZoomBefore = view.zoom;
-    UiActionFlags actions = RenderSchemaPanels(schema, bind, dirty);
+    UiActionFlags actions = RenderSchemaPanels(schema, bind, canLoadFits, loadFitsHint, dirty);
     if (view.center.x != uiCenterBefore.x || view.center.y != uiCenterBefore.y || view.zoom != uiZoomBefore) {
         SyncViewHpFromUi(view);
     }
@@ -904,6 +933,10 @@ static void DispatchUiActions(HWND hwnd,
                               bool& sidecarBudgetStateValid,
                               SidecarOrientationVector& loadedOrientationBaseline,
                               bool& loadedOrientationBaselineValid,
+                              RuntimeWalkViewerSession& runtimeWalkViewerSession,
+                              RuntimeWalkViewerPlaybackState& runtimeWalkPlayback,
+                              std::string& currentLoadedStatePath,
+                              FractalType& currentLoadedStateFractalType,
                               PolyKind& lastPolyKind, FractalType& lastFractalType,
                               std::string& findingStatus, std::string& lastFindingPath) {
     if (resetViewAction) {
@@ -959,6 +992,10 @@ static void DispatchUiActions(HWND hwnd,
                 sidecarStateValid = false;
                 sidecarBudgetState = {};
                 sidecarBudgetStateValid = false;
+                runtimeWalkViewerSession = {};
+                runtimeWalkPlayback = {};
+                currentLoadedStatePath = resolvedStatePath;
+                currentLoadedStateFractalType = view.fractal_type;
                 lastPolyKind = params.poly_kind;
                 lastFractalType = view.fractal_type;
                 findingStatus = "Loaded finding state: " + resolvedStatePath;
@@ -1250,6 +1287,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
                                              bool& loadedOrientationBaselineValid,
                                              SidecarAutoDemoMutationHistory& sidecarMutationHistory,
                                              bool& sidecarMutationHistoryValid,
+                                             std::string& currentLoadedStatePath,
                                              bool& dirty, UISchema& uiSchema,
                                              std::string& schemaPath,
                                              std::string& schemaWarning,
@@ -1282,6 +1320,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         &loadedOrientationBaselineValid,
         &sidecarMutationHistory,
         &sidecarMutationHistoryValid,
+        &currentLoadedStatePath,
         &dirty);
 }
 
@@ -1510,28 +1549,221 @@ static BindingContext BuildViewerBindingContext(
     return bind;
 }
 
+static std::string BuildRuntimeWalkImportBlockedReason(const std::string& currentLoadedStatePath,
+    FractalType currentLoadedStateFractalType) {
+    std::string error;
+    if (ValidateRuntimeWalkViewerImportBaseState(currentLoadedStatePath, currentLoadedStateFractalType, &error)) {
+        return {};
+    }
+    if (currentLoadedStatePath.empty()) {
+        return "Load Capture State first to choose the authoritative Explaino base state for FITS import.";
+    }
+    return error;
+}
+
+static void RefreshRuntimeWalkViewerImportRecent(const std::string& exeDir,
+    RuntimeWalkViewerImportPanelState* ioPanel,
+    std::string* ioStatusText) {
+    if (!ioPanel) return;
+    std::string error;
+    std::vector<RuntimeWalkViewerImportSessionRecord> recent;
+    if (LoadRecentRuntimeWalkViewerImportSessions(exeDir, &recent, &error)) {
+        ioPanel->recent_sessions = recent;
+    } else if (ioStatusText && ioStatusText->empty()) {
+        *ioStatusText = error;
+    }
+}
+
+static void SeedRuntimeWalkViewerImportPanel(const std::string& exeDir,
+    const std::string& currentLoadedStatePath,
+    const RuntimeWalkViewerSession& session,
+    RuntimeWalkViewerImportPanelState* ioPanel) {
+    if (!ioPanel) return;
+    ioPanel->open = true;
+    ioPanel->base_state_json_path = currentLoadedStatePath;
+    if (session.loaded) {
+        if (ioPanel->comparison_fits_path.empty()) {
+            ioPanel->comparison_fits_path = session.asset.companion.comparison_fits_path;
+        }
+        if (ioPanel->request_json_path.empty()) {
+            ioPanel->request_json_path = session.request_json_path;
+        }
+        if (ioPanel->bundle_json_path.empty()) {
+            ioPanel->bundle_json_path = session.asset.request.bundle_json_path;
+        }
+    }
+    RefreshRuntimeWalkViewerImportRecent(exeDir, ioPanel, &ioPanel->status_text);
+}
+
+static bool ActivateRuntimeWalkViewerSession(const std::string& requestJsonPath,
+    RuntimeWalkViewerSession* ioSession,
+    RuntimeWalkViewerPlaybackState* ioPlayback,
+    RenderSettings* ioRender,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    std::string* ioCurrentLoadedStatePath,
+    FractalType* ioCurrentLoadedStateFractalType,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!ioSession || !ioPlayback || !ioRender || !ioView || !ioParams) {
+        if (outError) *outError = "Runtime walk viewer activation requires valid runtime pointers";
+        return false;
+    }
+
+    RuntimeWalkViewerSession nextSession;
+    if (!LoadRuntimeWalkViewerSession(requestJsonPath, &nextSession, outError)) {
+        return false;
+    }
+
+    RuntimeWalkViewerPlaybackState nextPlayback = *ioPlayback;
+    nextPlayback.loaded = false;
+    nextPlayback.playing = true;
+
+    RuntimeWalkSnapshot snapshot{};
+    if (!ApplyRuntimeWalkViewerPlaybackSnapshot(nextSession, nextPlayback, ioView, ioParams, &snapshot, outError)) {
+        return false;
+    }
+
+    *ioSession = nextSession;
+    *ioPlayback = nextPlayback;
+    *ioRender = nextSession.asset.base_render;
+    if (ioCurrentLoadedStatePath) *ioCurrentLoadedStatePath = nextSession.resolved_state_json_path;
+    if (ioCurrentLoadedStateFractalType) *ioCurrentLoadedStateFractalType = nextSession.asset.base_view.fractal_type;
+    return true;
+}
+
 static bool InitializeRuntimeWalkViewerIfRequested(
     const ViewerCliArgs& cli,
     RuntimeWalkViewerSession* ioSession,
     RuntimeWalkViewerPlaybackState* ioPlayback,
     RenderSettings* ioRender,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    std::string* ioCurrentLoadedStatePath,
+    FractalType* ioCurrentLoadedStateFractalType,
     bool* ioDirty,
     std::string* outError) {
     if (outError) outError->clear();
     if (!cli.have_runtime_walk_viewer_request_json) return true;
-    if (!ioSession || !ioPlayback || !ioRender || !ioDirty) {
+    if (!ioSession || !ioPlayback || !ioRender || !ioView || !ioParams || !ioDirty) {
         if (outError) *outError = "Runtime walk viewer initialization requires valid output pointers";
         return false;
     }
-    RuntimeWalkViewerSession session;
-    if (!LoadRuntimeWalkViewerSession(cli.runtime_walk_viewer_request_json_path, &session, outError)) {
+    if (!ActivateRuntimeWalkViewerSession(
+            cli.runtime_walk_viewer_request_json_path,
+            ioSession,
+            ioPlayback,
+            ioRender,
+            ioView,
+            ioParams,
+            ioCurrentLoadedStatePath,
+            ioCurrentLoadedStateFractalType,
+            outError)) {
         return false;
     }
-    *ioSession = session;
-    *ioRender = ioSession->asset.base_render;
-    ioPlayback->loaded = false;
-    ioPlayback->playing = true;
     *ioDirty = true;
+    return true;
+}
+
+static bool ProcessRuntimeWalkViewerImportPerFrame(
+    HWND hwnd,
+    const std::string& exeDir,
+    RuntimeWalkViewerImportPanelState& panel,
+    RuntimeWalkViewerSession& session,
+    RuntimeWalkViewerPlaybackState& playback,
+    ViewState& view,
+    KernelParams& params,
+    RenderSettings& render,
+    std::string& currentLoadedStatePath,
+    FractalType& currentLoadedStateFractalType,
+    bool& dirty,
+    bool& interactionChanged,
+    std::string& findingStatus) {
+    const std::string blockedReason = BuildRuntimeWalkImportBlockedReason(currentLoadedStatePath, currentLoadedStateFractalType);
+    const bool importAllowed = blockedReason.empty();
+    panel.base_state_json_path = currentLoadedStatePath;
+
+    RuntimeWalkViewerImportUiActions actions{};
+    if (!RenderRuntimeWalkViewerImportPanel(panel, importAllowed, blockedReason, &actions)) {
+        return true;
+    }
+
+    interactionChanged = true;
+    if (actions.open_fits_dialog) {
+        std::string selectedPath;
+        if (PromptOpenFitsPath(hwnd, &selectedPath)) {
+            panel.comparison_fits_path = selectedPath;
+            panel.status_text.clear();
+        }
+    }
+    if (actions.open_request_dialog) {
+        std::string selectedPath;
+        if (PromptOpenRuntimeWalkRequestPath(hwnd, &selectedPath)) {
+            panel.request_json_path = selectedPath;
+            panel.bundle_json_path.clear();
+            panel.status_text.clear();
+        }
+    }
+    if (actions.open_bundle_dialog) {
+        std::string selectedPath;
+        if (PromptOpenRuntimeWalkBundlePath(hwnd, &selectedPath)) {
+            panel.bundle_json_path = selectedPath;
+            panel.request_json_path.clear();
+            panel.status_text.clear();
+        }
+    }
+
+    std::string requestToLoad;
+    if (actions.open_latest) {
+        RuntimeWalkViewerImportSessionRecord latest;
+        std::string latestError;
+        if (!LoadLatestRuntimeWalkViewerImportSession(exeDir, &latest, &latestError)) {
+            panel.status_text = latestError;
+        } else {
+            requestToLoad = latest.request_json_path;
+        }
+    } else if (!actions.open_recent_request_json_path.empty()) {
+        requestToLoad = actions.open_recent_request_json_path;
+    } else if (actions.build_and_open) {
+        RuntimeWalkViewerImportRequest importRequest{};
+        importRequest.exe_dir = exeDir;
+        importRequest.base_state_json_path = currentLoadedStatePath;
+        importRequest.base_fractal_type = currentLoadedStateFractalType;
+        importRequest.comparison_fits_path = panel.comparison_fits_path;
+        importRequest.request_json_path = panel.request_json_path;
+        importRequest.bundle_json_path = panel.bundle_json_path;
+        RuntimeWalkViewerImportSessionRecord record;
+        std::string importError;
+        if (!BuildRuntimeWalkViewerImportSession(importRequest, &record, &importError)) {
+            panel.status_text = importError;
+        } else {
+            requestToLoad = record.request_json_path;
+            panel.status_text = "Prepared runtime-walk FITS import session: " + record.session_id;
+            RefreshRuntimeWalkViewerImportRecent(exeDir, &panel, &panel.status_text);
+        }
+    }
+
+    if (!requestToLoad.empty()) {
+        std::string loadError;
+        if (!ActivateRuntimeWalkViewerSession(
+                requestToLoad,
+                &session,
+                &playback,
+                &render,
+                &view,
+                &params,
+                &currentLoadedStatePath,
+                &currentLoadedStateFractalType,
+                &loadError)) {
+            findingStatus = "Runtime walk load failed: " + loadError;
+            panel.status_text = loadError;
+        } else {
+            panel.open = false;
+            panel.status_text.clear();
+            findingStatus = "Loaded runtime walk request: " + requestToLoad;
+            dirty = true;
+        }
+    }
     return true;
 }
 
@@ -1549,6 +1781,8 @@ static bool ProcessRuntimeWalkViewerPerFrame(
     ViewerRenderPacingState& renderPacingState,
     RuntimeWalkOverlayPath& outPath,
     RuntimeWalkGradientOverlay& outGradientOverlay,
+    std::string& currentLoadedStatePath,
+    FractalType& currentLoadedStateFractalType,
     bool& dirty,
     bool& interactionChanged,
     std::string& findingStatus) {
@@ -1606,27 +1840,21 @@ static bool ProcessRuntimeWalkViewerPerFrame(
     }
 
     if (!nextRequestPath.empty()) {
-        RuntimeWalkViewerSession nextSession;
-        if (!LoadRuntimeWalkViewerSession(nextRequestPath, &nextSession, &runtimeWalkError)) {
+        if (!ActivateRuntimeWalkViewerSession(
+                nextRequestPath,
+                &session,
+                &playback,
+                &render,
+                &view,
+                &params,
+                &currentLoadedStatePath,
+                &currentLoadedStateFractalType,
+                &runtimeWalkError)) {
             findingStatus = "Runtime walk load failed: " + runtimeWalkError;
         } else {
-            session = nextSession;
-            playback.loaded = false;
-            playback.playing = true;
-            render = session.asset.base_render;
             interactionChanged = true;
             dirty = true;
-            if (!ApplyRuntimeWalkViewerPlaybackSnapshot(
-                    session,
-                    playback,
-                    &view,
-                    &params,
-                    &snapshot,
-                    &runtimeWalkError)) {
-                findingStatus = "Runtime walk apply failed: " + runtimeWalkError;
-            } else {
-                findingStatus = "Loaded runtime walk request: " + session.request_json_path;
-            }
+            findingStatus = "Loaded runtime walk request: " + session.request_json_path;
         }
     }
 
@@ -1689,7 +1917,10 @@ static void RunViewerFrame(
     bool& sweepPaused,
     bool& sweepSingleStep,
     float& seedScrubAccel,
+    std::string& currentLoadedStatePath,
+    FractalType& currentLoadedStateFractalType,
     RuntimeWalkViewerSession& runtimeWalkViewerSession,
+    RuntimeWalkViewerImportPanelState& runtimeWalkImportPanel,
     RuntimeWalkViewerPlaybackState& runtimeWalkPlayback,
     RuntimeWalkOverlayProviderConfig& runtimeWalkOverlayConfig,
     RuntimeWalkOverlayPath& runtimeWalkOverlayPath,
@@ -1699,9 +1930,11 @@ static void RunViewerFrame(
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
     }
 
+    const std::string loadFitsHint = BuildRuntimeWalkImportBlockedReason(currentLoadedStatePath, currentLoadedStateFractalType);
     UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
         view, params, render, lens, stats, renderedFrame,
         findingStatus, lastFindingPath,
+        loadFitsHint.empty(), loadFitsHint,
         cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
         lastFractalType, lastPolyKind, dirty);
 
@@ -1713,8 +1946,30 @@ static void RunViewerFrame(
         sidecarState, sidecarStateValid,
         sidecarBudgetState, sidecarBudgetStateValid,
         loadedOrientationBaseline, loadedOrientationBaselineValid,
+        runtimeWalkViewerSession, runtimeWalkPlayback, currentLoadedStatePath, currentLoadedStateFractalType,
         lastPolyKind, lastFractalType,
         findingStatus, lastFindingPath);
+
+    if (actions.loadFits) {
+        SeedRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
+        actions.interactionChanged = true;
+    }
+    if (!ProcessRuntimeWalkViewerImportPerFrame(
+            hwnd,
+            exeDir,
+            runtimeWalkImportPanel,
+            runtimeWalkViewerSession,
+            runtimeWalkPlayback,
+            view,
+            params,
+            render,
+            currentLoadedStatePath,
+            currentLoadedStateFractalType,
+            dirty,
+            actions.interactionChanged,
+            findingStatus)) {
+        runtimeWalkImportPanel.status_text = findingStatus;
+    }
 
     if (runtimeWalkViewerSession.loaded) {
         if (!ProcessRuntimeWalkViewerPerFrame(
@@ -1731,6 +1986,8 @@ static void RunViewerFrame(
                 renderPacingState,
                 runtimeWalkOverlayPath,
                 runtimeWalkGradientOverlay,
+                currentLoadedStatePath,
+                currentLoadedStateFractalType,
                 dirty,
                 actions.interactionChanged,
                 findingStatus)) {
@@ -1843,13 +2100,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool loadedOrientationBaselineValid = false;
     SidecarAutoDemoMutationHistory sidecarMutationHistory;
     bool sidecarMutationHistoryValid = false;
+    std::string currentLoadedStatePath;
+    FractalType currentLoadedStateFractalType = FractalType::newton;
 
         { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
             sidecarControllerPolicy,
           loadedOrientationBaseline, loadedOrientationBaselineValid,
           sidecarMutationHistory, sidecarMutationHistoryValid,
+          currentLoadedStatePath,
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
+    if (!currentLoadedStatePath.empty()) {
+        currentLoadedStateFractalType = view.fractal_type;
+    }
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
@@ -1883,6 +2146,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sweepSingleStep = false;
     float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
     RuntimeWalkViewerSession runtimeWalkViewerSession{};
+    RuntimeWalkViewerImportPanelState runtimeWalkImportPanel{};
     RuntimeWalkViewerPlaybackState runtimeWalkPlayback{};
     RuntimeWalkOverlayProviderConfig runtimeWalkOverlayConfig{};
     RuntimeWalkOverlayPath runtimeWalkOverlayPath{};
@@ -1900,6 +2164,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 &runtimeWalkViewerSession,
                 &runtimeWalkPlayback,
                 &render,
+                &view,
+                &params,
+                &currentLoadedStatePath,
+                &currentLoadedStateFractalType,
                 &dirty,
                 &runtimeWalkError)) {
             std::fprintf(stderr, "%s\n", runtimeWalkError.c_str());
@@ -1969,7 +2237,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             sweepPaused,
             sweepSingleStep,
             seedScrubAccel,
+            currentLoadedStatePath,
+            currentLoadedStateFractalType,
             runtimeWalkViewerSession,
+            runtimeWalkImportPanel,
             runtimeWalkPlayback,
             runtimeWalkOverlayConfig,
             runtimeWalkOverlayPath,

@@ -34,11 +34,13 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                       bool* outHasLoadedOrientation,
                       SidecarAutoDemoMutationHistory* outLoadedMutationHistory,
                       bool* outHasLoadedMutationHistory,
+                      std::string* outResolvedLoadedStatePath,
                       bool* dirty) {
     if (outLoadedOrientation) *outLoadedOrientation = {};
     if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
     if (outLoadedMutationHistory) outLoadedMutationHistory->clear();
     if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = false;
+    if (outResolvedLoadedStatePath) outResolvedLoadedStatePath->clear();
 
     bool loadedState = false;
 
@@ -67,6 +69,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
             return 1;
         }
         loadedState = true;
+        if (outResolvedLoadedStatePath) *outResolvedLoadedStatePath = loadedStatePath;
         if (ioSidecarControllerPolicy) {
             *ioSidecarControllerPolicy = hasLoadedControllerPolicy ? loadedControllerPolicy : SidecarAutoDemoControllerPolicy{};
         }
@@ -134,5 +137,5 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render, bool* dirty) {
-    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
+    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
 }

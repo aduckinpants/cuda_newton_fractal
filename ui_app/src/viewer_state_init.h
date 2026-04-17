@@ -15,6 +15,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                       bool* outHasLoadedOrientation,
                       SidecarAutoDemoMutationHistory* outLoadedMutationHistory,
                       bool* outHasLoadedMutationHistory,
+                      std::string* outResolvedLoadedStatePath,
                       bool* dirty);
 
 // Apply CLI overrides (fractal type, explaino params, resolution, sweep, etc.)
