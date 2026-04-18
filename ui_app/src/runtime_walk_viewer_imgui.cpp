@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <string>
 
 namespace {
 
@@ -29,6 +30,144 @@ void DrawPolyline(const std::vector<Double2>& points,
             color,
             thickness);
     }
+}
+
+bool RenderStringCombo(const char* label, const std::vector<std::string>& options, std::string* ioValue) {
+    if (!ioValue) return false;
+    bool changed = false;
+    const char* preview = ioValue->empty() ? "(none)" : ioValue->c_str();
+    if (ImGui::BeginCombo(label, preview)) {
+        for (const std::string& option : options) {
+            const bool selected = option == *ioValue;
+            if (ImGui::Selectable(option.c_str(), selected)) {
+                *ioValue = option;
+                changed = true;
+            }
+            if (selected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    return changed;
+}
+
+bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
+    bool changed = false;
+    if (!ImGui::CollapsingHeader("Binding Workbench", ImGuiTreeNodeFlags_DefaultOpen)) return false;
+
+    ImGui::TextWrapped("FITS Signals: %d | Runtime Targets: %d | Rows: %d",
+        static_cast<int>(state.fits_signal_catalog.size()),
+        static_cast<int>(state.runtime_target_catalog.size()),
+        static_cast<int>(state.binding_workbench_rows.size()));
+    const bool canAddBinding = !state.fits_signal_catalog.empty() && !state.runtime_target_catalog.empty();
+    ImGui::BeginDisabled(!canAddBinding);
+    if (ImGui::Button("Add Binding")) {
+        RuntimeWalkFitsMappingBinding binding;
+        binding.target_selector = "default";
+        binding.source_signal = state.fits_signal_catalog.front();
+        binding.target_path = state.runtime_target_catalog.front();
+        binding.scale = 0.0;
+        binding.weight = 1.0;
+        binding.smoothing = 0.5;
+        binding.safety_class = "safe";
+        binding.enabled = true;
+        state.binding_workbench_rows.push_back(binding);
+        changed = true;
+    }
+    ImGui::EndDisabled();
+    if (!canAddBinding) {
+        ImGui::TextUnformatted("Add Binding requires at least one FITS signal and one runtime target.");
+    }
+    if (state.binding_workbench_rows.empty()) {
+        ImGui::TextUnformatted("No binding rows resolved from the mapping profile.");
+        return changed;
+    }
+
+    int removeIndex = -1;
+    for (std::size_t index = 0; index < state.binding_workbench_rows.size(); ++index) {
+        RuntimeWalkFitsMappingBinding& row = state.binding_workbench_rows[index];
+        ImGui::PushID(static_cast<int>(index));
+        if (ImGui::TreeNodeEx("binding", ImGuiTreeNodeFlags_DefaultOpen,
+                "%s -> %s", row.source_signal.c_str(), row.target_path.c_str())) {
+            ImGui::SameLine();
+            if (ImGui::SmallButton((std::string("Remove##binding") + std::to_string(index)).c_str())) {
+                removeIndex = static_cast<int>(index);
+            }
+            changed = ImGui::Checkbox("Enabled", &row.enabled) || changed;
+            changed = RenderStringCombo("FITS Source", state.fits_signal_catalog, &row.source_signal) || changed;
+            changed = RenderStringCombo("Runtime Target", state.runtime_target_catalog, &row.target_path) || changed;
+
+            float amount = static_cast<float>(row.weight);
+            if (ImGui::SliderFloat("Amount", &amount, 0.0f, 2.0f, "%.3f")) {
+                row.weight = static_cast<double>(amount);
+                changed = true;
+            }
+            float offset = static_cast<float>(row.offset);
+            if (ImGui::DragFloat("Offset", &offset, 0.01f, -32.0f, 32.0f, "%.3f")) {
+                row.offset = static_cast<double>(offset);
+                changed = true;
+            }
+            float smoothing = static_cast<float>(row.smoothing);
+            if (ImGui::SliderFloat("Smoothing", &smoothing, 0.0f, 1.0f, "%.2f")) {
+                row.smoothing = static_cast<double>(smoothing);
+                changed = true;
+            }
+            bool inverted = row.polarity < 0;
+            if (ImGui::Checkbox("Invert Polarity", &inverted)) {
+                row.polarity = inverted ? -1 : 1;
+                changed = true;
+            }
+            changed = ImGui::Checkbox("Clamp", &row.has_clamp) || changed;
+            if (row.has_clamp) {
+                float minValue = static_cast<float>(row.clamp_min);
+                float maxValue = static_cast<float>(row.clamp_max);
+                if (ImGui::DragFloat("Clamp Min", &minValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
+                    row.clamp_min = static_cast<double>(minValue);
+                    changed = true;
+                }
+                if (ImGui::DragFloat("Clamp Max", &maxValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
+                    row.clamp_max = static_cast<double>(maxValue);
+                    changed = true;
+                }
+                if (row.clamp_min > row.clamp_max) std::swap(row.clamp_min, row.clamp_max);
+            }
+            ImGui::Text("Input rail: %.3f .. %.3f | Scale: %.3f | Safety: %s",
+                row.input_min,
+                row.input_max,
+                row.scale,
+                row.safety_class.empty() ? "safe" : row.safety_class.c_str());
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+    if (removeIndex >= 0 && removeIndex < static_cast<int>(state.binding_workbench_rows.size())) {
+        state.binding_workbench_rows.erase(state.binding_workbench_rows.begin() + removeIndex);
+        changed = true;
+    }
+    return changed;
+}
+
+bool RenderRuntimeWalkFieldControls(RuntimeWalkOverlayProviderConfig* ioConfig) {
+    if (!ioConfig) return false;
+    bool changed = false;
+    if (!ImGui::CollapsingHeader("Adaptive Field Sampling")) return false;
+    changed = ImGui::SliderInt("Min Marbles", &ioConfig->field_min_marbles, 4, 256) || changed;
+    changed = ImGui::SliderInt("Max Marbles", &ioConfig->field_max_marbles, 8, 512) || changed;
+    if (ioConfig->field_max_marbles < ioConfig->field_min_marbles) {
+        ioConfig->field_max_marbles = ioConfig->field_min_marbles;
+        changed = true;
+    }
+    float sensitivity = static_cast<float>(ioConfig->field_gradient_sensitivity);
+    if (ImGui::SliderFloat("Gradient Sensitivity", &sensitivity, 0.05f, 4.0f, "%.2f")) {
+        ioConfig->field_gradient_sensitivity = static_cast<double>(sensitivity);
+        changed = true;
+    }
+    float hysteresis = static_cast<float>(ioConfig->field_hysteresis);
+    if (ImGui::SliderFloat("Traveler Hysteresis", &hysteresis, 0.0f, 0.95f, "%.2f")) {
+        ioConfig->field_hysteresis = static_cast<double>(hysteresis);
+        changed = true;
+    }
+    changed = ImGui::SliderInt("Export Cadence", &ioConfig->field_export_cadence, 1, 30) || changed;
+    return changed;
 }
 
 } // namespace
@@ -121,10 +260,14 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
         ioOverlayConfig->threshold = static_cast<double>(threshold);
         interactionChanged = true;
     }
+    interactionChanged = RenderRuntimeWalkFieldControls(ioOverlayConfig) || interactionChanged;
 
     ImGui::Separator();
     ImGui::TextWrapped("Request: %s", session.request_json_path.c_str());
-    ImGui::TextWrapped("Session Dir: %s", std::filesystem::path(session.request_json_path).parent_path().string().c_str());
+    const std::filesystem::path sessionDir = std::filesystem::path(session.request_json_path).parent_path();
+    ImGui::TextWrapped("Session Dir: %s", sessionDir.string().c_str());
+    ImGui::TextWrapped("Flow Lines CSV: %s", (sessionDir / "runtime_walk_flow_lines.csv").string().c_str());
+    ImGui::TextWrapped("Field Cells CSV: %s", (sessionDir / "runtime_field_cells.csv").string().c_str());
     ImGui::TextWrapped("Authority Mode: %s", RuntimeWalkAuthorityModeId(session.authority_mode));
     ImGui::TextWrapped("Base State (authority): %s", session.resolved_state_json_path.c_str());
     if (!session.asset.authority.mapping_profile_json_path.empty()) {
@@ -246,6 +389,8 @@ bool RenderRuntimeWalkViewerImportPanel(RuntimeWalkViewerImportPanelState& state
         ImGui::TextWrapped("Bundle: %s", state.bundle_json_path.empty() ? "(none)" : state.bundle_json_path.c_str());
         ImGui::TextWrapped("Mapping Profile Override: %s", state.mapping_profile_json_path.empty() ? "(default checked-in profile)" : state.mapping_profile_json_path.c_str());
     }
+
+    interactionChanged = RenderBindingWorkbench(state) || interactionChanged;
 
     if (ImGui::CollapsingHeader("Mapping Summary", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (state.mapping_binding_summaries.empty()) {

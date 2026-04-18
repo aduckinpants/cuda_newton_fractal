@@ -23,6 +23,7 @@ struct RuntimeWalkViewerImportRequest {
     std::string mapping_profile_id;
     std::string orientation_inputs_json_path;
     RuntimeWalkTransportSynthesisOptions transport_options;
+    std::vector<RuntimeWalkFitsMappingBinding> binding_overrides;
 };
 
 struct RuntimeWalkViewerImportSessionRecord {
@@ -45,7 +46,6 @@ struct RuntimeWalkViewerImportSessionRecord {
     std::string transport_generation_mode;
     std::size_t transport_sample_count = 0;
     double transport_motion_scale = 0.75;
-    double transport_warp_scale = 0.0;
     bool transport_generated = false;
     bool request_exists = false;
     bool viewer_load_succeeded = false;
@@ -63,6 +63,9 @@ struct RuntimeWalkViewerImportPanelState {
     RuntimeWalkTransportSynthesisOptions transport_options;
     std::string resolved_mapping_profile_json_path;
     std::string resolved_mapping_profile_base_fractal_type;
+    std::vector<std::string> fits_signal_catalog;
+    std::vector<std::string> runtime_target_catalog;
+    std::vector<RuntimeWalkFitsMappingBinding> binding_workbench_rows;
     std::vector<std::string> mapping_binding_summaries;
     std::string status_text;
     std::vector<RuntimeWalkViewerImportSessionRecord> recent_sessions;

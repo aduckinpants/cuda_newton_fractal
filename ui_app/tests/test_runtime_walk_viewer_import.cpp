@@ -674,7 +674,6 @@ static void TestImportSessionSynthesizedModeHonorsTransportOptions() {
     request.orientation_inputs_json_path = orientationInputsPath.string();
     request.transport_options.sample_count = 41u;
     request.transport_options.motion_scale = 0.55;
-    request.transport_options.warp_scale = 0.03;
 
     RuntimeWalkViewerImportSessionRecord record;
     std::string error;
@@ -685,8 +684,6 @@ static void TestImportSessionSynthesizedModeHonorsTransportOptions() {
         "TestImportSessionSynthesizedModeHonorsTransportOptions_SampleCount");
     Check(std::fabs(record.transport_motion_scale - 0.55) < 1.0e-9,
         "TestImportSessionSynthesizedModeHonorsTransportOptions_MotionScale");
-    Check(std::fabs(record.transport_warp_scale - 0.03) < 1.0e-9,
-        "TestImportSessionSynthesizedModeHonorsTransportOptions_WarpScale");
 }
 
 static void TestImportSessionTransportOptionsAffectSessionIdentity() {
@@ -703,12 +700,10 @@ static void TestImportSessionTransportOptionsAffectSessionIdentity() {
     firstRequest.orientation_inputs_json_path = orientationInputsPath.string();
     firstRequest.transport_options.sample_count = 33u;
     firstRequest.transport_options.motion_scale = 0.75;
-    firstRequest.transport_options.warp_scale = 0.10;
 
     RuntimeWalkViewerImportRequest secondRequest = firstRequest;
     secondRequest.transport_options.sample_count = 57u;
     secondRequest.transport_options.motion_scale = 0.42;
-    secondRequest.transport_options.warp_scale = 0.02;
 
     RuntimeWalkViewerImportSessionRecord firstRecord;
     RuntimeWalkViewerImportSessionRecord secondRecord;
@@ -739,7 +734,6 @@ static void TestPrimeImportPanelReusesLoadedSessionTransportSettings() {
     request.orientation_inputs_json_path = orientationInputsPath.string();
     request.transport_options.sample_count = 49u;
     request.transport_options.motion_scale = 0.44;
-    request.transport_options.warp_scale = 0.02;
 
     RuntimeWalkViewerImportSessionRecord record;
     std::string error;
@@ -754,7 +748,6 @@ static void TestPrimeImportPanelReusesLoadedSessionTransportSettings() {
     session.authority_mode = record.authority_mode;
     session.asset.request.transport_sample_count = record.transport_sample_count;
     session.asset.request.transport_motion_scale = record.transport_motion_scale;
-    session.asset.request.transport_warp_scale = record.transport_warp_scale;
     session.asset.authority.mapping_profile_json_path = record.mapping_profile_json_path;
     session.asset.authority.mapping_profile_id = record.mapping_profile_id;
     session.asset.companion.comparison_fits_path = record.comparison_fits_path;
@@ -767,8 +760,6 @@ static void TestPrimeImportPanelReusesLoadedSessionTransportSettings() {
         "TestPrimeImportPanelReusesLoadedSessionTransportSettings_SampleCount");
     Check(std::fabs(panel.transport_options.motion_scale - 0.44) < 1.0e-9,
         "TestPrimeImportPanelReusesLoadedSessionTransportSettings_MotionScale");
-    Check(std::fabs(panel.transport_options.warp_scale - 0.02) < 1.0e-9,
-        "TestPrimeImportPanelReusesLoadedSessionTransportSettings_WarpScale");
 }
 
 static void TestImportPanelAcceptsAdvancedManualOpenInputs() {
@@ -791,6 +782,68 @@ static void TestImportPanelAcceptsAdvancedManualOpenInputs() {
         "TestImportPanelAcceptsAdvancedManualOpenInputs_Fits");
 }
 
+static void TestPrimeImportPanelExposesEditableBindingWorkbench() {
+    const std::filesystem::path root = TempRoot("binding_workbench");
+    RuntimeWalkViewerImportPanelState panel{};
+    RuntimeWalkViewerSession session{};
+
+    PrimeRuntimeWalkViewerImportPanel(root.string(), "", session, &panel);
+
+    Check(!panel.fits_signal_catalog.empty(),
+        "TestPrimeImportPanelExposesEditableBindingWorkbench_SourceCatalog");
+    Check(!panel.runtime_target_catalog.empty(),
+        "TestPrimeImportPanelExposesEditableBindingWorkbench_TargetCatalog");
+    Check(!panel.binding_workbench_rows.empty(),
+        "TestPrimeImportPanelExposesEditableBindingWorkbench_Rows");
+
+    bool allCanonical = true;
+    bool noWarpTargets = true;
+    for (const RuntimeWalkFitsMappingBinding& row : panel.binding_workbench_rows) {
+        allCanonical = allCanonical && row.target_path.rfind("fractal.", 0) == 0;
+        noWarpTargets = noWarpTargets && row.target_path.find("warp") == std::string::npos;
+    }
+    Check(allCanonical,
+        "TestPrimeImportPanelExposesEditableBindingWorkbench_CanonicalTargets");
+    Check(noWarpTargets,
+        "TestPrimeImportPanelExposesEditableBindingWorkbench_NoWarpTarget");
+}
+
+static void TestBindingWorkbenchOverridesAffectGeneratedSession() {
+    const std::filesystem::path root = TempRoot("binding_override_identity");
+    const std::filesystem::path fitsPath = root / "checkpoint_final.fits";
+    const std::filesystem::path orientationInputsPath = root / "orientation_inputs.json";
+    WriteDummyFits(fitsPath);
+    WriteOrientationInputsJson(orientationInputsPath, fitsPath);
+
+    RuntimeWalkViewerImportPanelState panel{};
+    RuntimeWalkViewerSession session{};
+    PrimeRuntimeWalkViewerImportPanel(root.string(), "", session, &panel);
+    Check(!panel.binding_workbench_rows.empty(),
+        "TestBindingWorkbenchOverridesAffectGeneratedSession_HasRows");
+    panel.binding_workbench_rows.front().weight = 0.10;
+    panel.binding_workbench_rows.front().offset = 2.0;
+
+    RuntimeWalkViewerImportRequest request{};
+    request.exe_dir = root.string();
+    request.authority_mode = RuntimeWalkAuthorityMode::synthesized_fits_base;
+    request.comparison_fits_path = fitsPath.string();
+    request.orientation_inputs_json_path = orientationInputsPath.string();
+    request.binding_overrides = panel.binding_workbench_rows;
+
+    RuntimeWalkViewerImportSessionRecord record;
+    std::string error;
+    CheckWithError(BuildRuntimeWalkViewerImportSession(request, &record, &error),
+        "TestBindingWorkbenchOverridesAffectGeneratedSession_Builds",
+        error);
+    Check(record.mapping_profile_json_path.find("effective_mapping_profile.json") != std::string::npos,
+        "TestBindingWorkbenchOverridesAffectGeneratedSession_EffectiveProfileWritten");
+    std::ifstream profile(record.mapping_profile_json_path, std::ios::in | std::ios::binary);
+    const std::string profileText((std::istreambuf_iterator<char>(profile)), std::istreambuf_iterator<char>());
+    Check(profileText.find("\"weight\": 0.1") != std::string::npos &&
+            profileText.find("\"offset\": 2") != std::string::npos,
+        "TestBindingWorkbenchOverridesAffectGeneratedSession_OverridesSerialized");
+}
+
 int main() {
     TestImportSessionRejectsMissingBaseState();
     TestImportSessionRejectsWrongFamily();
@@ -807,6 +860,8 @@ int main() {
     TestImportSessionTransportOptionsAffectSessionIdentity();
     TestPrimeImportPanelReusesLoadedSessionTransportSettings();
     TestImportPanelAcceptsAdvancedManualOpenInputs();
+    TestPrimeImportPanelExposesEditableBindingWorkbench();
+    TestBindingWorkbenchOverridesAffectGeneratedSession();
     TestImportSessionPersistsDeterministicRecentLatest();
     TestImportSessionCanRediscoverFromRecentMatch();
     TestLatestRejectsStaleSession();

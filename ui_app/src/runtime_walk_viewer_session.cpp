@@ -2,6 +2,20 @@
 
 #include "finding_state_actions.h"
 #include "fractal_family_rules.h"
+#include <cstring>
+
+namespace {
+
+bool RuntimeWalkLiveStateMatches(const ViewState& lhsView,
+    const KernelParams& lhsParams,
+    const ViewState& rhsView,
+    const KernelParams& rhsParams) {
+    return std::memcmp(&lhsView, &rhsView, sizeof(ViewState)) == 0 &&
+        std::memcmp(&lhsParams, &rhsParams, sizeof(KernelParams)) == 0;
+}
+
+} // namespace
+
 
 void ResetRuntimeWalkViewerPlaybackForNewSession(const RuntimeWalkViewerPlaybackState& previous,
     RuntimeWalkViewerPlaybackState* outPlayback) {
@@ -67,11 +81,15 @@ bool LoadRuntimeWalkViewerSession(const std::string& requestJsonPath,
     session.resolved_state_json_path = resolvedStatePath;
     session.authority_mode = request.authority_mode;
     session.asset = asset;
+    session.operator_baseline_view = baseView;
+    session.operator_baseline_params = baseParams;
+    session.has_operator_baseline = true;
+    session.has_last_composed_state = false;
     *outSession = session;
     return true;
 }
 
-bool ApplyRuntimeWalkViewerPlaybackSnapshot(const RuntimeWalkViewerSession& session,
+bool ApplyRuntimeWalkViewerPlaybackSnapshot(RuntimeWalkViewerSession& session,
     const RuntimeWalkViewerPlaybackState& playback,
     ViewState* ioView,
     KernelParams* ioParams,
@@ -91,14 +109,31 @@ bool ApplyRuntimeWalkViewerPlaybackSnapshot(const RuntimeWalkViewerSession& sess
     if (!EvaluateRuntimeWalkViewerCurrentSnapshot(session.asset, playback, &snapshot, outError)) {
         return false;
     }
-    *ioView = session.asset.base_view;
-    *ioParams = session.asset.base_params;
-    ApplyRuntimeWalkSnapshot(snapshot, ioView, ioParams);
+    if (!session.has_operator_baseline) {
+        session.operator_baseline_view = session.asset.base_view;
+        session.operator_baseline_params = session.asset.base_params;
+        session.has_operator_baseline = true;
+    } else if (session.has_last_composed_state &&
+        !RuntimeWalkLiveStateMatches(*ioView, *ioParams, session.last_composed_view, session.last_composed_params)) {
+        session.operator_baseline_view = *ioView;
+        session.operator_baseline_params = *ioParams;
+    }
+
+    ComposeRuntimeWalkSnapshotOverLiveBaseline(
+        session.asset,
+        snapshot,
+        session.operator_baseline_view,
+        session.operator_baseline_params,
+        ioView,
+        ioParams);
+    session.last_composed_view = *ioView;
+    session.last_composed_params = *ioParams;
+    session.has_last_composed_state = true;
     if (outSnapshot) *outSnapshot = snapshot;
     return true;
 }
 
-bool UpdateRuntimeWalkViewerPlayback(const RuntimeWalkViewerSession& session,
+bool UpdateRuntimeWalkViewerPlayback(RuntimeWalkViewerSession& session,
     double deltaSeconds,
     bool togglePlayPause,
     bool stepPrevious,

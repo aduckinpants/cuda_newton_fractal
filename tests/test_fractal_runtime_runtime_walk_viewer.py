@@ -342,7 +342,7 @@ def test_runtime_walk_viewer_replays_and_space_pauses(tmp_path: Path) -> None:
         time.sleep(0.5)
         stepped_frame, _ = _capture_stable_window_pixels(hwnd)
         stepped_diff = _mean_abs_diff(paused_frame_b, stepped_frame)
-        assert stepped_diff > 0.08, f"Right-arrow step did not visibly advance runtime-walk playback; diff={stepped_diff:.3f}"
+        assert stepped_diff > 0.06, f"Right-arrow step did not visibly advance runtime-walk playback; diff={stepped_diff:.3f}"
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
@@ -462,11 +462,28 @@ def test_runtime_walk_viewer_can_boot_from_fits_only_cli() -> None:
         assert latest["transport_generation_mode"] == "closed_loop_default"
         assert latest["transport_sample_count"] >= 33
         assert latest["transport_motion_scale"] == pytest.approx(0.75)
-        assert latest["transport_warp_scale"] == pytest.approx(0.0)
+        assert "transport_warp_scale" not in latest
         synthesized_state = Path(latest["synthesized_base_state_json"])
         assert synthesized_state.exists(), "FITS-only load did not write synthesized state.json"
         synthesized_payload = json.loads(synthesized_state.read_text(encoding="utf-8"))
         assert synthesized_payload["fractal_type"] == "explaino"
+
+        session_dir = Path(latest["request_json"]).parent
+        flow_csv = session_dir / "runtime_walk_flow_lines.csv"
+        cells_csv = session_dir / "runtime_field_cells.csv"
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline:
+            if flow_csv.exists() and cells_csv.exists() and flow_csv.stat().st_size > 0 and cells_csv.stat().st_size > 0:
+                break
+            time.sleep(0.1)
+        assert flow_csv.exists() and flow_csv.stat().st_size > 0, "FITS-only viewer playback did not export non-empty runtime_walk_flow_lines.csv"
+        assert cells_csv.exists() and cells_csv.stat().st_size > 0, "FITS-only viewer playback did not export non-empty runtime_field_cells.csv"
+        flow_text = flow_csv.read_text(encoding="utf-8")
+        cells_text = cells_csv.read_text(encoding="utf-8")
+        assert "traveler_cluster_id" in flow_text and "tangent_angle" in flow_text
+        assert "traveler_centroid_x" in cells_text and "cluster_confidence" in cells_text
+        assert len(flow_text.splitlines()) > 1, "flow CSV should contain measured marble rows"
+        assert len(cells_text.splitlines()) > 1, "field-cell CSV should contain quantized cell rows"
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)

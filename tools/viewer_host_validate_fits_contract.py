@@ -14,6 +14,10 @@ except ModuleNotFoundError:
 DEFAULT_MAPPING_PATH = REPO_ROOT / "ui" / "runtime_walk_fits_mapping_profiles_v1.json"
 BOOTSTRAP_HEADER_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_bootstrap.h"
 VIEWER_IMGUI_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_viewer_imgui.cpp"
+RUNTIME_WALK_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk.cpp"
+RUNTIME_WALK_HEADER_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk.h"
+RUNTIME_WALK_IMPORT_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_viewer_import.cpp"
+MAIN_PATH = REPO_ROOT / "ui_app" / "src" / "main.cpp"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -33,6 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     mapping_payload = load_json_file(DEFAULT_MAPPING_PATH)
     header_text = BOOTSTRAP_HEADER_PATH.read_text(encoding="utf-8")
     imgui_text = VIEWER_IMGUI_PATH.read_text(encoding="utf-8")
+    runtime_walk_text = RUNTIME_WALK_PATH.read_text(encoding="utf-8")
+    runtime_walk_header_text = RUNTIME_WALK_HEADER_PATH.read_text(encoding="utf-8")
+    import_text = RUNTIME_WALK_IMPORT_PATH.read_text(encoding="utf-8")
+    main_text = MAIN_PATH.read_text(encoding="utf-8")
 
     errors: list[str] = []
     bindings = []
@@ -41,17 +49,65 @@ def main(argv: list[str] | None = None) -> int:
 
     checks = {
         "default_mapping_has_no_warp_binding": not any(
-            binding.get("target_path") == "params.explaino_warp_strength" for binding in bindings
+            "warp" in str(binding.get("target_path", "")) for binding in bindings
         ),
         "default_synthesized_fractal_is_explaino": 'FractalType base_fractal_type = FractalType::explaino;' in header_text,
         "default_ui_has_no_warp_control": '"Warp Motion"' not in imgui_text,
+        "default_runtime_transport_has_no_warp_animation":
+            "ioParams->explaino_warp_strength =" not in runtime_walk_text and "warpNorm" not in runtime_walk_text,
+        "field_csv_paths_visible":
+            "runtime_walk_flow_lines.csv" in imgui_text and "runtime_field_cells.csv" in imgui_text,
+        "field_slime_runtime_export_wired":
+            "WriteRuntimeWalkFieldSlimeCsv" in main_text and "StepRuntimeWalkFieldSlime" in main_text,
+        "transport_metadata_has_no_warp_scale":
+            "transport_warp_scale" not in runtime_walk_header_text and
+            "transport_warp_scale" not in import_text and
+            "warp_scale" not in import_text,
+        "binding_workbench_controls_visible": all(
+            needle in imgui_text for needle in [
+                "Binding Workbench",
+                "FITS Source",
+                "Runtime Target",
+                "Amount",
+                "Smoothing",
+                "Invert Polarity",
+                "Clamp",
+                "Add Binding",
+                "Remove##binding",
+            ]
+        ),
+        "adaptive_field_controls_visible": all(
+            needle in imgui_text for needle in [
+                "Adaptive Field Sampling",
+                "Min Marbles",
+                "Max Marbles",
+                "Gradient Sensitivity",
+                "Traveler Hysteresis",
+                "Export Cadence",
+            ]
+        ),
+        "effective_mapping_profile_visible": "effective_mapping_profile.json" in import_text,
     }
     if not checks["default_mapping_has_no_warp_binding"]:
-        errors.append("default FITS mapping still binds params.explaino_warp_strength")
+        errors.append("default FITS mapping still binds a warp target")
     if not checks["default_synthesized_fractal_is_explaino"]:
         errors.append("runtime_walk_bootstrap.h does not default base_fractal_type to explaino")
     if not checks["default_ui_has_no_warp_control"]:
         errors.append("runtime_walk_viewer_imgui.cpp still exposes Warp Motion in the default UI")
+    if not checks["default_runtime_transport_has_no_warp_animation"]:
+        errors.append("runtime_walk.cpp still animates or writes explaino_warp_strength in default transport")
+    if not checks["field_csv_paths_visible"]:
+        errors.append("runtime_walk_viewer_imgui.cpp does not show field-flow CSV artifact paths")
+    if not checks["field_slime_runtime_export_wired"]:
+        errors.append("main.cpp does not wire field slime stepping/export into runtime playback")
+    if not checks["transport_metadata_has_no_warp_scale"]:
+        errors.append("runtime-walk generated transport/session metadata still exposes transport_warp_scale/warp_scale")
+    if not checks["binding_workbench_controls_visible"]:
+        errors.append("runtime_walk_viewer_imgui.cpp does not expose binding workbench source/target/safety controls")
+    if not checks["adaptive_field_controls_visible"]:
+        errors.append("runtime_walk_viewer_imgui.cpp does not expose adaptive field sampling controls")
+    if not checks["effective_mapping_profile_visible"]:
+        errors.append("runtime_walk_viewer_import.cpp does not write a durable effective mapping profile artifact")
 
     expected_default = str(contract_payload.get("required_defaults", {}).get("base_fractal_type", ""))
     if expected_default and expected_default != "explaino":

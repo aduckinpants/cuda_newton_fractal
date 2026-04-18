@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -46,6 +47,7 @@
 #include "lens_sdf.h"
 #include "render_capture_guard.h"
 #include "runtime_walk.h"
+#include "runtime_walk_field_slime.h"
 #include "runtime_walk_viewer.h"
 #include "runtime_walk_viewer_imgui.h"
 #include "runtime_walk_viewer_session.h"
@@ -1821,6 +1823,7 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
         importRequest.mapping_profile_json_path = panel.mapping_profile_json_path;
         importRequest.mapping_profile_id = panel.mapping_profile_id;
         importRequest.transport_options = panel.transport_options;
+        importRequest.binding_overrides = panel.binding_workbench_rows;
         if (BuildAndActivateRuntimeWalkViewerImportSession(
                 importRequest,
                 &panel,
@@ -1871,12 +1874,92 @@ static bool ProcessRuntimeWalkViewerImportPerFrame(
     return true;
 }
 
+
+static std::uint32_t HashRuntimeWalkString(const std::string& text) {
+    std::uint32_t hash = 2166136261u;
+    for (unsigned char ch : text) {
+        hash ^= static_cast<std::uint32_t>(ch);
+        hash *= 16777619u;
+    }
+    return hash == 0u ? 1u : hash;
+}
+
+static RuntimeWalkFieldSlimeConfig BuildRuntimeWalkFieldSlimeConfig(const RuntimeWalkOverlayProviderConfig& overlayConfig) {
+    RuntimeWalkFieldSlimeConfig config{};
+    config.min_marbles = overlayConfig.field_min_marbles;
+    config.max_marbles = (std::max)(overlayConfig.field_min_marbles, overlayConfig.field_max_marbles);
+    config.max_steps = 2;
+    config.grid_resolution = 32;
+    config.gradient_sensitivity = overlayConfig.field_gradient_sensitivity + (std::max)(0.0, 0.25 - overlayConfig.threshold);
+    config.hysteresis = overlayConfig.field_hysteresis;
+    config.export_cadence = overlayConfig.field_export_cadence;
+    return config;
+}
+
+static Double2 RuntimeWalkFieldTravelerViewportPoint(const ViewState& view,
+    const RenderSettings& render,
+    const RuntimeWalkFieldSlimeTraveler& traveler) {
+    const double aspect = render.resolution.y > 0
+        ? static_cast<double>(render.resolution.x) / static_cast<double>(render.resolution.y)
+        : 1.0;
+    const double zoom = (std::max)(1.0e-30, std::pow(2.0, view.log2_zoom));
+    const double worldScale = 2.0 / zoom;
+    const double u = ClampD(0.5 + (traveler.centroid_world.x - view.center_hp_x) / (std::max)(1.0e-12, worldScale * aspect), 0.0, 1.0);
+    const double v = ClampD(0.5 - (traveler.centroid_world.y - view.center_hp_y) / (std::max)(1.0e-12, worldScale), 0.0, 1.0);
+    return {u, v};
+}
+
+static void UpdateRuntimeWalkFieldSlime(RuntimeWalkViewerSession& session,
+    const RuntimeWalkOverlayProviderConfig& overlayConfig,
+    CudaSidecarMeasurementHost& sidecarMeasurementHost,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RuntimeWalkViewerPlaybackState& playback,
+    RuntimeWalkFieldSlimeState& ioFieldSlime,
+    bool& ioFieldSlimeValid,
+    RuntimeWalkOverlayPath& ioPath,
+    std::string& findingStatus) {
+    RuntimeWalkFieldSlimeConfig config = BuildRuntimeWalkFieldSlimeConfig(overlayConfig);
+    std::string fieldError;
+    const std::uint32_t seed = HashRuntimeWalkString(session.request_json_path);
+    if (!ioFieldSlimeValid || RuntimeWalkFieldSlimeNeedsResetForSeed(ioFieldSlime, seed)) {
+        if (!InitializeRuntimeWalkFieldSlime(config, view, params, render, seed, &ioFieldSlime, &fieldError)) {
+            findingStatus = "Runtime walk field slime init failed: " + fieldError;
+            return;
+        }
+        ioFieldSlimeValid = true;
+    }
+
+    if (!StepRuntimeWalkFieldSlime(sidecarMeasurementHost, config, view, params, render, playback.current_t, &ioFieldSlime, &fieldError)) {
+        findingStatus = "Runtime walk field slime failed: " + fieldError;
+        ioFieldSlimeValid = false;
+        return;
+    }
+
+    if (ioFieldSlime.traveler.cluster_id >= 0) {
+        ioPath.current_point = RuntimeWalkFieldTravelerViewportPoint(view, render, ioFieldSlime.traveler);
+    }
+
+    if (ioFieldSlime.export_due && !session.request_json_path.empty()) {
+        const std::filesystem::path sessionDir = std::filesystem::path(session.request_json_path).parent_path();
+        const std::filesystem::path flowPath = sessionDir / "runtime_walk_flow_lines.csv";
+        const std::filesystem::path cellsPath = sessionDir / "runtime_field_cells.csv";
+        if (!WriteRuntimeWalkFieldSlimeCsv(ioFieldSlime, flowPath.string(), cellsPath.string(), &fieldError)) {
+            findingStatus = "Runtime walk field slime export failed: " + fieldError;
+        }
+    }
+}
+
 static bool ProcessRuntimeWalkViewerPerFrame(
     HWND hwnd,
     const ImGuiIO& io,
     RuntimeWalkViewerSession& session,
     RuntimeWalkViewerPlaybackState& playback,
     RuntimeWalkOverlayProviderConfig& overlayConfig,
+    CudaSidecarMeasurementHost& sidecarMeasurementHost,
+    RuntimeWalkFieldSlimeState& fieldSlimeState,
+    bool& fieldSlimeValid,
     const ExplainoSidecarWindowState& sidecarState,
     bool sidecarStateValid,
     ViewState& view,
@@ -1893,6 +1976,7 @@ static bool ProcessRuntimeWalkViewerPerFrame(
     if (!session.loaded) {
         outPath = {};
         outGradientOverlay = {};
+        fieldSlimeValid = false;
         return true;
     }
 
@@ -1963,6 +2047,8 @@ static bool ProcessRuntimeWalkViewerPerFrame(
     }
 
     BuildRuntimeWalkOverlayPath(session.asset, playback, &outPath);
+    UpdateRuntimeWalkFieldSlime(session, overlayConfig, sidecarMeasurementHost, view, params, render, playback,
+        fieldSlimeState, fieldSlimeValid, outPath, findingStatus);
     RuntimeWalkOverlayProviderInputs overlayInputs{};
     overlayInputs.branch_proximity = snapshot.branch.proximity;
     if (sidecarStateValid && sidecarState.has_orientation) {
@@ -2029,6 +2115,8 @@ static void RunViewerFrame(
     RuntimeWalkOverlayProviderConfig& runtimeWalkOverlayConfig,
     RuntimeWalkOverlayPath& runtimeWalkOverlayPath,
     RuntimeWalkGradientOverlay& runtimeWalkGradientOverlay,
+    RuntimeWalkFieldSlimeState& runtimeWalkFieldSlime,
+    bool& runtimeWalkFieldSlimeValid,
     bool& dirty) {
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
@@ -2082,6 +2170,9 @@ static void RunViewerFrame(
                 runtimeWalkViewerSession,
                 runtimeWalkPlayback,
                 runtimeWalkOverlayConfig,
+                sidecarMeasurementHost,
+                runtimeWalkFieldSlime,
+                runtimeWalkFieldSlimeValid,
                 sidecarState,
                 sidecarStateValid,
                 view,
@@ -2154,6 +2245,7 @@ static void RunViewerFrame(
     if (!runtimeWalkViewerSession.loaded) {
         runtimeWalkOverlayPath = {};
         runtimeWalkGradientOverlay = {};
+        runtimeWalkFieldSlimeValid = false;
     }
 
     RenderFractalViewport(io, render, view, dirty, actions.interactionChanged,
@@ -2255,6 +2347,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     RuntimeWalkOverlayProviderConfig runtimeWalkOverlayConfig{};
     RuntimeWalkOverlayPath runtimeWalkOverlayPath{};
     RuntimeWalkGradientOverlay runtimeWalkGradientOverlay{};
+    RuntimeWalkFieldSlimeState runtimeWalkFieldSlime{}; bool runtimeWalkFieldSlimeValid = false;
     if (!InitializeSweepIfEnabled(cli.sweep_config, sweepState, view, params, dirty)) {
         CleanupDeviceD3D();
         DestroyWindow(hwnd);
@@ -2351,6 +2444,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             runtimeWalkOverlayConfig,
             runtimeWalkOverlayPath,
             runtimeWalkGradientOverlay,
+            runtimeWalkFieldSlime, runtimeWalkFieldSlimeValid,
             dirty);
     }
 

@@ -5,16 +5,15 @@
   "workflow_type": "viewer_first",
   "plan_path": "docs/notes/runtime_walk_fits_usability_hostile_review_PHASED_PLAN.md",
   "allowed_mutation_scope": [
-    "ui/runtime_walk_fits_mapping_profiles_v1.json",
-    "ui_app/src/main.cpp",
-    "ui_app/src/runtime_walk_bootstrap.cpp",
-    "ui_app/src/runtime_walk_bootstrap.h",
-    "ui_app/src/runtime_walk_viewer_imgui.cpp",
-    "ui_app/src/runtime_walk_viewer_imgui.h",
-    "ui_app/src/runtime_walk_viewer_import.cpp",
-    "ui_app/src/runtime_walk_viewer_import.h",
+    "docs/contracts/runtime_walk_fits.contract.json",
+    "docs/notes/runtime_walk_fits_usability_hostile_review_PHASED_PLAN.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
     "ui_app/tests",
-    "tests"
+    "tests",
+    "tools/viewer_host_validate_fits_contract.py"
   ],
   "required_operator_inputs": [
     "fits"
@@ -72,16 +71,79 @@
       "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
       "json_path": "checks.default_ui_has_no_warp_control",
       "equals": true
+    },
+    {
+      "assertion_id": "default_runtime_transport_has_no_warp_animation",
+      "description": "Default runtime transport does not animate or write warp",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.default_runtime_transport_has_no_warp_animation",
+      "equals": true
+    },
+    {
+      "assertion_id": "field_csv_paths_visible",
+      "description": "Viewer panel exposes field-flow CSV artifact paths",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.field_csv_paths_visible",
+      "equals": true
+    },
+    {
+      "assertion_id": "field_slime_runtime_export_wired",
+      "description": "Published viewer runtime wires measured field slime stepping and CSV export",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.field_slime_runtime_export_wired",
+      "equals": true
+    },
+    {
+      "assertion_id": "transport_metadata_has_no_warp_scale",
+      "description": "Generated runtime-walk transport/session metadata exposes no warp-scale default",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.transport_metadata_has_no_warp_scale",
+      "equals": true
+    },
+    {
+      "assertion_id": "binding_workbench_controls_visible",
+      "description": "Viewer import panel exposes editable FITS source/runtime target binding controls",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.binding_workbench_controls_visible",
+      "equals": true
+    },
+    {
+      "assertion_id": "adaptive_field_controls_visible",
+      "description": "Viewer playback panel exposes adaptive field sampling controls",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.adaptive_field_controls_visible",
+      "equals": true
+    },
+    {
+      "assertion_id": "effective_mapping_profile_visible",
+      "description": "Generated sessions write a durable effective mapping profile artifact",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.effective_mapping_profile_visible",
+      "equals": true
     }
   ],
   "required_artifact_visibility": [
     "generated request path visible",
     "generated bundle path visible",
-    "generated session dir visible"
+    "generated session dir visible",
+    "flow lines csv path visible",
+    "field cells csv path visible",
+    "effective mapping profile path visible"
   ],
   "required_control_surface": [
     "generated samples control",
     "motion intensity control",
-    "binding summary visible"
+    "binding summary visible",
+    "binding workbench sources visible",
+    "binding workbench targets visible",
+    "safe binding controls visible",
+    "adaptive field sampling controls visible"
   ]
 }

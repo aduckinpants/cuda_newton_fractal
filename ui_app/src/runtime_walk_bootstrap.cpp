@@ -5,6 +5,7 @@
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "json_min.h"
+#include "schema_binding.h"
 #include "view_hp_sync.h"
 
 #include <Windows.h>
@@ -82,6 +83,13 @@ bool GetRequiredString(const json_min::Value& object, const char* key, std::stri
     return true;
 }
 
+bool GetOptionalString(const json_min::Value& object, const char* key, std::string* outValue) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_string()) return false;
+    if (outValue) *outValue = value->as_string();
+    return true;
+}
+
 bool GetOptionalBool(const json_min::Value& object, const char* key, bool* outValue, std::string* outError) {
     const json_min::Value* value = object.get(key);
     if (!value) return true;
@@ -109,19 +117,61 @@ bool GetOptionalNumber(const json_min::Value& object, const char* key, double* o
     return true;
 }
 
-bool IsSupportedTargetPath(std::string_view path) {
-    static constexpr std::array<std::string_view, 9> kPaths = {
-        "seed.combined",
-        "params.explaino_seed_b",
-        "params.explaino_mix",
-        "params.explaino_warp_strength",
-        "view.explaino_phase",
-        "view.explaino_seed_drift",
-        "view.center_hp_x",
-        "view.center_hp_y",
-        "view.log2_zoom",
+std::string CanonicalTargetPathInternal(std::string_view path) {
+    if (path == "seed.combined") return "fractal.params.explaino_seed";
+    if (path == "params.explaino_seed_b") return "fractal.params.explaino_seed_b";
+    if (path == "params.explaino_mix") return "fractal.params.explaino_mix";
+    if (path == "params.explaino_damping") return "fractal.params.explaino_damping";
+    if (path == "view.explaino_phase") return "fractal.view.explaino_phase";
+    if (path == "view.explaino_phase_strength") return "fractal.view.explaino_phase_strength";
+    if (path == "view.explaino_seed_drift") return "fractal.view.explaino_seed_drift";
+    if (path == "view.center_hp_x") return "fractal.view.center.x";
+    if (path == "view.center_hp_y") return "fractal.view.center.y";
+    if (path == "view.log2_zoom") return "fractal.view.zoom";
+    return std::string(path);
+}
+
+bool IsWarpTargetPath(std::string_view canonicalPath) {
+    return canonicalPath == "fractal.params.explaino_warp_strength" ||
+        canonicalPath == "fractal.params.warp_strength";
+}
+
+const std::vector<std::string>& CandidateTargetPaths() {
+    static const std::vector<std::string> kPaths = {
+        "fractal.params.explaino_seed",
+        "fractal.params.explaino_seed_b",
+        "fractal.params.explaino_mix",
+        "fractal.params.explaino_damping",
+        "fractal.params.explaino_root_spread",
+        "fractal.params.explaino_cluster_radius",
+        "fractal.params.momentum_beta",
+        "fractal.params.joy_coupling",
+        "fractal.params.fold_coupling",
+        "fractal.params.bell_coupling",
+        "fractal.params.ripple_amplitude",
+        "fractal.params.splice_offset",
+        "fractal.params.vortex_strength",
+        "fractal.params.tension_strength",
+        "fractal.view.explaino_phase",
+        "fractal.view.explaino_phase_strength",
+        "fractal.view.explaino_seed_drift",
+        "fractal.view.center.x",
+        "fractal.view.center.y",
+        "fractal.view.zoom",
     };
-    return std::find(kPaths.begin(), kPaths.end(), path) != kPaths.end();
+    return kPaths;
+}
+
+bool IsSupportedTargetPath(std::string_view path) {
+    const std::string canonical = CanonicalTargetPathInternal(path);
+    if (IsWarpTargetPath(canonical)) return false;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    BindingContext ctx{&view, &params, &render, nullptr};
+    float* floatPtr = nullptr;
+    double* doublePtr = nullptr;
+    return ctx.BindFloat(canonical, &floatPtr) || ctx.BindDouble(canonical, &doublePtr);
 }
 
 const RuntimeWalkFitsMappingProfile* FindProfile(const RuntimeWalkFitsMappingCatalog& catalog, std::string_view profileId) {
@@ -175,6 +225,12 @@ double ResolveBindingValue(const RuntimeWalkFitsMappingBinding& binding, double 
         normalized = (signalValue - binding.input_min) / span;
     }
     normalized = ClampDouble(normalized, 0.0, 1.0);
+    const double smoothing = ClampDouble(binding.smoothing, 0.0, 1.0);
+    const double smoothStep = normalized * normalized * (3.0 - 2.0 * normalized);
+    normalized += (smoothStep - normalized) * smoothing;
+    if (binding.polarity < 0) {
+        normalized = 1.0 - normalized;
+    }
     double mapped = binding.offset + normalized * binding.scale * binding.weight;
     if (binding.has_clamp) {
         mapped = ClampDouble(mapped, binding.clamp_min, binding.clamp_max);
@@ -188,40 +244,41 @@ bool ApplyBindingValue(const RuntimeWalkFitsMappingBinding& binding, double valu
         return false;
     }
 
-    if (binding.target_path == "seed.combined") {
+    const std::string targetPath = CanonicalTargetPathInternal(binding.target_path);
+    if (IsWarpTargetPath(targetPath)) {
+        if (outError) *outError = "Warp is not a supported default FITS binding target: " + targetPath;
+        return false;
+    }
+    if (targetPath == "fractal.params.explaino_seed") {
         ExplainoSeedSetCombined(*ioView, *ioParams, value);
         return true;
     }
-    if (binding.target_path == "params.explaino_seed_b") {
-        ioParams->explaino_seed_b = value;
-        return true;
-    }
-    if (binding.target_path == "params.explaino_mix") {
-        ioParams->explaino_mix = static_cast<float>(value);
-        return true;
-    }
-    if (binding.target_path == "params.explaino_warp_strength") {
-        ioParams->explaino_warp_strength = static_cast<float>(value);
-        return true;
-    }
-    if (binding.target_path == "view.explaino_phase") {
-        ioView->explaino_phase = static_cast<float>(value);
-        return true;
-    }
-    if (binding.target_path == "view.explaino_seed_drift") {
-        ioView->explaino_seed_drift = static_cast<float>(value);
-        return true;
-    }
-    if (binding.target_path == "view.center_hp_x") {
+    if (targetPath == "fractal.view.center.x") {
         ioView->center_hp_x = value;
+        ioView->center.x = static_cast<float>(value);
         return true;
     }
-    if (binding.target_path == "view.center_hp_y") {
+    if (targetPath == "fractal.view.center.y") {
         ioView->center_hp_y = value;
+        ioView->center.y = static_cast<float>(value);
         return true;
     }
-    if (binding.target_path == "view.log2_zoom") {
-        ioView->log2_zoom = value;
+    if (targetPath == "fractal.view.zoom") {
+        const double zoom = (std::max)(1.0e-12, value);
+        ioView->zoom = static_cast<float>(zoom);
+        ioView->log2_zoom = std::log2(zoom);
+        return true;
+    }
+
+    BindingContext ctx{ioView, ioParams, nullptr, nullptr};
+    double* doublePtr = nullptr;
+    if (ctx.BindDouble(targetPath, &doublePtr) && doublePtr) {
+        *doublePtr = value;
+        return true;
+    }
+    float* floatPtr = nullptr;
+    if (ctx.BindFloat(targetPath, &floatPtr) && floatPtr) {
+        *floatPtr = static_cast<float>(value);
         return true;
     }
 
@@ -520,7 +577,6 @@ std::array<double, 13> BuildClosedLoopTransportSample(const RuntimeWalkFitsOrien
     const double theta = 6.28318530717958647692 * t;
     const double phase = 6.28318530717958647692 * Clamp01(0.35 * mean + 0.35 * focus + 0.30 * energy);
     const double motionScale = ClampDouble(options.motion_scale, 0.0, 2.0);
-    const double warpScale = ClampDouble(options.warp_scale, 0.0, 1.0);
     const double swirl = (0.18 + 0.16 * energy + 0.08 * stddev) * motionScale;
     const double drift = (0.12 + 0.10 * delta) * motionScale;
     const double loopX = std::cos(theta + phase);
@@ -533,7 +589,7 @@ std::array<double, 13> BuildClosedLoopTransportSample(const RuntimeWalkFitsOrien
     sample[0] = Clamp01(anchor[0] + swirl * loopX + 0.08 * xBias + 0.05 * lobeX);
     sample[1] = Clamp01(anchor[1] - swirl * loopX + 0.08 * (1.0 - xBias) - 0.05 * lobeX);
     sample[2] = Clamp01(anchor[2] + swirl * loopY + 0.08 * yBias + 0.05 * lobeY);
-    sample[3] = Clamp01(anchor[3] - swirl * loopY * (0.35 + 0.65 * warpScale) + 0.03 * energy + 0.04 * (1.0 - yBias));
+    sample[3] = Clamp01(anchor[3] - swirl * loopY * 0.65 + 0.03 * energy + 0.04 * (1.0 - yBias));
     sample[4] = Clamp01(anchor[4] + motionScale * (0.20 * HarmonicWave(theta, 1.0, phase) + 0.05 * lobeX) + 0.08 * focus);
     sample[5] = Clamp01(anchor[5] + motionScale * 0.18 * HarmonicWave(theta, 2.0, phase * 0.5) + 0.08 * mean);
     sample[6] = Clamp01(anchor[6] + motionScale * 0.18 * HarmonicWave(theta, 1.0, 1.0471975512 + phase) + 0.05 * energy);
@@ -542,7 +598,7 @@ std::array<double, 13> BuildClosedLoopTransportSample(const RuntimeWalkFitsOrien
     sample[9] = Clamp01(anchor[9] + drift * HarmonicWave(theta, 3.0, edge) + 0.05 * stddev);
     sample[10] = Clamp01(anchor[10] + drift * HarmonicWave(theta, 3.0, 3.1415926535 - edge) + 0.05 * mean);
     sample[11] = Clamp01(anchor[11] + motionScale * 0.16 * HarmonicWave(theta, 1.0, 1.5707963267 + phase) + 0.08 * (1.0 - focus));
-    sample[12] = Clamp01(anchor[12] + warpScale * (0.12 * HarmonicWave(theta, 2.0, 0.7853981634 + phase) + 0.04 * delta));
+    sample[12] = Clamp01(anchor[12] + motionScale * (0.06 * HarmonicWave(theta, 2.0, 0.7853981634 + phase) + 0.02 * delta));
     return sample;
 }
 
@@ -589,6 +645,22 @@ std::string SerializeRuntimeWalkBundleJson(const RuntimeWalkBundle& bundle) {
 }
 
 } // namespace
+
+std::string CanonicalRuntimeWalkFitsMappingTargetPath(const std::string& targetPath) {
+    return CanonicalTargetPathInternal(targetPath);
+}
+
+bool IsSupportedRuntimeWalkFitsMappingTargetPath(const std::string& targetPath) {
+    return IsSupportedTargetPath(targetPath);
+}
+
+std::vector<std::string> RuntimeWalkFitsSupportedMappingTargetPaths() {
+    std::vector<std::string> paths;
+    for (const std::string& path : CandidateTargetPaths()) {
+        if (IsSupportedTargetPath(path)) paths.push_back(path);
+    }
+    return paths;
+}
 
 bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,
     RuntimeWalkFitsMappingCatalog* outCatalog,
@@ -639,6 +711,7 @@ bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,
             if (!GetRequiredString(bindingValue, "target_selector", &binding.target_selector, outError)) return false;
             if (!GetRequiredString(bindingValue, "source_signal", &binding.source_signal, outError)) return false;
             if (!GetRequiredString(bindingValue, "target_path", &binding.target_path, outError)) return false;
+            binding.target_path = CanonicalTargetPathInternal(binding.target_path);
             if (!IsSupportedTargetPath(binding.target_path)) {
                 if (outError) *outError = "Unsupported runtime-walk FITS mapping target path: " + binding.target_path;
                 return false;
@@ -648,6 +721,11 @@ bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,
             if (!GetOptionalNumber(bindingValue, "scale", &binding.scale, outError)) return false;
             if (!GetOptionalNumber(bindingValue, "offset", &binding.offset, outError)) return false;
             if (!GetOptionalNumber(bindingValue, "weight", &binding.weight, outError)) return false;
+            if (!GetOptionalNumber(bindingValue, "smoothing", &binding.smoothing, outError)) return false;
+            double polarityNumber = static_cast<double>(binding.polarity);
+            if (!GetOptionalNumber(bindingValue, "polarity", &polarityNumber, outError)) return false;
+            binding.polarity = polarityNumber < 0.0 ? -1 : 1;
+            GetOptionalString(bindingValue, "safety_class", &binding.safety_class);
             if (!GetOptionalBool(bindingValue, "enabled", &binding.enabled, outError)) return false;
             const json_min::Value* clampMinValue = bindingValue.get("clamp_min");
             const json_min::Value* clampMaxValue = bindingValue.get("clamp_max");

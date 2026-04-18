@@ -171,13 +171,144 @@ std::string Hex64(std::uint64_t value) {
     return out.str();
 }
 
+void AppendUnique(std::vector<std::string>* values, const std::string& value) {
+    if (!values || value.empty()) return;
+    if (std::find(values->begin(), values->end(), value) == values->end()) {
+        values->push_back(value);
+    }
+}
+
+std::vector<std::string> DefaultRuntimeWalkFitsSignalCatalog() {
+    return {
+        "mean",
+        "stddev",
+        "center_bias",
+        "residual_energy",
+        "edge_balance",
+        "frame_delta",
+        "x_bias",
+        "y_bias",
+        "focus_ratio",
+    };
+}
+
+std::string BindingOverridesSignature(const std::vector<RuntimeWalkFitsMappingBinding>& bindings) {
+    std::ostringstream out;
+    out.setf(std::ios::fixed);
+    out.precision(6);
+    for (const RuntimeWalkFitsMappingBinding& binding : bindings) {
+        out << binding.target_selector << '|'
+            << binding.source_signal << '|'
+            << CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path) << '|'
+            << binding.input_min << '|'
+            << binding.input_max << '|'
+            << binding.scale << '|'
+            << binding.offset << '|'
+            << binding.weight << '|'
+            << binding.smoothing << '|'
+            << binding.polarity << '|'
+            << binding.safety_class << '|'
+            << (binding.enabled ? 1 : 0) << '|'
+            << (binding.has_clamp ? 1 : 0) << '|'
+            << binding.clamp_min << '|'
+            << binding.clamp_max << ';';
+    }
+    return out.str();
+}
+
+std::string SerializeRuntimeWalkFitsMappingCatalogJson(const RuntimeWalkFitsMappingCatalog& catalog) {
+    std::ostringstream out;
+    out.setf(std::ios::fixed);
+    out.precision(8);
+    out << "{\n";
+    out << "  \"version\": 1,\n";
+    out << "  \"profiles\": [\n";
+    for (std::size_t profileIndex = 0; profileIndex < catalog.profiles.size(); ++profileIndex) {
+        const RuntimeWalkFitsMappingProfile& profile = catalog.profiles[profileIndex];
+        out << "    {\n";
+        out << "      \"id\": \"" << JsonEscape(profile.id) << "\",\n";
+        out << "      \"target_selector\": \"" << JsonEscape(profile.target_selector) << "\",\n";
+        out << "      \"base_fractal_type\": \"" << FractalTypeId(profile.base_fractal_type) << "\",\n";
+        out << "      \"bindings\": [\n";
+        for (std::size_t bindingIndex = 0; bindingIndex < profile.bindings.size(); ++bindingIndex) {
+            const RuntimeWalkFitsMappingBinding& binding = profile.bindings[bindingIndex];
+            out << "        {\n";
+            out << "          \"target_selector\": \"" << JsonEscape(binding.target_selector) << "\",\n";
+            out << "          \"source_signal\": \"" << JsonEscape(binding.source_signal) << "\",\n";
+            out << "          \"target_path\": \"" << JsonEscape(CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path)) << "\",\n";
+            out << "          \"input_min\": " << binding.input_min << ",\n";
+            out << "          \"input_max\": " << binding.input_max << ",\n";
+            out << "          \"scale\": " << binding.scale << ",\n";
+            out << "          \"offset\": " << binding.offset << ",\n";
+            out << "          \"weight\": " << binding.weight << ",\n";
+            out << "          \"smoothing\": " << binding.smoothing << ",\n";
+            out << "          \"polarity\": " << binding.polarity << ",\n";
+            out << "          \"safety_class\": \"" << JsonEscape(binding.safety_class) << "\",\n";
+            out << "          \"enabled\": " << (binding.enabled ? "true" : "false");
+            if (binding.has_clamp) {
+                out << ",\n          \"clamp_min\": " << binding.clamp_min;
+                out << ",\n          \"clamp_max\": " << binding.clamp_max;
+            }
+            out << "\n        }";
+            if (bindingIndex + 1u < profile.bindings.size()) out << ",";
+            out << "\n";
+        }
+        out << "      ]\n";
+        out << "    }";
+        if (profileIndex + 1u < catalog.profiles.size()) out << ",";
+        out << "\n";
+    }
+    out << "  ]\n";
+    out << "}\n";
+    return out.str();
+}
+
+RuntimeWalkFitsMappingProfile* FindMutableProfile(RuntimeWalkFitsMappingCatalog* catalog, const std::string& profileId) {
+    if (!catalog) return nullptr;
+    for (RuntimeWalkFitsMappingProfile& profile : catalog->profiles) {
+        if (profile.id == profileId) return &profile;
+    }
+    return nullptr;
+}
+
+bool ApplyBindingWorkbenchOverrides(const RuntimeWalkViewerImportRequest& request,
+    RuntimeWalkFitsMappingCatalog* ioCatalog,
+    const std::string& profileId,
+    std::string* outError) {
+    if (request.binding_overrides.empty()) return true;
+    RuntimeWalkFitsMappingProfile* profile = FindMutableProfile(ioCatalog, profileId);
+    if (!profile) {
+        if (outError) *outError = "Unknown runtime-walk FITS mapping profile for binding workbench: " + profileId;
+        return false;
+    }
+    std::vector<RuntimeWalkFitsMappingBinding> bindings;
+    bindings.reserve(request.binding_overrides.size());
+    for (RuntimeWalkFitsMappingBinding binding : request.binding_overrides) {
+        binding.target_path = CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path);
+        binding.smoothing = std::clamp(binding.smoothing, 0.0, 1.0);
+        binding.polarity = binding.polarity < 0 ? -1 : 1;
+        if (binding.safety_class.empty()) binding.safety_class = "safe";
+        if (!IsSupportedRuntimeWalkFitsMappingTargetPath(binding.target_path)) {
+            if (outError) *outError = "Unsupported runtime-walk FITS binding workbench target path: " + binding.target_path;
+            return false;
+        }
+        if (binding.has_clamp && !(binding.clamp_min <= binding.clamp_max)) {
+            if (outError) *outError = "Binding workbench clamp_min must be <= clamp_max for target path: " + binding.target_path;
+            return false;
+        }
+        bindings.push_back(binding);
+    }
+    profile->bindings = std::move(bindings);
+    return true;
+}
+
 std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
     const std::string& resolvedBundlePath,
     const std::string& resolvedFitsPath) {
     constexpr std::uint64_t kOffset = 1469598103934665603ull;
     constexpr std::uint64_t kPrime = 1099511628211ull;
     std::uint64_t hash = kOffset;
-    const std::array<std::string, 11> fields = {
+    const std::array<std::string, 12> fields = {
         RuntimeWalkAuthorityModeId(request.authority_mode),
         NormalizePathString(ResolveAbsolutePath(request.base_state_json_path)),
         NormalizePathString(ResolveAbsolutePath(resolvedBundlePath)),
@@ -189,6 +320,7 @@ std::string StableSessionId(const RuntimeWalkViewerImportRequest& request,
         NormalizePathString(ResolveAbsolutePath(request.rtk_harvest_summary_json_path)),
         std::to_string(request.transport_options.sample_count),
         std::to_string(request.transport_options.motion_scale),
+        BindingOverridesSignature(request.binding_overrides),
     };
     for (const std::string& field : fields) {
         for (unsigned char ch : field) {
@@ -262,7 +394,6 @@ bool ParseRecentIndexJson(const std::string& jsonText,
             record.transport_generated = generatedValue->as_bool();
         }
         if (!GetOptionalNumber(entry, "transport_motion_scale", &record.transport_motion_scale, outError)) return false;
-        if (!GetOptionalNumber(entry, "transport_warp_scale", &record.transport_warp_scale, outError)) return false;
         const json_min::Value* loadSucceededValue = entry.get("viewer_load_succeeded");
         if (loadSucceededValue && loadSucceededValue->is_bool()) {
             record.viewer_load_succeeded = loadSucceededValue->as_bool();
@@ -328,7 +459,6 @@ std::string SerializeRecentIndex(const ImportRecords& records) {
         out << "      \"transport_sample_count\": " << record.transport_sample_count << ",\n";
         out << "      \"transport_generated\": " << (record.transport_generated ? "true" : "false") << ",\n";
         out << "      \"transport_motion_scale\": " << record.transport_motion_scale << ",\n";
-        out << "      \"transport_warp_scale\": " << record.transport_warp_scale << ",\n";
         out << "      \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << "\n";
         out << "    }";
         if (index + 1u < records.size()) out << ",";
@@ -424,7 +554,6 @@ std::string SerializeRuntimeWalkRequestJson(const RuntimeWalkRequest& request) {
         out << ",\n  \"transport_sample_count\": " << request.transport_sample_count;
     }
     out << ",\n  \"transport_motion_scale\": " << request.transport_motion_scale;
-    out << ",\n  \"transport_warp_scale\": " << request.transport_warp_scale;
     out << "\n}\n";
     return out.str();
 }
@@ -448,7 +577,6 @@ std::string SerializeImportSelectionManifest(const RuntimeWalkViewerImportSessio
     out << "  \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
     out << "  \"transport_sample_count\": " << record.transport_sample_count << ",\n";
     out << "  \"transport_motion_scale\": " << record.transport_motion_scale << ",\n";
-    out << "  \"transport_warp_scale\": " << record.transport_warp_scale << ",\n";
     out << "  \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << ",\n";
     out << "  \"mapping_profile_json\": \"" << JsonEscape(record.mapping_profile_json_path) << "\",\n";
     out << "  \"mapping_profile_id\": \"" << JsonEscape(record.mapping_profile_id) << "\",\n";
@@ -472,7 +600,6 @@ std::string SerializeImportReceipt(const RuntimeWalkViewerImportSessionRecord& r
     out << "  \"transport_generation_mode\": \"" << JsonEscape(record.transport_generation_mode) << "\",\n";
     out << "  \"transport_sample_count\": " << record.transport_sample_count << ",\n";
     out << "  \"transport_motion_scale\": " << record.transport_motion_scale << ",\n";
-    out << "  \"transport_warp_scale\": " << record.transport_warp_scale << ",\n";
     out << "  \"viewer_load_succeeded\": " << (record.viewer_load_succeeded ? "true" : "false") << "\n";
     out << "}\n";
     return out.str();
@@ -513,8 +640,6 @@ void ApplyDefaultTransportOptions(RuntimeWalkTransportSynthesisOptions* ioOption
     if (!ioOptions) return;
     if (ioOptions->sample_count < 9u) ioOptions->sample_count = 33u;
     if (!(ioOptions->motion_scale > 0.0)) ioOptions->motion_scale = 0.75;
-    if (ioOptions->warp_scale < 0.0) ioOptions->warp_scale = 0.0;
-    if (ioOptions->warp_scale > 1.0) ioOptions->warp_scale = 1.0;
 }
 
 bool RefreshMappingProfileDisplayStateInternal(const std::string& exeDir,
@@ -527,6 +652,9 @@ bool RefreshMappingProfileDisplayStateInternal(const std::string& exeDir,
     }
 
     ioPanel->mapping_binding_summaries.clear();
+    ioPanel->fits_signal_catalog.clear();
+    ioPanel->runtime_target_catalog = RuntimeWalkFitsSupportedMappingTargetPaths();
+    ioPanel->binding_workbench_rows.clear();
     ioPanel->resolved_mapping_profile_json_path.clear();
     ioPanel->resolved_mapping_profile_base_fractal_type.clear();
 
@@ -557,18 +685,28 @@ bool RefreshMappingProfileDisplayStateInternal(const std::string& exeDir,
     ioPanel->mapping_profile_id = matchedProfile->id;
     ioPanel->resolved_mapping_profile_json_path = mappingProfilePath;
     ioPanel->resolved_mapping_profile_base_fractal_type = FractalTypeId(matchedProfile->base_fractal_type);
-    for (const RuntimeWalkFitsMappingBinding& binding : matchedProfile->bindings) {
+    for (const std::string& signal : DefaultRuntimeWalkFitsSignalCatalog()) {
+        AppendUnique(&ioPanel->fits_signal_catalog, signal);
+    }
+    for (RuntimeWalkFitsMappingBinding binding : matchedProfile->bindings) {
+        binding.target_path = CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path);
+        if (binding.safety_class.empty()) binding.safety_class = "safe";
+        AppendUnique(&ioPanel->fits_signal_catalog, binding.source_signal);
+        ioPanel->binding_workbench_rows.push_back(binding);
         std::ostringstream line;
         line.setf(std::ios::fixed);
         line.precision(3);
         line << binding.source_signal << " -> " << binding.target_path
              << " | selector=" << binding.target_selector
-             << " | weight=" << binding.weight
+             << " | amount=" << binding.weight
              << " | scale=" << binding.scale
              << " | offset=" << binding.offset;
         if (binding.has_clamp) {
             line << " | clamp=[" << binding.clamp_min << ", " << binding.clamp_max << "]";
         }
+        line << " | smoothing=" << binding.smoothing
+             << " | polarity=" << binding.polarity
+             << " | safety=" << binding.safety_class;
         if (!binding.enabled) {
             line << " | disabled";
         }
@@ -777,6 +915,7 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     const std::filesystem::path outputDir = sessionDir / "output";
     const std::filesystem::path orientationInputsPath = sessionDir / "orientation_inputs.json";
     const std::filesystem::path synthesizedStatePath = sessionDir / "state.json";
+    const std::filesystem::path effectiveMappingProfilePath = sessionDir / "effective_mapping_profile.json";
 
     RuntimeWalkRequest generatedRequest{};
     generatedRequest.authority_mode = request.authority_mode;
@@ -790,7 +929,6 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     generatedRequest.transport_generation_mode = resolved.transport_generation_mode;
     generatedRequest.transport_sample_count = resolved.transport_sample_count;
     generatedRequest.transport_motion_scale = resolved.transport_options.motion_scale;
-    generatedRequest.transport_warp_scale = resolved.transport_options.warp_scale;
 
     RuntimeWalkViewerImportSessionRecord record{};
     record.session_id = sessionId;
@@ -807,7 +945,6 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     record.transport_generation_mode = resolved.transport_generation_mode;
     record.transport_sample_count = resolved.transport_sample_count;
     record.transport_motion_scale = resolved.transport_options.motion_scale;
-    record.transport_warp_scale = resolved.transport_options.warp_scale;
     record.transport_generated = resolved.transport_generated;
     record.request_exists = true;
 
@@ -824,6 +961,9 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
         if (!ResolveMappingProfilePath(request, &mappingProfilePath, outError)) return false;
         mappingProfileId = ResolveMappingProfileId(request);
         if (!LoadRuntimeWalkFitsMappingCatalogFile(mappingProfilePath, &catalog, outError)) return false;
+        if (!ApplyBindingWorkbenchOverrides(request, &catalog, mappingProfileId, outError)) return false;
+        if (!WriteTextFile(effectiveMappingProfilePath, SerializeRuntimeWalkFitsMappingCatalogJson(catalog), outError)) return false;
+        mappingProfilePath = NormalizePathString(effectiveMappingProfilePath);
 
         if (!request.orientation_inputs_json_path.empty()) {
             if (!LoadRuntimeWalkFitsOrientationInputsFile(request.orientation_inputs_json_path, &inputs, outError)) return false;
@@ -892,13 +1032,11 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
         record.transport_generation_mode = "closed_loop_default";
         record.transport_sample_count = synthesizedBundle.samples.size();
         record.transport_motion_scale = resolved.transport_options.motion_scale;
-        record.transport_warp_scale = resolved.transport_options.warp_scale;
-        record.transport_generated = true;
+            record.transport_generated = true;
         generatedRequest.transport_generated = true;
         generatedRequest.transport_generation_mode = record.transport_generation_mode;
         generatedRequest.transport_sample_count = record.transport_sample_count;
         generatedRequest.transport_motion_scale = record.transport_motion_scale;
-        generatedRequest.transport_warp_scale = record.transport_warp_scale;
     }
 
     if (!WriteTextFile(requestPath, SerializeRuntimeWalkRequestJson(generatedRequest), outError)) return false;
@@ -975,7 +1113,6 @@ void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
             ioPanel->transport_options.sample_count = session.asset.tick_snapshots.size();
         }
         ioPanel->transport_options.motion_scale = session.asset.request.transport_motion_scale;
-        ioPanel->transport_options.warp_scale = session.asset.request.transport_warp_scale;
     }
     std::string mappingError;
     if (!RefreshMappingProfileDisplayState(exeDir, ioPanel, &mappingError) && ioPanel->status_text.empty()) {
@@ -991,7 +1128,6 @@ void PrimeRuntimeWalkViewerImportPanel(const std::string& exeDir,
                     ioPanel->transport_options.sample_count = recentRecord->transport_sample_count;
                 }
                 ioPanel->transport_options.motion_scale = recentRecord->transport_motion_scale;
-                ioPanel->transport_options.warp_scale = recentRecord->transport_warp_scale;
             }
         }
     } else if (ioPanel->status_text.empty()) {

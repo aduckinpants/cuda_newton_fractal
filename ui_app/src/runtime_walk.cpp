@@ -454,7 +454,6 @@ bool ParseRuntimeWalkRequestJson(const std::string& jsonText,
         request.transport_sample_count = static_cast<std::size_t>(std::max(0.0, std::floor(transportSampleCount)));
     }
     if (!GetOptionalNumber(parsed.value, "transport_motion_scale", &request.transport_motion_scale, outError)) return false;
-    if (!GetOptionalNumber(parsed.value, "transport_warp_scale", &request.transport_warp_scale, outError)) return false;
     if (!BuildTickSchedule(parsed.value, &request.t_values, outError)) return false;
 
     if (outRequest) *outRequest = request;
@@ -500,8 +499,6 @@ bool EvaluateRuntimeWalkSnapshot(const RuntimeWalkBundle& bundle,
     const double dyNorm = (snapshot.channels[2] - snapshot.channels[3]) + 0.5 * (snapshot.channels[7] - snapshot.channels[8]);
     const double zoomNorm = snapshot.channels[4] - snapshot.channels[11];
     const double mixNorm = 0.5 * (snapshot.channels[4] + snapshot.channels[6]);
-    const double warpNorm = 0.5 * (snapshot.channels[3] + snapshot.channels[12]);
-
     snapshot.dx_world = dxNorm * worldScale * aspect * 0.125;
     snapshot.dy_world = dyNorm * worldScale * 0.125;
     snapshot.dlog2_zoom = zoomNorm * 0.75;
@@ -512,7 +509,7 @@ bool EvaluateRuntimeWalkSnapshot(const RuntimeWalkBundle& bundle,
     snapshot.combined_seed = baseCombinedSeed + (snapshot.seed01 - 0.5) * 32.0;
     snapshot.seed_b = static_cast<double>(baseParams.explaino_seed_b) + (snapshot.channels[7] - snapshot.channels[8]) * 0.5;
     snapshot.mix = ClampD(static_cast<double>(baseParams.explaino_mix) + (mixNorm - 0.5) * 1.5, 0.0, 4.0);
-    snapshot.warp_strength = ClampD(static_cast<double>(baseParams.explaino_warp_strength) + (warpNorm - 0.5) * 0.16, 0.0, 1.0);
+    snapshot.warp_strength = static_cast<double>(baseParams.explaino_warp_strength);
 
     *outSnapshot = snapshot;
     return true;
@@ -530,5 +527,4 @@ void ApplyRuntimeWalkSnapshot(const RuntimeWalkSnapshot& snapshot,
     ExplainoSeedSetCombined(*ioView, *ioParams, snapshot.combined_seed);
     ioParams->explaino_seed_b = snapshot.seed_b;
     ioParams->explaino_mix = static_cast<float>(snapshot.mix);
-    ioParams->explaino_warp_strength = static_cast<float>(snapshot.warp_strength);
 }

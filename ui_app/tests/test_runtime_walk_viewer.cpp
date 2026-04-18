@@ -164,6 +164,60 @@ static void TestRuntimeWalkOverlayPathBuildsDeterministicClosedLoop() {
         "TestRuntimeWalkOverlayPathBuildsDeterministicClosedLoop_BranchPoints");
 }
 
+
+static void TestRuntimeWalkSnapshotComposesOverLiveBaselineControls() {
+    RuntimeWalkViewerAsset asset = BuildAsset();
+    RuntimeWalkViewerPlaybackState playback{};
+    bool changed = false;
+    Check(SeekRuntimeWalkViewerPlayback(asset, 0.5, &playback, &changed),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_Seek");
+
+    RuntimeWalkSnapshot snapshot;
+    std::string error;
+    Check(EvaluateRuntimeWalkViewerCurrentSnapshot(asset, playback, &snapshot, &error),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_Eval");
+
+    ViewState baselineView = asset.base_view;
+    KernelParams baselineParams = asset.base_params;
+    baselineView.center_hp_x = 4.0;
+    baselineView.center_hp_y = -3.0;
+    baselineView.log2_zoom = 2.5;
+    baselineView.explaino_phase = 0.75f;
+    baselineParams.explaino_mix = 1.25f;
+    baselineParams.explaino_warp_strength = 0.22f;
+
+    ViewState composedView{};
+    KernelParams composedParams{};
+    ComposeRuntimeWalkSnapshotOverLiveBaseline(asset, snapshot, baselineView, baselineParams, &composedView, &composedParams);
+
+    Check(NearlyEqual(composedView.center_hp_x, baselineView.center_hp_x + snapshot.dx_world, 1.0e-12),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_CenterXOffset");
+    Check(NearlyEqual(composedView.center_hp_y, baselineView.center_hp_y + snapshot.dy_world, 1.0e-12),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_CenterYOffset");
+    Check(NearlyEqual(composedView.log2_zoom, baselineView.log2_zoom + snapshot.dlog2_zoom, 1.0e-12),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_ZoomOffset");
+    Check(NearlyEqual(composedParams.explaino_mix, baselineParams.explaino_mix + (snapshot.mix - asset.base_params.explaino_mix), 1.0e-6),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_MixOffset");
+    Check(NearlyEqual(composedParams.explaino_warp_strength, baselineParams.explaino_warp_strength, 1.0e-6),
+        "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_WarpBaselinePreserved");
+}
+
+static void TestRuntimeWalkOverlayConfigExposesAdaptiveFieldSamplingControls() {
+    RuntimeWalkOverlayProviderConfig config{};
+    config.field_min_marbles = 12;
+    config.field_max_marbles = 72;
+    config.field_gradient_sensitivity = 1.8;
+    config.field_hysteresis = 0.42;
+    config.field_export_cadence = 3;
+
+    Check(config.field_min_marbles == 12 && config.field_max_marbles == 72,
+        "TestRuntimeWalkOverlayConfigExposesAdaptiveFieldSamplingControls_MarbleBounds");
+    Check(NearlyEqual(config.field_gradient_sensitivity, 1.8) && NearlyEqual(config.field_hysteresis, 0.42),
+        "TestRuntimeWalkOverlayConfigExposesAdaptiveFieldSamplingControls_ResponseControls");
+    Check(config.field_export_cadence == 3,
+        "TestRuntimeWalkOverlayConfigExposesAdaptiveFieldSamplingControls_ExportCadence");
+}
+
 static void TestRuntimeWalkGradientOverlayFiniteAndThresholded() {
     RuntimeWalkViewerAsset asset = BuildAsset();
     RuntimeWalkViewerPlaybackState playback{};
@@ -225,6 +279,8 @@ int main() {
     TestBuildRuntimeWalkViewerAssetCarriesCompanionsAndTicks();
     TestRuntimeWalkViewerPlaybackMatchesHeadlessInterpolation();
     TestRuntimeWalkViewerPlaybackStepAndLoop();
+    TestRuntimeWalkSnapshotComposesOverLiveBaselineControls();
+    TestRuntimeWalkOverlayConfigExposesAdaptiveFieldSamplingControls();
     TestRuntimeWalkOverlayPathBuildsDeterministicClosedLoop();
     TestRuntimeWalkGradientOverlayFiniteAndThresholded();
 

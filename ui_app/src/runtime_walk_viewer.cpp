@@ -1,5 +1,9 @@
 #include "runtime_walk_viewer.h"
 
+#include "explaino_seed.h"
+#include "fractal_derived_fields.h"
+#include "view_hp_sync.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -337,6 +341,42 @@ bool EvaluateRuntimeWalkViewerCurrentSnapshot(const RuntimeWalkViewerAsset& asse
     }
     const double t = playback.loaded ? playback.current_t : TMin(asset);
     return EvaluateRuntimeWalkSnapshot(asset.bundle, t, asset.base_view, asset.base_params, asset.base_render, outSnapshot, outError);
+}
+
+void ComposeRuntimeWalkSnapshotOverLiveBaseline(const RuntimeWalkViewerAsset& asset,
+    const RuntimeWalkSnapshot& snapshot,
+    const ViewState& baselineView,
+    const KernelParams& baselineParams,
+    ViewState* outView,
+    KernelParams* outParams) {
+    if (!outView || !outParams) return;
+
+    ViewState view = baselineView;
+    KernelParams params = baselineParams;
+
+    view.center_hp_x = baselineView.center_hp_x + snapshot.dx_world;
+    view.center_hp_y = baselineView.center_hp_y + snapshot.dy_world;
+    view.log2_zoom = ClampD(baselineView.log2_zoom + snapshot.dlog2_zoom, Log2D(kMinZoom), kMaxLog2Zoom);
+    SyncViewUiFromHp(view);
+
+    view.explaino_phase = static_cast<float>(
+        static_cast<double>(baselineView.explaino_phase) +
+        (snapshot.phase - static_cast<double>(asset.base_view.explaino_phase)));
+    view.explaino_seed_drift = baselineView.explaino_seed_drift;
+
+    const double baseCombinedSeed = ExplainoSeedCombined(asset.base_view, asset.base_params);
+    const double baselineCombinedSeed = ExplainoSeedCombined(baselineView, baselineParams);
+    ExplainoSeedSetCombined(view, params, baselineCombinedSeed + (snapshot.combined_seed - baseCombinedSeed));
+    params.explaino_seed_b = baselineParams.explaino_seed_b + (snapshot.seed_b - asset.base_params.explaino_seed_b);
+    params.explaino_mix = static_cast<float>(ClampD(
+        static_cast<double>(baselineParams.explaino_mix) + (snapshot.mix - static_cast<double>(asset.base_params.explaino_mix)),
+        0.0,
+        4.0));
+    params.explaino_warp_strength = baselineParams.explaino_warp_strength;
+    UpdateExplainoPolynomial(view, params, nullptr);
+
+    *outView = view;
+    *outParams = params;
 }
 
 void BuildRuntimeWalkOverlayPath(const RuntimeWalkViewerAsset& asset,

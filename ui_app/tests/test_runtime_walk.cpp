@@ -158,8 +158,47 @@ static void TestApplyRuntimeWalkSnapshotWritesExplainoState() {
         "TestApplyRuntimeWalkSnapshotWritesExplainoState_SeedB");
     Check(std::fabs(params.explaino_mix - 0.9f) < 1.0e-6,
         "TestApplyRuntimeWalkSnapshotWritesExplainoState_Mix");
-    Check(std::fabs(params.explaino_warp_strength - 0.35f) < 1.0e-6,
-        "TestApplyRuntimeWalkSnapshotWritesExplainoState_Warp");
+    Check(std::fabs(params.explaino_warp_strength - 0.0f) < 1.0e-6,
+        "TestApplyRuntimeWalkSnapshotWritesExplainoState_WarpPreservedByDefault");
+}
+
+
+static void TestEvaluateRuntimeWalkSnapshotDoesNotAnimateWarpFromTransportChannels() {
+    const char* warpHeavyBundleJson = R"JSON({
+      "version": 1,
+      "field_name": "mr_zipper_branch",
+      "samples": [
+        {
+          "id": "start",
+          "t": 0.0,
+          "channels": [0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0]
+        },
+        {
+          "id": "end",
+          "t": 1.0,
+          "channels": [0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0]
+        }
+      ]
+    })JSON";
+
+    RuntimeWalkBundle bundle;
+    std::string error;
+    Check(ParseRuntimeWalkBundleJson(warpHeavyBundleJson, &bundle, &error),
+        "TestEvaluateRuntimeWalkSnapshotDoesNotAnimateWarpFromTransportChannels_Parse");
+
+    ViewState baseView{};
+    KernelParams baseParams{};
+    RenderSettings render{};
+    baseView.fractal_type = FractalType::explaino;
+    baseView.log2_zoom = 0.0;
+    baseParams.explaino_warp_strength = 0.22f;
+    render.resolution = {800, 600};
+
+    RuntimeWalkSnapshot snapshot{};
+    Check(EvaluateRuntimeWalkSnapshot(bundle, 0.5, baseView, baseParams, render, &snapshot, &error),
+        "TestEvaluateRuntimeWalkSnapshotDoesNotAnimateWarpFromTransportChannels_Eval");
+    Check(std::fabs(snapshot.warp_strength - 0.22) < 1.0e-6,
+        "TestEvaluateRuntimeWalkSnapshotDoesNotAnimateWarpFromTransportChannels_WarpPreserved");
 }
 
 static void TestEvaluateRuntimeWalkSnapshotKeepsNeutralWarpCentered() {
@@ -228,6 +267,7 @@ int main() {
     TestParseRuntimeWalkBundleRejectsMalformedChannelCount();
     TestEvaluateRuntimeWalkSnapshotInterpolatesAndAnnotates();
     TestApplyRuntimeWalkSnapshotWritesExplainoState();
+    TestEvaluateRuntimeWalkSnapshotDoesNotAnimateWarpFromTransportChannels();
     TestEvaluateRuntimeWalkSnapshotKeepsNeutralWarpCentered();
     TestParseRuntimeWalkRequestJsonCarriesCompanionArtifacts();
 

@@ -78,6 +78,72 @@ static void TestMappingCatalogRejectsUnsupportedTargetPath() {
         "TestMappingCatalogRejectsUnsupportedTargetPath_Error");
 }
 
+
+
+static void TestMappingCatalogRejectsWarpTargetByDefault() {
+    const std::string json = R"JSON({
+  "version": 1,
+  "profiles": [
+    {
+      "id": "bad_warp",
+      "target_selector": "explaino",
+      "base_fractal_type": "explaino",
+      "bindings": [
+        {
+          "target_selector": "explaino",
+          "source_signal": "mean",
+          "target_path": "params.explaino_warp_strength",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 0.02,
+          "offset": 0.0
+        }
+      ]
+    }
+  ]
+})JSON";
+
+    RuntimeWalkFitsMappingCatalog catalog;
+    std::string error;
+    Check(!ParseRuntimeWalkFitsMappingCatalogJson(json, &catalog, &error),
+        "TestMappingCatalogRejectsWarpTargetByDefault_Fails");
+    Check(error.find("Unsupported runtime-walk FITS mapping target path") != std::string::npos,
+        "TestMappingCatalogRejectsWarpTargetByDefault_Error");
+}
+
+static void TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget() {
+    const std::string json = R"JSON({
+  "version": 1,
+  "profiles": [
+    {
+      "id": "safe_damping",
+      "target_selector": "explaino",
+      "base_fractal_type": "explaino",
+      "bindings": [
+        {
+          "target_selector": "explaino",
+          "source_signal": "residual_energy",
+          "target_path": "params.explaino_damping",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 0.25,
+          "offset": 0.75,
+          "clamp_min": 0.1,
+          "clamp_max": 1.5
+        }
+      ]
+    }
+  ]
+})JSON";
+
+    RuntimeWalkFitsMappingCatalog catalog;
+    std::string error;
+    Check(ParseRuntimeWalkFitsMappingCatalogJson(json, &catalog, &error),
+        "TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget_Parse");
+    Check(catalog.profiles.size() == 1u && catalog.profiles[0].bindings[0].target_path == "fractal.params.explaino_damping",
+        "TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget_TargetRetained");
+}
+
 static void TestOrientationInputsRequireFitsPath() {
     const std::string json = R"JSON({
   "version": 1,
@@ -188,7 +254,6 @@ static void TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape() {
     RuntimeWalkTransportSynthesisOptions options{};
     options.sample_count = 41u;
     options.motion_scale = 0.55;
-    options.warp_scale = 0.05;
     Check(SynthesizeRuntimeWalkTransportBundle(catalog, "explaino_default", inputs, options, &bundle, &error),
         "TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape_Synthesizes");
     Check(bundle.field_name == "mr_zipper_branch",
@@ -222,6 +287,8 @@ static void TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape() {
 
 int main() {
     TestMappingCatalogRejectsUnsupportedTargetPath();
+    TestMappingCatalogRejectsWarpTargetByDefault();
+    TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget();
     TestOrientationInputsRequireFitsPath();
     TestSynthesizedBaseStateUsesMappings();
     TestWriteSynthesizedStateJsonWritesLoadableShape();

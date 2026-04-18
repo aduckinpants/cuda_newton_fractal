@@ -9,7 +9,7 @@
         {
           "target_selector": "explaino",
           "source_signal": "mean",
-          "target_path": "seed.combined",
+          "target_path": "fractal.params.explaino_seed",
           "input_min": 0.0,
           "input_max": 1.0,
           "scale": 28.0,
@@ -19,7 +19,7 @@
         {
           "target_selector": "explaino",
           "source_signal": "stddev",
-          "target_path": "params.explaino_seed_b",
+          "target_path": "fractal.params.explaino_seed_b",
           "input_min": 0.0,
           "input_max": 0.5,
           "scale": 3.0,
@@ -29,7 +29,7 @@
         {
           "target_selector": "explaino",
           "source_signal": "center_bias",
-          "target_path": "params.explaino_mix",
+          "target_path": "fractal.params.explaino_mix",
           "input_min": -1.0,
           "input_max": 1.0,
           "scale": 1.75,
@@ -41,7 +41,7 @@
         {
           "target_selector": "explaino",
           "source_signal": "edge_balance",
-          "target_path": "view.explaino_phase",
+          "target_path": "fractal.view.explaino_phase",
           "input_min": -1.0,
           "input_max": 1.0,
           "scale": 6.283185307179586,
@@ -51,7 +51,7 @@
         {
           "target_selector": "explaino",
           "source_signal": "frame_delta",
-          "target_path": "view.explaino_seed_drift",
+          "target_path": "fractal.view.explaino_seed_drift",
           "input_min": 0.0,
           "input_max": 1.0,
           "scale": 1.2,
@@ -61,7 +61,7 @@
         {
           "target_selector": "all",
           "source_signal": "x_bias",
-          "target_path": "view.center_hp_x",
+          "target_path": "fractal.view.center.x",
           "input_min": -1.0,
           "input_max": 1.0,
           "scale": 0.9,
@@ -71,7 +71,7 @@
         {
           "target_selector": "all",
           "source_signal": "y_bias",
-          "target_path": "view.center_hp_y",
+          "target_path": "fractal.view.center.y",
           "input_min": -1.0,
           "input_max": 1.0,
           "scale": 0.9,
@@ -81,13 +81,13 @@
         {
           "target_selector": "all",
           "source_signal": "focus_ratio",
-          "target_path": "view.log2_zoom",
+          "target_path": "fractal.view.zoom",
           "input_min": 0.0,
           "input_max": 1.0,
-          "scale": 5.0,
-          "offset": -2.5,
+          "scale": 6.0,
+          "offset": 0.25,
           "weight": 1.0,
-          "clamp_min": -8.0,
+          "clamp_min": 0.25,
           "clamp_max": 8.0
         }
       ]

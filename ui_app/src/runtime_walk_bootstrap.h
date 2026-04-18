@@ -16,6 +16,9 @@ struct RuntimeWalkFitsMappingBinding {
     double scale = 1.0;
     double offset = 0.0;
     double weight = 1.0;
+    double smoothing = 0.0;
+    int polarity = 1;
+    std::string safety_class = "safe";
     bool enabled = true;
     bool has_clamp = false;
     double clamp_min = 0.0;
@@ -41,7 +44,6 @@ struct RuntimeWalkFitsOrientationInputs {
 struct RuntimeWalkTransportSynthesisOptions {
     std::size_t sample_count = 33;
     double motion_scale = 0.75;
-    double warp_scale = 0.0;
 };
 
 bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,
@@ -63,6 +65,10 @@ bool LoadRuntimeWalkFitsOrientationInputsFile(const std::string& path,
 bool ResolveDefaultRuntimeWalkFitsMappingProfilePath(const std::string& exeDir,
     std::string* outPath,
     std::string* outError);
+
+std::string CanonicalRuntimeWalkFitsMappingTargetPath(const std::string& targetPath);
+bool IsSupportedRuntimeWalkFitsMappingTargetPath(const std::string& targetPath);
+std::vector<std::string> RuntimeWalkFitsSupportedMappingTargetPaths();
 
 bool ExtractRuntimeWalkFitsOrientationInputs(const std::string& exeDir,
     const std::string& fitsPath,

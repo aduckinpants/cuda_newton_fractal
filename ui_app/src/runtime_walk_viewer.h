@@ -81,6 +81,11 @@ struct RuntimeWalkOverlayProviderConfig {
     int max_strokes = 12;
     int max_steps_per_stroke = 8;
     double branch_bias = 0.25;
+    int field_min_marbles = 24;
+    int field_max_marbles = 96;
+    double field_gradient_sensitivity = 1.0;
+    double field_hysteresis = 0.35;
+    int field_export_cadence = 1;
 };
 
 struct RuntimeWalkOverlayProviderInputs {
@@ -116,6 +121,13 @@ bool EvaluateRuntimeWalkViewerCurrentSnapshot(const RuntimeWalkViewerAsset& asse
     const RuntimeWalkViewerPlaybackState& playback,
     RuntimeWalkSnapshot* outSnapshot,
     std::string* outError);
+
+void ComposeRuntimeWalkSnapshotOverLiveBaseline(const RuntimeWalkViewerAsset& asset,
+    const RuntimeWalkSnapshot& snapshot,
+    const ViewState& baselineView,
+    const KernelParams& baselineParams,
+    ViewState* outView,
+    KernelParams* outParams);
 
 void BuildRuntimeWalkOverlayPath(const RuntimeWalkViewerAsset& asset,
     const RuntimeWalkViewerPlaybackState& playback,

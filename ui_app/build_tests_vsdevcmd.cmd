@@ -12,8 +12,27 @@ set OBJROOT=%TESTROOT%\obj
 set PDBROOT=%TESTROOT%\pdb
 
 if not exist "%TESTROOT%" mkdir "%TESTROOT%"
-if exist "%OBJROOT%" rmdir /s /q "%OBJROOT%"
-if exist "%PDBROOT%" rmdir /s /q "%PDBROOT%"
+
+for /L %%R in (1,1,30) do (
+  if not exist "%OBJROOT%" goto objroot_clean
+  rmdir /s /q "%OBJROOT%" 2>nul
+  if not exist "%OBJROOT%" goto objroot_clean
+  timeout /t 1 /nobreak >nul
+)
+echo [build_tests_vsdevcmd] Failed to remove "%OBJROOT%" after cleanup retries
+exit /b 1
+:objroot_clean
+
+for /L %%R in (1,1,30) do (
+  if not exist "%PDBROOT%" goto pdbroot_clean
+  rmdir /s /q "%PDBROOT%" 2>nul
+  if not exist "%PDBROOT%" goto pdbroot_clean
+  timeout /t 1 /nobreak >nul
+)
+echo [build_tests_vsdevcmd] Failed to remove "%PDBROOT%" after cleanup retries
+exit /b 1
+:pdbroot_clean
+
 mkdir "%OBJROOT%"
 if errorlevel 1 exit /b 1
 mkdir "%PDBROOT%"
@@ -41,18 +60,23 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_runtime_walk.exe"
 if errorlevel 1 exit /b 1
 
-cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\runtime_walk_bootstrap.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_runtime_walk_bootstrap.cpp ^
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\runtime_walk_bootstrap.cpp .\src\schema_binding.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_runtime_walk_bootstrap.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_bootstrap.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\runtime_walk.cpp .\src\runtime_walk_viewer.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\tests\test_runtime_walk_viewer.cpp ^
+  .\src\runtime_walk.cpp .\src\runtime_walk_viewer.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_runtime_walk_viewer.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_viewer.exe"
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
-  .\src\runtime_walk.cpp .\src\runtime_walk_bootstrap.cpp .\src\runtime_walk_viewer_import.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_runtime_walk_viewer_import.cpp ^
+  .\src\runtime_walk_field_slime.cpp .\tests\test_runtime_walk_field_slime.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_walk_field_slime.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\runtime_walk.cpp .\src\runtime_walk_bootstrap.cpp .\src\runtime_walk_viewer_import.cpp .\src\schema_binding.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_runtime_walk_viewer_import.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_viewer_import.exe"
 if errorlevel 1 exit /b 1
 
@@ -414,6 +438,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk_viewer.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_runtime_walk_field_slime.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk_viewer_import.exe"
