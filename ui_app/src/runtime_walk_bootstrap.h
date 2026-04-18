@@ -9,7 +9,9 @@
 
 struct RuntimeWalkFitsMappingBinding {
     std::string target_selector;
+    std::string source_kind = "fits_frame";
     std::string source_signal;
+    std::string source_path;
     std::string target_path;
     double input_min = 0.0;
     double input_max = 1.0;
@@ -19,6 +21,7 @@ struct RuntimeWalkFitsMappingBinding {
     double smoothing = 0.0;
     int polarity = 1;
     std::string safety_class = "safe";
+    std::string curve = "smoothstep";
     bool enabled = true;
     bool has_clamp = false;
     double clamp_min = 0.0;
@@ -36,9 +39,41 @@ struct RuntimeWalkFitsMappingCatalog {
     std::vector<RuntimeWalkFitsMappingProfile> profiles;
 };
 
+struct RuntimeWalkFitsSignalFrame {
+    int frame_index = 0;
+    double t = 0.0;
+    std::map<std::string, double> signals;
+};
+
 struct RuntimeWalkFitsOrientationInputs {
     std::string fits_path;
+    std::map<std::string, std::string> metadata;
     std::map<std::string, double> signals;
+    std::vector<RuntimeWalkFitsSignalFrame> frames;
+};
+
+struct RuntimeWalkFitsFieldSignals {
+    double traveler_score = 0.0;
+    double traveler_confidence = 0.0;
+    double tangent_angle = 0.0;
+    double tangent_x = 0.0;
+    double tangent_y = 0.0;
+    double residual_pressure = 0.0;
+    double cluster_spread = 0.0;
+};
+
+struct RuntimeWalkFitsLiveBindingResult {
+    std::string source_path;
+    std::string target_path;
+    int frame_index = -1;
+    double t = 0.0;
+    double source_value = 0.0;
+    double baseline_value = 0.0;
+    double offset_value = 0.0;
+    double composed_value = 0.0;
+    bool clamped = false;
+    bool ok = false;
+    std::string error;
 };
 
 struct RuntimeWalkTransportSynthesisOptions {
@@ -60,6 +95,24 @@ bool ParseRuntimeWalkFitsOrientationInputsJson(const std::string& jsonText,
 
 bool LoadRuntimeWalkFitsOrientationInputsFile(const std::string& path,
     RuntimeWalkFitsOrientationInputs* outInputs,
+    std::string* outError);
+
+bool EvaluateRuntimeWalkFitsSignalAtT(const RuntimeWalkFitsOrientationInputs& inputs,
+    const std::string& signalName,
+    double t,
+    double* outValue,
+    int* outFrameIndex,
+    std::string* outError);
+
+bool ComposeRuntimeWalkFitsBindingsOverLiveBaseline(const std::vector<RuntimeWalkFitsMappingBinding>& bindings,
+    const RuntimeWalkFitsOrientationInputs& inputs,
+    const RuntimeWalkFitsFieldSignals& fieldSignals,
+    double t,
+    const ViewState& baselineView,
+    const KernelParams& baselineParams,
+    ViewState* outView,
+    KernelParams* outParams,
+    std::vector<RuntimeWalkFitsLiveBindingResult>* outResults,
     std::string* outError);
 
 bool ResolveDefaultRuntimeWalkFitsMappingProfilePath(const std::string& exeDir,

@@ -419,6 +419,7 @@ def test_runtime_walk_viewer_can_boot_from_fits_only_cli() -> None:
         pytest.skip(f"missing real FITS acceptance artifact: {REAL_FITS_PATH}")
 
     exe_path = _active_runtime_exe()
+    artifact_cutoff = time.time() - 1.0
     proc = subprocess.Popen(
         [
             str(exe_path),
@@ -469,21 +470,48 @@ def test_runtime_walk_viewer_can_boot_from_fits_only_cli() -> None:
         assert synthesized_payload["fractal_type"] == "explaino"
 
         session_dir = Path(latest["request_json"]).parent
+        orientation_json = Path(latest["orientation_inputs_json"])
+        mapping_json = Path(latest["mapping_profile_json"])
+        assert orientation_json.exists(), "FITS-only load did not write orientation_inputs.json"
+        assert mapping_json.exists(), "FITS-only load did not write effective_mapping_profile.json"
+        orientation_payload = json.loads(orientation_json.read_text(encoding="utf-8"))
+        assert orientation_payload["frame_count"] >= 1
+        assert orientation_payload["frames"], "orientation inputs should expose a per-frame FITS timeline"
+        effective_profile = json.loads(mapping_json.read_text(encoding="utf-8"))
+        bindings = effective_profile["profiles"][0]["bindings"]
+        assert any(binding.get("source_kind") == "fits_frame" for binding in bindings)
+        assert any(binding.get("source_kind") == "field" for binding in bindings)
+        assert all("warp" not in binding["target_path"] for binding in bindings)
         flow_csv = session_dir / "runtime_walk_flow_lines.csv"
         cells_csv = session_dir / "runtime_field_cells.csv"
+        binding_csv = session_dir / "runtime_walk_binding_samples.csv"
+
+        def fresh_nonempty(path: Path) -> bool:
+            return path.exists() and path.stat().st_size > 0 and path.stat().st_mtime >= artifact_cutoff
+
         deadline = time.monotonic() + 5.0
         while time.monotonic() < deadline:
-            if flow_csv.exists() and cells_csv.exists() and flow_csv.stat().st_size > 0 and cells_csv.stat().st_size > 0:
+            if (
+                fresh_nonempty(flow_csv)
+                and fresh_nonempty(cells_csv)
+                and fresh_nonempty(binding_csv)
+            ):
                 break
             time.sleep(0.1)
-        assert flow_csv.exists() and flow_csv.stat().st_size > 0, "FITS-only viewer playback did not export non-empty runtime_walk_flow_lines.csv"
-        assert cells_csv.exists() and cells_csv.stat().st_size > 0, "FITS-only viewer playback did not export non-empty runtime_field_cells.csv"
+        assert fresh_nonempty(flow_csv), "FITS-only viewer playback did not export fresh non-empty runtime_walk_flow_lines.csv"
+        assert fresh_nonempty(cells_csv), "FITS-only viewer playback did not export fresh non-empty runtime_field_cells.csv"
+        assert fresh_nonempty(binding_csv), "FITS-only viewer playback did not export fresh non-empty runtime_walk_binding_samples.csv"
         flow_text = flow_csv.read_text(encoding="utf-8")
         cells_text = cells_csv.read_text(encoding="utf-8")
+        binding_text = binding_csv.read_text(encoding="utf-8")
         assert "traveler_cluster_id" in flow_text and "tangent_angle" in flow_text
+        assert "fits_frame_index" in flow_text
         assert "traveler_centroid_x" in cells_text and "cluster_confidence" in cells_text
+        assert "fits_frame_index" in cells_text
+        assert "t,source_path,target_path,frame_index,source_value,baseline_value,offset_value,composed_value" in binding_text
         assert len(flow_text.splitlines()) > 1, "flow CSV should contain measured marble rows"
         assert len(cells_text.splitlines()) > 1, "field-cell CSV should contain quantized cell rows"
+        assert len(binding_text.splitlines()) > 1, "binding CSV should contain live binding rows"
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)

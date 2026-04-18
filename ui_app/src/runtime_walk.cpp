@@ -508,7 +508,7 @@ bool EvaluateRuntimeWalkSnapshot(const RuntimeWalkBundle& bundle,
     snapshot.phase = static_cast<double>(baseView.explaino_phase) + (snapshot.channels[5] - 0.5) * 3.14159265358979323846;
     snapshot.combined_seed = baseCombinedSeed + (snapshot.seed01 - 0.5) * 32.0;
     snapshot.seed_b = static_cast<double>(baseParams.explaino_seed_b) + (snapshot.channels[7] - snapshot.channels[8]) * 0.5;
-    snapshot.mix = ClampD(static_cast<double>(baseParams.explaino_mix) + (mixNorm - 0.5) * 1.5, 0.0, 4.0);
+    snapshot.mix = ClampD(static_cast<double>(baseParams.explaino_mix) + (mixNorm - 0.5) * 1.5, 0.0, 1.0);
     snapshot.warp_strength = static_cast<double>(baseParams.explaino_warp_strength);
 
     *outSnapshot = snapshot;

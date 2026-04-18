@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - slime-backed FITS binding workbench and measured field-traveler slice closed pending checkpoint/receipt
+Phase 6 - measured FITS field playback re-closure complete pending checkpoint
 
 ## Phase Checklist
 
@@ -11,6 +11,7 @@ Phase 5 - slime-backed FITS binding workbench and measured field-traveler slice 
 - [x] Phase 3 - tune generated transport/mapping behavior so warp-heavy bindings do not destabilize motion, add adjustable transport density/sampling, and surface mapping profile/binding summaries in-viewer
 - [x] Phase 4 - repair the flaky `ui_app\build_tests_vsdevcmd.cmd` artifact/output model, rerun at least three deliberate hostile-review passes on the repaired state, and only then reclassify any remaining gaps as bounded/non-blocking
 - [x] Phase 5 - replace the remaining toy runtime-walk assumptions with a schema-derived FITS binding workbench, live-baseline-plus-offset playback composition, and measured slime-backed field traveler/export proof
+- [x] Phase 6 - connect per-frame FITS timelines, live binding offsets, and measured slime overlay into the visible playback loop
 
 ## Notes
 
@@ -51,9 +52,22 @@ Phase 5 - slime-backed FITS binding workbench and measured field-traveler slice 
   - adaptive field sampling controls were visible but the field slime population did not actually resize from measured gradient pressure; `TestFieldStepAdaptsMarblePopulationToMeasuredGradient` failed red, then passed after measured finite-gradient counts drive marble population size.
   - field CSV export could be observed as an empty file by the runtime proof while the viewer was writing/truncating it; `WriteRuntimeWalkFieldSlimeCsv` now publishes temp files atomically and the runtime pytest waits for non-empty flow/cell evidence.
   - full native validation could fail after a timeout because stale compiler locks made `build_tests_vsdevcmd.cmd` leave `obj` behind and then fail at `mkdir`; cleanup now retries before failing, and full native validation passed after the repair.
-- Remaining bounded gap after the final second/third audit passes:
-  - runtime-level UI automation still does not drag individual workbench sliders/buttons; native/session tests and source validators prove the rows, overrides, add/remove controls, adaptive controls, generated effective profile, and FITS-only runtime playback. A future UI automation pass should drive the workbench interactively through ImGui/window automation.
-  - flow CSVs now export measured marble/cell/traveler/tangent/sample-count data, but do not yet include every requested binding/baseline/composed/FITS-signal column; the generated effective mapping profile and session manifests remain the authoritative binding provenance for this slice.
+- Hostile-review findings closed in Phase 6:
+  - the FITS extractor still treated higher-dimensional inputs as a single aggregate plane, so playback had no current FITS moment; `tests/test_runtime_walk_extract_fits_orientation.py::test_runtime_walk_extract_fits_orientation_preserves_frame_timeline` now proves per-frame timeline output.
+  - live FITS bindings were generated/import artifacts, not continuous playback composition; `TestLiveFitsBindingsApplyOffsetsOverBaseline` now proves frame and field bindings compose over the live baseline while preserving default warp.
+  - runtime playback could still look static when `ImGuiIO::DeltaTime` was zero/near-zero under the published viewer harness; the playback loop now has a bounded wall-clock delta fallback.
+  - stale live CSV exports could satisfy runtime proof after regeneration; generated FITS sessions now remove old flow/cell/binding exports before fresh playback.
+  - field and binding CSVs initially overwrote snapshots instead of accumulating time history; field/cell/binding exports now append rows with a single header and runtime proof verifies non-empty current-run history.
+  - the first mix binding path could drive `explaino_mix` outside its valid domain; default mapping plus runtime target-domain clamp now keep it in `[0,1]`.
+  - live binding row clamps were incorrectly applied to offsets before baseline composition, erasing negative field modulation; the red native regression now proves negative phase-strength offsets survive and clamp only after composition.
+  - measured field flow/cell exports lacked active FITS frame context; flow and cell CSVs now include `fits_frame_index`, and the runtime proof plus contract validator check it.
+  - the live playback workbench exposed only amount/offset/smoothing, leaving curve/polarity/clamp as read-only or import-only behavior; live rows now expose curve, invert polarity, and clamp min/max controls under a contract assertion.
+- Hostile-review passes on repaired Phase 6 state:
+  - Pass 1 diff/artifact audit: no new defect after CSV history, stale-export, mix-domain, offset-clamp, and FITS-frame-context repairs; `artifacts/hostile_review/measured_field_artifact_audit_final.json` verifies no warp targets, bounded mix, negative field phase offset, field-step flow rows, finite tangents, nontrivial time history, and FITS frame context.
+  - Pass 2 UI/operator review: found and repaired missing live curve/polarity/clamp binding controls; default FITS-only synth mode, advanced overrides, artifact paths, and no default warp UI remain machine-validated.
+  - Pass 3 math/data-flow review: no new defect after repaired source/artifact audit; binding math now uses offset first, composed-value clamp second, and synthesis preserves absolute binding clamps.
+- Remaining bounded gap after final repaired-state audit passes:
+  - runtime-level UI automation still does not drag individual ImGui workbench sliders/buttons; native/session tests, source validators, runtime artifact proof, and published viewer FITS-only playback cover the live binding rows, controls, generated artifacts, measured exports, and no-warp policy. A future UI automation pass should drive the workbench interactively through ImGui/window automation.
 
 ## Validation
 
@@ -65,6 +79,16 @@ Phase 5 - slime-backed FITS binding workbench and measured field-traveler slice 
 - FITS contract validator: `py -3.14 tools/viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json --out-json artifacts/validation/viewer_host_validate_fits_contract.json` passed with `ok=true`.
 - Code-quality audit: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/slime_workbench_code_quality_final.json` passed baseline check.
 - Plan sync / whitespace: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed, and `git diff --check` passed.
+- Phase 6 red proofs: `artifacts/measured_field_negative_offset_red.log` failed on erased negative field offsets before the clamp fix, `artifacts/measured_field_fits_context_red.log` failed on missing FITS frame context in field CSVs, and `artifacts/validation/viewer_host_validate_fits_contract.red_live_controls.json` failed before live curve/polarity/clamp controls were added.
+- Phase 6 native rail: `py -3.14 tools/viewer_host_run_logged_command.py --label measured-field-native-full-pass7 --log artifacts/measured_field_native_full_pass7.log -- cmd /c ui_app\build_tests_vsdevcmd.cmd` passed.
+- Phase 6 runtime build: `py -3.14 tools/viewer_host_run_logged_command.py --label measured-field-runtime-build-pass10 --log artifacts/measured_field_runtime_build_pass10.log -- cmd /c ui_app\build_vsdevcmd.cmd` passed and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Phase 6 runtime viewer proof: `py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/test_fractal_runtime_runtime_walk_viewer.junit.xml` passed `3 passed`.
+- Phase 6 runtime pytest lane: `py -3.14 tools/viewer_host_runtime_pytest_lane.py` passed `68 passed`.
+- Phase 6 extractor proof: `py -3.14 -m pytest tests/test_runtime_walk_extract_fits_orientation.py -q` passed `2 passed`.
+- Phase 6 FITS contract validator: `py -3.14 tools/viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json --out-json artifacts/validation/viewer_host_validate_fits_contract.json` passed with `ok=true`, including `flow_csv_fits_frame_context_wired` and `live_binding_controls_tunable`.
+- Phase 6 artifact audit: `artifacts/hostile_review/measured_field_artifact_audit_final.json` passed all generated-artifact invariants.
+- Phase 6 code-quality audit: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/measured_field_code_quality_final.json` passed baseline check.
+- Phase 6 plan sync / whitespace: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed, and `git diff --check` passed.
 
 ## Phase 5 - Slime-Backed Binding Workbench And Field Traveler
 ### Scope
@@ -93,3 +117,22 @@ Phase 5 - slime-backed FITS binding workbench and measured field-traveler slice 
 
 - The named gap for this slice is that runtime-walk playback still behaves as an authoritative snapshot player in places where it must be an offset composer over live controls, while field traveler visualization is not yet tied to measured fractal field state.
 - Closure requires the focused red tests, native build-tests rail, runtime FITS-only viewer proof, code-quality audit, phased-plan sync, three hostile-review passes, checkpoint commit, validation receipt, and contract proof.
+
+## Phase 6 - Measured FITS Field Playback Re-Closure
+### Scope
+
+- Treat the current visual result as not landed: visible playback must be driven by per-frame FITS signals plus measured field slime, not only by the pre-generated runtime-walk rail.
+- Extend the checked-in extractor, native parser, runtime composition, playback UI, measured overlay, and exports under the active FITS contract.
+- Keep FITS-only import, Explaino default, and no default warp binding as non-negotiable invariants.
+
+### Red Tests First
+
+- FITS extractor must fail red until multi-frame data produces `frame_count` and `frames[]`.
+- Native bootstrap must fail red until frame timelines interpolate and live bindings compose offsets over the live baseline.
+- Native viewer overlay must fail red until measured slime marble trajectories can build the visible overlay.
+
+### Closure Gates
+
+- Focused red tests must turn green, then the runtime viewer proof must show FITS-only playback with live controls and measured-flow artifacts.
+- Contract assertions and validator JSON must cover the extractor timeline, live binding controls, measured overlay default, and no-warp default policy.
+- Closure still requires three hostile-review passes, plan sync, checkpoint validation, handoff, commit, validation receipt, and contract proof.

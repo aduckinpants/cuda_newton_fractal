@@ -6,6 +6,16 @@
 #include <fstream>
 #include <string>
 
+static int CountOccurrences(const std::string& text, const std::string& needle) {
+    int count = 0;
+    std::size_t pos = 0;
+    while ((pos = text.find(needle, pos)) != std::string::npos) {
+        ++count;
+        pos += needle.size();
+    }
+    return count;
+}
+
 static int g_passed = 0;
 static int g_failed = 0;
 
@@ -222,7 +232,11 @@ static void TestFieldCsvExportsTravelerRepresentative() {
     std::filesystem::create_directories(root, ec);
     const std::filesystem::path flowPath = root / "runtime_walk_flow_lines.csv";
     const std::filesystem::path cellsPath = root / "runtime_field_cells.csv";
-    Check(WriteRuntimeWalkFieldSlimeCsv(state, flowPath.string(), cellsPath.string(), &error),
+    std::filesystem::remove(flowPath, ec);
+    std::filesystem::remove(cellsPath, ec);
+    RuntimeWalkFieldSlimeExportContext exportContext{};
+    exportContext.fits_frame_index = 7;
+    Check(WriteRuntimeWalkFieldSlimeCsv(state, flowPath.string(), cellsPath.string(), &error, &exportContext),
         "TestFieldCsvExportsTravelerRepresentative_Write");
 
     std::ifstream flow(flowPath, std::ios::in | std::ios::binary);
@@ -231,8 +245,27 @@ static void TestFieldCsvExportsTravelerRepresentative() {
     const std::string cellsText((std::istreambuf_iterator<char>(cells)), std::istreambuf_iterator<char>());
     Check(flowText.find("traveler_cluster_id") != std::string::npos && flowText.find("tangent_angle") != std::string::npos,
         "TestFieldCsvExportsTravelerRepresentative_FlowHeader");
+    Check(flowText.find("fits_frame_index") != std::string::npos,
+        "TestFieldCsvExportsTravelerRepresentative_FlowFitsContextHeader");
+    Check(flowText.find("0.5,7,") != std::string::npos,
+        "TestFieldCsvExportsTravelerRepresentative_FlowFitsContextValue");
     Check(cellsText.find("traveler_centroid_x") != std::string::npos && cellsText.find("cluster_confidence") != std::string::npos,
         "TestFieldCsvExportsTravelerRepresentative_CellsHeader");
+    Check(cellsText.find("fits_frame_index") != std::string::npos,
+        "TestFieldCsvExportsTravelerRepresentative_CellsFitsContextHeader");
+    Check(cellsText.find("0.5,7,") != std::string::npos,
+        "TestFieldCsvExportsTravelerRepresentative_CellsFitsContextValue");
+
+    const std::size_t flowSizeBeforeAppend = flowText.size();
+    state.t = 0.75;
+    Check(WriteRuntimeWalkFieldSlimeCsv(state, flowPath.string(), cellsPath.string(), &error, &exportContext),
+        "TestFieldCsvExportsTravelerRepresentative_AppendWrite");
+    std::ifstream appendedFlow(flowPath, std::ios::in | std::ios::binary);
+    const std::string appendedFlowText((std::istreambuf_iterator<char>(appendedFlow)), std::istreambuf_iterator<char>());
+    Check(appendedFlowText.size() > flowSizeBeforeAppend,
+        "TestFieldCsvExportsTravelerRepresentative_AppendsHistory");
+    Check(CountOccurrences(appendedFlowText, "traveler_cluster_id") == 1,
+        "TestFieldCsvExportsTravelerRepresentative_SingleHeader");
 }
 
 int main() {

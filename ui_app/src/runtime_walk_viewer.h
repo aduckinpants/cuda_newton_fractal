@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+struct RuntimeWalkFieldSlimeState;
+
 struct RuntimeWalkViewerCompanionArtifacts {
     std::string comparison_fits_path;
     std::string rtk_manifest_json_path;
@@ -137,5 +139,12 @@ bool BuildRuntimeWalkGradientOverlay(const RuntimeWalkViewerAsset& asset,
     const RuntimeWalkViewerPlaybackState& playback,
     const RuntimeWalkOverlayProviderConfig& config,
     const RuntimeWalkOverlayProviderInputs& inputs,
+    RuntimeWalkGradientOverlay* outOverlay,
+    std::string* outError);
+
+bool BuildRuntimeWalkMeasuredFieldOverlay(const RuntimeWalkFieldSlimeState& fieldState,
+    const ViewState& view,
+    const RenderSettings& render,
+    const RuntimeWalkOverlayProviderConfig& config,
     RuntimeWalkGradientOverlay* outOverlay,
     std::string* outError);

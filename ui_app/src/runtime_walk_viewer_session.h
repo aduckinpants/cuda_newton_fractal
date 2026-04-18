@@ -1,8 +1,10 @@
 #pragma once
 
 #include "runtime_walk_viewer.h"
+#include "runtime_walk_bootstrap.h"
 
 #include <string>
+#include <vector>
 
 struct RuntimeWalkViewerSession {
     bool loaded = false;
@@ -16,6 +18,13 @@ struct RuntimeWalkViewerSession {
     KernelParams operator_baseline_params{};
     ViewState last_composed_view{};
     KernelParams last_composed_params{};
+    RuntimeWalkFitsOrientationInputs fits_orientation_inputs{};
+    RuntimeWalkFitsFieldSignals fits_field_signals{};
+    std::vector<RuntimeWalkFitsMappingBinding> live_binding_rows;
+    std::vector<RuntimeWalkFitsLiveBindingResult> live_binding_results;
+    std::vector<std::string> live_fits_signal_catalog;
+    std::vector<std::string> live_runtime_target_catalog;
+    bool live_bindings_loaded = false;
 };
 
 bool LoadRuntimeWalkViewerSession(const std::string& requestJsonPath,

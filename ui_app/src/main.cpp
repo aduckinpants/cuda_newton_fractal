@@ -8,9 +8,11 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -1909,6 +1911,91 @@ static Double2 RuntimeWalkFieldTravelerViewportPoint(const ViewState& view,
     return {u, v};
 }
 
+
+static int RuntimeWalkActiveFitsFrameIndex(const RuntimeWalkViewerSession& session) {
+    for (const RuntimeWalkFitsLiveBindingResult& result : session.live_binding_results) {
+        if (result.ok && result.frame_index >= 0) return result.frame_index;
+    }
+    return -1;
+}
+
+static RuntimeWalkFitsFieldSignals BuildRuntimeWalkFieldBindingSignals(const RuntimeWalkFieldSlimeState& state) {
+    RuntimeWalkFitsFieldSignals signals{};
+    if (state.marbles.empty()) return signals;
+    double scoreSum = 0.0;
+    double residualSum = 0.0;
+    double tangentX = 0.0;
+    double tangentY = 0.0;
+    double spreadSum = 0.0;
+    int count = 0;
+    for (const RuntimeWalkFieldSlimeMarble& marble : state.marbles) {
+        if (!std::isfinite(marble.score) || !std::isfinite(marble.residual)) continue;
+        ++count;
+        scoreSum += (std::max)(0.0, marble.score);
+        residualSum += (std::max)(0.0, marble.residual);
+        tangentX += marble.tangent.x;
+        tangentY += marble.tangent.y;
+        const double dx = marble.world.x - state.traveler.centroid_world.x;
+        const double dy = marble.world.y - state.traveler.centroid_world.y;
+        spreadSum += std::sqrt(dx * dx + dy * dy);
+    }
+    if (count <= 0) return signals;
+    signals.traveler_score = std::clamp(scoreSum / static_cast<double>(count), 0.0, 4.0);
+    signals.traveler_confidence = std::clamp(state.traveler.confidence, 0.0, 1.0);
+    signals.residual_pressure = std::clamp(std::tanh(residualSum / static_cast<double>(count)), 0.0, 1.0);
+    signals.cluster_spread = std::clamp(spreadSum / static_cast<double>(count), 0.0, 4.0);
+    const double tangentLength = std::sqrt(tangentX * tangentX + tangentY * tangentY);
+    if (tangentLength > 1.0e-12) {
+        signals.tangent_x = tangentX / tangentLength;
+        signals.tangent_y = tangentY / tangentLength;
+        signals.tangent_angle = std::atan2(signals.tangent_y, signals.tangent_x);
+    }
+    return signals;
+}
+
+static bool WriteRuntimeWalkBindingSamplesCsv(const RuntimeWalkViewerSession& session,
+    const std::string& path,
+    std::string* outError) {
+    std::filesystem::path outputPath(path);
+    std::error_code ec;
+    std::filesystem::create_directories(outputPath.parent_path(), ec);
+    if (ec) {
+        if (outError) *outError = "Failed to create binding sample CSV directory: " + outputPath.parent_path().string();
+        return false;
+    }
+    const bool writeHeader = !std::filesystem::exists(outputPath, ec) || std::filesystem::file_size(outputPath, ec) == 0 || ec;
+    ec.clear();
+    std::ofstream out(outputPath, std::ios::out | std::ios::binary | std::ios::app);
+    if (!out) {
+        if (outError) *outError = "Failed to open binding sample CSV: " + outputPath.string();
+        return false;
+    }
+    out.setf(std::ios::fixed);
+    out.precision(8);
+    if (writeHeader) {
+        out << "t,source_path,target_path,frame_index,source_value,baseline_value,offset_value,composed_value,clamped,ok,error\n";
+    }
+    for (const RuntimeWalkFitsLiveBindingResult& result : session.live_binding_results) {
+        out << result.t << ','
+            << result.source_path << ','
+            << result.target_path << ','
+            << result.frame_index << ','
+            << result.source_value << ','
+            << result.baseline_value << ','
+            << result.offset_value << ','
+            << result.composed_value << ','
+            << (result.clamped ? 1 : 0) << ','
+            << (result.ok ? 1 : 0) << ','
+            << result.error << "\n";
+    }
+    out.close();
+    if (!out.good()) {
+        if (outError) *outError = "Failed to write binding sample CSV: " + outputPath.string();
+        return false;
+    }
+    return true;
+}
+
 static void UpdateRuntimeWalkFieldSlime(RuntimeWalkViewerSession& session,
     const RuntimeWalkOverlayProviderConfig& overlayConfig,
     CudaSidecarMeasurementHost& sidecarMeasurementHost,
@@ -1937,6 +2024,8 @@ static void UpdateRuntimeWalkFieldSlime(RuntimeWalkViewerSession& session,
         return;
     }
 
+    session.fits_field_signals = BuildRuntimeWalkFieldBindingSignals(ioFieldSlime);
+
     if (ioFieldSlime.traveler.cluster_id >= 0) {
         ioPath.current_point = RuntimeWalkFieldTravelerViewportPoint(view, render, ioFieldSlime.traveler);
     }
@@ -1945,7 +2034,9 @@ static void UpdateRuntimeWalkFieldSlime(RuntimeWalkViewerSession& session,
         const std::filesystem::path sessionDir = std::filesystem::path(session.request_json_path).parent_path();
         const std::filesystem::path flowPath = sessionDir / "runtime_walk_flow_lines.csv";
         const std::filesystem::path cellsPath = sessionDir / "runtime_field_cells.csv";
-        if (!WriteRuntimeWalkFieldSlimeCsv(ioFieldSlime, flowPath.string(), cellsPath.string(), &fieldError)) {
+        RuntimeWalkFieldSlimeExportContext exportContext{};
+        exportContext.fits_frame_index = RuntimeWalkActiveFitsFrameIndex(session);
+        if (!WriteRuntimeWalkFieldSlimeCsv(ioFieldSlime, flowPath.string(), cellsPath.string(), &fieldError, &exportContext)) {
             findingStatus = "Runtime walk field slime export failed: " + fieldError;
         }
     }
@@ -1982,10 +2073,19 @@ static bool ProcessRuntimeWalkViewerPerFrame(
 
     RuntimeWalkSnapshot snapshot{};
     std::string runtimeWalkError;
+    static auto lastRuntimeWalkTick = std::chrono::steady_clock::now();
+    const auto runtimeWalkNow = std::chrono::steady_clock::now();
+    const double wallDeltaSeconds = std::chrono::duration<double>(runtimeWalkNow - lastRuntimeWalkTick).count();
+    lastRuntimeWalkTick = runtimeWalkNow;
+    const double imguiDeltaSeconds = static_cast<double>(io.DeltaTime);
+    const double playbackDeltaSeconds = (std::isfinite(imguiDeltaSeconds) && imguiDeltaSeconds > 1.0e-6)
+        ? imguiDeltaSeconds
+        : std::clamp(wallDeltaSeconds, 1.0 / 240.0, 1.0 / 15.0);
+
     bool runtimeWalkChanged = false;
     if (!UpdateRuntimeWalkViewerPlayback(
             session,
-            static_cast<double>(io.DeltaTime),
+            playbackDeltaSeconds,
             ImGui::IsKeyPressed(ImGuiKey_Space, false),
             ImGui::IsKeyPressed(ImGuiKey_LeftArrow, false),
             ImGui::IsKeyPressed(ImGuiKey_RightArrow, false),
@@ -2049,21 +2149,49 @@ static bool ProcessRuntimeWalkViewerPerFrame(
     BuildRuntimeWalkOverlayPath(session.asset, playback, &outPath);
     UpdateRuntimeWalkFieldSlime(session, overlayConfig, sidecarMeasurementHost, view, params, render, playback,
         fieldSlimeState, fieldSlimeValid, outPath, findingStatus);
-    RuntimeWalkOverlayProviderInputs overlayInputs{};
-    overlayInputs.branch_proximity = snapshot.branch.proximity;
-    if (sidecarStateValid && sidecarState.has_orientation) {
-        overlayInputs.decode_stability = sidecarState.orientation.decode_stability;
-        overlayInputs.divergence = sidecarState.divergence.scalar_divergence;
+    if (session.live_bindings_loaded) {
+        if (!ApplyRuntimeWalkViewerPlaybackSnapshot(
+                session,
+                playback,
+                &view,
+                &params,
+                &snapshot,
+                &runtimeWalkError)) {
+            findingStatus = "Runtime walk playback failed: " + runtimeWalkError;
+        }
     }
-    if (!BuildRuntimeWalkGradientOverlay(
-            session.asset,
-            playback,
-            overlayConfig,
-            overlayInputs,
-            &outGradientOverlay,
-            &runtimeWalkError)) {
-        findingStatus = "Runtime walk overlay failed: " + runtimeWalkError;
-        outGradientOverlay = {};
+    if (session.live_bindings_loaded && !session.request_json_path.empty()) {
+        const std::filesystem::path bindingPath =
+            std::filesystem::path(session.request_json_path).parent_path() / "runtime_walk_binding_samples.csv";
+        if (!WriteRuntimeWalkBindingSamplesCsv(session, bindingPath.string(), &runtimeWalkError)) {
+            findingStatus = "Runtime walk binding sample export failed: " + runtimeWalkError;
+        }
+    }
+    outGradientOverlay = {};
+    if (playback.show_gradient_overlay) {
+        if (fieldSlimeValid && !fieldSlimeState.marbles.empty()) {
+            if (!BuildRuntimeWalkMeasuredFieldOverlay(fieldSlimeState, view, render, overlayConfig, &outGradientOverlay, &runtimeWalkError)) {
+                findingStatus = "Runtime walk measured field overlay failed: " + runtimeWalkError;
+                outGradientOverlay = {};
+            }
+        } else {
+            RuntimeWalkOverlayProviderInputs overlayInputs{};
+            overlayInputs.branch_proximity = snapshot.branch.proximity;
+            if (sidecarStateValid && sidecarState.has_orientation) {
+                overlayInputs.decode_stability = sidecarState.orientation.decode_stability;
+                overlayInputs.divergence = sidecarState.divergence.scalar_divergence;
+            }
+            if (!BuildRuntimeWalkGradientOverlay(
+                    session.asset,
+                    playback,
+                    overlayConfig,
+                    overlayInputs,
+                    &outGradientOverlay,
+                    &runtimeWalkError)) {
+                findingStatus = "Runtime walk overlay failed: " + runtimeWalkError;
+                outGradientOverlay = {};
+            }
+        }
     }
     return true;
 }

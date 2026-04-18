@@ -13,7 +13,8 @@
     "ui_app/build_vsdevcmd.cmd",
     "ui_app/tests",
     "tests",
-    "tools/viewer_host_validate_fits_contract.py"
+    "tools/viewer_host_validate_fits_contract.py",
+    "tools/runtime_walk_extract_fits_orientation.py"
   ],
   "required_operator_inputs": [
     "fits"
@@ -126,6 +127,86 @@
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
       "json_path": "checks.effective_mapping_profile_visible",
+      "equals": true
+    },
+    {
+      "assertion_id": "fits_timeline_extractor_emits_frames",
+      "description": "FITS extraction emits per-frame timeline records",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.fits_timeline_extractor_emits_frames",
+      "equals": true
+    },
+    {
+      "assertion_id": "orientation_timeline_parser_wired",
+      "description": "Native runtime-walk bootstrap parses and evaluates FITS signal timelines",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.orientation_timeline_parser_wired",
+      "equals": true
+    },
+    {
+      "assertion_id": "live_binding_runtime_composes_offsets",
+      "description": "Runtime playback composes live FITS/field binding offsets over baseline state",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.live_binding_runtime_composes_offsets",
+      "equals": true
+    },
+    {
+      "assertion_id": "measured_field_overlay_default_wired",
+      "description": "Runtime viewer prefers measured field slime overlay before synthetic rail overlay",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.measured_field_overlay_default_wired",
+      "equals": true
+    },
+    {
+      "assertion_id": "binding_samples_csv_export_wired",
+      "description": "Runtime viewer exports and exposes live binding sample CSV",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.binding_samples_csv_export_wired",
+      "equals": true
+    },
+    {
+      "assertion_id": "stale_live_exports_removed_on_regeneration",
+      "description": "Generated FITS session regeneration removes stale live export CSVs",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.stale_live_exports_removed_on_regeneration",
+      "equals": true
+    },
+    {
+      "assertion_id": "runtime_target_domain_clamps_mix",
+      "description": "Live FITS binding defaults cannot drive explaino_mix outside the validated domain",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.runtime_target_domain_clamps_mix",
+      "equals": true
+    },
+    {
+      "assertion_id": "playback_delta_has_wall_clock_fallback",
+      "description": "Runtime playback has a wall-clock delta fallback when ImGui delta is zero",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.playback_delta_has_wall_clock_fallback",
+      "equals": true
+    },
+    {
+      "assertion_id": "flow_csv_fits_frame_context_wired",
+      "description": "Measured field flow/cell CSV export records the active FITS frame context",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.flow_csv_fits_frame_context_wired",
+      "equals": true
+    },
+    {
+      "assertion_id": "live_binding_controls_tunable",
+      "description": "Live FITS playback binding rows expose tunable curve, polarity, and clamp controls",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_validate_fits_contract.json",
+      "json_path": "checks.live_binding_controls_tunable",
       "equals": true
     }
   ],

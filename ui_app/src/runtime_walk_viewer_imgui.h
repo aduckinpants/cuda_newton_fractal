@@ -23,7 +23,7 @@ struct RuntimeWalkViewerImportUiActions {
     std::string open_recent_request_json_path;
 };
 
-bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
+bool RenderRuntimeWalkViewerPanel(RuntimeWalkViewerSession& session,
     RuntimeWalkViewerPlaybackState* ioPlayback,
     RuntimeWalkOverlayProviderConfig* ioOverlayConfig,
     RuntimeWalkViewerUiActions* outActions);

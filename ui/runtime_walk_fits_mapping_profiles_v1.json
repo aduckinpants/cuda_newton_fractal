@@ -14,7 +14,10 @@
           "input_max": 1.0,
           "scale": 28.0,
           "offset": -14.0,
-          "weight": 1.0
+          "weight": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.mean",
+          "curve": "wedge_logistic_seed"
         },
         {
           "target_selector": "explaino",
@@ -24,7 +27,10 @@
           "input_max": 0.5,
           "scale": 3.0,
           "offset": -1.5,
-          "weight": 1.0
+          "weight": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.stddev",
+          "curve": "smoothstep"
         },
         {
           "target_selector": "explaino",
@@ -32,11 +38,14 @@
           "target_path": "fractal.params.explaino_mix",
           "input_min": -1.0,
           "input_max": 1.0,
-          "scale": 1.75,
-          "offset": 0.25,
+          "scale": 0.35,
+          "offset": -0.175,
           "weight": 1.0,
           "clamp_min": 0.0,
-          "clamp_max": 4.0
+          "clamp_max": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.center_bias",
+          "curve": "smoothstep"
         },
         {
           "target_selector": "explaino",
@@ -46,7 +55,10 @@
           "input_max": 1.0,
           "scale": 6.283185307179586,
           "offset": -3.141592653589793,
-          "weight": 1.0
+          "weight": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.edge_balance",
+          "curve": "smoothstep"
         },
         {
           "target_selector": "explaino",
@@ -56,7 +68,10 @@
           "input_max": 1.0,
           "scale": 1.2,
           "offset": -0.6,
-          "weight": 1.0
+          "weight": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.frame_delta",
+          "curve": "smoothstep"
         },
         {
           "target_selector": "all",
@@ -66,7 +81,10 @@
           "input_max": 1.0,
           "scale": 0.9,
           "offset": -0.45,
-          "weight": 1.0
+          "weight": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.x_bias",
+          "curve": "signed_tanh"
         },
         {
           "target_selector": "all",
@@ -76,7 +94,10 @@
           "input_max": 1.0,
           "scale": 0.9,
           "offset": -0.45,
-          "weight": 1.0
+          "weight": 1.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.y_bias",
+          "curve": "signed_tanh"
         },
         {
           "target_selector": "all",
@@ -88,7 +109,28 @@
           "offset": 0.25,
           "weight": 1.0,
           "clamp_min": 0.25,
-          "clamp_max": 8.0
+          "clamp_max": 8.0,
+          "source_kind": "fits_frame",
+          "source_path": "fits.frame.focus_ratio",
+          "curve": "signed_tanh"
+        },
+        {
+          "target_selector": "explaino",
+          "source_kind": "field",
+          "source_signal": "field.traveler.confidence",
+          "source_path": "field.traveler.confidence",
+          "target_path": "fractal.view.explaino_phase_strength",
+          "input_min": 0.0,
+          "input_max": 1.0,
+          "scale": 0.18,
+          "offset": -0.09,
+          "weight": 1.0,
+          "smoothing": 0.6,
+          "curve": "smoothstep",
+          "safety_class": "safe",
+          "enabled": true,
+          "clamp_min": 0.0,
+          "clamp_max": 1.0
         }
       ]
     }

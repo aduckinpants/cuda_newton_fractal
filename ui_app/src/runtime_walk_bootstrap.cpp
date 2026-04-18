@@ -1,6 +1,7 @@
 #include "runtime_walk_bootstrap.h"
 
 #include "explaino_seed.h"
+#include "explaino_seed_curve.h"
 #include "enum_id_utils.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
@@ -191,10 +192,81 @@ bool LookupSignal(const RuntimeWalkFitsOrientationInputs& inputs, std::string_vi
     return true;
 }
 
+bool LookupSignalMapValue(const std::map<std::string, double>& signals, std::string_view sourceSignal, double* outValue) {
+    const auto it = signals.find(std::string(sourceSignal));
+    if (it == signals.end() || !std::isfinite(it->second)) return false;
+    if (outValue) *outValue = it->second;
+    return true;
+}
+
+std::string EffectiveSourceSignal(const RuntimeWalkFitsMappingBinding& binding) {
+    if (!binding.source_signal.empty()) return binding.source_signal;
+    constexpr std::string_view prefix = "fits.frame.";
+    if (binding.source_path.rfind(std::string(prefix), 0) == 0) {
+        return binding.source_path.substr(prefix.size());
+    }
+    return binding.source_path;
+}
+
+bool BindingUsesFieldSource(const RuntimeWalkFitsMappingBinding& binding) {
+    return binding.source_kind == "field" ||
+        binding.source_signal.rfind("field.", 0) == 0 ||
+        binding.source_path.rfind("field.", 0) == 0;
+}
+
+bool ResolveFieldSignalValue(const RuntimeWalkFitsMappingBinding& binding,
+    const RuntimeWalkFitsFieldSignals& fieldSignals,
+    double* outValue,
+    std::string* outError) {
+    const std::string key = binding.source_path.empty() ? binding.source_signal : binding.source_path;
+    if (key == "field.traveler.score" || key == "traveler_score") {
+        if (outValue) *outValue = fieldSignals.traveler_score;
+        return true;
+    }
+    if (key == "field.traveler.confidence" || key == "traveler_confidence") {
+        if (outValue) *outValue = fieldSignals.traveler_confidence;
+        return true;
+    }
+    if (key == "field.tangent.angle" || key == "field.tangent_angle" || key == "tangent_angle") {
+        if (outValue) *outValue = fieldSignals.tangent_angle;
+        return true;
+    }
+    if (key == "field.tangent.x" || key == "tangent_x") {
+        if (outValue) *outValue = fieldSignals.tangent_x;
+        return true;
+    }
+    if (key == "field.tangent.y" || key == "tangent_y") {
+        if (outValue) *outValue = fieldSignals.tangent_y;
+        return true;
+    }
+    if (key == "field.residual.pressure" || key == "residual_pressure") {
+        if (outValue) *outValue = fieldSignals.residual_pressure;
+        return true;
+    }
+    if (key == "field.cluster.spread" || key == "cluster_spread") {
+        if (outValue) *outValue = fieldSignals.cluster_spread;
+        return true;
+    }
+    if (outError) *outError = "Unsupported runtime-walk FITS field source: " + key;
+    return false;
+}
+
 double ClampDouble(double value, double minValue, double maxValue) {
     if (value < minValue) return minValue;
     if (value > maxValue) return maxValue;
     return value;
+}
+
+double ClampRuntimeWalkTargetDomainValue(const std::string& targetPath, double value, bool* outClamped = nullptr) {
+    double clamped = value;
+    if (targetPath == "fractal.params.explaino_mix" ||
+        targetPath == "fractal.view.explaino_phase_strength") {
+        clamped = ClampDouble(value, 0.0, 1.0);
+    } else if (targetPath == "fractal.view.explaino_seed_drift") {
+        clamped = ClampDouble(value, 0.0, 1.0);
+    }
+    if (outClamped) *outClamped = std::fabs(clamped - value) > 1.0e-12;
+    return clamped;
 }
 
 double Clamp01(double value) {
@@ -225,17 +297,104 @@ double ResolveBindingValue(const RuntimeWalkFitsMappingBinding& binding, double 
         normalized = (signalValue - binding.input_min) / span;
     }
     normalized = ClampDouble(normalized, 0.0, 1.0);
-    const double smoothing = ClampDouble(binding.smoothing, 0.0, 1.0);
-    const double smoothStep = normalized * normalized * (3.0 - 2.0 * normalized);
-    normalized += (smoothStep - normalized) * smoothing;
     if (binding.polarity < 0) {
         normalized = 1.0 - normalized;
     }
-    double mapped = binding.offset + normalized * binding.scale * binding.weight;
-    if (binding.has_clamp) {
-        mapped = ClampDouble(mapped, binding.clamp_min, binding.clamp_max);
+
+    const double smoothing = ClampDouble(binding.smoothing, 0.0, 1.0);
+    const double smoothStep = normalized * normalized * (3.0 - 2.0 * normalized);
+    double shaped = normalized + (smoothStep - normalized) * smoothing;
+    double mapped = 0.0;
+    if (binding.curve == "wedge_logistic_seed") {
+        shaped = ExplainoWedgeTween(shaped);
+        mapped = binding.offset + shaped * binding.scale * binding.weight;
+    } else if (binding.curve == "smoothstep") {
+        mapped = binding.offset + smoothStep * binding.scale * binding.weight;
+    } else if (binding.curve == "signed_tanh") {
+        mapped = binding.offset + std::tanh((normalized * 2.0 - 1.0) * 1.75) * binding.scale * binding.weight;
+    } else if (binding.curve == "linear") {
+        mapped = binding.offset + normalized * binding.scale * binding.weight;
+    } else {
+        mapped = binding.offset + shaped * binding.scale * binding.weight;
     }
     return mapped;
+}
+
+bool ReadRuntimeWalkTargetValue(const std::string& targetPath,
+    const ViewState& view,
+    const KernelParams& params,
+    double* outValue) {
+    if (!outValue) return false;
+    if (targetPath == "fractal.params.explaino_seed") {
+        *outValue = ExplainoSeedCombined(view, params);
+        return true;
+    }
+    if (targetPath == "fractal.view.center.x") {
+        *outValue = view.center_hp_x;
+        return true;
+    }
+    if (targetPath == "fractal.view.center.y") {
+        *outValue = view.center_hp_y;
+        return true;
+    }
+    if (targetPath == "fractal.view.zoom") {
+        *outValue = view.log2_zoom;
+        return true;
+    }
+    ViewState viewCopy = view;
+    KernelParams paramsCopy = params;
+    BindingContext ctx{&viewCopy, &paramsCopy, nullptr, nullptr};
+    double* doublePtr = nullptr;
+    if (ctx.BindDouble(targetPath, &doublePtr) && doublePtr) {
+        *outValue = *doublePtr;
+        return true;
+    }
+    float* floatPtr = nullptr;
+    if (ctx.BindFloat(targetPath, &floatPtr) && floatPtr) {
+        *outValue = static_cast<double>(*floatPtr);
+        return true;
+    }
+    return false;
+}
+
+bool ApplyRuntimeWalkTargetValue(const std::string& targetPath,
+    double value,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    std::string* outError) {
+    value = ClampRuntimeWalkTargetDomainValue(targetPath, value);
+    if (targetPath == "fractal.params.explaino_seed") {
+        ExplainoSeedSetCombined(*ioView, *ioParams, value);
+        return true;
+    }
+    if (targetPath == "fractal.view.center.x") {
+        ioView->center_hp_x = value;
+        ioView->center.x = static_cast<float>(value);
+        return true;
+    }
+    if (targetPath == "fractal.view.center.y") {
+        ioView->center_hp_y = value;
+        ioView->center.y = static_cast<float>(value);
+        return true;
+    }
+    if (targetPath == "fractal.view.zoom") {
+        ioView->log2_zoom = ClampDouble(value, Log2D(kMinZoom), kMaxLog2Zoom);
+        SyncViewUiFromHp(*ioView);
+        return true;
+    }
+    BindingContext ctx{ioView, ioParams, nullptr, nullptr};
+    double* doublePtr = nullptr;
+    if (ctx.BindDouble(targetPath, &doublePtr) && doublePtr) {
+        *doublePtr = value;
+        return true;
+    }
+    float* floatPtr = nullptr;
+    if (ctx.BindFloat(targetPath, &floatPtr) && floatPtr) {
+        *floatPtr = static_cast<float>(value);
+        return true;
+    }
+    if (outError) *outError = "Unsupported FITS mapping target path: " + targetPath;
+    return false;
 }
 
 bool ApplyBindingValue(const RuntimeWalkFitsMappingBinding& binding, double value, ViewState* ioView, KernelParams* ioParams, std::string* outError) {
@@ -245,6 +404,7 @@ bool ApplyBindingValue(const RuntimeWalkFitsMappingBinding& binding, double valu
     }
 
     const std::string targetPath = CanonicalTargetPathInternal(binding.target_path);
+    value = ClampRuntimeWalkTargetDomainValue(targetPath, value);
     if (IsWarpTargetPath(targetPath)) {
         if (outError) *outError = "Warp is not a supported default FITS binding target: " + targetPath;
         return false;
@@ -710,6 +870,12 @@ bool ParseRuntimeWalkFitsMappingCatalogJson(const std::string& jsonText,
             RuntimeWalkFitsMappingBinding binding;
             if (!GetRequiredString(bindingValue, "target_selector", &binding.target_selector, outError)) return false;
             if (!GetRequiredString(bindingValue, "source_signal", &binding.source_signal, outError)) return false;
+            GetOptionalString(bindingValue, "source_kind", &binding.source_kind);
+            GetOptionalString(bindingValue, "source_path", &binding.source_path);
+            GetOptionalString(bindingValue, "curve", &binding.curve);
+            if (binding.source_kind.empty()) binding.source_kind = BindingUsesFieldSource(binding) ? "field" : "fits_frame";
+            if (binding.source_path.empty()) binding.source_path = BindingUsesFieldSource(binding) ? binding.source_signal : std::string("fits.frame.") + binding.source_signal;
+            if (binding.curve.empty()) binding.curve = "smoothstep";
             if (!GetRequiredString(bindingValue, "target_path", &binding.target_path, outError)) return false;
             binding.target_path = CanonicalTargetPathInternal(binding.target_path);
             if (!IsSupportedTargetPath(binding.target_path)) {
@@ -783,26 +949,93 @@ bool ParseRuntimeWalkFitsOrientationInputsJson(const std::string& jsonText,
         return false;
     }
     if (!GetRequiredString(parsed.value, "fits_path", &inputs.fits_path, outError)) return false;
-    const json_min::Value* signalsValue = parsed.value.get("signals");
-    if (!signalsValue || !signalsValue->is_object()) {
-        if (outError) *outError = "runtime-walk FITS orientation inputs require object field: signals";
-        return false;
+
+    const json_min::Value* metadataValue = parsed.value.get("metadata");
+    if (metadataValue) {
+        if (!metadataValue->is_object()) {
+            if (outError) *outError = "runtime-walk FITS orientation metadata must be an object";
+            return false;
+        }
+        for (const auto& it : metadataValue->as_object()) {
+            if (it.second.is_string()) {
+                inputs.metadata[it.first] = it.second.as_string();
+            } else if (it.second.is_number()) {
+                std::ostringstream number;
+                number << it.second.as_number();
+                inputs.metadata[it.first] = number.str();
+            } else if (it.second.is_bool()) {
+                inputs.metadata[it.first] = it.second.as_bool() ? "true" : "false";
+            }
+        }
     }
-    for (const auto& it : signalsValue->as_object()) {
-        if (!it.second.is_number()) {
-            if (outError) *outError = "runtime-walk FITS orientation signals must be numeric";
+
+    const auto parseSignals = [&](const json_min::Value& signalsObject,
+        std::map<std::string, double>* outSignals) -> bool {
+        if (!signalsObject.is_object()) {
+            if (outError) *outError = "runtime-walk FITS orientation signals must be objects";
             return false;
         }
-        const double value = it.second.as_number();
-        if (!std::isfinite(value)) {
-            if (outError) *outError = "runtime-walk FITS orientation signals must be finite";
-            return false;
+        for (const auto& it : signalsObject.as_object()) {
+            if (!it.second.is_number()) {
+                if (outError) *outError = "runtime-walk FITS orientation signals must be numeric";
+                return false;
+            }
+            const double value = it.second.as_number();
+            if (!std::isfinite(value)) {
+                if (outError) *outError = "runtime-walk FITS orientation signals must be finite";
+                return false;
+            }
+            (*outSignals)[it.first] = value;
         }
-        inputs.signals[it.first] = value;
+        return true;
+    };
+
+    const json_min::Value* signalsValue = parsed.value.get("signals");
+    if (!signalsValue || !parseSignals(*signalsValue, &inputs.signals)) {
+        if (outError && outError->empty()) *outError = "runtime-walk FITS orientation inputs require object field: signals";
+        return false;
     }
     if (inputs.signals.empty()) {
         if (outError) *outError = "runtime-walk FITS orientation inputs require at least one signal";
         return false;
+    }
+
+    const json_min::Value* framesValue = parsed.value.get("frames");
+    if (framesValue) {
+        if (!framesValue->is_array()) {
+            if (outError) *outError = "runtime-walk FITS orientation frames must be an array";
+            return false;
+        }
+        for (const json_min::Value& frameValue : framesValue->as_array()) {
+            if (!frameValue.is_object()) {
+                if (outError) *outError = "runtime-walk FITS orientation frame entries must be objects";
+                return false;
+            }
+            RuntimeWalkFitsSignalFrame frame;
+            double frameIndex = 0.0;
+            double frameT = 0.0;
+            if (!GetOptionalNumber(frameValue, "frame_index", &frameIndex, outError)) return false;
+            if (!GetOptionalNumber(frameValue, "t", &frameT, outError)) return false;
+            if (!std::isfinite(frameT)) {
+                if (outError) *outError = "runtime-walk FITS orientation frame t must be finite";
+                return false;
+            }
+            frame.frame_index = static_cast<int>(std::lround(frameIndex));
+            frame.t = frameT;
+            const json_min::Value* frameSignals = frameValue.get("signals");
+            if (!frameSignals || !parseSignals(*frameSignals, &frame.signals)) return false;
+            if (frame.signals.empty()) {
+                if (outError) *outError = "runtime-walk FITS orientation frame signals cannot be empty";
+                return false;
+            }
+            inputs.frames.push_back(frame);
+        }
+        std::sort(inputs.frames.begin(), inputs.frames.end(), [](const RuntimeWalkFitsSignalFrame& lhs, const RuntimeWalkFitsSignalFrame& rhs) {
+            return lhs.t < rhs.t;
+        });
+    }
+    if (inputs.frames.empty()) {
+        inputs.frames.push_back(RuntimeWalkFitsSignalFrame{0, 0.0, inputs.signals});
     }
 
     if (outInputs) *outInputs = inputs;
@@ -815,6 +1048,140 @@ bool LoadRuntimeWalkFitsOrientationInputsFile(const std::string& path,
     std::string jsonText;
     if (!ReadTextFile(path, &jsonText, outError)) return false;
     return ParseRuntimeWalkFitsOrientationInputsJson(jsonText, outInputs, outError);
+}
+
+bool EvaluateRuntimeWalkFitsSignalAtT(const RuntimeWalkFitsOrientationInputs& inputs,
+    const std::string& signalName,
+    double t,
+    double* outValue,
+    int* outFrameIndex,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (outFrameIndex) *outFrameIndex = -1;
+    if (inputs.frames.empty()) {
+        if (!LookupSignalMapValue(inputs.signals, signalName, outValue)) {
+            if (outError) *outError = "Missing FITS frame signal: " + signalName;
+            return false;
+        }
+        if (outFrameIndex) *outFrameIndex = 0;
+        return true;
+    }
+    if (inputs.frames.size() == 1u || t <= inputs.frames.front().t) {
+        if (!LookupSignalMapValue(inputs.frames.front().signals, signalName, outValue)) {
+            if (outError) *outError = "Missing FITS frame signal: " + signalName;
+            return false;
+        }
+        if (outFrameIndex) *outFrameIndex = inputs.frames.front().frame_index;
+        return true;
+    }
+    if (t >= inputs.frames.back().t) {
+        if (!LookupSignalMapValue(inputs.frames.back().signals, signalName, outValue)) {
+            if (outError) *outError = "Missing FITS frame signal: " + signalName;
+            return false;
+        }
+        if (outFrameIndex) *outFrameIndex = inputs.frames.back().frame_index;
+        return true;
+    }
+    for (std::size_t index = 1; index < inputs.frames.size(); ++index) {
+        const RuntimeWalkFitsSignalFrame& next = inputs.frames[index];
+        if (t > next.t) continue;
+        const RuntimeWalkFitsSignalFrame& prev = inputs.frames[index - 1u];
+        double lhs = 0.0;
+        double rhs = 0.0;
+        if (!LookupSignalMapValue(prev.signals, signalName, &lhs) || !LookupSignalMapValue(next.signals, signalName, &rhs)) {
+            if (outError) *outError = "Missing FITS frame signal: " + signalName;
+            return false;
+        }
+        const double span = (std::max)(1.0e-12, next.t - prev.t);
+        const double local = ClampDouble((t - prev.t) / span, 0.0, 1.0);
+        if (outValue) *outValue = lhs + (rhs - lhs) * local;
+        if (outFrameIndex) *outFrameIndex = prev.frame_index;
+        return true;
+    }
+    if (outError) *outError = "Failed to evaluate FITS frame signal: " + signalName;
+    return false;
+}
+
+bool ComposeRuntimeWalkFitsBindingsOverLiveBaseline(const std::vector<RuntimeWalkFitsMappingBinding>& bindings,
+    const RuntimeWalkFitsOrientationInputs& inputs,
+    const RuntimeWalkFitsFieldSignals& fieldSignals,
+    double t,
+    const ViewState& baselineView,
+    const KernelParams& baselineParams,
+    ViewState* outView,
+    KernelParams* outParams,
+    std::vector<RuntimeWalkFitsLiveBindingResult>* outResults,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!outView || !outParams) {
+        if (outError) *outError = "Runtime-walk FITS live binding composition requires outputs";
+        return false;
+    }
+    ViewState view = baselineView;
+    KernelParams params = baselineParams;
+    std::vector<RuntimeWalkFitsLiveBindingResult> results;
+    for (const RuntimeWalkFitsMappingBinding& binding : bindings) {
+        if (!binding.enabled) continue;
+        RuntimeWalkFitsLiveBindingResult result;
+        result.source_path = binding.source_path.empty() ? binding.source_signal : binding.source_path;
+        result.target_path = CanonicalTargetPathInternal(binding.target_path);
+        if (IsWarpTargetPath(result.target_path)) {
+            result.error = "warp binding is forbidden in FITS live playback";
+            results.push_back(result);
+            continue;
+        }
+        double sourceValue = 0.0;
+        int frameIndex = -1;
+        bool haveSource = false;
+        if (BindingUsesFieldSource(binding)) {
+            haveSource = ResolveFieldSignalValue(binding, fieldSignals, &sourceValue, outError);
+        } else {
+            haveSource = EvaluateRuntimeWalkFitsSignalAtT(inputs, EffectiveSourceSignal(binding), t, &sourceValue, &frameIndex, outError);
+        }
+        if (!haveSource) {
+            result.error = outError ? *outError : "source unavailable";
+            results.push_back(result);
+            continue;
+        }
+        double baselineValue = 0.0;
+        if (!ReadRuntimeWalkTargetValue(result.target_path, view, params, &baselineValue)) {
+            result.error = "target unavailable";
+            results.push_back(result);
+            continue;
+        }
+        double offsetValue = ResolveBindingValue(binding, sourceValue);
+        double composedValue = baselineValue + offsetValue;
+        bool clamped = false;
+        if (binding.has_clamp) {
+            const double unclamped = composedValue;
+            composedValue = ClampDouble(composedValue, binding.clamp_min, binding.clamp_max);
+            clamped = std::fabs(unclamped - composedValue) > 1.0e-12;
+        }
+        bool targetDomainClamped = false;
+        composedValue = ClampRuntimeWalkTargetDomainValue(result.target_path, composedValue, &targetDomainClamped);
+        clamped = clamped || targetDomainClamped;
+        if (!ApplyRuntimeWalkTargetValue(result.target_path, composedValue, &view, &params, outError)) {
+            result.error = outError ? *outError : "target apply failed";
+            results.push_back(result);
+            continue;
+        }
+        result.frame_index = frameIndex;
+        result.t = t;
+        result.source_value = sourceValue;
+        result.baseline_value = baselineValue;
+        result.offset_value = offsetValue;
+        result.composed_value = composedValue;
+        result.clamped = clamped;
+        result.ok = true;
+        results.push_back(result);
+    }
+    params.explaino_warp_strength = baselineParams.explaino_warp_strength;
+    UpdateExplainoPolynomial(view, params, nullptr);
+    SyncViewUiFromHp(view);
+    *outView = view;
+    *outParams = params;
+    if (outResults) *outResults = std::move(results);
+    return true;
 }
 
 bool ResolveDefaultRuntimeWalkFitsMappingProfilePath(const std::string& exeDir,
@@ -947,10 +1314,14 @@ bool SynthesizeRuntimeWalkBaseState(const RuntimeWalkFitsMappingCatalog& catalog
 
     for (const RuntimeWalkFitsMappingBinding& binding : profile->bindings) {
         if (!binding.enabled) continue;
+        if (BindingUsesFieldSource(binding)) continue;
         if (!(binding.target_selector == profile->target_selector || binding.target_selector == "all")) continue;
         double signalValue = 0.0;
-        if (!LookupSignal(inputs, binding.source_signal, &signalValue, outError)) return false;
-        const double mappedValue = ResolveBindingValue(binding, signalValue);
+        if (!LookupSignal(inputs, EffectiveSourceSignal(binding), &signalValue, outError)) return false;
+        double mappedValue = ResolveBindingValue(binding, signalValue);
+        if (binding.has_clamp) {
+            mappedValue = ClampDouble(mappedValue, binding.clamp_min, binding.clamp_max);
+        }
         if (!ApplyBindingValue(binding, mappedValue, &view, &params, outError)) return false;
     }
 

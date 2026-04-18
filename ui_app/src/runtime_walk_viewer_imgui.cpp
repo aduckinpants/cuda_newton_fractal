@@ -32,6 +32,16 @@ void DrawPolyline(const std::vector<Double2>& points,
     }
 }
 
+const std::vector<std::string>& RuntimeWalkFitsCurveOptions() {
+    static const std::vector<std::string> options{
+        "smoothstep",
+        "signed_tanh",
+        "wedge_logistic_seed",
+        "linear",
+    };
+    return options;
+}
+
 bool RenderStringCombo(const char* label, const std::vector<std::string>& options, std::string* ioValue) {
     if (!ioValue) return false;
     bool changed = false;
@@ -93,7 +103,11 @@ bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
                 removeIndex = static_cast<int>(index);
             }
             changed = ImGui::Checkbox("Enabled", &row.enabled) || changed;
-            changed = RenderStringCombo("FITS Source", state.fits_signal_catalog, &row.source_signal) || changed;
+            if (RenderStringCombo("FITS Source", state.fits_signal_catalog, &row.source_signal)) {
+                row.source_kind = row.source_signal.rfind("field.", 0) == 0 ? "field" : "fits_frame";
+                row.source_path = row.source_kind == "field" ? row.source_signal : std::string("fits.frame.") + row.source_signal;
+                changed = true;
+            }
             changed = RenderStringCombo("Runtime Target", state.runtime_target_catalog, &row.target_path) || changed;
 
             float amount = static_cast<float>(row.weight);
@@ -111,6 +125,7 @@ bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
                 row.smoothing = static_cast<double>(smoothing);
                 changed = true;
             }
+            changed = RenderStringCombo("Curve", RuntimeWalkFitsCurveOptions(), &row.curve) || changed;
             bool inverted = row.polarity < 0;
             if (ImGui::Checkbox("Invert Polarity", &inverted)) {
                 row.polarity = inverted ? -1 : 1;
@@ -146,6 +161,96 @@ bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
     return changed;
 }
 
+
+bool RenderRuntimeWalkLiveBindingWorkbench(RuntimeWalkViewerSession& session) {
+    bool changed = false;
+    if (!ImGui::CollapsingHeader("Live FITS Binding Workbench", ImGuiTreeNodeFlags_DefaultOpen)) return false;
+    ImGui::Text("Timeline Frames: %d | Active Bindings: %d",
+        static_cast<int>(session.fits_orientation_inputs.frames.size()),
+        static_cast<int>(session.live_binding_rows.size()));
+    if (session.live_binding_rows.empty()) {
+        ImGui::TextUnformatted("No live FITS bindings loaded for this session.");
+        return false;
+    }
+    if (!session.live_binding_results.empty()) {
+        for (const RuntimeWalkFitsLiveBindingResult& result : session.live_binding_results) {
+            ImGui::TextWrapped("%s -> %s | src %.4f | base %.4f | offset %.4f | composed %.4f%s",
+                result.source_path.c_str(),
+                result.target_path.c_str(),
+                result.source_value,
+                result.baseline_value,
+                result.offset_value,
+                result.composed_value,
+                result.clamped ? " [clamped]" : "");
+        }
+    }
+    int removeIndex = -1;
+    for (std::size_t index = 0; index < session.live_binding_rows.size(); ++index) {
+        RuntimeWalkFitsMappingBinding& row = session.live_binding_rows[index];
+        ImGui::PushID(static_cast<int>(index) + 10000);
+        if (ImGui::TreeNodeEx("live_binding", ImGuiTreeNodeFlags_DefaultOpen,
+                "%s -> %s", row.source_signal.c_str(), row.target_path.c_str())) {
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Remove##live_binding")) {
+                removeIndex = static_cast<int>(index);
+            }
+            changed = ImGui::Checkbox("Enabled", &row.enabled) || changed;
+            if (RenderStringCombo("Source", session.live_fits_signal_catalog, &row.source_signal)) {
+                row.source_kind = row.source_signal.rfind("field.", 0) == 0 ? "field" : "fits_frame";
+                row.source_path = row.source_kind == "field" ? row.source_signal : std::string("fits.frame.") + row.source_signal;
+                changed = true;
+            }
+            changed = RenderStringCombo("Target", session.live_runtime_target_catalog, &row.target_path) || changed;
+            float amount = static_cast<float>(row.weight);
+            if (ImGui::SliderFloat("Amount", &amount, 0.0f, 2.0f, "%.3f")) {
+                row.weight = static_cast<double>(amount);
+                changed = true;
+            }
+            float offset = static_cast<float>(row.offset);
+            if (ImGui::DragFloat("Offset", &offset, 0.01f, -32.0f, 32.0f, "%.3f")) {
+                row.offset = static_cast<double>(offset);
+                changed = true;
+            }
+            float smoothing = static_cast<float>(row.smoothing);
+            if (ImGui::SliderFloat("Smoothing", &smoothing, 0.0f, 1.0f, "%.2f")) {
+                row.smoothing = static_cast<double>(smoothing);
+                changed = true;
+            }
+            changed = RenderStringCombo("Curve##live_binding", RuntimeWalkFitsCurveOptions(), &row.curve) || changed;
+            bool inverted = row.polarity < 0;
+            if (ImGui::Checkbox("Invert Polarity##live_binding", &inverted)) {
+                row.polarity = inverted ? -1 : 1;
+                changed = true;
+            }
+            changed = ImGui::Checkbox("Clamp##live_binding", &row.has_clamp) || changed;
+            if (row.has_clamp) {
+                float minValue = static_cast<float>(row.clamp_min);
+                float maxValue = static_cast<float>(row.clamp_max);
+                if (ImGui::DragFloat("Clamp Min##live_binding", &minValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
+                    row.clamp_min = static_cast<double>(minValue);
+                    changed = true;
+                }
+                if (ImGui::DragFloat("Clamp Max##live_binding", &maxValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
+                    row.clamp_max = static_cast<double>(maxValue);
+                    changed = true;
+                }
+                if (row.clamp_min > row.clamp_max) std::swap(row.clamp_min, row.clamp_max);
+            }
+            ImGui::Text("Safety: %s", row.safety_class.c_str());
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+    if (removeIndex >= 0 && removeIndex < static_cast<int>(session.live_binding_rows.size())) {
+        session.live_binding_rows.erase(session.live_binding_rows.begin() + removeIndex);
+        changed = true;
+    }
+    if (changed) {
+        session.has_last_composed_state = false;
+    }
+    return changed;
+}
+
 bool RenderRuntimeWalkFieldControls(RuntimeWalkOverlayProviderConfig* ioConfig) {
     if (!ioConfig) return false;
     bool changed = false;
@@ -172,7 +277,7 @@ bool RenderRuntimeWalkFieldControls(RuntimeWalkOverlayProviderConfig* ioConfig) 
 
 } // namespace
 
-bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
+bool RenderRuntimeWalkViewerPanel(RuntimeWalkViewerSession& session,
     RuntimeWalkViewerPlaybackState* ioPlayback,
     RuntimeWalkOverlayProviderConfig* ioOverlayConfig,
     RuntimeWalkViewerUiActions* outActions) {
@@ -261,6 +366,7 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
         interactionChanged = true;
     }
     interactionChanged = RenderRuntimeWalkFieldControls(ioOverlayConfig) || interactionChanged;
+    interactionChanged = RenderRuntimeWalkLiveBindingWorkbench(session) || interactionChanged;
 
     ImGui::Separator();
     ImGui::TextWrapped("Request: %s", session.request_json_path.c_str());
@@ -268,6 +374,7 @@ bool RenderRuntimeWalkViewerPanel(const RuntimeWalkViewerSession& session,
     ImGui::TextWrapped("Session Dir: %s", sessionDir.string().c_str());
     ImGui::TextWrapped("Flow Lines CSV: %s", (sessionDir / "runtime_walk_flow_lines.csv").string().c_str());
     ImGui::TextWrapped("Field Cells CSV: %s", (sessionDir / "runtime_field_cells.csv").string().c_str());
+    ImGui::TextWrapped("Binding Samples CSV: %s", (sessionDir / "runtime_walk_binding_samples.csv").string().c_str());
     ImGui::TextWrapped("Authority Mode: %s", RuntimeWalkAuthorityModeId(session.authority_mode));
     ImGui::TextWrapped("Base State (authority): %s", session.resolved_state_json_path.c_str());
     if (!session.asset.authority.mapping_profile_json_path.empty()) {

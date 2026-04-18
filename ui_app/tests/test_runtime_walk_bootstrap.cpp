@@ -1,4 +1,5 @@
 #include "../src/runtime_walk_bootstrap.h"
+#include "../src/explaino_seed.h"
 
 #include <cmath>
 #include <cstdio>
@@ -160,6 +161,137 @@ static void TestOrientationInputsRequireFitsPath() {
         "TestOrientationInputsRequireFitsPath_Error");
 }
 
+
+static void TestOrientationInputsParseFrameTimeline() {
+    const std::string json = R"JSON({
+  "version": 1,
+  "fits_path": "timeline.fits",
+  "frame_count": 3,
+  "metadata": {
+    "ORIENT": "godel-test"
+  },
+  "signals": {
+    "mean": 0.5,
+    "stddev": 0.2
+  },
+  "frames": [
+    {
+      "frame_index": 0,
+      "t": 0.0,
+      "signals": {"mean": 0.1, "x_bias": -0.4}
+    },
+    {
+      "frame_index": 1,
+      "t": 0.5,
+      "signals": {"mean": 0.6, "x_bias": 0.0}
+    },
+    {
+      "frame_index": 2,
+      "t": 1.0,
+      "signals": {"mean": 0.9, "x_bias": 0.4}
+    }
+  ]
+})JSON";
+
+    RuntimeWalkFitsOrientationInputs inputs;
+    std::string error;
+    Check(ParseRuntimeWalkFitsOrientationInputsJson(json, &inputs, &error),
+        "TestOrientationInputsParseFrameTimeline_Parse");
+    Check(inputs.frames.size() == 3u,
+        "TestOrientationInputsParseFrameTimeline_FrameCount");
+    Check(inputs.frames[1].frame_index == 1 && NearlyEqual(inputs.frames[1].t, 0.5),
+        "TestOrientationInputsParseFrameTimeline_FrameMetadata");
+    Check(inputs.metadata.find("ORIENT") != inputs.metadata.end() && inputs.metadata["ORIENT"] == "godel-test",
+        "TestOrientationInputsParseFrameTimeline_Metadata");
+
+    double value = 0.0;
+    int frameIndex = -1;
+    Check(EvaluateRuntimeWalkFitsSignalAtT(inputs, "mean", 0.75, &value, &frameIndex, &error),
+        "TestOrientationInputsParseFrameTimeline_Evaluate");
+    Check(frameIndex == 1 && NearlyEqual(value, 0.75),
+        "TestOrientationInputsParseFrameTimeline_Interpolates");
+}
+
+static void TestLiveFitsBindingsApplyOffsetsOverBaseline() {
+    RuntimeWalkFitsOrientationInputs inputs;
+    inputs.fits_path = "timeline.fits";
+    inputs.signals = {{"mean", 0.5}};
+    inputs.frames = {
+        RuntimeWalkFitsSignalFrame{0, 0.0, {{"mean", 0.0}}},
+        RuntimeWalkFitsSignalFrame{1, 1.0, {{"mean", 1.0}}},
+    };
+
+    RuntimeWalkFitsMappingBinding binding;
+    binding.source_kind = "fits_frame";
+    binding.source_path = "fits.frame.mean";
+    binding.source_signal = "mean";
+    binding.target_path = "fractal.params.explaino_seed";
+    binding.input_min = 0.0;
+    binding.input_max = 1.0;
+    binding.scale = 4.0;
+    binding.offset = -2.0;
+    binding.weight = 1.0;
+    binding.smoothing = 1.0;
+
+    RuntimeWalkFitsMappingBinding mixBinding;
+    mixBinding.source_kind = "fits_frame";
+    mixBinding.source_path = "fits.frame.mean";
+    mixBinding.source_signal = "mean";
+    mixBinding.target_path = "fractal.params.explaino_mix";
+    mixBinding.input_min = 0.0;
+    mixBinding.input_max = 1.0;
+    mixBinding.scale = 2.0;
+    mixBinding.offset = 0.0;
+    mixBinding.weight = 1.0;
+    mixBinding.has_clamp = true;
+    mixBinding.clamp_min = 0.0;
+    mixBinding.clamp_max = 4.0;
+
+    RuntimeWalkFitsMappingBinding phaseBinding;
+    phaseBinding.source_kind = "field";
+    phaseBinding.source_path = "field.traveler.confidence";
+    phaseBinding.source_signal = "field.traveler.confidence";
+    phaseBinding.target_path = "fractal.view.explaino_phase_strength";
+    phaseBinding.input_min = 0.0;
+    phaseBinding.input_max = 1.0;
+    phaseBinding.scale = 0.18;
+    phaseBinding.offset = -0.09;
+    phaseBinding.weight = 1.0;
+    phaseBinding.has_clamp = true;
+    phaseBinding.clamp_min = 0.0;
+    phaseBinding.clamp_max = 1.0;
+
+    ViewState baselineView{};
+    KernelParams baselineParams{};
+    baselineView.fractal_type = FractalType::explaino;
+    baselineView.explaino_phase_strength = 1.0f;
+    baselineParams.explaino_mix = 0.75f;
+    ExplainoSeedSetCombined(baselineView, baselineParams, 10.0);
+    baselineParams.explaino_warp_strength = 0.37f;
+
+    RuntimeWalkFitsFieldSignals fieldSignals{};
+    fieldSignals.traveler_confidence = 0.0;
+    ViewState composedView{};
+    KernelParams composedParams{};
+    std::vector<RuntimeWalkFitsLiveBindingResult> results;
+    std::string error;
+    Check(ComposeRuntimeWalkFitsBindingsOverLiveBaseline({binding, mixBinding, phaseBinding}, inputs, fieldSignals, 1.0,
+            baselineView, baselineParams, &composedView, &composedParams, &results, &error),
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_Compose");
+    Check(NearlyEqual(ExplainoSeedCombined(composedView, composedParams), 12.0, 1.0e-6),
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_SeedOffset");
+    Check(NearlyEqual(composedParams.explaino_warp_strength, baselineParams.explaino_warp_strength, 1.0e-6),
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_WarpPreserved");
+    Check(results.size() == 3u && results[0].ok && NearlyEqual(results[0].offset_value, 2.0),
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_ResultRecorded");
+    Check(NearlyEqual(composedParams.explaino_mix, 1.0, 1.0e-6) && results[1].ok && results[1].clamped,
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_MixTargetDomainClamped");
+    Check(results[2].ok && NearlyEqual(results[2].offset_value, -0.09, 1.0e-6),
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_NegativeFieldOffsetPreserved");
+    Check(NearlyEqual(composedView.explaino_phase_strength, 0.91, 1.0e-6),
+        "TestLiveFitsBindingsApplyOffsetsOverBaseline_FieldOffsetComposesBeforeClamp");
+}
+
 static void TestSynthesizedBaseStateUsesMappings() {
     RuntimeWalkFitsMappingCatalog catalog;
     std::string error;
@@ -290,6 +422,8 @@ int main() {
     TestMappingCatalogRejectsWarpTargetByDefault();
     TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget();
     TestOrientationInputsRequireFitsPath();
+    TestOrientationInputsParseFrameTimeline();
+    TestLiveFitsBindingsApplyOffsetsOverBaseline();
     TestSynthesizedBaseStateUsesMappings();
     TestWriteSynthesizedStateJsonWritesLoadableShape();
     TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape();

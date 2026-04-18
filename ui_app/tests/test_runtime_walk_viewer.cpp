@@ -1,5 +1,7 @@
 #include "../src/runtime_walk_viewer.h"
+#include "../src/runtime_walk_field_slime.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -196,7 +198,11 @@ static void TestRuntimeWalkSnapshotComposesOverLiveBaselineControls() {
         "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_CenterYOffset");
     Check(NearlyEqual(composedView.log2_zoom, baselineView.log2_zoom + snapshot.dlog2_zoom, 1.0e-12),
         "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_ZoomOffset");
-    Check(NearlyEqual(composedParams.explaino_mix, baselineParams.explaino_mix + (snapshot.mix - asset.base_params.explaino_mix), 1.0e-6),
+    const double expectedMix = std::clamp(
+        static_cast<double>(baselineParams.explaino_mix) + (snapshot.mix - asset.base_params.explaino_mix),
+        0.0,
+        1.0);
+    Check(NearlyEqual(composedParams.explaino_mix, expectedMix, 1.0e-6),
         "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_MixOffset");
     Check(NearlyEqual(composedParams.explaino_warp_strength, baselineParams.explaino_warp_strength, 1.0e-6),
         "TestRuntimeWalkSnapshotComposesOverLiveBaselineControls_WarpBaselinePreserved");
@@ -275,6 +281,49 @@ static void TestRuntimeWalkGradientOverlayFiniteAndThresholded() {
         "TestRuntimeWalkGradientOverlayFiniteAndThresholded_ThresholdStops");
 }
 
+
+static void TestMeasuredFieldOverlayUsesSlimeMarbleTrajectories() {
+    ViewState view{};
+    RenderSettings render{};
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    render.resolution = {800, 600};
+
+    RuntimeWalkFieldSlimeState field{};
+    field.t = 0.25;
+    field.traveler.cluster_id = 7;
+    field.traveler.centroid_world = {0.05, -0.05};
+    field.traveler.marble_count = 2;
+    field.traveler.confidence = 0.9;
+    RuntimeWalkFieldSlimeMarble first{};
+    first.marble_id = 1;
+    first.previous_world = {-0.10, -0.10};
+    first.world = {0.10, 0.05};
+    first.tangent = {0.8, 0.6};
+    first.score = 0.8;
+    first.traveler_cluster_id = 7;
+    RuntimeWalkFieldSlimeMarble second{};
+    second.marble_id = 2;
+    second.previous_world = {0.15, 0.10};
+    second.world = {0.00, -0.15};
+    second.tangent = {-0.4, -0.9};
+    second.score = 0.6;
+    second.traveler_cluster_id = 7;
+    field.marbles = {first, second};
+
+    RuntimeWalkOverlayProviderConfig config{};
+    config.threshold = 0.05;
+    RuntimeWalkGradientOverlay overlay;
+    std::string error;
+    Check(BuildRuntimeWalkMeasuredFieldOverlay(field, view, render, config, &overlay, &error),
+        "TestMeasuredFieldOverlayUsesSlimeMarbleTrajectories_Build");
+    Check(overlay.strokes.size() == 2u,
+        "TestMeasuredFieldOverlayUsesSlimeMarbleTrajectories_StrokeCount");
+    Check(overlay.strokes[0].points.size() >= 2u && !NearlyEqual(overlay.strokes[0].points.front().point.x, overlay.strokes[0].points.back().point.x),
+        "TestMeasuredFieldOverlayUsesSlimeMarbleTrajectories_FollowsMarblePath");
+}
+
 int main() {
     TestBuildRuntimeWalkViewerAssetCarriesCompanionsAndTicks();
     TestRuntimeWalkViewerPlaybackMatchesHeadlessInterpolation();
@@ -283,6 +332,7 @@ int main() {
     TestRuntimeWalkOverlayConfigExposesAdaptiveFieldSamplingControls();
     TestRuntimeWalkOverlayPathBuildsDeterministicClosedLoop();
     TestRuntimeWalkGradientOverlayFiniteAndThresholded();
+    TestMeasuredFieldOverlayUsesSlimeMarbleTrajectories();
 
     std::printf("test_runtime_walk_viewer: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

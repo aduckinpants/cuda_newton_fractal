@@ -2,6 +2,7 @@
 
 #include "finding_state_actions.h"
 #include "fractal_family_rules.h"
+#include <algorithm>
 #include <cstring>
 
 namespace {
@@ -12,6 +13,78 @@ bool RuntimeWalkLiveStateMatches(const ViewState& lhsView,
     const KernelParams& rhsParams) {
     return std::memcmp(&lhsView, &rhsView, sizeof(ViewState)) == 0 &&
         std::memcmp(&lhsParams, &rhsParams, sizeof(KernelParams)) == 0;
+}
+
+
+void AppendUniqueString(std::vector<std::string>* values, const std::string& value) {
+    if (!values || value.empty()) return;
+    if (std::find(values->begin(), values->end(), value) == values->end()) {
+        values->push_back(value);
+    }
+}
+
+const RuntimeWalkFitsMappingProfile* FindRuntimeWalkFitsProfile(const RuntimeWalkFitsMappingCatalog& catalog,
+    const std::string& profileId) {
+    for (const RuntimeWalkFitsMappingProfile& profile : catalog.profiles) {
+        if (profile.id == profileId) return &profile;
+    }
+    return nullptr;
+}
+
+void BuildRuntimeWalkLiveSignalCatalog(const RuntimeWalkFitsOrientationInputs& inputs,
+    std::vector<std::string>* outSignals) {
+    if (!outSignals) return;
+    outSignals->clear();
+    for (const auto& it : inputs.signals) AppendUniqueString(outSignals, it.first);
+    for (const RuntimeWalkFitsSignalFrame& frame : inputs.frames) {
+        for (const auto& it : frame.signals) AppendUniqueString(outSignals, it.first);
+    }
+    AppendUniqueString(outSignals, "field.traveler.score");
+    AppendUniqueString(outSignals, "field.traveler.confidence");
+    AppendUniqueString(outSignals, "field.tangent.angle");
+    AppendUniqueString(outSignals, "field.residual.pressure");
+    AppendUniqueString(outSignals, "field.cluster.spread");
+}
+
+bool LoadRuntimeWalkViewerLiveBindings(RuntimeWalkViewerSession* ioSession, std::string* outError) {
+    if (!ioSession) return false;
+    ioSession->live_bindings_loaded = false;
+    ioSession->live_binding_rows.clear();
+    ioSession->live_binding_results.clear();
+    ioSession->live_fits_signal_catalog.clear();
+    ioSession->live_runtime_target_catalog = RuntimeWalkFitsSupportedMappingTargetPaths();
+    if (ioSession->asset.authority.orientation_inputs_json_path.empty() ||
+        ioSession->asset.authority.mapping_profile_json_path.empty()) {
+        return true;
+    }
+    if (!LoadRuntimeWalkFitsOrientationInputsFile(
+            ioSession->asset.authority.orientation_inputs_json_path,
+            &ioSession->fits_orientation_inputs,
+            outError)) {
+        return false;
+    }
+    RuntimeWalkFitsMappingCatalog catalog;
+    if (!LoadRuntimeWalkFitsMappingCatalogFile(
+            ioSession->asset.authority.mapping_profile_json_path,
+            &catalog,
+            outError)) {
+        return false;
+    }
+    const std::string profileId = ioSession->asset.authority.mapping_profile_id.empty()
+        ? std::string("explaino_default")
+        : ioSession->asset.authority.mapping_profile_id;
+    const RuntimeWalkFitsMappingProfile* profile = FindRuntimeWalkFitsProfile(catalog, profileId);
+    if (!profile) {
+        if (outError) *outError = "Runtime walk viewer live bindings could not find mapping profile: " + profileId;
+        return false;
+    }
+    ioSession->live_binding_rows = profile->bindings;
+    BuildRuntimeWalkLiveSignalCatalog(ioSession->fits_orientation_inputs, &ioSession->live_fits_signal_catalog);
+    for (const RuntimeWalkFitsMappingBinding& binding : ioSession->live_binding_rows) {
+        AppendUniqueString(&ioSession->live_fits_signal_catalog, binding.source_signal);
+    }
+    ioSession->live_bindings_loaded = !ioSession->live_binding_rows.empty();
+    return true;
 }
 
 } // namespace
@@ -85,6 +158,7 @@ bool LoadRuntimeWalkViewerSession(const std::string& requestJsonPath,
     session.operator_baseline_params = baseParams;
     session.has_operator_baseline = true;
     session.has_last_composed_state = false;
+    if (!LoadRuntimeWalkViewerLiveBindings(&session, outError)) return false;
     *outSession = session;
     return true;
 }
@@ -126,6 +200,25 @@ bool ApplyRuntimeWalkViewerPlaybackSnapshot(RuntimeWalkViewerSession& session,
         session.operator_baseline_params,
         ioView,
         ioParams);
+    if (session.live_bindings_loaded) {
+        ViewState liveView{};
+        KernelParams liveParams{};
+        if (!ComposeRuntimeWalkFitsBindingsOverLiveBaseline(
+                session.live_binding_rows,
+                session.fits_orientation_inputs,
+                session.fits_field_signals,
+                playback.current_t,
+                *ioView,
+                *ioParams,
+                &liveView,
+                &liveParams,
+                &session.live_binding_results,
+                outError)) {
+            return false;
+        }
+        *ioView = liveView;
+        *ioParams = liveParams;
+    }
     session.last_composed_view = *ioView;
     session.last_composed_params = *ioParams;
     session.has_last_composed_state = true;

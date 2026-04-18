@@ -167,6 +167,14 @@ void RebuildCellsAndTraveler(const RuntimeWalkFieldSlimeConfig& config,
     }
 }
 
+
+bool CsvNeedsHeader(const std::string& path) {
+    std::error_code ec;
+    if (!std::filesystem::exists(path, ec)) return true;
+    if (ec) return true;
+    return std::filesystem::file_size(path, ec) == 0 || ec;
+}
+
 bool WriteParentDirs(const std::string& path, std::string* outError) {
     std::filesystem::path fsPath(path);
     std::error_code ec;
@@ -180,19 +188,6 @@ bool WriteParentDirs(const std::string& path, std::string* outError) {
     return true;
 }
 
-bool PublishCsvTempFile(const std::string& tempPath,
-    const std::string& finalPath,
-    std::string* outError) {
-    std::error_code ec;
-    std::filesystem::remove(finalPath, ec);
-    ec.clear();
-    std::filesystem::rename(tempPath, finalPath, ec);
-    if (ec) {
-        if (outError) *outError = "Failed to publish field slime CSV: " + finalPath;
-        return false;
-    }
-    return true;
-}
 } // namespace
 
 int ComputeRuntimeWalkFieldSlimeAdaptiveMarbleCount(const RuntimeWalkFieldSlimeConfig& rawConfig,
@@ -330,7 +325,8 @@ bool StepRuntimeWalkFieldSlime(const SidecarMeasurementHost& measurementHost,
 bool WriteRuntimeWalkFieldSlimeCsv(const RuntimeWalkFieldSlimeState& state,
     const std::string& flowLinesCsvPath,
     const std::string& fieldCellsCsvPath,
-    std::string* outError) {
+    std::string* outError,
+    const RuntimeWalkFieldSlimeExportContext* exportContext) {
     if (outError) outError->clear();
     if (flowLinesCsvPath.empty() || fieldCellsCsvPath.empty()) {
         if (outError) *outError = "Runtime-walk field slime CSV export requires both output paths";
@@ -338,16 +334,22 @@ bool WriteRuntimeWalkFieldSlimeCsv(const RuntimeWalkFieldSlimeState& state,
     }
     if (!WriteParentDirs(flowLinesCsvPath, outError) || !WriteParentDirs(fieldCellsCsvPath, outError)) return false;
 
-    const std::string flowTempPath = flowLinesCsvPath + ".tmp";
-    const std::string cellsTempPath = fieldCellsCsvPath + ".tmp";
-    std::ofstream flow(flowTempPath, std::ios::out | std::ios::binary | std::ios::trunc);
+    const RuntimeWalkFieldSlimeExportContext defaultContext{};
+    const RuntimeWalkFieldSlimeExportContext& context = exportContext ? *exportContext : defaultContext;
+
+    const bool writeFlowHeader = CsvNeedsHeader(flowLinesCsvPath);
+    const bool writeCellsHeader = CsvNeedsHeader(fieldCellsCsvPath);
+    std::ofstream flow(flowLinesCsvPath, std::ios::out | std::ios::binary | std::ios::app);
     if (!flow) {
-        if (outError) *outError = "Failed to open field slime flow CSV: " + flowTempPath;
+        if (outError) *outError = "Failed to open field slime flow CSV: " + flowLinesCsvPath;
         return false;
     }
-    flow << "t,export_sequence,actual_sample_count,marble_id,cell_id,traveler_cluster_id,world_x,world_y,previous_world_x,previous_world_y,tangent_x,tangent_y,tangent_angle,residual,iterations,score,active,stop_reason\n";
+    if (writeFlowHeader) {
+        flow << "t,fits_frame_index,export_sequence,actual_sample_count,marble_id,cell_id,traveler_cluster_id,world_x,world_y,previous_world_x,previous_world_y,tangent_x,tangent_y,tangent_angle,residual,iterations,score,active,stop_reason\n";
+    }
     for (const RuntimeWalkFieldSlimeMarble& marble : state.marbles) {
         flow << state.t << ','
+            << context.fits_frame_index << ','
             << state.export_sequence << ','
             << state.actual_sample_count << ','
             << marble.marble_id << ','
@@ -368,18 +370,21 @@ bool WriteRuntimeWalkFieldSlimeCsv(const RuntimeWalkFieldSlimeState& state,
     }
     flow.close();
     if (!flow) {
-        if (outError) *outError = "Failed to write field slime flow CSV: " + flowTempPath;
+        if (outError) *outError = "Failed to write field slime flow CSV: " + flowLinesCsvPath;
         return false;
     }
 
-    std::ofstream cells(cellsTempPath, std::ios::out | std::ios::binary | std::ios::trunc);
+    std::ofstream cells(fieldCellsCsvPath, std::ios::out | std::ios::binary | std::ios::app);
     if (!cells) {
-        if (outError) *outError = "Failed to open field slime cells CSV: " + cellsTempPath;
+        if (outError) *outError = "Failed to open field slime cells CSV: " + fieldCellsCsvPath;
         return false;
     }
-    cells << "t,export_sequence,actual_sample_count,cell_id,marble_count,centroid_x,centroid_y,score,traveler_cluster_id,traveler_centroid_x,traveler_centroid_y,cluster_confidence\n";
+    if (writeCellsHeader) {
+        cells << "t,fits_frame_index,export_sequence,actual_sample_count,cell_id,marble_count,centroid_x,centroid_y,score,traveler_cluster_id,traveler_centroid_x,traveler_centroid_y,cluster_confidence\n";
+    }
     for (const RuntimeWalkFieldSlimeCell& cell : state.cells) {
         cells << state.t << ','
+            << context.fits_frame_index << ','
             << state.export_sequence << ','
             << state.actual_sample_count << ','
             << cell.cell_id << ','
@@ -394,9 +399,8 @@ bool WriteRuntimeWalkFieldSlimeCsv(const RuntimeWalkFieldSlimeState& state,
     }
     cells.close();
     if (!cells) {
-        if (outError) *outError = "Failed to write field slime cells CSV: " + cellsTempPath;
+        if (outError) *outError = "Failed to write field slime cells CSV: " + fieldCellsCsvPath;
         return false;
     }
-    return PublishCsvTempFile(flowTempPath, flowLinesCsvPath, outError) &&
-        PublishCsvTempFile(cellsTempPath, fieldCellsCsvPath, outError);
+    return true;
 }

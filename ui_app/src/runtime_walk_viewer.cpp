@@ -1,4 +1,5 @@
 #include "runtime_walk_viewer.h"
+#include "runtime_walk_field_slime.h"
 
 #include "explaino_seed.h"
 #include "fractal_derived_fields.h"
@@ -188,6 +189,18 @@ Double2 BuildFlowFieldDirection(Double2 point,
     return NormalizeVector(direction);
 }
 
+
+Double2 WorldToViewportPoint(const ViewState& view, const RenderSettings& render, Double2 world) {
+    const double aspect = render.resolution.y > 0
+        ? static_cast<double>(render.resolution.x) / static_cast<double>(render.resolution.y)
+        : 1.0;
+    const double zoom = std::max(1.0e-30, std::pow(2.0, view.log2_zoom));
+    const double worldScale = 2.0 / zoom;
+    const double u = ClampUnit(0.5 + (world.x - view.center_hp_x) / std::max(1.0e-12, worldScale * aspect));
+    const double v = ClampUnit(0.5 - (world.y - view.center_hp_y) / std::max(1.0e-12, worldScale));
+    return {u, v};
+}
+
 std::vector<Double2> BuildSeedOrigins(Double2 currentPoint,
     Double2 tangent,
     Double2 normal,
@@ -371,7 +384,7 @@ void ComposeRuntimeWalkSnapshotOverLiveBaseline(const RuntimeWalkViewerAsset& as
     params.explaino_mix = static_cast<float>(ClampD(
         static_cast<double>(baselineParams.explaino_mix) + (snapshot.mix - static_cast<double>(asset.base_params.explaino_mix)),
         0.0,
-        4.0));
+        1.0));
     params.explaino_warp_strength = baselineParams.explaino_warp_strength;
     UpdateExplainoPolynomial(view, params, nullptr);
 
@@ -515,6 +528,45 @@ bool BuildRuntimeWalkGradientOverlay(const RuntimeWalkViewerAsset& asset,
         if (stroke.points.size() >= 2u) {
             outOverlay->strokes.push_back(stroke);
         }
+    }
+    return true;
+}
+
+
+bool BuildRuntimeWalkMeasuredFieldOverlay(const RuntimeWalkFieldSlimeState& fieldState,
+    const ViewState& view,
+    const RenderSettings& render,
+    const RuntimeWalkOverlayProviderConfig& config,
+    RuntimeWalkGradientOverlay* outOverlay,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!outOverlay) {
+        if (outError) *outError = "Runtime walk measured field overlay output is required";
+        return false;
+    }
+    *outOverlay = {};
+    if (config.kind == RuntimeWalkOverlayProviderKind::none) return true;
+    const int maxStrokeCount = std::max(1, config.max_strokes);
+    for (const RuntimeWalkFieldSlimeMarble& marble : fieldState.marbles) {
+        if (static_cast<int>(outOverlay->strokes.size()) >= maxStrokeCount) break;
+        if (!marble.active && marble.stop_reason != "nonfinite_sample") continue;
+        const double strength = std::max(0.0, marble.score);
+        if (strength < config.threshold) continue;
+        RuntimeWalkGradientOverlayGuideStroke stroke;
+        stroke.strength = strength;
+        const Double2 previous = WorldToViewportPoint(view, render, marble.previous_world);
+        const Double2 current = WorldToViewportPoint(view, render, marble.world);
+        stroke.points.push_back({previous, strength * 0.72});
+        stroke.points.push_back({current, strength});
+        const double tangentLength = std::sqrt(marble.tangent.x * marble.tangent.x + marble.tangent.y * marble.tangent.y);
+        if (tangentLength > 1.0e-9) {
+            const Double2 tipWorld{
+                marble.world.x + marble.tangent.x / tangentLength * 0.035,
+                marble.world.y + marble.tangent.y / tangentLength * 0.035,
+            };
+            stroke.points.push_back({WorldToViewportPoint(view, render, tipWorld), strength * 0.82});
+        }
+        outOverlay->strokes.push_back(std::move(stroke));
     }
     return true;
 }

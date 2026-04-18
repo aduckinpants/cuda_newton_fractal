@@ -78,6 +78,31 @@ bool WriteTextFile(const std::filesystem::path& path, const std::string& text, s
     return true;
 }
 
+bool RemoveIfPresent(const std::filesystem::path& path, std::string* outError) {
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
+    if (ec) {
+        if (outError) *outError = "Failed to remove stale runtime-walk live artifact: " + path.string();
+        return false;
+    }
+    return true;
+}
+
+bool RemoveStaleLivePlaybackExports(const std::filesystem::path& sessionDir, std::string* outError) {
+    const std::array<const char*, 6> names = {
+        "runtime_walk_flow_lines.csv",
+        "runtime_walk_flow_lines.csv.tmp",
+        "runtime_field_cells.csv",
+        "runtime_field_cells.csv.tmp",
+        "runtime_walk_binding_samples.csv",
+        "runtime_walk_binding_samples.csv.tmp",
+    };
+    for (const char* name : names) {
+        if (!RemoveIfPresent(sessionDir / name, outError)) return false;
+    }
+    return true;
+}
+
 std::string JsonEscape(const std::string& value) {
     std::string out;
     out.reserve(value.size() + 8u);
@@ -189,6 +214,15 @@ std::vector<std::string> DefaultRuntimeWalkFitsSignalCatalog() {
         "x_bias",
         "y_bias",
         "focus_ratio",
+        "gradient_energy",
+        "tangent_angle",
+        "tangent_x",
+        "tangent_y",
+        "field.traveler.score",
+        "field.traveler.confidence",
+        "field.tangent.angle",
+        "field.residual.pressure",
+        "field.cluster.spread",
     };
 }
 
@@ -198,7 +232,9 @@ std::string BindingOverridesSignature(const std::vector<RuntimeWalkFitsMappingBi
     out.precision(6);
     for (const RuntimeWalkFitsMappingBinding& binding : bindings) {
         out << binding.target_selector << '|'
+            << binding.source_kind << '|'
             << binding.source_signal << '|'
+            << binding.source_path << '|'
             << CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path) << '|'
             << binding.input_min << '|'
             << binding.input_max << '|'
@@ -208,6 +244,7 @@ std::string BindingOverridesSignature(const std::vector<RuntimeWalkFitsMappingBi
             << binding.smoothing << '|'
             << binding.polarity << '|'
             << binding.safety_class << '|'
+            << binding.curve << '|'
             << (binding.enabled ? 1 : 0) << '|'
             << (binding.has_clamp ? 1 : 0) << '|'
             << binding.clamp_min << '|'
@@ -234,7 +271,9 @@ std::string SerializeRuntimeWalkFitsMappingCatalogJson(const RuntimeWalkFitsMapp
             const RuntimeWalkFitsMappingBinding& binding = profile.bindings[bindingIndex];
             out << "        {\n";
             out << "          \"target_selector\": \"" << JsonEscape(binding.target_selector) << "\",\n";
+            out << "          \"source_kind\": \"" << JsonEscape(binding.source_kind) << "\",\n";
             out << "          \"source_signal\": \"" << JsonEscape(binding.source_signal) << "\",\n";
+            out << "          \"source_path\": \"" << JsonEscape(binding.source_path) << "\",\n";
             out << "          \"target_path\": \"" << JsonEscape(CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path)) << "\",\n";
             out << "          \"input_min\": " << binding.input_min << ",\n";
             out << "          \"input_max\": " << binding.input_max << ",\n";
@@ -244,6 +283,7 @@ std::string SerializeRuntimeWalkFitsMappingCatalogJson(const RuntimeWalkFitsMapp
             out << "          \"smoothing\": " << binding.smoothing << ",\n";
             out << "          \"polarity\": " << binding.polarity << ",\n";
             out << "          \"safety_class\": \"" << JsonEscape(binding.safety_class) << "\",\n";
+            out << "          \"curve\": \"" << JsonEscape(binding.curve) << "\",\n";
             out << "          \"enabled\": " << (binding.enabled ? "true" : "false");
             if (binding.has_clamp) {
                 out << ",\n          \"clamp_min\": " << binding.clamp_min;
@@ -285,6 +325,9 @@ bool ApplyBindingWorkbenchOverrides(const RuntimeWalkViewerImportRequest& reques
     bindings.reserve(request.binding_overrides.size());
     for (RuntimeWalkFitsMappingBinding binding : request.binding_overrides) {
         binding.target_path = CanonicalRuntimeWalkFitsMappingTargetPath(binding.target_path);
+        if (binding.source_kind.empty()) binding.source_kind = binding.source_signal.rfind("field.", 0) == 0 ? "field" : "fits_frame";
+        if (binding.source_path.empty()) binding.source_path = binding.source_kind == "field" ? binding.source_signal : std::string("fits.frame.") + binding.source_signal;
+        if (binding.curve.empty()) binding.curve = "smoothstep";
         binding.smoothing = std::clamp(binding.smoothing, 0.0, 1.0);
         binding.polarity = binding.polarity < 0 ? -1 : 1;
         if (binding.safety_class.empty()) binding.safety_class = "safe";
@@ -697,6 +740,7 @@ bool RefreshMappingProfileDisplayStateInternal(const std::string& exeDir,
         line.setf(std::ios::fixed);
         line.precision(3);
         line << binding.source_signal << " -> " << binding.target_path
+             << " | source=" << binding.source_kind
              << " | selector=" << binding.target_selector
              << " | amount=" << binding.weight
              << " | scale=" << binding.scale
@@ -705,6 +749,7 @@ bool RefreshMappingProfileDisplayStateInternal(const std::string& exeDir,
             line << " | clamp=[" << binding.clamp_min << ", " << binding.clamp_max << "]";
         }
         line << " | smoothing=" << binding.smoothing
+             << " | curve=" << binding.curve
              << " | polarity=" << binding.polarity
              << " | safety=" << binding.safety_class;
         if (!binding.enabled) {
@@ -916,6 +961,10 @@ bool BuildRuntimeWalkViewerImportSession(const RuntimeWalkViewerImportRequest& r
     const std::filesystem::path orientationInputsPath = sessionDir / "orientation_inputs.json";
     const std::filesystem::path synthesizedStatePath = sessionDir / "state.json";
     const std::filesystem::path effectiveMappingProfilePath = sessionDir / "effective_mapping_profile.json";
+
+    if (!RemoveStaleLivePlaybackExports(sessionDir, outError)) {
+        return false;
+    }
 
     RuntimeWalkRequest generatedRequest{};
     generatedRequest.authority_mode = request.authority_mode;

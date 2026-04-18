@@ -13,10 +13,14 @@ except ModuleNotFoundError:
 
 DEFAULT_MAPPING_PATH = REPO_ROOT / "ui" / "runtime_walk_fits_mapping_profiles_v1.json"
 BOOTSTRAP_HEADER_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_bootstrap.h"
+BOOTSTRAP_CPP_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_bootstrap.cpp"
+EXTRACTOR_PATH = REPO_ROOT / "tools" / "runtime_walk_extract_fits_orientation.py"
 VIEWER_IMGUI_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_viewer_imgui.cpp"
 RUNTIME_WALK_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk.cpp"
 RUNTIME_WALK_HEADER_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk.h"
 RUNTIME_WALK_IMPORT_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_viewer_import.cpp"
+FIELD_SLIME_HEADER_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_field_slime.h"
+FIELD_SLIME_CPP_PATH = REPO_ROOT / "ui_app" / "src" / "runtime_walk_field_slime.cpp"
 MAIN_PATH = REPO_ROOT / "ui_app" / "src" / "main.cpp"
 
 
@@ -36,10 +40,14 @@ def main(argv: list[str] | None = None) -> int:
     contract_payload = load_json_file(contract_path)
     mapping_payload = load_json_file(DEFAULT_MAPPING_PATH)
     header_text = BOOTSTRAP_HEADER_PATH.read_text(encoding="utf-8")
+    bootstrap_text = BOOTSTRAP_CPP_PATH.read_text(encoding="utf-8")
+    extractor_text = EXTRACTOR_PATH.read_text(encoding="utf-8")
     imgui_text = VIEWER_IMGUI_PATH.read_text(encoding="utf-8")
     runtime_walk_text = RUNTIME_WALK_PATH.read_text(encoding="utf-8")
     runtime_walk_header_text = RUNTIME_WALK_HEADER_PATH.read_text(encoding="utf-8")
     import_text = RUNTIME_WALK_IMPORT_PATH.read_text(encoding="utf-8")
+    field_slime_header_text = FIELD_SLIME_HEADER_PATH.read_text(encoding="utf-8")
+    field_slime_text = FIELD_SLIME_CPP_PATH.read_text(encoding="utf-8")
     main_text = MAIN_PATH.read_text(encoding="utf-8")
 
     errors: list[str] = []
@@ -87,6 +95,78 @@ def main(argv: list[str] | None = None) -> int:
             ]
         ),
         "effective_mapping_profile_visible": "effective_mapping_profile.json" in import_text,
+        "fits_timeline_extractor_emits_frames": all(
+            needle in extractor_text for needle in [
+                '"frame_count"',
+                '"frames"',
+                'frame_index',
+                'tangent_angle',
+            ]
+        ),
+        "orientation_timeline_parser_wired": all(
+            needle in header_text + bootstrap_text for needle in [
+                "RuntimeWalkFitsSignalFrame",
+                "EvaluateRuntimeWalkFitsSignalAtT",
+                "inputs.frames",
+            ]
+        ),
+        "live_binding_runtime_composes_offsets": all(
+            needle in bootstrap_text for needle in [
+                "ComposeRuntimeWalkFitsBindingsOverLiveBaseline",
+                "baselineValue + offsetValue",
+                "RuntimeWalkFitsFieldSignals",
+            ]
+        ),
+        "measured_field_overlay_default_wired": (
+            "BuildRuntimeWalkMeasuredFieldOverlay(fieldSlimeState" in main_text and
+            "BuildRuntimeWalkGradientOverlay" in main_text and
+            main_text.find("BuildRuntimeWalkMeasuredFieldOverlay(fieldSlimeState") < main_text.rfind("BuildRuntimeWalkGradientOverlay")
+        ),
+        "binding_samples_csv_export_wired": (
+            "runtime_walk_binding_samples.csv" in main_text and
+            "WriteRuntimeWalkBindingSamplesCsv" in main_text and
+            "t,source_path,target_path,frame_index" in main_text and
+            "Binding Samples CSV" in imgui_text
+        ),
+        "stale_live_exports_removed_on_regeneration": all(
+            needle in import_text for needle in [
+                "RemoveStaleLivePlaybackExports",
+                "runtime_walk_flow_lines.csv.tmp",
+                "runtime_walk_binding_samples.csv.tmp",
+            ]
+        ),
+        "runtime_target_domain_clamps_mix": (
+            "ClampRuntimeWalkTargetDomainValue" in bootstrap_text and
+            'targetPath == "fractal.params.explaino_mix"' in bootstrap_text and
+            not any(
+                binding.get("target_path") == "fractal.params.explaino_mix" and float(binding.get("clamp_max", 0.0)) > 1.0
+                for binding in bindings
+            )
+        ),
+        "playback_delta_has_wall_clock_fallback": all(
+            needle in main_text for needle in [
+                "lastRuntimeWalkTick",
+                "wallDeltaSeconds",
+                "playbackDeltaSeconds",
+            ]
+        ),
+        "flow_csv_fits_frame_context_wired": all(
+            needle in field_slime_header_text + field_slime_text + main_text for needle in [
+                "RuntimeWalkFieldSlimeExportContext",
+                "fits_frame_index",
+                "RuntimeWalkActiveFitsFrameIndex",
+            ]
+        ),
+        "live_binding_controls_tunable": all(
+            needle in imgui_text for needle in [
+                "Live FITS Binding Workbench",
+                "Curve##live_binding",
+                "Invert Polarity##live_binding",
+                "Clamp##live_binding",
+                "Clamp Min##live_binding",
+                "Clamp Max##live_binding",
+            ]
+        ),
     }
     if not checks["default_mapping_has_no_warp_binding"]:
         errors.append("default FITS mapping still binds a warp target")
@@ -108,6 +188,26 @@ def main(argv: list[str] | None = None) -> int:
         errors.append("runtime_walk_viewer_imgui.cpp does not expose adaptive field sampling controls")
     if not checks["effective_mapping_profile_visible"]:
         errors.append("runtime_walk_viewer_import.cpp does not write a durable effective mapping profile artifact")
+    if not checks["fits_timeline_extractor_emits_frames"]:
+        errors.append("runtime_walk_extract_fits_orientation.py does not emit a per-frame FITS timeline")
+    if not checks["orientation_timeline_parser_wired"]:
+        errors.append("runtime_walk_bootstrap does not parse/evaluate FITS signal timelines")
+    if not checks["live_binding_runtime_composes_offsets"]:
+        errors.append("runtime_walk_bootstrap does not compose live binding offsets over baseline state")
+    if not checks["measured_field_overlay_default_wired"]:
+        errors.append("main.cpp does not prefer measured field overlay before synthetic runtime-walk overlay")
+    if not checks["binding_samples_csv_export_wired"]:
+        errors.append("binding sample CSV export/path visibility is not wired")
+    if not checks["stale_live_exports_removed_on_regeneration"]:
+        errors.append("generated FITS session regeneration does not remove stale live export CSVs")
+    if not checks["runtime_target_domain_clamps_mix"]:
+        errors.append("live FITS binding defaults can still drive explaino_mix outside [0,1]")
+    if not checks["playback_delta_has_wall_clock_fallback"]:
+        errors.append("runtime-walk playback lacks a wall-clock delta fallback for zero ImGui delta")
+    if not checks["flow_csv_fits_frame_context_wired"]:
+        errors.append("field slime CSV export does not include active FITS frame context")
+    if not checks["live_binding_controls_tunable"]:
+        errors.append("live FITS binding workbench does not expose curve/polarity/clamp controls")
 
     expected_default = str(contract_payload.get("required_defaults", {}).get("base_fractal_type", ""))
     if expected_default and expected_default != "explaino":

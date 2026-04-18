@@ -59,6 +59,10 @@ struct RuntimeWalkFieldSlimeState {
     bool export_due = false;
 };
 
+struct RuntimeWalkFieldSlimeExportContext {
+    int fits_frame_index = -1;
+};
+
 int ComputeRuntimeWalkFieldSlimeAdaptiveMarbleCount(const RuntimeWalkFieldSlimeConfig& config,
     double gradientMagnitude,
     double tangentCurvature,
@@ -88,5 +92,6 @@ bool StepRuntimeWalkFieldSlime(const SidecarMeasurementHost& measurementHost,
 bool WriteRuntimeWalkFieldSlimeCsv(const RuntimeWalkFieldSlimeState& state,
     const std::string& flowLinesCsvPath,
     const std::string& fieldCellsCsvPath,
-    std::string* outError);
+    std::string* outError,
+    const RuntimeWalkFieldSlimeExportContext* exportContext = nullptr);
 

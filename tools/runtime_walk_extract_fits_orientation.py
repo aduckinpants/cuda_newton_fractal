@@ -3,11 +3,23 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
 
-def _load_primary_plane(path: Path) -> np.ndarray:
+def _metadata_value(value: Any) -> str | int | float | bool | None:
+    if isinstance(value, (str, bool)):
+        return value
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    if isinstance(value, (float, np.floating)):
+        number = float(value)
+        return number if np.isfinite(number) else None
+    return None
+
+
+def _load_primary_frames(path: Path) -> tuple[list[np.ndarray], dict[str, str | int | float | bool], tuple[int, ...]]:
     try:
         from astropy.io import fits
     except ImportError as exc:  # pragma: no cover - environment-specific guard
@@ -19,16 +31,37 @@ def _load_primary_plane(path: Path) -> np.ndarray:
         data = hdul[0].data
         if data is None:
             raise RuntimeError(f"FITS primary HDU has no data: {path}")
-        plane = np.asarray(data, dtype=np.float64)
-    while plane.ndim > 2:
-        plane = plane[0]
-    if plane.ndim == 1:
-        plane = plane.reshape((1, plane.shape[0]))
-    if plane.ndim != 2:
-        raise RuntimeError(f"Unsupported FITS primary shape for runtime-walk orientation extraction: {plane.shape!r}")
-    if not np.isfinite(plane).any():
-        raise RuntimeError(f"FITS primary plane contains no finite values: {path}")
-    return np.nan_to_num(plane, nan=0.0, posinf=0.0, neginf=0.0)
+        raw = np.asarray(data, dtype=np.float64)
+        metadata: dict[str, str | int | float | bool] = {}
+        for key, value in hdul[0].header.items():
+            if key in {"", "COMMENT", "HISTORY"}:
+                continue
+            converted = _metadata_value(value)
+            if converted is not None:
+                metadata[str(key)] = converted
+
+    if raw.ndim == 0:
+        raise RuntimeError(f"Unsupported FITS primary shape for runtime-walk orientation extraction: {raw.shape!r}")
+    if raw.ndim == 1:
+        frames = [raw.reshape((1, raw.shape[0]))]
+    elif raw.ndim == 2:
+        frames = [raw]
+    else:
+        frames_array = raw.reshape((-1, raw.shape[-2], raw.shape[-1]))
+        frames = [frames_array[index] for index in range(frames_array.shape[0])]
+    if not frames:
+        raise RuntimeError(f"FITS primary data contains no frames: {path}")
+
+    normalized_frames: list[np.ndarray] = []
+    for index, frame in enumerate(frames):
+        if frame.ndim != 2:
+            raise RuntimeError(f"Unsupported FITS frame shape at index {index}: {frame.shape!r}")
+        if not np.isfinite(frame).any():
+            continue
+        normalized_frames.append(np.nan_to_num(frame, nan=0.0, posinf=0.0, neginf=0.0))
+    if not normalized_frames:
+        raise RuntimeError(f"FITS primary frames contain no finite values: {path}")
+    return normalized_frames, metadata, tuple(int(dim) for dim in raw.shape)
 
 
 def _normalize_unit(value: float) -> float:
@@ -72,7 +105,11 @@ def _extract_signals(plane: np.ndarray) -> dict[str, float]:
     y_bias = top_mean - bottom_mean
 
     grad_y, grad_x = np.gradient(plane)
-    grad_energy = float(np.mean(np.sqrt(grad_x * grad_x + grad_y * grad_y)))
+    grad_magnitude = np.sqrt(grad_x * grad_x + grad_y * grad_y)
+    grad_energy = float(np.mean(grad_magnitude))
+    tangent_x = float(np.mean(-grad_y))
+    tangent_y = float(np.mean(grad_x))
+    tangent_angle = float(np.arctan2(tangent_y, tangent_x)) if abs(tangent_x) + abs(tangent_y) > 1.0e-12 else 0.0
 
     total_abs = float(np.sum(abs_plane))
     focus_ratio = float(np.sum(np.abs(center))) / total_abs if total_abs > 1.0e-12 else 0.0
@@ -102,7 +139,20 @@ def _extract_signals(plane: np.ndarray) -> dict[str, float]:
         "center_mean": center_mean,
         "edge_mean": edge_mean,
         "gradient_energy": grad_energy,
+        "tangent_x": tangent_x,
+        "tangent_y": tangent_y,
+        "tangent_angle": tangent_angle,
     }
+
+
+def _global_signals(frames: list[dict[str, float]]) -> dict[str, float]:
+    keys = sorted({key for frame in frames for key in frame})
+    out: dict[str, float] = {}
+    for key in keys:
+        values = [frame[key] for frame in frames if key in frame and np.isfinite(frame[key])]
+        if values:
+            out[key] = float(np.mean(values))
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -112,11 +162,26 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     fits_path = args.fits.resolve()
-    plane = _load_primary_plane(fits_path)
+    planes, metadata, dimensions = _load_primary_frames(fits_path)
+    frame_signals = [_extract_signals(plane) for plane in planes]
+    last_index = max(1, len(frame_signals) - 1)
+    frames = [
+        {
+            "frame_index": index,
+            "t": float(index / last_index) if len(frame_signals) > 1 else 0.0,
+            "shape": [int(planes[index].shape[0]), int(planes[index].shape[1])],
+            "signals": signals,
+        }
+        for index, signals in enumerate(frame_signals)
+    ]
     payload = {
         "version": 1,
         "fits_path": str(fits_path),
-        "signals": _extract_signals(plane),
+        "dimensions": list(dimensions),
+        "metadata": metadata,
+        "frame_count": len(frames),
+        "signals": _global_signals(frame_signals),
+        "frames": frames,
     }
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
     args.out_json.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

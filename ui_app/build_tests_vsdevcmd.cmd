@@ -17,7 +17,7 @@ for /L %%R in (1,1,30) do (
   if not exist "%OBJROOT%" goto objroot_clean
   rmdir /s /q "%OBJROOT%" 2>nul
   if not exist "%OBJROOT%" goto objroot_clean
-  timeout /t 1 /nobreak >nul
+  ping -n 2 127.0.0.1 >nul
 )
 echo [build_tests_vsdevcmd] Failed to remove "%OBJROOT%" after cleanup retries
 exit /b 1
@@ -27,7 +27,7 @@ for /L %%R in (1,1,30) do (
   if not exist "%PDBROOT%" goto pdbroot_clean
   rmdir /s /q "%PDBROOT%" 2>nul
   if not exist "%PDBROOT%" goto pdbroot_clean
-  timeout /t 1 /nobreak >nul
+  ping -n 2 127.0.0.1 >nul
 )
 echo [build_tests_vsdevcmd] Failed to remove "%PDBROOT%" after cleanup retries
 exit /b 1
