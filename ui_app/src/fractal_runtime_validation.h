@@ -67,8 +67,8 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
         }
         if (!std::isfinite(params.explaino_warp_strength) ||
             params.explaino_warp_strength < 0.0f ||
-            params.explaino_warp_strength > 5.0f) {
-            return FailFractalRuntimeValidation("explaino_warp_strength must be finite and in [0,5]", outError);
+            params.explaino_warp_strength > 1.0f) {
+            return FailFractalRuntimeValidation("explaino_warp_strength must be finite and in [0,1]", outError);
         }
     }
 

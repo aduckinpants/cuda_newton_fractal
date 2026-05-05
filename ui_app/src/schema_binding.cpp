@@ -21,7 +21,47 @@ bool ParseAndAssignEnumId(const std::string& id, EnumT* outValue, ParseFn parseF
     return outValue && parseFn(id, outValue);
 }
 
+template <typename T>
+void ClampNumericValue(T* value, const NumericControlRange& range) {
+    if (!value) {
+        return;
+    }
+    if (range.has_hard_min && *value < static_cast<T>(range.hard_min)) {
+        *value = static_cast<T>(range.hard_min);
+    }
+    if (range.has_hard_max && *value > static_cast<T>(range.hard_max)) {
+        *value = static_cast<T>(range.hard_max);
+    }
+}
+
 } // namespace
+
+NumericControlRange ResolveNumericControlRange(const UISchemaControl& control) {
+    NumericControlRange range;
+    if (control.has_ui_min) {
+        range.widget_min = control.ui_min;
+        range.has_widget_min = true;
+    } else if (control.has_min) {
+        range.widget_min = control.min;
+        range.has_widget_min = true;
+    }
+    if (control.has_ui_max) {
+        range.widget_max = control.ui_max;
+        range.has_widget_max = true;
+    } else if (control.has_max) {
+        range.widget_max = control.max;
+        range.has_widget_max = true;
+    }
+    if (control.has_min) {
+        range.hard_min = control.min;
+        range.has_hard_min = true;
+    }
+    if (control.has_max) {
+        range.hard_max = control.max;
+        range.has_hard_max = true;
+    }
+    return range;
+}
 
 std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.poly_kind") {
@@ -678,8 +718,9 @@ bool RenderIntControl(
         return RenderDiagnosticLabel(control, "bind failed");
     }
 
-    const int minValue = control.has_min ? static_cast<int>(control.min) : 0;
-    const int maxValue = control.has_max ? static_cast<int>(control.max) : 100;
+    const NumericControlRange range = ResolveNumericControlRange(control);
+    const int minValue = range.has_widget_min ? static_cast<int>(range.widget_min) : 0;
+    const int maxValue = range.has_widget_max ? static_cast<int>(range.widget_max) : (control.type == "slider_int" ? 100 : 0);
 
     bool changed = false;
     if (control.type == "slider_int") {
@@ -687,6 +728,13 @@ bool RenderIntControl(
     } else {
         const float speed = control.has_step ? static_cast<float>(control.step) : 1.0f;
         changed = ImGui::DragInt(control.label.c_str(), value, speed, minValue, maxValue);
+    }
+    ImGui::SameLine();
+    const std::string inputLabel = "##value_input_" + control.id;
+    const bool typedChanged = ImGui::InputInt(inputLabel.c_str(), value, 0, 0);
+    if (changed || typedChanged) {
+        ClampNumericValue(value, range);
+        changed = true;
     }
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
@@ -704,8 +752,9 @@ bool RenderFloatControl(
         return RenderDiagnosticLabel(control, "bind failed");
     }
 
-    const float minValue = control.has_min ? static_cast<float>(control.min) : 0.0f;
-    const float maxValue = control.has_max ? static_cast<float>(control.max) : 1.0f;
+    const NumericControlRange range = ResolveNumericControlRange(control);
+    const float minValue = range.has_widget_min ? static_cast<float>(range.widget_min) : 0.0f;
+    const float maxValue = range.has_widget_max ? static_cast<float>(range.widget_max) : (control.type == "slider_float" ? 1.0f : 0.0f);
     const float speed = control.has_step ? static_cast<float>(control.step) : 0.01f;
     const ImGuiSliderFlags flags = control.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
 
@@ -715,6 +764,13 @@ bool RenderFloatControl(
     } else {
         changed = ImGui::DragFloat(control.label.c_str(), value, speed, minValue, maxValue, "%.3f", flags);
     }
+    ImGui::SameLine();
+    const std::string inputLabel = "##value_input_" + control.id;
+    const bool typedChanged = ImGui::InputFloat(inputLabel.c_str(), value, 0.0f, 0.0f, "%.5f");
+    if (changed || typedChanged) {
+        ClampNumericValue(value, range);
+        changed = true;
+    }
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;
@@ -723,6 +779,7 @@ bool RenderFloatControl(
 bool RenderExplainoSeedDoubleControl(
     const UISchemaControl& control,
     BindingContext& ctx,
+    const NumericControlRange& range,
     double minValue,
     double maxValue,
     double speed,
@@ -737,8 +794,12 @@ bool RenderExplainoSeedDoubleControl(
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speed), &minValue, &maxValue, valueFormat);
     }
     ImGui::SameLine();
-    const bool typedChanged = ImGui::InputDouble("##val", &displayed, 0.0, 0.0, valueFormat);
-    if (typedChanged) changed = true;
+    const std::string inputLabel = "##value_input_" + control.id;
+    const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), &displayed, 0.0, 0.0, valueFormat);
+    if (changed || typedChanged) {
+        ClampNumericValue(&displayed, range);
+        changed = true;
+    }
     if (changed) {
         ExplainoSeedSetCombined(*ctx.view, *ctx.params, displayed);
     }
@@ -758,13 +819,14 @@ bool RenderDoubleControl(
         return RenderDiagnosticLabel(control, "bind failed");
     }
 
-    const double minValue = control.has_min ? control.min : 0.0;
-    const double maxValue = control.has_max ? control.max : 1.0;
+    const NumericControlRange range = ResolveNumericControlRange(control);
+    const double minValue = range.has_widget_min ? range.widget_min : 0.0;
+    const double maxValue = range.has_widget_max ? range.widget_max : (control.type == "slider_double" ? 1.0 : 0.0);
     const double speed = control.has_step ? control.step : 0.001;
     const char* valueFormat = "%.6f";
 
     if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
-        return RenderExplainoSeedDoubleControl(control, ctx, minValue, maxValue, speed, valueFormat, ioDirty, ioInteracted);
+        return RenderExplainoSeedDoubleControl(control, ctx, range, minValue, maxValue, speed, valueFormat, ioDirty, ioInteracted);
     }
 
     bool changed = false;
@@ -774,8 +836,12 @@ bool RenderDoubleControl(
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, value, static_cast<float>(speed), &minValue, &maxValue, valueFormat);
     }
     ImGui::SameLine();
-    const bool typedChanged = ImGui::InputDouble("##val", value, 0.0, 0.0, valueFormat);
-    if (typedChanged) changed = true;
+    const std::string inputLabel = "##value_input_" + control.id;
+    const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), value, 0.0, 0.0, valueFormat);
+    if (changed || typedChanged) {
+        ClampNumericValue(value, range);
+        changed = true;
+    }
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;

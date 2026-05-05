@@ -30,6 +30,15 @@ static bool get_bool(const json_min::Value& o, const char* key, bool& out) {
     return true;
 }
 
+static void parse_numeric_control_metadata(const json_min::Value& o, UISchemaControl* ctrl) {
+    double n = 0.0;
+    if (get_number(o, "ui_min", n)) { ctrl->ui_min = n; ctrl->has_ui_min = true; }
+    if (get_number(o, "ui_max", n)) { ctrl->ui_max = n; ctrl->has_ui_max = true; }
+    if (get_number(o, "min", n)) { ctrl->min = n; ctrl->has_min = true; }
+    if (get_number(o, "max", n)) { ctrl->max = n; ctrl->has_max = true; }
+    if (get_number(o, "step", n)) { ctrl->step = n; ctrl->has_step = true; }
+}
+
 UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
     UISchemaLoadResult r;
     if (!root.is_object()) {
@@ -106,10 +115,7 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
 
             get_string(c, "value_type", ctrl.value_type);
 
-            double n = 0.0;
-            if (get_number(c, "min", n)) { ctrl.min = n; ctrl.has_min = true; }
-            if (get_number(c, "max", n)) { ctrl.max = n; ctrl.has_max = true; }
-            if (get_number(c, "step", n)) { ctrl.step = n; ctrl.has_step = true; }
+            parse_numeric_control_metadata(c, &ctrl);
 
             if (auto* logv = c.get("logarithmic")) {
                 if (logv->is_bool()) ctrl.logarithmic = logv->as_bool();

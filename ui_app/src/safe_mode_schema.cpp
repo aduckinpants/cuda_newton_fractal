@@ -94,6 +94,45 @@ UISchemaControl MakeRangedParamControl(
     return control;
 }
 
+UISchemaControl MakeUiRangedParamControl(
+    const char* id,
+    const char* type,
+    const char* label,
+    const char* value_type,
+    double uiMin,
+    double uiMax,
+    double step,
+    const char* path,
+    const json_min::Value& default_value) {
+    UISchemaControl control = MakeParamControl(id, type, label, value_type, path, default_value);
+    control.ui_min = uiMin;
+    control.ui_max = uiMax;
+    control.step = step;
+    control.has_ui_min = true;
+    control.has_ui_max = true;
+    control.has_step = true;
+    return control;
+}
+
+UISchemaControl MakeSoftMinParamControl(
+    const char* id,
+    const char* type,
+    const char* label,
+    const char* value_type,
+    double hardMin,
+    double uiMin,
+    double uiMax,
+    double step,
+    const char* path,
+    const json_min::Value& default_value,
+    bool logarithmic = false) {
+    UISchemaControl control = MakeUiRangedParamControl(id, type, label, value_type, uiMin, uiMax, step, path, default_value);
+    control.min = hardMin;
+    control.has_min = true;
+    control.logarithmic = logarithmic;
+    return control;
+}
+
 UISchemaControl MakeActionControl(const char* id, const char* label, const char* path) {
     UISchemaControl control;
     control.id = id;
@@ -131,12 +170,13 @@ UISchemaPanel BuildSafeModeViewPanel() {
     panel.label = "View (Safe Mode)";
     panel.order = 10;
     panel.has_order = true;
+
     panel.controls = {
         BuildSafeModeFractalTypeControl(),
-        MakeRangedParamControl("center_x", "drag_float", "Center X", "float", -2.0, 2.0, 0.001, "fractal.view.center.x", json_min::Value{0.0}),
-        MakeRangedParamControl("center_y", "drag_float", "Center Y", "float", -2.0, 2.0, 0.001, "fractal.view.center.y", json_min::Value{0.0}),
-        MakeRangedParamControl("zoom", "drag_float", "Zoom", "float", 1.0e-12, 1.0e12, 0.01, "fractal.view.zoom", json_min::Value{1.0}),
-        MakeRangedParamControl("rotation_deg", "drag_float", "Rotation (deg)", "float", -180.0, 180.0, 0.1, "fractal.view.rotation", json_min::Value{0.0}),
+        MakeUiRangedParamControl("center_x", "drag_float", "Center X", "float", -2.0, 2.0, 0.001, "fractal.view.center.x", json_min::Value{0.0}),
+        MakeUiRangedParamControl("center_y", "drag_float", "Center Y", "float", -2.0, 2.0, 0.001, "fractal.view.center.y", json_min::Value{0.0}),
+        MakeSoftMinParamControl("zoom", "drag_float", "Zoom", "float", 1.0e-12, 0.25, 64.0, 0.01, "fractal.view.zoom", json_min::Value{1.0}, true),
+        MakeUiRangedParamControl("rotation_deg", "drag_float", "Rotation (deg)", "float", -180.0, 180.0, 0.1, "fractal.view.rotation", json_min::Value{0.0}),
         MakeParamControl("auto_refresh", "checkbox", "Continuous Render", "bool", "fractal.view.auto_refresh", json_min::Value{false}),
         MakeActionControl("render_once", "Render Once", "fractal.actions.render_once"),
         MakeActionControl("reset_view", "Reset View", "fractal.actions.reset_view"),
@@ -153,8 +193,9 @@ UISchemaPanel BuildSafeModeFractalPanel() {
     panel.label = "Fractal (Safe Mode)";
     panel.order = 20;
     panel.has_order = true;
+
     panel.controls = {
-        MakeRangedParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
+        MakeSoftMinParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
         MakeRangedParamControl("exposure", "slider_float", "Exposure", "float", 0.1, 5.0, 0.01, "fractal.params.exposure", json_min::Value{1.0}),
     };
     return panel;

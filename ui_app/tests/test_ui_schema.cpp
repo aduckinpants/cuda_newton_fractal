@@ -176,6 +176,54 @@ int main() {
         }
     }
 
+    // Test explicit UI-range metadata parsing for drag controls.
+    {
+        const char* json = R"({
+            "schema_version": "1",
+            "namespace": "test",
+            "panels": [
+                {
+                    "id": "p1",
+                    "label": "Panel",
+                    "controls": [
+                        {
+                            "id": "center_x",
+                            "type": "drag_float",
+                            "label": "Center X",
+                            "value_type": "float",
+                            "ui_min": -2.0,
+                            "ui_max": 2.0,
+                            "step": 0.001,
+                            "binding": { "kind": "param", "path": "fractal.view.center.x" }
+                        }
+                    ]
+                }
+            ]
+        })";
+
+        json_min::ParseResult pr = json_min::Parse(json);
+        if (!pr.error.empty()) {
+            std::cerr << "JSON parse failed for ui-range test: " << pr.error << "\n";
+            return 1;
+        }
+
+        UISchemaLoadResult result = LoadUISchemaFromJson(pr.value);
+        if (!result.error.empty()) {
+            std::cerr << "Schema load failed for ui-range test: " << result.error << "\n";
+            return 1;
+        }
+
+        const auto& control = result.schema.panels[0].controls[0];
+        if (!control.has_ui_min || !control.has_ui_max || control.ui_min != -2.0 || control.ui_max != 2.0) {
+            std::cerr << "Drag control should parse explicit ui_min/ui_max metadata\n";
+            return 1;
+        }
+        if (control.has_min || control.has_max) {
+            std::cerr << "ui_min/ui_max should stay separate from hard min/max metadata\n";
+            return 1;
+        }
+    }
+
     // Test grouped enum option parsing for organized selectors.
     {
         const char* json = R"({
@@ -273,6 +321,29 @@ int main() {
         bool foundClusterRadiusClampAligned = false;
         bool foundClusterRadiusVisibilityFixed = false;
         bool foundPositiveNovaAlphaMin = false;
+        bool foundCenterXUiRange = false;
+        bool foundCenterYUiRange = false;
+        bool foundZoomUiRange = false;
+        bool foundRotationUiRange = false;
+        bool foundMaxIterUiCap = false;
+        bool foundEpsilonSoftMax = false;
+        bool foundSeedRateSoftMin = false;
+        bool foundParamAnimRateSoftMin = false;
+        bool foundDiveSpeedUiCap = false;
+        bool foundPolyCoeffUiRange = false;
+        bool foundExplainoPhaseUiRange = false;
+        bool foundExplainoPhaseStrengthUiRange = false;
+        bool foundExplainoPhaseVisibleForDual = false;
+        bool foundExplainoWarpClampAligned = false;
+        bool foundExplainoDampingUiRange = false;
+        bool foundMomentumBetaUiRange = false;
+        bool foundJoyCouplingUiRange = false;
+        bool foundFoldCouplingUiRange = false;
+        bool foundBellCouplingUiRange = false;
+        bool foundRippleAmplitudeUiRange = false;
+        bool foundSpliceOffsetUiRange = false;
+        bool foundVortexStrengthUiRange = false;
+        bool foundTensionStrengthUiRange = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -334,13 +405,16 @@ int main() {
                 if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
                     foundContinuousRenderDefaultFalse = true;
                 }
-                if (ctrl.id == "explaino_seed" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 10.0) {
+                if (ctrl.id == "explaino_seed" && ctrl.has_ui_min && ctrl.has_ui_max &&
+                    ctrl.ui_min == -10.0 && ctrl.ui_max == 10.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundNegativeExplainoSeedRange = true;
                 }
-                if (ctrl.id == "explaino_seed_b" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 10.0) {
+                if (ctrl.id == "explaino_seed_b" && ctrl.has_ui_min && ctrl.has_ui_max &&
+                    ctrl.ui_min == -10.0 && ctrl.ui_max == 10.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundNegativeExplainoSeedBRange = true;
                 }
-                if (ctrl.id == "explaino_phase_strength" && ctrl.has_min && ctrl.has_max && ctrl.min < 0.0 && ctrl.max == 20.0) {
+                if (ctrl.id == "explaino_phase_strength" && ctrl.has_ui_min && ctrl.has_ui_max &&
+                    ctrl.ui_min == -20.0 && ctrl.ui_max == 20.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundNegativePhaseStrengthRange = true;
                 }
                 if (ctrl.id == "explaino_root_spread" && ctrl.has_max && ctrl.max == 3.0) {
@@ -354,6 +428,103 @@ int main() {
                 }
                 if (ctrl.id == "nova_alpha" && ctrl.has_min && ctrl.min > 0.0) {
                     foundPositiveNovaAlphaMin = true;
+                }
+                if (ctrl.id == "center_x" && ctrl.has_ui_min && ctrl.has_ui_max && ctrl.ui_min == -2.0 && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundCenterXUiRange = true;
+                }
+                if (ctrl.id == "center_y" && ctrl.has_ui_min && ctrl.has_ui_max && ctrl.ui_min == -2.0 && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundCenterYUiRange = true;
+                }
+                if (ctrl.id == "zoom" && ctrl.has_min && ctrl.min == 1e-12 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.25 && ctrl.has_ui_max && ctrl.ui_max == 64.0 &&
+                    !ctrl.has_max && ctrl.logarithmic) {
+                    foundZoomUiRange = true;
+                }
+                if (ctrl.id == "rotation_deg" && ctrl.has_ui_min && ctrl.ui_min == -180.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 180.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundRotationUiRange = true;
+                }
+                if (ctrl.id == "max_iter" && ctrl.has_min && ctrl.min == 1.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 1.0 && ctrl.has_ui_max && ctrl.ui_max == 5000.0 &&
+                    !ctrl.has_max) {
+                    foundMaxIterUiCap = true;
+                }
+                if (ctrl.id == "epsilon" && ctrl.has_min && ctrl.min == 1e-12 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 1e-12 && ctrl.has_ui_max && ctrl.ui_max == 0.01 &&
+                    !ctrl.has_max && ctrl.logarithmic) {
+                    foundEpsilonSoftMax = true;
+                }
+                if (ctrl.id == "explaino_seed_rate" && ctrl.has_min && ctrl.min == 0.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0001 && ctrl.has_ui_max && ctrl.ui_max == 5.0 &&
+                    !ctrl.has_max && ctrl.logarithmic) {
+                    foundSeedRateSoftMin = true;
+                }
+                if (ctrl.id == "param_anim_rate" && ctrl.has_min && ctrl.min == 0.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0001 && ctrl.has_ui_max && ctrl.ui_max == 5.0 &&
+                    !ctrl.has_max && ctrl.logarithmic) {
+                    foundParamAnimRateSoftMin = true;
+                }
+                if (ctrl.id == "dive_speed" && ctrl.has_min && ctrl.min == 0.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.0 && ctrl.has_ui_max && ctrl.ui_max == 5.0 && !ctrl.has_max) {
+                    foundDiveSpeedUiCap = true;
+                }
+                if ((ctrl.id == "poly_c0" || ctrl.id == "poly_c1" || ctrl.id == "poly_c2" ||
+                     ctrl.id == "poly_c3" || ctrl.id == "poly_c4") &&
+                    ctrl.has_ui_min && ctrl.ui_min == -10.0 && ctrl.has_ui_max && ctrl.ui_max == 10.0 &&
+                    !ctrl.has_min && !ctrl.has_max) {
+                    foundPolyCoeffUiRange = true;
+                }
+                if (ctrl.id == "explaino_phase" && ctrl.has_ui_min && ctrl.ui_min == -6.283185307179586 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 6.283185307179586 && !ctrl.has_min && !ctrl.has_max) {
+                    foundExplainoPhaseUiRange = true;
+                }
+                if (ctrl.id == "explaino_phase" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
+                    foundExplainoPhaseVisibleForDual = true;
+                }
+                if (ctrl.id == "explaino_phase_strength" && ctrl.has_ui_min && ctrl.ui_min == -20.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 20.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundExplainoPhaseStrengthUiRange = true;
+                }
+                if (ctrl.id == "explaino_warp_strength" && ctrl.has_min && ctrl.min == 0.0 &&
+                    ctrl.has_max && ctrl.max == 1.0 && !ctrl.has_ui_min && !ctrl.has_ui_max) {
+                    foundExplainoWarpClampAligned = true;
+                }
+                if (ctrl.id == "explaino_damping" && ctrl.has_ui_min && ctrl.ui_min == 0.01 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 10.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundExplainoDampingUiRange = true;
+                }
+                if (ctrl.id == "momentum_beta" && ctrl.has_ui_min && ctrl.ui_min == -1.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundMomentumBetaUiRange = true;
+                }
+                if (ctrl.id == "joy_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundJoyCouplingUiRange = true;
+                }
+                if (ctrl.id == "fold_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundFoldCouplingUiRange = true;
+                }
+                if (ctrl.id == "bell_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundBellCouplingUiRange = true;
+                }
+                if (ctrl.id == "ripple_amplitude" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 0.5 && !ctrl.has_min && !ctrl.has_max) {
+                    foundRippleAmplitudeUiRange = true;
+                }
+                if (ctrl.id == "splice_offset" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundSpliceOffsetUiRange = true;
+                }
+                if (ctrl.id == "vortex_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundVortexStrengthUiRange = true;
+                }
+                if (ctrl.id == "tension_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
+                    foundTensionStrengthUiRange = true;
                 }
                 if (ctrl.id == "coloring_mode_newton" && ctrl.has_visible_if &&
                     ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
@@ -392,6 +563,20 @@ int main() {
         }
         if (!foundRootSpreadClampAligned || !foundClusterRadiusClampAligned || !foundClusterRadiusVisibilityFixed || !foundPositiveNovaAlphaMin) {
             std::cerr << "Did not find engine-aligned Explaino/Nova control limits in schema\n";
+            return 1;
+        }
+        if (!foundCenterXUiRange || !foundCenterYUiRange) {
+            std::cerr << "Did not find explicit UI ranges for unbounded center drag controls in schema\n";
+            return 1;
+        }
+        if (!foundZoomUiRange || !foundRotationUiRange || !foundMaxIterUiCap || !foundEpsilonSoftMax ||
+            !foundSeedRateSoftMin || !foundParamAnimRateSoftMin || !foundDiveSpeedUiCap ||
+            !foundPolyCoeffUiRange || !foundExplainoPhaseUiRange || !foundExplainoPhaseStrengthUiRange ||
+            !foundExplainoPhaseVisibleForDual || !foundExplainoWarpClampAligned || !foundExplainoDampingUiRange || !foundMomentumBetaUiRange ||
+            !foundJoyCouplingUiRange || !foundFoldCouplingUiRange || !foundBellCouplingUiRange ||
+            !foundRippleAmplitudeUiRange || !foundSpliceOffsetUiRange || !foundVortexStrengthUiRange ||
+            !foundTensionStrengthUiRange) {
+            std::cerr << "Did not find the expected soft-range MVP control updates in schema\n";
             return 1;
         }
         if (!foundLambdaReal || !foundLambdaImag) {
@@ -435,6 +620,11 @@ int main() {
         bool foundPreviewTargetFpsDefault = false;
         bool foundPreviewMinScaleDefault = false;
         bool foundContinuousRenderDefaultFalse = false;
+        bool foundSafeModeCenterXUiRange = false;
+        bool foundSafeModeCenterYUiRange = false;
+        bool foundSafeModeZoomUiRange = false;
+        bool foundSafeModeRotationUiRange = false;
+        bool foundSafeModeMaxIterUiCap = false;
 
         if (!viewPanel || viewPanel->label != "View (Safe Mode)" || !viewPanel->has_order || viewPanel->order != 10 ||
             viewPanel->controls.size() != 11) {
@@ -517,6 +707,24 @@ int main() {
                 if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
                     foundContinuousRenderDefaultFalse = true;
                 }
+                if (ctrl.id == "center_x" && ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundSafeModeCenterXUiRange = true;
+                }
+                if (ctrl.id == "center_y" && ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundSafeModeCenterYUiRange = true;
+                }
+                if (ctrl.id == "zoom" && ctrl.has_min && ctrl.min == 1e-12 && ctrl.has_ui_min && ctrl.ui_min == 0.25 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 64.0 && !ctrl.has_max && ctrl.logarithmic) {
+                    foundSafeModeZoomUiRange = true;
+                }
+                if (ctrl.id == "rotation_deg" && ctrl.has_ui_min && ctrl.ui_min == -180.0 && ctrl.has_ui_max && ctrl.ui_max == 180.0 &&
+                    !ctrl.has_min && !ctrl.has_max) {
+                    foundSafeModeRotationUiRange = true;
+                }
+                if (ctrl.id == "max_iter" && ctrl.has_min && ctrl.min == 1.0 && ctrl.has_ui_min && ctrl.ui_min == 1.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 5000.0 && !ctrl.has_max) {
+                    foundSafeModeMaxIterUiCap = true;
+                }
             }
         }
         if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
@@ -541,6 +749,11 @@ int main() {
         }
         if (!foundContinuousRenderDefaultFalse) {
             std::cerr << "Safe-mode schema did not expose the disabled-by-default continuous-render control\n";
+            return 1;
+        }
+        if (!foundSafeModeCenterXUiRange || !foundSafeModeCenterYUiRange || !foundSafeModeZoomUiRange ||
+            !foundSafeModeRotationUiRange || !foundSafeModeMaxIterUiCap) {
+            std::cerr << "Safe-mode schema did not inherit the MVP soft-range control updates\n";
             return 1;
         }
     }
