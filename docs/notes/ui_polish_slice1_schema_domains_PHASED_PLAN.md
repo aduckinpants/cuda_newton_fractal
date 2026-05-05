@@ -2,20 +2,22 @@
 
 ## Current Phase
 
-Phase 4 - hostile re-audit the remaining schema-domain misses, republish the deployed runtime, and checkpoint the corrective follow-up
+Phase 4 complete - duplicate-schema cleanup and Warp domain repair validated on the published runtime
 
 ## Phase Checklist
 
 - [x] Phase 1 - wait for Phase 0 closeout and capture the schema-domain baseline
 - [x] Phase 2 - define the target domains, widget hints, and grouping fixes in the schema/binding seam
 - [x] Phase 3 - implement the schema, binding, and focused test updates
-- [ ] Phase 4 - hostile audit the resulting UI-domain behavior and checkpoint the slice
+- [x] Phase 4 - hostile audit the resulting UI-domain behavior and checkpoint the slice
 
 ## Explicit User Asks
 
-- [open] Fix slider values that are not covering the proper domains.
-- [open] Treat the UI polish as a bounded slice instead of a broad refactor.
-- [open] Re-audit the shipped control bindings in detail and correct the remaining misses instead of stopping at partial coverage.
+- [done] Fix slider values that are not covering the proper domains.
+- [done] Treat the UI polish as a bounded slice instead of a broad refactor.
+- [done] Re-audit the shipped control bindings in detail and correct the remaining misses instead of stopping at partial coverage.
+- [done] Remove the stale duplicate schema JSON entirely from the runtime/deploy surface and the remaining repo references.
+- [done] Fix Warp so the shipped UI, shared runtime validation, and deployed runtime all agree on the real supported domain.
 
 ## Presumption Loop
 
@@ -37,6 +39,8 @@ Hostile review assumes the current static ranges are too weak or too generic for
 - Hostile Review Reopen: the reopened user review showed the first sweep still left several Explaino-family controls on legacy hard `min`/`max` metadata even though the shipped experimental-family reference only defines their intended widget spans, not engine clamps. The same reopen found that `fractal.view.explaino_phase` was still hidden for `explaino_dual` even though the shared runtime path uses the phase/warp start for DualSeed as well.
 - Range Evidence: `docs/EXPLAINO_EXPERIMENTAL_FAMILY_REFERENCE.md` defines the shipped UI spans for `joy_coupling`, `fold_coupling`, `bell_coupling`, `ripple_amplitude`, `splice_offset`, `vortex_strength`, and `tension_strength`; those values belong in `ui_min`/`ui_max` unless the runtime itself proves a hard clamp.
 - Runtime Evidence: the inertial runtime uses `momentum_beta` as a signed scalar multiplier on the previous-step momentum vector in both the host probe path and the device sampler, so the prior `[0,1]` hard clamp was suppressing a real half of the control domain.
+- Duplicate-Schema Evidence: the deployed D runtime still carried a stale extra schema payload beside the live schema even though `ui_app/src/viewer_schema_load.cpp` only searches for the live `fractal_binding_surface_v1.ui_schema.json` file. The stale duplicate was therefore dead weight at best and a user-hostile confusion source at worst, because it still advertised old control metadata that no longer matched the live schema.
+- Warp Authority Evidence: `ui_app/src/fractal_device_math.cuh` and `ui_app/src/fractal_probe_runner.cpp` both clamp `explaino_warp_strength` to `[0,1]` before applying the warp-start transform, while the live schema and `ui_app/src/fractal_runtime_validation.h` still advertise `[0,5]`. The real runtime owner is therefore already the stricter `[0,1]` contract.
 
 ## Proof Ledger
 
@@ -49,6 +53,11 @@ Hostile review assumes the current static ranges are too weak or too generic for
 - Published-runtime GREEN: `verify: runtime publish` completed with active runtime `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, and the deployed executable passed `--validate-ui` with exit code 0.
 - Reopen RED: after the user re-audited the shipped controls, `cmd /c ui_app\build_tests_vsdevcmd.cmd` failed on the new live-schema regression because the schema still used hard `min`/`max` metadata for `explaino_damping`, `momentum_beta`, and the experimental-family variant controls, and `explaino_phase` was still missing `explaino_dual` from its visibility list.
 - Reopen GREEN: `cmd /c ui_app\build_tests_vsdevcmd.cmd` passed after converting the remaining non-runtime-clamped Explaino-family sliders to `ui_min`/`ui_max`, widening `momentum_beta` to a signed UI range, and restoring `explaino_phase` visibility for `explaino_dual`.
+- Duplicate-Schema RED: the user then verified that D still contained a stale duplicate schema payload; repo search showed the duplicate file itself was already gone from the workspace, but stale deploy/runtime docs still referenced it.
+- Warp RED: the deployed runtime still exposes Warp as `[0,5]` even though the actual host/device math clamps at `1.0`, so the first control the user checked remained visibly wrong after the earlier publish.
+- Duplicate-Schema GREEN: precise repo search across the active ui/spec/docs surfaces found no remaining duplicate-schema references, the stale deployed duplicate payload was deleted, and the published runtime no longer carries any extra schema copy beside the live schema.
+- Warp GREEN: `cmd /c ui_app\build_tests_vsdevcmd.cmd` passed after aligning the live schema plus `ui_app/src/fractal_runtime_validation.h` to the actual `[0,1]` Warp domain, `verify: runtime publish` republished `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, the deployed executable passed `--validate-ui`, and a direct deployed-schema probe confirmed `explaino_warp_strength` now ships with `min=0.0` and `max=1.0`.
+- Closeout GREEN: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json` passed at 95/100, and `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` stayed green after the final cleanup edits.
 
 ## Notes
 
@@ -71,4 +80,4 @@ Hostile review assumes the current static ranges are too weak or too generic for
 
 ## Resume Point
 
-Continue slice 1 from the reopened and now-green schema audit: republish the deployed runtime so the D:\ build matches the corrected UI domains, run the remaining validation rails, then checkpoint and receipt the corrective follow-up under the active slice token.
+Phase 4 is complete. The published runtime now ships only the live schema payload, and Warp is aligned end-to-end to `[0,1]` across the live schema, shared runtime validation, and deployed D:\ runtime.

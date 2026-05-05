@@ -7,12 +7,19 @@
   "allowed_mutation_scope": [
     "docs/contracts",
     "docs/notes/ui_polish_slice1_schema_domains_PHASED_PLAN.md",
+    "docs/handoffs/archive/HANDOFF_LOG_20260412_030129.md",
+    "docs/handoffs/archive/HANDOFF_LOG_20260412_145024.md",
+    "docs/handoffs/archive/HANDOFF_LOG_20260412_173922.md",
+    "spec_intake/ViewerHost_Backport_FeatureMatrix_2026-04-05.md",
     "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src/fractal_runtime_validation.h",
     "ui_app/src/ui_schema.h",
     "ui_app/src/ui_schema.cpp",
     "ui_app/src/schema_binding.h",
     "ui_app/src/schema_binding.cpp",
     "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/tests/test_fractal_runtime_validation.cpp",
     "ui_app/tests/test_schema_binding.cpp",
     "ui_app/tests/test_ui_schema.cpp"
   ],
@@ -30,7 +37,7 @@
   "required_defaults": {
     "schema_authority": "single_source",
     "range_model": "soft_ui_range_plus_explicit_clamp",
-    "slice_scope": "schema_domains_only"
+    "slice_scope": "schema_domains_plus_deploy_cleanup"
   },
   "forbidden_defaults": {
     "main_cpp_one_off_override": "forbidden",

@@ -551,7 +551,7 @@
           "type": "slider_float",
           "label": "Explaino Warp",
           "value_type": "float",
-          "min": 0.0, "max": 5.0, "step": 0.01, "default": 0.0,
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_warp_strength" },
           "visible_if": {
             "op": "in",

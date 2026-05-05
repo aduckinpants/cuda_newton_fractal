@@ -362,8 +362,6 @@ Do NOT introduce `fractal.cap.*` provider.
 
 **Files touched:**
 - `ui/fractal_binding_surface_v1.ui_schema.json` (rewrite)
-- `ui/fractal_binding_surface_v1.ui_schema.canonical.json` (regenerate)
-- `ui_app/ui/fractal_binding_surface_v1.ui_schema.canonical.json` (copy)
 
 **Exit criteria:** `--validate-ui` passes. All panels render. Controls visible for
 correct families. Existing tests green.

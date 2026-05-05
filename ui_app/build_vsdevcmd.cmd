@@ -85,6 +85,7 @@ del "%LINK_LOG%" >NUL 2>NUL
 REM Stage schema beside the published runtime so the external exe can validate and render without touching the repo tree.
 echo [build_vsdevcmd] Staging schema and launcher metadata
 if not exist "%OUTROOT%\ui" mkdir "%OUTROOT%\ui"
+for %%F in ("%OUTROOT%\ui\fractal_binding_surface_v1.ui_schema.*.json") do if exist "%%~fF" del /Q "%%~fF"
 if exist ..\ui\fractal_binding_surface_v1.ui_schema.json (
   copy /Y ..\ui\fractal_binding_surface_v1.ui_schema.json "%OUTROOT%\ui\fractal_binding_surface_v1.ui_schema.json" >NUL
 ) else (

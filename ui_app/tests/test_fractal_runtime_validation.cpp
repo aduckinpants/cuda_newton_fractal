@@ -107,6 +107,19 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino;
+        params.explaino_warp_strength = 1.5f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "explaino_warp_strength must be finite and in [0,1]") {
+            std::cerr << "Expected Explaino warp validation to enforce the shared [0,1] contract\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_fractal_runtime_validation: all passed\n";
     return 0;
 }

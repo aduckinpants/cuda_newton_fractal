@@ -334,6 +334,7 @@ int main() {
         bool foundExplainoPhaseUiRange = false;
         bool foundExplainoPhaseStrengthUiRange = false;
         bool foundExplainoPhaseVisibleForDual = false;
+        bool foundExplainoWarpClampAligned = false;
         bool foundExplainoDampingUiRange = false;
         bool foundMomentumBetaUiRange = false;
         bool foundJoyCouplingUiRange = false;
@@ -485,6 +486,10 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 20.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundExplainoPhaseStrengthUiRange = true;
                 }
+                if (ctrl.id == "explaino_warp_strength" && ctrl.has_min && ctrl.min == 0.0 &&
+                    ctrl.has_max && ctrl.max == 1.0 && !ctrl.has_ui_min && !ctrl.has_ui_max) {
+                    foundExplainoWarpClampAligned = true;
+                }
                 if (ctrl.id == "explaino_damping" && ctrl.has_ui_min && ctrl.ui_min == 0.01 &&
                     ctrl.has_ui_max && ctrl.ui_max == 10.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundExplainoDampingUiRange = true;
@@ -567,7 +572,7 @@ int main() {
         if (!foundZoomUiRange || !foundRotationUiRange || !foundMaxIterUiCap || !foundEpsilonSoftMax ||
             !foundSeedRateSoftMin || !foundParamAnimRateSoftMin || !foundDiveSpeedUiCap ||
             !foundPolyCoeffUiRange || !foundExplainoPhaseUiRange || !foundExplainoPhaseStrengthUiRange ||
-            !foundExplainoPhaseVisibleForDual || !foundExplainoDampingUiRange || !foundMomentumBetaUiRange ||
+            !foundExplainoPhaseVisibleForDual || !foundExplainoWarpClampAligned || !foundExplainoDampingUiRange || !foundMomentumBetaUiRange ||
             !foundJoyCouplingUiRange || !foundFoldCouplingUiRange || !foundBellCouplingUiRange ||
             !foundRippleAmplitudeUiRange || !foundSpliceOffsetUiRange || !foundVortexStrengthUiRange ||
             !foundTensionStrengthUiRange) {
