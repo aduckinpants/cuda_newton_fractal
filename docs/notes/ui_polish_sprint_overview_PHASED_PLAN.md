@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - slice 2 is closed; render-resolution and pacing is the next bounded UI polish slice
+Phase 5 - all three UI polish slices are code-complete; integration audit and merge closure are next
 
 ## Phase Checklist
 
 - [x] Phase 1 - complete Phase 0 foundation and branch-topology preparation
 - [x] Phase 2 - land slice 1 for schema domains and control polish
 - [x] Phase 3 - land slice 2 for color-mode authority and UI cleanup
-- [ ] Phase 4 - land slice 3 for render-resolution defaults and pacing policy
+- [x] Phase 4 - land slice 3 for render-resolution defaults and pacing policy
 - [ ] Phase 5 - run integration audit and close the sprint follow-up ledger
 
 ## Explicit User Asks
@@ -17,7 +17,7 @@ Phase 4 - slice 2 is closed; render-resolution and pacing is the next bounded UI
 - [open] Do a short UI polish pass on the project.
 - [done] Fix slider values that are not covering the proper domains.
 - [done] Improve how the color mode is done.
-- [open] Raise the starting render resolution from the current low default.
+- [done] Raise the starting render resolution from the current low default.
 - [done] Cleanly merge to master and then start a new branch for each feature slice.
 - [done] Document the work structure in the newer phased style before feature implementation.
 
@@ -33,9 +33,9 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 
 - Owner Proof: the current repo has one UI-schema authority surface, one color-mode/runtime surface, and one render-pacing/defaults surface, which supports a three-slice split instead of one blended branch.
 - RED Witness: the sprint overview was stale after slice 1 landed; it still claimed Phase 1 and Phase 2 were pending, and slice 2 still looked blocked even though the dedicated integration branch and slice branches already existed.
-- Fix Proof: `feature/ui-polish-schema-domains` and `feature/ui-polish-color-authority` are now merged into `feature/ui-polish-integration`, and `feature/ui-polish-resolution-pacing` is the active branch for the next bounded slice.
+- Fix Proof: `feature/ui-polish-schema-domains` and `feature/ui-polish-color-authority` are already merged into `feature/ui-polish-integration`, and slice 3 is now code-complete on `feature/ui-polish-resolution-pacing` with the restored `2048x1536` baseline plus explicit pacing-policy regressions.
 - Hostile Review Pass 1: slice-1 closure was code-complete, but the sprint-level bookkeeping lagged behind reality; that was repaired before slice 2 started.
-- Hostile Review Pass 2: slice 2 is now code-complete, viewer-validated, and merged into the sprint integration branch, so the next open sprint surface is slice 3 rather than more color-mode cleanup.
+- Hostile Review Pass 2: slice 3's pacing-policy pass found one real local defect in the first authority refactor, repaired it, and reran the native/runtime/code-quality rails before closure, so the next open sprint surface is the integration audit rather than more slice-local UI polish.
 
 ## Proof Ledger
 
@@ -44,6 +44,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - Post-green hostile finding: the repo had no slice-2 contract yet, so the next feature branch still needed its own lock surface before meaningful work could begin.
 - Phase 3 GREEN: slice 2 landed a single public `coloring_mode` control with family-filtered visible options, and the published runtime plus code-quality / plan-sync rails stayed green.
 - Phase 4 setup: slice 2 is now merged into `feature/ui-polish-integration`, and the dedicated slice-3 branch `feature/ui-polish-resolution-pacing` is active with its own phased plan and contract surface.
+- Phase 4 GREEN: slice 3 restored the exploration-first `2048x1536` startup/reset defaults, centralized the current pacing-policy defaults in the C++ owner seams, added 2048-baseline pacing regressions, repaired the one clamp bug exposed by hostile review, and passed native helper, runtime publish, deployed `--validate-ui`, deployed-schema, and code-quality validation.
 
 ## Notes
 
@@ -61,9 +62,9 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - Current stop point discipline:
   - slice 1 is complete and merged into `feature/ui-polish-integration`
   - slice 2 is complete and merged into `feature/ui-polish-integration`
-  - slice 3 is active on `feature/ui-polish-resolution-pacing`
+  - slice 3 is complete on `feature/ui-polish-resolution-pacing`
   - keep future programmable-color or Salticid-adjacent exploration out of this sprint overview until the user reopens that topic separately
 
 ## Resume Point
 
-Slice 3 is now the active bounded UI polish step on `feature/ui-polish-resolution-pacing`. Capture the current render-resolution defaults and pacing behavior before writing the first regression.
+All three UI polish slices are now code-complete. The next sprint step is to merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-integration` and run the planned integration audit.

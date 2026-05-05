@@ -212,9 +212,9 @@ UISchemaPanel BuildSafeModeRenderPanel() {
     panel.controls = {
         MakeRangedParamControl("width", "slider_int", "Width", "int", 64.0, 4096.0, 1.0, "fractal.render.resolution.x", json_min::Value{static_cast<double>(RenderSettings::kDefaultWidth)}),
         MakeRangedParamControl("height", "slider_int", "Height", "int", 64.0, 4096.0, 1.0, "fractal.render.resolution.y", json_min::Value{static_cast<double>(RenderSettings::kDefaultHeight)}),
-        MakeRangedParamControl("interaction_debounce_ms", "slider_int", "Interaction Debounce (ms)", "int", 0.0, 1000.0, 10.0, "fractal.render.interaction_debounce_ms", json_min::Value{200.0}),
-        MakeRangedParamControl("preview_target_fps", "slider_float", "Preview Target FPS", "float", 5.0, 120.0, 1.0, "fractal.render.preview_target_fps", json_min::Value{30.0}),
-        MakeRangedParamControl("preview_min_scale", "slider_float", "Preview Min Scale", "float", 0.25, 1.0, 0.05, "fractal.render.preview_min_scale", json_min::Value{0.5}),
+        MakeRangedParamControl("interaction_debounce_ms", "slider_int", "Interaction Debounce (ms)", "int", 0.0, 1000.0, 10.0, "fractal.render.interaction_debounce_ms", json_min::Value{static_cast<double>(RenderSettings::kDefaultInteractionDebounceMs)}),
+        MakeRangedParamControl("preview_target_fps", "slider_float", "Preview Target FPS", "float", 5.0, 120.0, 1.0, "fractal.render.preview_target_fps", json_min::Value{static_cast<double>(RenderSettings::kDefaultPreviewTargetFps)}),
+        MakeRangedParamControl("preview_min_scale", "slider_float", "Preview Min Scale", "float", 0.25, 1.0, 0.05, "fractal.render.preview_min_scale", json_min::Value{static_cast<double>(RenderSettings::kDefaultPreviewMinScale)}),
     };
     return panel;
 }

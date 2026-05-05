@@ -228,14 +228,17 @@ struct KernelParams {
 struct RenderSettings {
     static constexpr int kDefaultWidth = 2048;
     static constexpr int kDefaultHeight = 1536;
+    static constexpr int kDefaultInteractionDebounceMs = 200;
+    static constexpr float kDefaultPreviewTargetFps = 30.0f;
+    static constexpr float kDefaultPreviewMinScale = 0.50f;
 
     Int2 resolution{kDefaultWidth, kDefaultHeight};
     int block_size{256};
     int device_id{0};
     bool benchmark{false};
-    int interaction_debounce_ms{200};
-    float preview_target_fps{30.0f};
-    float preview_min_scale{0.50f};
+    int interaction_debounce_ms{kDefaultInteractionDebounceMs};
+    float preview_target_fps{kDefaultPreviewTargetFps};
+    float preview_min_scale{kDefaultPreviewMinScale};
     SampleTier sample_tier{SampleTier::tier_auto};
     ResolvedEvalMode resolved_eval{};  // filled by resolver before dispatch
 };

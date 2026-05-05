@@ -15,6 +15,23 @@ bool NearlyEqual(double a, double b, double eps = 1.0e-6) {
 int main() {
     {
         RenderSettings render{};
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        if (!NearlyEqual(config.debounce_seconds, 0.20)) {
+            std::cerr << "Expected default render pacing config to preserve the 200ms interaction debounce\n";
+            return 1;
+        }
+        if (!NearlyEqual(config.target_frame_ms, 1000.0 / 30.0)) {
+            std::cerr << "Expected default render pacing config to preserve the 30 FPS preview target\n";
+            return 1;
+        }
+        if (!NearlyEqual(config.min_preview_scale, 0.50)) {
+            std::cerr << "Expected default render pacing config to preserve the 0.5 preview floor\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
         render.interaction_debounce_ms = 450;
         render.preview_target_fps = 20.0f;
         render.preview_min_scale = 0.40f;
@@ -30,6 +47,55 @@ int main() {
         }
         if (!NearlyEqual(config.min_preview_scale, 0.40)) {
             std::cerr << "Expected render pacing config to preserve the preview minimum scale\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        RenderStats stats{};
+        stats.last_render_ms = 90.0f;
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
+
+        if (!decision.preview_active || decision.preview_step_index != 1) {
+            std::cerr << "Expected the restored 2048x1536 baseline to enter the first preview step under slow interaction frames\n";
+            return 1;
+        }
+        if (decision.render_resolution.x <= 1024 || decision.render_resolution.y <= 768) {
+            std::cerr << "Expected the first preview step to stay above the old low-resolution baseline\n";
+            return 1;
+        }
+        if (decision.render_resolution.x >= render.resolution.x || decision.render_resolution.y >= render.resolution.y) {
+            std::cerr << "Expected the first preview step to remain below the full-quality baseline\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        RenderStats stats{};
+        stats.last_render_ms = 90.0f;
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision decision{};
+        for (int index = 0; index < 4; ++index) {
+            decision = AdvanceViewerRenderPacing(render, stats, 0.03, config, &state);
+        }
+
+        if (!decision.preview_active || decision.preview_step_index != 4) {
+            std::cerr << "Expected repeated slow preview frames to reach the configured preview floor\n";
+            return 1;
+        }
+        if (decision.render_resolution.x != 1024 || decision.render_resolution.y != 768) {
+            std::cerr << "Expected the default preview floor to bottom out at the old 1024x768 baseline\n";
             return 1;
         }
     }

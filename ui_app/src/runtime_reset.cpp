@@ -41,9 +41,9 @@ void ResetRuntimeStateForCurrentFractal(
     render.block_size = 256;
     render.device_id = 0;
     render.benchmark = false;
-    render.interaction_debounce_ms = 200;
-    render.preview_target_fps = 30.0f;
-    render.preview_min_scale = 0.50f;
+    render.interaction_debounce_ms = RenderSettings::kDefaultInteractionDebounceMs;
+    render.preview_target_fps = RenderSettings::kDefaultPreviewTargetFps;
+    render.preview_min_scale = RenderSettings::kDefaultPreviewMinScale;
 
     lens.enabled = false;
     lens.downsample = 2;

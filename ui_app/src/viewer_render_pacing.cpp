@@ -22,7 +22,7 @@ int ClampStepIndex(int stepIndex, int maxStepCount) {
 
 double ClampPreviewScale(double value, double minScale) {
     if (!std::isfinite(value)) return 1.0;
-    if (!std::isfinite(minScale)) minScale = 0.5;
+    if (!std::isfinite(minScale)) minScale = static_cast<double>(RenderSettings::kDefaultPreviewMinScale);
     if (minScale < 0.125) minScale = 0.125;
     if (minScale > 1.0) minScale = 1.0;
     if (value < minScale) value = minScale;
@@ -79,12 +79,20 @@ bool IsPositiveResolution(const Int2& resolution) {
     return resolution.x > 0 && resolution.y > 0;
 }
 
+double DefaultDebounceSeconds() {
+    return static_cast<double>(RenderSettings::kDefaultInteractionDebounceMs) / 1000.0;
+}
+
+double DefaultPreviewTargetFps() {
+    return static_cast<double>(RenderSettings::kDefaultPreviewTargetFps);
+}
+
 } // namespace
 
 ViewerRenderPacingConfig BuildViewerRenderPacingConfig(const RenderSettings& render) {
     ViewerRenderPacingConfig config{};
-    config.debounce_seconds = ClampFinite(static_cast<double>(render.interaction_debounce_ms) / 1000.0, 0.0, 5.0, 0.20);
-    const double previewTargetFps = ClampFinite(static_cast<double>(render.preview_target_fps), 1.0, 240.0, 30.0);
+    config.debounce_seconds = ClampFinite(static_cast<double>(render.interaction_debounce_ms) / 1000.0, 0.0, 5.0, DefaultDebounceSeconds());
+    const double previewTargetFps = ClampFinite(static_cast<double>(render.preview_target_fps), 1.0, 240.0, DefaultPreviewTargetFps());
     config.target_frame_ms = 1000.0 / previewTargetFps;
     config.min_preview_scale = ClampPreviewScale(static_cast<double>(render.preview_min_scale), 0.125);
     config.preview_step_count = kDefaultPreviewStepCount;
