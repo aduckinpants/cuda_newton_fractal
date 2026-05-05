@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - all three UI polish slices are code-complete; integration audit and merge closure are next
+Phase 5 - merge the completed UI polish work and run the integration audit
 
 ## Phase Checklist
 
@@ -18,6 +18,7 @@ Phase 5 - all three UI polish slices are code-complete; integration audit and me
 - [done] Fix slider values that are not covering the proper domains.
 - [done] Improve how the color mode is done.
 - [done] Raise the starting render resolution from the current low default.
+- [done] Sanity-check the remaining bound values before merge and repair any places where UI-only ranges still behave like real clamps.
 - [done] Cleanly merge to master and then start a new branch for each feature slice.
 - [done] Document the work structure in the newer phased style before feature implementation.
 
@@ -35,7 +36,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - RED Witness: the sprint overview was stale after slice 1 landed; it still claimed Phase 1 and Phase 2 were pending, and slice 2 still looked blocked even though the dedicated integration branch and slice branches already existed.
 - Fix Proof: `feature/ui-polish-schema-domains` and `feature/ui-polish-color-authority` are already merged into `feature/ui-polish-integration`, and slice 3 is now code-complete on `feature/ui-polish-resolution-pacing` with the restored `2048x1536` baseline plus explicit pacing-policy regressions.
 - Hostile Review Pass 1: slice-1 closure was code-complete, but the sprint-level bookkeeping lagged behind reality; that was repaired before slice 2 started.
-- Hostile Review Pass 2: slice 3's pacing-policy pass found one real local defect in the first authority refactor, repaired it, and reran the native/runtime/code-quality rails before closure, so the next open sprint surface is the integration audit rather than more slice-local UI polish.
+- Hostile Review Pass 2: the pre-merge user audit found one remaining drag-range bug in the schema-binding seam, the bounded follow-up repaired it, and the same native/runtime/code-quality rails are green again, so merge/audit are no longer blocked on slice-local UI work.
 
 ## Proof Ledger
 
@@ -45,6 +46,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - Phase 3 GREEN: slice 2 landed a single public `coloring_mode` control with family-filtered visible options, and the published runtime plus code-quality / plan-sync rails stayed green.
 - Phase 4 setup: slice 2 is now merged into `feature/ui-polish-integration`, and the dedicated slice-3 branch `feature/ui-polish-resolution-pacing` is active with its own phased plan and contract surface.
 - Phase 4 GREEN: slice 3 restored the exploration-first `2048x1536` startup/reset defaults, centralized the current pacing-policy defaults in the C++ owner seams, added 2048-baseline pacing regressions, repaired the one clamp bug exposed by hostile review, and passed native helper, runtime publish, deployed `--validate-ui`, deployed-schema, and code-quality validation.
+- Phase 5 pre-merge GREEN: the bounded follow-up repaired the last drag-clamp bug in `schema_binding.cpp`, so UI-only drag ranges no longer behave like real limits while bilateral hard-clamped drags still do. Native helper, runtime publish, deployed `--validate-ui`, and code-quality validation all passed again.
 
 ## Notes
 
@@ -63,8 +65,9 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
   - slice 1 is complete and merged into `feature/ui-polish-integration`
   - slice 2 is complete and merged into `feature/ui-polish-integration`
   - slice 3 is complete on `feature/ui-polish-resolution-pacing`
+  - pre-merge bounds sanity follow-up is complete on `feature/ui-polish-resolution-pacing`
   - keep future programmable-color or Salticid-adjacent exploration out of this sprint overview until the user reopens that topic separately
 
 ## Resume Point
 
-All three UI polish slices are now code-complete. The next sprint step is to merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-integration` and run the planned integration audit.
+Merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-integration`, then run the planned sprint integration audit.

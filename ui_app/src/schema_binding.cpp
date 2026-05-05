@@ -64,6 +64,17 @@ NumericControlRange ResolveNumericControlRange(const UISchemaControl& control) {
     return range;
 }
 
+NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& control) {
+    NumericDragWidgetBounds bounds;
+    const NumericControlRange range = ResolveNumericControlRange(control);
+    if (range.has_hard_min && range.has_hard_max && range.hard_max > range.hard_min) {
+        bounds.min = range.hard_min;
+        bounds.max = range.hard_max;
+        bounds.has_bounds = true;
+    }
+    return bounds;
+}
+
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& control, const BindingContext& ctx) {
     std::vector<const UISchemaOption*> options;
     options.reserve(control.options.size());
@@ -747,13 +758,16 @@ bool RenderIntControl(
     const NumericControlRange range = ResolveNumericControlRange(control);
     const int minValue = range.has_widget_min ? static_cast<int>(range.widget_min) : 0;
     const int maxValue = range.has_widget_max ? static_cast<int>(range.widget_max) : (control.type == "slider_int" ? 100 : 0);
+    const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
 
     bool changed = false;
     if (control.type == "slider_int") {
         changed = ImGui::SliderInt(control.label.c_str(), value, minValue, maxValue);
     } else {
         const float speed = control.has_step ? static_cast<float>(control.step) : 1.0f;
-        changed = ImGui::DragInt(control.label.c_str(), value, speed, minValue, maxValue);
+        const int dragMin = dragBounds.has_bounds ? static_cast<int>(dragBounds.min) : 0;
+        const int dragMax = dragBounds.has_bounds ? static_cast<int>(dragBounds.max) : 0;
+        changed = ImGui::DragInt(control.label.c_str(), value, speed, dragMin, dragMax);
     }
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
@@ -781,6 +795,7 @@ bool RenderFloatControl(
     const NumericControlRange range = ResolveNumericControlRange(control);
     const float minValue = range.has_widget_min ? static_cast<float>(range.widget_min) : 0.0f;
     const float maxValue = range.has_widget_max ? static_cast<float>(range.widget_max) : (control.type == "slider_float" ? 1.0f : 0.0f);
+    const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
     const float speed = control.has_step ? static_cast<float>(control.step) : 0.01f;
     const ImGuiSliderFlags flags = control.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
 
@@ -788,7 +803,9 @@ bool RenderFloatControl(
     if (control.type == "slider_float") {
         changed = ImGui::SliderFloat(control.label.c_str(), value, minValue, maxValue, "%.5f", flags);
     } else {
-        changed = ImGui::DragFloat(control.label.c_str(), value, speed, minValue, maxValue, "%.3f", flags);
+        const float dragMin = dragBounds.has_bounds ? static_cast<float>(dragBounds.min) : 0.0f;
+        const float dragMax = dragBounds.has_bounds ? static_cast<float>(dragBounds.max) : 0.0f;
+        changed = ImGui::DragFloat(control.label.c_str(), value, speed, dragMin, dragMax, "%.3f", flags);
     }
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
@@ -806,18 +823,21 @@ bool RenderExplainoSeedDoubleControl(
     const UISchemaControl& control,
     BindingContext& ctx,
     const NumericControlRange& range,
-    double minValue,
-    double maxValue,
     double speed,
     const char* valueFormat,
     bool* ioDirty,
     bool* ioInteracted) {
     double displayed = ExplainoSeedCombined(*ctx.view, *ctx.params);
+    const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
     bool changed = false;
     if (control.type == "slider_double") {
+        const double minValue = range.has_widget_min ? range.widget_min : 0.0;
+        const double maxValue = range.has_widget_max ? range.widget_max : 1.0;
         changed = ImGui::SliderScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, &minValue, &maxValue, valueFormat);
     } else {
-        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speed), &minValue, &maxValue, valueFormat);
+        const double* dragMin = dragBounds.has_bounds ? &dragBounds.min : nullptr;
+        const double* dragMax = dragBounds.has_bounds ? &dragBounds.max : nullptr;
+        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speed), dragMin, dragMax, valueFormat);
     }
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
@@ -848,18 +868,21 @@ bool RenderDoubleControl(
     const NumericControlRange range = ResolveNumericControlRange(control);
     const double minValue = range.has_widget_min ? range.widget_min : 0.0;
     const double maxValue = range.has_widget_max ? range.widget_max : (control.type == "slider_double" ? 1.0 : 0.0);
+    const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
     const double speed = control.has_step ? control.step : 0.001;
     const char* valueFormat = "%.6f";
 
     if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
-        return RenderExplainoSeedDoubleControl(control, ctx, range, minValue, maxValue, speed, valueFormat, ioDirty, ioInteracted);
+        return RenderExplainoSeedDoubleControl(control, ctx, range, speed, valueFormat, ioDirty, ioInteracted);
     }
 
     bool changed = false;
     if (control.type == "slider_double") {
         changed = ImGui::SliderScalar(control.label.c_str(), ImGuiDataType_Double, value, &minValue, &maxValue, valueFormat);
     } else {
-        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, value, static_cast<float>(speed), &minValue, &maxValue, valueFormat);
+        const double* dragMin = dragBounds.has_bounds ? &dragBounds.min : nullptr;
+        const double* dragMax = dragBounds.has_bounds ? &dragBounds.max : nullptr;
+        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, value, static_cast<float>(speed), dragMin, dragMax, valueFormat);
     }
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;

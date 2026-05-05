@@ -37,9 +37,16 @@ struct NumericControlRange {
     bool has_hard_max = false;
 };
 
+struct NumericDragWidgetBounds {
+    double min = 0.0;
+    double max = 0.0;
+    bool has_bounds = false;
+};
+
 bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty);
 void ApplySchemaDefaults(const UISchema& schema, BindingContext& ctx, bool* ioDirty);
 bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::string* outError);
 NumericControlRange ResolveNumericControlRange(const UISchemaControl& c);
+NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& c);
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& c, const BindingContext& ctx);
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);

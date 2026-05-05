@@ -165,6 +165,30 @@ int main() {
             std::cerr << "Expected ui_min/ui_max-only drag controls to remain unclamped\n";
             return 1;
         }
+        NumericDragWidgetBounds centerDragBounds = ResolveNumericDragWidgetBounds(centerX);
+        if (centerDragBounds.has_bounds) {
+            std::cerr << "Expected ui-only camera center drags to avoid in-widget clamp bounds\n";
+            return 1;
+        }
+
+        UISchemaControl zoom = MakeBoundControl("zoom", "drag_float", "Zoom", "float", "param", "fractal.view.zoom");
+        zoom.has_min = true;
+        zoom.min = 1.0e-12;
+        zoom.has_ui_min = true;
+        zoom.ui_min = 0.25;
+        zoom.has_ui_max = true;
+        zoom.ui_max = 64.0;
+
+        NumericControlRange zoomRange = ResolveNumericControlRange(zoom);
+        if (!zoomRange.has_hard_min || zoomRange.hard_min != 1.0e-12 || zoomRange.has_hard_max) {
+            std::cerr << "Expected zoom to keep only its true hard minimum after range resolution\n";
+            return 1;
+        }
+        NumericDragWidgetBounds zoomDragBounds = ResolveNumericDragWidgetBounds(zoom);
+        if (zoomDragBounds.has_bounds) {
+            std::cerr << "Expected zoom drags to avoid in-widget clamp bounds when only a one-sided hard limit exists\n";
+            return 1;
+        }
 
         UISchemaControl epsilon = MakeBoundControl("epsilon", "slider_float", "Epsilon", "float", "param", "fractal.params.epsilon");
         epsilon.has_min = true;
@@ -228,6 +252,17 @@ int main() {
             explainoDampingRange.widget_min != 0.01 || explainoDampingRange.widget_max != 10.0 ||
             explainoDampingRange.has_hard_min || explainoDampingRange.has_hard_max) {
             std::cerr << "Expected Newton damping sliders to keep their shipped UI span without a hard clamp\n";
+            return 1;
+        }
+
+        UISchemaControl lambdaReal = MakeBoundControl("lambda_real", "drag_float", "Lambda Real", "float", "param", "fractal.params.lambda_real");
+        lambdaReal.has_min = true;
+        lambdaReal.min = -4.0;
+        lambdaReal.has_max = true;
+        lambdaReal.max = 4.0;
+        NumericDragWidgetBounds lambdaRealDragBounds = ResolveNumericDragWidgetBounds(lambdaReal);
+        if (!lambdaRealDragBounds.has_bounds || lambdaRealDragBounds.min != -4.0 || lambdaRealDragBounds.max != 4.0) {
+            std::cerr << "Expected truly clamped drags to keep their bilateral hard bounds in the widget\n";
             return 1;
         }
 

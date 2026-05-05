@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "contract_id": "ui_polish_followup_bounds_sanity",
+  "feature_id": "ui_polish_followup_bounds_sanity",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_polish_followup_bounds_sanity_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/ui_polish_followup_bounds_sanity_PHASED_PLAN.md",
+    "docs/notes/ui_polish_sprint_overview_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp"
+  ],
+  "required_operator_inputs": [
+    "schema drag-control metadata",
+    "schema binding render path",
+    "focused drag-range regressions",
+    "published runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "chat-only range opinion",
+    "main.cpp one-off widget clamp tweak",
+    "silent drag fallback"
+  ],
+  "required_defaults": {
+    "schema_authority": "single_source",
+    "drag_range_model": "ui_range_is_not_a_drag_clamp",
+    "slice_scope": "bounds_sanity_followup_only"
+  },
+  "forbidden_defaults": {
+    "ui_range_as_drag_hard_limit": "forbidden",
+    "second_widget_authority_surface": "forbidden",
+    "off_topic_merge_audit_work": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_polish_followup_bounds_sanity.contract.json --out-json artifacts/validation/ui_polish_followup_bounds_sanity_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "followup_contract_schema_valid",
+      "description": "The UI polish bounds-sanity follow-up contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_polish_followup_bounds_sanity_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "followup_plan_sync_ok",
+      "description": "The sprint overview and bounds-sanity follow-up plan stay synchronized while this repair slice is active",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
