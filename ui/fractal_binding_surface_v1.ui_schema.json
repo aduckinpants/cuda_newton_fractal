@@ -61,7 +61,7 @@
           "type": "drag_float",
           "label": "Center X",
           "value_type": "float",
-          "min": -2.0, "max": 2.0, "step": 0.001, "default": 0.0,
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.view.center.x" }
         },
         {
@@ -69,7 +69,7 @@
           "type": "drag_float",
           "label": "Center Y",
           "value_type": "float",
-          "min": -2.0, "max": 2.0, "step": 0.001, "default": 0.0,
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.view.center.y" }
         },
         {
@@ -77,7 +77,8 @@
           "type": "drag_float",
           "label": "Zoom",
           "value_type": "float",
-          "min": 1e-12, "max": 1000000000000.0, "step": 0.01, "default": 1.0,
+          "min": 1e-12, "ui_min": 0.25, "ui_max": 64.0, "step": 0.01, "default": 1.0,
+          "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.zoom" }
         },
         {
@@ -86,7 +87,7 @@
           "label": "Rotation (deg)",
           "help": "Optional: engine may ignore",
           "value_type": "float",
-          "min": -180.0, "max": 180.0, "step": 0.1, "default": 0.0,
+          "ui_min": -180.0, "ui_max": 180.0, "step": 0.1, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.view.rotation" }
         },
         {
@@ -117,7 +118,7 @@
           "type": "slider_float",
           "label": "Dive Speed",
           "value_type": "float",
-          "min": 0.0, "max": 5.0, "step": 0.01, "default": 1.0,
+          "min": 0.0, "ui_min": 0.0, "ui_max": 5.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.view.dive_speed" },
           "visible_if": { "op": "eq", "path": "fractal.view.auto_dive", "value": true }
         },
@@ -181,7 +182,7 @@
           "type": "slider_float",
           "label": "Seed Increment Rate",
           "value_type": "float",
-          "min": 0.0001, "max": 5.0, "step": 0.0001, "default": 0.001,
+          "min": 0.0, "ui_min": 0.0001, "ui_max": 5.0, "step": 0.0001, "default": 0.001,
           "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.explaino_seed_rate" },
           "visible_if": { "op": "eq", "path": "fractal.view.auto_increment_seed", "value": true },
@@ -222,7 +223,7 @@
           "type": "slider_float",
           "label": "Animation Rate",
           "value_type": "float",
-          "min": 0.0001, "max": 5.0, "step": 0.0001, "default": 0.001,
+          "min": 0.0, "ui_min": 0.0001, "ui_max": 5.0, "step": 0.0001, "default": 0.001,
           "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.param_anim_rate" },
           "visible_if": { "op": "neq", "path": "fractal.view.param_anim_target", "value": "none" },
@@ -327,7 +328,7 @@
           "type": "slider_int",
           "label": "Max Iterations",
           "value_type": "int",
-          "min": 1, "max": 5000, "step": 1, "default": 500,
+          "min": 1, "ui_min": 1, "ui_max": 5000, "step": 1, "default": 500,
           "binding": { "kind": "param", "path": "fractal.params.max_iter" }
         },
         {
@@ -345,7 +346,8 @@
           "label": "Epsilon",
           "help": "Convergence threshold",
           "value_type": "float",
-          "min": 1e-12, "max": 0.01, "step": 1e-06, "default": 1e-06,
+          "min": 1e-12, "ui_min": 1e-12, "ui_max": 0.01, "step": 1e-06, "default": 1e-06,
+          "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.params.epsilon" },
           "visible_if": {
             "op": "in",
@@ -432,7 +434,7 @@
           "type": "drag_float",
           "label": "Coeff c0 (z^0)",
           "value_type": "float",
-          "min": -10.0, "max": 10.0, "step": 0.01, "default": -1.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.01, "default": -1.0,
           "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.0" },
           "visible_if": {
             "op": "in",
@@ -445,7 +447,7 @@
           "type": "drag_float",
           "label": "Coeff c1 (z^1)",
           "value_type": "float",
-          "min": -10.0, "max": 10.0, "step": 0.01, "default": 0.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.1" },
           "visible_if": {
             "op": "in",
@@ -458,7 +460,7 @@
           "type": "drag_float",
           "label": "Coeff c2 (z^2)",
           "value_type": "float",
-          "min": -10.0, "max": 10.0, "step": 0.01, "default": 0.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.2" },
           "visible_if": {
             "op": "in",
@@ -471,7 +473,7 @@
           "type": "drag_float",
           "label": "Coeff c3 (z^3)",
           "value_type": "float",
-          "min": -10.0, "max": 10.0, "step": 0.01, "default": 1.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.3" },
           "visible_if": {
             "op": "in",
@@ -484,7 +486,7 @@
           "type": "drag_float",
           "label": "Coeff c4 (z^4)",
           "value_type": "float",
-          "min": -10.0, "max": 10.0, "step": 0.01, "default": 0.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.4" },
           "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "newton,halley" }
         },
@@ -493,7 +495,7 @@
           "type": "slider_double",
           "label": "Explaino Seed",
           "value_type": "double",
-          "min": -10.0, "max": 10.0, "step": 0.001, "default": 0.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.001, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_seed" },
           "visible_if": {
             "op": "in",
@@ -507,7 +509,7 @@
           "type": "slider_double",
           "label": "Explaino Seed B",
           "value_type": "double",
-          "min": -10.0, "max": 10.0, "step": 0.001, "default": 1.0,
+          "ui_min": -10.0, "ui_max": 10.0, "step": 0.001, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_seed_b" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" },
           "help": "Secondary Explaino seed for DualSeed root-pack blending."
@@ -577,7 +579,7 @@
           "label": "Phase Strength",
           "help": "Multiplier on phase modulation of root angles. Higher values make the Phase slider more influential.",
           "value_type": "float",
-          "min": -20.0, "max": 20.0, "step": 0.01, "default": 1.0,
+          "ui_min": -20.0, "ui_max": 20.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.view.explaino_phase_strength" },
           "visible_if": {
             "op": "in",
@@ -694,7 +696,7 @@
           "type": "slider_float",
           "label": "Explaino Phase",
           "value_type": "float",
-          "min": -6.283185307179586, "max": 6.283185307179586, "step": 0.01, "default": 0.0,
+          "ui_min": -6.283185307179586, "ui_max": 6.283185307179586, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.view.explaino_phase" },
           "visible_if": {
             "op": "in",

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "contract_id": "ui_polish_slice1_schema_domains",
+  "feature_id": "ui_polish_schema_domains",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_polish_slice1_schema_domains_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/ui_polish_slice1_schema_domains_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/ui_schema.h",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp"
+  ],
+  "required_operator_inputs": [
+    "schema json",
+    "schema binding render path",
+    "headless schema tests",
+    "published runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "chat-only domain tweak",
+    "main.cpp widget special case",
+    "silent binding fallback"
+  ],
+  "required_defaults": {
+    "schema_authority": "single_source",
+    "range_model": "soft_ui_range_plus_explicit_clamp",
+    "slice_scope": "schema_domains_only"
+  },
+  "forbidden_defaults": {
+    "main_cpp_one_off_override": "forbidden",
+    "second_ui_source_of_truth": "forbidden",
+    "single_range_model_for_all_drags": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_polish_slice1_schema_domains.contract.json --out-json artifacts/validation/ui_polish_slice1_schema_domains_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "slice1_contract_schema_valid",
+      "description": "Slice 1 schema-domains contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_polish_slice1_schema_domains_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "slice1_plan_sync_ok",
+      "description": "Slice 1 phased plan stays synchronized during the schema-domain work",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

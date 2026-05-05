@@ -26,7 +26,19 @@ struct BindingContext {
     bool BindBool(const std::string& path, bool** outPtr);
 };
 
+struct NumericControlRange {
+    double widget_min = 0.0;
+    double widget_max = 0.0;
+    double hard_min = 0.0;
+    double hard_max = 0.0;
+    bool has_widget_min = false;
+    bool has_widget_max = false;
+    bool has_hard_min = false;
+    bool has_hard_max = false;
+};
+
 bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty);
 void ApplySchemaDefaults(const UISchema& schema, BindingContext& ctx, bool* ioDirty);
 bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::string* outError);
+NumericControlRange ResolveNumericControlRange(const UISchemaControl& c);
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);

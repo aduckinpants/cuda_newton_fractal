@@ -115,6 +115,76 @@ int main() {
     }
 
     {
+        UISchemaControl centerX = MakeBoundControl("center_x", "drag_float", "Center X", "float", "param", "fractal.view.center.x");
+        centerX.has_ui_min = true;
+        centerX.ui_min = -2.0;
+        centerX.has_ui_max = true;
+        centerX.ui_max = 2.0;
+
+        NumericControlRange centerRange = ResolveNumericControlRange(centerX);
+        if (!centerRange.has_widget_min || !centerRange.has_widget_max ||
+            centerRange.widget_min != -2.0 || centerRange.widget_max != 2.0) {
+            std::cerr << "Expected drag controls to expose explicit widget ranges from ui_min/ui_max\n";
+            return 1;
+        }
+        if (centerRange.has_hard_min || centerRange.has_hard_max) {
+            std::cerr << "Expected ui_min/ui_max-only drag controls to remain unclamped\n";
+            return 1;
+        }
+
+        UISchemaControl epsilon = MakeBoundControl("epsilon", "slider_float", "Epsilon", "float", "param", "fractal.params.epsilon");
+        epsilon.has_min = true;
+        epsilon.min = 0.0001;
+        epsilon.has_max = true;
+        epsilon.max = 1.0;
+
+        NumericControlRange epsilonRange = ResolveNumericControlRange(epsilon);
+        if (!epsilonRange.has_widget_min || !epsilonRange.has_widget_max ||
+            !epsilonRange.has_hard_min || !epsilonRange.has_hard_max) {
+            std::cerr << "Expected slider controls to keep hard min/max as the widget range when no ui_min/ui_max override exists\n";
+            return 1;
+        }
+        if (epsilonRange.widget_min != 0.0001 || epsilonRange.widget_max != 1.0 ||
+            epsilonRange.hard_min != 0.0001 || epsilonRange.hard_max != 1.0) {
+            std::cerr << "Expected hard min/max to round-trip through numeric range resolution\n";
+            return 1;
+        }
+
+        UISchemaControl maxIter = MakeBoundControl("max_iter", "slider_int", "Max Iterations", "int", "param", "fractal.params.max_iter");
+        maxIter.has_min = true;
+        maxIter.min = 1.0;
+        maxIter.has_ui_min = true;
+        maxIter.ui_min = 1.0;
+        maxIter.has_ui_max = true;
+        maxIter.ui_max = 5000.0;
+
+        NumericControlRange maxIterRange = ResolveNumericControlRange(maxIter);
+        if (!maxIterRange.has_widget_min || !maxIterRange.has_widget_max ||
+            !maxIterRange.has_hard_min || maxIterRange.has_hard_max) {
+            std::cerr << "Expected mixed int ranges to keep a hard minimum with a UI-only maximum\n";
+            return 1;
+        }
+        if (maxIterRange.widget_min != 1.0 || maxIterRange.widget_max != 5000.0 ||
+            maxIterRange.hard_min != 1.0) {
+            std::cerr << "Expected max_iter range resolution to preserve the runtime minimum and UI-only slider cap\n";
+            return 1;
+        }
+
+        UISchemaControl explainoSeed = MakeBoundControl("explaino_seed", "slider_double", "Explaino Seed", "double", "param", "fractal.params.explaino_seed");
+        explainoSeed.has_ui_min = true;
+        explainoSeed.ui_min = -10.0;
+        explainoSeed.has_ui_max = true;
+        explainoSeed.ui_max = 10.0;
+
+        NumericControlRange explainoSeedRange = ResolveNumericControlRange(explainoSeed);
+        if (!explainoSeedRange.has_widget_min || !explainoSeedRange.has_widget_max ||
+            explainoSeedRange.has_hard_min || explainoSeedRange.has_hard_max) {
+            std::cerr << "Expected explaino seed sliders to keep UI-only bounds with no hard clamp\n";
+            return 1;
+        }
+    }
+
+    {
         ViewState view{};
         bool* boolValue = nullptr;
         BindingContext viewOnly = MakeBindingContext(&view, nullptr, nullptr, nullptr);
