@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 1 - complete Phase 0 foundation and branch-topology preparation
+Phase 3 - start slice 2 for color-mode authority from the dedicated slice branch
 
 ## Phase Checklist
 
-- [ ] Phase 1 - complete Phase 0 foundation and branch-topology preparation
-- [ ] Phase 2 - land slice 1 for schema domains and control polish
+- [x] Phase 1 - complete Phase 0 foundation and branch-topology preparation
+- [x] Phase 2 - land slice 1 for schema domains and control polish
 - [ ] Phase 3 - land slice 2 for color-mode authority and UI cleanup
 - [ ] Phase 4 - land slice 3 for render-resolution defaults and pacing policy
 - [ ] Phase 5 - run integration audit and close the sprint follow-up ledger
@@ -15,11 +15,11 @@ Phase 1 - complete Phase 0 foundation and branch-topology preparation
 ## Explicit User Asks
 
 - [open] Do a short UI polish pass on the project.
-- [open] Fix slider values that are not covering the proper domains.
+- [done] Fix slider values that are not covering the proper domains.
 - [open] Improve how the color mode is done.
 - [open] Raise the starting render resolution from the current low default.
-- [open] Cleanly merge to master and then start a new branch for each feature slice.
-- [open] Document the work structure in the newer phased style before feature implementation.
+- [done] Cleanly merge to master and then start a new branch for each feature slice.
+- [done] Document the work structure in the newer phased style before feature implementation.
 
 ## Presumption Loop
 
@@ -32,17 +32,16 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 ## Presumption Evidence
 
 - Owner Proof: the current repo has one UI-schema authority surface, one color-mode/runtime surface, and one render-pacing/defaults surface, which supports a three-slice split instead of one blended branch.
-- RED Witness: pending.
-- Fix Proof: pending.
-- Hostile Review Pass 1: pending.
+- RED Witness: the sprint overview was stale after slice 1 landed; it still claimed Phase 1 and Phase 2 were pending, and slice 2 still looked blocked even though the dedicated integration branch and slice branches already existed.
+- Fix Proof: `feature/ui-polish-schema-domains` is now merged into `feature/ui-polish-integration`, and the next bounded slice branch `feature/ui-polish-color-authority` is the active branch for the color-authority follow-up.
+- Hostile Review Pass 1: slice-1 closure was code-complete, but the sprint-level bookkeeping still lagged behind reality. The overview and slice-2 start surfaces must be updated before calling the sprint state cleanly advanced.
 - Hostile Review Pass 2: pending.
 
 ## Proof Ledger
 
-- Manual RED: pending.
-- Checked-in regression RED: pending.
-- First GREEN: pending.
-- Post-green hostile finding: pending.
+- Manual RED: after slice 1 checkpointed cleanly, the sprint overview still advertised only Phase 1, which was inconsistent with the actual branch state and would have left the next slice starting from stale repo guidance.
+- First GREEN: the branch topology now matches the planned sprint structure in practice: the integration branch carries slice 1, and the dedicated slice-2 branch exists for color-authority work.
+- Post-green hostile finding: the repo had no slice-2 contract yet, so the next feature branch still needed its own lock surface before meaningful work could begin.
 
 ## Notes
 
@@ -58,9 +57,10 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
   - slice 2: `docs/notes/ui_polish_slice2_color_mode_authority_PHASED_PLAN.md`
   - slice 3: `docs/notes/ui_polish_slice3_render_resolution_pacing_PHASED_PLAN.md`
 - Current stop point discipline:
-  - do not start the feature branches until Phase 0 records the merge/branch-ready checkpoint explicitly
+  - slice 1 is complete and merged into `feature/ui-polish-integration`
+  - the active branch is now `feature/ui-polish-color-authority`
   - keep future programmable-color or Salticid-adjacent exploration out of this sprint overview until the user reopens that topic separately
 
 ## Resume Point
 
-Finish the Phase 0 foundation slice, then reopen this overview plan from the fresh sprint integration branch and start slice 1.
+Slice 1 is closed. Start slice 2 from `feature/ui-polish-color-authority` by inventorying the duplicated color-mode surfaces, writing the smallest failing regression that proves the authority split, and keeping render-resolution work deferred to slice 3.

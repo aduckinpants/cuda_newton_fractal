@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 1 - wait for Phase 0 closeout and capture the color-authority baseline
+Phase 1 - capture the color-authority baseline from the dedicated slice branch
 
 ## Phase Checklist
 
@@ -25,20 +25,24 @@ Hostile review assumes the current duplication is real and user-visible. Lock th
 ## Presumption Evidence
 
 - Owner Proof: current UI review found duplicated coloring-mode controls in the schema and hard-coded mode branches across `ui_app/src/fractal_types.h`, `ui_app/src/escape_time_coloring.h`, and `ui_app/src/fractal_renderer.cu`.
-- RED Witness: pending.
-- Fix Proof: pending.
+- Workflow Proof: `feature/ui-polish-color-authority` now exists as the dedicated branch for this slice, and slice 1 is already merged into `feature/ui-polish-integration`, so the color-authority work no longer needs to wait on Phase 0 or slice 1.
+- RED Witness: the live schema currently exposes two separate public controls, `coloring_mode_newton` and `coloring_mode_escape`, but both bind to the same runtime path `fractal.params.coloring_mode`, which means the public authority surface is duplicated even before any runtime branching is considered.
+- Fix Proof: the runtime already centralizes family-aware coloring legality and defaults in `ui_app/src/fractal_family_rules.h` via `IsColoringModeAllowedForFractal(...)` and `DefaultColoringModeForFractal(...)`, so the likely repair is to collapse the duplicated public control surface around those existing rules instead of inventing another authority layer.
 - Hostile Review Pass 1: pending.
 - Hostile Review Pass 2: pending.
 
 ## Proof Ledger
 
-- Manual RED: pending.
+- Manual RED: baseline inventory on `feature/ui-polish-color-authority` confirmed that the schema exposes two different `Coloring Mode` combos with different option lists even though they mutate the same `fractal.params.coloring_mode` enum.
 - Checked-in regression RED: pending.
 - First GREEN: pending.
 - Post-green hostile finding: pending.
 
 ## Notes
 
+- Branch owner:
+  - active branch: `feature/ui-polish-color-authority`
+  - integration base: `feature/ui-polish-integration`
 - Expected owner files:
   - `ui/fractal_binding_surface_v1.ui_schema.json`
   - `ui_app/src/fractal_types.h`
@@ -54,4 +58,4 @@ Hostile review assumes the current duplication is real and user-visible. Lock th
 
 ## Resume Point
 
-Inventory the duplicated or confusing color-mode surfaces first, then write the smallest failing regression that proves the current authority split.
+The baseline inventory is complete enough to name the first hypothesis: the public color-mode authority should be one family-aware control, not two schema controls bound to the same enum path. Next step: write the smallest failing regression that proves the duplicated schema surface or option filtering mismatch, then repair that one seam before widening scope.
