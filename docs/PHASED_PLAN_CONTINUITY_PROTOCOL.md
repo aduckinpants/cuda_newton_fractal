@@ -12,6 +12,10 @@ Each meaningful multi-step slice should use a phased plan document with, at mini
 
 - `## Current Phase`
 - `## Phase Checklist`
+- `## Explicit User Asks`
+- `## Presumption Loop`
+- `## Presumption Evidence`
+- `## Proof Ledger`
 - `## Notes` or another short evidence section for blockers, proof, or next actions
 
 Meaningful slices should also carry a checked-in machine-readable contract file that references the phased plan and acts as the enforcement surface for mutation/closure guards.
@@ -59,6 +63,29 @@ Phase 1 - <short label>
 - [ ] Phase 1 - <short label>
 - [ ] Phase 2 - <short label>
 - [ ] Phase 3 - <short label>
+
+## Explicit User Asks
+
+- [open] <user-facing ask>
+
+## Presumption Loop
+
+<owner hypothesis, hostile-review stance, and TDD loop>
+
+## Presumption Evidence
+
+- Owner Proof: <local evidence>
+- RED Witness: pending
+- Fix Proof: pending
+- Hostile Review Pass 1: pending
+- Hostile Review Pass 2: pending
+
+## Proof Ledger
+
+- Manual RED: pending
+- Checked-in regression RED: pending
+- First GREEN: pending
+- Post-green hostile finding: pending
 
 ## Notes
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import importlib
 import importlib.util
 import subprocess
 import sys
@@ -10,6 +12,36 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAINLINE_PHASED_PLAN_HOOK = Path(r"C:\code\salticid-cuda\tools\hook_require_phased_plan_sync.py")
 PHASED_PLAN_SUFFIX = "_PHASED_PLAN.md"
+
+
+@contextlib.contextmanager
+def _temporary_sys_path(paths: list[Path]):
+    original = list(sys.path)
+    additions = [str(path) for path in paths if str(path) not in sys.path]
+    try:
+        sys.path[:0] = additions
+        yield
+    finally:
+        sys.path[:] = original
+
+
+@contextlib.contextmanager
+def _temporary_mainline_tools_namespace():
+    saved = {
+        name: module
+        for name, module in sys.modules.items()
+        if name == "tools" or name.startswith("tools.")
+    }
+    try:
+        for name in saved:
+            sys.modules.pop(name, None)
+        importlib.import_module("tools")
+        yield
+    finally:
+        for name in list(sys.modules):
+            if name == "tools" or name.startswith("tools."):
+                sys.modules.pop(name, None)
+        sys.modules.update(saved)
 
 
 def _repo_relative(path: Path) -> str:
@@ -67,7 +99,11 @@ def _load_mainline_plan_guard():
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load mainline phased-plan hook from: {MAINLINE_PHASED_PLAN_HOOK}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    mainline_repo_root = MAINLINE_PHASED_PLAN_HOOK.parent.parent
+    mainline_tools_dir = MAINLINE_PHASED_PLAN_HOOK.parent
+    with _temporary_sys_path([mainline_repo_root, mainline_tools_dir]):
+        with _temporary_mainline_tools_namespace():
+            spec.loader.exec_module(module)
     module.REPO_ROOT = REPO_ROOT
     return module
 

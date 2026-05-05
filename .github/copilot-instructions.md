@@ -30,6 +30,7 @@
 - Do not rely on chat history as the durable plan. Reuse the nearest phased plan or create
     `docs/notes/<slug>_PHASED_PLAN.md`, then keep `## Current Phase` and `## Phase Checklist`
     synchronized in the same edit.
+- When creating or refreshing a meaningful phased plan, include `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, and `## Proof Ledger` alongside the required phase-tracking sections.
 - Use `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` or task `agent: assert phased plan sync`
     after touching a phased plan.
 - Follow strict TDD for behavioral changes: add or extend the focused test first, then implement the minimal fix, then refactor.

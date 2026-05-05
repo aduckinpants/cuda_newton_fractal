@@ -299,6 +299,45 @@ def test_core_workflow_docs_advertise_session_start_checkpoint_flow() -> None:
             assert snippet not in text, f"{path} still contains stale workflow-doc snippet: {snippet}"
 
 
+def test_phase0_workflow_docs_require_mainline_style_plan_sections() -> None:
+    expected = {
+        REPO_ROOT / "AGENTS.md": [
+            "Explicit User Asks",
+            "Presumption Loop",
+            "Proof Ledger",
+        ],
+        REPO_ROOT / "AGENT_WORKING_PROTOCOL.md": [
+            "Explicit User Asks",
+            "Presumption Loop",
+            "Proof Ledger",
+        ],
+        REPO_ROOT / ".github" / "copilot-instructions.md": [
+            "Explicit User Asks",
+            "Presumption Loop",
+            "Proof Ledger",
+        ],
+        REPO_ROOT / "docs" / "PHASED_PLAN_CONTINUITY_PROTOCOL.md": [
+            "## Explicit User Asks",
+            "## Presumption Loop",
+            "## Presumption Evidence",
+            "## Proof Ledger",
+        ],
+    }
+
+    for path, snippets in expected.items():
+        text = path.read_text(encoding="utf-8")
+        for snippet in snippets:
+            assert snippet in text, f"{path} missing expected phased-plan section guidance: {snippet}"
+
+
+def test_ui_polish_phase0_plan_resume_point_waits_for_checkpoint() -> None:
+    plan_path = REPO_ROOT / "docs" / "notes" / "ui_polish_sprint_phase0_foundation_PHASED_PLAN.md"
+    text = plan_path.read_text(encoding="utf-8")
+
+    assert "after this slice is checkpointed" in text.lower()
+    assert "current clean `feature/explaino-joy` state" not in text
+
+
 def test_workflow_cli_friction_plan_tracks_remaining_review_turns() -> None:
     plan_path = REPO_ROOT / "docs" / "notes" / "workflow_cli_friction_closure_PHASED_PLAN.md"
     text = plan_path.read_text(encoding="utf-8")

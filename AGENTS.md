@@ -21,6 +21,7 @@ Do these before making architecture claims or starting broad edits:
    - Prefer the nearest existing plan doc.
    - Otherwise create `docs/notes/<slug>_PHASED_PLAN.md`.
    - Protocol: `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`.
+   - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, and `## Proof Ledger` alongside `## Current Phase` and `## Phase Checklist`.
 9. Read `.github/copilot-instructions.md` after this file, not instead of it.
 
 The VS Code task surface mirrors these commands:
