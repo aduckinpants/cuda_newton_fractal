@@ -112,6 +112,40 @@ int main() {
             std::cerr << "Unknown enum paths should return an empty id\n";
             return 1;
         }
+
+        UISchemaControl coloringMode = MakeBoundControl("coloring_mode", "combo", "Coloring Mode", "enum", "param", "fractal.params.coloring_mode");
+        coloringMode.options = {
+            {"root_basin", "Root Basins (Root-Finding)", ""},
+            {"joy_basins", "Joy Basins (All paths succeed)", ""},
+            {"iteration_count", "Iteration Count", ""},
+            {"smooth_escape", "Smooth Escape", ""},
+            {"phase", "Phase (Hue Wheel)", ""},
+            {"iteration_bands", "Iteration Bands", ""},
+        };
+
+        view.fractal_type = FractalType::explaino;
+        const std::vector<const UISchemaOption*> explainoOptions = ResolveVisibleEnumOptions(coloringMode, ctx);
+        if (explainoOptions.size() != 6) {
+            std::cerr << "Expected basin-capable fractals to expose all coloring options\n";
+            return 1;
+        }
+
+        view.fractal_type = FractalType::mandelbrot;
+        const std::vector<const UISchemaOption*> mandelbrotOptions = ResolveVisibleEnumOptions(coloringMode, ctx);
+        if (mandelbrotOptions.size() != 4) {
+            std::cerr << "Expected escape-time fractals to hide basin-only coloring options\n";
+            return 1;
+        }
+        for (const UISchemaOption* option : mandelbrotOptions) {
+            if (!option) {
+                std::cerr << "Expected visible coloring options to remain addressable\n";
+                return 1;
+            }
+            if (option->id == "root_basin" || option->id == "joy_basins") {
+                std::cerr << "Escape-time fractals should not expose basin-only coloring options\n";
+                return 1;
+            }
+        }
     }
 
     {

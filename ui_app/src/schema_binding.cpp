@@ -2,6 +2,7 @@
 
 #include "enum_id_utils.h"
 #include "explaino_seed.h"
+#include "fractal_family_rules.h"
 #include "imgui.h"
 #include "ui_schema_grouping.h"
 
@@ -61,6 +62,31 @@ NumericControlRange ResolveNumericControlRange(const UISchemaControl& control) {
         range.has_hard_max = true;
     }
     return range;
+}
+
+std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& control, const BindingContext& ctx) {
+    std::vector<const UISchemaOption*> options;
+    options.reserve(control.options.size());
+
+    const bool filterColoringModeOptions = control.value_type == "enum" &&
+        control.has_binding &&
+        control.binding.path == "fractal.params.coloring_mode" &&
+        ctx.view;
+
+    for (const auto& option : control.options) {
+        if (filterColoringModeOptions) {
+            ColoringMode mode = ColoringMode::smooth_escape;
+            if (!TryParseColoringModeId(option.id, &mode)) {
+                continue;
+            }
+            if (!IsColoringModeAllowedForFractal(ctx.view->fractal_type, mode)) {
+                continue;
+            }
+        }
+        options.push_back(&option);
+    }
+
+    return options;
 }
 
 std::string BindingContext::GetEnumId(const std::string& path) const {
@@ -981,29 +1007,34 @@ bool RenderEnumComboControl(
     bool* ioDirty,
     bool* ioInteracted) {
     const std::string currentId = ctx.GetEnumId(binding.path);
+    const std::vector<const UISchemaOption*> visibleOptions = ResolveVisibleEnumOptions(control, ctx);
     if (HasGroupedOptions(control)) {
         RenderGroupedEnumComboControl(control, ctx, binding, currentId, ioDirty, ioInteracted);
         return true;
     }
 
+    if (visibleOptions.empty()) {
+        return RenderDiagnosticLabel(control, "no visible options");
+    }
+
     int currentIndex = 0;
-    for (int index = 0; index < static_cast<int>(control.options.size()); ++index) {
-        if (control.options[index].id == currentId) {
+    for (int index = 0; index < static_cast<int>(visibleOptions.size()); ++index) {
+        if (visibleOptions[index]->id == currentId) {
             currentIndex = index;
             break;
         }
     }
 
     std::vector<const char*> labels;
-    labels.reserve(control.options.size());
-    for (const auto& option : control.options) {
-        labels.push_back(option.label.c_str());
+    labels.reserve(visibleOptions.size());
+    for (const UISchemaOption* option : visibleOptions) {
+        labels.push_back(option->label.c_str());
     }
 
     bool changed = false;
     if (!labels.empty() && ImGui::Combo(control.label.c_str(), &currentIndex, labels.data(), static_cast<int>(labels.size()))) {
-        if (currentIndex >= 0 && currentIndex < static_cast<int>(control.options.size())) {
-            changed = ctx.SetEnumId(binding.path, control.options[currentIndex].id);
+        if (currentIndex >= 0 && currentIndex < static_cast<int>(visibleOptions.size())) {
+            changed = ctx.SetEnumId(binding.path, visibleOptions[currentIndex]->id);
         }
     }
     MarkDirtyIfChanged(changed, ioDirty);

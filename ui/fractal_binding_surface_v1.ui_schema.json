@@ -739,7 +739,7 @@
       "order": 25,
       "controls": [
         {
-          "id": "coloring_mode_newton",
+          "id": "coloring_mode",
           "type": "combo",
           "label": "Coloring Mode",
           "value_type": "enum",
@@ -754,33 +754,7 @@
             { "id": "iteration_bands", "label": "Iteration Bands" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
-          "visible_if": {
-            "op": "in",
-            "path": "fractal.view.fractal_type",
-            "value": "newton,explaino,explaino_y,explaino_fp,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,halley"
-          },
-          "help": "Newton and the root-finding Explaino variants support basin-based coloring. 'Joy Basins' emphasizes warm success basins while keeping non-convergent regions as a subdued undertow."
-        },
-        {
-          "id": "coloring_mode_escape",
-          "type": "combo",
-          "label": "Coloring Mode",
-          "value_type": "enum",
-          "order": 1,
-          "default": "smooth_escape",
-          "options": [
-            { "id": "iteration_count", "label": "Iteration Count" },
-            { "id": "smooth_escape", "label": "Smooth Escape" },
-            { "id": "phase", "label": "Phase (Hue Wheel)" },
-            { "id": "iteration_bands", "label": "Iteration Bands" }
-          ],
-          "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
-          "visible_if": {
-            "op": "in",
-            "path": "fractal.view.fractal_type",
-            "value": "nova,explaino_nova,mandelbrot,julia,burning_ship,multibrot,phoenix,explaino_julia,multicorn,collatz,mcmullen,lambda,explaino_lambda,explaino_rational_escape"
-          },
-          "help": "Escape-time fractals use iteration-based coloring."
+          "help": "One public coloring-mode control. Basin options remain available only for fractal families that support them; escape-time families show the iteration-based subset."
         },
         {
           "id": "exposure",

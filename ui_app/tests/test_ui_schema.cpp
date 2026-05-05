@@ -296,7 +296,8 @@ int main() {
         bool foundPhaseSlider = false;
         bool foundDualSeedB = false;
         bool foundDualSeedMix = false;
-        bool foundDualSeedColoring = false;
+        bool foundUnifiedColoringMode = false;
+        int coloringModeControlCount = 0;
         bool foundMultibrotPowerFloat = false;
         bool foundLambdaReal = false;
         bool foundLambdaImag = false;
@@ -526,9 +527,21 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
                     foundTensionStrengthUiRange = true;
                 }
-                if (ctrl.id == "coloring_mode_newton" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
-                    foundDualSeedColoring = true;
+                if (ctrl.has_binding && ctrl.binding.path == "fractal.params.coloring_mode") {
+                    ++coloringModeControlCount;
+                    if (ctrl.id == "coloring_mode" && ctrl.options.size() == 6) {
+                        bool foundRootBasin = false;
+                        bool foundJoyBasins = false;
+                        bool foundSmoothEscape = false;
+                        bool foundIterationBands = false;
+                        for (const auto& option : ctrl.options) {
+                            if (option.id == "root_basin") foundRootBasin = true;
+                            if (option.id == "joy_basins") foundJoyBasins = true;
+                            if (option.id == "smooth_escape") foundSmoothEscape = true;
+                            if (option.id == "iteration_bands") foundIterationBands = true;
+                        }
+                        foundUnifiedColoringMode = foundRootBasin && foundJoyBasins && foundSmoothEscape && foundIterationBands;
+                    }
                 }
             }
         }
@@ -595,8 +608,8 @@ int main() {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";
             return 1;
         }
-        if (!foundDualSeedB || !foundDualSeedMix || !foundDualSeedColoring) {
-            std::cerr << "Did not find Explaino-DualSeed controls and coloring visibility in schema\n";
+        if (!foundDualSeedB || !foundDualSeedMix || !foundUnifiedColoringMode || coloringModeControlCount != 1) {
+            std::cerr << "Did not find the unified public coloring-mode control in schema\n";
             return 1;
         }
     }

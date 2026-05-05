@@ -41,4 +41,5 @@ bool ApplySchemaDefaultForControl(const UISchemaControl& c, BindingContext& ctx,
 void ApplySchemaDefaults(const UISchema& schema, BindingContext& ctx, bool* ioDirty);
 bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::string* outError);
 NumericControlRange ResolveNumericControlRange(const UISchemaControl& c);
+std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& c, const BindingContext& ctx);
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);
