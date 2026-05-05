@@ -226,7 +226,10 @@ struct KernelParams {
 };
 
 struct RenderSettings {
-    Int2 resolution{1024, 768};
+    static constexpr int kDefaultWidth = 2048;
+    static constexpr int kDefaultHeight = 1536;
+
+    Int2 resolution{kDefaultWidth, kDefaultHeight};
     int block_size{256};
     int device_id{0};
     bool benchmark{false};

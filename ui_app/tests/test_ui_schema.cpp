@@ -388,10 +388,10 @@ int main() {
                         if (option.id == "perpendicular_burning_ship" && option.group == "Escape-Time") foundPerpendicularShipEscapeTimeGroup = true;
                     }
                 }
-                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 768.0) {
+                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
                     foundRenderHeightDefault = true;
                 }
-                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1024.0) {
+                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
                     foundRenderWidthDefault = true;
                 }
                 if (ctrl.id == "interaction_debounce_ms" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 200.0) {
@@ -702,10 +702,10 @@ int main() {
                         if (option.id == "perpendicular_burning_ship" && option.group == "Escape-Time") foundPerpendicularShipEscapeTimeGroup = true;
                     }
                 }
-                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1024.0) {
+                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
                     foundRenderWidthDefault = true;
                 }
-                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 768.0) {
+                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
                     foundRenderHeightDefault = true;
                 }
                 if (ctrl.id == "interaction_debounce_ms" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 200.0) {

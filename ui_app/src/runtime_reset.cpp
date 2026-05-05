@@ -37,7 +37,7 @@ void ResetRuntimeStateForCurrentFractal(
     }
     SyncViewHpFromUi(view);
 
-    render.resolution = {1024, 768};
+    render.resolution = {RenderSettings::kDefaultWidth, RenderSettings::kDefaultHeight};
     render.block_size = 256;
     render.device_id = 0;
     render.benchmark = false;

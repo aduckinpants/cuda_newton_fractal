@@ -324,6 +324,7 @@ int main() {
         }
 
         dirty = false;
+        render.resolution.x = 640;
         UISchemaControl intControl = MakeBoundControl("width", "slider_int", "Width", "int", "param", "fractal.render.resolution.x");
         intControl.has_default = true;
         intControl.def = json_min::Value{2048.0};

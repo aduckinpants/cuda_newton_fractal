@@ -14,6 +14,12 @@ int main() {
             std::cerr << "Fresh runtime state should default startup fractal selection to Explaino\n";
             return 1;
         }
+
+        RenderSettings startupRender{};
+        if (startupRender.resolution.x != 2048 || startupRender.resolution.y != 1536) {
+            std::cerr << "Fresh runtime render state should default startup resolution to 2048x1536\n";
+            return 1;
+        }
     }
 
     ViewState view{};
@@ -62,7 +68,7 @@ int main() {
         std::cerr << "Reset should restore explaino param defaults\n";
         return 1;
     }
-    if (render.resolution.x != 1024 || render.resolution.y != 768 || render.block_size != 256 || render.device_id != 0 || render.benchmark) {
+    if (render.resolution.x != 2048 || render.resolution.y != 1536 || render.block_size != 256 || render.device_id != 0 || render.benchmark) {
         std::cerr << "Reset should restore render defaults\n";
         return 1;
     }

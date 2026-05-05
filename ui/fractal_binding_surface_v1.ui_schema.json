@@ -816,7 +816,7 @@
           "type": "slider_int",
           "label": "Width",
           "value_type": "int",
-          "min": 64, "max": 4096, "step": 1, "default": 1024,
+          "min": 64, "max": 4096, "step": 1, "default": 2048,
           "binding": { "kind": "param", "path": "fractal.render.resolution.x" }
         },
         {
@@ -824,7 +824,7 @@
           "type": "slider_int",
           "label": "Height",
           "value_type": "int",
-          "min": 64, "max": 4096, "step": 1, "default": 768,
+          "min": 64, "max": 4096, "step": 1, "default": 1536,
           "binding": { "kind": "param", "path": "fractal.render.resolution.y" }
         },
         {
