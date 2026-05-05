@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "contract_id": "ui_polish_sprint_phase5_merge_audit",
+  "feature_id": "ui_polish_sprint_merge_audit",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_polish_sprint_overview_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/ui_polish_sprint_overview_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "integration branch history",
+    "resolution-pacing branch history",
+    "published runtime on D:"
+  ],
+  "forbidden_operator_prompts": [
+    "unvalidated fast-forward assumption",
+    "skip D: published runtime refresh",
+    "undocumented sprint closure"
+  ],
+  "required_defaults": {
+    "merge_target": "feature/ui-polish-integration",
+    "runtime_publish": "required_before_audit_close",
+    "phase_scope": "merge_and_integration_audit_only"
+  },
+  "forbidden_defaults": {
+    "close_sprint_from_slice_branch": "forbidden",
+    "skip_merged_runtime_validation": "forbidden",
+    "off_topic_ui_rework": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_polish_sprint_phase5_merge_audit.contract.json --out-json artifacts/validation/ui_polish_sprint_phase5_merge_audit_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "phase5_contract_schema_valid",
+      "description": "The Phase 5 merge/audit contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_polish_sprint_phase5_merge_audit_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "phase5_plan_sync_ok",
+      "description": "The UI polish sprint overview stays synchronized while the merge/audit slice is active",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

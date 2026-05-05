@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - merge the completed UI polish work and run the integration audit
+Phase 5 - merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-integration`, refresh the published runtime on D:, and run the integration audit
 
 ## Phase Checklist
 
@@ -47,6 +47,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - Phase 4 setup: slice 2 is now merged into `feature/ui-polish-integration`, and the dedicated slice-3 branch `feature/ui-polish-resolution-pacing` is active with its own phased plan and contract surface.
 - Phase 4 GREEN: slice 3 restored the exploration-first `2048x1536` startup/reset defaults, centralized the current pacing-policy defaults in the C++ owner seams, added 2048-baseline pacing regressions, repaired the one clamp bug exposed by hostile review, and passed native helper, runtime publish, deployed `--validate-ui`, deployed-schema, and code-quality validation.
 - Phase 5 pre-merge GREEN: the bounded follow-up repaired the last drag-clamp bug in `schema_binding.cpp`, so UI-only drag ranges no longer behave like real limits while bilateral hard-clamped drags still do. Native helper, runtime publish, deployed `--validate-ui`, and code-quality validation all passed again.
+- Phase 5 start: `feature/ui-polish-resolution-pacing` is four commits ahead of `feature/ui-polish-integration` with no divergence, so the remaining sprint work is a straight merge on the integration branch followed by merged-branch validation, including a fresh publish to `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
 
 ## Notes
 
@@ -70,4 +71,4 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 
 ## Resume Point
 
-Merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-integration`, then run the planned sprint integration audit.
+Start the Phase 5 merge/audit slice on `feature/ui-polish-integration`, merge `feature/ui-polish-resolution-pacing`, then run the planned integration audit against the refreshed published runtime on D:.
