@@ -33,9 +33,9 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 
 - Owner Proof: the current repo has one UI-schema authority surface, one color-mode/runtime surface, and one render-pacing/defaults surface, which supports a three-slice split instead of one blended branch.
 - RED Witness: the sprint overview was stale after slice 1 landed; it still claimed Phase 1 and Phase 2 were pending, and slice 2 still looked blocked even though the dedicated integration branch and slice branches already existed.
-- Fix Proof: `feature/ui-polish-schema-domains` is now merged into `feature/ui-polish-integration`, and the next bounded slice branch `feature/ui-polish-color-authority` is the active branch for the color-authority follow-up.
+- Fix Proof: `feature/ui-polish-schema-domains` and `feature/ui-polish-color-authority` are now merged into `feature/ui-polish-integration`, and `feature/ui-polish-resolution-pacing` is the active branch for the next bounded slice.
 - Hostile Review Pass 1: slice-1 closure was code-complete, but the sprint-level bookkeeping lagged behind reality; that was repaired before slice 2 started.
-- Hostile Review Pass 2: slice 2 is now code-complete and viewer-validated, so the next open sprint surface is slice 3 rather than more color-mode cleanup.
+- Hostile Review Pass 2: slice 2 is now code-complete, viewer-validated, and merged into the sprint integration branch, so the next open sprint surface is slice 3 rather than more color-mode cleanup.
 
 ## Proof Ledger
 
@@ -43,6 +43,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - First GREEN: the branch topology now matches the planned sprint structure in practice: the integration branch carries slice 1, and the dedicated slice-2 branch exists for color-authority work.
 - Post-green hostile finding: the repo had no slice-2 contract yet, so the next feature branch still needed its own lock surface before meaningful work could begin.
 - Phase 3 GREEN: slice 2 landed a single public `coloring_mode` control with family-filtered visible options, and the published runtime plus code-quality / plan-sync rails stayed green.
+- Phase 4 setup: slice 2 is now merged into `feature/ui-polish-integration`, and the dedicated slice-3 branch `feature/ui-polish-resolution-pacing` is active with its own phased plan and contract surface.
 
 ## Notes
 
@@ -59,9 +60,10 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
   - slice 3: `docs/notes/ui_polish_slice3_render_resolution_pacing_PHASED_PLAN.md`
 - Current stop point discipline:
   - slice 1 is complete and merged into `feature/ui-polish-integration`
-  - slice 2 is complete on `feature/ui-polish-color-authority`
+  - slice 2 is complete and merged into `feature/ui-polish-integration`
+  - slice 3 is active on `feature/ui-polish-resolution-pacing`
   - keep future programmable-color or Salticid-adjacent exploration out of this sprint overview until the user reopens that topic separately
 
 ## Resume Point
 
-Slice 2 is closed. The next bounded UI polish step is slice 3 for render-resolution defaults and pacing policy.
+Slice 3 is now the active bounded UI polish step on `feature/ui-polish-resolution-pacing`. Capture the current render-resolution defaults and pacing behavior before writing the first regression.

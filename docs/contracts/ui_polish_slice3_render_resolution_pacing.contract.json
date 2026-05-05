@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "contract_id": "ui_polish_slice3_render_resolution_pacing",
+  "feature_id": "ui_polish_resolution_pacing",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/ui_polish_slice3_render_resolution_pacing_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/ui_polish_sprint_overview_PHASED_PLAN.md",
+    "docs/notes/ui_polish_slice3_render_resolution_pacing_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/main.cpp",
+    "ui_app/src/runtime_reset.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/viewer_render_pacing.h",
+    "ui_app/src/viewer_render_pacing.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_viewer_render_pacing.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_finding_state_actions.cpp"
+  ],
+  "required_operator_inputs": [
+    "runtime reset and render pacing owner files",
+    "focused defaults and pacing regressions",
+    "published runtime"
+  ],
+  "forbidden_operator_prompts": [
+    "chat-only resolution bump",
+    "pacing tweak without regression proof",
+    "silent startup default divergence"
+  ],
+  "required_defaults": {
+    "runtime_default_authority": "startup_and_reset_surfaces_aligned",
+    "pacing_policy": "explicit_preview_policy",
+    "slice_scope": "resolution_and_pacing_only"
+  },
+  "forbidden_defaults": {
+    "main_cpp_one_off_resolution_override": "forbidden",
+    "hidden_preview_pacing_fallback": "forbidden",
+    "off_topic_color_authority_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_polish_slice3_render_resolution_pacing.contract.json --out-json artifacts/validation/ui_polish_slice3_render_resolution_pacing_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "slice3_contract_schema_valid",
+      "description": "Slice 3 render-resolution/pacing contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_polish_slice3_render_resolution_pacing_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "slice3_plan_sync_ok",
+      "description": "Slice 3 phased plan stays synchronized while the resolution/pacing slice is active",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
