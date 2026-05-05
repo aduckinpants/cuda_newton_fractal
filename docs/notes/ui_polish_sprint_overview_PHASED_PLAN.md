@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 complete - `feature/ui-polish-integration` now carries the full UI polish sprint and the merged runtime has passed the integration audit on the published D: viewer
+Phase 6 - fast-forward `master` to `feature/ui-polish-integration`, push `origin/master`, then reopen deferred coloring-mode and remaining polish follow-ups for planning
 
 ## Phase Checklist
 
@@ -11,6 +11,7 @@ Phase 5 complete - `feature/ui-polish-integration` now carries the full UI polis
 - [x] Phase 3 - land slice 2 for color-mode authority and UI cleanup
 - [x] Phase 4 - land slice 3 for render-resolution defaults and pacing policy
 - [x] Phase 5 - run integration audit and close the sprint follow-up ledger
+- [ ] Phase 6 - publish the reviewed integration branch to master and capture the next follow-up threads
 
 ## Explicit User Asks
 
@@ -19,8 +20,9 @@ Phase 5 complete - `feature/ui-polish-integration` now carries the full UI polis
 - [done] Improve how the color mode is done.
 - [done] Raise the starting render resolution from the current low default.
 - [done] Sanity-check the remaining bound values before merge and repair any places where UI-only ranges still behave like real clamps.
-- [done] Cleanly merge to master and then start a new branch for each feature slice.
+- [open] Cleanly merge the reviewed UI polish sprint to master.
 - [done] Document the work structure in the newer phased style before feature implementation.
+- [open] Bring the remaining coloring-mode and other deferred polish follow-ups back onto the planning table after the merge.
 
 ## Presumption Loop
 
@@ -49,6 +51,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - Phase 5 pre-merge GREEN: the bounded follow-up repaired the last drag-clamp bug in `schema_binding.cpp`, so UI-only drag ranges no longer behave like real limits while bilateral hard-clamped drags still do. Native helper, runtime publish, deployed `--validate-ui`, and code-quality validation all passed again.
 - Phase 5 start: `feature/ui-polish-resolution-pacing` is four commits ahead of `feature/ui-polish-integration` with no divergence, so the remaining sprint work is a straight merge on the integration branch followed by merged-branch validation, including a fresh publish to `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
 - Phase 5 GREEN: `feature/ui-polish-integration` fast-forwarded cleanly to `44585ef`, the checkpoint validation rails passed on the merged branch (`95/100` code quality, native helper tests, runtime publish, runtime pytest lane `68 passed`), and the deployed `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui` run stayed clean, so the sprint is closed at the integration-branch level.
+- Phase 6 start: `feature/ui-polish-integration` has already passed hostile review and is twelve commits ahead of `master` with no divergence, so the remaining release work is a straight fast-forward of `master` followed by `origin/master` publication and a small planning recap of the still-open coloring/deferred polish threads.
 
 ## Notes
 
@@ -72,4 +75,4 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 
 ## Resume Point
 
-UI polish sprint closure is complete on `feature/ui-polish-integration`; any next step beyond this point is a separate thread (for example, publishing/pushing the integration branch or merging onward).
+Fast-forward `master` to `feature/ui-polish-integration`, push `origin/master`, then summarize the deferred coloring-mode and other remaining polish/planning threads to reopen next.
