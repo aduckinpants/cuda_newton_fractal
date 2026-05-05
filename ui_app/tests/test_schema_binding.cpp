@@ -182,6 +182,34 @@ int main() {
             std::cerr << "Expected explaino seed sliders to keep UI-only bounds with no hard clamp\n";
             return 1;
         }
+
+        UISchemaControl explainoDamping = MakeBoundControl("explaino_damping", "slider_float", "Newton Damping", "float", "param", "fractal.params.explaino_damping");
+        explainoDamping.has_ui_min = true;
+        explainoDamping.ui_min = 0.01;
+        explainoDamping.has_ui_max = true;
+        explainoDamping.ui_max = 10.0;
+
+        NumericControlRange explainoDampingRange = ResolveNumericControlRange(explainoDamping);
+        if (!explainoDampingRange.has_widget_min || !explainoDampingRange.has_widget_max ||
+            explainoDampingRange.widget_min != 0.01 || explainoDampingRange.widget_max != 10.0 ||
+            explainoDampingRange.has_hard_min || explainoDampingRange.has_hard_max) {
+            std::cerr << "Expected Newton damping sliders to keep their shipped UI span without a hard clamp\n";
+            return 1;
+        }
+
+        UISchemaControl momentumBeta = MakeBoundControl("momentum_beta", "slider_float", "Momentum Beta", "float", "param", "fractal.params.momentum_beta");
+        momentumBeta.has_ui_min = true;
+        momentumBeta.ui_min = -1.0;
+        momentumBeta.has_ui_max = true;
+        momentumBeta.ui_max = 1.0;
+
+        NumericControlRange momentumBetaRange = ResolveNumericControlRange(momentumBeta);
+        if (!momentumBetaRange.has_widget_min || !momentumBetaRange.has_widget_max ||
+            momentumBetaRange.widget_min != -1.0 || momentumBetaRange.widget_max != 1.0 ||
+            momentumBetaRange.has_hard_min || momentumBetaRange.has_hard_max) {
+            std::cerr << "Expected momentum beta to use a signed UI-only slider range with no hard clamp\n";
+            return 1;
+        }
     }
 
     {

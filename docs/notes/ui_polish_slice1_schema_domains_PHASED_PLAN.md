@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - hostile audit the broadened MVP UI-domain sweep, publish the deployed runtime, and checkpoint the slice
+Phase 4 - hostile re-audit the remaining schema-domain misses, republish the deployed runtime, and checkpoint the corrective follow-up
 
 ## Phase Checklist
 
@@ -15,6 +15,7 @@ Phase 4 - hostile audit the broadened MVP UI-domain sweep, publish the deployed 
 
 - [open] Fix slider values that are not covering the proper domains.
 - [open] Treat the UI polish as a bounded slice instead of a broad refactor.
+- [open] Re-audit the shipped control bindings in detail and correct the remaining misses instead of stopping at partial coverage.
 
 ## Presumption Loop
 
@@ -33,6 +34,9 @@ Hostile review assumes the current static ranges are too weak or too generic for
 - Hostile Review Pass 2: the active slice contract omitted `ui_app/src/schema_binding.h` from the allowed mutation scope even though the range seam needs a public resolver declaration; the contract was repaired before proceeding.
 - Hostile Review Pass 3 Prep: safe-mode fallback is part of the visible control surface for this slice, so `ui_app/src/safe_mode_schema.cpp` now mirrors the new range model for the overlapping view/fractal controls instead of leaving the fallback on stale single-range behavior.
 - Hostile Review Pass 3: `fractal.view.explaino_phase_strength` still used a hard `min`/`max` pair even though the owning root-shape math consumes it as an unclamped modulation multiplier; the schema and regression now treat its `[-20,20]` range as UI-only metadata, and a follow-up audit pass did not find another nearby control with equally strong runtime-authority evidence for conversion.
+- Hostile Review Reopen: the reopened user review showed the first sweep still left several Explaino-family controls on legacy hard `min`/`max` metadata even though the shipped experimental-family reference only defines their intended widget spans, not engine clamps. The same reopen found that `fractal.view.explaino_phase` was still hidden for `explaino_dual` even though the shared runtime path uses the phase/warp start for DualSeed as well.
+- Range Evidence: `docs/EXPLAINO_EXPERIMENTAL_FAMILY_REFERENCE.md` defines the shipped UI spans for `joy_coupling`, `fold_coupling`, `bell_coupling`, `ripple_amplitude`, `splice_offset`, `vortex_strength`, and `tension_strength`; those values belong in `ui_min`/`ui_max` unless the runtime itself proves a hard clamp.
+- Runtime Evidence: the inertial runtime uses `momentum_beta` as a signed scalar multiplier on the previous-step momentum vector in both the host probe path and the device sampler, so the prior `[0,1]` hard clamp was suppressing a real half of the control domain.
 
 ## Proof Ledger
 
@@ -43,6 +47,8 @@ Hostile review assumes the current static ranges are too weak or too generic for
 - Broadened MVP GREEN: `cmd /c ui_app\build_tests_vsdevcmd.cmd` passed again after extending the same range model to int controls, safe-mode fallback parity, and the larger checked-in schema sweep including zoom, rotation, max-iter, epsilon, seed/animation rates, Explaino seeds, dive speed, polynomial coefficients, and Explaino phase.
 - Hostile-audit repair GREEN: `cmd /c ui_app\build_tests_vsdevcmd.cmd` passed again after converting `explaino_phase_strength` from a hard clamp to UI-only range metadata and updating the pre-existing negative-capable Explaino schema regression.
 - Published-runtime GREEN: `verify: runtime publish` completed with active runtime `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`, and the deployed executable passed `--validate-ui` with exit code 0.
+- Reopen RED: after the user re-audited the shipped controls, `cmd /c ui_app\build_tests_vsdevcmd.cmd` failed on the new live-schema regression because the schema still used hard `min`/`max` metadata for `explaino_damping`, `momentum_beta`, and the experimental-family variant controls, and `explaino_phase` was still missing `explaino_dual` from its visibility list.
+- Reopen GREEN: `cmd /c ui_app\build_tests_vsdevcmd.cmd` passed after converting the remaining non-runtime-clamped Explaino-family sliders to `ui_min`/`ui_max`, widening `momentum_beta` to a signed UI range, and restoring `explaino_phase` visibility for `explaino_dual`.
 
 ## Notes
 
@@ -65,4 +71,4 @@ Hostile review assumes the current static ranges are too weak or too generic for
 
 ## Resume Point
 
-Continue slice 1 from the now-green hostile-audited and republished MVP sweep: checkpoint and receipt the slice, then leave remaining nearby controls such as `explaino_damping` or `momentum_beta` for a separate runtime-domain decision unless new runtime-authority evidence appears.
+Continue slice 1 from the reopened and now-green schema audit: republish the deployed runtime so the D:\ build matches the corrected UI domains, run the remaining validation rails, then checkpoint and receipt the corrective follow-up under the active slice token.

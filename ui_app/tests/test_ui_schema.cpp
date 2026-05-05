@@ -333,6 +333,16 @@ int main() {
         bool foundPolyCoeffUiRange = false;
         bool foundExplainoPhaseUiRange = false;
         bool foundExplainoPhaseStrengthUiRange = false;
+        bool foundExplainoPhaseVisibleForDual = false;
+        bool foundExplainoDampingUiRange = false;
+        bool foundMomentumBetaUiRange = false;
+        bool foundJoyCouplingUiRange = false;
+        bool foundFoldCouplingUiRange = false;
+        bool foundBellCouplingUiRange = false;
+        bool foundRippleAmplitudeUiRange = false;
+        bool foundSpliceOffsetUiRange = false;
+        bool foundVortexStrengthUiRange = false;
+        bool foundTensionStrengthUiRange = false;
 
         if (!LoadAndValidateSchemaFile(schemaPath)) {
             return 1;
@@ -467,9 +477,49 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 6.283185307179586 && !ctrl.has_min && !ctrl.has_max) {
                     foundExplainoPhaseUiRange = true;
                 }
+                if (ctrl.id == "explaino_phase" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
+                    foundExplainoPhaseVisibleForDual = true;
+                }
                 if (ctrl.id == "explaino_phase_strength" && ctrl.has_ui_min && ctrl.ui_min == -20.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 20.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundExplainoPhaseStrengthUiRange = true;
+                }
+                if (ctrl.id == "explaino_damping" && ctrl.has_ui_min && ctrl.ui_min == 0.01 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 10.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundExplainoDampingUiRange = true;
+                }
+                if (ctrl.id == "momentum_beta" && ctrl.has_ui_min && ctrl.ui_min == -1.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundMomentumBetaUiRange = true;
+                }
+                if (ctrl.id == "joy_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundJoyCouplingUiRange = true;
+                }
+                if (ctrl.id == "fold_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundFoldCouplingUiRange = true;
+                }
+                if (ctrl.id == "bell_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundBellCouplingUiRange = true;
+                }
+                if (ctrl.id == "ripple_amplitude" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 0.5 && !ctrl.has_min && !ctrl.has_max) {
+                    foundRippleAmplitudeUiRange = true;
+                }
+                if (ctrl.id == "splice_offset" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundSpliceOffsetUiRange = true;
+                }
+                if (ctrl.id == "vortex_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
+                    foundVortexStrengthUiRange = true;
+                }
+                if (ctrl.id == "tension_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
+                    ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
+                    foundTensionStrengthUiRange = true;
                 }
                 if (ctrl.id == "coloring_mode_newton" && ctrl.has_visible_if &&
                     ctrl.visible_if.value.find("explaino_dual") != std::string::npos) {
@@ -516,7 +566,11 @@ int main() {
         }
         if (!foundZoomUiRange || !foundRotationUiRange || !foundMaxIterUiCap || !foundEpsilonSoftMax ||
             !foundSeedRateSoftMin || !foundParamAnimRateSoftMin || !foundDiveSpeedUiCap ||
-            !foundPolyCoeffUiRange || !foundExplainoPhaseUiRange || !foundExplainoPhaseStrengthUiRange) {
+            !foundPolyCoeffUiRange || !foundExplainoPhaseUiRange || !foundExplainoPhaseStrengthUiRange ||
+            !foundExplainoPhaseVisibleForDual || !foundExplainoDampingUiRange || !foundMomentumBetaUiRange ||
+            !foundJoyCouplingUiRange || !foundFoldCouplingUiRange || !foundBellCouplingUiRange ||
+            !foundRippleAmplitudeUiRange || !foundSpliceOffsetUiRange || !foundVortexStrengthUiRange ||
+            !foundTensionStrengthUiRange) {
             std::cerr << "Did not find the expected soft-range MVP control updates in schema\n";
             return 1;
         }

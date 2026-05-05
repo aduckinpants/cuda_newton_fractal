@@ -593,7 +593,7 @@
           "label": "Newton Damping",
           "help": "Multiplier on the Newton step size. Values <1 slow convergence for richer structure; >1 can overshoot.",
           "value_type": "float",
-          "min": 0.01, "max": 10.0, "step": 0.01, "default": 1.0,
+          "ui_min": 0.01, "ui_max": 10.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.explaino_damping" },
           "visible_if": {
             "op": "in",
@@ -615,9 +615,9 @@
           "id": "momentum_beta",
           "type": "slider_float",
           "label": "Momentum Beta",
-          "help": "Strength of previous-step momentum. Higher values carry more of the previous Newton step direction forward.",
+          "help": "Signed strength of previous-step momentum. Positive values carry the prior-step direction forward; negative values push against it.",
           "value_type": "float",
-          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0,
+          "ui_min": -1.0, "ui_max": 1.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.momentum_beta" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_inertial" }
         },
@@ -627,7 +627,7 @@
           "label": "Joy Coupling (gamma)",
           "help": "Blends Newton on P with Newton on P'. At 0, pure Newton on P(z). Higher values couple the derivative-level root-finding step P'/P''.",
           "value_type": "float",
-          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.3,
+          "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.3,
           "binding": { "kind": "param", "path": "fractal.params.joy_coupling" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_joy" }
         },
@@ -637,7 +637,7 @@
           "label": "Fold Coupling (alpha)",
           "help": "Controls abs-value folding of the Newton step. At 0, pure Newton. Higher values fold Step components through absolute value (Burning Ship style).",
           "value_type": "float",
-          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5,
+          "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.params.fold_coupling" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_fold" }
         },
@@ -647,7 +647,7 @@
           "label": "Bell Coupling (beta)",
           "help": "Controls measurement-reaction decomposition. At 0, pure Newton. Higher values suppress the measurement channel (P-phase parallel component), letting only the reaction (perpendicular) component drive the step.",
           "value_type": "float",
-          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5,
+          "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.params.bell_coupling" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_bell" }
         },
@@ -657,7 +657,7 @@
           "label": "Ripple Amplitude",
           "help": "Controls standing-wave perturbation strength. At 0, pure Newton. Higher values add sinusoidal kicks perpendicular to the Newton step, creating Chladni-figure interference rings at basin boundaries.",
           "value_type": "float",
-          "min": 0.0, "max": 0.5, "step": 0.005, "default": 0.15,
+          "ui_min": 0.0, "ui_max": 0.5, "step": 0.005, "default": 0.15,
           "binding": { "kind": "param", "path": "fractal.params.ripple_amplitude" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_ripple" }
         },
@@ -667,7 +667,7 @@
           "label": "Splice Offset",
           "help": "Controls the seed offset for the second polynomial. At 0, both polynomials match (pure Newton). Higher values increase the difference between alternating polynomials, creating Moire-like interference patterns.",
           "value_type": "float",
-          "min": 0.0, "max": 2.0, "step": 0.01, "default": 0.5,
+          "ui_min": 0.0, "ui_max": 2.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.params.splice_offset" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_splice" }
         },
@@ -677,7 +677,7 @@
           "label": "Vortex Strength",
           "help": "Controls the self-referential spin intensity. At 0, iteration is pure Newton. Higher values rotate each Newton step by an angle proportional to its own direction, creating spiral interference.",
           "value_type": "float",
-          "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.3,
+          "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.3,
           "binding": { "kind": "param", "path": "fractal.params.vortex_strength" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_vortex" }
         },
@@ -687,7 +687,7 @@
           "label": "Tension Strength",
           "help": "Controls the pull toward the second-closest root. At 0, pure Newton. Small values fatten basin boundaries into structured contested territories.",
           "value_type": "float",
-          "min": 0.0, "max": 0.1, "step": 0.001, "default": 0.02,
+          "ui_min": 0.0, "ui_max": 0.1, "step": 0.001, "default": 0.02,
           "binding": { "kind": "param", "path": "fractal.params.tension_strength" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_tension" }
         },
@@ -701,7 +701,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension"
+            "value": "explaino,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension"
           }
         },
         {
