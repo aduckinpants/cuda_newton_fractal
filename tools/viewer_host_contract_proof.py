@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
@@ -69,15 +70,42 @@ KNOWN_VALIDATION_EVIDENCE_SPECS: tuple[ValidationEvidenceSpec, ...] = (
 KNOWN_VALIDATION_EVIDENCE_BY_COMMAND = {spec.command: spec for spec in KNOWN_VALIDATION_EVIDENCE_SPECS}
 
 
+def _dynamic_slice_contract_validation_spec(command: str) -> ValidationEvidenceSpec | None:
+    match = re.search(r"--out-json\s+(?P<artifact>\S+)", command)
+    if match is None:
+        return None
+    if "tools/viewer_host_validate_slice_contract.py" not in command.replace("\\", "/"):
+        return None
+    artifact_path = match.group("artifact").replace("\\", "/")
+    safe_suffix = re.sub(r"[^A-Za-z0-9]+", "_", artifact_path).strip("_") or "artifact"
+    return ValidationEvidenceSpec(
+        evidence_id=f"validator_slice_contract_{safe_suffix}",
+        command=command,
+        artifact_kind="validator_json",
+        artifact_path=artifact_path,
+    )
+
+
 def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec | None:
-    return KNOWN_VALIDATION_EVIDENCE_BY_COMMAND.get(command)
+    spec = KNOWN_VALIDATION_EVIDENCE_BY_COMMAND.get(command)
+    if spec is not None:
+        return spec
+    normalized = command.replace("\\", "/").strip()
+    if normalized == "py -3.14 tools/viewer_host_assert_phased_plan_sync.py":
+        return ValidationEvidenceSpec(
+            evidence_id="validator_plan_sync",
+            command=command,
+            artifact_kind="validator_json",
+            artifact_path="artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+        )
+    return _dynamic_slice_contract_validation_spec(command)
 
 
 def build_validation_evidence_entries(commands: list[str], repo_root: Path) -> list[dict[str, str]]:
     entries: list[dict[str, str]] = []
     seen_ids: set[str] = set()
     for command in commands:
-        spec = KNOWN_VALIDATION_EVIDENCE_BY_COMMAND.get(command)
+        spec = validation_evidence_spec_for_command(command)
         if spec is None or spec.evidence_id in seen_ids:
             continue
         artifact_path = (repo_root / spec.artifact_path).resolve()

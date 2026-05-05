@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -9,8 +10,10 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.viewer_host_begin_work_slice import build_breadcrumb_append_plan, build_breadcrumb_message, main as begin_work_slice_main
+from tools.viewer_host_contract_proof import build_validation_evidence_entries, validation_evidence_spec_for_command
 from tools.viewer_host_session_bootstrap import build_bootstrap_state, build_validation_profiles, legacy_pending_handoff_entries, tail_handoff_entries
-from tools.viewer_host_assert_phased_plan_sync import validate_plan_text
+from tools.viewer_host_assert_phased_plan_sync import PLAN_SYNC_VALIDATION_ARTIFACT, main as assert_plan_sync_main, validate_plan_text
+from tools.viewer_host_validate_slice_contract import main as validate_slice_contract_main
 
 
 def test_build_handoff_message_normalizes_fields() -> None:
@@ -173,6 +176,45 @@ Phase 2 - Cleanup
 - [x] Phase 2 - Cleanup
 """
     assert validate_plan_text(text, display_path="docs/notes/example_PHASED_PLAN.md") is None
+
+
+def test_plan_sync_command_writes_validation_artifact() -> None:
+    artifact_path = REPO_ROOT / PLAN_SYNC_VALIDATION_ARTIFACT
+    if artifact_path.exists():
+        artifact_path.unlink()
+
+    assert assert_plan_sync_main(["docs/notes/ui_polish_sprint_phase0_foundation_PHASED_PLAN.md"]) == 0
+
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    assert payload["ok"] is True
+    assert payload["plan_count"] == 1
+    assert payload["checked_plans"] == ["docs/notes/ui_polish_sprint_phase0_foundation_PHASED_PLAN.md"]
+
+
+def test_validation_evidence_entries_cover_phase0_contract_validator_and_plan_sync() -> None:
+    contract_command = (
+        "py -3.14 tools/viewer_host_validate_slice_contract.py --contract "
+        "docs/contracts/ui_polish_sprint_phase0_foundation.contract.json --out-json "
+        "artifacts/validation/ui_polish_sprint_phase0_foundation_contract.json"
+    )
+    plan_sync_command = "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+
+    assert validate_slice_contract_main([
+        "--contract",
+        "docs/contracts/ui_polish_sprint_phase0_foundation.contract.json",
+        "--out-json",
+        "artifacts/validation/ui_polish_sprint_phase0_foundation_contract.json",
+    ]) == 0
+    assert assert_plan_sync_main(["docs/notes/ui_polish_sprint_phase0_foundation_PHASED_PLAN.md"]) == 0
+
+    assert validation_evidence_spec_for_command(contract_command) is not None
+    assert validation_evidence_spec_for_command(plan_sync_command) is not None
+
+    entries = build_validation_evidence_entries([contract_command, plan_sync_command], REPO_ROOT)
+    assert [entry["artifact_path"] for entry in entries] == [
+        "artifacts/validation/ui_polish_sprint_phase0_foundation_contract.json",
+        "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+    ]
 
 
 def test_tasks_surface_exposes_profile_tasks() -> None:

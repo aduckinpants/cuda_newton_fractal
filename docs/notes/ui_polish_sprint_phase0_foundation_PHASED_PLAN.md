@@ -96,6 +96,7 @@ Any change in owner, topic, or proof surface resets this loop.
   - `py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml` passes with 21 green tests, covering the workflow-doc regressions, the phased-plan sync wrapper behavior, and the resume-point guard
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passes across the Phase 0 plan and the four new UI sprint plans
   - the confirmed merge/branch-ready stop point is: merge `feature/explaino-joy` into `master`, create `feature/ui-polish-integration`, then peel off `feature/ui-polish-schema-domains`, `feature/ui-polish-color-authority`, and `feature/ui-polish-resolution-pacing` one at a time
+  - post-checkpoint receipt proof exposed one more workflow defect: the proof layer could not derive evidence for `viewer_host_assert_phased_plan_sync.py` or generic `viewer_host_validate_slice_contract.py --out-json ...` commands, so a follow-up repair now writes a plan-sync validation artifact, teaches the proof layer both commands, and revalidates with 23 green workflow tests before the merge/branch choreography continues
 
 ## Validation
 

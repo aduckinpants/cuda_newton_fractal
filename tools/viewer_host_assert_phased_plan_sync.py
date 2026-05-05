@@ -4,6 +4,7 @@ import argparse
 import contextlib
 import importlib
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAINLINE_PHASED_PLAN_HOOK = Path(r"C:\code\salticid-cuda\tools\hook_require_phased_plan_sync.py")
 PHASED_PLAN_SUFFIX = "_PHASED_PLAN.md"
+PLAN_SYNC_VALIDATION_ARTIFACT = Path("artifacts/validation/viewer_host_assert_phased_plan_sync.json")
 
 
 @contextlib.contextmanager
@@ -141,6 +143,18 @@ def _validate_plan_file(path: Path) -> str | None:
     return guard._validate_plan_file(path)
 
 
+def _write_validation_artifact(*, paths: list[Path], source: str) -> None:
+    artifact_path = (REPO_ROOT / PLAN_SYNC_VALIDATION_ARTIFACT).resolve()
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "ok": True,
+        "source": source,
+        "plan_count": len(paths),
+        "checked_plans": [_repo_relative(path) for path in paths],
+    }
+    artifact_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Assert phased-plan checklist/current-phase sync for this repo")
     parser.add_argument("paths", nargs="*", help="Explicit phased-plan paths to check")
@@ -161,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
             paths, source = _default_target_paths()
 
         if not paths:
+            _write_validation_artifact(paths=[], source=source)
             print("viewer_host_assert_phased_plan_sync: no phased plan changes detected")
             return 0
 
@@ -171,6 +186,7 @@ def main(argv: list[str] | None = None) -> int:
                 sys.stderr.write(f"- {failure}\n")
             return 2
 
+        _write_validation_artifact(paths=paths, source=source)
         print(f"viewer_host_assert_phased_plan_sync: OK ({len(paths)} plan(s), source={source})")
         for path in paths:
             print(f"  {_repo_relative(path)}")
