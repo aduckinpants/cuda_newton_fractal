@@ -629,11 +629,16 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             case ColoringMode::iteration_count: coloringModeName = "iteration_count"; break;
             case ColoringMode::smooth_escape: coloringModeName = "smooth_escape"; break;
             case ColoringMode::joy_basins: coloringModeName = "joy_basins"; break;
+            case ColoringMode::phase: coloringModeName = "phase"; break;
+            case ColoringMode::iteration_bands: coloringModeName = "iteration_bands"; break;
             }
             *outError = "coloring_mode " + coloringModeName + " is not allowed for fractal_type " + fractalTypeId;
         }
         return false;
     }
+    nextParams.color_pipeline = stateVersion >= 2
+        ? ColorPipelineForLegacyMode(nextParams.coloring_mode)
+        : DefaultColorPipelineForFractal(nextView.fractal_type);
     if (!RequirePositiveIntField(maxIter, "max_iter", outError)) return false;
     nextParams.max_iter = maxIter;
     nextParams.epsilon = static_cast<float>(epsilon);

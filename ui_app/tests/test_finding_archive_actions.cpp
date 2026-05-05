@@ -176,6 +176,14 @@ int main() {
             std::cerr << "Expected diagnostics capture to persist Explaino fields, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
+        if (stateJson.find("\"coloring_mode\": \"root_basin\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to keep legacy coloring_mode as the saved authority during slice 1\n";
+            return 1;
+        }
+        if (stateJson.find("\"color_pipeline\"") != std::string::npos) {
+            std::cerr << "Diagnostics capture must not serialize the internal color_pipeline field during slice 1\n";
+            return 1;
+        }
 
         if (CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size() - 1, &capture, &error)) {
             std::cerr << "Expected diagnostics capture to reject mismatched pixel counts\n";

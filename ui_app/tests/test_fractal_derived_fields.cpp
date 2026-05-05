@@ -88,6 +88,12 @@ int main() {
             std::cerr << "Nova should default to smooth_escape, not basin coloring\n";
             return 1;
         }
+        if (params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default) {
+            std::cerr << "Nova defaults should synthesize the escape-time color pipeline\n";
+            return 1;
+        }
     }
 
     {
@@ -116,6 +122,12 @@ int main() {
         if (params.coloring_mode != DefaultColoringModeForFractal(view.fractal_type) || !NearlyEqual(params.exposure, 1.0f) ||
             !NearlyEqual(params.phoenix_p_real, -0.50f) || !NearlyEqual(params.phoenix_p_imag, 0.0f)) {
             std::cerr << "Newton should use the expected root-finding coloring and Phoenix defaults\n";
+            return 1;
+        }
+        if (params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::joy ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "Newton defaults should synthesize the basin color pipeline\n";
             return 1;
         }
     }

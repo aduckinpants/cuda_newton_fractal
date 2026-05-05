@@ -64,6 +64,28 @@ FRACTAL_FAMILY_RULES_HD inline constexpr ColoringMode DefaultColoringModeForFrac
     return SupportsBasinColoring(fractalType) ? ColoringMode::joy_basins : ColoringMode::smooth_escape;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection ColorPipelineForLegacyMode(ColoringMode mode) {
+    switch (mode) {
+    case ColoringMode::root_basin:
+        return {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
+    case ColoringMode::iteration_count:
+        return {ColorSignal::iteration_count, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    case ColoringMode::smooth_escape:
+        return {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    case ColoringMode::joy_basins:
+        return {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
+    case ColoringMode::phase:
+        return {ColorSignal::phase_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+    case ColoringMode::iteration_bands:
+        return {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
+    }
+    return {};
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection DefaultColorPipelineForFractal(FractalType fractalType) {
+    return ColorPipelineForLegacyMode(DefaultColoringModeForFractal(fractalType));
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool DefaultAutoMaxIterForFractal(FractalType fractalType) {
     return fractalType == FractalType::nova || fractalType == FractalType::explaino_nova;
 }

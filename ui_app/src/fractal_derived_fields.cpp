@@ -142,13 +142,18 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.lambda_imag = -0.27446103f;
 }
 
+static void ApplyDefaultColoringSelection(FractalType fractalType, KernelParams& params) {
+    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    params.color_pipeline = DefaultColorPipelineForFractal(fractalType);
+}
+
 static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams& params) {
     params.max_iter = fractalType == FractalType::nova ? 300 : 500;
     params.epsilon = 1e-6f;
     params.nova_alpha = 0.50f;
     params.poly_kind = PolyKind::z3_minus_1;
     SetPolyPreset(params);
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = -0.50f;
     params.phoenix_p_imag = 0.0f;
@@ -219,7 +224,7 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.epsilon = 1e-6f;
     params.nova_alpha = 0.50f;
     params.poly_kind = PolyKind::custom;
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = 0.0f;
     params.phoenix_p_imag = 0.0f;
@@ -277,7 +282,7 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
 
 static void ApplyEscapeTimePresetDefaults(FractalType fractalType, KernelParams& params, int maxIter, float exposure) {
     params.max_iter = maxIter;
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = exposure;
 }
 
@@ -286,7 +291,7 @@ static void ApplyHalleyPresetDefaults(FractalType fractalType, KernelParams& par
     params.epsilon = 1e-6f;
     params.poly_kind = PolyKind::z3_minus_1;
     SetPolyPreset(params);
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
 }
 
@@ -296,7 +301,7 @@ static void ApplyPhoenixPresetDefaults(FractalType fractalType, KernelParams& pa
     params.nova_alpha = 0.50f;
     params.phoenix_p_real = 0.5667f;
     params.phoenix_p_imag = 0.0f;
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.6f;
 }
 
@@ -308,13 +313,13 @@ static void ApplyLambdaPresetDefaults(FractalType fractalType, KernelParams& par
 
 static void ApplyCollatzPresetDefaults(FractalType fractalType, KernelParams& params) {
     params.max_iter = 200;
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
 }
 
 static void ApplyMcMullenPresetDefaults(FractalType fractalType, KernelParams& params) {
     params.max_iter = 500;
-    params.coloring_mode = DefaultColoringModeForFractal(fractalType);
+    ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.2f;
     params.mcmullen_preset = McMullenPreset::z3_z3;
 }
@@ -364,7 +369,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
             break;
         }
         params.max_iter = 800;
-        params.coloring_mode = DefaultColoringModeForFractal(view.fractal_type);
+        ApplyDefaultColoringSelection(view.fractal_type, params);
         params.exposure = 1.0f;
         break;
     }

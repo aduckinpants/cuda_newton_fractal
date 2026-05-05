@@ -56,6 +56,19 @@ int main() {
             std::cerr << "Newton lens mask should reject non-converged pixels\n";
             return 1;
         }
+        const ColorPipelineSelection pipeline = DefaultColorPipelineForFractal(FractalType::newton);
+        if (pipeline.signal != ColorSignal::root_index) {
+            std::cerr << "Newton should default to the root_index signal\n";
+            return 1;
+        }
+        if (pipeline.palette != ColorPalette::joy) {
+            std::cerr << "Newton should default to the joy palette\n";
+            return 1;
+        }
+        if (pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "Newton should default to basin_default grading\n";
+            return 1;
+        }
     }
 
     {
@@ -125,6 +138,19 @@ int main() {
         }
         if (LensMaskInsideForFractal(FractalType::phoenix, false, true)) {
             std::cerr << "Phoenix lens mask should reject escaped pixels\n";
+            return 1;
+        }
+        const ColorPipelineSelection pipeline = DefaultColorPipelineForFractal(FractalType::phoenix);
+        if (pipeline.signal != ColorSignal::smooth_escape) {
+            std::cerr << "Phoenix should default to the smooth_escape signal\n";
+            return 1;
+        }
+        if (pipeline.palette != ColorPalette::cyclic_escape) {
+            std::cerr << "Phoenix should default to the cyclic escape palette\n";
+            return 1;
+        }
+        if (pipeline.grading != ColorGradingPreset::escape_default) {
+            std::cerr << "Phoenix should default to escape_default grading\n";
             return 1;
         }
     }

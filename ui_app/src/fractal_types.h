@@ -33,6 +33,35 @@ enum class ColoringMode : int {
     iteration_bands = 5,
 };
 
+enum class ColorSignal : int {
+    root_index = 0,
+    iteration_count = 1,
+    smooth_escape = 2,
+    phase_angle = 3,
+    iteration_bands = 4,
+};
+
+enum class ColorPalette : int {
+    root_classic = 0,
+    joy = 1,
+    cyclic_escape = 2,
+    phase_wheel = 3,
+    banded_escape = 4,
+};
+
+enum class ColorGradingPreset : int {
+    basin_default = 0,
+    escape_default = 1,
+    phase_default = 2,
+    bands_default = 3,
+};
+
+struct ColorPipelineSelection {
+    ColorSignal signal{ColorSignal::root_index};
+    ColorPalette palette{ColorPalette::root_classic};
+    ColorGradingPreset grading{ColorGradingPreset::basin_default};
+};
+
 enum class TranscendentalFunc : int {
     f_sin = 0,
     f_exp_minus_1 = 1,
@@ -195,6 +224,7 @@ struct KernelParams {
     float lambda_real{2.9685855f};
     float lambda_imag{-0.27446103f};
     ColoringMode coloring_mode{ColoringMode::root_basin};
+    ColorPipelineSelection color_pipeline{};
     float exposure{1.0f};
 
     float color_saturation{1.15f};

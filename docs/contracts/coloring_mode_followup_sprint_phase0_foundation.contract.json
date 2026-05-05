@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "contract_id": "coloring_mode_followup_sprint_phase0_foundation",
+  "feature_id": "coloring_mode_followup_sprint_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/coloring_mode_followup_sprint_overview_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/coloring_mode_followup_sprint_overview_PHASED_PLAN.md",
+    "docs/notes/coloring_mode_followup_slice1_runtime_split_PHASED_PLAN.md",
+    "docs/notes/coloring_mode_followup_slice2_control_surface_PHASED_PLAN.md",
+    "docs/notes/coloring_mode_followup_slice3_family_tuning_PHASED_PLAN.md"
+  ],
+  "required_operator_inputs": [
+    "current branch baseline",
+    "coloring-thread planning docs",
+    "separate follow-up thread scope"
+  ],
+  "forbidden_operator_prompts": [
+    "chat-only coloring sprint plan",
+    "dsl-first implementation start",
+    "blended multi-thread follow-up"
+  ],
+  "required_defaults": {
+    "branch_topology": "fresh_coloring_integration_branch",
+    "plan_style": "mainline_sections_adapted",
+    "phase0_scope": "planning_and_contract_foundation_only"
+  },
+  "forbidden_defaults": {
+    "chat_only_planning": "forbidden",
+    "slice_without_plan_contract": "forbidden",
+    "non_coloring_followup_scope_creep": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/coloring_mode_followup_sprint_phase0_foundation.contract.json --out-json artifacts/validation/coloring_mode_followup_sprint_phase0_foundation_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "coloring_phase0_contract_schema_valid",
+      "description": "Coloring follow-up Phase 0 contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/coloring_mode_followup_sprint_phase0_foundation_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "coloring_phase0_plan_sync_ok",
+      "description": "Coloring follow-up overview and slice plans stay synchronized during Phase 0",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

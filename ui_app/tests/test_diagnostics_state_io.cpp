@@ -1917,6 +1917,18 @@ int main() {
             std::cerr << "Expected legacy phoenix state to default to smooth_escape\n";
             return 1;
         }
+        if (params.color_pipeline.signal != ColorSignal::smooth_escape) {
+          std::cerr << "Expected legacy phoenix state to synthesize smooth_escape signal\n";
+          return 1;
+        }
+        if (params.color_pipeline.palette != ColorPalette::cyclic_escape) {
+          std::cerr << "Expected legacy phoenix state to synthesize cyclic_escape palette\n";
+          return 1;
+        }
+        if (params.color_pipeline.grading != ColorGradingPreset::escape_default) {
+          std::cerr << "Expected legacy phoenix state to synthesize escape_default grading\n";
+          return 1;
+        }
     }
 
       {
