@@ -60,6 +60,29 @@ inline constexpr EnumIdPair<ColoringMode> kColoringModeIds[] = {
     {ColoringMode::iteration_bands, "iteration_bands"},
 };
 
+inline constexpr EnumIdPair<ColorSignal> kColorSignalIds[] = {
+    {ColorSignal::root_index, "root_index"},
+    {ColorSignal::iteration_count, "iteration_count"},
+    {ColorSignal::smooth_escape, "smooth_escape"},
+    {ColorSignal::phase_angle, "phase_angle"},
+    {ColorSignal::iteration_bands, "iteration_bands"},
+};
+
+inline constexpr EnumIdPair<ColorPalette> kColorPaletteIds[] = {
+    {ColorPalette::root_classic, "root_classic"},
+    {ColorPalette::joy, "joy"},
+    {ColorPalette::cyclic_escape, "cyclic_escape"},
+    {ColorPalette::phase_wheel, "phase_wheel"},
+    {ColorPalette::banded_escape, "banded_escape"},
+};
+
+inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
+    {ColorGradingPreset::basin_default, "basin_default"},
+    {ColorGradingPreset::escape_default, "escape_default"},
+    {ColorGradingPreset::phase_default, "phase_default"},
+    {ColorGradingPreset::bands_default, "bands_default"},
+};
+
 inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::newton, "newton"},
     {FractalType::nova, "nova"},
@@ -146,6 +169,30 @@ inline const char* ColoringModeId(ColoringMode value) {
 
 inline bool TryParseColoringModeId(std::string_view id, ColoringMode* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColoringModeIds, outValue);
+}
+
+inline const char* ColorSignalId(ColorSignal value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kColorSignalIds);
+}
+
+inline bool TryParseColorSignalId(std::string_view id, ColorSignal* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColorSignalIds, outValue);
+}
+
+inline const char* ColorPaletteId(ColorPalette value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kColorPaletteIds);
+}
+
+inline bool TryParseColorPaletteId(std::string_view id, ColorPalette* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColorPaletteIds, outValue);
+}
+
+inline const char* ColorGradingPresetId(ColorGradingPreset value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kColorGradingPresetIds);
+}
+
+inline bool TryParseColorGradingPresetId(std::string_view id, ColorGradingPreset* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColorGradingPresetIds, outValue);
 }
 
 inline const char* FractalTypeId(FractalType value) {

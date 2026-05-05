@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 - slice 2 control-surface work is the next active step after slice 1 closure
+Phase 3 - slice 2 control-surface work is green under hostile audit and waiting on slice closure
 
 ## Phase Checklist
 
@@ -31,6 +31,7 @@ Hostile review assumes the right first move is not a new language surface. The f
 - Fix Proof: the overview plus three slice plans are now checked in, the slice-1 contract is validated and relocked on `feature/coloring-mode-foundation` under `ck:d8074a50`, and the first runtime pass now synthesizes split-color state for family defaults and legacy diagnostics state load.
 - Hostile Review Pass 1: the first green build exposed a real defaulting gap in `fractal_derived_fields.cpp`, so the slice contract was widened, relocked, and repaired before continuing.
 - Hostile Review Pass 2: a save-authority audit found no new runtime defect, but it added a characterization guard proving diagnostics capture still serializes legacy `coloring_mode` and does not leak the internal `color_pipeline` field during slice 1.
+- Phase 3 update: slice 2 has now landed the split state migration plus public signal/palette/grading controls on `feature/coloring-mode-control-surface`; the current green state already includes two repaired hostile-review findings in the loader and diagnostics capture save seam.
 
 ## Proof Ledger
 
@@ -67,4 +68,4 @@ Hostile review assumes the right first move is not a new language surface. The f
 
 ## Resume Point
 
-Phase 3 is next. Checkpoint slice 1 on `feature/coloring-mode-foundation`, merge it into `feature/coloring-mode-integration`, then create `feature/coloring-mode-control-surface` and lock the slice-2 contract before changing the schema/state surface.
+Phase 3 is in its closure pass. Rerun the checked-in slice-2 validation/profile rails, checkpoint `feature/coloring-mode-control-surface`, merge it into `feature/coloring-mode-integration`, and then start slice 3 on `feature/coloring-mode-family-tuning`.

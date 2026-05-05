@@ -84,6 +84,20 @@ int main() {
             std::cerr << "Expected coloring mode enum round-trip to accept smooth_escape\n";
             return 1;
         }
+        if (ctx.GetEnumId("fractal.params.color_signal") != "smooth_escape" ||
+            ctx.GetEnumId("fractal.params.color_palette") != "cyclic_escape" ||
+            ctx.GetEnumId("fractal.params.color_grading") != "escape_default") {
+            std::cerr << "Expected legacy coloring mode edits to keep the split color pipeline in sync\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.color_signal", "phase_angle") ||
+            ctx.GetEnumId("fractal.params.color_signal") != "phase_angle" ||
+            ctx.GetEnumId("fractal.params.color_palette") != "phase_wheel" ||
+            ctx.GetEnumId("fractal.params.color_grading") != "phase_default" ||
+            ctx.GetEnumId("fractal.params.coloring_mode") != "phase") {
+            std::cerr << "Expected split color signal edits to coerce the rest of the color pipeline onto a valid exact runtime combination\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "lambda") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "lambda") {
             std::cerr << "Expected fractal type enum round-trip to accept lambda\n";
@@ -106,6 +120,10 @@ int main() {
         }
         if (ctx.SetEnumId("fractal.view.fractal_type", "not_real")) {
             std::cerr << "Invalid enum ids should fail instead of silently falling back\n";
+            return 1;
+        }
+        if (ctx.SetEnumId("fractal.params.color_palette", "not_real")) {
+            std::cerr << "Invalid split-color enum ids should fail instead of silently falling back\n";
             return 1;
         }
         if (!ctx.GetEnumId("fractal.unknown.path").empty()) {
@@ -143,6 +161,39 @@ int main() {
             }
             if (option->id == "root_basin" || option->id == "joy_basins") {
                 std::cerr << "Escape-time fractals should not expose basin-only coloring options\n";
+                return 1;
+            }
+        }
+
+        UISchemaControl colorSignal = MakeBoundControl("color_signal", "combo", "Color Signal", "enum", "param", "fractal.params.color_signal");
+        colorSignal.options = {
+            {"root_index", "Root Index", ""},
+            {"iteration_count", "Iteration Count", ""},
+            {"smooth_escape", "Smooth Escape", ""},
+            {"phase_angle", "Phase Angle", ""},
+            {"iteration_bands", "Iteration Bands", ""},
+        };
+
+        view.fractal_type = FractalType::explaino;
+        const std::vector<const UISchemaOption*> explainoSignalOptions = ResolveVisibleEnumOptions(colorSignal, ctx);
+        if (explainoSignalOptions.size() != 5) {
+            std::cerr << "Expected basin-capable fractals to expose the full split color signal set\n";
+            return 1;
+        }
+
+        view.fractal_type = FractalType::mandelbrot;
+        const std::vector<const UISchemaOption*> mandelbrotSignalOptions = ResolveVisibleEnumOptions(colorSignal, ctx);
+        if (mandelbrotSignalOptions.size() != 4) {
+            std::cerr << "Expected escape-time fractals to hide basin-only split color signals\n";
+            return 1;
+        }
+        for (const UISchemaOption* option : mandelbrotSignalOptions) {
+            if (!option) {
+                std::cerr << "Expected visible split color signal options to remain addressable\n";
+                return 1;
+            }
+            if (option->id == "root_index") {
+                std::cerr << "Escape-time fractals should not expose basin-only split color signals\n";
                 return 1;
             }
         }

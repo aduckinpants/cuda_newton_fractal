@@ -1473,6 +1473,129 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "split_color_pipeline_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "iteration_count",
+    "color_signal": "root_index",
+    "color_palette": "joy",
+    "color_grading": "basin_default",
+    "nova_alpha": 0.50,
+    "phoenix_p_real": -0.50,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected split-color state to load: " << error << "\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::joy_basins) {
+            std::cerr << "Expected explicit split-color fields to override conflicting legacy coloring_mode\n";
+            return 1;
+        }
+        if (params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::joy ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "Expected split-color fields to round-trip into the runtime color pipeline\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "split_color_pipeline_without_legacy_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "color_signal": "root_index",
+    "color_palette": "root_classic",
+    "color_grading": "basin_default",
+    "nova_alpha": 0.50,
+    "phoenix_p_real": -0.50,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected split-only color state to load without requiring legacy coloring_mode: " << error << "\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::root_basin) {
+            std::cerr << "Expected split-only color state to synthesize the legacy coloring_mode for the runtime\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "bad_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

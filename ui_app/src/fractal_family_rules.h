@@ -86,6 +86,56 @@ FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection DefaultColorPipe
     return ColorPipelineForLegacyMode(DefaultColoringModeForFractal(fractalType));
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
+    const ColorPipelineSelection& pipeline,
+    ColoringMode* outMode) {
+    if (pipeline.signal == ColorSignal::root_index &&
+        pipeline.palette == ColorPalette::root_classic &&
+        pipeline.grading == ColorGradingPreset::basin_default) {
+        if (outMode) *outMode = ColoringMode::root_basin;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::iteration_count &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::iteration_count;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::smooth_escape &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_index &&
+        pipeline.palette == ColorPalette::joy &&
+        pipeline.grading == ColorGradingPreset::basin_default) {
+        if (outMode) *outMode = ColoringMode::joy_basins;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::phase_angle &&
+        pipeline.palette == ColorPalette::phase_wheel &&
+        pipeline.grading == ColorGradingPreset::phase_default) {
+        if (outMode) *outMode = ColoringMode::phase;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::iteration_bands &&
+        pipeline.palette == ColorPalette::banded_escape &&
+        pipeline.grading == ColorGradingPreset::bands_default) {
+        if (outMode) *outMode = ColoringMode::iteration_bands;
+        return true;
+    }
+    return false;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColorPipelineAllowedForFractal(
+    FractalType fractalType,
+    const ColorPipelineSelection& pipeline) {
+    ColoringMode mode = ColoringMode::root_basin;
+    return TryLegacyColoringModeForPipeline(pipeline, &mode) &&
+        IsColoringModeAllowedForFractal(fractalType, mode);
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool DefaultAutoMaxIterForFractal(FractalType fractalType) {
     return fractalType == FractalType::nova || fractalType == FractalType::explaino_nova;
 }

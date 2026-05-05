@@ -739,22 +739,54 @@
       "order": 25,
       "controls": [
         {
-          "id": "coloring_mode",
+          "id": "color_signal",
           "type": "combo",
-          "label": "Coloring Mode",
+          "label": "Signal",
           "value_type": "enum",
           "order": 1,
-          "default": "joy_basins",
+          "default": "root_index",
           "options": [
-            { "id": "root_basin", "label": "Root Basins (Root-Finding)" },
-            { "id": "joy_basins", "label": "Joy Basins (All paths succeed)" },
+            { "id": "root_index", "label": "Root Index" },
             { "id": "iteration_count", "label": "Iteration Count" },
             { "id": "smooth_escape", "label": "Smooth Escape" },
-            { "id": "phase", "label": "Phase (Hue Wheel)" },
+            { "id": "phase_angle", "label": "Phase Angle" },
             { "id": "iteration_bands", "label": "Iteration Bands" }
           ],
-          "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
-          "help": "One public coloring-mode control. Basin options remain available only for fractal families that support them; escape-time families show the iteration-based subset."
+          "binding": { "kind": "param", "path": "fractal.params.color_signal" },
+          "help": "Split-color signal/palette/grading stay on exact runtime-supported combinations. Basin signals remain available only for fractal families that support them."
+        },
+        {
+          "id": "color_palette",
+          "type": "combo",
+          "label": "Palette",
+          "value_type": "enum",
+          "order": 2,
+          "default": "joy",
+          "options": [
+            { "id": "root_classic", "label": "Root Classic" },
+            { "id": "joy", "label": "Joy" },
+            { "id": "cyclic_escape", "label": "Cyclic Escape" },
+            { "id": "phase_wheel", "label": "Phase Wheel" },
+            { "id": "banded_escape", "label": "Banded Escape" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.color_palette" },
+          "help": "Palette choices are filtered through the same runtime legality rules so the UI never authors unsupported split-color combinations."
+        },
+        {
+          "id": "color_grading",
+          "type": "combo",
+          "label": "Grading",
+          "value_type": "enum",
+          "order": 3,
+          "default": "basin_default",
+          "options": [
+            { "id": "basin_default", "label": "Basin Default" },
+            { "id": "escape_default", "label": "Escape Default" },
+            { "id": "phase_default", "label": "Phase Default" },
+            { "id": "bands_default", "label": "Bands Default" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.color_grading" },
+          "help": "Grading presets stay tied to exact runtime-supported pipelines while the renderer still dispatches through the legacy coloring-mode seam."
         },
         {
           "id": "exposure",

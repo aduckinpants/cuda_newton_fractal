@@ -296,8 +296,12 @@ int main() {
         bool foundPhaseSlider = false;
         bool foundDualSeedB = false;
         bool foundDualSeedMix = false;
-        bool foundUnifiedColoringMode = false;
-        int coloringModeControlCount = 0;
+        bool foundColorSignalControl = false;
+        bool foundColorPaletteControl = false;
+        bool foundColorGradingControl = false;
+        int colorSignalControlCount = 0;
+        int colorPaletteControlCount = 0;
+        int colorGradingControlCount = 0;
         bool foundMultibrotPowerFloat = false;
         bool foundLambdaReal = false;
         bool foundLambdaImag = false;
@@ -527,20 +531,46 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
                     foundTensionStrengthUiRange = true;
                 }
-                if (ctrl.has_binding && ctrl.binding.path == "fractal.params.coloring_mode") {
-                    ++coloringModeControlCount;
-                    if (ctrl.id == "coloring_mode" && ctrl.options.size() == 6) {
-                        bool foundRootBasin = false;
-                        bool foundJoyBasins = false;
+                if (ctrl.has_binding && ctrl.binding.path == "fractal.params.color_signal") {
+                    ++colorSignalControlCount;
+                    if (ctrl.id == "color_signal" && ctrl.options.size() == 5) {
+                        bool foundRootIndex = false;
                         bool foundSmoothEscape = false;
-                        bool foundIterationBands = false;
+                        bool foundPhaseAngle = false;
                         for (const auto& option : ctrl.options) {
-                            if (option.id == "root_basin") foundRootBasin = true;
-                            if (option.id == "joy_basins") foundJoyBasins = true;
+                            if (option.id == "root_index") foundRootIndex = true;
                             if (option.id == "smooth_escape") foundSmoothEscape = true;
-                            if (option.id == "iteration_bands") foundIterationBands = true;
+                            if (option.id == "phase_angle") foundPhaseAngle = true;
                         }
-                        foundUnifiedColoringMode = foundRootBasin && foundJoyBasins && foundSmoothEscape && foundIterationBands;
+                        foundColorSignalControl = foundRootIndex && foundSmoothEscape && foundPhaseAngle;
+                    }
+                }
+                if (ctrl.has_binding && ctrl.binding.path == "fractal.params.color_palette") {
+                    ++colorPaletteControlCount;
+                    if (ctrl.id == "color_palette" && ctrl.options.size() == 5) {
+                        bool foundRootClassic = false;
+                        bool foundJoy = false;
+                        bool foundBandedEscape = false;
+                        for (const auto& option : ctrl.options) {
+                            if (option.id == "root_classic") foundRootClassic = true;
+                            if (option.id == "joy") foundJoy = true;
+                            if (option.id == "banded_escape") foundBandedEscape = true;
+                        }
+                        foundColorPaletteControl = foundRootClassic && foundJoy && foundBandedEscape;
+                    }
+                }
+                if (ctrl.has_binding && ctrl.binding.path == "fractal.params.color_grading") {
+                    ++colorGradingControlCount;
+                    if (ctrl.id == "color_grading" && ctrl.options.size() == 4) {
+                        bool foundBasinDefault = false;
+                        bool foundPhaseDefault = false;
+                        bool foundBandsDefault = false;
+                        for (const auto& option : ctrl.options) {
+                            if (option.id == "basin_default") foundBasinDefault = true;
+                            if (option.id == "phase_default") foundPhaseDefault = true;
+                            if (option.id == "bands_default") foundBandsDefault = true;
+                        }
+                        foundColorGradingControl = foundBasinDefault && foundPhaseDefault && foundBandsDefault;
                     }
                 }
             }
@@ -608,8 +638,10 @@ int main() {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";
             return 1;
         }
-        if (!foundDualSeedB || !foundDualSeedMix || !foundUnifiedColoringMode || coloringModeControlCount != 1) {
-            std::cerr << "Did not find the unified public coloring-mode control in schema\n";
+        if (!foundDualSeedB || !foundDualSeedMix ||
+            !foundColorSignalControl || !foundColorPaletteControl || !foundColorGradingControl ||
+            colorSignalControlCount != 1 || colorPaletteControlCount != 1 || colorGradingControlCount != 1) {
+            std::cerr << "Did not find the split public color signal/palette/grading controls in schema\n";
             return 1;
         }
     }

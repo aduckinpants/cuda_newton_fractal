@@ -35,6 +35,75 @@ void ClampNumericValue(T* value, const NumericControlRange& range) {
     }
 }
 
+constexpr ColoringMode kSelectableColoringModes[] = {
+    ColoringMode::root_basin,
+    ColoringMode::joy_basins,
+    ColoringMode::iteration_count,
+    ColoringMode::smooth_escape,
+    ColoringMode::phase,
+    ColoringMode::iteration_bands,
+};
+
+bool IsAllowedColoringModeForBinding(const BindingContext& ctx, ColoringMode mode) {
+    return !ctx.view || IsColoringModeAllowedForFractal(ctx.view->fractal_type, mode);
+}
+
+template <typename MatchFn>
+bool TrySelectAllowedColorPipeline(
+    const BindingContext& ctx,
+    MatchFn match,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode) {
+    auto matchesMode = [&](ColoringMode mode) {
+        return IsAllowedColoringModeForBinding(ctx, mode) && match(ColorPipelineForLegacyMode(mode));
+    };
+
+    if (ctx.params) {
+        ColoringMode currentMode = ColoringMode::root_basin;
+        if (TryLegacyColoringModeForPipeline(ctx.params->color_pipeline, &currentMode) && matchesMode(currentMode)) {
+            if (outPipeline) *outPipeline = ColorPipelineForLegacyMode(currentMode);
+            if (outMode) *outMode = currentMode;
+            return true;
+        }
+    }
+
+    if (ctx.view) {
+        const ColoringMode defaultMode = DefaultColoringModeForFractal(ctx.view->fractal_type);
+        if (matchesMode(defaultMode)) {
+            if (outPipeline) *outPipeline = ColorPipelineForLegacyMode(defaultMode);
+            if (outMode) *outMode = defaultMode;
+            return true;
+        }
+    }
+
+    for (ColoringMode mode : kSelectableColoringModes) {
+        if (matchesMode(mode)) {
+            if (outPipeline) *outPipeline = ColorPipelineForLegacyMode(mode);
+            if (outMode) *outMode = mode;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+template <typename MatchFn>
+bool ApplySelectedColorPipeline(BindingContext* ctx, MatchFn match) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    ColorPipelineSelection nextPipeline{};
+    ColoringMode nextMode = ColoringMode::root_basin;
+    if (!TrySelectAllowedColorPipeline(*ctx, match, &nextPipeline, &nextMode)) {
+        return false;
+    }
+
+    ctx->params->color_pipeline = nextPipeline;
+    ctx->params->coloring_mode = nextMode;
+    return true;
+}
+
 } // namespace
 
 NumericControlRange ResolveNumericControlRange(const UISchemaControl& control) {
@@ -83,6 +152,18 @@ std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaContr
         control.has_binding &&
         control.binding.path == "fractal.params.coloring_mode" &&
         ctx.view;
+    const bool filterColorSignalOptions = control.value_type == "enum" &&
+        control.has_binding &&
+        control.binding.path == "fractal.params.color_signal" &&
+        ctx.params;
+    const bool filterColorPaletteOptions = control.value_type == "enum" &&
+        control.has_binding &&
+        control.binding.path == "fractal.params.color_palette" &&
+        ctx.params;
+    const bool filterColorGradingOptions = control.value_type == "enum" &&
+        control.has_binding &&
+        control.binding.path == "fractal.params.color_grading" &&
+        ctx.params;
 
     for (const auto& option : control.options) {
         if (filterColoringModeOptions) {
@@ -91,6 +172,42 @@ std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaContr
                 continue;
             }
             if (!IsColoringModeAllowedForFractal(ctx.view->fractal_type, mode)) {
+                continue;
+            }
+        }
+        if (filterColorSignalOptions) {
+            ColorSignal signal = ColorSignal::root_index;
+            if (!TryParseColorSignalId(option.id, &signal)) {
+                continue;
+            }
+            if (!TrySelectAllowedColorPipeline(ctx,
+                    [signal](const ColorPipelineSelection& pipeline) { return pipeline.signal == signal; },
+                    nullptr,
+                    nullptr)) {
+                continue;
+            }
+        }
+        if (filterColorPaletteOptions) {
+            ColorPalette palette = ColorPalette::root_classic;
+            if (!TryParseColorPaletteId(option.id, &palette)) {
+                continue;
+            }
+            if (!TrySelectAllowedColorPipeline(ctx,
+                    [palette](const ColorPipelineSelection& pipeline) { return pipeline.palette == palette; },
+                    nullptr,
+                    nullptr)) {
+                continue;
+            }
+        }
+        if (filterColorGradingOptions) {
+            ColorGradingPreset grading = ColorGradingPreset::basin_default;
+            if (!TryParseColorGradingPresetId(option.id, &grading)) {
+                continue;
+            }
+            if (!TrySelectAllowedColorPipeline(ctx,
+                    [grading](const ColorPipelineSelection& pipeline) { return pipeline.grading == grading; },
+                    nullptr,
+                    nullptr)) {
                 continue;
             }
         }
@@ -112,6 +229,15 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     }
     if (params && path == "fractal.params.coloring_mode") {
         return EnumIdOrEmpty(ColoringModeId(params->coloring_mode));
+    }
+    if (params && path == "fractal.params.color_signal") {
+        return EnumIdOrEmpty(ColorSignalId(params->color_pipeline.signal));
+    }
+    if (params && path == "fractal.params.color_palette") {
+        return EnumIdOrEmpty(ColorPaletteId(params->color_pipeline.palette));
+    }
+    if (params && path == "fractal.params.color_grading") {
+        return EnumIdOrEmpty(ColorGradingPresetId(params->color_pipeline.grading));
     }
     if (view && path == "fractal.view.fractal_type") {
         return EnumIdOrEmpty(FractalTypeId(view->fractal_type));
@@ -139,7 +265,40 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         return ParseAndAssignEnumId(id, &params->mcmullen_preset, TryParseMcMullenPresetId);
     }
     if (params && path == "fractal.params.coloring_mode") {
-        return ParseAndAssignEnumId(id, &params->coloring_mode, TryParseColoringModeId);
+        ColoringMode mode = ColoringMode::root_basin;
+        if (!ParseAndAssignEnumId(id, &mode, TryParseColoringModeId)) {
+            return false;
+        }
+        if (!IsAllowedColoringModeForBinding(*this, mode)) {
+            return false;
+        }
+        params->coloring_mode = mode;
+        params->color_pipeline = ColorPipelineForLegacyMode(mode);
+        return true;
+    }
+    if (params && path == "fractal.params.color_signal") {
+        ColorSignal signal = ColorSignal::root_index;
+        if (!ParseAndAssignEnumId(id, &signal, TryParseColorSignalId)) {
+            return false;
+        }
+        return ApplySelectedColorPipeline(this,
+            [signal](const ColorPipelineSelection& pipeline) { return pipeline.signal == signal; });
+    }
+    if (params && path == "fractal.params.color_palette") {
+        ColorPalette palette = ColorPalette::root_classic;
+        if (!ParseAndAssignEnumId(id, &palette, TryParseColorPaletteId)) {
+            return false;
+        }
+        return ApplySelectedColorPipeline(this,
+            [palette](const ColorPipelineSelection& pipeline) { return pipeline.palette == palette; });
+    }
+    if (params && path == "fractal.params.color_grading") {
+        ColorGradingPreset grading = ColorGradingPreset::basin_default;
+        if (!ParseAndAssignEnumId(id, &grading, TryParseColorGradingPresetId)) {
+            return false;
+        }
+        return ApplySelectedColorPipeline(this,
+            [grading](const ColorPipelineSelection& pipeline) { return pipeline.grading == grading; });
     }
     if (view && path == "fractal.view.fractal_type") {
         return ParseAndAssignEnumId(id, &view->fractal_type, TryParseFractalTypeId);

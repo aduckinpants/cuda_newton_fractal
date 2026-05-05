@@ -1,5 +1,6 @@
 #include "diagnostics_capture.h"
 
+#include "fractal_family_rules.h"
 #include "render_capture_guard.h"
 
 #include <Windows.h>
@@ -61,6 +62,40 @@ const char* ColoringModeId(ColoringMode coloringMode) {
     case ColoringMode::iteration_count: return "iteration_count";
     case ColoringMode::smooth_escape: return "smooth_escape";
     case ColoringMode::joy_basins: return "joy_basins";
+    case ColoringMode::phase: return "phase";
+    case ColoringMode::iteration_bands: return "iteration_bands";
+    }
+    return "unknown";
+}
+
+const char* ColorSignalId(ColorSignal signal) {
+    switch (signal) {
+    case ColorSignal::root_index: return "root_index";
+    case ColorSignal::iteration_count: return "iteration_count";
+    case ColorSignal::smooth_escape: return "smooth_escape";
+    case ColorSignal::phase_angle: return "phase_angle";
+    case ColorSignal::iteration_bands: return "iteration_bands";
+    }
+    return "unknown";
+}
+
+const char* ColorPaletteId(ColorPalette palette) {
+    switch (palette) {
+    case ColorPalette::root_classic: return "root_classic";
+    case ColorPalette::joy: return "joy";
+    case ColorPalette::cyclic_escape: return "cyclic_escape";
+    case ColorPalette::phase_wheel: return "phase_wheel";
+    case ColorPalette::banded_escape: return "banded_escape";
+    }
+    return "unknown";
+}
+
+const char* ColorGradingPresetId(ColorGradingPreset grading) {
+    switch (grading) {
+    case ColorGradingPreset::basin_default: return "basin_default";
+    case ColorGradingPreset::escape_default: return "escape_default";
+    case ColorGradingPreset::phase_default: return "phase_default";
+    case ColorGradingPreset::bands_default: return "bands_default";
     }
     return "unknown";
 }
@@ -218,6 +253,9 @@ std::string BuildStateJson(
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory) {
+    ColoringMode mirroredColoringMode = ColoringMode::root_basin;
+    const bool hasLegacyColoringMirror = TryLegacyColoringModeForPipeline(params.color_pipeline, &mirroredColoringMode);
+
     std::ostringstream js;
     js << "{\n";
     js << "  \"state_version\": 3,\n";
@@ -243,7 +281,12 @@ std::string BuildStateJson(
     js << "    \"epsilon\": " << static_cast<double>(params.epsilon) << ",\n";
     js << "    \"exposure\": " << static_cast<double>(params.exposure) << ",\n";
     js << "    \"poly_kind\": " << static_cast<int>(params.poly_kind) << ",\n";
-    js << "    \"coloring_mode\": \"" << ColoringModeId(params.coloring_mode) << "\",\n";
+    if (hasLegacyColoringMirror) {
+        js << "    \"coloring_mode\": \"" << ColoringModeId(mirroredColoringMode) << "\",\n";
+    }
+    js << "    \"color_signal\": \"" << ColorSignalId(params.color_pipeline.signal) << "\",\n";
+    js << "    \"color_palette\": \"" << ColorPaletteId(params.color_pipeline.palette) << "\",\n";
+    js << "    \"color_grading\": \"" << ColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
     js << "    \"nova_alpha\": " << static_cast<double>(params.nova_alpha) << ",\n";
     js << "    \"phoenix_p_real\": " << static_cast<double>(params.phoenix_p_real) << ",\n";
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";

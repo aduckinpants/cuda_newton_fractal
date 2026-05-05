@@ -224,6 +224,18 @@ bool ParseColoringMode(const std::string& text, ColoringMode* outMode) {
     return TryParseColoringModeId(text, outMode);
 }
 
+bool ParseColorSignal(const std::string& text, ColorSignal* outSignal) {
+    return TryParseColorSignalId(text, outSignal);
+}
+
+bool ParseColorPalette(const std::string& text, ColorPalette* outPalette) {
+    return TryParseColorPaletteId(text, outPalette);
+}
+
+bool ParseColorGradingPreset(const std::string& text, ColorGradingPreset* outGrading) {
+    return TryParseColorGradingPresetId(text, outGrading);
+}
+
 bool ParseIntField(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
     double rawValue = 0.0;
     if (!GetRequiredNumber(object, key, &rawValue, outError)) return false;
@@ -541,6 +553,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double epsilon = 0.0;
     double exposure = 0.0;
     std::string coloringModeId;
+    bool hasLegacyColoringModeId = false;
+    std::string colorSignalId;
+    std::string colorPaletteId;
+    std::string colorGradingId;
     double novaAlpha = 0.0;
     double phoenixPReal = 0.0;
     double phoenixPImag = 0.0;
@@ -567,7 +583,6 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetRequiredNumber(*paramsObject, "exposure", &exposure, outError)) return false;
     if (!ParseIntField(*paramsObject, "poly_kind", &rawPolyKind, outError)) return false;
     if (stateVersion >= 2) {
-        if (!GetRequiredString(*paramsObject, "coloring_mode", &coloringModeId, outError)) return false;
         if (!GetRequiredNumber(*paramsObject, "nova_alpha", &novaAlpha, outError)) return false;
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_real", &phoenixPReal, outError)) return false;
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_imag", &phoenixPImag, outError)) return false;
@@ -575,6 +590,19 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
+    }
+    const bool hasColorSignalId = TryGetOptionalString(*paramsObject, "color_signal", &colorSignalId);
+    const bool hasColorPaletteId = TryGetOptionalString(*paramsObject, "color_palette", &colorPaletteId);
+    const bool hasColorGradingId = TryGetOptionalString(*paramsObject, "color_grading", &colorGradingId);
+    const bool hasAnyExplicitColorPipeline = hasColorSignalId || hasColorPaletteId || hasColorGradingId;
+    hasLegacyColoringModeId = stateVersion >= 2 && TryGetOptionalString(*paramsObject, "coloring_mode", &coloringModeId);
+    if (hasAnyExplicitColorPipeline && !(hasColorSignalId && hasColorPaletteId && hasColorGradingId)) {
+        if (outError) *outError = "color_signal, color_palette, and color_grading must all be provided together";
+        return false;
+    }
+    if (stateVersion >= 2 && !hasAnyExplicitColorPipeline && !hasLegacyColoringModeId) {
+        if (outError) *outError = "Missing or invalid string field: coloring_mode";
+        return false;
     }
     if (!GetRequiredNumber(*paramsObject, "explaino_seed", &explainoSeed, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_seed_b", &explainoSeedB, nullptr, outError)) return false;
@@ -603,7 +631,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "poly_kind must be custom for fractal_type " + fractalTypeId;
         return false;
     }
-    if (stateVersion >= 2) {
+    if (stateVersion >= 2 && !hasAnyExplicitColorPipeline) {
         if (!ParseColoringMode(coloringModeId, &nextParams.coloring_mode)) {
             if (outError) *outError = "Unknown coloring_mode: " + coloringModeId;
             return false;
@@ -636,9 +664,36 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         }
         return false;
     }
-    nextParams.color_pipeline = stateVersion >= 2
-        ? ColorPipelineForLegacyMode(nextParams.coloring_mode)
-        : DefaultColorPipelineForFractal(nextView.fractal_type);
+    if (hasAnyExplicitColorPipeline) {
+        ColorPipelineSelection explicitPipeline{};
+        if (!ParseColorSignal(colorSignalId, &explicitPipeline.signal)) {
+            if (outError) *outError = "Unknown color_signal: " + colorSignalId;
+            return false;
+        }
+        if (!ParseColorPalette(colorPaletteId, &explicitPipeline.palette)) {
+            if (outError) *outError = "Unknown color_palette: " + colorPaletteId;
+            return false;
+        }
+        if (!ParseColorGradingPreset(colorGradingId, &explicitPipeline.grading)) {
+            if (outError) *outError = "Unknown color_grading: " + colorGradingId;
+            return false;
+        }
+        ColoringMode derivedMode = ColoringMode::root_basin;
+        if (!TryLegacyColoringModeForPipeline(explicitPipeline, &derivedMode)) {
+            if (outError) *outError = "Unsupported split-color combination in saved state";
+            return false;
+        }
+        if (!IsColoringModeAllowedForFractal(nextView.fractal_type, derivedMode)) {
+            if (outError) *outError = "split-color combination is not allowed for fractal_type " + fractalTypeId;
+            return false;
+        }
+        nextParams.color_pipeline = explicitPipeline;
+        nextParams.coloring_mode = derivedMode;
+    } else {
+        nextParams.color_pipeline = stateVersion >= 2
+            ? ColorPipelineForLegacyMode(nextParams.coloring_mode)
+            : DefaultColorPipelineForFractal(nextView.fractal_type);
+    }
     if (!RequirePositiveIntField(maxIter, "max_iter", outError)) return false;
     nextParams.max_iter = maxIter;
     nextParams.epsilon = static_cast<float>(epsilon);

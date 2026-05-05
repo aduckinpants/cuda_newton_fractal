@@ -135,6 +135,7 @@ int main() {
         view.explaino_phase_strength = -2.5f;
         view.auto_max_iter = true;
         KernelParams params{};
+        params.coloring_mode = ColoringMode::iteration_count;
         params.explaino_seed = -3.0;
         params.explaino_seed_b = -7.5;
         params.explaino_root_spread = 1.75f;
@@ -176,12 +177,22 @@ int main() {
             std::cerr << "Expected diagnostics capture to persist Explaino fields, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
+        if (stateJson.find("\"color_signal\": \"root_index\"") == std::string::npos ||
+            stateJson.find("\"color_palette\": \"root_classic\"") == std::string::npos ||
+            stateJson.find("\"color_grading\": \"basin_default\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist explicit split-color state during slice 2\n";
+            return 1;
+        }
         if (stateJson.find("\"coloring_mode\": \"root_basin\"") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to keep legacy coloring_mode as the saved authority during slice 1\n";
+            std::cerr << "Expected diagnostics capture to derive the exact legacy coloring_mode mirror from the split-color pipeline\n";
+            return 1;
+        }
+        if (stateJson.find("\"coloring_mode\": \"iteration_count\"") != std::string::npos) {
+            std::cerr << "Diagnostics capture must not trust a stale legacy coloring_mode when split-color state disagrees\n";
             return 1;
         }
         if (stateJson.find("\"color_pipeline\"") != std::string::npos) {
-            std::cerr << "Diagnostics capture must not serialize the internal color_pipeline field during slice 1\n";
+            std::cerr << "Diagnostics capture must serialize split-color fields explicitly, not the raw internal struct name\n";
             return 1;
         }
 
