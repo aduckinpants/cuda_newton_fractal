@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-integration`, refresh the published runtime on D:, and run the integration audit
+Phase 5 complete - `feature/ui-polish-integration` now carries the full UI polish sprint and the merged runtime has passed the integration audit on the published D: viewer
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - merge `feature/ui-polish-resolution-pacing` into `feature/ui-polish-in
 - [x] Phase 2 - land slice 1 for schema domains and control polish
 - [x] Phase 3 - land slice 2 for color-mode authority and UI cleanup
 - [x] Phase 4 - land slice 3 for render-resolution defaults and pacing policy
-- [ ] Phase 5 - run integration audit and close the sprint follow-up ledger
+- [x] Phase 5 - run integration audit and close the sprint follow-up ledger
 
 ## Explicit User Asks
 
@@ -48,6 +48,7 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 - Phase 4 GREEN: slice 3 restored the exploration-first `2048x1536` startup/reset defaults, centralized the current pacing-policy defaults in the C++ owner seams, added 2048-baseline pacing regressions, repaired the one clamp bug exposed by hostile review, and passed native helper, runtime publish, deployed `--validate-ui`, deployed-schema, and code-quality validation.
 - Phase 5 pre-merge GREEN: the bounded follow-up repaired the last drag-clamp bug in `schema_binding.cpp`, so UI-only drag ranges no longer behave like real limits while bilateral hard-clamped drags still do. Native helper, runtime publish, deployed `--validate-ui`, and code-quality validation all passed again.
 - Phase 5 start: `feature/ui-polish-resolution-pacing` is four commits ahead of `feature/ui-polish-integration` with no divergence, so the remaining sprint work is a straight merge on the integration branch followed by merged-branch validation, including a fresh publish to `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Phase 5 GREEN: `feature/ui-polish-integration` fast-forwarded cleanly to `44585ef`, the checkpoint validation rails passed on the merged branch (`95/100` code quality, native helper tests, runtime publish, runtime pytest lane `68 passed`), and the deployed `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe --validate-ui` run stayed clean, so the sprint is closed at the integration-branch level.
 
 ## Notes
 
@@ -71,4 +72,4 @@ Each slice still follows local TDD and hostile audit rules. This overview plan i
 
 ## Resume Point
 
-Start the Phase 5 merge/audit slice on `feature/ui-polish-integration`, merge `feature/ui-polish-resolution-pacing`, then run the planned integration audit against the refreshed published runtime on D:.
+UI polish sprint closure is complete on `feature/ui-polish-integration`; any next step beyond this point is a separate thread (for example, publishing/pushing the integration branch or merging onward).
