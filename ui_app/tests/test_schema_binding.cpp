@@ -1,5 +1,6 @@
 #include "../src/schema_binding.h"
 
+#include "../src/color_pipeline_window.h"
 #include "../src/imgui_stack_editor.h"
 
 #include "../src/explaino_seed.h"
@@ -98,6 +99,15 @@ int main() {
             ctx.GetEnumId("fractal.params.color_grading") != "phase_default" ||
             ctx.GetEnumId("fractal.params.coloring_mode") != "phase") {
             std::cerr << "Expected split color signal edits to coerce the rest of the color pipeline onto a valid exact runtime combination\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.coloring_mode", "smooth_escape") ||
+            !ctx.SetEnumId("fractal.params.color_grading", "phase_default") ||
+            ctx.GetEnumId("fractal.params.coloring_mode") != "phase" ||
+            ctx.GetEnumId("fractal.params.color_signal") != "phase_angle" ||
+            ctx.GetEnumId("fractal.params.color_palette") != "phase_wheel" ||
+            ctx.GetEnumId("fractal.params.color_grading") != "phase_default") {
+            std::cerr << "Expected public coloring mode plus grading edits to stay on a coherent runtime-supported color pipeline\n";
             return 1;
         }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "lambda") ||
@@ -526,6 +536,19 @@ int main() {
     }
 
     {
+        ColorPipelineWindowState windowState{};
+        if (windowState.open) {
+            std::cerr << "Expected placeholder color pipeline windows to start closed\n";
+            return 1;
+        }
+        OpenColorPipelineWindow(&windowState);
+        if (!windowState.open) {
+            std::cerr << "Expected the placeholder color pipeline helper to open the window state\n";
+            return 1;
+        }
+    }
+
+    {
         std::uint64_t nextRowId = 1;
         std::uint64_t missingRowId = 0;
         if (!EnsureImGuiStackEditorRowId(&missingRowId, &nextRowId)) {
@@ -563,6 +586,27 @@ int main() {
         RenderSettings render{};
         LensSettings lens{};
         BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+
+        BeginFrame();
+        ColorPipelineWindowState closedWindowState{};
+        if (RenderColorPipelineWindow(&closedWindowState)) {
+            std::cerr << "Expected the placeholder color pipeline window helper to stay hidden while closed\n";
+            return 1;
+        }
+        EndFrame();
+
+        BeginFrame();
+        ColorPipelineWindowState openWindowState{};
+        openWindowState.open = true;
+        if (!RenderColorPipelineWindow(&openWindowState)) {
+            std::cerr << "Expected the placeholder color pipeline window helper to render once opened\n";
+            return 1;
+        }
+        if (!openWindowState.open) {
+            std::cerr << "Expected the placeholder color pipeline window helper to preserve the open state without user dismissal\n";
+            return 1;
+        }
+        EndFrame();
 
         BeginFrame();
         std::vector<std::string> emptyValidationMessages;

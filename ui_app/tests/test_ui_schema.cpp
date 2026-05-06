@@ -296,9 +296,11 @@ int main() {
         bool foundPhaseSlider = false;
         bool foundDualSeedB = false;
         bool foundDualSeedMix = false;
+        bool foundColoringModeControl = false;
         bool foundColorSignalControl = false;
         bool foundColorPaletteControl = false;
         bool foundColorGradingControl = false;
+        int coloringModeControlCount = 0;
         int colorSignalControlCount = 0;
         int colorPaletteControlCount = 0;
         int colorGradingControlCount = 0;
@@ -531,6 +533,20 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
                     foundTensionStrengthUiRange = true;
                 }
+                if (ctrl.has_binding && ctrl.binding.path == "fractal.params.coloring_mode") {
+                    ++coloringModeControlCount;
+                    if (ctrl.id == "coloring_mode" && ctrl.options.size() == 6) {
+                        bool foundRootBasin = false;
+                        bool foundSmoothEscape = false;
+                        bool foundPhase = false;
+                        for (const auto& option : ctrl.options) {
+                            if (option.id == "root_basin") foundRootBasin = true;
+                            if (option.id == "smooth_escape") foundSmoothEscape = true;
+                            if (option.id == "phase") foundPhase = true;
+                        }
+                        foundColoringModeControl = foundRootBasin && foundSmoothEscape && foundPhase;
+                    }
+                }
                 if (ctrl.has_binding && ctrl.binding.path == "fractal.params.color_signal") {
                     ++colorSignalControlCount;
                     if (ctrl.id == "color_signal" && ctrl.options.size() == 5) {
@@ -638,10 +654,11 @@ int main() {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";
             return 1;
         }
-        if (!foundDualSeedB || !foundDualSeedMix ||
-            !foundColorSignalControl || !foundColorPaletteControl || !foundColorGradingControl ||
-            colorSignalControlCount != 1 || colorPaletteControlCount != 1 || colorGradingControlCount != 1) {
-            std::cerr << "Did not find the split public color signal/palette/grading controls in schema\n";
+        if (!foundDualSeedB || !foundDualSeedMix || !foundColoringModeControl || !foundColorGradingControl ||
+            coloringModeControlCount != 1 ||
+            foundColorSignalControl || foundColorPaletteControl ||
+            colorSignalControlCount != 0 || colorPaletteControlCount != 0 || colorGradingControlCount != 1) {
+            std::cerr << "Did not find the restored legacy public coloring_mode control surface in schema\n";
             return 1;
         }
     }

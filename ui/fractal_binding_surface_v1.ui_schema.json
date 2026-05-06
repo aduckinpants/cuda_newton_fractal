@@ -739,45 +739,29 @@
       "order": 25,
       "controls": [
         {
-          "id": "color_signal",
+          "id": "coloring_mode",
           "type": "combo",
-          "label": "Signal",
+          "label": "Coloring Mode",
           "value_type": "enum",
           "order": 1,
-          "default": "root_index",
+          "default": "root_basin",
           "options": [
-            { "id": "root_index", "label": "Root Index" },
+            { "id": "root_basin", "label": "Root Basin" },
             { "id": "iteration_count", "label": "Iteration Count" },
             { "id": "smooth_escape", "label": "Smooth Escape" },
-            { "id": "phase_angle", "label": "Phase Angle" },
+            { "id": "joy_basins", "label": "Joy Basins" },
+            { "id": "phase", "label": "Phase" },
             { "id": "iteration_bands", "label": "Iteration Bands" }
           ],
-          "binding": { "kind": "param", "path": "fractal.params.color_signal" },
-          "help": "Split-color signal/palette/grading stay on exact runtime-supported combinations. Basin signals remain available only for fractal families that support them."
-        },
-        {
-          "id": "color_palette",
-          "type": "combo",
-          "label": "Palette",
-          "value_type": "enum",
-          "order": 2,
-          "default": "joy",
-          "options": [
-            { "id": "root_classic", "label": "Root Classic" },
-            { "id": "joy", "label": "Joy" },
-            { "id": "cyclic_escape", "label": "Cyclic Escape" },
-            { "id": "phase_wheel", "label": "Phase Wheel" },
-            { "id": "banded_escape", "label": "Banded Escape" }
-          ],
-          "binding": { "kind": "param", "path": "fractal.params.color_palette" },
-          "help": "Palette choices are filtered through the same runtime legality rules so the UI never authors unsupported split-color combinations."
+          "binding": { "kind": "param", "path": "fractal.params.coloring_mode" },
+          "help": "Keep the main Color panel on the legacy runtime coloring seam. Use Color Pipeline... for advanced composition once the descriptor-driven editor is enabled."
         },
         {
           "id": "color_grading",
           "type": "combo",
           "label": "Grading",
           "value_type": "enum",
-          "order": 3,
+          "order": 2,
           "default": "basin_default",
           "options": [
             { "id": "basin_default", "label": "Basin Default" },
@@ -786,7 +770,7 @@
             { "id": "bands_default", "label": "Bands Default" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.color_grading" },
-          "help": "Grading presets stay tied to exact runtime-supported pipelines while the renderer still dispatches through the legacy coloring-mode seam."
+          "help": "Grading remains public while advanced pipeline editing is staged behind the Color Pipeline window."
         },
         {
           "id": "exposure",

@@ -24,6 +24,7 @@
 #include "backends/imgui_impl_dx11.h"
 
 #include "cli_args.h"
+#include "color_pipeline_window.h"
 #include "viewer_cli.h"
 #include "viewer_schema_load.h"
 #include "viewer_state_init.h"
@@ -741,6 +742,7 @@ struct UiActionFlags {
     bool resetAll = false;
     bool loadState = false;
     bool loadFits = false;
+    bool openColorPipelineWindow = false;
     bool captureFinding = false;
     bool captureDiagnostic = false;
     bool nextSeed = false;
@@ -796,7 +798,21 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                 } else {
                     prevWasSeedButton = false;
                     bool controlInteracted = false;
+                    const bool isColoringModeControl =
+                        ctrl.has_binding &&
+                        ctrl.binding.kind == "param" &&
+                        ctrl.binding.path == "fractal.params.coloring_mode" &&
+                        (!ctrl.has_visible_if || bind.EvalVisibleIf(ctrl.visible_if));
                     RenderControlFromSchema(ctrl, bind, &dirty, &a.renderOnce, &controlInteracted);
+                    if (isColoringModeControl) {
+                        ImGui::SameLine();
+                        ImGui::PushID("color_pipeline_entry");
+                        if (ImGui::Button("Color Pipeline...")) {
+                            a.openColorPipelineWindow = true;
+                            a.interactionChanged = true;
+                        }
+                        ImGui::PopID();
+                    }
                     if (controlInteracted) {
                         a.interactionChanged = true;
                     }
@@ -2237,6 +2253,7 @@ static void RunViewerFrame(
     float& seedScrubAccel,
     std::string& currentLoadedStatePath,
     FractalType& currentLoadedStateFractalType,
+    ColorPipelineWindowState& colorPipelineWindow,
     RuntimeWalkViewerSession& runtimeWalkViewerSession,
     RuntimeWalkViewerImportPanelState& runtimeWalkImportPanel,
     RuntimeWalkViewerPlaybackState& runtimeWalkPlayback,
@@ -2270,10 +2287,14 @@ static void RunViewerFrame(
         lastPolyKind, lastFractalType,
         findingStatus, lastFindingPath);
 
+    if (actions.openColorPipelineWindow) {
+        OpenColorPipelineWindow(&colorPipelineWindow);
+    }
     if (actions.loadFits) {
         PrimeRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
         actions.interactionChanged = true;
     }
+    RenderColorPipelineWindow(&colorPipelineWindow);
     if (!ProcessRuntimeWalkViewerImportPerFrame(
             hwnd,
             exeDir,
@@ -2454,7 +2475,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     }
 
     ImGuiIO& io = ImGui::GetIO();
-
     std::vector<uint32_t> rgba;
     std::vector<uint8_t> maskBuffer;
     std::vector<uint32_t> lensSdfRgba;
@@ -2469,7 +2489,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sweepPaused = false;
     bool sweepSingleStep = false;
     float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
-    RuntimeWalkViewerSession runtimeWalkViewerSession{};
+    RuntimeWalkViewerSession runtimeWalkViewerSession{}; ColorPipelineWindowState colorPipelineWindow{};
     RuntimeWalkViewerImportPanelState runtimeWalkImportPanel{};
     RuntimeWalkViewerPlaybackState runtimeWalkPlayback{};
     RuntimeWalkOverlayProviderConfig runtimeWalkOverlayConfig{};
@@ -2504,7 +2524,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             return 1;
         }
     }
-
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
 
@@ -2566,6 +2585,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             seedScrubAccel,
             currentLoadedStatePath,
             currentLoadedStateFractalType,
+            colorPipelineWindow,
             runtimeWalkViewerSession,
             runtimeWalkImportPanel,
             runtimeWalkPlayback,
