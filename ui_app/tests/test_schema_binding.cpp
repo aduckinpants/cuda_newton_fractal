@@ -639,6 +639,53 @@ int main() {
     }
 
     {
+        ViewState view{};
+        KernelParams params{};
+        ColorPipelineWindowState windowState{};
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to import a live baseline before apply coverage\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "iteration_bands")) {
+            std::cerr << "Expected the advanced color pipeline apply RED to select a divergent signal lane\n";
+            return 1;
+        }
+        if (ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected illegal advanced color tuples to fail closed instead of mutating live KernelParams\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::phase ||
+            params.color_pipeline.signal != ColorSignal::phase_angle ||
+            params.color_pipeline.palette != ColorPalette::phase_wheel ||
+            params.color_pipeline.grading != ColorGradingPreset::phase_default) {
+            std::cerr << "Failed advanced color apply attempts should preserve the prior live runtime tuple\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "banded_escape") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "bands_default")) {
+            std::cerr << "Expected the advanced color pipeline apply RED to construct a legal iteration-bands tuple\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to apply a legal draft tuple back into live KernelParams\n";
+            return 1;
+        }
+        if (!windowState.live_snapshot.valid || HasColorPipelineDraftEdits(windowState) ||
+            params.coloring_mode != ColoringMode::iteration_bands ||
+            params.color_pipeline.signal != ColorSignal::iteration_bands ||
+            params.color_pipeline.palette != ColorPalette::banded_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::bands_default ||
+            windowState.live_snapshot.pipeline.signal != ColorSignal::iteration_bands ||
+            windowState.live_snapshot.pipeline.palette != ColorPalette::banded_escape ||
+            windowState.live_snapshot.pipeline.grading != ColorGradingPreset::bands_default) {
+            std::cerr << "Expected advanced color apply to update KernelParams and resync the live snapshot to the applied tuple\n";
+            return 1;
+        }
+    }
+
+    {
         std::uint64_t nextRowId = 1;
         std::uint64_t missingRowId = 0;
         if (!EnsureImGuiStackEditorRowId(&missingRowId, &nextRowId)) {

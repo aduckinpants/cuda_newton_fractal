@@ -596,6 +596,110 @@ inline bool SelectColorPipelineLaneFunction(
     return SetColorPipelineLaneFunction(&lane, *descriptor);
 }
 
+inline bool TryBuildColorPipelineSelectionFromDraft(
+    const ColorPipelineWindowState& state,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode,
+    std::string* outError = nullptr) {
+    if (!outPipeline || !outMode) {
+        if (outError) *outError = "Advanced color pipeline apply requires output storage";
+        return false;
+    }
+
+    ColorPipelineSelection pipeline{};
+    bool hasSignal = false;
+    bool hasPalette = false;
+    bool hasGrading = false;
+    for (const ColorPipelineLaneState& lane : state.lanes) {
+        if (lane.lane_id == "signal") {
+            if (!TryParseColorSignalId(lane.function_id, &pipeline.signal)) {
+                if (outError) *outError = std::string("Unknown advanced color signal function '") + lane.function_id + "'";
+                return false;
+            }
+            hasSignal = true;
+            continue;
+        }
+        if (lane.lane_id == "palette") {
+            if (!TryParseColorPaletteId(lane.function_id, &pipeline.palette)) {
+                if (outError) *outError = std::string("Unknown advanced color palette function '") + lane.function_id + "'";
+                return false;
+            }
+            hasPalette = true;
+            continue;
+        }
+        if (lane.lane_id == "grade") {
+            if (!TryParseColorGradingPresetId(lane.function_id, &pipeline.grading)) {
+                if (outError) *outError = std::string("Unknown advanced color grading function '") + lane.function_id + "'";
+                return false;
+            }
+            hasGrading = true;
+            continue;
+        }
+        if (outError) *outError = std::string("Unknown advanced color pipeline lane id: ") + lane.lane_id;
+        return false;
+    }
+
+    if (!(hasSignal && hasPalette && hasGrading)) {
+        if (outError) *outError = "Advanced color pipeline apply requires signal, palette, and grade lanes";
+        return false;
+    }
+
+    ColoringMode mode = ColoringMode::root_basin;
+    if (!TryLegacyColoringModeForPipeline(pipeline, &mode)) {
+        if (outError) *outError = "Selected advanced color tuple does not map to a supported live runtime mode";
+        return false;
+    }
+
+    *outPipeline = pipeline;
+    *outMode = mode;
+    return true;
+}
+
+inline bool ApplyColorPipelineDraftToLiveState(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* ioParams,
+    bool* outChanged = nullptr) {
+    if (outChanged) {
+        *outChanged = false;
+    }
+    if (!ioState || !ioParams) {
+        return false;
+    }
+    if (!EnsureColorPipelineWindowInitialized(ioState)) {
+        return false;
+    }
+
+    ColorPipelineSelection nextPipeline{};
+    ColoringMode nextMode = ColoringMode::root_basin;
+    std::string error;
+    if (!TryBuildColorPipelineSelectionFromDraft(*ioState, &nextPipeline, &nextMode, &error)) {
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+    if (!IsColorPipelineAllowedForFractal(liveFractalType, nextPipeline)) {
+        PushColorPipelineValidationMessage(ioState,
+            "Selected advanced color tuple is not allowed for the current fractal family");
+        return false;
+    }
+
+    const bool changed =
+        ioParams->coloring_mode != nextMode ||
+        ioParams->color_pipeline.signal != nextPipeline.signal ||
+        ioParams->color_pipeline.palette != nextPipeline.palette ||
+        ioParams->color_pipeline.grading != nextPipeline.grading;
+
+    ioParams->coloring_mode = nextMode;
+    ioParams->color_pipeline = nextPipeline;
+    if (!SyncColorPipelineWindowFromLiveState(ioState, liveFractalType, ioParams)) {
+        return false;
+    }
+    if (outChanged) {
+        *outChanged = changed;
+    }
+    return true;
+}
+
 inline bool RenderColorPipelineParamControl(
     const FunctionParamDescriptor& param,
     ColorPipelineParamState* ioValue) {
@@ -672,8 +776,13 @@ inline void OpenColorPipelineWindow(ColorPipelineWindowState* ioState) {
     ioState->open = true;
 }
 
-inline void RenderColorPipelineWindowSummary(ColorPipelineWindowState* ioState) {
-    ImGui::TextWrapped("Draft only: this advanced color-pipeline editor mirrors the live runtime pipeline without applying changes back.");
+inline void RenderColorPipelineWindowSummary(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    bool* ioDirty) {
+    ImGui::TextWrapped("Live slot editor: applying Signal / Palette / Grade here updates the same runtime color tuple used by the main Color panel.");
+    ImGui::TextDisabled("Function parameter tuning controls remain preview-only until their runtime owner fields land in a later slice.");
     ImGui::Separator();
     if (ioState && ioState->live_snapshot.valid) {
         ImGui::TextWrapped(
@@ -684,6 +793,13 @@ inline void RenderColorPipelineWindowSummary(ColorPipelineWindowState* ioState) 
             ColorGradingPresetId(ioState->live_snapshot.pipeline.grading));
         if (HasColorPipelineDraftEdits(*ioState)) {
             ImGui::TextColored(ImVec4(0.95f, 0.83f, 0.40f, 1.0f), "Draft diverges from the live runtime selection.");
+            ImGui::SameLine();
+            if (liveParams && ImGui::Button("Apply Selected Pipeline")) {
+                bool changed = false;
+                if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
+                    *ioDirty = true;
+                }
+            }
             ImGui::SameLine();
             if (ImGui::Button("Reset Draft From Live")) {
                 ResetColorPipelineDraftFromLiveState(ioState);
@@ -755,10 +871,15 @@ inline void RenderColorPipelineWindowLane(
         if (!currentDescriptor->description.empty()) {
             ImGui::TextWrapped("%s", currentDescriptor->description.c_str());
         }
-        for (std::size_t paramIndex = 0; paramIndex < currentDescriptor->parameters.size() &&
-                paramIndex < lane.parameter_values.size();
-             ++paramIndex) {
-            RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &lane.parameter_values[paramIndex]);
+        if (!currentDescriptor->parameters.empty()) {
+            ImGui::BeginDisabled();
+            for (std::size_t paramIndex = 0; paramIndex < currentDescriptor->parameters.size() &&
+                    paramIndex < lane.parameter_values.size();
+                 ++paramIndex) {
+                RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &lane.parameter_values[paramIndex]);
+            }
+            ImGui::EndDisabled();
+            ImGui::TextDisabled("Parameter tuning preview only in this slice.");
         }
     });
 }
@@ -766,7 +887,8 @@ inline void RenderColorPipelineWindowLane(
 inline bool RenderColorPipelineWindow(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
-    const KernelParams* liveParams) {
+    KernelParams* liveParams,
+    bool* ioDirty = nullptr) {
     if (!ioState || !ioState->open) {
         return false;
     }
@@ -783,7 +905,7 @@ inline bool RenderColorPipelineWindow(
     ImGui::SetNextWindowSize(ImVec2(720.0f, 520.0f), ImGuiCond_FirstUseEver);
     const bool began = ImGui::Begin("Color Pipeline", &open);
     if (began) {
-        RenderColorPipelineWindowSummary(ioState);
+        RenderColorPipelineWindowSummary(ioState, liveFractalType, liveParams, ioDirty);
         for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
             RenderColorPipelineWindowLane(ioState, laneIndex);
             ImGui::Spacing();

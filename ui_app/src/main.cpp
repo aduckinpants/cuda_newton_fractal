@@ -2294,7 +2294,7 @@ static void RunViewerFrame(
         PrimeRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
         actions.interactionChanged = true;
     }
-    RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params);
+    RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty);
     if (!ProcessRuntimeWalkViewerImportPerFrame(
             hwnd,
             exeDir,

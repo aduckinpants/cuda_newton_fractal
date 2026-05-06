@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_slice5_live_apply",
+  "feature_id": "advanced_color_pipeline_live_apply",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_slice5_live_apply_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_slice5_live_apply_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/main.cpp",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "current advanced color pipeline live snapshot seam",
+    "live KernelParams split-color authority",
+    "exact color enum id helpers"
+  ],
+  "forbidden_operator_prompts": [
+    "new runtime owner fields for unwired parameter knobs",
+    "public schema changes",
+    "second advanced draft persistence model",
+    "approximate fallback from lane ids to guessed runtime enums"
+  ],
+  "required_defaults": {
+    "advanced_window_mode": "exact_tuple_live_apply",
+    "live_authority": "shared_kernelparams_only",
+    "sync_mode": "apply_then_live_resync"
+  },
+  "forbidden_defaults": {
+    "second_live_authority": "forbidden",
+    "implicit_pipeline_approximation": "forbidden",
+    "fake_live_parameter_knobs": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_slice5_live_apply.contract.json --out-json artifacts/validation/advanced_color_pipeline_slice5_live_apply_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_slice5_contract_schema_valid",
+      "description": "The advanced color-pipeline slice-5 contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_slice5_live_apply_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_slice5_plan_sync_ok",
+      "description": "The advanced color-pipeline slice-5 phased plan stays synchronized during live apply work",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
