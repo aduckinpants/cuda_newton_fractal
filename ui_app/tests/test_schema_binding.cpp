@@ -662,6 +662,46 @@ int main() {
             std::cerr << "Failed advanced color lane selections should preserve the current function choice\n";
             return 1;
         }
+
+        params.coloring_mode = ColoringMode::root_basin;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::root_basin);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected unsupported live tuples to keep the schedule editor on its current draft instead of failing sync\n";
+            return 1;
+        }
+        if (!windowState.live_snapshot.valid || windowState.live_snapshot.draft_import_supported) {
+            std::cerr << "Expected root-basin live tuples to stay outside the current Source / Shape / Palette bridge\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_orbit") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette") ||
+            !HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected the draft editor to diverge while the live runtime is outside the current bridge\n";
+            return 1;
+        }
+
+        params.coloring_mode = ColoringMode::iteration_bands;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected supported live tuples to resync the snapshot without clobbering an already-diverged draft\n";
+            return 1;
+        }
+        if (!windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() != 3 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "banded_signal" ||
+            windowState.live_snapshot.lanes[1].rows[0].function_id != "identity" ||
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "banded_heatmap") {
+            std::cerr << "Expected the live snapshot to refresh to the newly supported runtime tuple\n";
+            return 1;
+        }
+        if (windowState.lanes[0].rows[0].function_id != "phase_orbit" ||
+            windowState.lanes[2].rows[0].function_id != "phase_wheel_palette" ||
+            !HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected a diverged draft to survive when the live tuple becomes bridge-supported later\n";
+            return 1;
+        }
     }
 
     {

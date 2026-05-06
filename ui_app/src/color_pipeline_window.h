@@ -748,6 +748,24 @@ inline bool EnsureColorPipelineWindowInitialized(ColorPipelineWindowState* ioSta
     return true;
 }
 
+inline bool IsColorPipelineStarterDraft(const ColorPipelineWindowState& state) {
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+    if (state.lanes.size() != catalogs.size()) {
+        return false;
+    }
+
+    for (std::size_t index = 0; index < catalogs.size(); ++index) {
+        ColorPipelineLaneState expectedLane;
+        if (!BuildColorPipelineLaneWithSingleRow(catalogs[index], catalogs[index].default_function_id, 0, &expectedLane)) {
+            return false;
+        }
+        if (!ColorPipelineLaneStatesEqual(state.lanes[index], expectedLane)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline bool SyncColorPipelineWindowFromLiveState(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
@@ -759,10 +777,13 @@ inline bool SyncColorPipelineWindowFromLiveState(
         return false;
     }
 
+    const bool liveSnapshotWasValid = ioState->live_snapshot.valid;
+    const bool draftHasEdits = HasColorPipelineDraftEdits(*ioState);
+    const bool draftMatchesStarter = IsColorPipelineStarterDraft(*ioState);
     const bool adoptIntoDraft =
-        !ioState->live_snapshot.valid ||
-        !ioState->live_snapshot.draft_import_supported ||
-        !HasColorPipelineDraftEdits(*ioState);
+        !liveSnapshotWasValid ||
+        !draftHasEdits ||
+        (!ioState->live_snapshot.draft_import_supported && draftMatchesStarter);
     ColorPipelineLiveSnapshot nextSnapshot;
     std::string error;
     if (!TryBuildColorPipelineLiveSnapshot(liveFractalType, *liveParams, &nextSnapshot, &error)) {
@@ -1669,8 +1690,20 @@ inline void RenderColorPipelineWindowLane(
             if (!currentDescriptor->description.empty()) {
                 ImGui::TextWrapped("%s", currentDescriptor->description.c_str());
             }
-            for (std::size_t paramIndex = 0; paramIndex < currentDescriptor->parameters.size() && paramIndex < row.parameter_values.size(); ++paramIndex) {
+            std::vector<std::size_t> renderableParamIndexes;
+            bool hasHiddenParams = false;
+            CollectRenderableColorPipelineParamIndexes(row, &renderableParamIndexes, &hasHiddenParams);
+            for (std::size_t renderIndex = 0; renderIndex < renderableParamIndexes.size(); ++renderIndex) {
+                const std::size_t paramIndex = renderableParamIndexes[renderIndex];
+                if (paramIndex >= currentDescriptor->parameters.size() || paramIndex >= row.parameter_values.size()) {
+                    continue;
+                }
                 RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex]);
+            }
+            if (!currentDescriptor->parameters.empty() && renderableParamIndexes.empty()) {
+                ImGui::TextDisabled("Parameter tuning preview only in this slice.");
+            } else if (hasHiddenParams) {
+                ImGui::TextDisabled("Only the visible controls are live in this slice.");
             }
             if (!currentDescriptor->parameters.empty() && lane.lane_id == "shape") {
                 ImGui::TextDisabled("Shape rows edit the schedule draft now; only Identity participates in the current live bridge.");
