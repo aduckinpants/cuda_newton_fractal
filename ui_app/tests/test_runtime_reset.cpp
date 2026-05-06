@@ -45,6 +45,12 @@ int main() {
     params.color_iteration_band_softness = 0.8f;
     params.color_iteration_band_emphasis = 1.6f;
     params.color_iteration_band_palette_offset = 0.4f;
+    params.color_smooth_escape_scale = 2.0f;
+    params.color_smooth_escape_bias = -0.25f;
+    params.color_heatmap_cycle_scale = 1.75f;
+    params.color_heatmap_saturation = 1.4f;
+    params.color_contrast_lift_exposure = 1.8f;
+    params.color_contrast_lift_saturation = 1.3f;
     render.resolution = {2048, 1024};
     render.block_size = 512;
     render.device_id = 3;
@@ -81,8 +87,14 @@ int main() {
         params.color_iteration_band_count != 8 ||
         !NearlyEqual(params.color_iteration_band_softness, 0.35f) ||
         !NearlyEqual(params.color_iteration_band_emphasis, 1.0f) ||
-        !NearlyEqual(params.color_iteration_band_palette_offset, 0.0f)) {
-        std::cerr << "Reset should restore phase and iteration-band parameter defaults\n";
+        !NearlyEqual(params.color_iteration_band_palette_offset, 0.0f) ||
+        !NearlyEqual(params.color_smooth_escape_scale, 1.0f) ||
+        !NearlyEqual(params.color_smooth_escape_bias, 0.0f) ||
+        !NearlyEqual(params.color_heatmap_cycle_scale, 1.0f) ||
+        !NearlyEqual(params.color_heatmap_saturation, 1.0f) ||
+        !NearlyEqual(params.color_contrast_lift_exposure, 1.0f) ||
+        !NearlyEqual(params.color_contrast_lift_saturation, 1.0f)) {
+        std::cerr << "Reset should restore phase, band, and advanced programmable color parameter defaults\n";
         return 1;
     }
     if (render.resolution.x != 2048 || render.resolution.y != 1536 || render.block_size != 256 || render.device_id != 0 || render.benchmark) {

@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_slice7_catalog_runtime_binding",
+  "feature_id": "advanced_color_pipeline_catalog_runtime_binding",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/basin_coloring.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_bootstrap.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_basin_coloring.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_runtime_walk_bootstrap.cpp"
+  ],
+  "required_operator_inputs": [
+    "user schedule-editor spec for the advanced color window",
+    "current advanced color window catalog",
+    "live KernelParams color authority",
+    "published D runtime active executable metadata"
+  ],
+  "forbidden_operator_prompts": [
+    "keep the fixed three-slot editor after the schedule-editor spec was clarified",
+    "leave preview-only bait visible in the shipped catalog",
+    "collapse grade lane into existing global post-color controls by convenience",
+    "introduce a second editable color authority"
+  ],
+  "required_defaults": {
+    "runtime_authority": "kernelparams_only",
+    "catalog_honesty": "visible_entries_require_explicit_runtime_binding_classification",
+    "advanced_catalog_identity": "custom_function_ids_not_raw_legacy_enum_ids",
+    "advanced_window_shape": "source_shape_palette_schedule_stacks",
+    "shared_editor_surface": "reuse_imgui_stack_editor_helper",
+    "live_bridge_scope": "single_enabled_source_identity_shape_single_enabled_palette_exact_supported_recipe_only",
+    "main_panel_transition": "legacy_color_mode_and_grading_controls_remain_in_main_panel",
+    "publish_proof": "validate_active_d_runtime_executable_and_staged_schema"
+  },
+  "forbidden_defaults": {
+    "fake_live_parameter_knobs": "forbidden",
+    "silent_preview_only_shipping_surface": "forbidden",
+    "guessed_runtime_owner_mapping": "forbidden",
+    "legacy_coloring_mode_alias_surface": "forbidden",
+    "fixed_three_slot_editor_shape": "forbidden",
+    "fake_multi_row_live_apply": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_slice7_catalog_runtime_binding.contract.json --out-json artifacts/validation/advanced_color_pipeline_slice7_catalog_runtime_binding_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_slice7_contract_schema_valid",
+      "description": "The advanced color-pipeline slice-7 runtime-binding contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_slice7_catalog_runtime_binding_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_slice7_plan_sync_ok",
+      "description": "The advanced color-pipeline slice-7 phased plan stays synchronized during catalog runtime-binding work",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

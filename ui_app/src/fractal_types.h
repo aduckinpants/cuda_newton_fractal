@@ -239,6 +239,12 @@ struct KernelParams {
     float color_iteration_band_softness{0.35f};
     float color_iteration_band_emphasis{1.0f};
     float color_iteration_band_palette_offset{0.0f};
+    float color_smooth_escape_scale{1.0f};
+    float color_smooth_escape_bias{0.0f};
+    float color_heatmap_cycle_scale{1.0f};
+    float color_heatmap_saturation{1.0f};
+    float color_contrast_lift_exposure{1.0f};
+    float color_contrast_lift_saturation{1.0f};
 
     double explaino_seed{0.0};
     double explaino_seed_b{1.0};

@@ -729,6 +729,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorIterationBandSoftness = nextParams.color_iteration_band_softness;
     double colorIterationBandEmphasis = nextParams.color_iteration_band_emphasis;
     double colorIterationBandPaletteOffset = nextParams.color_iteration_band_palette_offset;
+    double colorSmoothEscapeScale = nextParams.color_smooth_escape_scale;
+    double colorSmoothEscapeBias = nextParams.color_smooth_escape_bias;
+    double colorHeatmapCycleScale = nextParams.color_heatmap_cycle_scale;
+    double colorHeatmapSaturation = nextParams.color_heatmap_saturation;
+    double colorContrastLiftExposure = nextParams.color_contrast_lift_exposure;
+    double colorContrastLiftSaturation = nextParams.color_contrast_lift_saturation;
     if (!GetOptionalNumber(*paramsObject, "color_saturation", &colorSaturation, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast", &colorContrast, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_r", &colorTintR, nullptr, outError)) return false;
@@ -754,6 +760,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_softness", &colorIterationBandSoftness, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_emphasis", &colorIterationBandEmphasis, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_palette_offset", &colorIterationBandPaletteOffset, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_scale", &colorSmoothEscapeScale, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_bias", &colorSmoothEscapeBias, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_heatmap_cycle_scale", &colorHeatmapCycleScale, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_heatmap_saturation", &colorHeatmapSaturation, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_contrast_lift_exposure", &colorContrastLiftExposure, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_contrast_lift_saturation", &colorContrastLiftSaturation, nullptr, outError)) return false;
     nextParams.color_saturation = static_cast<float>(colorSaturation);
     nextParams.color_contrast = static_cast<float>(colorContrast);
     nextParams.color_tint_r = static_cast<float>(colorTintR);
@@ -766,6 +778,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_iteration_band_softness = static_cast<float>(colorIterationBandSoftness);
     nextParams.color_iteration_band_emphasis = static_cast<float>(colorIterationBandEmphasis);
     nextParams.color_iteration_band_palette_offset = static_cast<float>(colorIterationBandPaletteOffset);
+    nextParams.color_smooth_escape_scale = static_cast<float>(colorSmoothEscapeScale);
+    nextParams.color_smooth_escape_bias = static_cast<float>(colorSmoothEscapeBias);
+    nextParams.color_heatmap_cycle_scale = static_cast<float>(colorHeatmapCycleScale);
+    nextParams.color_heatmap_saturation = static_cast<float>(colorHeatmapSaturation);
+    nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);
+    nextParams.color_contrast_lift_saturation = static_cast<float>(colorContrastLiftSaturation);
 
     // explaino_cluster_radius (optional for backward compat)
     double explainoClusterRadius = nextParams.explaino_cluster_radius;

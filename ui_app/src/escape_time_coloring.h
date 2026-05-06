@@ -54,33 +54,64 @@ ESCAPE_TIME_COLOR_HD inline unsigned char EscapeTimeColorToneMap(unsigned char v
     return static_cast<unsigned char>(EscapeTimeColorClamp(x, 0.0f, 1.0f) * 255.0f);
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolveFractalGradeExposure(const KernelParams& params) {
+    float exposure = params.exposure < 0.0f ? 0.0f : params.exposure;
+    if (params.color_pipeline.grading == ColorGradingPreset::escape_default) {
+        exposure *= EscapeTimeColorClamp(params.color_contrast_lift_exposure, 0.1f, 3.0f);
+    }
+    return exposure;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveFractalGradeSaturation(const KernelParams& params) {
+    float saturation = params.color_saturation;
+    if (params.color_pipeline.grading == ColorGradingPreset::escape_default) {
+        saturation *= EscapeTimeColorClamp(params.color_contrast_lift_saturation, 0.0f, 2.0f);
+    }
+    return saturation;
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorTint(Color color, const KernelParams& params) {
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(static_cast<float>(color.x) * params.color_tint_r, 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(static_cast<float>(color.y) * params.color_tint_g, 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(static_cast<float>(color.z) * params.color_tint_b, 0.0f, 255.0f)),
+        color.w);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorSaturation(Color color, float saturation) {
+    const float lum = 0.299f * static_cast<float>(color.x) + 0.587f * static_cast<float>(color.y) + 0.114f * static_cast<float>(color.z);
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(lum + saturation * (static_cast<float>(color.x) - lum), 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(lum + saturation * (static_cast<float>(color.y) - lum), 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(lum + saturation * (static_cast<float>(color.z) - lum), 0.0f, 255.0f)),
+        color.w);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorContrast(Color color, float contrast) {
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(128.0f + contrast * (static_cast<float>(color.x) - 128.0f), 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(128.0f + contrast * (static_cast<float>(color.y) - 128.0f), 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(128.0f + contrast * (static_cast<float>(color.z) - 128.0f), 0.0f, 255.0f)),
+        color.w);
+}
+
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const KernelParams& params) {
-    const float exposure = params.exposure < 0.0f ? 0.0f : params.exposure;
+    const float exposure = ResolveFractalGradeExposure(params);
+    const float saturation = ResolveFractalGradeSaturation(params);
     color = EscapeTimeColorMake<Color>(
         EscapeTimeColorToneMap(color.x, exposure),
         EscapeTimeColorToneMap(color.y, exposure),
         EscapeTimeColorToneMap(color.z, exposure),
         255);
-
-    color = EscapeTimeColorMake<Color>(
-        static_cast<unsigned char>(EscapeTimeColorClamp(static_cast<float>(color.x) * params.color_tint_r, 0.0f, 255.0f)),
-        static_cast<unsigned char>(EscapeTimeColorClamp(static_cast<float>(color.y) * params.color_tint_g, 0.0f, 255.0f)),
-        static_cast<unsigned char>(EscapeTimeColorClamp(static_cast<float>(color.z) * params.color_tint_b, 0.0f, 255.0f)),
-        color.w);
-
-    const float lum = 0.299f * static_cast<float>(color.x) + 0.587f * static_cast<float>(color.y) + 0.114f * static_cast<float>(color.z);
-    color = EscapeTimeColorMake<Color>(
-        static_cast<unsigned char>(EscapeTimeColorClamp(lum + params.color_saturation * (static_cast<float>(color.x) - lum), 0.0f, 255.0f)),
-        static_cast<unsigned char>(EscapeTimeColorClamp(lum + params.color_saturation * (static_cast<float>(color.y) - lum), 0.0f, 255.0f)),
-        static_cast<unsigned char>(EscapeTimeColorClamp(lum + params.color_saturation * (static_cast<float>(color.z) - lum), 0.0f, 255.0f)),
-        color.w);
-
-    return EscapeTimeColorMake<Color>(
-        static_cast<unsigned char>(EscapeTimeColorClamp(128.0f + params.color_contrast * (static_cast<float>(color.x) - 128.0f), 0.0f, 255.0f)),
-        static_cast<unsigned char>(EscapeTimeColorClamp(128.0f + params.color_contrast * (static_cast<float>(color.y) - 128.0f), 0.0f, 255.0f)),
-        static_cast<unsigned char>(EscapeTimeColorClamp(128.0f + params.color_contrast * (static_cast<float>(color.z) - 128.0f), 0.0f, 255.0f)),
-        color.w);
+    return ApplyFractalColorContrast(
+        ApplyFractalColorSaturation(
+            ApplyFractalColorTint(color, params),
+            saturation),
+        params.color_contrast);
 }
 
 template <typename Color>
@@ -128,6 +159,14 @@ struct EscapeTimeColorRgb {
     float b;
 };
 
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb EscapeTimeColorApplySaturation(EscapeTimeColorRgb rgb, float saturation) {
+    const float lum = 0.299f * rgb.r + 0.587f * rgb.g + 0.114f * rgb.b;
+    rgb.r = EscapeTimeColorClamp(lum + saturation * (rgb.r - lum), 0.0f, 1.0f);
+    rgb.g = EscapeTimeColorClamp(lum + saturation * (rgb.g - lum), 0.0f, 1.0f);
+    rgb.b = EscapeTimeColorClamp(lum + saturation * (rgb.b - lum), 0.0f, 1.0f);
+    return rgb;
+}
+
 ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleIterationBandPalette(float rawBand, int bandCount, float softness) {
     const float palette[8][3] = {
         {0.05f, 0.15f, 0.45f}, {0.10f, 0.50f, 0.70f}, {0.15f, 0.75f, 0.55f}, {0.65f, 0.85f, 0.20f},
@@ -154,6 +193,93 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyIterationBandEmphasis(Escape
     rgb.g = EscapeTimeColorClamp(lum + emphasis * (rgb.g - lum), 0.0f, 1.0f);
     rgb.b = EscapeTimeColorClamp(lum + emphasis * (rgb.b - lum), 0.0f, 1.0f);
     return rgb;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeHeatmapBand(float nu, const KernelParams& params) {
+    float band = nu * 0.025f;
+    if (params.color_pipeline.signal == ColorSignal::smooth_escape) {
+        band = band * EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
+            EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
+    }
+    if (params.color_pipeline.palette == ColorPalette::cyclic_escape) {
+        band *= EscapeTimeColorClamp(params.color_heatmap_cycle_scale, 0.25f, 4.0f);
+    }
+    return band;
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleEscapeHeatmap(float band, const KernelParams& params) {
+    const float frac = band - floorf(band);
+    const float stops[6][3] = {
+        {0.00f, 0.03f, 0.20f}, {0.05f, 0.35f, 0.65f}, {0.10f, 0.75f, 0.85f},
+        {0.95f, 0.85f, 0.25f}, {0.90f, 0.45f, 0.10f}, {0.00f, 0.03f, 0.20f},
+    };
+    const float u5 = frac * 5.0f;
+    int segment = static_cast<int>(u5);
+    if (segment > 4) segment = 4;
+    const float segT = u5 - static_cast<float>(segment);
+    EscapeTimeColorRgb rgb{
+        stops[segment][0] + (stops[segment + 1][0] - stops[segment][0]) * segT,
+        stops[segment][1] + (stops[segment + 1][1] - stops[segment][1]) * segT,
+        stops[segment][2] + (stops[segment + 1][2] - stops[segment][2]) * segT,
+    };
+    if (params.color_pipeline.palette == ColorPalette::cyclic_escape) {
+        rgb = EscapeTimeColorApplySaturation(rgb, EscapeTimeColorClamp(params.color_heatmap_saturation, 0.0f, 2.0f));
+    }
+    return rgb;
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color EscapeTimeColorFromRgb(EscapeTimeColorRgb rgb) {
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(rgb.r, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(rgb.g, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(rgb.b, 0.0f, 1.0f) * 255.0f),
+        255);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter, const KernelParams& params);
+
+template <typename Color, typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryMakeDiscreteEscapeTimeColor(FractalType, ColoringMode mode, bool escaped, int iteration, int maxIter, Complex z, const KernelParams& params, Color* outColor) {
+    if (!outColor) return false;
+    if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
+        *outColor = EscapeTimeColorMake<Color>(255, 0, 255, 255);
+        return true;
+    }
+    if (mode == ColoringMode::phase) {
+        *outColor = MakePhaseAngleColor<Color>(atan2f(z.y, z.x), escaped, params);
+        return true;
+    }
+    if (mode == ColoringMode::iteration_bands) {
+        if (escaped) {
+            *outColor = IterationBandColor<Color>(iteration, maxIter, params);
+        } else {
+            *outColor = EscapeTimeColorMake<Color>(0, 0, 0, 255);
+        }
+        return true;
+    }
+    if (!escaped) { *outColor = EscapeTimeColorMake<Color>(0, 0, 0, 255); return true; }
+    if (mode == ColoringMode::iteration_count) {
+        const float t = static_cast<float>(iteration) / static_cast<float>(maxIter);
+        const unsigned char value = static_cast<unsigned char>(EscapeTimeColorClamp(t, 0.0f, 1.0f) * 255.0f);
+        *outColor = EscapeTimeColorMake<Color>(64, value, static_cast<unsigned char>(255 - value), 255);
+        return true;
+    }
+    return false;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    const KernelParams& params) {
+    const float logZn = logf(fmaxf(magnitude, 1.0e-12f));
+    float denom = logf(2.0f);
+    if (fractalType == FractalType::multibrot && params.multibrot_power_float > 1.0f) {
+        denom = logf(params.multibrot_power_float);
+    }
+    return static_cast<float>(iteration) + 1.0f - logf(fmaxf(logZn / denom, 1.0e-12f)) / denom;
 }
 
 // Cyclic iteration-band palette (8 distinct hues).
@@ -185,66 +311,15 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     int maxIter,
     Complex z,
     const KernelParams& params) {
-    (void)fractalType;
-
-    const Color errorColor = EscapeTimeColorMake<Color>(255, 0, 255, 255);
-    if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
-        return errorColor;
+    Color discreteColor{};
+    if (TryMakeDiscreteEscapeTimeColor(fractalType, mode, escaped, iteration, maxIter, z, params, &discreteColor)) {
+        return discreteColor;
     }
 
-    if (mode == ColoringMode::phase) {
-        return MakePhaseAngleColor<Color>(atan2f(z.y, z.x), escaped, params);
-    }
-
-    if (mode == ColoringMode::iteration_bands) {
-        if (!escaped) return EscapeTimeColorMake<Color>(0, 0, 0, 255);
-        return IterationBandColor<Color>(iteration, maxIter, params);
-    }
-
-    if (!escaped) {
-        return EscapeTimeColorMake<Color>(0, 0, 0, 255);
-    }
-
-    if (mode == ColoringMode::iteration_count) {
-        const float t = static_cast<float>(iteration) / static_cast<float>(maxIter);
-        const unsigned char value = static_cast<unsigned char>(EscapeTimeColorClamp(t, 0.0f, 1.0f) * 255.0f);
-        return EscapeTimeColorMake<Color>(64, value, static_cast<unsigned char>(255 - value), 255);
-    }
-
-    const float magnitude = EscapeTimeColorAbs(z);
-    const float logZn = logf(fmaxf(magnitude, 1.0e-12f));
-
-    float denom = logf(2.0f);
-    if (fractalType == FractalType::multibrot && params.multibrot_power_float > 1.0f) {
-        denom = logf(params.multibrot_power_float);
-    }
-
-    const float nu = static_cast<float>(iteration) + 1.0f - logf(fmaxf(logZn / denom, 1.0e-12f)) / denom;
-    const float band = nu * 0.025f;
-    const float frac = band - floorf(band);
-
-    const float stops[6][3] = {
-        {0.00f, 0.03f, 0.20f},
-        {0.05f, 0.35f, 0.65f},
-        {0.10f, 0.75f, 0.85f},
-        {0.95f, 0.85f, 0.25f},
-        {0.90f, 0.45f, 0.10f},
-        {0.00f, 0.03f, 0.20f},
-    };
-
-    const float u5 = frac * 5.0f;
-    int segment = static_cast<int>(u5);
-    if (segment > 4) segment = 4;
-    const float segT = u5 - static_cast<float>(segment);
-    const float rf = stops[segment][0] + (stops[segment + 1][0] - stops[segment][0]) * segT;
-    const float gf = stops[segment][1] + (stops[segment + 1][1] - stops[segment][1]) * segT;
-    const float bf = stops[segment][2] + (stops[segment + 1][2] - stops[segment][2]) * segT;
-
-    return EscapeTimeColorMake<Color>(
-        static_cast<unsigned char>(EscapeTimeColorClamp(rf, 0.0f, 1.0f) * 255.0f),
-        static_cast<unsigned char>(EscapeTimeColorClamp(gf, 0.0f, 1.0f) * 255.0f),
-        static_cast<unsigned char>(EscapeTimeColorClamp(bf, 0.0f, 1.0f) * 255.0f),
-        255);
+    return EscapeTimeColorFromRgb<Color>(
+        SampleEscapeHeatmap(
+            ResolveSmoothEscapeHeatmapBand(ComputeEscapeTimeNu(fractalType, iteration, EscapeTimeColorAbs(z), params), params),
+            params));
 }
 
 #undef ESCAPE_TIME_COLOR_HD

@@ -2285,7 +2285,13 @@ int main() {
     "color_iteration_band_count": 5,
     "color_iteration_band_softness": 0.8,
     "color_iteration_band_emphasis": 1.6,
-    "color_iteration_band_palette_offset": 0.4
+    "color_iteration_band_palette_offset": 0.4,
+    "color_smooth_escape_scale": 1.75,
+    "color_smooth_escape_bias": -0.2,
+    "color_heatmap_cycle_scale": 1.5,
+    "color_heatmap_saturation": 1.25,
+    "color_contrast_lift_exposure": 1.6,
+    "color_contrast_lift_saturation": 1.3
   },
   "render": { "width": 512, "height": 384, "block_size": 256, "device_id": 0 }
 })";
@@ -2305,8 +2311,14 @@ int main() {
             p.color_iteration_band_count != 5 ||
             !NearlyEqual(p.color_iteration_band_softness, 0.8, 0.001) ||
             !NearlyEqual(p.color_iteration_band_emphasis, 1.6, 0.001) ||
-            !NearlyEqual(p.color_iteration_band_palette_offset, 0.4, 0.001)) {
-            std::cerr << "phase/bands parameter fields mismatch\n";
+          !NearlyEqual(p.color_iteration_band_palette_offset, 0.4, 0.001) ||
+          !NearlyEqual(p.color_smooth_escape_scale, 1.75, 0.001) ||
+          !NearlyEqual(p.color_smooth_escape_bias, -0.2, 0.001) ||
+          !NearlyEqual(p.color_heatmap_cycle_scale, 1.5, 0.001) ||
+          !NearlyEqual(p.color_heatmap_saturation, 1.25, 0.001) ||
+          !NearlyEqual(p.color_contrast_lift_exposure, 1.6, 0.001) ||
+          !NearlyEqual(p.color_contrast_lift_saturation, 1.3, 0.001)) {
+          std::cerr << "phase/bands/advanced color parameter fields mismatch\n";
             return 1;
         }
     }

@@ -1,4 +1,5 @@
 #include "../src/escape_time_coloring.h"
+#include "../src/fractal_family_rules.h"
 
 #include <iostream>
 
@@ -24,6 +25,7 @@ bool Equals(TestColor left, TestColor right) {
 
 int main() {
     KernelParams params{};
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
     params.exposure = 1.0f;
     params.color_tint_r = 1.0f;
     params.color_tint_g = 1.0f;
@@ -44,6 +46,7 @@ int main() {
         return 1;
     }
 
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_count);
     if (!Equals(MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
             ColoringMode::iteration_count,
             false,
@@ -56,6 +59,7 @@ int main() {
         return 1;
     }
 
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_count);
     if (!Equals(MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
             ColoringMode::iteration_count,
             true,
@@ -69,6 +73,7 @@ int main() {
     }
 
     params.multibrot_power_float = 3.0f;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
     if (!Equals(MakeEscapeTimeBaseColor<TestColor>(FractalType::mandelbrot,
             ColoringMode::smooth_escape,
             true,
@@ -82,6 +87,7 @@ int main() {
     }
 
     params.multibrot_power_float = 4.0f;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
     if (!Equals(MakeEscapeTimeBaseColor<TestColor>(FractalType::multibrot,
             ColoringMode::smooth_escape,
             true,
@@ -100,6 +106,65 @@ int main() {
     }
 
     {
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_smooth_escape_scale = 1.0f;
+        params.color_smooth_escape_bias = 0.0f;
+        params.color_heatmap_cycle_scale = 1.0f;
+        params.color_heatmap_saturation = 1.0f;
+        params.color_contrast_lift_exposure = 1.0f;
+        params.color_contrast_lift_saturation = 1.0f;
+
+        const TestColor programmableBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+
+        params.color_smooth_escape_scale = 2.0f;
+        const TestColor scaledSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, scaledSignal)) {
+            std::cerr << "smooth_escape_ramp should react to its live scale owner field\n";
+            return 1;
+        }
+
+        params.color_smooth_escape_scale = 1.0f;
+        params.color_heatmap_cycle_scale = 2.0f;
+        const TestColor fasterHeatmap = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, fasterHeatmap)) {
+            std::cerr << "heatmap should react to its live cycle-scale owner field\n";
+            return 1;
+        }
+
+        params.color_heatmap_cycle_scale = 1.0f;
+        const TestColor gradedBase = ApplyFractalColorGrading(programmableBase, params);
+        params.color_contrast_lift_exposure = 1.8f;
+        params.color_contrast_lift_saturation = 1.5f;
+        const TestColor liftedGrade = ApplyFractalColorGrading(programmableBase, params);
+        if (Equals(gradedBase, liftedGrade)) {
+            std::cerr << "contrast_lift should react to its live exposure and saturation owner fields\n";
+            return 1;
+        }
+    }
+
+    {
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
         const TestComplex phaseCoord{1.0f, 1.0f};
         const TestColor phaseBase = MakeEscapeTimeBaseColor<TestColor>(
             FractalType::mandelbrot,
@@ -156,6 +221,7 @@ int main() {
     }
 
     {
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
         params.color_iteration_band_count = 8;
         params.color_iteration_band_softness = 0.0f;
         params.color_iteration_band_emphasis = 1.0f;
