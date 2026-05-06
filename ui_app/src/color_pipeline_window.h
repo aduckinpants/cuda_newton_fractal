@@ -365,11 +365,45 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
     };
 }
 
+inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::string& functionId) {
+    if (!laneId || laneId[0] == '\0') {
+        return false;
+    }
+
+    if (std::string(laneId) == "source") {
+        return functionId == "smooth_escape_ramp" ||
+            functionId == "phase_orbit" ||
+            functionId == "banded_signal";
+    }
+    if (std::string(laneId) == "shape") {
+        return functionId == "identity";
+    }
+    if (std::string(laneId) == "palette") {
+        return functionId == "heatmap" ||
+            functionId == "phase_wheel_palette" ||
+            functionId == "banded_heatmap";
+    }
+    return false;
+}
+
+inline std::vector<FunctionDescriptor> FilterRuntimeBackedColorPipelineFunctions(
+    const char* laneId,
+    std::vector<FunctionDescriptor> functions) {
+    std::vector<FunctionDescriptor> filtered;
+    filtered.reserve(functions.size());
+    for (FunctionDescriptor& descriptor : functions) {
+        if (IsColorPipelineFunctionRuntimeBacked(laneId, descriptor.id)) {
+            filtered.push_back(std::move(descriptor));
+        }
+    }
+    return filtered;
+}
+
 inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs() {
     static const std::vector<ColorPipelineLaneCatalog> catalogs = {
-        {"source", "Source", "smooth_escape_ramp", BuildColorPipelineSignalFunctions()},
-        {"shape", "Shape", "identity", BuildColorPipelineShapeFunctions()},
-        {"palette", "Palette", "heatmap", BuildColorPipelinePaletteFunctions()},
+        {"source", "Source", "smooth_escape_ramp", FilterRuntimeBackedColorPipelineFunctions("source", BuildColorPipelineSignalFunctions())},
+        {"shape", "Shape", "identity", FilterRuntimeBackedColorPipelineFunctions("shape", BuildColorPipelineShapeFunctions())},
+        {"palette", "Palette", "heatmap", FilterRuntimeBackedColorPipelineFunctions("palette", BuildColorPipelinePaletteFunctions())},
     };
     return catalogs;
 }

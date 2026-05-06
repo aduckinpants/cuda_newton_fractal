@@ -593,6 +593,13 @@ int main() {
             std::cerr << "Expected the starter Identity shape row to stay out of the current live-runtime-backed control surface\n";
             return 1;
         }
+        const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
+        if (!shapeCatalog ||
+            shapeCatalog->functions.size() != 1 ||
+            shapeCatalog->functions[0].id != "identity") {
+            std::cerr << "Expected the shipped Shape catalog to exclude draft-only rows until runtime Shape support lands\n";
+            return 1;
+        }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
             visibleParamIndexes.size() != 2 ||
             visibleParamIndexes[0] != 0 ||
@@ -630,23 +637,29 @@ int main() {
             std::cerr << "Expected runtime-backed advanced color functions to expose only their real renderable parameter controls\n";
             return 1;
         }
-        if (!AddColorPipelineLaneRow(&windowState, 1, "repeat") ||
+        if (!AddColorPipelineLaneRow(&windowState, 1, "identity") ||
             windowState.lanes[1].rows.size() != 2 ||
-            windowState.lanes[1].rows[1].function_id != "repeat" ||
+            windowState.lanes[1].rows[1].function_id != "identity" ||
             windowState.lanes[1].rows[1].ui_row_id != 4) {
-            std::cerr << "Expected the schedule-style Shape lane to support appending a second row with a stable row id\n";
+            std::cerr << "Expected the schedule-style Shape lane to support appending a second shipped row with a stable row id\n";
             return 1;
         }
         if (!MoveColorPipelineLaneRow(&windowState, 1, 1, -1) ||
-            windowState.lanes[1].rows[0].function_id != "repeat" ||
-            windowState.lanes[1].rows[1].function_id != "identity") {
+            windowState.lanes[1].rows[0].ui_row_id != 4 ||
+            windowState.lanes[1].rows[1].ui_row_id != 2) {
             std::cerr << "Expected schedule-style lane rows to support reorder operations\n";
             return 1;
         }
         if (!RemoveColorPipelineLaneRow(&windowState, 1, 1) ||
             windowState.lanes[1].rows.size() != 1 ||
-            windowState.lanes[1].rows[0].function_id != "repeat") {
+            windowState.lanes[1].rows[0].ui_row_id != 4 ||
+            windowState.lanes[1].rows[0].function_id != "identity") {
             std::cerr << "Expected schedule-style lane rows to support removing non-last rows\n";
+            return 1;
+        }
+        if (SelectColorPipelineLaneFunction(&windowState, 1, "repeat") ||
+            AddColorPipelineLaneRow(&windowState, 1, "repeat")) {
+            std::cerr << "Expected the shipped Shape lane to reject draft-only rows until the runtime backend supports them\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
@@ -756,13 +769,13 @@ int main() {
             return 1;
         }
 
-        if (!SelectColorPipelineLaneFunction(&windowState, 1, "repeat")) {
-            std::cerr << "Expected the rebuilt programmable editor to construct an unsupported Shape recipe from the shipped schedule catalog\n";
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "heatmap")) {
+            std::cerr << "Expected the rebuilt programmable editor to construct an unsupported shipped lane mix for preview-state coverage\n";
             return 1;
         }
         const ColorPipelineDraftApplyState invalidApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
         if (invalidApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
-            std::cerr << "Expected unsupported mixed tuples to classify as preview-only before apply\n";
+            std::cerr << "Expected unsupported shipped lane mixes to classify as preview-only before apply\n";
             return 1;
         }
         if (!AddColorPipelineLaneRow(&windowState, 1, "identity")) {

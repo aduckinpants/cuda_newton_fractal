@@ -25,6 +25,7 @@
     "ui_app/tests/test_runtime_walk_bootstrap.cpp"
   ],
   "required_operator_inputs": [
+    "cumulative external agent session descriptions and transcript corrections over time",
     "user schedule-editor spec for the advanced color window",
     "current advanced color window catalog",
     "live KernelParams color authority",
@@ -33,12 +34,14 @@
   "forbidden_operator_prompts": [
     "keep the fixed three-slot editor after the schedule-editor spec was clarified",
     "leave preview-only bait visible in the shipped catalog",
+    "keep draft-only Shape rows in the shipped selector while the runtime cannot execute them",
     "collapse grade lane into existing global post-color controls by convenience",
     "introduce a second editable color authority"
   ],
   "required_defaults": {
     "runtime_authority": "kernelparams_only",
     "catalog_honesty": "visible_entries_require_explicit_runtime_binding_classification",
+    "shipped_surface_honesty": "visible_rows_must_be_runtime_real_or_removed",
     "advanced_catalog_identity": "custom_function_ids_not_raw_legacy_enum_ids",
     "advanced_window_shape": "source_shape_palette_schedule_stacks",
     "shared_editor_surface": "reuse_imgui_stack_editor_helper",
@@ -49,6 +52,7 @@
   "forbidden_defaults": {
     "fake_live_parameter_knobs": "forbidden",
     "silent_preview_only_shipping_surface": "forbidden",
+    "draft_only_shipped_rows": "forbidden",
     "guessed_runtime_owner_mapping": "forbidden",
     "legacy_coloring_mode_alias_surface": "forbidden",
     "fixed_three_slot_editor_shape": "forbidden",
