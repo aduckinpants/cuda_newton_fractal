@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_slice3_window_editor",
+  "feature_id": "advanced_color_pipeline_window_editor",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_slice3_window_editor_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_slice3_window_editor_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "placeholder color pipeline window seam",
+    "FunctionParamDescriptor metadata vocabulary",
+    "shared ImGui stack-editor row chrome"
+  ],
+  "forbidden_operator_prompts": [
+    "renderer integration in slice 3",
+    "advanced window mutating KernelParams",
+    "dynamic lane counts",
+    "public schema changes"
+  ],
+  "required_defaults": {
+    "advanced_window_mode": "draft_only_fixed_three_lane_editor",
+    "descriptor_surface": "FunctionParamDescriptor_aligned",
+    "row_chrome_surface": "shared_imgui_stack_editor"
+  },
+  "forbidden_defaults": {
+    "second_live_authority": "forbidden",
+    "unknown_lane_function_fallback": "forbidden",
+    "renderer_dispatch_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_slice3_window_editor.contract.json --out-json artifacts/validation/advanced_color_pipeline_slice3_window_editor_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_slice3_contract_schema_valid",
+      "description": "The advanced color-pipeline slice-3 contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_slice3_window_editor_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_slice3_plan_sync_ok",
+      "description": "The advanced color-pipeline slice-3 phased plan stays synchronized during the window-editor slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

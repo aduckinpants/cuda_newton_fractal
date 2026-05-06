@@ -538,12 +538,49 @@ int main() {
     {
         ColorPipelineWindowState windowState{};
         if (windowState.open) {
-            std::cerr << "Expected placeholder color pipeline windows to start closed\n";
+            std::cerr << "Expected advanced color pipeline windows to start closed\n";
             return 1;
         }
         OpenColorPipelineWindow(&windowState);
         if (!windowState.open) {
-            std::cerr << "Expected the placeholder color pipeline helper to open the window state\n";
+            std::cerr << "Expected the advanced color pipeline helper to open the window state\n";
+            return 1;
+        }
+        if (!EnsureColorPipelineWindowInitialized(&windowState)) {
+            std::cerr << "Expected the advanced color pipeline window to initialize a fixed draft editor state\n";
+            return 1;
+        }
+        if (!windowState.initialized || windowState.lanes.size() != 3 || windowState.next_row_id != 4) {
+            std::cerr << "Expected the advanced color pipeline window to initialize exactly three fixed lanes with stable row ids\n";
+            return 1;
+        }
+        if (windowState.lanes[0].label != "Signal" || windowState.lanes[0].ui_row_id != 1 ||
+            windowState.lanes[1].label != "Palette" || windowState.lanes[1].ui_row_id != 2 ||
+            windowState.lanes[2].label != "Grade" || windowState.lanes[2].ui_row_id != 3) {
+            std::cerr << "Expected the advanced color pipeline draft lanes to keep deterministic labels and row ids\n";
+            return 1;
+        }
+        if (windowState.lanes[0].function_id != "smooth_escape_ramp" ||
+            windowState.lanes[1].function_id != "phase_wheel" ||
+            windowState.lanes[2].function_id != "contrast_lift") {
+            std::cerr << "Expected the advanced color pipeline draft editor to start from deterministic default functions\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "iteration_bands")) {
+            std::cerr << "Expected advanced color pipeline lane function selection to accept known lane-local functions\n";
+            return 1;
+        }
+        if (windowState.lanes[0].function_id != "iteration_bands" || windowState.lanes[0].parameter_values.size() != 3 ||
+            windowState.lanes[0].parameter_values[0].path != "signal.band_count") {
+            std::cerr << "Expected advanced color pipeline lane function changes to swap the descriptor-backed parameter surface\n";
+            return 1;
+        }
+        if (SelectColorPipelineLaneFunction(&windowState, 0, "not_real")) {
+            std::cerr << "Unknown advanced color lane functions should fail instead of silently falling back\n";
+            return 1;
+        }
+        if (windowState.lanes[0].function_id != "iteration_bands") {
+            std::cerr << "Failed advanced color lane selections should preserve the current function choice\n";
             return 1;
         }
     }
@@ -590,7 +627,7 @@ int main() {
         BeginFrame();
         ColorPipelineWindowState closedWindowState{};
         if (RenderColorPipelineWindow(&closedWindowState)) {
-            std::cerr << "Expected the placeholder color pipeline window helper to stay hidden while closed\n";
+            std::cerr << "Expected the advanced color pipeline window helper to stay hidden while closed\n";
             return 1;
         }
         EndFrame();
@@ -599,14 +636,56 @@ int main() {
         ColorPipelineWindowState openWindowState{};
         openWindowState.open = true;
         if (!RenderColorPipelineWindow(&openWindowState)) {
-            std::cerr << "Expected the placeholder color pipeline window helper to render once opened\n";
+            std::cerr << "Expected the advanced color pipeline window helper to render once opened\n";
             return 1;
         }
         if (!openWindowState.open) {
-            std::cerr << "Expected the placeholder color pipeline window helper to preserve the open state without user dismissal\n";
+            std::cerr << "Expected the advanced color pipeline window helper to preserve the open state without user dismissal\n";
+            return 1;
+        }
+        if (!openWindowState.initialized || openWindowState.lanes.size() != 3) {
+            std::cerr << "Expected the advanced color pipeline window to initialize the three-lane draft editor during render\n";
             return 1;
         }
         EndFrame();
+
+        BeginFrame();
+        if (!SelectColorPipelineLaneFunction(&openWindowState, 1, "heatmap")) {
+            std::cerr << "Expected advanced color pipeline lane changes to work after the window has rendered\n";
+            return 1;
+        }
+        if (!RenderColorPipelineWindow(&openWindowState)) {
+            std::cerr << "Expected the advanced color pipeline editor to keep rendering after a lane function change\n";
+            return 1;
+        }
+        if (openWindowState.lanes[1].function_id != "heatmap" || openWindowState.lanes[1].parameter_values.size() != 2 ||
+            openWindowState.lanes[1].parameter_values[0].path != "palette.warmth") {
+            std::cerr << "Expected advanced color pipeline renders to honor the switched descriptor-backed lane parameters\n";
+            return 1;
+        }
+        EndFrame();
+
+        openWindowState.lanes[1].function_id = "not_real";
+        ClearColorPipelineValidationMessages(&openWindowState);
+        BeginFrame();
+        if (!RenderColorPipelineWindow(&openWindowState)) {
+            std::cerr << "Expected the advanced color pipeline window to keep rendering even when a lane function id is invalid\n";
+            return 1;
+        }
+        EndFrame();
+        bool foundUnknownFunctionMessage = false;
+        for (const std::string& message : openWindowState.validation_messages) {
+            if (message.find("Unknown advanced color function 'not_real'") != std::string::npos) {
+                foundUnknownFunctionMessage = true;
+                break;
+            }
+        }
+        if (!foundUnknownFunctionMessage) {
+            std::cerr << "Expected invalid advanced color lane function ids to surface an explicit validation message\n";
+            return 1;
+        }
+        openWindowState.lanes[1].function_id = "phase_wheel";
+        ClearColorPipelineValidationMessages(&openWindowState);
 
         BeginFrame();
         std::vector<std::string> emptyValidationMessages;
