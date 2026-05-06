@@ -536,6 +536,8 @@ int main() {
     }
 
     {
+        ViewState view{};
+        KernelParams params{};
         ColorPipelineWindowState windowState{};
         if (windowState.open) {
             std::cerr << "Expected advanced color pipeline windows to start closed\n";
@@ -560,26 +562,77 @@ int main() {
             std::cerr << "Expected the advanced color pipeline draft lanes to keep deterministic labels and row ids\n";
             return 1;
         }
-        if (windowState.lanes[0].function_id != "smooth_escape_ramp" ||
-            windowState.lanes[1].function_id != "phase_wheel" ||
-            windowState.lanes[2].function_id != "contrast_lift") {
+        if (windowState.lanes[0].function_id != "root_index" ||
+            windowState.lanes[1].function_id != "root_classic" ||
+            windowState.lanes[2].function_id != "basin_default") {
             std::cerr << "Expected the advanced color pipeline draft editor to start from deterministic default functions\n";
             return 1;
         }
+
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to import the live runtime color pipeline into the draft model\n";
+            return 1;
+        }
+        if (!windowState.live_snapshot.valid || windowState.live_snapshot.coloring_mode != ColoringMode::phase ||
+            windowState.lanes[0].function_id != "phase_angle" ||
+            windowState.lanes[1].function_id != "phase_wheel" ||
+            windowState.lanes[2].function_id != "phase_default") {
+            std::cerr << "Expected the advanced color pipeline draft editor to import exact live runtime lane ids\n";
+            return 1;
+        }
+        if (HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected a freshly imported advanced color draft to match the live runtime selection\n";
+            return 1;
+        }
+
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "iteration_bands")) {
             std::cerr << "Expected advanced color pipeline lane function selection to accept known lane-local functions\n";
             return 1;
         }
-        if (windowState.lanes[0].function_id != "iteration_bands" || windowState.lanes[0].parameter_values.size() != 3 ||
+        if (!HasColorPipelineDraftEdits(windowState) ||
+            windowState.lanes[0].function_id != "iteration_bands" ||
+            windowState.lanes[0].parameter_values.size() != 2 ||
             windowState.lanes[0].parameter_values[0].path != "signal.band_count") {
-            std::cerr << "Expected advanced color pipeline lane function changes to swap the descriptor-backed parameter surface\n";
+            std::cerr << "Expected advanced color pipeline lane edits to diverge from the imported live draft baseline\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::phase ||
+            params.color_pipeline.signal != ColorSignal::phase_angle ||
+            params.color_pipeline.palette != ColorPalette::phase_wheel ||
+            params.color_pipeline.grading != ColorGradingPreset::phase_default) {
+            std::cerr << "Expected advanced color pipeline draft edits to leave KernelParams unchanged\n";
+            return 1;
+        }
+
+        params.coloring_mode = ColoringMode::root_basin;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::root_basin);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected live color pipeline updates to refresh the advanced window live snapshot\n";
+            return 1;
+        }
+        if (!windowState.live_snapshot.valid ||
+            windowState.live_snapshot.lanes[0].function_id != "root_index" ||
+            windowState.live_snapshot.lanes[1].function_id != "root_classic" ||
+            windowState.live_snapshot.lanes[2].function_id != "basin_default" ||
+            windowState.lanes[0].function_id != "iteration_bands") {
+            std::cerr << "Expected an already-diverged draft to preserve its lane choices while the live snapshot updates\n";
+            return 1;
+        }
+        if (!ResetColorPipelineDraftFromLiveState(&windowState) ||
+            HasColorPipelineDraftEdits(windowState) ||
+            windowState.lanes[0].function_id != "root_index" ||
+            windowState.lanes[1].function_id != "root_classic" ||
+            windowState.lanes[2].function_id != "basin_default") {
+            std::cerr << "Expected advanced color pipeline reset-to-live to restore the imported runtime baseline\n";
             return 1;
         }
         if (SelectColorPipelineLaneFunction(&windowState, 0, "not_real")) {
             std::cerr << "Unknown advanced color lane functions should fail instead of silently falling back\n";
             return 1;
         }
-        if (windowState.lanes[0].function_id != "iteration_bands") {
+        if (windowState.lanes[0].function_id != "root_index") {
             std::cerr << "Failed advanced color lane selections should preserve the current function choice\n";
             return 1;
         }
@@ -624,9 +677,12 @@ int main() {
         LensSettings lens{};
         BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
 
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+
         BeginFrame();
         ColorPipelineWindowState closedWindowState{};
-        if (RenderColorPipelineWindow(&closedWindowState)) {
+        if (RenderColorPipelineWindow(&closedWindowState, view.fractal_type, &params)) {
             std::cerr << "Expected the advanced color pipeline window helper to stay hidden while closed\n";
             return 1;
         }
@@ -635,7 +691,7 @@ int main() {
         BeginFrame();
         ColorPipelineWindowState openWindowState{};
         openWindowState.open = true;
-        if (!RenderColorPipelineWindow(&openWindowState)) {
+        if (!RenderColorPipelineWindow(&openWindowState, view.fractal_type, &params)) {
             std::cerr << "Expected the advanced color pipeline window helper to render once opened\n";
             return 1;
         }
@@ -643,24 +699,30 @@ int main() {
             std::cerr << "Expected the advanced color pipeline window helper to preserve the open state without user dismissal\n";
             return 1;
         }
-        if (!openWindowState.initialized || openWindowState.lanes.size() != 3) {
-            std::cerr << "Expected the advanced color pipeline window to initialize the three-lane draft editor during render\n";
+        if (!openWindowState.initialized || !openWindowState.live_snapshot.valid || openWindowState.lanes.size() != 3 ||
+            openWindowState.lanes[0].function_id != "phase_angle" ||
+            openWindowState.lanes[1].function_id != "phase_wheel" ||
+            openWindowState.lanes[2].function_id != "phase_default") {
+            std::cerr << "Expected the advanced color pipeline window to import the live runtime pipeline during render\n";
             return 1;
         }
         EndFrame();
 
         BeginFrame();
-        if (!SelectColorPipelineLaneFunction(&openWindowState, 1, "heatmap")) {
+        if (!SelectColorPipelineLaneFunction(&openWindowState, 1, "banded_escape")) {
             std::cerr << "Expected advanced color pipeline lane changes to work after the window has rendered\n";
             return 1;
         }
-        if (!RenderColorPipelineWindow(&openWindowState)) {
+        if (!RenderColorPipelineWindow(&openWindowState, view.fractal_type, &params)) {
             std::cerr << "Expected the advanced color pipeline editor to keep rendering after a lane function change\n";
             return 1;
         }
-        if (openWindowState.lanes[1].function_id != "heatmap" || openWindowState.lanes[1].parameter_values.size() != 2 ||
-            openWindowState.lanes[1].parameter_values[0].path != "palette.warmth") {
-            std::cerr << "Expected advanced color pipeline renders to honor the switched descriptor-backed lane parameters\n";
+        if (!HasColorPipelineDraftEdits(openWindowState) ||
+            openWindowState.lanes[1].function_id != "banded_escape" ||
+            openWindowState.lanes[1].parameter_values.size() != 2 ||
+            openWindowState.lanes[1].parameter_values[0].path != "palette.band_emphasis" ||
+            params.color_pipeline.palette != ColorPalette::phase_wheel) {
+            std::cerr << "Expected advanced color pipeline renders to honor switched draft parameters without mutating the live runtime palette\n";
             return 1;
         }
         EndFrame();
@@ -668,7 +730,7 @@ int main() {
         openWindowState.lanes[1].function_id = "not_real";
         ClearColorPipelineValidationMessages(&openWindowState);
         BeginFrame();
-        if (!RenderColorPipelineWindow(&openWindowState)) {
+        if (!RenderColorPipelineWindow(&openWindowState, view.fractal_type, &params)) {
             std::cerr << "Expected the advanced color pipeline window to keep rendering even when a lane function id is invalid\n";
             return 1;
         }
