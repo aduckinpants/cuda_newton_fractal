@@ -2255,6 +2255,62 @@ int main() {
         if (!NearlyEqual(p.color_tint_r, 1.0, 0.01)) { std::cerr << "v2 color_tint_r should be default 1.0\n"; return 1; }
     }
 
+    {
+        const fs::path statePath = tempRoot / "v3_phase_bands_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "phase",
+    "color_signal": "phase_angle",
+    "color_palette": "phase_wheel",
+    "color_grading": "phase_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0],
+    "color_phase_signal_offset": 1.25,
+    "color_phase_wrap_cycles": 2.5,
+    "color_phase_palette_offset": -0.75,
+    "color_iteration_band_count": 5,
+    "color_iteration_band_softness": 0.8,
+    "color_iteration_band_emphasis": 1.6,
+    "color_iteration_band_palette_offset": 0.4
+  },
+  "render": { "width": 512, "height": 384, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V3 phase/bands parameter load failed: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(p.color_phase_signal_offset, 1.25, 0.001) ||
+            !NearlyEqual(p.color_phase_wrap_cycles, 2.5, 0.001) ||
+            !NearlyEqual(p.color_phase_palette_offset, -0.75, 0.001) ||
+            p.color_iteration_band_count != 5 ||
+            !NearlyEqual(p.color_iteration_band_softness, 0.8, 0.001) ||
+            !NearlyEqual(p.color_iteration_band_emphasis, 1.6, 0.001) ||
+            !NearlyEqual(p.color_iteration_band_palette_offset, 0.4, 0.001)) {
+            std::cerr << "phase/bands parameter fields mismatch\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }

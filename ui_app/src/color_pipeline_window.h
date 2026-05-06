@@ -319,6 +319,11 @@ inline std::string ResolveColorPipelineEnumDefault(const FunctionParamDescriptor
     return {};
 }
 
+inline bool ImportSupportedColorPipelineParamsFromLive(
+    ColorPipelineLaneState* ioLane,
+    const KernelParams& liveParams,
+    std::string* outError = nullptr);
+
 inline void ClearColorPipelineValidationMessages(ColorPipelineWindowState* ioState) {
     if (!ioState) {
         return;
@@ -404,7 +409,7 @@ inline bool ColorPipelineParamStatesEqual(
     const ColorPipelineParamState& right) {
     return left.path == right.path &&
         left.type == right.type &&
-        std::fabs(left.number_value - right.number_value) <= 1e-9 &&
+    std::fabs(left.number_value - right.number_value) <= 1e-6 &&
         left.bool_value == right.bool_value &&
         left.enum_value == right.enum_value;
 }
@@ -496,6 +501,9 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     for (std::size_t index = 0; index < catalogs.size(); ++index) {
         ColorPipelineLaneState lane;
         if (!BuildColorPipelineLaneFromFunctionId(catalogs[index], laneFunctionIds[index], 0, &lane, outError)) {
+            return false;
+        }
+        if (!ImportSupportedColorPipelineParamsFromLive(&lane, liveParams, outError)) {
             return false;
         }
         snapshot.lanes.push_back(std::move(lane));
@@ -596,6 +604,211 @@ inline bool SelectColorPipelineLaneFunction(
     return SetColorPipelineLaneFunction(&lane, *descriptor);
 }
 
+inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const std::string& path) {
+    if (functionId == "phase_angle") {
+        return path == "signal.phase_offset" || path == "signal.wrap_cycles";
+    }
+    if (functionId == "phase_wheel") {
+        return path == "palette.phase_offset";
+    }
+    if (functionId == "iteration_bands") {
+        return path == "signal.band_count" || path == "signal.softness";
+    }
+    if (functionId == "banded_escape") {
+        return path == "palette.band_emphasis" || path == "palette.phase_offset";
+    }
+    return false;
+}
+
+inline bool TryGetColorPipelineParamNumber(
+    const ColorPipelineLaneState& lane,
+    const char* path,
+    double* outValue,
+    std::string* outError = nullptr) {
+    if (!path || !outValue) {
+        if (outError) *outError = "Advanced color parameter lookup requires a path and output storage";
+        return false;
+    }
+    for (const ColorPipelineParamState& param : lane.parameter_values) {
+        if (param.path == path) {
+            *outValue = param.number_value;
+            return true;
+        }
+    }
+    if (outError) *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + lane.function_id + "'";
+    return false;
+}
+
+inline bool SetColorPipelineParamNumber(
+    ColorPipelineLaneState* ioLane,
+    const char* path,
+    double value,
+    std::string* outError = nullptr) {
+    if (!ioLane || !path) {
+        if (outError) *outError = "Advanced color parameter import requires a lane and parameter path";
+        return false;
+    }
+    for (ColorPipelineParamState& param : ioLane->parameter_values) {
+        if (param.path == path) {
+            param.number_value = value;
+            return true;
+        }
+    }
+    if (outError) *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + ioLane->function_id + "'";
+    return false;
+}
+
+inline bool ImportSupportedColorPipelineParamsFromLive(
+    ColorPipelineLaneState* ioLane,
+    const KernelParams& liveParams,
+    std::string* outError) {
+    if (!ioLane) {
+        if (outError) *outError = "Advanced color parameter import requires a lane";
+        return false;
+    }
+    if (ioLane->function_id == "phase_angle") {
+        return SetColorPipelineParamNumber(ioLane, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
+            SetColorPipelineParamNumber(ioLane, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
+    }
+    if (ioLane->function_id == "phase_wheel") {
+        return SetColorPipelineParamNumber(ioLane, "palette.phase_offset", liveParams.color_phase_palette_offset, outError);
+    }
+    if (ioLane->function_id == "iteration_bands") {
+        return SetColorPipelineParamNumber(ioLane, "signal.band_count", static_cast<double>(liveParams.color_iteration_band_count), outError) &&
+            SetColorPipelineParamNumber(ioLane, "signal.softness", liveParams.color_iteration_band_softness, outError);
+    }
+    if (ioLane->function_id == "banded_escape") {
+        return SetColorPipelineParamNumber(ioLane, "palette.band_emphasis", liveParams.color_iteration_band_emphasis, outError) &&
+            SetColorPipelineParamNumber(ioLane, "palette.phase_offset", liveParams.color_iteration_band_palette_offset, outError);
+    }
+    return true;
+}
+
+inline bool ValidateColorPipelineParamRange(
+    const char* path,
+    double value,
+    double minValue,
+    double maxValue,
+    std::string* outError = nullptr) {
+    if (value < minValue || value > maxValue) {
+        if (outError) {
+            *outError = std::string("Advanced color parameter '") + path + "' is outside its supported range";
+        }
+        return false;
+    }
+    return true;
+}
+
+inline bool TryReadColorPipelineIntegerParam(
+    const ColorPipelineLaneState& lane,
+    const char* path,
+    int* outValue,
+    std::string* outError = nullptr) {
+    double value = 0.0;
+    if (!TryGetColorPipelineParamNumber(lane, path, &value, outError)) {
+        return false;
+    }
+    const double rounded = std::round(value);
+    if (std::fabs(value - rounded) > 1.0e-6) {
+        if (outError) *outError = std::string("Advanced color parameter '") + path + "' must be an integer";
+        return false;
+    }
+    *outValue = static_cast<int>(rounded);
+    return true;
+}
+
+inline bool ApplySupportedColorPipelineParamsToLive(
+    const ColorPipelineWindowState& state,
+    KernelParams* ioParams,
+    bool* outChanged = nullptr,
+    std::string* outError = nullptr) {
+    if (outChanged) {
+        *outChanged = false;
+    }
+    if (!ioParams) {
+        if (outError) *outError = "Advanced color parameter apply requires live KernelParams";
+        return false;
+    }
+
+    bool changed = false;
+    for (const ColorPipelineLaneState& lane : state.lanes) {
+        if (lane.function_id == "phase_angle") {
+            double phaseOffset = 0.0;
+            double wrapCycles = 0.0;
+            if (!TryGetColorPipelineParamNumber(lane, "signal.phase_offset", &phaseOffset, outError) ||
+                !TryGetColorPipelineParamNumber(lane, "signal.wrap_cycles", &wrapCycles, outError) ||
+                !ValidateColorPipelineParamRange("signal.phase_offset", phaseOffset, -3.141592653589793, 3.141592653589793, outError) ||
+                !ValidateColorPipelineParamRange("signal.wrap_cycles", wrapCycles, 0.5, 6.0, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_phase_signal_offset - static_cast<float>(phaseOffset)) > 1.0e-6f) {
+                ioParams->color_phase_signal_offset = static_cast<float>(phaseOffset);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_phase_wrap_cycles - static_cast<float>(wrapCycles)) > 1.0e-6f) {
+                ioParams->color_phase_wrap_cycles = static_cast<float>(wrapCycles);
+                changed = true;
+            }
+            continue;
+        }
+        if (lane.function_id == "phase_wheel") {
+            double paletteOffset = 0.0;
+            if (!TryGetColorPipelineParamNumber(lane, "palette.phase_offset", &paletteOffset, outError) ||
+                !ValidateColorPipelineParamRange("palette.phase_offset", paletteOffset, -3.141592653589793, 3.141592653589793, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_phase_palette_offset - static_cast<float>(paletteOffset)) > 1.0e-6f) {
+                ioParams->color_phase_palette_offset = static_cast<float>(paletteOffset);
+                changed = true;
+            }
+            continue;
+        }
+        if (lane.function_id == "iteration_bands") {
+            int bandCount = 0;
+            double softness = 0.0;
+            if (!TryReadColorPipelineIntegerParam(lane, "signal.band_count", &bandCount, outError) ||
+                !TryGetColorPipelineParamNumber(lane, "signal.softness", &softness, outError) ||
+                !ValidateColorPipelineParamRange("signal.band_count", static_cast<double>(bandCount), 2.0, 24.0, outError) ||
+                !ValidateColorPipelineParamRange("signal.softness", softness, 0.0, 1.0, outError)) {
+                return false;
+            }
+            if (ioParams->color_iteration_band_count != bandCount) {
+                ioParams->color_iteration_band_count = bandCount;
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_iteration_band_softness - static_cast<float>(softness)) > 1.0e-6f) {
+                ioParams->color_iteration_band_softness = static_cast<float>(softness);
+                changed = true;
+            }
+            continue;
+        }
+        if (lane.function_id == "banded_escape") {
+            double emphasis = 0.0;
+            double paletteOffset = 0.0;
+            if (!TryGetColorPipelineParamNumber(lane, "palette.band_emphasis", &emphasis, outError) ||
+                !TryGetColorPipelineParamNumber(lane, "palette.phase_offset", &paletteOffset, outError) ||
+                !ValidateColorPipelineParamRange("palette.band_emphasis", emphasis, 0.0, 2.0, outError) ||
+                !ValidateColorPipelineParamRange("palette.phase_offset", paletteOffset, -3.141592653589793, 3.141592653589793, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_iteration_band_emphasis - static_cast<float>(emphasis)) > 1.0e-6f) {
+                ioParams->color_iteration_band_emphasis = static_cast<float>(emphasis);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_iteration_band_palette_offset - static_cast<float>(paletteOffset)) > 1.0e-6f) {
+                ioParams->color_iteration_band_palette_offset = static_cast<float>(paletteOffset);
+                changed = true;
+            }
+            continue;
+        }
+    }
+
+    if (outChanged) {
+        *outChanged = changed;
+    }
+    return true;
+}
+
 inline bool TryBuildColorPipelineSelectionFromDraft(
     const ColorPipelineWindowState& state,
     ColorPipelineSelection* outPipeline,
@@ -689,13 +902,19 @@ inline bool ApplyColorPipelineDraftToLiveState(
         ioParams->color_pipeline.palette != nextPipeline.palette ||
         ioParams->color_pipeline.grading != nextPipeline.grading;
 
+    bool paramChanged = false;
+    if (!ApplySupportedColorPipelineParamsToLive(*ioState, ioParams, &paramChanged, &error)) {
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+
     ioParams->coloring_mode = nextMode;
     ioParams->color_pipeline = nextPipeline;
     if (!SyncColorPipelineWindowFromLiveState(ioState, liveFractalType, ioParams)) {
         return false;
     }
     if (outChanged) {
-        *outChanged = changed;
+        *outChanged = changed || paramChanged;
     }
     return true;
 }
@@ -782,7 +1001,7 @@ inline void RenderColorPipelineWindowSummary(
     KernelParams* liveParams,
     bool* ioDirty) {
     ImGui::TextWrapped("Live slot editor: applying Signal / Palette / Grade here updates the same runtime color tuple used by the main Color panel.");
-    ImGui::TextDisabled("Function parameter tuning controls remain preview-only until their runtime owner fields land in a later slice.");
+    ImGui::TextDisabled("Phase and iteration-bands tuning controls are live in this slice; unsupported function knobs remain preview-only.");
     ImGui::Separator();
     if (ioState && ioState->live_snapshot.valid) {
         ImGui::TextWrapped(
@@ -872,14 +1091,29 @@ inline void RenderColorPipelineWindowLane(
             ImGui::TextWrapped("%s", currentDescriptor->description.c_str());
         }
         if (!currentDescriptor->parameters.empty()) {
-            ImGui::BeginDisabled();
+            bool hasLiveParams = false;
+            bool hasPreviewOnlyParams = false;
             for (std::size_t paramIndex = 0; paramIndex < currentDescriptor->parameters.size() &&
                     paramIndex < lane.parameter_values.size();
                  ++paramIndex) {
+                const bool liveParam = IsLiveColorPipelineParamPath(
+                    lane.function_id,
+                    currentDescriptor->parameters[paramIndex].path);
+                hasLiveParams = hasLiveParams || liveParam;
+                hasPreviewOnlyParams = hasPreviewOnlyParams || !liveParam;
+                if (!liveParam) {
+                    ImGui::BeginDisabled();
+                }
                 RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &lane.parameter_values[paramIndex]);
+                if (!liveParam) {
+                    ImGui::EndDisabled();
+                }
             }
-            ImGui::EndDisabled();
-            ImGui::TextDisabled("Parameter tuning preview only in this slice.");
+            if (!hasLiveParams) {
+                ImGui::TextDisabled("Parameter tuning preview only in this slice.");
+            } else if (hasPreviewOnlyParams) {
+                ImGui::TextDisabled("Only the enabled controls are live in this slice.");
+            }
         }
     });
 }

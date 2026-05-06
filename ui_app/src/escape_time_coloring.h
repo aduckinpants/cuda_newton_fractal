@@ -15,6 +15,18 @@ ESCAPE_TIME_COLOR_HD inline Scalar EscapeTimeColorClamp(Scalar value, Scalar lo,
     return value < lo ? lo : (value > hi ? hi : value);
 }
 
+ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorLerp(float a, float b, float t) {
+    return a + (b - a) * t;
+}
+
+ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorSmoothstep(float edge0, float edge1, float x) {
+    if (edge1 <= edge0) {
+        return x >= edge1 ? 1.0f : 0.0f;
+    }
+    const float t = EscapeTimeColorClamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color EscapeTimeColorMake(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255) {
     return {r, g, b, a};
@@ -32,6 +44,9 @@ ESCAPE_TIME_COLOR_HD inline Color EscapeTimeColorMulRgb(Color color, float scale
         static_cast<unsigned char>(EscapeTimeColorClamp(b, 0, 255)),
         255);
 }
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color HsvToRgb(float h, float s, float v);
 
 ESCAPE_TIME_COLOR_HD inline unsigned char EscapeTimeColorToneMap(unsigned char value, float exposure) {
     float x = (static_cast<float>(value) / 255.0f) * exposure;
@@ -68,6 +83,16 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const Ke
         color.w);
 }
 
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color MakePhaseAngleColor(float angle, bool brightValue, const KernelParams& params) {
+    const float twoPi = 6.28318530717958647692f;
+    const float wrapCycles = params.color_phase_wrap_cycles < 0.5f ? 0.5f : params.color_phase_wrap_cycles;
+    const float hue = ((angle + params.color_phase_signal_offset) / twoPi) * wrapCycles +
+        (params.color_phase_palette_offset / twoPi);
+    const float value = brightValue ? 0.85f : 0.25f;
+    return HsvToRgb<Color>(hue, 0.9f, value);
+}
+
 template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorAbs(Complex value) {
     return sqrtf(value.x * value.x + value.y * value.y);
@@ -97,26 +122,57 @@ ESCAPE_TIME_COLOR_HD inline Color HsvToRgb(float h, float s, float v) {
         255);
 }
 
+struct EscapeTimeColorRgb {
+    float r;
+    float g;
+    float b;
+};
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleIterationBandPalette(float rawBand, int bandCount, float softness) {
+    const float palette[8][3] = {
+        {0.05f, 0.15f, 0.45f}, {0.10f, 0.50f, 0.70f}, {0.15f, 0.75f, 0.55f}, {0.65f, 0.85f, 0.20f},
+        {0.95f, 0.75f, 0.15f}, {0.90f, 0.40f, 0.10f}, {0.70f, 0.15f, 0.30f}, {0.40f, 0.10f, 0.55f},
+    };
+    int bandIndex = static_cast<int>(floorf(rawBand)) % bandCount;
+    if (bandIndex < 0) bandIndex += bandCount;
+    const int paletteIndex = bandIndex % 8;
+    const int nextPaletteIndex = (paletteIndex + 1) % 8;
+    const float frac = rawBand - floorf(rawBand);
+    const float blend = softness <= 0.0f
+        ? 0.0f
+        : EscapeTimeColorSmoothstep(0.5f - 0.5f * softness, 0.5f + 0.5f * softness, frac);
+    return {
+        EscapeTimeColorLerp(palette[paletteIndex][0], palette[nextPaletteIndex][0], blend),
+        EscapeTimeColorLerp(palette[paletteIndex][1], palette[nextPaletteIndex][1], blend),
+        EscapeTimeColorLerp(palette[paletteIndex][2], palette[nextPaletteIndex][2], blend),
+    };
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyIterationBandEmphasis(EscapeTimeColorRgb rgb, float emphasis) {
+    const float lum = 0.299f * rgb.r + 0.587f * rgb.g + 0.114f * rgb.b;
+    rgb.r = EscapeTimeColorClamp(lum + emphasis * (rgb.r - lum), 0.0f, 1.0f);
+    rgb.g = EscapeTimeColorClamp(lum + emphasis * (rgb.g - lum), 0.0f, 1.0f);
+    rgb.b = EscapeTimeColorClamp(lum + emphasis * (rgb.b - lum), 0.0f, 1.0f);
+    return rgb;
+}
+
 // Cyclic iteration-band palette (8 distinct hues).
 template <typename Color>
-ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter) {
-    const float palette[8][3] = {
-        {0.05f, 0.15f, 0.45f},
-        {0.10f, 0.50f, 0.70f},
-        {0.15f, 0.75f, 0.55f},
-        {0.65f, 0.85f, 0.20f},
-        {0.95f, 0.75f, 0.15f},
-        {0.90f, 0.40f, 0.10f},
-        {0.70f, 0.15f, 0.30f},
-        {0.40f, 0.10f, 0.55f},
-    };
-    int idx = iteration % 8;
-    float t = static_cast<float>(iteration) / static_cast<float>(maxIter);
-    float bright = 1.0f - 0.4f * t;
+ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter, const KernelParams& params) {
+    const int safeMaxIter = maxIter > 0 ? maxIter : 1;
+    const int bandCount = params.color_iteration_band_count < 2 ? 2 : params.color_iteration_band_count;
+    const float softness = EscapeTimeColorClamp(params.color_iteration_band_softness, 0.0f, 1.0f);
+    const float emphasis = EscapeTimeColorClamp(params.color_iteration_band_emphasis, 0.0f, 2.0f);
+    const float twoPi = 6.28318530717958647692f;
+    const float paletteOffset = (params.color_iteration_band_palette_offset / twoPi) * static_cast<float>(bandCount);
+    const float t = static_cast<float>(iteration) / static_cast<float>(safeMaxIter);
+    EscapeTimeColorRgb rgb = SampleIterationBandPalette(t * static_cast<float>(bandCount) + paletteOffset, bandCount, softness);
+    rgb = ApplyIterationBandEmphasis(rgb, emphasis);
+    const float bright = 1.0f - 0.4f * t;
     return EscapeTimeColorMake<Color>(
-        static_cast<unsigned char>(EscapeTimeColorClamp(palette[idx][0] * bright, 0.0f, 1.0f) * 255.0f),
-        static_cast<unsigned char>(EscapeTimeColorClamp(palette[idx][1] * bright, 0.0f, 1.0f) * 255.0f),
-        static_cast<unsigned char>(EscapeTimeColorClamp(palette[idx][2] * bright, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(rgb.r * bright, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(rgb.g * bright, 0.0f, 1.0f) * 255.0f),
+        static_cast<unsigned char>(EscapeTimeColorClamp(rgb.b * bright, 0.0f, 1.0f) * 255.0f),
         255);
 }
 
@@ -137,15 +193,12 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     }
 
     if (mode == ColoringMode::phase) {
-        float angle = atan2f(z.y, z.x);
-        float h = (angle + 3.14159265f) / (2.0f * 3.14159265f);
-        float v = escaped ? 0.85f : 0.25f;
-        return HsvToRgb<Color>(h, 0.9f, v);
+        return MakePhaseAngleColor<Color>(atan2f(z.y, z.x), escaped, params);
     }
 
     if (mode == ColoringMode::iteration_bands) {
         if (!escaped) return EscapeTimeColorMake<Color>(0, 0, 0, 255);
-        return IterationBandColor<Color>(iteration, maxIter);
+        return IterationBandColor<Color>(iteration, maxIter, params);
     }
 
     if (!escaped) {

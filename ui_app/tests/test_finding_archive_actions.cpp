@@ -139,6 +139,13 @@ int main() {
         params.explaino_seed = -3.0;
         params.explaino_seed_b = -7.5;
         params.explaino_root_spread = 1.75f;
+        params.color_phase_signal_offset = 1.25f;
+        params.color_phase_wrap_cycles = 2.5f;
+        params.color_phase_palette_offset = -0.75f;
+        params.color_iteration_band_count = 5;
+        params.color_iteration_band_softness = 0.8f;
+        params.color_iteration_band_emphasis = 1.6f;
+        params.color_iteration_band_palette_offset = 0.4f;
         RenderSettings render{};
         render.resolution = {64, 48};
         RenderStats stats{};
@@ -166,6 +173,8 @@ int main() {
         }
         if (stateJson.find("\"explaino_phase_strength\": -2.5") == std::string::npos ||
             stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos ||
+            stateJson.find("\"color_phase_signal_offset\": 1.25") == std::string::npos ||
+            stateJson.find("\"color_iteration_band_count\": 5") == std::string::npos ||
             stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
             stateJson.find("\"interaction_debounce_ms\": 200") == std::string::npos ||
             stateJson.find("\"preview_target_fps\": 30") == std::string::npos ||
@@ -174,7 +183,7 @@ int main() {
             stateJson.find("\"import_signature\": \"9007199254740993\"") == std::string::npos ||
             stateJson.find("\"pack_projection_hash\": \"18446744073709551614\"") == std::string::npos ||
             stateJson.find("\"field_embedding_stats\": 5.5") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist Explaino fields, adaptive preview pacing, and optional sidecar orientation state\n";
+            std::cerr << "Expected diagnostics capture to persist Explaino fields, phase/bands color params, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
         if (stateJson.find("\"color_signal\": \"root_index\"") == std::string::npos ||

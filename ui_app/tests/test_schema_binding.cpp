@@ -64,6 +64,11 @@ UISchemaControl MakeBoundControl(const char* id, const char* type, const char* l
     return control;
 }
 
+bool NearlyEqual(double left, double right, double eps = 1.0e-6) {
+    const double delta = left - right;
+    return delta < eps && delta > -eps;
+}
+
 } // namespace
 
 int main() {
@@ -681,6 +686,79 @@ int main() {
             windowState.live_snapshot.pipeline.palette != ColorPalette::banded_escape ||
             windowState.live_snapshot.pipeline.grading != ColorGradingPreset::bands_default) {
             std::cerr << "Expected advanced color apply to update KernelParams and resync the live snapshot to the applied tuple\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        ColorPipelineWindowState windowState{};
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline parameter RED to import a live phase baseline\n";
+            return 1;
+        }
+
+        auto setParam = [](ColorPipelineLaneState& lane, const char* path, double value) {
+            for (ColorPipelineParamState& param : lane.parameter_values) {
+                if (param.path == path) {
+                    param.number_value = value;
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if (!setParam(windowState.lanes[0], "signal.phase_offset", 1.25) ||
+            !setParam(windowState.lanes[0], "signal.wrap_cycles", 2.5) ||
+            !setParam(windowState.lanes[1], "palette.phase_offset", -0.75)) {
+            std::cerr << "Expected the advanced color pipeline parameter RED to find the live phase parameter controls\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline parameter RED to apply the current phase tuple successfully\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.color_phase_signal_offset, 1.25) ||
+            !NearlyEqual(params.color_phase_wrap_cycles, 2.5) ||
+            !NearlyEqual(params.color_phase_palette_offset, -0.75) ||
+            HasColorPipelineDraftEdits(windowState) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[0].parameter_values[0].number_value, 1.25) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[0].parameter_values[1].number_value, 2.5) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[1].parameter_values[0].number_value, -0.75)) {
+            std::cerr << "Expected the advanced color pipeline window to write and reimport supported phase parameter values\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "iteration_bands") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "banded_escape") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "bands_default")) {
+            std::cerr << "Expected the advanced color pipeline parameter RED to construct a legal bands tuple\n";
+            return 1;
+        }
+        if (!setParam(windowState.lanes[0], "signal.band_count", 5.0) ||
+            !setParam(windowState.lanes[0], "signal.softness", 0.8) ||
+            !setParam(windowState.lanes[1], "palette.band_emphasis", 1.6) ||
+            !setParam(windowState.lanes[1], "palette.phase_offset", 0.4)) {
+            std::cerr << "Expected the advanced color pipeline parameter RED to find the live bands parameter controls\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline parameter RED to apply the current bands tuple successfully\n";
+            return 1;
+        }
+        if (params.color_iteration_band_count != 5 ||
+            !NearlyEqual(params.color_iteration_band_softness, 0.8) ||
+            !NearlyEqual(params.color_iteration_band_emphasis, 1.6) ||
+            !NearlyEqual(params.color_iteration_band_palette_offset, 0.4) ||
+            HasColorPipelineDraftEdits(windowState) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[0].parameter_values[0].number_value, 5.0) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[0].parameter_values[1].number_value, 0.8) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[1].parameter_values[0].number_value, 1.6) ||
+            !NearlyEqual(windowState.live_snapshot.lanes[1].parameter_values[1].number_value, 0.4)) {
+            std::cerr << "Expected the advanced color pipeline window to write and reimport supported bands parameter values\n";
             return 1;
         }
     }

@@ -721,16 +721,51 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorTintR = nextParams.color_tint_r;
     double colorTintG = nextParams.color_tint_g;
     double colorTintB = nextParams.color_tint_b;
+    double colorPhaseSignalOffset = nextParams.color_phase_signal_offset;
+    double colorPhaseWrapCycles = nextParams.color_phase_wrap_cycles;
+    double colorPhasePaletteOffset = nextParams.color_phase_palette_offset;
+    int colorIterationBandCount = nextParams.color_iteration_band_count;
+    double colorIterationBandCountRaw = static_cast<double>(colorIterationBandCount);
+    double colorIterationBandSoftness = nextParams.color_iteration_band_softness;
+    double colorIterationBandEmphasis = nextParams.color_iteration_band_emphasis;
+    double colorIterationBandPaletteOffset = nextParams.color_iteration_band_palette_offset;
     if (!GetOptionalNumber(*paramsObject, "color_saturation", &colorSaturation, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast", &colorContrast, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_r", &colorTintR, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_g", &colorTintG, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_b", &colorTintB, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_phase_signal_offset", &colorPhaseSignalOffset, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_phase_wrap_cycles", &colorPhaseWrapCycles, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_phase_palette_offset", &colorPhasePaletteOffset, nullptr, outError)) return false;
+    bool hasColorIterationBandCount = false;
+    if (!GetOptionalNumber(*paramsObject, "color_iteration_band_count", &colorIterationBandCountRaw, &hasColorIterationBandCount, outError)) return false;
+    if (hasColorIterationBandCount) {
+        if (!std::isfinite(colorIterationBandCountRaw) || std::floor(colorIterationBandCountRaw) != colorIterationBandCountRaw) {
+            if (outError) *outError = "Invalid integer field: color_iteration_band_count";
+            return false;
+        }
+        if (colorIterationBandCountRaw < static_cast<double>(INT_MIN) ||
+            colorIterationBandCountRaw > static_cast<double>(INT_MAX)) {
+            if (outError) *outError = "Out-of-range integer field: color_iteration_band_count";
+            return false;
+        }
+        colorIterationBandCount = static_cast<int>(colorIterationBandCountRaw);
+    }
+    if (!GetOptionalNumber(*paramsObject, "color_iteration_band_softness", &colorIterationBandSoftness, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_iteration_band_emphasis", &colorIterationBandEmphasis, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_iteration_band_palette_offset", &colorIterationBandPaletteOffset, nullptr, outError)) return false;
     nextParams.color_saturation = static_cast<float>(colorSaturation);
     nextParams.color_contrast = static_cast<float>(colorContrast);
     nextParams.color_tint_r = static_cast<float>(colorTintR);
     nextParams.color_tint_g = static_cast<float>(colorTintG);
     nextParams.color_tint_b = static_cast<float>(colorTintB);
+    nextParams.color_phase_signal_offset = static_cast<float>(colorPhaseSignalOffset);
+    nextParams.color_phase_wrap_cycles = static_cast<float>(colorPhaseWrapCycles);
+    nextParams.color_phase_palette_offset = static_cast<float>(colorPhasePaletteOffset);
+    nextParams.color_iteration_band_count = colorIterationBandCount;
+    nextParams.color_iteration_band_softness = static_cast<float>(colorIterationBandSoftness);
+    nextParams.color_iteration_band_emphasis = static_cast<float>(colorIterationBandEmphasis);
+    nextParams.color_iteration_band_palette_offset = static_cast<float>(colorIterationBandPaletteOffset);
 
     // explaino_cluster_radius (optional for backward compat)
     double explainoClusterRadius = nextParams.explaino_cluster_radius;

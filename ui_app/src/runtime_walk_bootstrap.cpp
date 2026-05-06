@@ -667,7 +667,14 @@ std::string BuildSynthesizedStateJson(const ViewState& view, const KernelParams&
     js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
     js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
     js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
-    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << "\n";
+    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << ",\n";
+    js << "    \"color_phase_signal_offset\": " << static_cast<double>(params.color_phase_signal_offset) << ",\n";
+    js << "    \"color_phase_wrap_cycles\": " << static_cast<double>(params.color_phase_wrap_cycles) << ",\n";
+    js << "    \"color_phase_palette_offset\": " << static_cast<double>(params.color_phase_palette_offset) << ",\n";
+    js << "    \"color_iteration_band_count\": " << params.color_iteration_band_count << ",\n";
+    js << "    \"color_iteration_band_softness\": " << static_cast<double>(params.color_iteration_band_softness) << ",\n";
+    js << "    \"color_iteration_band_emphasis\": " << static_cast<double>(params.color_iteration_band_emphasis) << ",\n";
+    js << "    \"color_iteration_band_palette_offset\": " << static_cast<double>(params.color_iteration_band_palette_offset) << "\n";
     js << "  },\n";
     js << "  \"render\": {\n";
     js << "    \"width\": " << render.resolution.x << ",\n";

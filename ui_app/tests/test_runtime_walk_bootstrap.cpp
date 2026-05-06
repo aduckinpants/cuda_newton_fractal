@@ -341,6 +341,13 @@ static void TestWriteSynthesizedStateJsonWritesLoadableShape() {
     KernelParams params{};
     RenderSettings render{};
     view.fractal_type = FractalType::explaino;
+    params.color_phase_signal_offset = 1.25f;
+    params.color_phase_wrap_cycles = 2.5f;
+    params.color_phase_palette_offset = -0.75f;
+    params.color_iteration_band_count = 5;
+    params.color_iteration_band_softness = 0.8f;
+    params.color_iteration_band_emphasis = 1.6f;
+    params.color_iteration_band_palette_offset = 0.4f;
     render.resolution = {320, 240};
     render.block_size = 256;
     render.device_id = 0;
@@ -356,6 +363,10 @@ static void TestWriteSynthesizedStateJsonWritesLoadableShape() {
         "TestWriteSynthesizedStateJsonWritesLoadableShape_HasStateVersion");
     Check(text.find("\"fractal_type\": \"explaino\"") != std::string::npos,
         "TestWriteSynthesizedStateJsonWritesLoadableShape_HasFractalType");
+    Check(text.find("\"color_phase_signal_offset\": 1.25") != std::string::npos,
+        "TestWriteSynthesizedStateJsonWritesLoadableShape_HasPhaseSignalOffset");
+    Check(text.find("\"color_iteration_band_count\": 5") != std::string::npos,
+        "TestWriteSynthesizedStateJsonWritesLoadableShape_HasBandCount");
 }
 
 static void TestSynthesizeRuntimeWalkTransportBundleBuildsPlayableShape() {

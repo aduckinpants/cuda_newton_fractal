@@ -180,12 +180,9 @@ __global__ void kernel_render(
                 unsigned char g = (unsigned char)(sqrtf(t) * 255.0f);
                 color = {r, g, (unsigned char)(255 - r), 255};
             } else if (mode == ColoringMode::phase) {
-                float angle = atan2f(z.y, z.x);
-                float h = (angle + 3.14159265f) / (2.0f * 3.14159265f);
-                float v = converged ? 0.85f : 0.25f;
-                color = HsvToRgb<uchar4>(h, 0.9f, v);
+                color = MakePhaseAngleColor<uchar4>(atan2f(z.y, z.x), converged, params);
             } else if (mode == ColoringMode::iteration_bands) {
-                color = IterationBandColor<uchar4>(it, maxIter);
+                color = IterationBandColor<uchar4>(it, maxIter, params);
             }
         }
     } else {

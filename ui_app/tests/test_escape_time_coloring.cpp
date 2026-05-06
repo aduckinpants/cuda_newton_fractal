@@ -99,6 +99,136 @@ int main() {
         return 1;
     }
 
+    {
+        const TestComplex phaseCoord{1.0f, 1.0f};
+        const TestColor phaseBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            phaseCoord,
+            params);
+
+        params.color_phase_signal_offset = 1.5707963f;
+        const TestColor phaseSignalShift = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            phaseCoord,
+            params);
+        if (Equals(phaseBase, phaseSignalShift)) {
+            std::cerr << "Phase coloring should react to the live signal phase offset owner field\n";
+            return 1;
+        }
+
+        params.color_phase_signal_offset = 0.0f;
+        params.color_phase_wrap_cycles = 2.0f;
+        const TestColor phaseWrapped = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            phaseCoord,
+            params);
+        if (Equals(phaseBase, phaseWrapped)) {
+            std::cerr << "Phase coloring should react to the live wrap-cycle owner field\n";
+            return 1;
+        }
+
+        params.color_phase_wrap_cycles = 1.0f;
+        params.color_phase_palette_offset = 1.0471976f;
+        const TestColor phasePaletteShift = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            phaseCoord,
+            params);
+        if (Equals(phaseBase, phasePaletteShift)) {
+            std::cerr << "Phase coloring should react to the live palette phase offset owner field\n";
+            return 1;
+        }
+    }
+
+    {
+        params.color_iteration_band_count = 8;
+        params.color_iteration_band_softness = 0.0f;
+        params.color_iteration_band_emphasis = 1.0f;
+        params.color_iteration_band_palette_offset = 0.0f;
+        const TestColor bandsBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::iteration_bands,
+            true,
+            31,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+
+        params.color_iteration_band_count = 3;
+        const TestColor bandsCountShift = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::iteration_bands,
+            true,
+            31,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(bandsBase, bandsCountShift)) {
+            std::cerr << "Iteration-band coloring should react to the live band-count owner field\n";
+            return 1;
+        }
+
+        params.color_iteration_band_count = 8;
+        params.color_iteration_band_softness = 1.0f;
+        const TestColor bandsSoftened = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::iteration_bands,
+            true,
+            31,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(bandsBase, bandsSoftened)) {
+            std::cerr << "Iteration-band coloring should react to the live band-softness owner field\n";
+            return 1;
+        }
+
+        params.color_iteration_band_softness = 0.0f;
+        params.color_iteration_band_emphasis = 1.8f;
+        const TestColor bandsEmphasized = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::iteration_bands,
+            true,
+            31,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(bandsBase, bandsEmphasized)) {
+            std::cerr << "Iteration-band coloring should react to the live band-emphasis owner field\n";
+            return 1;
+        }
+
+        params.color_iteration_band_emphasis = 1.0f;
+        params.color_iteration_band_palette_offset = 1.5707963f;
+        const TestColor bandsPaletteShift = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::iteration_bands,
+            true,
+            31,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(bandsBase, bandsPaletteShift)) {
+            std::cerr << "Iteration-band coloring should react to the live palette offset owner field\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_escape_time_coloring: all passed\n";
     return 0;
 }

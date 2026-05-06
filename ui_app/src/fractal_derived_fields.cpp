@@ -140,6 +140,13 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.multibrot_power_float = 3.0f;
     params.lambda_real = 2.9685855f;
     params.lambda_imag = -0.27446103f;
+    params.color_phase_signal_offset = 0.0f;
+    params.color_phase_wrap_cycles = 1.0f;
+    params.color_phase_palette_offset = 0.0f;
+    params.color_iteration_band_count = 8;
+    params.color_iteration_band_softness = 0.35f;
+    params.color_iteration_band_emphasis = 1.0f;
+    params.color_iteration_band_palette_offset = 0.0f;
 }
 
 static void ApplyDefaultColoringSelection(FractalType fractalType, KernelParams& params) {
