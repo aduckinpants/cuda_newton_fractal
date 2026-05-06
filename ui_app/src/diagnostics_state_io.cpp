@@ -236,6 +236,10 @@ bool ParseColorGradingPreset(const std::string& text, ColorGradingPreset* outGra
     return TryParseColorGradingPresetId(text, outGrading);
 }
 
+bool ParseColorPipelineShape(const std::string& text, ColorPipelineShape* outShape) {
+    return TryParseColorPipelineShapeId(text, outShape);
+}
+
 bool ParseIntField(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
     double rawValue = 0.0;
     if (!GetRequiredNumber(object, key, &rawValue, outError)) return false;
@@ -555,6 +559,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     std::string coloringModeId;
     bool hasLegacyColoringModeId = false;
     std::string colorSignalId;
+    std::string colorShapeId;
     std::string colorPaletteId;
     std::string colorGradingId;
     double novaAlpha = 0.0;
@@ -592,6 +597,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
     }
     const bool hasColorSignalId = TryGetOptionalString(*paramsObject, "color_signal", &colorSignalId);
+    const bool hasColorShapeId = TryGetOptionalString(*paramsObject, "color_shape", &colorShapeId);
     const bool hasColorPaletteId = TryGetOptionalString(*paramsObject, "color_palette", &colorPaletteId);
     const bool hasColorGradingId = TryGetOptionalString(*paramsObject, "color_grading", &colorGradingId);
     const bool hasAnyExplicitColorPipeline = hasColorSignalId || hasColorPaletteId || hasColorGradingId;
@@ -678,6 +684,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             if (outError) *outError = "Unknown color_grading: " + colorGradingId;
             return false;
         }
+        if (hasColorShapeId && !ParseColorPipelineShape(colorShapeId, &nextParams.color_shape)) {
+            if (outError) *outError = "Unknown color_shape: " + colorShapeId;
+            return false;
+        }
         ColoringMode derivedMode = ColoringMode::root_basin;
         if (!TryLegacyColoringModeForPipeline(explicitPipeline, &derivedMode)) {
             if (outError) *outError = "Unsupported split-color combination in saved state";
@@ -724,6 +734,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorPhaseSignalOffset = nextParams.color_phase_signal_offset;
     double colorPhaseWrapCycles = nextParams.color_phase_wrap_cycles;
     double colorPhasePaletteOffset = nextParams.color_phase_palette_offset;
+    double colorShapeOffset = nextParams.color_shape_offset;
+    double colorShapeScale = nextParams.color_shape_scale;
     int colorIterationBandCount = nextParams.color_iteration_band_count;
     double colorIterationBandCountRaw = static_cast<double>(colorIterationBandCount);
     double colorIterationBandSoftness = nextParams.color_iteration_band_softness;
@@ -743,6 +755,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_phase_signal_offset", &colorPhaseSignalOffset, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_phase_wrap_cycles", &colorPhaseWrapCycles, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_phase_palette_offset", &colorPhasePaletteOffset, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_offset", &colorShapeOffset, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_scale", &colorShapeScale, nullptr, outError)) return false;
     bool hasColorIterationBandCount = false;
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_count", &colorIterationBandCountRaw, &hasColorIterationBandCount, outError)) return false;
     if (hasColorIterationBandCount) {
@@ -774,6 +788,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_phase_signal_offset = static_cast<float>(colorPhaseSignalOffset);
     nextParams.color_phase_wrap_cycles = static_cast<float>(colorPhaseWrapCycles);
     nextParams.color_phase_palette_offset = static_cast<float>(colorPhasePaletteOffset);
+    nextParams.color_shape_offset = static_cast<float>(colorShapeOffset);
+    nextParams.color_shape_scale = static_cast<float>(colorShapeScale);
     nextParams.color_iteration_band_count = colorIterationBandCount;
     nextParams.color_iteration_band_softness = static_cast<float>(colorIterationBandSoftness);
     nextParams.color_iteration_band_emphasis = static_cast<float>(colorIterationBandEmphasis);

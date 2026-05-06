@@ -143,6 +143,9 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.color_phase_signal_offset = 0.0f;
     params.color_phase_wrap_cycles = 1.0f;
     params.color_phase_palette_offset = 0.0f;
+    params.color_shape = ColorPipelineShape::identity;
+    params.color_shape_offset = 0.0f;
+    params.color_shape_scale = 1.0f;
     params.color_iteration_band_count = 8;
     params.color_iteration_band_softness = 0.35f;
     params.color_iteration_band_emphasis = 1.0f;

@@ -41,6 +41,9 @@ int main() {
     params.color_phase_signal_offset = 1.25f;
     params.color_phase_wrap_cycles = 2.5f;
     params.color_phase_palette_offset = -0.75f;
+    params.color_shape = ColorPipelineShape::offset_scale;
+    params.color_shape_offset = 0.35f;
+    params.color_shape_scale = 1.8f;
     params.color_iteration_band_count = 5;
     params.color_iteration_band_softness = 0.8f;
     params.color_iteration_band_emphasis = 1.6f;
@@ -84,6 +87,9 @@ int main() {
     if (!NearlyEqual(params.color_phase_signal_offset, 0.0f) ||
         !NearlyEqual(params.color_phase_wrap_cycles, 1.0f) ||
         !NearlyEqual(params.color_phase_palette_offset, 0.0f) ||
+        params.color_shape != ColorPipelineShape::identity ||
+        !NearlyEqual(params.color_shape_offset, 0.0f) ||
+        !NearlyEqual(params.color_shape_scale, 1.0f) ||
         params.color_iteration_band_count != 8 ||
         !NearlyEqual(params.color_iteration_band_softness, 0.35f) ||
         !NearlyEqual(params.color_iteration_band_emphasis, 1.0f) ||

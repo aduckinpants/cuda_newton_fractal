@@ -26,6 +26,9 @@ bool Equals(TestColor left, TestColor right) {
 int main() {
     KernelParams params{};
     params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.color_shape = ColorPipelineShape::identity;
+    params.color_shape_offset = 0.0f;
+    params.color_shape_scale = 1.0f;
     params.exposure = 1.0f;
     params.color_tint_r = 1.0f;
     params.color_tint_g = 1.0f;
@@ -153,6 +156,25 @@ int main() {
         }
 
         params.color_heatmap_cycle_scale = 1.0f;
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.35f;
+        params.color_shape_scale = 1.8f;
+        const TestColor reshapedSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, reshapedSignal)) {
+            std::cerr << "offset_scale should react to its live Shape owner fields\n";
+            return 1;
+        }
+
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
         const TestColor gradedBase = ApplyFractalColorGrading(programmableBase, params);
         params.color_contrast_lift_exposure = 1.8f;
         params.color_contrast_lift_saturation = 1.5f;
@@ -216,6 +238,23 @@ int main() {
             params);
         if (Equals(phaseBase, phasePaletteShift)) {
             std::cerr << "Phase coloring should react to the live palette phase offset owner field\n";
+            return 1;
+        }
+
+        params.color_phase_palette_offset = 0.0f;
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.2f;
+        params.color_shape_scale = 1.4f;
+        const TestColor phaseReshaped = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            phaseCoord,
+            params);
+        if (Equals(phaseBase, phaseReshaped)) {
+            std::cerr << "Phase coloring should react to the live offset_scale Shape owner fields\n";
             return 1;
         }
     }

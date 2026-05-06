@@ -595,9 +595,24 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 1 ||
-            shapeCatalog->functions[0].id != "identity") {
-            std::cerr << "Expected the shipped Shape catalog to exclude draft-only rows until runtime Shape support lands\n";
+            shapeCatalog->functions.size() != 2 ||
+            shapeCatalog->functions[0].id != "identity" ||
+            shapeCatalog->functions[1].id != "offset_scale") {
+            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the first real offset_scale row\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
+            windowState.lanes[1].rows[0].parameter_values.size() != 2 ||
+            windowState.lanes[1].rows[0].parameter_values[0].path != "shape.offset" ||
+            !CollectRenderableColorPipelineParamIndexes(windowState.lanes[1].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1) {
+            std::cerr << "Expected offset_scale to expose its runtime-backed Shape parameter controls\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity")) {
+            std::cerr << "Expected the Shape lane to switch back to Identity after offset_scale coverage\n";
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
@@ -637,23 +652,22 @@ int main() {
             std::cerr << "Expected runtime-backed advanced color functions to expose only their real renderable parameter controls\n";
             return 1;
         }
-        if (!AddColorPipelineLaneRow(&windowState, 1, "identity") ||
+        if (!AddColorPipelineLaneRow(&windowState, 1, "offset_scale") ||
             windowState.lanes[1].rows.size() != 2 ||
-            windowState.lanes[1].rows[1].function_id != "identity" ||
+            windowState.lanes[1].rows[1].function_id != "offset_scale" ||
             windowState.lanes[1].rows[1].ui_row_id != 4) {
             std::cerr << "Expected the schedule-style Shape lane to support appending a second shipped row with a stable row id\n";
             return 1;
         }
         if (!MoveColorPipelineLaneRow(&windowState, 1, 1, -1) ||
-            windowState.lanes[1].rows[0].ui_row_id != 4 ||
-            windowState.lanes[1].rows[1].ui_row_id != 2) {
+            windowState.lanes[1].rows[0].function_id != "offset_scale" ||
+            windowState.lanes[1].rows[1].function_id != "identity") {
             std::cerr << "Expected schedule-style lane rows to support reorder operations\n";
             return 1;
         }
         if (!RemoveColorPipelineLaneRow(&windowState, 1, 1) ||
             windowState.lanes[1].rows.size() != 1 ||
-            windowState.lanes[1].rows[0].ui_row_id != 4 ||
-            windowState.lanes[1].rows[0].function_id != "identity") {
+            windowState.lanes[1].rows[0].function_id != "offset_scale") {
             std::cerr << "Expected schedule-style lane rows to support removing non-last rows\n";
             return 1;
         }
@@ -724,6 +738,9 @@ int main() {
         ColorPipelineWindowState windowState{};
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.25f;
+        params.color_shape_scale = 1.5f;
         if (!EnsureColorPipelineWindowInitialized(&windowState)) {
             std::cerr << "Expected the advanced color pipeline draft editor to initialize before param mutation coverage\n";
             return 1;
@@ -739,21 +756,24 @@ int main() {
         };
         std::vector<std::size_t> visibleParamIndexes;
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_orbit") ||
-            !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
-            std::cerr << "Expected the live programmable editor RED to construct a legal phase tuple\n";
+            std::cerr << "Expected the live programmable editor RED to construct a legal phase tuple with the first real Shape row\n";
             return 1;
         }
         if (!setParam(windowState.lanes[0].rows[0], "signal.phase_offset", 1.25) ||
             !setParam(windowState.lanes[0].rows[0], "signal.wrap_cycles", 2.5) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.offset", 0.25) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.scale", 1.5) ||
             !setParam(windowState.lanes[2].rows[0], "palette.phase_offset", -0.75)) {
-            std::cerr << "Expected the live programmable editor RED to expose the current phase parameter controls\n";
+            std::cerr << "Expected the live programmable editor RED to expose the current phase and Shape parameter controls\n";
             return 1;
         }
-        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
-            visibleParamIndexes.size() != 1 ||
-            visibleParamIndexes[0] != 0) {
-            std::cerr << "Expected partially wired advanced color functions to expose only their runtime-backed subset of controls\n";
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[1].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1) {
+            std::cerr << "Expected offset_scale to expose only its real runtime-backed Shape controls\n";
             return 1;
         }
         if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
@@ -762,10 +782,14 @@ int main() {
         }
         if (!NearlyEqual(params.color_phase_signal_offset, 1.25) ||
             !NearlyEqual(params.color_phase_wrap_cycles, 2.5) ||
+            params.color_shape != ColorPipelineShape::offset_scale ||
+            !NearlyEqual(params.color_shape_offset, 0.25) ||
+            !NearlyEqual(params.color_shape_scale, 1.5) ||
             !NearlyEqual(params.color_phase_palette_offset, -0.75) ||
             !windowState.live_snapshot.valid ||
+            windowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
             HasColorPipelineDraftEdits(windowState)) {
-            std::cerr << "Expected live programmable apply to write the phase owner fields and resync the live snapshot\n";
+            std::cerr << "Expected live programmable apply to write the phase plus Shape owner fields and resync the live snapshot\n";
             return 1;
         }
 
@@ -794,13 +818,14 @@ int main() {
         }
 
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_orbit") ||
-            !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
             std::cerr << "Expected the live programmable editor to reconstruct a legal phase tuple after the preview-only check\n";
             return 1;
         }
-        if (!setParam(windowState.lanes[0].rows[0], "signal.phase_offset", 0.5)) {
-            std::cerr << "Expected the live programmable editor to expose the phase offset control for apply-state coverage\n";
+        if (!setParam(windowState.lanes[0].rows[0], "signal.phase_offset", 0.5) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.scale", 2.0)) {
+            std::cerr << "Expected the live programmable editor to expose phase and Shape controls for apply-state coverage\n";
             return 1;
         }
         const ColorPipelineDraftApplyState validApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
@@ -817,6 +842,9 @@ int main() {
         ColorPipelineWindowState windowState{};
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.25f;
+        params.color_shape_scale = 1.5f;
 
         BeginFrame();
         ColorPipelineWindowState closedWindowState{};
@@ -841,7 +869,7 @@ int main() {
             openWindowState.lanes[0].rows.size() != 1 ||
             openWindowState.lanes[0].rows[0].function_id != "phase_orbit" ||
             openWindowState.lanes[1].rows.size() != 1 ||
-            openWindowState.lanes[1].rows[0].function_id != "identity" ||
+            openWindowState.lanes[1].rows[0].function_id != "offset_scale" ||
             openWindowState.lanes[2].rows.size() != 1 ||
             openWindowState.lanes[2].rows[0].function_id != "phase_wheel_palette") {
             std::cerr << "Expected the advanced color pipeline window to import the live programmable tuple during render\n";
@@ -849,7 +877,7 @@ int main() {
         }
         if (openWindowState.live_snapshot.lanes.size() != 3 ||
             openWindowState.live_snapshot.lanes[0].rows[0].function_id != "phase_orbit" ||
-            openWindowState.live_snapshot.lanes[1].rows[0].function_id != "identity" ||
+            openWindowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
             openWindowState.live_snapshot.lanes[2].rows[0].function_id != "phase_wheel_palette") {
             std::cerr << "Expected the advanced color pipeline window to keep the live snapshot aligned with the visible programmable tuple\n";
             return 1;

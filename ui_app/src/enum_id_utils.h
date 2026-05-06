@@ -83,6 +83,11 @@ inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
     {ColorGradingPreset::bands_default, "bands_default"},
 };
 
+inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {
+    {ColorPipelineShape::identity, "identity"},
+    {ColorPipelineShape::offset_scale, "offset_scale"},
+};
+
 inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::newton, "newton"},
     {FractalType::nova, "nova"},
@@ -193,6 +198,14 @@ inline const char* ColorGradingPresetId(ColorGradingPreset value) {
 
 inline bool TryParseColorGradingPresetId(std::string_view id, ColorGradingPreset* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColorGradingPresetIds, outValue);
+}
+
+inline const char* ColorPipelineShapeId(ColorPipelineShape value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kColorPipelineShapeIds);
+}
+
+inline bool TryParseColorPipelineShapeId(std::string_view id, ColorPipelineShape* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kColorPipelineShapeIds, outValue);
 }
 
 inline const char* FractalTypeId(FractalType value) {

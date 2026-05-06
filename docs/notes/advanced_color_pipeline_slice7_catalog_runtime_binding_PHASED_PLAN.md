@@ -2,15 +2,15 @@
 
 ## Current Phase
 
-Phase 2 - real runtime Shape authority is next; Phase 1 shipped-catalog honesty is implemented and validated
+Phase 4 - widen shipped Source / Shape / Palette execution only when each row family is runtime-real, fail-closed, and deployed-proofed; the bounded offset_scale Shape-authority slice is implemented and closure-validated
 
 ## Phase Checklist
 
 - [x] Phase 0 - recover the cumulative spec: latest explicit user wording over time is binding and the current partial shell is not closure
 - [x] Phase 1 - add an explicit backend support classifier and remove draft-only rows from the shipped catalog until they are runtime-real
-- [ ] Phase 2 - add real runtime Shape authority and the first non-Identity shipped Shape row end to end through apply/import/runtime math/persistence
-- [ ] Phase 3 - widen shipped Source / Shape / Palette execution only when each row family is runtime-real, fail-closed, and deployed-proofed
-- [ ] Phase 4 - checkpoint/receipt closure for the current bounded slice after native/runtime validation and hostile review
+- [x] Phase 2 - add real runtime Shape authority and the first non-Identity shipped Shape row end to end through apply/import/runtime math/persistence
+- [x] Phase 3 - checkpoint/receipt closure for the current bounded slice after native/runtime validation and hostile review
+- [ ] Phase 4 - widen shipped Source / Shape / Palette execution only when each row family is runtime-real, fail-closed, and deployed-proofed
 
 ## Explicit User Asks
 
@@ -39,10 +39,10 @@ The falsifiable local hypothesis for the first bounded implementation slice is t
 ## Proof Ledger
 
 - Existing proof: `ui_app/tests/test_schema_binding.cpp` already proves the schedule editor shape, row-stack operations, and truthful import/apply boundaries for the currently supported live tuples.
-- RED/GREEN: `ui_app/tests/test_schema_binding.cpp` now proves the shipped Shape catalog excludes draft-only rows, rejects `repeat` from the shipped selector, and still preserves Source / Shape / Palette row-stack behavior with shipped entries only.
-- GREEN: `ui_app/src/color_pipeline_window.h` now derives the shipped selector from explicit runtime support classification rather than a wish list of future Shape rows.
+- RED/GREEN: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_runtime_reset.cpp`, and `ui_app/tests/test_diagnostics_state_io.cpp` now prove the first real `offset_scale` Shape row end to end through shipped catalog exposure, live import/apply, runtime color math, reset defaults, and persisted-state round-trip.
+- GREEN: `ui_app/src/fractal_types.h`, `ui_app/src/fractal_derived_fields.cpp`, `ui_app/src/enum_id_utils.h`, `ui_app/src/diagnostics_state_io.cpp`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/color_pipeline_window.h`, and `ui_app/src/escape_time_coloring.h` now treat Shape as real runtime authority instead of a fixed Identity placeholder.
 - Validation: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json` passed, `cmd /c ui_app\build_tests_vsdevcmd.cmd` passed, `cmd /c ui_app\build_vsdevcmd.cmd` published the staged runtime, staged `fractal_ui.exe --validate-ui` passed, and `py -3.14 tools/viewer_host_runtime_pytest_lane.py` passed with `68 passed`.
-- Audit: hostile review of the landed diff did not find a new defect in this bounded shipped-catalog honesty slice; the next real defect surface is still missing runtime Shape authority.
+- Audit: hostile review found one live-snapshot consistency bug where an unmapped `color_shape` could still leave `draft_import_supported=true`; `ui_app/src/color_pipeline_window.h` now fails that case closed by clearing the bridge-supported flag before returning the snapshot.
 
 ## Notes
 
@@ -69,4 +69,4 @@ The falsifiable local hypothesis for the first bounded implementation slice is t
 
 ## Resume Point
 
-Once the shipped selector is runtime-honest, the next feature slice is real runtime Shape authority for the first non-Identity shipped row, then wider multi-row execution only when each row is real end to end.
+The first real `offset_scale` Shape row is now landed and validated. The next feature slice is Phase 4: widen shipped Source / Shape / Palette execution only one real row family at a time, with fail-closed live-bridge rules and published-runtime proof for each newly exposed row.

@@ -100,6 +100,14 @@ const char* ColorGradingPresetId(ColorGradingPreset grading) {
     return "unknown";
 }
 
+const char* ColorPipelineShapeId(ColorPipelineShape shape) {
+    switch (shape) {
+    case ColorPipelineShape::identity: return "identity";
+    case ColorPipelineShape::offset_scale: return "offset_scale";
+    }
+    return "unknown";
+}
+
 const char* TranscendentalFuncId(TranscendentalFunc func) {
     switch (func) {
     case TranscendentalFunc::f_sin: return "f_sin";
@@ -204,6 +212,8 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_phase_signal_offset\": " << static_cast<double>(params.color_phase_signal_offset) << ",\n";
     js << "    \"color_phase_wrap_cycles\": " << static_cast<double>(params.color_phase_wrap_cycles) << ",\n";
     js << "    \"color_phase_palette_offset\": " << static_cast<double>(params.color_phase_palette_offset) << ",\n";
+    js << "    \"color_shape_offset\": " << static_cast<double>(params.color_shape_offset) << ",\n";
+    js << "    \"color_shape_scale\": " << static_cast<double>(params.color_shape_scale) << ",\n";
     js << "    \"color_iteration_band_count\": " << params.color_iteration_band_count << ",\n";
     js << "    \"color_iteration_band_softness\": " << static_cast<double>(params.color_iteration_band_softness) << ",\n";
     js << "    \"color_iteration_band_emphasis\": " << static_cast<double>(params.color_iteration_band_emphasis) << ",\n";
@@ -298,6 +308,7 @@ std::string BuildStateJson(
         js << "    \"coloring_mode\": \"" << ColoringModeId(mirroredColoringMode) << "\",\n";
     }
     js << "    \"color_signal\": \"" << ColorSignalId(params.color_pipeline.signal) << "\",\n";
+    js << "    \"color_shape\": \"" << ColorPipelineShapeId(params.color_shape) << "\",\n";
     js << "    \"color_palette\": \"" << ColorPaletteId(params.color_pipeline.palette) << "\",\n";
     js << "    \"color_grading\": \"" << ColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
     js << "    \"nova_alpha\": " << static_cast<double>(params.nova_alpha) << ",\n";

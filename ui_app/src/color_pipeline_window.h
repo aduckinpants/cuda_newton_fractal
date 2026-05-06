@@ -244,6 +244,16 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
     return false;
 }
 
+inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
+    switch (value) {
+    case ColorPipelineShape::identity:
+        return "identity";
+    case ColorPipelineShape::offset_scale:
+        return "offset_scale";
+    }
+    return nullptr;
+}
+
 inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
     return {
         MakeColorPipelineFunction(
@@ -376,7 +386,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "banded_signal";
     }
     if (std::string(laneId) == "shape") {
-        return functionId == "identity";
+        return functionId == "identity" ||
+            functionId == "offset_scale";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||
@@ -715,6 +726,7 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     }
 
     const char* sourceFunctionId = nullptr;
+    const char* shapeFunctionId = AdvancedColorShapeFunctionId(liveParams.color_shape);
     const char* paletteFunctionId = nullptr;
     ColorPipelineLiveSnapshot snapshot;
     snapshot.valid = true;
@@ -725,6 +737,9 @@ inline bool TryBuildColorPipelineLiveSnapshot(
         liveParams.color_pipeline,
         &sourceFunctionId,
         &paletteFunctionId);
+    if (!shapeFunctionId) {
+        snapshot.draft_import_supported = false;
+    }
     if (!snapshot.draft_import_supported) {
         *outSnapshot = std::move(snapshot);
         return true;
@@ -733,7 +748,7 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     snapshot.lanes.reserve(catalogs.size());
     const char* laneFunctionIds[] = {
         sourceFunctionId,
-        "identity",
+        shapeFunctionId,
         paletteFunctionId,
     };
     for (std::size_t index = 0; index < catalogs.size(); ++index) {
@@ -968,6 +983,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "phase_wheel_palette") {
         return path == "palette.phase_offset";
     }
+    if (functionId == "offset_scale") {
+        return path == "shape.offset" || path == "shape.scale";
+    }
     if (functionId == "banded_signal") {
         return path == "signal.band_count" || path == "signal.softness";
     }
@@ -1066,6 +1084,10 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     }
     if (ioRow->function_id == "phase_wheel_palette") {
         return SetColorPipelineParamNumber(ioRow, "palette.phase_offset", liveParams.color_phase_palette_offset, outError);
+    }
+    if (ioRow->function_id == "offset_scale") {
+        return SetColorPipelineParamNumber(ioRow, "shape.offset", liveParams.color_shape_offset, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.scale", liveParams.color_shape_scale, outError);
     }
     if (ioRow->function_id == "banded_signal") {
         return SetColorPipelineParamNumber(ioRow, "signal.band_count", static_cast<double>(liveParams.color_iteration_band_count), outError) &&
@@ -1218,6 +1240,44 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             }
             continue;
         }
+        if (row.function_id == "identity") {
+            if (ioParams->color_shape != ColorPipelineShape::identity) {
+                ioParams->color_shape = ColorPipelineShape::identity;
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_shape_offset) > 1.0e-6f) {
+                ioParams->color_shape_offset = 0.0f;
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_shape_scale - 1.0f) > 1.0e-6f) {
+                ioParams->color_shape_scale = 1.0f;
+                changed = true;
+            }
+            continue;
+        }
+        if (row.function_id == "offset_scale") {
+            double offset = 0.0;
+            double scale = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "shape.offset", &offset, outError) ||
+                !TryGetColorPipelineParamNumber(row, "shape.scale", &scale, outError) ||
+                !ValidateColorPipelineParamRange("shape.offset", offset, -2.0, 2.0, outError) ||
+                !ValidateColorPipelineParamRange("shape.scale", scale, 0.1, 8.0, outError)) {
+                return false;
+            }
+            if (ioParams->color_shape != ColorPipelineShape::offset_scale) {
+                ioParams->color_shape = ColorPipelineShape::offset_scale;
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_shape_offset - static_cast<float>(offset)) > 1.0e-6f) {
+                ioParams->color_shape_offset = static_cast<float>(offset);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_shape_scale - static_cast<float>(scale)) > 1.0e-6f) {
+                ioParams->color_shape_scale = static_cast<float>(scale);
+                changed = true;
+            }
+            continue;
+        }
         if (row.function_id == "banded_signal") {
             int bandCount = 0;
             double softness = 0.0;
@@ -1334,9 +1394,9 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         return false;
     }
 
-    if (shapeRow->function_id != "identity") {
+    if (shapeRow->function_id != "identity" && shapeRow->function_id != "offset_scale") {
         if (outError) {
-            *outError = "Current live bridge only supports the Identity Shape row; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            *outError = "Current live bridge only supports the Identity and Offset + Scale Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
         }
         return false;
     }

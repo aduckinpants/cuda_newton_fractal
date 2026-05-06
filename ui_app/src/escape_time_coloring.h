@@ -114,12 +114,15 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const Ke
         params.color_contrast);
 }
 
+    ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params);
+
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color MakePhaseAngleColor(float angle, bool brightValue, const KernelParams& params) {
     const float twoPi = 6.28318530717958647692f;
     const float wrapCycles = params.color_phase_wrap_cycles < 0.5f ? 0.5f : params.color_phase_wrap_cycles;
-    const float hue = ((angle + params.color_phase_signal_offset) / twoPi) * wrapCycles +
-        (params.color_phase_palette_offset / twoPi);
+    float hue = ((angle + params.color_phase_signal_offset) / twoPi) * wrapCycles;
+    hue = ApplyColorPipelineShapeValue(hue, params);
+    hue += (params.color_phase_palette_offset / twoPi);
     const float value = brightValue ? 0.85f : 0.25f;
     return HsvToRgb<Color>(hue, 0.9f, value);
 }
@@ -195,12 +198,21 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyIterationBandEmphasis(Escape
     return rgb;
 }
 
+ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params) {
+    if (params.color_shape == ColorPipelineShape::offset_scale) {
+        value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
+        value *= EscapeTimeColorClamp(params.color_shape_scale, 0.1f, 8.0f);
+    }
+    return value;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeHeatmapBand(float nu, const KernelParams& params) {
     float band = nu * 0.025f;
     if (params.color_pipeline.signal == ColorSignal::smooth_escape) {
         band = band * EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
             EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
     }
+    band = ApplyColorPipelineShapeValue(band, params);
     if (params.color_pipeline.palette == ColorPalette::cyclic_escape) {
         band *= EscapeTimeColorClamp(params.color_heatmap_cycle_scale, 0.25f, 4.0f);
     }
@@ -292,7 +304,8 @@ ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter,
     const float twoPi = 6.28318530717958647692f;
     const float paletteOffset = (params.color_iteration_band_palette_offset / twoPi) * static_cast<float>(bandCount);
     const float t = static_cast<float>(iteration) / static_cast<float>(safeMaxIter);
-    EscapeTimeColorRgb rgb = SampleIterationBandPalette(t * static_cast<float>(bandCount) + paletteOffset, bandCount, softness);
+    const float signalBand = ApplyColorPipelineShapeValue(t * static_cast<float>(bandCount), params);
+    EscapeTimeColorRgb rgb = SampleIterationBandPalette(signalBand + paletteOffset, bandCount, softness);
     rgb = ApplyIterationBandEmphasis(rgb, emphasis);
     const float bright = 1.0f - 0.4f * t;
     return EscapeTimeColorMake<Color>(

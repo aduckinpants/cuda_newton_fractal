@@ -56,6 +56,11 @@ enum class ColorGradingPreset : int {
     bands_default = 3,
 };
 
+enum class ColorPipelineShape : int {
+    identity = 0,
+    offset_scale = 1,
+};
+
 struct ColorPipelineSelection {
     ColorSignal signal{ColorSignal::root_index};
     ColorPalette palette{ColorPalette::root_classic};
@@ -235,6 +240,9 @@ struct KernelParams {
     float color_phase_signal_offset{0.0f};
     float color_phase_wrap_cycles{1.0f};
     float color_phase_palette_offset{0.0f};
+    ColorPipelineShape color_shape{ColorPipelineShape::identity};
+    float color_shape_offset{0.0f};
+    float color_shape_scale{1.0f};
     int color_iteration_band_count{8};
     float color_iteration_band_softness{0.35f};
     float color_iteration_band_emphasis{1.0f};

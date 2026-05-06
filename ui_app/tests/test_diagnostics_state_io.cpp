@@ -2272,6 +2272,7 @@ int main() {
     "poly_kind": 0,
     "coloring_mode": "phase",
     "color_signal": "phase_angle",
+    "color_shape": "offset_scale",
     "color_palette": "phase_wheel",
     "color_grading": "phase_default",
     "nova_alpha": 0.5,
@@ -2282,6 +2283,8 @@ int main() {
     "color_phase_signal_offset": 1.25,
     "color_phase_wrap_cycles": 2.5,
     "color_phase_palette_offset": -0.75,
+    "color_shape_offset": 0.3,
+    "color_shape_scale": 1.5,
     "color_iteration_band_count": 5,
     "color_iteration_band_softness": 0.8,
     "color_iteration_band_emphasis": 1.6,
@@ -2305,9 +2308,12 @@ int main() {
             std::cerr << "V3 phase/bands parameter load failed: " << error << "\n";
             return 1;
         }
-        if (!NearlyEqual(p.color_phase_signal_offset, 1.25, 0.001) ||
+        if (p.color_shape != ColorPipelineShape::offset_scale ||
+          !NearlyEqual(p.color_phase_signal_offset, 1.25, 0.001) ||
             !NearlyEqual(p.color_phase_wrap_cycles, 2.5, 0.001) ||
             !NearlyEqual(p.color_phase_palette_offset, -0.75, 0.001) ||
+          !NearlyEqual(p.color_shape_offset, 0.3, 0.001) ||
+          !NearlyEqual(p.color_shape_scale, 1.5, 0.001) ||
             p.color_iteration_band_count != 5 ||
             !NearlyEqual(p.color_iteration_band_softness, 0.8, 0.001) ||
             !NearlyEqual(p.color_iteration_band_emphasis, 1.6, 0.001) ||
