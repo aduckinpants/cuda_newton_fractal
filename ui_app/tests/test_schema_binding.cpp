@@ -1,5 +1,7 @@
 #include "../src/schema_binding.h"
 
+#include "../src/imgui_stack_editor.h"
+
 #include "../src/explaino_seed.h"
 #include "../third_party/imgui/imgui.h"
 
@@ -524,12 +526,84 @@ int main() {
     }
 
     {
+        std::uint64_t nextRowId = 1;
+        std::uint64_t missingRowId = 0;
+        if (!EnsureImGuiStackEditorRowId(&missingRowId, &nextRowId)) {
+            std::cerr << "Expected missing row ids to be assigned through the shared stack-editor helper\n";
+            return 1;
+        }
+        if (missingRowId != 1 || nextRowId != 2) {
+            std::cerr << "Expected the first assigned row id to consume the next shared stack-editor id\n";
+            return 1;
+        }
+        if (!EnsureImGuiStackEditorRowId(&missingRowId, &nextRowId)) {
+            std::cerr << "Expected already-assigned row ids to remain valid when rechecked\n";
+            return 1;
+        }
+        if (missingRowId != 1 || nextRowId != 2) {
+            std::cerr << "Expected existing row ids to stay stable when the helper rechecks them\n";
+            return 1;
+        }
+
+        std::uint64_t existingRowId = 7;
+        if (!EnsureImGuiStackEditorRowId(&existingRowId, &nextRowId)) {
+            std::cerr << "Expected the shared helper to accept pre-existing stable row ids\n";
+            return 1;
+        }
+        if (existingRowId != 7 || nextRowId != 8) {
+            std::cerr << "Expected the shared helper to advance the next id past any reused stable row id\n";
+            return 1;
+        }
+    }
+
+    {
         ImGuiTestContext imgui;
         ViewState view{};
         KernelParams params{};
         RenderSettings render{};
         LensSettings lens{};
         BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+
+        BeginFrame();
+        std::vector<std::string> emptyValidationMessages;
+        if (RenderImGuiStackEditorValidationBox("Validation", emptyValidationMessages)) {
+            std::cerr << "Expected the shared stack-editor validation box to stay hidden when no messages exist\n";
+            return 1;
+        }
+        EndFrame();
+
+        BeginFrame();
+        std::vector<std::string> validationMessages{
+            "Source lane needs at least one enabled row.",
+            "Palette lane has a duplicate function."
+        };
+        if (!RenderImGuiStackEditorValidationBox("Validation", validationMessages)) {
+            std::cerr << "Expected the shared stack-editor validation box to render when messages exist\n";
+            return 1;
+        }
+        EndFrame();
+
+        BeginFrame();
+        bool rowEnabled = true;
+        ImGuiStackEditorRowChromeSpec rowSpec;
+        rowSpec.tree_node_id = "binding";
+        rowSpec.header_label = "mean -> fractal.params.exposure";
+        rowSpec.stable_row_id = 42;
+        rowSpec.enabled = &rowEnabled;
+        ImGuiStackEditorRowChromeResult rowChrome = RenderImGuiStackEditorRowChrome(rowSpec);
+        if (!rowChrome.open) {
+            std::cerr << "Expected shared stack-editor rows to open by default when first rendered\n";
+            return 1;
+        }
+        if (rowChrome.changed || rowChrome.remove_requested || rowChrome.move_up_requested || rowChrome.move_down_requested) {
+            std::cerr << "Expected idle shared stack-editor row chrome to report no actions without clicks\n";
+            return 1;
+        }
+        if (!rowEnabled) {
+            std::cerr << "Expected idle shared stack-editor row chrome to preserve the enabled flag\n";
+            return 1;
+        }
+        EndFrame();
 
         BeginFrame();
         UISchemaControl unbound;

@@ -1,8 +1,11 @@
 #include "runtime_walk_viewer_imgui.h"
 
+#include "imgui_stack_editor.h"
+
 #include "imgui.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <string>
 
@@ -60,6 +63,66 @@ bool RenderStringCombo(const char* label, const std::vector<std::string>& option
     return changed;
 }
 
+void EnsureRuntimeWalkBindingRowIds(std::vector<RuntimeWalkFitsMappingBinding>* ioRows) {
+    if (!ioRows) return;
+    std::uint64_t nextRowId = 1;
+    for (RuntimeWalkFitsMappingBinding& row : *ioRows) {
+        EnsureImGuiStackEditorRowId(&row.ui_row_id, &nextRowId);
+    }
+}
+
+bool RenderRuntimeWalkBindingRowFields(
+    RuntimeWalkFitsMappingBinding& row,
+    const std::vector<std::string>& signalCatalog,
+    const std::vector<std::string>& targetCatalog,
+    const char* sourceLabel,
+    const char* targetLabel) {
+    bool changed = false;
+    if (RenderStringCombo(sourceLabel, signalCatalog, &row.source_signal)) {
+        row.source_kind = row.source_signal.rfind("field.", 0) == 0 ? "field" : "fits_frame";
+        row.source_path = row.source_kind == "field" ? row.source_signal : std::string("fits.frame.") + row.source_signal;
+        changed = true;
+    }
+    changed = RenderStringCombo(targetLabel, targetCatalog, &row.target_path) || changed;
+
+    float amount = static_cast<float>(row.weight);
+    if (ImGui::SliderFloat("Amount", &amount, 0.0f, 2.0f, "%.3f")) {
+        row.weight = static_cast<double>(amount);
+        changed = true;
+    }
+    float offset = static_cast<float>(row.offset);
+    if (ImGui::DragFloat("Offset", &offset, 0.01f, -32.0f, 32.0f, "%.3f")) {
+        row.offset = static_cast<double>(offset);
+        changed = true;
+    }
+    float smoothing = static_cast<float>(row.smoothing);
+    if (ImGui::SliderFloat("Smoothing", &smoothing, 0.0f, 1.0f, "%.2f")) {
+        row.smoothing = static_cast<double>(smoothing);
+        changed = true;
+    }
+    changed = RenderStringCombo("Curve", RuntimeWalkFitsCurveOptions(), &row.curve) || changed;
+    bool inverted = row.polarity < 0;
+    if (ImGui::Checkbox("Invert Polarity", &inverted)) {
+        row.polarity = inverted ? -1 : 1;
+        changed = true;
+    }
+    changed = ImGui::Checkbox("Clamp", &row.has_clamp) || changed;
+    if (row.has_clamp) {
+        float minValue = static_cast<float>(row.clamp_min);
+        float maxValue = static_cast<float>(row.clamp_max);
+        if (ImGui::DragFloat("Clamp Min", &minValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
+            row.clamp_min = static_cast<double>(minValue);
+            changed = true;
+        }
+        if (ImGui::DragFloat("Clamp Max", &maxValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
+            row.clamp_max = static_cast<double>(maxValue);
+            changed = true;
+        }
+        if (row.clamp_min > row.clamp_max) std::swap(row.clamp_min, row.clamp_max);
+    }
+    return changed;
+}
+
 bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
     bool changed = false;
     if (!ImGui::CollapsingHeader("Binding Workbench", ImGuiTreeNodeFlags_DefaultOpen)) return false;
@@ -69,8 +132,11 @@ bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
         static_cast<int>(state.runtime_target_catalog.size()),
         static_cast<int>(state.binding_workbench_rows.size()));
     const bool canAddBinding = !state.fits_signal_catalog.empty() && !state.runtime_target_catalog.empty();
-    ImGui::BeginDisabled(!canAddBinding);
-    if (ImGui::Button("Add Binding")) {
+    ImGuiStackEditorHeaderSpec headerSpec;
+    headerSpec.add_button_label = "Add Binding";
+    headerSpec.can_add = canAddBinding;
+    headerSpec.disabled_reason = "Add Binding requires at least one FITS signal and one runtime target.";
+    if (RenderImGuiStackEditorHeader(headerSpec).add_requested) {
         RuntimeWalkFitsMappingBinding binding;
         binding.target_selector = "default";
         binding.source_signal = state.fits_signal_catalog.front();
@@ -83,76 +149,38 @@ bool RenderBindingWorkbench(RuntimeWalkViewerImportPanelState& state) {
         state.binding_workbench_rows.push_back(binding);
         changed = true;
     }
-    ImGui::EndDisabled();
-    if (!canAddBinding) {
-        ImGui::TextUnformatted("Add Binding requires at least one FITS signal and one runtime target.");
-    }
     if (state.binding_workbench_rows.empty()) {
         ImGui::TextUnformatted("No binding rows resolved from the mapping profile.");
         return changed;
     }
 
+    EnsureRuntimeWalkBindingRowIds(&state.binding_workbench_rows);
     int removeIndex = -1;
     for (std::size_t index = 0; index < state.binding_workbench_rows.size(); ++index) {
         RuntimeWalkFitsMappingBinding& row = state.binding_workbench_rows[index];
-        ImGui::PushID(static_cast<int>(index));
-        if (ImGui::TreeNodeEx("binding", ImGuiTreeNodeFlags_DefaultOpen,
-                "%s -> %s", row.source_signal.c_str(), row.target_path.c_str())) {
-            ImGui::SameLine();
-            if (ImGui::SmallButton((std::string("Remove##binding") + std::to_string(index)).c_str())) {
-                removeIndex = static_cast<int>(index);
-            }
-            changed = ImGui::Checkbox("Enabled", &row.enabled) || changed;
-            if (RenderStringCombo("FITS Source", state.fits_signal_catalog, &row.source_signal)) {
-                row.source_kind = row.source_signal.rfind("field.", 0) == 0 ? "field" : "fits_frame";
-                row.source_path = row.source_kind == "field" ? row.source_signal : std::string("fits.frame.") + row.source_signal;
-                changed = true;
-            }
-            changed = RenderStringCombo("Runtime Target", state.runtime_target_catalog, &row.target_path) || changed;
-
-            float amount = static_cast<float>(row.weight);
-            if (ImGui::SliderFloat("Amount", &amount, 0.0f, 2.0f, "%.3f")) {
-                row.weight = static_cast<double>(amount);
-                changed = true;
-            }
-            float offset = static_cast<float>(row.offset);
-            if (ImGui::DragFloat("Offset", &offset, 0.01f, -32.0f, 32.0f, "%.3f")) {
-                row.offset = static_cast<double>(offset);
-                changed = true;
-            }
-            float smoothing = static_cast<float>(row.smoothing);
-            if (ImGui::SliderFloat("Smoothing", &smoothing, 0.0f, 1.0f, "%.2f")) {
-                row.smoothing = static_cast<double>(smoothing);
-                changed = true;
-            }
-            changed = RenderStringCombo("Curve", RuntimeWalkFitsCurveOptions(), &row.curve) || changed;
-            bool inverted = row.polarity < 0;
-            if (ImGui::Checkbox("Invert Polarity", &inverted)) {
-                row.polarity = inverted ? -1 : 1;
-                changed = true;
-            }
-            changed = ImGui::Checkbox("Clamp", &row.has_clamp) || changed;
-            if (row.has_clamp) {
-                float minValue = static_cast<float>(row.clamp_min);
-                float maxValue = static_cast<float>(row.clamp_max);
-                if (ImGui::DragFloat("Clamp Min", &minValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
-                    row.clamp_min = static_cast<double>(minValue);
-                    changed = true;
-                }
-                if (ImGui::DragFloat("Clamp Max", &maxValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
-                    row.clamp_max = static_cast<double>(maxValue);
-                    changed = true;
-                }
-                if (row.clamp_min > row.clamp_max) std::swap(row.clamp_min, row.clamp_max);
-            }
+        const std::string headerLabel = row.source_signal + " -> " + row.target_path;
+        ImGuiStackEditorRowChromeSpec rowSpec;
+        rowSpec.tree_node_id = "binding";
+        rowSpec.header_label = headerLabel.c_str();
+        rowSpec.stable_row_id = row.ui_row_id;
+        rowSpec.enabled = &row.enabled;
+        const ImGuiStackEditorRowChromeResult rowChrome = RenderImGuiStackEditorRowChrome(rowSpec, [&]() {
+            changed = RenderRuntimeWalkBindingRowFields(
+                    row,
+                    state.fits_signal_catalog,
+                    state.runtime_target_catalog,
+                    "FITS Source",
+                    "Runtime Target") || changed;
             ImGui::Text("Input rail: %.3f .. %.3f | Scale: %.3f | Safety: %s",
                 row.input_min,
                 row.input_max,
                 row.scale,
                 row.safety_class.empty() ? "safe" : row.safety_class.c_str());
-            ImGui::TreePop();
+        });
+        changed = rowChrome.changed || changed;
+        if (rowChrome.remove_requested) {
+            removeIndex = static_cast<int>(index);
         }
-        ImGui::PopID();
     }
     if (removeIndex >= 0 && removeIndex < static_cast<int>(state.binding_workbench_rows.size())) {
         state.binding_workbench_rows.erase(state.binding_workbench_rows.begin() + removeIndex);
@@ -184,62 +212,29 @@ bool RenderRuntimeWalkLiveBindingWorkbench(RuntimeWalkViewerSession& session) {
                 result.clamped ? " [clamped]" : "");
         }
     }
+        EnsureRuntimeWalkBindingRowIds(&session.live_binding_rows);
     int removeIndex = -1;
     for (std::size_t index = 0; index < session.live_binding_rows.size(); ++index) {
         RuntimeWalkFitsMappingBinding& row = session.live_binding_rows[index];
-        ImGui::PushID(static_cast<int>(index) + 10000);
-        if (ImGui::TreeNodeEx("live_binding", ImGuiTreeNodeFlags_DefaultOpen,
-                "%s -> %s", row.source_signal.c_str(), row.target_path.c_str())) {
-            ImGui::SameLine();
-            if (ImGui::SmallButton("Remove##live_binding")) {
+            const std::string headerLabel = row.source_signal + " -> " + row.target_path;
+            ImGuiStackEditorRowChromeSpec rowSpec;
+            rowSpec.tree_node_id = "live_binding";
+            rowSpec.header_label = headerLabel.c_str();
+            rowSpec.stable_row_id = row.ui_row_id;
+            rowSpec.enabled = &row.enabled;
+            const ImGuiStackEditorRowChromeResult rowChrome = RenderImGuiStackEditorRowChrome(rowSpec, [&]() {
+                changed = RenderRuntimeWalkBindingRowFields(
+                        row,
+                        session.live_fits_signal_catalog,
+                        session.live_runtime_target_catalog,
+                        "Source",
+                        "Target") || changed;
+                ImGui::Text("Safety: %s", row.safety_class.c_str());
+            });
+            changed = rowChrome.changed || changed;
+            if (rowChrome.remove_requested) {
                 removeIndex = static_cast<int>(index);
             }
-            changed = ImGui::Checkbox("Enabled", &row.enabled) || changed;
-            if (RenderStringCombo("Source", session.live_fits_signal_catalog, &row.source_signal)) {
-                row.source_kind = row.source_signal.rfind("field.", 0) == 0 ? "field" : "fits_frame";
-                row.source_path = row.source_kind == "field" ? row.source_signal : std::string("fits.frame.") + row.source_signal;
-                changed = true;
-            }
-            changed = RenderStringCombo("Target", session.live_runtime_target_catalog, &row.target_path) || changed;
-            float amount = static_cast<float>(row.weight);
-            if (ImGui::SliderFloat("Amount", &amount, 0.0f, 2.0f, "%.3f")) {
-                row.weight = static_cast<double>(amount);
-                changed = true;
-            }
-            float offset = static_cast<float>(row.offset);
-            if (ImGui::DragFloat("Offset", &offset, 0.01f, -32.0f, 32.0f, "%.3f")) {
-                row.offset = static_cast<double>(offset);
-                changed = true;
-            }
-            float smoothing = static_cast<float>(row.smoothing);
-            if (ImGui::SliderFloat("Smoothing", &smoothing, 0.0f, 1.0f, "%.2f")) {
-                row.smoothing = static_cast<double>(smoothing);
-                changed = true;
-            }
-            changed = RenderStringCombo("Curve##live_binding", RuntimeWalkFitsCurveOptions(), &row.curve) || changed;
-            bool inverted = row.polarity < 0;
-            if (ImGui::Checkbox("Invert Polarity##live_binding", &inverted)) {
-                row.polarity = inverted ? -1 : 1;
-                changed = true;
-            }
-            changed = ImGui::Checkbox("Clamp##live_binding", &row.has_clamp) || changed;
-            if (row.has_clamp) {
-                float minValue = static_cast<float>(row.clamp_min);
-                float maxValue = static_cast<float>(row.clamp_max);
-                if (ImGui::DragFloat("Clamp Min##live_binding", &minValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
-                    row.clamp_min = static_cast<double>(minValue);
-                    changed = true;
-                }
-                if (ImGui::DragFloat("Clamp Max##live_binding", &maxValue, 0.01f, -64.0f, 64.0f, "%.3f")) {
-                    row.clamp_max = static_cast<double>(maxValue);
-                    changed = true;
-                }
-                if (row.clamp_min > row.clamp_max) std::swap(row.clamp_min, row.clamp_max);
-            }
-            ImGui::Text("Safety: %s", row.safety_class.c_str());
-            ImGui::TreePop();
-        }
-        ImGui::PopID();
     }
     if (removeIndex >= 0 && removeIndex < static_cast<int>(session.live_binding_rows.size())) {
         session.live_binding_rows.erase(session.live_binding_rows.begin() + removeIndex);

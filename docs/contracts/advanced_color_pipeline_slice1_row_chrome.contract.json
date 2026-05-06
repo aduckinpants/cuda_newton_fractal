@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_slice1_row_chrome",
+  "feature_id": "advanced_color_pipeline_row_chrome",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_slice1_row_chrome_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_slice1_row_chrome_PHASED_PLAN.md",
+    "ui_app/src/imgui_stack_editor.h",
+    "ui_app/src/runtime_walk_bootstrap.h",
+    "ui_app/src/runtime_walk_viewer_imgui.cpp",
+    "ui_app/src/runtime_walk_viewer_imgui.h",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_runtime_walk_viewer_import.cpp"
+  ],
+  "required_operator_inputs": [
+    "duplicated runtime-walk row editor chrome",
+    "existing ImGui headless test surface",
+    "narrow shared-helper boundary"
+  ],
+  "forbidden_operator_prompts": [
+    "bespoke color-window row clone",
+    "generic params array row model",
+    "salticid transpiler dependency",
+    "schema-engine rewrite"
+  ],
+  "required_defaults": {
+    "shared_helper_scope": "row_chrome_only",
+    "domain_state_owner": "runtime_walk_rows_remain_domain_owned",
+    "slice_scope": "runtime_walk_extraction_only"
+  },
+  "forbidden_defaults": {
+    "fits_semantics_in_shared_helper": "forbidden",
+    "renderer_or_color_pipeline_behavior_change": "forbidden",
+    "build_script_churn_without_need": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_slice1_row_chrome.contract.json --out-json artifacts/validation/advanced_color_pipeline_slice1_row_chrome_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_slice1_contract_schema_valid",
+      "description": "The advanced color-pipeline slice-1 contract validates with structured assertions enabled",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_slice1_row_chrome_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_slice1_plan_sync_ok",
+      "description": "The advanced color-pipeline slice-1 phased plan stays synchronized during the row-chrome extraction",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

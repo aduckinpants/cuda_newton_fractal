@@ -3,11 +3,13 @@
 #include "fractal_types.h"
 #include "runtime_walk.h"
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
 
 struct RuntimeWalkFitsMappingBinding {
+    std::uint64_t ui_row_id = 0;
     std::string target_selector;
     std::string source_kind = "fits_frame";
     std::string source_signal;
