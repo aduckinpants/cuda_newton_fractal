@@ -45,6 +45,20 @@ struct ColorPipelineWindowState {
     std::vector<std::string> validation_messages;
 };
 
+enum class ColorPipelineDraftApplyStatus {
+    live_unavailable,
+    matches_live,
+    can_apply,
+    unsupported_tuple,
+    disallowed_for_family,
+    invalid_params,
+};
+
+struct ColorPipelineDraftApplyState {
+    ColorPipelineDraftApplyStatus status = ColorPipelineDraftApplyStatus::live_unavailable;
+    std::string message;
+};
+
 struct ColorPipelineLaneCatalog {
     const char* lane_id = "";
     const char* label = "";
@@ -868,6 +882,75 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     return true;
 }
 
+inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
+    const ColorPipelineWindowState& state,
+    FractalType liveFractalType,
+    const KernelParams* liveParams = nullptr) {
+    if (!state.live_snapshot.valid) {
+        return {
+            ColorPipelineDraftApplyStatus::live_unavailable,
+            "Live runtime selection is not available yet.",
+        };
+    }
+    if (!HasColorPipelineDraftEdits(state)) {
+        return {
+            ColorPipelineDraftApplyStatus::matches_live,
+            "Draft matches the live runtime selection.",
+        };
+    }
+
+    ColorPipelineSelection nextPipeline{};
+    ColoringMode nextMode = ColoringMode::root_basin;
+    std::string error;
+    if (!TryBuildColorPipelineSelectionFromDraft(state, &nextPipeline, &nextMode, &error)) {
+        return {
+            ColorPipelineDraftApplyStatus::unsupported_tuple,
+            "Selected lane mix is preview-only in this slice; only exact supported live tuples can apply.",
+        };
+    }
+    if (!IsColorPipelineAllowedForFractal(liveFractalType, nextPipeline)) {
+        return {
+            ColorPipelineDraftApplyStatus::disallowed_for_family,
+            "Selected advanced color tuple is not allowed for the current fractal family.",
+        };
+    }
+    if (liveParams) {
+        KernelParams probe = *liveParams;
+        if (!ApplySupportedColorPipelineParamsToLive(state, &probe, nullptr, &error)) {
+            return {
+                ColorPipelineDraftApplyStatus::invalid_params,
+                error,
+            };
+        }
+    }
+    return {
+        ColorPipelineDraftApplyStatus::can_apply,
+        "Draft diverges from the live runtime selection.",
+    };
+}
+
+inline ColorPipelineDraftApplyState DescribeColorPipelineCandidateApplyState(
+    const ColorPipelineWindowState& state,
+    std::size_t laneIndex,
+    const char* functionId,
+    FractalType liveFractalType,
+    const KernelParams* liveParams = nullptr) {
+    if (!functionId || functionId[0] == '\0' || laneIndex >= state.lanes.size()) {
+        return {
+            ColorPipelineDraftApplyStatus::unsupported_tuple,
+            "Unsupported advanced color candidate.",
+        };
+    }
+    ColorPipelineWindowState probeState = state;
+    if (!SelectColorPipelineLaneFunction(&probeState, laneIndex, functionId)) {
+        return {
+            ColorPipelineDraftApplyStatus::unsupported_tuple,
+            "Unsupported advanced color candidate.",
+        };
+    }
+    return DescribeColorPipelineDraftApplyState(probeState, liveFractalType, liveParams);
+}
+
 inline bool ApplyColorPipelineDraftToLiveState(
     ColorPipelineWindowState* ioState,
     FractalType liveFractalType,
@@ -1001,30 +1084,46 @@ inline void RenderColorPipelineWindowSummary(
     KernelParams* liveParams,
     bool* ioDirty) {
     ImGui::TextWrapped("Live slot editor: applying Signal / Palette / Grade here updates the same runtime color tuple used by the main Color panel.");
-    ImGui::TextDisabled("Phase and iteration-bands tuning controls are live in this slice; unsupported function knobs remain preview-only.");
+    ImGui::TextDisabled("Only exact supported live tuples are executable in this slice; unsupported mixed lane combinations remain preview-only.");
+    ImGui::TextDisabled("Within those tuples, only phase and iteration-bands tuning controls are live in this slice; unsupported function knobs remain preview-only.");
     ImGui::Separator();
     if (ioState && ioState->live_snapshot.valid) {
+        const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
         ImGui::TextWrapped(
             "Live runtime: %s -> %s / %s / %s",
             ColoringModeId(ioState->live_snapshot.coloring_mode),
             ColorSignalId(ioState->live_snapshot.pipeline.signal),
             ColorPaletteId(ioState->live_snapshot.pipeline.palette),
             ColorGradingPresetId(ioState->live_snapshot.pipeline.grading));
-        if (HasColorPipelineDraftEdits(*ioState)) {
-            ImGui::TextColored(ImVec4(0.95f, 0.83f, 0.40f, 1.0f), "Draft diverges from the live runtime selection.");
-            ImGui::SameLine();
-            if (liveParams && ImGui::Button("Apply Selected Pipeline")) {
-                bool changed = false;
-                if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
-                    *ioDirty = true;
-                }
+        if (applyState.status == ColorPipelineDraftApplyStatus::matches_live) {
+            ImGui::TextDisabled("%s", applyState.message.c_str());
+        } else {
+            const bool canApply = applyState.status == ColorPipelineDraftApplyStatus::can_apply;
+            const ImVec4 statusColor = canApply
+                ? ImVec4(0.95f, 0.83f, 0.40f, 1.0f)
+                : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
+            ImGui::TextColored(statusColor, "%s", applyState.message.c_str());
+            if (!canApply) {
+                ImGui::TextDisabled("Supported live tuples in this slice: Root Basin, Joy Basins, Iteration Count, Smooth Escape, Phase, and Iteration Bands.");
             }
-            ImGui::SameLine();
+            if (liveParams) {
+                if (!canApply) {
+                    ImGui::BeginDisabled();
+                }
+                if (ImGui::Button("Apply Selected Pipeline") && canApply) {
+                    bool changed = false;
+                    if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
+                        *ioDirty = true;
+                    }
+                }
+                if (!canApply) {
+                    ImGui::EndDisabled();
+                }
+                ImGui::SameLine();
+            }
             if (ImGui::Button("Reset Draft From Live")) {
                 ResetColorPipelineDraftFromLiveState(ioState);
             }
-        } else {
-            ImGui::TextDisabled("Draft matches the live runtime selection.");
         }
     } else {
         ImGui::TextDisabled("Live runtime selection is not available yet.");
@@ -1038,7 +1137,9 @@ inline void RenderColorPipelineWindowSummary(
 
 inline void RenderColorPipelineWindowLane(
     ColorPipelineWindowState* ioState,
-    std::size_t laneIndex) {
+    std::size_t laneIndex,
+    FractalType liveFractalType,
+    const KernelParams* liveParams) {
     if (!ioState || laneIndex >= ioState->lanes.size()) {
         return;
     }
@@ -1073,7 +1174,18 @@ inline void RenderColorPipelineWindowLane(
         if (ImGui::BeginCombo("Function", comboPreview)) {
             for (const FunctionDescriptor& candidate : catalog->functions) {
                 const bool isSelected = (candidate.id == lane.function_id);
-                if (ImGui::Selectable(candidate.name.c_str(), isSelected)) {
+                const ColorPipelineDraftApplyState candidateState = DescribeColorPipelineCandidateApplyState(
+                    *ioState,
+                    laneIndex,
+                    candidate.id.c_str(),
+                    liveFractalType,
+                    liveParams);
+                std::string optionLabel = candidate.name;
+                if (!isSelected && candidateState.status != ColorPipelineDraftApplyStatus::can_apply &&
+                    candidateState.status != ColorPipelineDraftApplyStatus::matches_live) {
+                    optionLabel += " (preview only)";
+                }
+                if (ImGui::Selectable(optionLabel.c_str(), isSelected)) {
                     if (SelectColorPipelineLaneFunction(ioState, laneIndex, candidate.id.c_str())) {
                         currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, lane.function_id);
                     }
@@ -1141,7 +1253,7 @@ inline bool RenderColorPipelineWindow(
     if (began) {
         RenderColorPipelineWindowSummary(ioState, liveFractalType, liveParams, ioDirty);
         for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
-            RenderColorPipelineWindowLane(ioState, laneIndex);
+            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams);
             ImGui::Spacing();
         }
     }

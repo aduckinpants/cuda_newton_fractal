@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_invalid_tuple_ux",
+  "feature_id": "advanced_color_pipeline_invalid_tuple_ux",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_invalid_tuple_ux_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_invalid_tuple_ux_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "current advanced color pipeline draft tuple",
+    "legacy tuple legality rules",
+    "advanced window summary/apply seam"
+  ],
+  "forbidden_operator_prompts": [
+    "pretend unsupported tuples are reviewable",
+    "expand the live tuple catalog in this UX slice",
+    "public schema changes"
+  ],
+  "required_defaults": {
+    "invalid_tuple_behavior": "explicit_status_and_disabled_apply",
+    "runtime_authority": "kernelparams_only"
+  },
+  "forbidden_defaults": {
+    "silent_apply_failures": "forbidden",
+    "second_tuple_authority": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_invalid_tuple_ux.contract.json --out-json artifacts/validation/advanced_color_pipeline_invalid_tuple_ux_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_invalid_tuple_ux_contract_schema_valid",
+      "description": "The invalid-tuple UX follow-up contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_invalid_tuple_ux_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_invalid_tuple_ux_plan_sync_ok",
+      "description": "The invalid-tuple UX follow-up phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

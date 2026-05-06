@@ -761,6 +761,34 @@ int main() {
             std::cerr << "Expected the advanced color pipeline window to write and reimport supported bands parameter values\n";
             return 1;
         }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "iteration_count") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "joy") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "escape_default")) {
+            std::cerr << "Expected the advanced color pipeline status RED to construct the unsupported mixed tuple from the user report\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState invalidApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
+        if (invalidApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
+            std::cerr << "Expected the advanced color pipeline status RED to classify unsupported mixed tuples before apply\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_angle") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "phase_wheel") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "phase_default")) {
+            std::cerr << "Expected the advanced color pipeline status RED to reconstruct a legal phase tuple\n";
+            return 1;
+        }
+        if (!setParam(windowState.lanes[0], "signal.phase_offset", 0.5)) {
+            std::cerr << "Expected the advanced color pipeline status RED to find the phase offset control\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState validApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
+        if (validApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected the advanced color pipeline status GREEN to recognize a valid live phase draft\n";
+            return 1;
+        }
     }
 
     {
