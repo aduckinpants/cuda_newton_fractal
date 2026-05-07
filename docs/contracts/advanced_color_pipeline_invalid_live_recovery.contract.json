@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_invalid_live_recovery",
+  "feature_id": "advanced_color_pipeline_invalid_live_recovery",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_invalid_live_recovery_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_invalid_live_recovery_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "operator report that the staged D: build still hides the checkbox and leaves the sliders inert",
+    "summary and apply logic in ui_app/src/color_pipeline_window.h",
+    "focused regression seam in ui_app/tests/test_schema_binding.cpp"
+  ],
+  "forbidden_operator_prompts": [
+    "revert the checkbox back to a separate apply button",
+    "solve the issue by turning auto-apply off by default",
+    "treat an invalid live color state as if no live runtime exists"
+  ],
+  "required_defaults": {
+    "auto_apply_checkbox": "visible_when_live_runtime_exists",
+    "invalid_live_recovery": "supported_drafts_can_repair_invalid_live_state",
+    "slider_feedback": "supported_live_backed_edits_resume_after_recovery"
+  },
+  "forbidden_defaults": {
+    "hidden_checkbox_on_invalid_live_state": "forbidden",
+    "blocked_apply_on_invalid_live_state": "forbidden",
+    "new_timing_workaround": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_invalid_live_recovery.contract.json --out-json artifacts/validation/advanced_color_pipeline_invalid_live_recovery_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_invalid_live_recovery_contract_schema_valid",
+      "description": "The invalid-live recovery contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_invalid_live_recovery_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_invalid_live_recovery_plan_sync_ok",
+      "description": "The invalid-live recovery plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

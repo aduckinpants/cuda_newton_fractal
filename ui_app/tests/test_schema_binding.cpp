@@ -768,6 +768,51 @@ int main() {
             std::cerr << "Expected a diverged draft to survive when the live tuple becomes bridge-supported later\n";
             return 1;
         }
+
+        ColorPipelineWindowState invalidLiveWindowState{};
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        if (SyncColorPipelineWindowFromLiveState(&invalidLiveWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected out-of-sync live color state to fail snapshot import instead of pretending it was valid\n";
+            return 1;
+        }
+        if (invalidLiveWindowState.live_snapshot.valid) {
+            std::cerr << "Expected invalid live color state to leave the live snapshot unavailable for import\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState invalidLiveApplyState = DescribeColorPipelineDraftApplyState(
+            invalidLiveWindowState,
+            view.fractal_type,
+            &params);
+        if (invalidLiveApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected the default supported draft to remain applicable so the advanced window can repair an invalid live color state\n";
+            return 1;
+        }
+        ColorPipelineRenderInteractionState invalidLiveInteractionState{};
+        if (!ShouldAutoApplySupportedColorPipelineDraft(
+                invalidLiveWindowState,
+                invalidLiveApplyState,
+                invalidLiveInteractionState,
+                &params)) {
+            std::cerr << "Expected supported auto-apply to stay eligible while recovering an invalid live color state\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&invalidLiveWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the supported draft to repair an invalid live color state\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
+            !invalidLiveWindowState.live_snapshot.valid ||
+            !invalidLiveWindowState.live_snapshot.draft_import_supported) {
+            std::cerr << "Expected invalid live recovery to repair the runtime tuple and restore an importable live snapshot\n";
+            return 1;
+        }
     }
 
     {
@@ -958,6 +1003,29 @@ int main() {
             return 1;
         }
         EndFrame();
+
+        BeginFrame();
+        ColorPipelineWindowState invalidLiveRenderState{};
+        invalidLiveRenderState.open = true;
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        if (!RenderColorPipelineWindow(&invalidLiveRenderState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to keep rendering while repairing an invalid live color state\n";
+            return 1;
+        }
+        EndFrame();
+        if (!invalidLiveRenderState.auto_apply_supported_recipe ||
+            params.coloring_mode != ColoringMode::smooth_escape ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
+            !invalidLiveRenderState.live_snapshot.valid) {
+            std::cerr << "Expected a default-on supported draft to repair an invalid live color state during render instead of leaving the runtime stuck\n";
+            return 1;
+        }
 
         auto setParam = [](ColorPipelineRowState& row, const char* path, double value) {
             for (ColorPipelineParamState& param : row.parameter_values) {

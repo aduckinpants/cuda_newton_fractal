@@ -1476,13 +1476,14 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
     const ColorPipelineWindowState& state,
     FractalType liveFractalType,
     const KernelParams* liveParams = nullptr) {
-    if (!state.live_snapshot.valid) {
+    if (!liveParams && !state.live_snapshot.valid) {
         return {
             ColorPipelineDraftApplyStatus::live_unavailable,
             "Live runtime selection is not available yet.",
         };
     }
-    if (!HasColorPipelineDraftEdits(state)) {
+
+    if (!liveParams && !HasColorPipelineDraftEdits(state)) {
         return {
             ColorPipelineDraftApplyStatus::matches_live,
             "Draft matches the live runtime selection.",
@@ -1508,10 +1509,31 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
     }
     if (liveParams) {
         KernelParams probe = *liveParams;
-        if (!ApplySupportedColorPipelineParamsToLive(state, &probe, nullptr, &error)) {
+        bool paramChanged = false;
+        if (!ApplySupportedColorPipelineParamsToLive(state, &probe, &paramChanged, &error)) {
             return {
                 ColorPipelineDraftApplyStatus::invalid_params,
                 error,
+            };
+        }
+
+        const bool tupleChanged =
+            liveParams->coloring_mode != nextMode ||
+            liveParams->color_pipeline.signal != nextPipeline.signal ||
+            liveParams->color_pipeline.palette != nextPipeline.palette ||
+            liveParams->color_pipeline.grading != nextPipeline.grading ||
+            paramChanged;
+        if (!tupleChanged) {
+            return {
+                ColorPipelineDraftApplyStatus::matches_live,
+                "Draft matches the live runtime selection.",
+            };
+        }
+
+        if (!state.live_snapshot.valid) {
+            return {
+                ColorPipelineDraftApplyStatus::can_apply,
+                "Current live runtime selection is invalid or out of sync; the supported draft can repair it.",
             };
         }
     }
@@ -1757,9 +1779,9 @@ inline void RenderColorPipelineWindowSummary(
     ImGui::TextDisabled("This window now models three typed lane stacks instead of a fixed Signal / Palette / Grade trio.");
     ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, one live-backed Shape row (Identity or Offset + Scale), and one enabled Palette row. Stacked Shape recipes remain draft-only until custom runtime integration lands.");
     ImGui::Separator();
-    if (ioState && ioState->live_snapshot.valid) {
+    if (ioState && liveParams) {
         ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
-        if (ioState->live_snapshot.draft_import_supported) {
+        if (ioState->live_snapshot.valid && ioState->live_snapshot.draft_import_supported) {
             const char* signalId = nullptr;
             const char* shapeId = "(unsupported shape)";
             const char* paletteId = nullptr;
@@ -1773,11 +1795,14 @@ inline void RenderColorPipelineWindowSummary(
                 signalId ? signalId : "(unsupported signal)",
                 shapeId,
                 paletteId ? paletteId : "(unsupported palette)");
-        } else {
+        } else if (ioState->live_snapshot.valid) {
             ImGui::TextWrapped(
                 "Live bridge: %s (outside the current Source / Shape / Palette bridge)",
                 ColoringModeId(ioState->live_snapshot.coloring_mode));
             ImGui::TextDisabled("The schedule editor keeps its own starter draft until live runtime maps onto a supported Source / Shape / Palette bridge recipe.");
+        } else {
+            ImGui::TextWrapped("Live bridge: current runtime color state is invalid or out of sync with the programmable bridge.");
+            ImGui::TextDisabled("The current supported draft can still repair the runtime; the live import/reset path will return once the state is coherent again.");
         }
         const bool canApply = applyState.status == ColorPipelineDraftApplyStatus::can_apply;
         if (applyState.status == ColorPipelineDraftApplyStatus::matches_live) {
@@ -1791,23 +1816,17 @@ inline void RenderColorPipelineWindowSummary(
                 ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape + Heatmap, Phase Orbit + Phase Wheel, and Iteration Bands + Banded Heatmap with Identity or Offset + Scale in Shape.");
             }
         }
-        if (!liveParams) {
-            ImGui::BeginDisabled();
-        }
         const bool autoApplyChanged = ImGui::Checkbox("Auto-apply supported recipe", &ioState->auto_apply_supported_recipe);
         NoteColorPipelineCurrentItemInteraction(autoApplyChanged, ioInteraction);
-        if (!liveParams) {
-            ImGui::EndDisabled();
-        }
         ImGui::SameLine();
-        if (!ioState->live_snapshot.draft_import_supported) {
+        if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
             ImGui::BeginDisabled();
         }
         if (ImGui::Button("Reset Draft From Live")) {
             NoteColorPipelineCurrentItemInteraction(true, ioInteraction);
             ResetColorPipelineDraftFromLiveState(ioState);
         }
-        if (!ioState->live_snapshot.draft_import_supported) {
+        if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
             ImGui::EndDisabled();
         }
         if (ioState->auto_apply_supported_recipe && !canApply && applyState.status != ColorPipelineDraftApplyStatus::matches_live) {
