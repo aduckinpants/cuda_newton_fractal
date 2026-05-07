@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "contract_id": "viewport_camera_drag_regression",
+  "feature_id": "viewport_camera_drag_regression",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/viewport_camera_drag_regression_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/viewport_camera_drag_regression_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp"
+  ],
+  "required_operator_inputs": [
+    "user reported viewport X/Y/Zoom dragging broke",
+    "zoom should not be re-capped to a tiny UI maximum",
+    "fix must be locked down with unit and regression tests"
+  ],
+  "forbidden_operator_prompts": [
+    "paper over the bug without a failing regression",
+    "open the advanced-color dropdown completeness scope during this slice",
+    "reintroduce UI-only zoom caps that block deep camera zoom"
+  ],
+  "required_defaults": {
+    "camera_drag_updates_hp_authority": "required",
+    "shipped_zoom_control_has_no_bogus_ui_cap": "required"
+  },
+  "forbidden_defaults": {
+    "camera_drag_only_mutates_ui_mirror": "forbidden",
+    "zoom_drag_ui_cap_reintroduced": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/viewport_camera_drag_regression.contract.json --out-json artifacts/validation/viewport_camera_drag_regression_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "viewport_camera_drag_regression_contract_schema_valid",
+      "description": "The viewport camera drag regression contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewport_camera_drag_regression_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "viewport_camera_drag_regression_plan_sync_ok",
+      "description": "The viewport camera drag regression phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

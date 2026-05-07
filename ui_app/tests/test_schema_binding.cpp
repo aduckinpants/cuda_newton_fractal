@@ -69,6 +69,41 @@ bool NearlyEqual(double left, double right, double eps = 1.0e-6) {
     return delta < eps && delta > -eps;
 }
 
+constexpr double kTestMaxLog2Zoom = 1020.0;
+
+double TestLog2(double value) {
+    return std::log(value) / std::log(2.0);
+}
+
+double TestExp2(double value) {
+    return std::exp(value * std::log(2.0));
+}
+
+double TestSafeZoomFromLog2(double log2Zoom) {
+    double clamped = log2Zoom;
+    const double minLog2 = TestLog2(1.0e-30);
+    if (clamped < minLog2) {
+        clamped = minLog2;
+    }
+    if (clamped > kTestMaxLog2Zoom) {
+        clamped = kTestMaxLog2Zoom;
+    }
+    return TestExp2(clamped);
+}
+
+void SyncTestViewUiFromHp(ViewState& view) {
+    double zoom = TestSafeZoomFromLog2(view.log2_zoom);
+    if (zoom < 1.0e-30) {
+        zoom = 1.0e-30;
+    }
+    if (zoom > 1.0e30) {
+        zoom = 1.0e30;
+    }
+    view.zoom = static_cast<float>(zoom);
+    view.center.x = static_cast<float>(view.center_hp_x);
+    view.center.y = static_cast<float>(view.center_hp_y);
+}
+
 } // namespace
 
 int main() {
@@ -242,14 +277,11 @@ int main() {
         UISchemaControl zoom = MakeBoundControl("zoom", "drag_float", "Zoom", "float", "param", "fractal.view.zoom");
         zoom.has_min = true;
         zoom.min = 1.0e-12;
-        zoom.has_ui_min = true;
-        zoom.ui_min = 0.25;
-        zoom.has_ui_max = true;
-        zoom.ui_max = 64.0;
 
         NumericControlRange zoomRange = ResolveNumericControlRange(zoom);
-        if (!zoomRange.has_hard_min || zoomRange.hard_min != 1.0e-12 || zoomRange.has_hard_max) {
-            std::cerr << "Expected zoom to keep only its true hard minimum after range resolution\n";
+        if (zoomRange.has_widget_max ||
+            !zoomRange.has_hard_min || zoomRange.hard_min != 1.0e-12 || zoomRange.has_hard_max) {
+            std::cerr << "Expected zoom drags to keep their true hard minimum without a UI maximum cap\n";
             return 1;
         }
         NumericDragWidgetBounds zoomDragBounds = ResolveNumericDragWidgetBounds(zoom);
@@ -386,6 +418,74 @@ int main() {
             std::cerr << "Expected color-pipeline int params to clamp edits to their declared hard maximum\n";
             return 1;
         }
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        view.center_hp_x = 1.25;
+        view.center_hp_y = -0.75;
+        view.log2_zoom = TestLog2(32.0);
+        SyncTestViewUiFromHp(view);
+
+        BindingContext cameraCtx = MakeBindingContext(&view, &params, &render, &lens);
+
+        UISchemaBinding centerXBinding;
+        centerXBinding.kind = "param";
+        centerXBinding.path = "fractal.view.center.x";
+
+        double displayedValue = 0.0;
+        if (!TryGetFloatControlDisplayValue(centerXBinding, cameraCtx, &displayedValue) ||
+            !NearlyEqual(displayedValue, 1.25, 1.0e-12)) {
+            std::cerr << "Expected camera center controls to read back from the HP center authority\n";
+            return 1;
+        }
+
+        view.center.x = 999.0f;
+        if (!TryGetFloatControlDisplayValue(centerXBinding, cameraCtx, &displayedValue) ||
+            !NearlyEqual(displayedValue, 1.25, 1.0e-12)) {
+            std::cerr << "Expected camera center controls to ignore stale UI mirror values\n";
+            return 1;
+        }
+
+        NumericControlRange cameraCenterRange{};
+        if (!ApplyFloatControlEdit(centerXBinding, cameraCtx, cameraCenterRange, -2.5) ||
+            !NearlyEqual(view.center_hp_x, -2.5, 1.0e-12) ||
+            !NearlyEqual(view.center.x, -2.5f, 1.0e-6) ||
+            !NearlyEqual(view.center_hp_y, -0.75, 1.0e-12)) {
+            std::cerr << "Expected camera center edits to update HP authority and resync the UI mirror\n";
+            return 1;
+        }
+
+        UISchemaBinding zoomBinding;
+        zoomBinding.kind = "param";
+        zoomBinding.path = "fractal.view.zoom";
+
+        view.log2_zoom = TestLog2(32.0);
+        SyncTestViewUiFromHp(view);
+        view.zoom = 0.0f;
+        if (!TryGetFloatControlDisplayValue(zoomBinding, cameraCtx, &displayedValue) ||
+            !NearlyEqual(displayedValue, 32.0, 1.0e-12)) {
+            std::cerr << "Expected camera zoom controls to read back from log2_zoom instead of a stale float mirror\n";
+            return 1;
+        }
+
+        NumericControlRange cameraZoomRange{};
+        cameraZoomRange.has_hard_min = true;
+        cameraZoomRange.hard_min = 1.0e-12;
+        if (!ApplyFloatControlEdit(zoomBinding, cameraCtx, cameraZoomRange, 1.0e9) ||
+            !NearlyEqual(TestSafeZoomFromLog2(view.log2_zoom), 1.0e9, 1.0) ||
+            view.zoom <= 0.0f) {
+            std::cerr << "Expected camera zoom edits to update log2_zoom and preserve a positive synced zoom value\n";
+            return 1;
+        }
+
+        if (!ApplyFloatControlEdit(zoomBinding, cameraCtx, cameraZoomRange, 0.0) ||
+            TestSafeZoomFromLog2(view.log2_zoom) < 1.0e-12 ||
+            view.zoom < 1.0e-12f) {
+            std::cerr << "Expected camera zoom edits to respect only the hard zoom floor when clamped\n";
+            return 1;
+        }
     }
 
     {
@@ -485,6 +585,32 @@ int main() {
         }
         if (ExplainoSeedCombined(view, params) != 7.25) {
             std::cerr << "Expected explaino combined seed to track schema default application\n";
+            return 1;
+        }
+
+        dirty = false;
+        view.center_hp_x = 0.0;
+        view.center_hp_y = 0.0;
+        view.log2_zoom = 0.0;
+        SyncTestViewUiFromHp(view);
+        UISchemaControl centerDefault = MakeBoundControl("center_x", "drag_float", "Center X", "float", "param", "fractal.view.center.x");
+        centerDefault.has_default = true;
+        centerDefault.def = json_min::Value{1.5};
+        if (!ApplySchemaDefaultForControl(centerDefault, ctx, &dirty) || !dirty ||
+            !NearlyEqual(view.center_hp_x, 1.5, 1.0e-12) || !NearlyEqual(view.center.x, 1.5f, 1.0e-6)) {
+            std::cerr << "Expected camera center defaults to update HP authority and the synced UI mirror\n";
+            return 1;
+        }
+
+        dirty = false;
+        UISchemaControl zoomDefault = MakeBoundControl("zoom", "drag_float", "Zoom", "float", "param", "fractal.view.zoom");
+        zoomDefault.has_default = true;
+        zoomDefault.has_min = true;
+        zoomDefault.min = 1.0e-12;
+        zoomDefault.def = json_min::Value{1000000.0};
+        if (!ApplySchemaDefaultForControl(zoomDefault, ctx, &dirty) || !dirty ||
+            !NearlyEqual(TestSafeZoomFromLog2(view.log2_zoom), 1000000.0, 1.0) || view.zoom <= 0.0f) {
+            std::cerr << "Expected camera zoom defaults to update log2_zoom and keep the UI mirror synced\n";
             return 1;
         }
 

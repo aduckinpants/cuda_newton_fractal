@@ -5,6 +5,7 @@
 #include "fractal_family_rules.h"
 #include "imgui.h"
 #include "ui_schema_grouping.h"
+#include "view_hp_sync.h"
 
 #include <cmath>
 #include <cstring>
@@ -33,6 +34,56 @@ void ClampNumericValue(T* value, const NumericControlRange& range) {
     if (range.has_hard_max && *value > static_cast<T>(range.hard_max)) {
         *value = static_cast<T>(range.hard_max);
     }
+}
+
+bool IsCameraFloatBindingPath(const std::string& path) {
+    return path == "fractal.view.center.x" ||
+        path == "fractal.view.center.y" ||
+        path == "fractal.view.zoom";
+}
+
+double ClampDouble(double value, double minValue, double maxValue) {
+    if (value < minValue) {
+        return minValue;
+    }
+    if (value > maxValue) {
+        return maxValue;
+    }
+    return value;
+}
+
+double LocalLog2(double value) {
+    return std::log(value) / std::log(2.0);
+}
+
+double LocalExp2(double value) {
+    return std::exp(value * std::log(2.0));
+}
+
+double SafeCameraUiZoomFromLog2(double log2Zoom) {
+    return LocalExp2(ClampDouble(log2Zoom, LocalLog2(1.0e-30), kMaxLog2Zoom));
+}
+
+void SyncCameraUiMirrorFromHp(ViewState& view) {
+    double zoom = SafeCameraUiZoomFromLog2(view.log2_zoom);
+    zoom = ClampDouble(zoom, 1.0e-30, 1.0e30);
+    view.zoom = static_cast<float>(zoom);
+    view.center.x = static_cast<float>(view.center_hp_x);
+    view.center.y = static_cast<float>(view.center_hp_y);
+}
+
+const char* FloatControlDisplayFormat(const UISchemaControl& control, const UISchemaBinding& binding) {
+    if (binding.path == "fractal.view.zoom" || control.logarithmic) {
+        return "%.6g";
+    }
+    return control.type == "slider_float" ? "%.5f" : "%.3f";
+}
+
+const char* FloatControlInputFormat(const UISchemaControl& control, const UISchemaBinding& binding) {
+    if (binding.path == "fractal.view.zoom" || control.logarithmic) {
+        return "%.9g";
+    }
+    return "%.5f";
 }
 
 constexpr ColoringMode kSelectableColoringModes[] = {
@@ -105,6 +156,80 @@ bool ApplySelectedColorPipeline(BindingContext* ctx, MatchFn match) {
 }
 
 } // namespace
+
+bool TryGetFloatControlDisplayValue(const UISchemaBinding& binding, const BindingContext& ctx, double* outValue) {
+    if (!outValue) {
+        return false;
+    }
+
+    if (binding.path == "fractal.view.center.x") {
+        if (!ctx.view) {
+            return false;
+        }
+        *outValue = ctx.view->center_hp_x;
+        return true;
+    }
+    if (binding.path == "fractal.view.center.y") {
+        if (!ctx.view) {
+            return false;
+        }
+        *outValue = ctx.view->center_hp_y;
+        return true;
+    }
+    if (binding.path == "fractal.view.zoom") {
+        if (!ctx.view) {
+            return false;
+        }
+        *outValue = SafeCameraUiZoomFromLog2(ctx.view->log2_zoom);
+        return true;
+    }
+
+    float value = 0.0f;
+    if (!ctx.GetFloatValue(binding.path, value)) {
+        return false;
+    }
+    *outValue = static_cast<double>(value);
+    return true;
+}
+
+bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
+    double nextValue = value;
+    ClampNumericValue(&nextValue, range);
+
+    if (binding.path == "fractal.view.center.x") {
+        if (!ctx.view) {
+            return false;
+        }
+        ctx.view->center_hp_x = nextValue;
+        SyncCameraUiMirrorFromHp(*ctx.view);
+        return true;
+    }
+    if (binding.path == "fractal.view.center.y") {
+        if (!ctx.view) {
+            return false;
+        }
+        ctx.view->center_hp_y = nextValue;
+        SyncCameraUiMirrorFromHp(*ctx.view);
+        return true;
+    }
+    if (binding.path == "fractal.view.zoom") {
+        if (!ctx.view) {
+            return false;
+        }
+        ctx.view->log2_zoom = LocalLog2((std::fmax)(1.0e-30, nextValue));
+        SyncCameraUiMirrorFromHp(*ctx.view);
+        return true;
+    }
+
+    float* target = nullptr;
+    if (!ctx.BindFloat(binding.path, &target) || !target) {
+        return false;
+    }
+    float nextFloat = static_cast<float>(nextValue);
+    ClampNumericValue(&nextFloat, range);
+    *target = nextFloat;
+    return true;
+}
 
 NumericControlRange ResolveNumericControlRange(const UISchemaControl& control) {
     NumericControlRange range;
@@ -623,14 +748,14 @@ bool ApplyIntSchemaDefault(const UISchemaControl& control, BindingContext& ctx, 
 }
 
 bool ApplyFloatSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
-    float* value = nullptr;
-    if (!ctx.BindFloat(control.binding.path, &value) || !value) return false;
+    double currentValue = 0.0;
+    if (!TryGetFloatControlDisplayValue(control.binding, ctx, &currentValue)) return false;
 
-    float newValue = *value;
-    if (control.def.is_number()) newValue = static_cast<float>(control.def.as_number());
+    double newValue = currentValue;
+    if (control.def.is_number()) newValue = control.def.as_number();
     else if (control.def.is_string()) {
         try {
-            newValue = static_cast<float>(std::stod(control.def.as_string()));
+            newValue = std::stod(control.def.as_string());
         } catch (...) {
             return false;
         }
@@ -638,8 +763,10 @@ bool ApplyFloatSchemaDefault(const UISchemaControl& control, BindingContext& ctx
         return false;
     }
 
-    if (*value == newValue) return false;
-    *value = newValue;
+    if (currentValue == newValue) return false;
+    if (!ApplyFloatControlEdit(control.binding, ctx, ResolveNumericControlRange(control), newValue)) {
+        return false;
+    }
     if (ioDirty) *ioDirty = true;
     return true;
 }
@@ -946,10 +1073,11 @@ bool RenderFloatControl(
     const UISchemaBinding& binding,
     bool* ioDirty,
     bool* ioInteracted) {
-    float* value = nullptr;
-    if (!ctx.BindFloat(binding.path, &value) || !value) {
+    double displayedValue = 0.0;
+    if (!TryGetFloatControlDisplayValue(binding, ctx, &displayedValue)) {
         return RenderDiagnosticLabel(control, "bind failed");
     }
+    float value = static_cast<float>(displayedValue);
 
     const NumericControlRange range = ResolveNumericControlRange(control);
     const float minValue = range.has_widget_min ? static_cast<float>(range.widget_min) : 0.0f;
@@ -957,20 +1085,24 @@ bool RenderFloatControl(
     const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
     const float speed = control.has_step ? static_cast<float>(control.step) : 0.01f;
     const ImGuiSliderFlags flags = control.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
+    const char* displayFormat = FloatControlDisplayFormat(control, binding);
+    const char* inputFormat = FloatControlInputFormat(control, binding);
 
     bool changed = false;
     if (control.type == "slider_float") {
-        changed = ImGui::SliderFloat(control.label.c_str(), value, minValue, maxValue, "%.5f", flags);
+        changed = ImGui::SliderFloat(control.label.c_str(), &value, minValue, maxValue, displayFormat, flags);
     } else {
         const float dragMin = dragBounds.has_bounds ? static_cast<float>(dragBounds.min) : 0.0f;
         const float dragMax = dragBounds.has_bounds ? static_cast<float>(dragBounds.max) : 0.0f;
-        changed = ImGui::DragFloat(control.label.c_str(), value, speed, dragMin, dragMax, "%.3f", flags);
+        changed = ImGui::DragFloat(control.label.c_str(), &value, speed, dragMin, dragMax, displayFormat, flags);
     }
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
-    const bool typedChanged = ImGui::InputFloat(inputLabel.c_str(), value, 0.0f, 0.0f, "%.5f");
+    const bool typedChanged = ImGui::InputFloat(inputLabel.c_str(), &value, 0.0f, 0.0f, inputFormat);
     if (changed || typedChanged) {
-        ClampNumericValue(value, range);
+        if (!ApplyFloatControlEdit(binding, ctx, range, static_cast<double>(value))) {
+            return RenderDiagnosticLabel(control, IsCameraFloatBindingPath(binding.path) ? "camera edit failed" : "edit failed");
+        }
         changed = true;
     }
     MarkDirtyIfChanged(changed, ioDirty);

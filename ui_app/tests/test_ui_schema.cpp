@@ -330,7 +330,7 @@ int main() {
         bool foundPositiveNovaAlphaMin = false;
         bool foundCenterXUiRange = false;
         bool foundCenterYUiRange = false;
-        bool foundZoomUiRange = false;
+        bool foundZoomNoUiCap = false;
         bool foundRotationUiRange = false;
         bool foundMaxIterUiCap = false;
         bool foundEpsilonSoftMax = false;
@@ -443,9 +443,9 @@ int main() {
                     foundCenterYUiRange = true;
                 }
                 if (ctrl.id == "zoom" && ctrl.has_min && ctrl.min == 1e-12 &&
-                    ctrl.has_ui_min && ctrl.ui_min == 0.25 && ctrl.has_ui_max && ctrl.ui_max == 64.0 &&
+                    !ctrl.has_ui_min && !ctrl.has_ui_max &&
                     !ctrl.has_max && ctrl.logarithmic) {
-                    foundZoomUiRange = true;
+                    foundZoomNoUiCap = true;
                 }
                 if (ctrl.id == "rotation_deg" && ctrl.has_ui_min && ctrl.ui_min == -180.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 180.0 && !ctrl.has_min && !ctrl.has_max) {
@@ -628,7 +628,7 @@ int main() {
             std::cerr << "Did not find explicit UI ranges for unbounded center drag controls in schema\n";
             return 1;
         }
-        if (!foundZoomUiRange || !foundRotationUiRange || !foundMaxIterUiCap || !foundEpsilonSoftMax ||
+        if (!foundZoomNoUiCap || !foundRotationUiRange || !foundMaxIterUiCap || !foundEpsilonSoftMax ||
             !foundSeedRateSoftMin || !foundParamAnimRateSoftMin || !foundDiveSpeedUiCap ||
             !foundPolyCoeffUiRange || !foundExplainoPhaseUiRange || !foundExplainoPhaseStrengthUiRange ||
             !foundExplainoPhaseVisibleForDual || !foundExplainoWarpClampAligned || !foundExplainoDampingUiRange || !foundMomentumBetaUiRange ||
@@ -684,7 +684,7 @@ int main() {
         bool foundContinuousRenderDefaultFalse = false;
         bool foundSafeModeCenterXUiRange = false;
         bool foundSafeModeCenterYUiRange = false;
-        bool foundSafeModeZoomUiRange = false;
+        bool foundSafeModeZoomNoUiCap = false;
         bool foundSafeModeRotationUiRange = false;
         bool foundSafeModeMaxIterUiCap = false;
 
@@ -775,9 +775,9 @@ int main() {
                 if (ctrl.id == "center_y" && ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundSafeModeCenterYUiRange = true;
                 }
-                if (ctrl.id == "zoom" && ctrl.has_min && ctrl.min == 1e-12 && ctrl.has_ui_min && ctrl.ui_min == 0.25 &&
-                    ctrl.has_ui_max && ctrl.ui_max == 64.0 && !ctrl.has_max && ctrl.logarithmic) {
-                    foundSafeModeZoomUiRange = true;
+                if (ctrl.id == "zoom" && ctrl.has_min && ctrl.min == 1e-12 && !ctrl.has_ui_min &&
+                    !ctrl.has_ui_max && !ctrl.has_max && ctrl.logarithmic) {
+                    foundSafeModeZoomNoUiCap = true;
                 }
                 if (ctrl.id == "rotation_deg" && ctrl.has_ui_min && ctrl.ui_min == -180.0 && ctrl.has_ui_max && ctrl.ui_max == 180.0 &&
                     !ctrl.has_min && !ctrl.has_max) {
@@ -813,7 +813,7 @@ int main() {
             std::cerr << "Safe-mode schema did not expose the disabled-by-default continuous-render control\n";
             return 1;
         }
-        if (!foundSafeModeCenterXUiRange || !foundSafeModeCenterYUiRange || !foundSafeModeZoomUiRange ||
+        if (!foundSafeModeCenterXUiRange || !foundSafeModeCenterYUiRange || !foundSafeModeZoomNoUiCap ||
             !foundSafeModeRotationUiRange || !foundSafeModeMaxIterUiCap) {
             std::cerr << "Safe-mode schema did not inherit the MVP soft-range control updates\n";
             return 1;

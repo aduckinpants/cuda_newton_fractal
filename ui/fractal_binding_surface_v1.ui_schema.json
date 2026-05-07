@@ -77,7 +77,7 @@
           "type": "drag_float",
           "label": "Zoom",
           "value_type": "float",
-          "min": 1e-12, "ui_min": 0.25, "ui_max": 64.0, "step": 0.01, "default": 1.0,
+          "min": 1e-12, "step": 0.01, "default": 1.0,
           "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.view.zoom" }
         },

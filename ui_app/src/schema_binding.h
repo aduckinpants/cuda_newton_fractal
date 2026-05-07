@@ -49,4 +49,6 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
 NumericControlRange ResolveNumericControlRange(const UISchemaControl& c);
 NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& c);
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& c, const BindingContext& ctx);
+bool TryGetFloatControlDisplayValue(const UISchemaBinding& binding, const BindingContext& ctx, double* outValue);
+bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value);
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);
