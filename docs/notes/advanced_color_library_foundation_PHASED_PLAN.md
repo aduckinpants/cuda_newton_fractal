@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 0 validated - the ExplainO oracle split, stronger color-pipeline architecture contract, and initial balanced library inventory are checked in, and the deterministic validation rails are green; checkpoint closure remains before Phase 1 extraction starts
+Phase 1 validated - the headless category/function/catalog/live-bridge core now lives in `ui_app/src/color_pipeline_core.h`, the window delegates to that core, and the checkpoint validation rails are green; checkpoint closure remains before Phase 2 source-library widening starts
 
 ## Phase Checklist
 
 - [x] Phase 0 - check in the oracle/terminology note, architecture contract, and initial library inventory for the four-category foundation
-- [ ] Phase 1 - extract category/function/adapter/serialization authority out of `ui_app/src/color_pipeline_window.h` so the window becomes a consumer only
+- [x] Phase 1 - extract category/function/catalog/live-bridge authority out of `ui_app/src/color_pipeline_window.h` so the window becomes a consumer for the shipped catalog truth before any library widening starts
 - [ ] Phase 2 - land the full initial Source library through the extracted descriptor/registry core
 - [ ] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [ ] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
@@ -44,32 +44,33 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` explicitly distinguishes legacy ExplainO CMap, Root Classic Palette, Joy Root Palette, and the generic viewport colormap surface as separate authorities.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` records the stronger architecture rule that `color_pipeline_window.h` must become a consumer and not remain the authority for ids, semantics, adapters, or serialization truth.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` records the initial balanced library inventory for Source / Shape / Palette / Grading, including the bounded Balance/Void-inspired grading operator and a separate ExplainO-BalanceVoid family track.
-- Validated: `artifacts/validation/advanced_color_library_foundation_phase0_oracle_inventory_contract.json` shows the new slice contract validates cleanly, and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` shows the phased plan remains synchronized.
-- Pending: the Phase 0 docs-only slice is checkpointed with receipts before Phase 1 extraction begins.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase0_oracle_inventory_contract.json` shows the Phase 0 contract validated cleanly, and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` shows the phased plan stayed synchronized.
+- Checkpointed: Phase 0 closed at commit `6624781` with handoff and machine proof receipts.
+- Landed: `ui_app/src/color_pipeline_core.h` now owns the shipped advanced color lane-catalog type, descriptor builders, function-id mappings, runtime-backed filtering, and schedule-bridge tuple mapping.
+- Landed: `ui_app/src/color_pipeline_window.h` now delegates the shipped catalog and bridge helpers to `ui_app/src/color_pipeline_core.h` instead of defining that authority inline.
+- Landed: `ui_app/tests/test_schema_binding.cpp` now exercises the extracted core directly, proving the shipped Shape catalog and the banded schedule-bridge tuple without routing through the window helper first.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase1_core_extraction_contract.json` shows the Phase 1 contract validated cleanly, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` shows the plan stayed synchronized, `artifacts/code_quality_report.json` stayed at baseline (`97/100`), `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` published the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed`.
+- Deferred explicitly: apply/reset/default/serialization ownership cleanup is still part of the broader foundation architecture, but this slice did not claim to finish that seam; it only moved the shipped catalog and bridge truth into the dedicated core header.
+- Pending: the Phase 1 extraction slice is checkpointed with handoff and machine proof receipts before Phase 2 Source-library widening starts.
 
 ## Notes
 
 - Expected owner files for the current slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase0_oracle_inventory.contract.json`
-  - `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md`
-- Expected owner files for follow-on implementation slices:
+  - `docs/contracts/advanced_color_library_foundation_phase1_core_extraction.contract.json`
   - `ui_app/src/color_pipeline_window.h`
+  - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/function_descriptor.h`
-  - `ui_app/src/escape_time_coloring.h`
-  - `ui_app/src/basin_coloring.h`
-  - `ui_app/src/fractal_types.h`
-  - `ui_app/src/fractal_family_rules.h`
-  - `ui_app/src/diagnostics_state_io.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
-  - `ui_app/tests/test_escape_time_coloring.cpp`
 - Non-goals for this slice:
-  - do not start the extraction or widen the shipped runtime catalog yet
+  - do not widen the shipped runtime catalog yet
   - do not implement the Balance/Void grading operator yet
   - do not implement ExplainO-BalanceVoid yet
   - do not widen into Blend or Mask/Domain yet
-  - do not add new hard-coded window branches while planning a reusable core
+  - do not add new hard-coded window branches while extracting the reusable core
 
 ## Resume Point
 
-After the checked-in oracle/inventory note lands and validates, Phase 1 begins: extract the category/function/adapter/serialization authority out of `ui_app/src/color_pipeline_window.h` and make the window consume that core instead of owning it.
+After the dedicated headless core extraction lands and validates, Phase 2 begins: widen the Source library through the extracted registry/core instead of adding new hard-coded window-owned descriptors.
+
+

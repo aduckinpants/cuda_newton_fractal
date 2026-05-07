@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase1_core_extraction",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "extract category/function/catalog/live-bridge authority out of color_pipeline_window.h before widening the library",
+    "keep the window as a consumer of a separate headless core",
+    "preserve the shipped Source / Shape / Palette starter draft and existing runtime-backed function filtering",
+    "add focused regressions that exercise the extracted core directly"
+  ],
+  "forbidden_operator_prompts": [
+    "leave the window as the authority for lane catalogs and function descriptors",
+    "widen the shipped function catalog during the extraction slice",
+    "duplicate catalog logic between the new core and the window",
+    "hide unknown function or lane ids behind silent fallback",
+    "skip runtime-backed filtering just because the core moved"
+  ],
+  "required_defaults": {
+    "window_consumes_headless_core": "required",
+    "starter_draft_shape_preserved": "required",
+    "runtime_backed_catalog_filter_preserved": "required",
+    "focused_headless_regression_exists": "required"
+  },
+  "forbidden_defaults": {
+    "window_redeclares_catalog_truth": "forbidden",
+    "preview_only_function_rows_shipped": "forbidden",
+    "silent_unknown_lane_or_function_fallback": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase1_core_extraction.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase1_core_extraction_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label \"native helper tests\" --log artifacts/verify_native_helper_tests.log -- cmd /c ui_app\\build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label \"runtime publish\" --log artifacts/verify_runtime_publish.log -- cmd /c ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label \"runtime probe session pytest\" --log artifacts/verify_runtime_probe_session_pytest.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase1_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 1 extraction contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase1_core_extraction_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase1_plan_sync_ok",
+      "description": "The advanced color library foundation Phase 1 plan stays synchronized during core extraction",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 #include "../src/schema_binding.h"
 
+#include "../src/color_pipeline_core.h"
 #include "../src/color_pipeline_window.h"
 #include "../src/imgui_stack_editor.h"
 
@@ -717,6 +718,49 @@ int main() {
     }
 
     {
+        const std::vector<ColorPipelineLaneCatalog>& coreCatalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
+        if (coreCatalogs.size() != 3 ||
+            coreCatalogs[0].lane_id != std::string("source") ||
+            coreCatalogs[1].lane_id != std::string("shape") ||
+            coreCatalogs[2].lane_id != std::string("palette")) {
+            std::cerr << "Expected the extracted advanced color core to own the shipped Source / Shape / Palette lane catalog\n";
+            return 1;
+        }
+        const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
+        if (!coreShapeCatalog ||
+            coreShapeCatalog->default_function_id != std::string("identity") ||
+            coreShapeCatalog->functions.size() != 3 ||
+            coreShapeCatalog->functions[0].id != "identity" ||
+            coreShapeCatalog->functions[1].id != "offset_scale" ||
+            coreShapeCatalog->functions[2].id != "repeat") {
+            std::cerr << "Expected the extracted advanced color core to preserve the shipped runtime-backed Shape catalog without posterize\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "repeat");
+        if (!coreRepeatDescriptor ||
+            coreRepeatDescriptor->parameters.size() != 2 ||
+            coreRepeatDescriptor->parameters[0].path != "shape.frequency" ||
+            coreRepeatDescriptor->parameters[1].path != "shape.phase") {
+            std::cerr << "Expected the extracted advanced color core to preserve repeat parameter ordering and meaning\n";
+            return 1;
+        }
+        const char* bridgeSourceFunctionId = nullptr;
+        const char* bridgePaletteFunctionId = nullptr;
+        const ColorPipelineSelection bandsPipeline = {
+            ColorSignal::iteration_bands,
+            ColorPalette::banded_escape,
+            ColorGradingPreset::bands_default,
+        };
+        if (!color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(
+                bandsPipeline,
+                &bridgeSourceFunctionId,
+                &bridgePaletteFunctionId) ||
+            std::string(bridgeSourceFunctionId ? bridgeSourceFunctionId : "") != "banded_signal" ||
+            std::string(bridgePaletteFunctionId ? bridgePaletteFunctionId : "") != "banded_heatmap") {
+            std::cerr << "Expected the extracted advanced color core to preserve the shipped schedule bridge ids for runtime-backed tuples\n";
+            return 1;
+        }
+
         ViewState view{};
         KernelParams params{};
         ColorPipelineWindowState windowState{};
