@@ -835,18 +835,33 @@ int main() {
         }
 
         ColorPipelineRenderInteractionState interactionState{};
-        if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
+        if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, 0.0, &params)) {
             std::cerr << "Expected armed auto-apply to remain eligible when no programmable control is actively being manipulated\n";
             return 1;
         }
         interactionState.has_active_item = true;
-        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
-            std::cerr << "Expected auto-apply to defer while a programmable control is actively being manipulated\n";
+        windowState.last_auto_apply_time_seconds = 10.0;
+        if (ShouldAutoApplySupportedColorPipelineDraft(
+                windowState,
+                validApplyState,
+                interactionState,
+                10.0 + (kColorPipelineActiveAutoApplyIntervalSeconds * 0.5),
+                &params)) {
+            std::cerr << "Expected auto-apply to stay throttled until the short active-drag debounce window has elapsed\n";
+            return 1;
+        }
+        if (!ShouldAutoApplySupportedColorPipelineDraft(
+                windowState,
+                validApplyState,
+                interactionState,
+                10.0 + (kColorPipelineActiveAutoApplyIntervalSeconds * 1.5),
+                &params)) {
+            std::cerr << "Expected auto-apply to resume short-interval live preview while a programmable control stays active\n";
             return 1;
         }
         interactionState.has_active_item = false;
         windowState.auto_apply_supported_recipe = false;
-        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
+        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, 0.0, &params)) {
             std::cerr << "Expected disabled auto-apply to stay disarmed even when the draft is otherwise supported\n";
             return 1;
         }

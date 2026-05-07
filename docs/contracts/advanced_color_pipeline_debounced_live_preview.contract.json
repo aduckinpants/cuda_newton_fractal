@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_debounced_live_preview",
+  "feature_id": "advanced_color_pipeline_debounced_live_preview",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_debounced_live_preview_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_debounced_live_preview_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "operator report that the current release-only gate removes live slider feedback",
+    "current auto-apply decision seam in ui_app/src/color_pipeline_window.h",
+    "existing live slider interaction pattern elsewhere in the viewer"
+  ],
+  "forbidden_operator_prompts": [
+    "turn auto-apply off by default",
+    "revert the checkbox back to a separate apply button",
+    "keep active drag fully disarmed until mouse release"
+  ],
+  "required_defaults": {
+    "auto_apply_checkbox": "persistent_and_default_on",
+    "active_drag_preview": "debounced_live_runtime_updates",
+    "release_behavior": "supported_drafts_still_apply_after_edit_completion"
+  },
+  "forbidden_defaults": {
+    "release_only_feedback": "forbidden",
+    "default_off_auto_apply": "forbidden",
+    "summary_prelane_mutation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_debounced_live_preview.contract.json --out-json artifacts/validation/advanced_color_pipeline_debounced_live_preview_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_debounced_live_preview_contract_schema_valid",
+      "description": "The debounced live-preview contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_debounced_live_preview_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_debounced_live_preview_plan_sync_ok",
+      "description": "The debounced live-preview plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

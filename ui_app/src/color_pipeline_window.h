@@ -46,6 +46,7 @@ struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
     bool auto_apply_supported_recipe = true;
+    double last_auto_apply_time_seconds = -1.0e30;
     std::uint64_t next_row_id = 1;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
@@ -69,6 +70,8 @@ struct ColorPipelineDraftApplyState {
 struct ColorPipelineRenderInteractionState {
     bool has_active_item = false;
 };
+
+constexpr double kColorPipelineActiveAutoApplyIntervalSeconds = 1.0 / 30.0;
 
 struct ColorPipelineLaneCatalog {
     const char* lane_id = "";
@@ -1576,11 +1579,13 @@ inline bool ShouldAutoApplySupportedColorPipelineDraft(
     const ColorPipelineWindowState& state,
     const ColorPipelineDraftApplyState& applyState,
     const ColorPipelineRenderInteractionState& interactionState,
+    double currentTimeSeconds,
     const KernelParams* liveParams = nullptr) {
     return liveParams &&
         state.auto_apply_supported_recipe &&
         applyState.status == ColorPipelineDraftApplyStatus::can_apply &&
-        !interactionState.has_active_item;
+        (!interactionState.has_active_item ||
+            (currentTimeSeconds - state.last_auto_apply_time_seconds) >= kColorPipelineActiveAutoApplyIntervalSeconds);
 }
 
 inline bool RenderColorPipelineParamControl(
@@ -1881,16 +1886,20 @@ inline bool RenderColorPipelineWindow(
     const bool began = ImGui::Begin("Color Pipeline", &open);
     if (began) {
         ColorPipelineRenderInteractionState interactionState;
+        const double currentTimeSeconds = ImGui::GetTime();
         RenderColorPipelineWindowSummary(ioState, liveFractalType, liveParams, ioDirty);
         for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
             RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams, &interactionState);
             ImGui::Spacing();
         }
         const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
-        if (ShouldAutoApplySupportedColorPipelineDraft(*ioState, applyState, interactionState, liveParams)) {
+        if (ShouldAutoApplySupportedColorPipelineDraft(*ioState, applyState, interactionState, currentTimeSeconds, liveParams)) {
             bool changed = false;
-            if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
-                *ioDirty = true;
+            if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed)) {
+                ioState->last_auto_apply_time_seconds = currentTimeSeconds;
+                if (changed && ioDirty) {
+                    *ioDirty = true;
+                }
             }
         }
     }
