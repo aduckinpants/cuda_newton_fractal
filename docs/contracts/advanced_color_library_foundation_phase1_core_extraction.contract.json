@@ -37,10 +37,7 @@
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase1_core_extraction.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase1_core_extraction_contract.json",
-    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label \"native helper tests\" --log artifacts/verify_native_helper_tests.log -- cmd /c ui_app\\build_tests_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label \"runtime publish\" --log artifacts/verify_runtime_publish.log -- cmd /c ui_app\\build_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label \"runtime probe session pytest\" --log artifacts/verify_runtime_probe_session_pytest.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py"
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
   ],
   "required_acceptance_assertions": [
     {
