@@ -297,6 +297,8 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "identity";
     case ColorPipelineShape::offset_scale:
         return "offset_scale";
+    case ColorPipelineShape::repeat:
+        return "repeat";
     }
     return nullptr;
 }
@@ -434,7 +436,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
     }
     if (std::string(laneId) == "shape") {
         return functionId == "identity" ||
-            functionId == "offset_scale";
+            functionId == "offset_scale" ||
+            functionId == "repeat";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||
@@ -1065,6 +1068,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "offset_scale") {
         return path == "shape.offset" || path == "shape.scale";
     }
+    if (functionId == "repeat") {
+        return path == "shape.frequency" || path == "shape.phase";
+    }
     if (functionId == "banded_signal") {
         return path == "signal.band_count" || path == "signal.softness";
     }
@@ -1168,6 +1174,10 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
         return SetColorPipelineParamNumber(ioRow, "shape.offset", liveParams.color_shape_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.scale", liveParams.color_shape_scale, outError);
     }
+    if (ioRow->function_id == "repeat") {
+        return SetColorPipelineParamNumber(ioRow, "shape.frequency", liveParams.color_shape_repeat_frequency, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.phase", liveParams.color_shape_repeat_phase, outError);
+    }
     if (ioRow->function_id == "banded_signal") {
         return SetColorPipelineParamNumber(ioRow, "signal.band_count", static_cast<double>(liveParams.color_iteration_band_count), outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.softness", liveParams.color_iteration_band_softness, outError);
@@ -1226,6 +1236,20 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     }
 
     bool changed = false;
+    const auto assignShapeFloat = [&](float* target, float value) {
+        if (std::fabs(*target - value) > 1.0e-6f) {
+            *target = value;
+            changed = true;
+        }
+    };
+    const auto resetShapeOffsetScale = [&]() {
+        assignShapeFloat(&ioParams->color_shape_offset, 0.0f);
+        assignShapeFloat(&ioParams->color_shape_scale, 1.0f);
+    };
+    const auto resetShapeRepeat = [&]() {
+        assignShapeFloat(&ioParams->color_shape_repeat_frequency, 8.0f);
+        assignShapeFloat(&ioParams->color_shape_repeat_phase, 0.0f);
+    };
     for (const ColorPipelineLaneState& lane : state.lanes) {
         for (const ColorPipelineRowState& row : lane.rows) {
         if (!row.enabled) {
@@ -1324,14 +1348,8 @@ inline bool ApplySupportedColorPipelineParamsToLive(
                 ioParams->color_shape = ColorPipelineShape::identity;
                 changed = true;
             }
-            if (std::fabs(ioParams->color_shape_offset) > 1.0e-6f) {
-                ioParams->color_shape_offset = 0.0f;
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_shape_scale - 1.0f) > 1.0e-6f) {
-                ioParams->color_shape_scale = 1.0f;
-                changed = true;
-            }
+            resetShapeOffsetScale();
+            resetShapeRepeat();
             continue;
         }
         if (row.function_id == "offset_scale") {
@@ -1347,14 +1365,27 @@ inline bool ApplySupportedColorPipelineParamsToLive(
                 ioParams->color_shape = ColorPipelineShape::offset_scale;
                 changed = true;
             }
-            if (std::fabs(ioParams->color_shape_offset - static_cast<float>(offset)) > 1.0e-6f) {
-                ioParams->color_shape_offset = static_cast<float>(offset);
+            assignShapeFloat(&ioParams->color_shape_offset, static_cast<float>(offset));
+            assignShapeFloat(&ioParams->color_shape_scale, static_cast<float>(scale));
+            resetShapeRepeat();
+            continue;
+        }
+        if (row.function_id == "repeat") {
+            double frequency = 0.0;
+            double phase = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "shape.frequency", &frequency, outError) ||
+                !TryGetColorPipelineParamNumber(row, "shape.phase", &phase, outError) ||
+                !ValidateColorPipelineParamRange("shape.frequency", frequency, 0.25, 24.0, outError) ||
+                !ValidateColorPipelineParamRange("shape.phase", phase, -1.0, 1.0, outError)) {
+                return false;
+            }
+            if (ioParams->color_shape != ColorPipelineShape::repeat) {
+                ioParams->color_shape = ColorPipelineShape::repeat;
                 changed = true;
             }
-            if (std::fabs(ioParams->color_shape_scale - static_cast<float>(scale)) > 1.0e-6f) {
-                ioParams->color_shape_scale = static_cast<float>(scale);
-                changed = true;
-            }
+            resetShapeOffsetScale();
+            assignShapeFloat(&ioParams->color_shape_repeat_frequency, static_cast<float>(frequency));
+            assignShapeFloat(&ioParams->color_shape_repeat_phase, static_cast<float>(phase));
             continue;
         }
         if (row.function_id == "banded_signal") {

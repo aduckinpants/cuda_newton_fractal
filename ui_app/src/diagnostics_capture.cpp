@@ -104,6 +104,7 @@ const char* ColorPipelineShapeId(ColorPipelineShape shape) {
     switch (shape) {
     case ColorPipelineShape::identity: return "identity";
     case ColorPipelineShape::offset_scale: return "offset_scale";
+    case ColorPipelineShape::repeat: return "repeat";
     }
     return "unknown";
 }
@@ -214,6 +215,8 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_phase_palette_offset\": " << static_cast<double>(params.color_phase_palette_offset) << ",\n";
     js << "    \"color_shape_offset\": " << static_cast<double>(params.color_shape_offset) << ",\n";
     js << "    \"color_shape_scale\": " << static_cast<double>(params.color_shape_scale) << ",\n";
+    js << "    \"color_shape_repeat_frequency\": " << static_cast<double>(params.color_shape_repeat_frequency) << ",\n";
+    js << "    \"color_shape_repeat_phase\": " << static_cast<double>(params.color_shape_repeat_phase) << ",\n";
     js << "    \"color_iteration_band_count\": " << params.color_iteration_band_count << ",\n";
     js << "    \"color_iteration_band_softness\": " << static_cast<double>(params.color_iteration_band_softness) << ",\n";
     js << "    \"color_iteration_band_emphasis\": " << static_cast<double>(params.color_iteration_band_emphasis) << ",\n";

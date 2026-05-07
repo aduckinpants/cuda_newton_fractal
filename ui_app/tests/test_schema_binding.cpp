@@ -645,10 +645,11 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 2 ||
+            shapeCatalog->functions.size() != 3 ||
             shapeCatalog->functions[0].id != "identity" ||
-            shapeCatalog->functions[1].id != "offset_scale") {
-            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the first real offset_scale row\n";
+            shapeCatalog->functions[1].id != "offset_scale" ||
+            shapeCatalog->functions[2].id != "repeat") {
+            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real offset_scale and repeat rows\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
@@ -663,6 +664,33 @@ int main() {
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity")) {
             std::cerr << "Expected the Shape lane to switch back to Identity after offset_scale coverage\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "repeat")) {
+            std::cerr << "Expected the shipped Shape lane to allow selecting repeat once it is runtime-backed\n";
+            return 1;
+        }
+        if (windowState.lanes[1].rows[0].parameter_values.size() != 2) {
+            std::cerr << "Expected repeat to initialize two Shape parameters\n";
+            return 1;
+        }
+        if (windowState.lanes[1].rows[0].parameter_values[0].path != "shape.frequency" ||
+            windowState.lanes[1].rows[0].parameter_values[1].path != "shape.phase") {
+            std::cerr << "Expected repeat to expose frequency and phase parameter paths in order\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[1].rows[0], &visibleParamIndexes)) {
+            std::cerr << "Expected repeat renderability collection to succeed\n";
+            return 1;
+        }
+        if (visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1) {
+            std::cerr << "Expected repeat to mark both Shape parameters as live-renderable\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity")) {
+            std::cerr << "Expected the Shape lane to switch back to Identity after repeat coverage\n";
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
@@ -721,9 +749,20 @@ int main() {
             std::cerr << "Expected schedule-style lane rows to support removing non-last rows\n";
             return 1;
         }
-        if (SelectColorPipelineLaneFunction(&windowState, 1, "repeat") ||
-            AddColorPipelineLaneRow(&windowState, 1, "repeat")) {
-            std::cerr << "Expected the shipped Shape lane to reject draft-only rows until the runtime backend supports them\n";
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "repeat") ||
+            !AddColorPipelineLaneRow(&windowState, 1, "repeat")) {
+            std::cerr << "Expected the shipped Shape lane to accept repeat once the runtime backend supports it\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 1, 1) ||
+            windowState.lanes[1].rows.size() != 1 ||
+            windowState.lanes[1].rows[0].function_id != "repeat") {
+            std::cerr << "Expected repeat rows to participate in the same schedule-style Shape row editing surface\n";
+            return 1;
+        }
+        if (SelectColorPipelineLaneFunction(&windowState, 1, "posterize") ||
+            AddColorPipelineLaneRow(&windowState, 1, "posterize")) {
+            std::cerr << "Expected the shipped Shape lane to keep rejecting draft-only posterize until its runtime backend exists\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
@@ -875,15 +914,15 @@ int main() {
         };
         std::vector<std::size_t> visibleParamIndexes;
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_orbit") ||
-            !SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "repeat") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
-            std::cerr << "Expected the live programmable editor RED to construct a legal phase tuple with the first real Shape row\n";
+            std::cerr << "Expected the live programmable editor RED to construct a legal phase tuple with the repeat Shape row\n";
             return 1;
         }
         if (!setParam(windowState.lanes[0].rows[0], "signal.phase_offset", 1.25) ||
             !setParam(windowState.lanes[0].rows[0], "signal.wrap_cycles", 2.5) ||
-            !setParam(windowState.lanes[1].rows[0], "shape.offset", 0.25) ||
-            !setParam(windowState.lanes[1].rows[0], "shape.scale", 1.5) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.frequency", 6.0) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.phase", 0.2) ||
             !setParam(windowState.lanes[2].rows[0], "palette.phase_offset", -0.75)) {
             std::cerr << "Expected the live programmable editor RED to expose the current phase and Shape parameter controls\n";
             return 1;
@@ -901,12 +940,14 @@ int main() {
         }
         if (!NearlyEqual(params.color_phase_signal_offset, 1.25) ||
             !NearlyEqual(params.color_phase_wrap_cycles, 2.5) ||
-            params.color_shape != ColorPipelineShape::offset_scale ||
-            !NearlyEqual(params.color_shape_offset, 0.25) ||
-            !NearlyEqual(params.color_shape_scale, 1.5) ||
+            params.color_shape != ColorPipelineShape::repeat ||
+            !NearlyEqual(params.color_shape_repeat_frequency, 6.0) ||
+            !NearlyEqual(params.color_shape_repeat_phase, 0.2) ||
+            !NearlyEqual(params.color_shape_offset, 0.0) ||
+            !NearlyEqual(params.color_shape_scale, 1.0) ||
             !NearlyEqual(params.color_phase_palette_offset, -0.75) ||
             !windowState.live_snapshot.valid ||
-            windowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
+            windowState.live_snapshot.lanes[1].rows[0].function_id != "repeat" ||
             HasColorPipelineDraftEdits(windowState)) {
             std::cerr << "Expected live programmable apply to write the phase plus Shape owner fields and resync the live snapshot\n";
             return 1;

@@ -202,6 +202,10 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, cons
     if (params.color_shape == ColorPipelineShape::offset_scale) {
         value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
         value *= EscapeTimeColorClamp(params.color_shape_scale, 0.1f, 8.0f);
+    } else if (params.color_shape == ColorPipelineShape::repeat) {
+        value = value * EscapeTimeColorClamp(params.color_shape_repeat_frequency, 0.25f, 24.0f) +
+            EscapeTimeColorClamp(params.color_shape_repeat_phase, -1.0f, 1.0f);
+        value -= floorf(value);
     }
     return value;
 }

@@ -736,6 +736,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorPhasePaletteOffset = nextParams.color_phase_palette_offset;
     double colorShapeOffset = nextParams.color_shape_offset;
     double colorShapeScale = nextParams.color_shape_scale;
+    double colorShapeRepeatFrequency = nextParams.color_shape_repeat_frequency;
+    double colorShapeRepeatPhase = nextParams.color_shape_repeat_phase;
     int colorIterationBandCount = nextParams.color_iteration_band_count;
     double colorIterationBandCountRaw = static_cast<double>(colorIterationBandCount);
     double colorIterationBandSoftness = nextParams.color_iteration_band_softness;
@@ -757,6 +759,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_phase_palette_offset", &colorPhasePaletteOffset, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_shape_offset", &colorShapeOffset, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_shape_scale", &colorShapeScale, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_repeat_frequency", &colorShapeRepeatFrequency, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_repeat_phase", &colorShapeRepeatPhase, nullptr, outError)) return false;
     bool hasColorIterationBandCount = false;
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_count", &colorIterationBandCountRaw, &hasColorIterationBandCount, outError)) return false;
     if (hasColorIterationBandCount) {
@@ -790,6 +794,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_phase_palette_offset = static_cast<float>(colorPhasePaletteOffset);
     nextParams.color_shape_offset = static_cast<float>(colorShapeOffset);
     nextParams.color_shape_scale = static_cast<float>(colorShapeScale);
+    nextParams.color_shape_repeat_frequency = static_cast<float>(colorShapeRepeatFrequency);
+    nextParams.color_shape_repeat_phase = static_cast<float>(colorShapeRepeatPhase);
     nextParams.color_iteration_band_count = colorIterationBandCount;
     nextParams.color_iteration_band_softness = static_cast<float>(colorIterationBandSoftness);
     nextParams.color_iteration_band_emphasis = static_cast<float>(colorIterationBandEmphasis);

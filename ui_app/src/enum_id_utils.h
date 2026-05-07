@@ -86,6 +86,7 @@ inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
 inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {
     {ColorPipelineShape::identity, "identity"},
     {ColorPipelineShape::offset_scale, "offset_scale"},
+    {ColorPipelineShape::repeat, "repeat"},
 };
 
 inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {

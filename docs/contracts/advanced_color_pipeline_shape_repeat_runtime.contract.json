@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_shape_repeat_runtime",
+  "feature_id": "advanced_color_pipeline_shape_repeat_runtime",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_shape_repeat_runtime_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_shape_repeat_runtime_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slider_runtime_root_cause_RETROSPECTIVE.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_runtime_reset.cpp"
+  ],
+  "required_operator_inputs": [
+    "user request to document the slider lesson and flesh out the advanced color pipeline tool",
+    "repeat shape metadata already present in ui_app/src/color_pipeline_window.h",
+    "runtime shape authority seams in fractal_types.h and escape_time_coloring.h"
+  ],
+  "forbidden_operator_prompts": [
+    "ship repeat as preview-only",
+    "pretend multi-function lane composition already exists",
+    "skip documenting the slider runtime lesson"
+  ],
+  "required_defaults": {
+    "repeat_shape_runtime_backed": "required",
+    "slider_root_cause_documented": "required",
+    "posterize_parallel_scope": "forbidden"
+  },
+  "forbidden_defaults": {
+    "draft_only_repeat_in_shipped_selector": "forbidden",
+    "helper_only_confidence_without_runtime_proof": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_shape_repeat_runtime.contract.json --out-json artifacts/validation/advanced_color_pipeline_shape_repeat_runtime_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_shape_repeat_runtime_contract_schema_valid",
+      "description": "The repeat-shape runtime contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_shape_repeat_runtime_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_shape_repeat_runtime_plan_sync_ok",
+      "description": "The repeat-shape runtime phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

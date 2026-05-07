@@ -172,9 +172,27 @@ int main() {
             return 1;
         }
 
+        params.color_shape = ColorPipelineShape::repeat;
+        params.color_shape_repeat_frequency = 6.0f;
+        params.color_shape_repeat_phase = 0.2f;
+        const TestColor repeatedSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, repeatedSignal)) {
+            std::cerr << "repeat should react to its live Shape owner fields\n";
+            return 1;
+        }
+
         params.color_shape = ColorPipelineShape::identity;
         params.color_shape_offset = 0.0f;
         params.color_shape_scale = 1.0f;
+        params.color_shape_repeat_frequency = 8.0f;
+        params.color_shape_repeat_phase = 0.0f;
         const TestColor gradedBase = ApplyFractalColorGrading(programmableBase, params);
         params.color_contrast_lift_exposure = 1.8f;
         params.color_contrast_lift_saturation = 1.5f;
@@ -255,6 +273,22 @@ int main() {
             params);
         if (Equals(phaseBase, phaseReshaped)) {
             std::cerr << "Phase coloring should react to the live offset_scale Shape owner fields\n";
+            return 1;
+        }
+
+        params.color_shape = ColorPipelineShape::repeat;
+        params.color_shape_repeat_frequency = 4.0f;
+        params.color_shape_repeat_phase = -0.15f;
+        const TestColor phaseRepeated = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            phaseCoord,
+            params);
+        if (Equals(phaseBase, phaseRepeated)) {
+            std::cerr << "Phase coloring should react to the live repeat Shape owner fields\n";
             return 1;
         }
     }
