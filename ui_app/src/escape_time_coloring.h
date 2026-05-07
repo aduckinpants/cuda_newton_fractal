@@ -114,7 +114,7 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const Ke
         params.color_contrast);
 }
 
-    ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params);
+    ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap = 1.0f);
 
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color MakePhaseAngleColor(float angle, bool brightValue, const KernelParams& params) {
@@ -198,14 +198,18 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyIterationBandEmphasis(Escape
     return rgb;
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params) {
+ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
     if (params.color_shape == ColorPipelineShape::offset_scale) {
         value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
         value *= EscapeTimeColorClamp(params.color_shape_scale, 0.1f, 8.0f);
     } else if (params.color_shape == ColorPipelineShape::repeat) {
         value = value * EscapeTimeColorClamp(params.color_shape_repeat_frequency, 0.25f, 24.0f) +
             EscapeTimeColorClamp(params.color_shape_repeat_phase, -1.0f, 1.0f);
-        value -= floorf(value);
+        repeatWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+        value = fmodf(value, repeatWrap);
+        if (value < 0.0f) {
+            value += repeatWrap;
+        }
     }
     return value;
 }
@@ -308,7 +312,7 @@ ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter,
     const float twoPi = 6.28318530717958647692f;
     const float paletteOffset = (params.color_iteration_band_palette_offset / twoPi) * static_cast<float>(bandCount);
     const float t = static_cast<float>(iteration) / static_cast<float>(safeMaxIter);
-    const float signalBand = ApplyColorPipelineShapeValue(t * static_cast<float>(bandCount), params);
+    const float signalBand = ApplyColorPipelineShapeValue(t * static_cast<float>(bandCount), params, static_cast<float>(bandCount));
     EscapeTimeColorRgb rgb = SampleIterationBandPalette(signalBand + paletteOffset, bandCount, softness);
     rgb = ApplyIterationBandEmphasis(rgb, emphasis);
     const float bright = 1.0f - 0.4f * t;

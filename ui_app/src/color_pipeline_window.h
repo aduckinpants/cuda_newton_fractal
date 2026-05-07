@@ -3,8 +3,6 @@
 #include "enum_id_utils.h"
 #include "fractal_family_rules.h"
 #include "function_descriptor.h"
-#include "imgui.h"
-#include "imgui_stack_editor.h"
 #include "schema_binding.h"
 
 #include <cmath>
@@ -12,6 +10,29 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "imgui.h"
+#include "imgui_stack_editor.h"
+#else
+inline bool EnsureImGuiStackEditorRowId(std::uint64_t* ioRowId, std::uint64_t* ioNextRowId) {
+    if (!ioRowId || !ioNextRowId) {
+        return false;
+    }
+    if (*ioNextRowId == 0) {
+        *ioNextRowId = 1;
+    }
+    if (*ioRowId == 0) {
+        *ioRowId = *ioNextRowId;
+        ++(*ioNextRowId);
+        return true;
+    }
+    if (*ioNextRowId <= *ioRowId) {
+        *ioNextRowId = *ioRowId + 1;
+    }
+    return true;
+}
+#endif
 
 struct ColorPipelineParamState {
     std::string path;
@@ -1504,9 +1525,11 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         return false;
     }
 
-    if (shapeRow->function_id != "identity" && shapeRow->function_id != "offset_scale") {
+    if (shapeRow->function_id != "identity" &&
+        shapeRow->function_id != "offset_scale" &&
+        shapeRow->function_id != "repeat") {
         if (outError) {
-            *outError = "Current live bridge only supports the Identity and Offset + Scale Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            *outError = "Current live bridge only supports the Identity, Offset + Scale, and Repeat Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
         }
         return false;
     }
@@ -1703,6 +1726,7 @@ inline void NoteColorPipelineInteractionSnapshot(
     }
 }
 
+#ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
 inline void NoteColorPipelineCurrentItemInteraction(
     bool changed,
     ColorPipelineRenderInteractionState* ioState) {
@@ -2141,3 +2165,4 @@ inline bool RenderColorPipelineWindow(
 inline bool RenderColorPipelineWindow(ColorPipelineWindowState* ioState) {
     return RenderColorPipelineWindow(ioState, FractalType::explaino, nullptr);
 }
+#endif

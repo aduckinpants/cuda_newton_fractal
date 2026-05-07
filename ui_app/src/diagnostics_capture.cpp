@@ -1,5 +1,8 @@
 #include "diagnostics_capture.h"
 
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "fractal_family_rules.h"
 #include "render_capture_guard.h"
 
@@ -13,7 +16,7 @@
 
 namespace {
 
-const char* FractalTypeId(FractalType fractalType) {
+const char* CaptureFractalTypeId(FractalType fractalType) {
     switch (fractalType) {
     case FractalType::newton: return "newton";
     case FractalType::nova: return "nova";
@@ -56,7 +59,7 @@ const char* FractalTypeId(FractalType fractalType) {
     return "unknown";
 }
 
-const char* ColoringModeId(ColoringMode coloringMode) {
+const char* CaptureColoringModeId(ColoringMode coloringMode) {
     switch (coloringMode) {
     case ColoringMode::root_basin: return "root_basin";
     case ColoringMode::iteration_count: return "iteration_count";
@@ -68,7 +71,7 @@ const char* ColoringModeId(ColoringMode coloringMode) {
     return "unknown";
 }
 
-const char* ColorSignalId(ColorSignal signal) {
+const char* CaptureColorSignalId(ColorSignal signal) {
     switch (signal) {
     case ColorSignal::root_index: return "root_index";
     case ColorSignal::iteration_count: return "iteration_count";
@@ -79,7 +82,7 @@ const char* ColorSignalId(ColorSignal signal) {
     return "unknown";
 }
 
-const char* ColorPaletteId(ColorPalette palette) {
+const char* CaptureColorPaletteId(ColorPalette palette) {
     switch (palette) {
     case ColorPalette::root_classic: return "root_classic";
     case ColorPalette::joy: return "joy";
@@ -90,7 +93,7 @@ const char* ColorPaletteId(ColorPalette palette) {
     return "unknown";
 }
 
-const char* ColorGradingPresetId(ColorGradingPreset grading) {
+const char* CaptureColorGradingPresetId(ColorGradingPreset grading) {
     switch (grading) {
     case ColorGradingPreset::basin_default: return "basin_default";
     case ColorGradingPreset::escape_default: return "escape_default";
@@ -100,7 +103,7 @@ const char* ColorGradingPresetId(ColorGradingPreset grading) {
     return "unknown";
 }
 
-const char* ColorPipelineShapeId(ColorPipelineShape shape) {
+const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
     switch (shape) {
     case ColorPipelineShape::identity: return "identity";
     case ColorPipelineShape::offset_scale: return "offset_scale";
@@ -109,7 +112,7 @@ const char* ColorPipelineShapeId(ColorPipelineShape shape) {
     return "unknown";
 }
 
-const char* TranscendentalFuncId(TranscendentalFunc func) {
+const char* CaptureTranscendentalFuncId(TranscendentalFunc func) {
     switch (func) {
     case TranscendentalFunc::f_sin: return "f_sin";
     case TranscendentalFunc::f_exp_minus_1: return "f_exp_minus_1";
@@ -118,7 +121,7 @@ const char* TranscendentalFuncId(TranscendentalFunc func) {
     return "unknown";
 }
 
-const char* McMullenPresetId(McMullenPreset preset) {
+const char* CaptureMcMullenPresetId(McMullenPreset preset) {
     switch (preset) {
     case McMullenPreset::z3_z3: return "z3_z3";
     case McMullenPreset::z2_z2: return "z2_z2";
@@ -271,6 +274,99 @@ void WriteSidecarMutationHistoryJson(std::ostringstream& js, const SidecarAutoDe
     js << "  ]";
 }
 
+void WriteJsonEscapedString(std::ostringstream& js, const std::string& text) {
+    js << '"';
+    for (char ch : text) {
+        switch (ch) {
+        case '\\': js << "\\\\"; break;
+        case '"': js << "\\\""; break;
+        case '\n': js << "\\n"; break;
+        case '\r': js << "\\r"; break;
+        case '\t': js << "\\t"; break;
+        default: js << ch; break;
+        }
+    }
+    js << '"';
+}
+
+bool HasSerializableColorPipelineDraft(const ColorPipelineWindowState* state) {
+    return state && state->initialized && !state->lanes.empty();
+}
+
+void WriteColorPipelineParamStateJson(std::ostringstream& js, const ColorPipelineParamState& param) {
+    js << "          {\n";
+    js << "            \"path\": ";
+    WriteJsonEscapedString(js, param.path);
+    js << ",\n";
+    js << "            \"type\": ";
+    WriteJsonEscapedString(js, param.type);
+    js << ",\n";
+    if (param.type == "bool") {
+        js << "            \"bool_value\": " << (param.bool_value ? "true" : "false") << "\n";
+    } else if (param.type == "enum") {
+        js << "            \"enum_value\": ";
+        WriteJsonEscapedString(js, param.enum_value);
+        js << "\n";
+    } else {
+        js << "            \"number_value\": " << param.number_value << "\n";
+    }
+    js << "          }";
+}
+
+void WriteColorPipelineRowStateJson(std::ostringstream& js, const ColorPipelineRowState& row) {
+    js << "        {\n";
+    js << "          \"ui_row_id\": " << row.ui_row_id << ",\n";
+    js << "          \"enabled\": " << (row.enabled ? "true" : "false") << ",\n";
+    js << "          \"function_id\": ";
+    WriteJsonEscapedString(js, row.function_id);
+    js << ",\n";
+    js << "          \"parameter_values\": [\n";
+    for (std::size_t index = 0; index < row.parameter_values.size(); ++index) {
+        WriteColorPipelineParamStateJson(js, row.parameter_values[index]);
+        if (index + 1 < row.parameter_values.size()) {
+            js << ",";
+        }
+        js << "\n";
+    }
+    js << "          ]\n";
+    js << "        }";
+}
+
+void WriteColorPipelineLaneStateJson(std::ostringstream& js, const ColorPipelineLaneState& lane) {
+    js << "      {\n";
+    js << "        \"lane_id\": ";
+    WriteJsonEscapedString(js, lane.lane_id);
+    js << ",\n";
+    js << "        \"label\": ";
+    WriteJsonEscapedString(js, lane.label);
+    js << ",\n";
+    js << "        \"rows\": [\n";
+    for (std::size_t index = 0; index < lane.rows.size(); ++index) {
+        WriteColorPipelineRowStateJson(js, lane.rows[index]);
+        if (index + 1 < lane.rows.size()) {
+            js << ",";
+        }
+        js << "\n";
+    }
+    js << "        ]\n";
+    js << "      }";
+}
+
+void WriteColorPipelineDraftJson(std::ostringstream& js, const ColorPipelineWindowState& state) {
+    js << "  \"color_pipeline_draft\": {\n";
+    js << "    \"next_row_id\": " << state.next_row_id << ",\n";
+    js << "    \"lanes\": [\n";
+    for (std::size_t index = 0; index < state.lanes.size(); ++index) {
+        WriteColorPipelineLaneStateJson(js, state.lanes[index]);
+        if (index + 1 < state.lanes.size()) {
+            js << ",";
+        }
+        js << "\n";
+    }
+    js << "    ]\n";
+    js << "  }";
+}
+
 std::string BuildStateJson(
     const ViewState& view,
     const KernelParams& params,
@@ -278,14 +374,15 @@ std::string BuildStateJson(
     const RenderStats& stats,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
-    const SidecarAutoDemoMutationHistory* sidecarMutationHistory) {
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow) {
     ColoringMode mirroredColoringMode = ColoringMode::root_basin;
     const bool hasLegacyColoringMirror = TryLegacyColoringModeForPipeline(params.color_pipeline, &mirroredColoringMode);
 
     std::ostringstream js;
     js << "{\n";
     js << "  \"state_version\": 3,\n";
-    js << "  \"fractal_type\": \"" << FractalTypeId(view.fractal_type) << "\",\n";
+    js << "  \"fractal_type\": \"" << CaptureFractalTypeId(view.fractal_type) << "\",\n";
     js << "  \"view\": {\n";
     js << "    \"center_x\": " << static_cast<double>(view.center.x) << ",\n";
     js << "    \"center_y\": " << static_cast<double>(view.center.y) << ",\n";
@@ -308,12 +405,12 @@ std::string BuildStateJson(
     js << "    \"exposure\": " << static_cast<double>(params.exposure) << ",\n";
     js << "    \"poly_kind\": " << static_cast<int>(params.poly_kind) << ",\n";
     if (hasLegacyColoringMirror) {
-        js << "    \"coloring_mode\": \"" << ColoringModeId(mirroredColoringMode) << "\",\n";
+        js << "    \"coloring_mode\": \"" << CaptureColoringModeId(mirroredColoringMode) << "\",\n";
     }
-    js << "    \"color_signal\": \"" << ColorSignalId(params.color_pipeline.signal) << "\",\n";
-    js << "    \"color_shape\": \"" << ColorPipelineShapeId(params.color_shape) << "\",\n";
-    js << "    \"color_palette\": \"" << ColorPaletteId(params.color_pipeline.palette) << "\",\n";
-    js << "    \"color_grading\": \"" << ColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
+    js << "    \"color_signal\": \"" << CaptureColorSignalId(params.color_pipeline.signal) << "\",\n";
+    js << "    \"color_shape\": \"" << CaptureColorPipelineShapeId(params.color_shape) << "\",\n";
+    js << "    \"color_palette\": \"" << CaptureColorPaletteId(params.color_pipeline.palette) << "\",\n";
+    js << "    \"color_grading\": \"" << CaptureColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
     js << "    \"nova_alpha\": " << static_cast<double>(params.nova_alpha) << ",\n";
     js << "    \"phoenix_p_real\": " << static_cast<double>(params.phoenix_p_real) << ",\n";
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";
@@ -329,9 +426,9 @@ std::string BuildStateJson(
     js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     WriteExplainoVariantParamsJson(js, params);
-    js << "    \"transcendental_func\": \"" << TranscendentalFuncId(params.transcendental_func) << "\",\n";
+    js << "    \"transcendental_func\": \"" << CaptureTranscendentalFuncId(params.transcendental_func) << "\",\n";
     js << "    \"momentum_beta\": " << static_cast<double>(params.momentum_beta) << ",\n";
-    js << "    \"mcmullen_preset\": \"" << McMullenPresetId(params.mcmullen_preset) << "\",\n";
+    js << "    \"mcmullen_preset\": \"" << CaptureMcMullenPresetId(params.mcmullen_preset) << "\",\n";
     js << "    \"poly_coeffs\": [";
     for (int i = 0; i < 5; ++i) {
         if (i > 0) js << ", ";
@@ -366,86 +463,15 @@ std::string BuildStateJson(
         js << ",\n";
         WriteSidecarMutationHistoryJson(js, *sidecarMutationHistory);
     }
+    if (HasSerializableColorPipelineDraft(colorPipelineWindow)) {
+        js << ",\n";
+        WriteColorPipelineDraftJson(js, *colorPipelineWindow);
+    }
     js << "}\n";
     return js.str();
 }
 
-} // namespace
-
-bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    return CaptureDiagnosticsLastBundle(
-        exeDir,
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        nullptr,
-        nullptr,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    const SidecarOrientationVector* sidecarOrientation,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    return CaptureDiagnosticsLastBundle(
-        exeDir,
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        sidecarOrientation,
-        nullptr,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    const SidecarOrientationVector* sidecarOrientation,
-    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    return CaptureDiagnosticsLastBundle(
-        exeDir,
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        sidecarOrientation,
-        sidecarControllerPolicy,
-        nullptr,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+bool CaptureDiagnosticsBundleToDirWithDraft(const std::string& outputDir,
     const ViewState& view,
     const KernelParams& params,
     const RenderSettings& render,
@@ -455,109 +481,7 @@ bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    const std::filesystem::path bundleDir = (std::filesystem::path(exeDir) / "diagnostics" / "last").lexically_normal();
-    return CaptureDiagnosticsBundleToDir(
-        bundleDir.string(),
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        sidecarOrientation,
-        sidecarControllerPolicy,
-        sidecarMutationHistory,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    return CaptureDiagnosticsBundleToDir(
-        outputDir,
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        nullptr,
-        nullptr,
-        nullptr,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    const SidecarOrientationVector* sidecarOrientation,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    return CaptureDiagnosticsBundleToDir(
-        outputDir,
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        sidecarOrientation,
-        nullptr,
-        nullptr,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    const SidecarOrientationVector* sidecarOrientation,
-    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
-    DiagnosticsCaptureResult* outResult,
-    std::string* outError) {
-    return CaptureDiagnosticsBundleToDir(
-        outputDir,
-        view,
-        params,
-        render,
-        stats,
-        rgba,
-        rgbaPixelCount,
-        sidecarOrientation,
-        sidecarControllerPolicy,
-        nullptr,
-        outResult,
-        outError);
-}
-
-bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
-    const ViewState& view,
-    const KernelParams& params,
-    const RenderSettings& render,
-    const RenderStats& stats,
-    const uint32_t* rgba,
-    std::size_t rgbaPixelCount,
-    const SidecarOrientationVector* sidecarOrientation,
-    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
-    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
     DiagnosticsCaptureResult* outResult,
     std::string* outError) {
     if (outError) outError->clear();
@@ -581,7 +505,15 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         return false;
     }
 
-    std::string stateJson = BuildStateJson(view, params, render, stats, sidecarOrientation, sidecarControllerPolicy, sidecarMutationHistory);
+    std::string stateJson = BuildStateJson(
+        view,
+        params,
+        render,
+        stats,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        colorPipelineWindow);
     if (!WriteTextFile(statePath, stateJson, outError)) {
         return false;
     }
@@ -592,4 +524,298 @@ bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
         outResult->state_json_path = statePath.string();
     }
     return true;
+}
+
+} // namespace
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        nullptr,
+        nullptr,
+        nullptr,
+        colorPipelineWindow,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        nullptr,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        nullptr,
+        nullptr,
+        colorPipelineWindow,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsLastBundle(
+        exeDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsLastBundle(const std::string& exeDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    const ColorPipelineWindowState* colorPipelineWindow,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    const std::filesystem::path bundleDir = (std::filesystem::path(exeDir) / "diagnostics" / "last").lexically_normal();
+    return CaptureDiagnosticsBundleToDirWithDraft(
+        bundleDir.string(),
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        colorPipelineWindow,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDir(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        nullptr,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDir(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        nullptr,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDir(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        nullptr,
+        outResult,
+        outError);
+}
+
+bool CaptureDiagnosticsBundleToDir(const std::string& outputDir,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const uint32_t* rgba,
+    std::size_t rgbaPixelCount,
+    const SidecarOrientationVector* sidecarOrientation,
+    const SidecarAutoDemoControllerPolicy* sidecarControllerPolicy,
+    const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
+    DiagnosticsCaptureResult* outResult,
+    std::string* outError) {
+    return CaptureDiagnosticsBundleToDirWithDraft(
+        outputDir,
+        view,
+        params,
+        render,
+        stats,
+        rgba,
+        rgbaPixelCount,
+        sidecarOrientation,
+        sidecarControllerPolicy,
+        sidecarMutationHistory,
+        nullptr,
+        outResult,
+        outError);
 }

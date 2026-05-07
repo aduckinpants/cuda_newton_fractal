@@ -6,10 +6,19 @@
 
 #include <string>
 
+struct ColorPipelineWindowState;
+
 bool LoadDiagnosticsStateJson(const std::string& text,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    std::string* outError);
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError);
 
 bool LoadDiagnosticsStateJson(const std::string& text,
@@ -42,10 +51,30 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     bool* outHasMutationHistory,
     std::string* outError);
 
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError);
+
 bool LoadDiagnosticsStateFile(const std::string& path,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    std::string* outError);
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError);
 
 bool LoadDiagnosticsStateFile(const std::string& path,
@@ -76,6 +105,19 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     bool* outHasControllerPolicy,
     SidecarAutoDemoMutationHistory* outMutationHistory,
     bool* outHasMutationHistory,
+    std::string* outError);
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError);
 
 bool ResolveFindingStateJsonPath(const std::string& selectedPath,

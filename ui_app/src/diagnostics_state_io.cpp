@@ -1,5 +1,8 @@
 #include "diagnostics_state_io.h"
 
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "enum_id_utils.h"
 #include "explaino_seed.h"
 #include "fractal_family_rules.h"
@@ -372,6 +375,337 @@ bool ParseOptionalSidecarMutationHistory(const json_min::Value& root,
     return true;
 }
 
+bool ParsePositiveUInt64Field(const json_min::Value& object,
+    const char* key,
+    std::uint64_t* outValue,
+    std::string* outError) {
+    constexpr double kMaxExactJsonInteger = 9007199254740991.0;
+
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_number()) {
+        if (outError) *outError = std::string("Missing or invalid integer field: ") + key;
+        return false;
+    }
+
+    const double numeric = value->as_number();
+    if (!std::isfinite(numeric) || numeric <= 0.0 || std::floor(numeric) != numeric || numeric > kMaxExactJsonInteger) {
+        if (outError) *outError = std::string("Invalid positive integer field: ") + key;
+        return false;
+    }
+
+    if (outValue) *outValue = static_cast<std::uint64_t>(numeric);
+    return true;
+}
+
+bool FindColorPipelineLaneCatalogIndex(const std::string& laneId, std::size_t* outIndex) {
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+    for (std::size_t index = 0; index < catalogs.size(); ++index) {
+        if (catalogs[index].lane_id == laneId) {
+            if (outIndex) *outIndex = index;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FindColorPipelineParamDescriptorIndex(const FunctionDescriptor& descriptor,
+    const std::string& path,
+    std::size_t* outIndex) {
+    for (std::size_t index = 0; index < descriptor.parameters.size(); ++index) {
+        if (descriptor.parameters[index].path == path) {
+            if (outIndex) *outIndex = index;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IsValidColorPipelineEnumValue(const FunctionParamDescriptor& descriptor, const std::string& value) {
+    if (descriptor.type != "enum") {
+        return false;
+    }
+    if (descriptor.options.empty()) {
+        return true;
+    }
+    for (const UISchemaOption& option : descriptor.options) {
+        if (option.id == value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ParseColorPipelineDraftParam(const json_min::Value& paramObject,
+    const FunctionParamDescriptor& descriptor,
+    ColorPipelineParamState* ioParam,
+    std::string* outError) {
+    if (!ioParam) {
+        if (outError) *outError = "color_pipeline_draft parameter parse requires output storage";
+        return false;
+    }
+
+    std::string path;
+    std::string type;
+    if (!GetRequiredString(paramObject, "path", &path, outError)) return false;
+    if (!GetRequiredString(paramObject, "type", &type, outError)) return false;
+    if (path != descriptor.path) {
+        if (outError) *outError = "color_pipeline_draft parameter path mismatch for " + descriptor.path;
+        return false;
+    }
+    if (type != descriptor.type) {
+        if (outError) *outError = "color_pipeline_draft parameter type mismatch for " + descriptor.path;
+        return false;
+    }
+
+    ioParam->path = path;
+    ioParam->type = type;
+    if (descriptor.type == "bool") {
+        if (!GetRequiredBool(paramObject, "bool_value", &ioParam->bool_value, outError)) return false;
+        return true;
+    }
+    if (descriptor.type == "enum") {
+        if (!GetRequiredString(paramObject, "enum_value", &ioParam->enum_value, outError)) return false;
+        if (!IsValidColorPipelineEnumValue(descriptor, ioParam->enum_value)) {
+            if (outError) *outError = "Unknown color_pipeline_draft enum value for " + descriptor.path;
+            return false;
+        }
+        return true;
+    }
+
+    double numberValue = 0.0;
+    if (!GetRequiredNumber(paramObject, "number_value", &numberValue, outError)) return false;
+    if (!std::isfinite(numberValue)) {
+        if (outError) *outError = "color_pipeline_draft numeric parameter must be finite for " + descriptor.path;
+        return false;
+    }
+    if (descriptor.type == "int") {
+        const double rounded = std::round(numberValue);
+        if (std::fabs(numberValue - rounded) > 1.0e-6) {
+            if (outError) *outError = "color_pipeline_draft integer parameter must be integral for " + descriptor.path;
+            return false;
+        }
+    }
+    ioParam->number_value = numberValue;
+    return true;
+}
+
+bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
+    const ColorPipelineLaneCatalog& catalog,
+    ColorPipelineRowState* outRow,
+    std::string* outError) {
+    if (!outRow) {
+        if (outError) *outError = "color_pipeline_draft row parse requires output storage";
+        return false;
+    }
+
+    std::uint64_t uiRowId = 0;
+    bool enabled = true;
+    std::string functionId;
+    const json_min::Value* parameterValues = nullptr;
+    if (!ParsePositiveUInt64Field(rowObject, "ui_row_id", &uiRowId, outError)) return false;
+    if (!GetRequiredBool(rowObject, "enabled", &enabled, outError)) return false;
+    if (!GetRequiredString(rowObject, "function_id", &functionId, outError)) return false;
+    if (!GetRequiredArray(rowObject, "parameter_values", &parameterValues, outError)) return false;
+
+    const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(catalog, functionId);
+    if (!descriptor) {
+        if (outError) *outError = "Unknown advanced color function '" + functionId + "' for lane " + catalog.label;
+        return false;
+    }
+
+    ColorPipelineRowState row;
+    if (!BuildColorPipelineRowFromFunctionId(catalog, functionId.c_str(), uiRowId, &row, outError)) {
+        return false;
+    }
+    row.enabled = enabled;
+
+    if (parameterValues->as_array().size() != descriptor->parameters.size()) {
+        if (outError) *outError = "color_pipeline_draft parameter count mismatch for function '" + functionId + "'";
+        return false;
+    }
+
+    std::vector<bool> seenParams(descriptor->parameters.size(), false);
+    for (const json_min::Value& paramValue : parameterValues->as_array()) {
+        if (!paramValue.is_object()) {
+            if (outError) *outError = "color_pipeline_draft parameter_values entries must be objects";
+            return false;
+        }
+
+        std::string path;
+        if (!GetRequiredString(paramValue, "path", &path, outError)) return false;
+        std::size_t paramIndex = 0;
+        if (!FindColorPipelineParamDescriptorIndex(*descriptor, path, &paramIndex)) {
+            if (outError) *outError = "Unknown color_pipeline_draft parameter path '" + path + "' for function '" + functionId + "'";
+            return false;
+        }
+        if (seenParams[paramIndex]) {
+            if (outError) *outError = "Duplicate color_pipeline_draft parameter path '" + path + "' for function '" + functionId + "'";
+            return false;
+        }
+        if (!ParseColorPipelineDraftParam(paramValue, descriptor->parameters[paramIndex], &row.parameter_values[paramIndex], outError)) {
+            return false;
+        }
+        seenParams[paramIndex] = true;
+    }
+
+    for (std::size_t index = 0; index < seenParams.size(); ++index) {
+        if (!seenParams[index]) {
+            if (outError) *outError = "Missing color_pipeline_draft parameter path '" + descriptor->parameters[index].path + "' for function '" + functionId + "'";
+            return false;
+        }
+    }
+
+    *outRow = std::move(row);
+    return true;
+}
+
+bool ParseColorPipelineDraftLane(const json_min::Value& laneObject,
+    const ColorPipelineLaneCatalog& catalog,
+    ColorPipelineLaneState* outLane,
+    std::string* outError) {
+    if (!outLane) {
+        if (outError) *outError = "color_pipeline_draft lane parse requires output storage";
+        return false;
+    }
+
+    std::string laneId;
+    const json_min::Value* rowsValue = nullptr;
+    if (!GetRequiredString(laneObject, "lane_id", &laneId, outError)) return false;
+    if (laneId != catalog.lane_id) {
+        if (outError) *outError = "color_pipeline_draft lane_id mismatch for lane '" + std::string(catalog.lane_id) + "'";
+        return false;
+    }
+
+    const json_min::Value* labelValue = laneObject.get("label");
+    if (labelValue && !labelValue->is_string()) {
+        if (outError) *outError = "Invalid color_pipeline_draft lane label for lane '" + laneId + "'";
+        return false;
+    }
+
+    if (!GetRequiredArray(laneObject, "rows", &rowsValue, outError)) return false;
+    if (rowsValue->as_array().empty()) {
+        if (outError) *outError = "color_pipeline_draft lane '" + laneId + "' must contain at least one row";
+        return false;
+    }
+
+    ColorPipelineLaneState lane;
+    lane.lane_id = catalog.lane_id;
+    lane.label = catalog.label;
+    lane.rows.reserve(rowsValue->as_array().size());
+    for (const json_min::Value& rowValue : rowsValue->as_array()) {
+        if (!rowValue.is_object()) {
+            if (outError) *outError = "color_pipeline_draft rows entries must be objects";
+            return false;
+        }
+        ColorPipelineRowState row;
+        if (!ParseColorPipelineDraftRow(rowValue, catalog, &row, outError)) {
+            return false;
+        }
+        lane.rows.push_back(std::move(row));
+    }
+
+    *outLane = std::move(lane);
+    return true;
+}
+
+bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
+    FractalType liveFractalType,
+    const KernelParams& liveParams,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
+    if (outColorPipelineWindow) {
+        *outColorPipelineWindow = {};
+    }
+
+    const json_min::Value* draftObject = root.get("color_pipeline_draft");
+    if (!draftObject) {
+        return true;
+    }
+    if (!draftObject->is_object()) {
+        if (outError) *outError = "Missing or invalid object field: color_pipeline_draft";
+        return false;
+    }
+
+    const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+    const json_min::Value* lanesValue = nullptr;
+    std::uint64_t nextRowId = 0;
+    if (!ParsePositiveUInt64Field(*draftObject, "next_row_id", &nextRowId, outError)) return false;
+    if (!GetRequiredArray(*draftObject, "lanes", &lanesValue, outError)) return false;
+    if (lanesValue->as_array().size() != catalogs.size()) {
+        if (outError) *outError = "color_pipeline_draft must contain exactly the shipped programmable lanes";
+        return false;
+    }
+
+    ColorPipelineWindowState parsedState;
+    parsedState.initialized = true;
+    parsedState.next_row_id = nextRowId;
+    parsedState.lanes.resize(catalogs.size());
+    std::vector<bool> seenLanes(catalogs.size(), false);
+    std::uint64_t maxRowId = 0;
+
+    for (const json_min::Value& laneValue : lanesValue->as_array()) {
+        if (!laneValue.is_object()) {
+            if (outError) *outError = "color_pipeline_draft lanes entries must be objects";
+            return false;
+        }
+
+        std::string laneId;
+        if (!GetRequiredString(laneValue, "lane_id", &laneId, outError)) return false;
+        std::size_t catalogIndex = 0;
+        if (!FindColorPipelineLaneCatalogIndex(laneId, &catalogIndex)) {
+            if (outError) *outError = "Unknown color_pipeline_draft lane id: " + laneId;
+            return false;
+        }
+        if (seenLanes[catalogIndex]) {
+            if (outError) *outError = "Duplicate color_pipeline_draft lane id: " + laneId;
+            return false;
+        }
+
+        ColorPipelineLaneState lane;
+        if (!ParseColorPipelineDraftLane(laneValue, catalogs[catalogIndex], &lane, outError)) {
+            return false;
+        }
+        for (const ColorPipelineRowState& row : lane.rows) {
+            if (row.ui_row_id >= parsedState.next_row_id) {
+                if (outError) *outError = "color_pipeline_draft.next_row_id must be greater than every ui_row_id";
+                return false;
+            }
+            if (row.ui_row_id > maxRowId) {
+                maxRowId = row.ui_row_id;
+            }
+        }
+        parsedState.lanes[catalogIndex] = std::move(lane);
+        seenLanes[catalogIndex] = true;
+    }
+
+    for (std::size_t index = 0; index < seenLanes.size(); ++index) {
+        if (!seenLanes[index]) {
+            if (outError) *outError = "Missing color_pipeline_draft lane id: " + std::string(catalogs[index].lane_id);
+            return false;
+        }
+    }
+
+    if (maxRowId + 1 > parsedState.next_row_id) {
+        if (outError) *outError = "color_pipeline_draft.next_row_id must be greater than every ui_row_id";
+        return false;
+    }
+
+    std::string snapshotError;
+    if (!TryBuildColorPipelineLiveSnapshot(liveFractalType, liveParams, &parsedState.live_snapshot, &snapshotError)) {
+        if (outError) *outError = "Saved color_pipeline_draft cannot be restored: " + snapshotError;
+        return false;
+    }
+    if (!parsedState.live_snapshot.valid || !parsedState.live_snapshot.draft_import_supported) {
+        if (outError) *outError = "Saved color_pipeline_draft is not supported for the saved fractal/color tuple";
+        return false;
+    }
+
+    if (outColorPipelineWindow) {
+        *outColorPipelineWindow = std::move(parsedState);
+    }
+    return true;
+}
+
 bool RequirePositiveIntField(int value, const char* key, std::string* outError) {
     if (value > 0) return true;
     if (outError) *outError = std::string(key) + " must be > 0";
@@ -398,7 +732,16 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
-    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outError);
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
+    return LoadDiagnosticsStateJson(text, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outColorPipelineWindow, outError);
 }
 
 bool LoadDiagnosticsStateJson(const std::string& text,
@@ -456,6 +799,33 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     SidecarAutoDemoMutationHistory* outMutationHistory,
     bool* outHasMutationHistory,
     std::string* outError) {
+    return LoadDiagnosticsStateJson(
+        text,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        outMutationHistory,
+        outHasMutationHistory,
+        nullptr,
+        outError);
+}
+
+bool LoadDiagnosticsStateJson(const std::string& text,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
     if (outError) outError->clear();
     if (outOrientation) *outOrientation = {};
     if (outHasOrientation) *outHasOrientation = false;
@@ -463,6 +833,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (outHasControllerPolicy) *outHasControllerPolicy = false;
     if (outMutationHistory) outMutationHistory->clear();
     if (outHasMutationHistory) *outHasMutationHistory = false;
+    if (outColorPipelineWindow) *outColorPipelineWindow = {};
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadDiagnosticsStateJson requires non-null output pointers";
         return false;
@@ -896,9 +1267,15 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextRender.preview_target_fps = static_cast<float>(previewTargetFps);
     nextRender.preview_min_scale = static_cast<float>(previewMinScale);
 
+    ColorPipelineWindowState nextColorPipelineWindow;
+    if (!ParseOptionalColorPipelineDraft(root, nextView.fractal_type, nextParams, &nextColorPipelineWindow, outError)) {
+        return false;
+    }
+
     *ioView = nextView;
     *ioParams = nextParams;
     *ioRender = nextRender;
+    if (outColorPipelineWindow) *outColorPipelineWindow = std::move(nextColorPipelineWindow);
     return true;
 }
 
@@ -907,7 +1284,16 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     KernelParams* ioParams,
     RenderSettings* ioRender,
     std::string* outError) {
-    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outError);
+    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
+    return LoadDiagnosticsStateFile(path, ioView, ioParams, ioRender, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, outColorPipelineWindow, outError);
 }
 
 bool LoadDiagnosticsStateFile(const std::string& path,
@@ -965,6 +1351,33 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     SidecarAutoDemoMutationHistory* outMutationHistory,
     bool* outHasMutationHistory,
     std::string* outError) {
+    return LoadDiagnosticsStateFile(
+        path,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        outMutationHistory,
+        outHasMutationHistory,
+        nullptr,
+        outError);
+}
+
+bool LoadDiagnosticsStateFile(const std::string& path,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outError) {
     if (outError) outError->clear();
     std::string text;
     if (!ReadTextFile(std::filesystem::path(path), &text, outError)) return false;
@@ -979,6 +1392,7 @@ bool LoadDiagnosticsStateFile(const std::string& path,
         outHasControllerPolicy,
         outMutationHistory,
         outHasMutationHistory,
+        outColorPipelineWindow,
         outError);
 }
 

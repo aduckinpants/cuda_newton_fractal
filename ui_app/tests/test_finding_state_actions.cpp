@@ -1,3 +1,6 @@
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "../src/color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "../src/finding_state_actions.h"
 
 #include "../src/diagnostics_state_io.h"
@@ -59,6 +62,15 @@ bool PolyCoeffsMatch(const KernelParams& lhs, const KernelParams& rhs, double ep
     return true;
 }
 
+bool DraftRowHasNumberParam(const ColorPipelineRowState& row, const char* path, double expected, double eps = 1.0e-9) {
+    for (const ColorPipelineParamState& param : row.parameter_values) {
+        if (param.path == path && NearlyEqual(param.number_value, expected, eps)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace
 
 int main() {
@@ -94,7 +106,11 @@ int main() {
     "epsilon": 0.000001,
     "exposure": 1.25,
     "poly_kind": 2,
-    "coloring_mode": "joy_basins",
+        "coloring_mode": "phase",
+        "color_signal": "phase_angle",
+        "color_shape": "repeat",
+        "color_palette": "phase_wheel",
+        "color_grading": "phase_default",
     "nova_alpha": 0.50,
     "phoenix_p_real": -0.50,
     "phoenix_p_imag": 0.0,
@@ -103,7 +119,62 @@ int main() {
     "explaino_warp_strength": 0.40,
         "explaino_root_spread": 2.25,
     "explaino_root_count": 99,
-    "poly_coeffs": [11, 22, 33, 44, 55]
+        "color_phase_signal_offset": 1.25,
+        "color_phase_wrap_cycles": 2.5,
+        "color_phase_palette_offset": -0.75,
+        "color_shape_repeat_frequency": 6.0,
+        "color_shape_repeat_phase": 0.2,
+        "poly_coeffs": [11, 22, 33, 44, 55]
+    },
+    "color_pipeline_draft": {
+        "next_row_id": 4,
+        "lanes": [
+            {
+                "lane_id": "source",
+                "label": "Source",
+                "rows": [
+                    {
+                        "ui_row_id": 1,
+                        "enabled": true,
+                        "function_id": "phase_orbit",
+                        "parameter_values": [
+                            { "path": "signal.phase_offset", "type": "float", "number_value": 1.25 },
+                            { "path": "signal.wrap_cycles", "type": "float", "number_value": 2.5 }
+                        ]
+                    }
+                ]
+            },
+            {
+                "lane_id": "shape",
+                "label": "Shape",
+                "rows": [
+                    {
+                        "ui_row_id": 2,
+                        "enabled": true,
+                        "function_id": "repeat",
+                        "parameter_values": [
+                            { "path": "shape.frequency", "type": "float", "number_value": 6.0 },
+                            { "path": "shape.phase", "type": "float", "number_value": 0.2 }
+                        ]
+                    }
+                ]
+            },
+            {
+                "lane_id": "palette",
+                "label": "Palette",
+                "rows": [
+                    {
+                        "ui_row_id": 3,
+                        "enabled": true,
+                        "function_id": "phase_wheel_palette",
+                        "parameter_values": [
+                            { "path": "palette.phase_offset", "type": "float", "number_value": -0.75 },
+                            { "path": "palette.saturation", "type": "float", "number_value": 1.15 }
+                        ]
+                    }
+                ]
+            }
+        ]
   },
   "render": {
     "width": 1600,
@@ -138,10 +209,11 @@ int main() {
         render.resolution = {320, 200};
         render.block_size = 128;
         render.device_id = 7;
+        ColorPipelineWindowState colorPipelineWindow{};
 
         std::string resolvedStatePath;
         std::string error;
-        if (!LoadFindingSelectionIntoRuntime(findingPath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+        if (!LoadFindingSelectionIntoRuntime(findingPath.string(), &view, &params, &render, &colorPipelineWindow, &resolvedStatePath, &error)) {
             std::cerr << "LoadFindingSelectionIntoRuntime failed: " << error << "\n";
             return 1;
         }
@@ -189,6 +261,17 @@ int main() {
         }
         if (render.resolution.x != 1600 || render.resolution.y != 900 || render.block_size != 512 || render.device_id != 1) {
             std::cerr << "Expected render settings from saved state\n";
+            return 1;
+        }
+        if (colorPipelineWindow.next_row_id != 4 || colorPipelineWindow.lanes.size() != 3) {
+            std::cerr << "Expected finding-state load to restore the captured advanced color draft lanes\n";
+            return 1;
+        }
+        if (colorPipelineWindow.lanes[1].rows.size() != 1 ||
+            colorPipelineWindow.lanes[1].rows[0].function_id != "repeat" ||
+            !DraftRowHasNumberParam(colorPipelineWindow.lanes[1].rows[0], "shape.frequency", 6.0) ||
+            !DraftRowHasNumberParam(colorPipelineWindow.lanes[1].rows[0], "shape.phase", 0.2)) {
+            std::cerr << "Expected finding-state load to restore the advanced color Shape draft row and params\n";
             return 1;
         }
     }

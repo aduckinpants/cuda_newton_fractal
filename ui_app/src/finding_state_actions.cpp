@@ -1,5 +1,8 @@
 #include "finding_state_actions.h"
 
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "diagnostics_state_io.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
@@ -24,6 +27,30 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
         nullptr,
         nullptr,
         nullptr,
+        nullptr,
+        outResolvedStatePath,
+        outError);
+}
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outResolvedStatePath,
+    std::string* outError) {
+    return LoadFindingSelectionIntoRuntime(
+        selectedPath,
+        ioView,
+        ioParams,
+        ioRender,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        outColorPipelineWindow,
         outResolvedStatePath,
         outError);
 }
@@ -40,6 +67,35 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     bool* outHasMutationHistory,
     std::string* outResolvedStatePath,
     std::string* outError) {
+    return LoadFindingSelectionIntoRuntime(
+        selectedPath,
+        ioView,
+        ioParams,
+        ioRender,
+        outOrientation,
+        outHasOrientation,
+        outControllerPolicy,
+        outHasControllerPolicy,
+        outMutationHistory,
+        outHasMutationHistory,
+        nullptr,
+        outResolvedStatePath,
+        outError);
+}
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outResolvedStatePath,
+    std::string* outError) {
     if (outError) outError->clear();
     if (outOrientation) *outOrientation = {};
     if (outHasOrientation) *outHasOrientation = false;
@@ -47,6 +103,7 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     if (outHasControllerPolicy) *outHasControllerPolicy = false;
     if (outMutationHistory) outMutationHistory->clear();
     if (outHasMutationHistory) *outHasMutationHistory = false;
+    if (outColorPipelineWindow) *outColorPipelineWindow = {};
     if (!ioView || !ioParams || !ioRender) {
         if (outError) *outError = "LoadFindingSelectionIntoRuntime requires non-null output pointers";
         return false;
@@ -66,6 +123,7 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     bool nextHasControllerPolicy = false;
     SidecarAutoDemoMutationHistory nextMutationHistory;
     bool nextHasMutationHistory = false;
+    ColorPipelineWindowState nextColorPipelineWindow;
     if (!LoadDiagnosticsStateFile(
             resolvedStatePath,
             &nextView,
@@ -77,6 +135,7 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
             &nextHasControllerPolicy,
             &nextMutationHistory,
             &nextHasMutationHistory,
+            &nextColorPipelineWindow,
             outError)) {
         return false;
     }
@@ -95,6 +154,7 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     if (outHasControllerPolicy) *outHasControllerPolicy = nextHasControllerPolicy;
     if (outMutationHistory) *outMutationHistory = nextMutationHistory;
     if (outHasMutationHistory) *outHasMutationHistory = nextHasMutationHistory;
+    if (outColorPipelineWindow) *outColorPipelineWindow = std::move(nextColorPipelineWindow);
     if (outResolvedStatePath) *outResolvedStatePath = resolvedStatePath;
     return true;
 }
@@ -116,6 +176,7 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
         nullptr,
         nullptr,
         nullptr,
+    nullptr,
         outResolvedStatePath,
         outError);
 }

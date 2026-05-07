@@ -6,6 +6,8 @@
 
 #include <string>
 
+struct ColorPipelineWindowState;
+
 bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     ViewState* ioView,
     KernelParams* ioParams,
@@ -19,12 +21,34 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
     ViewState* ioView,
     KernelParams* ioParams,
     RenderSettings* ioRender,
+    ColorPipelineWindowState* outColorPipelineWindow,
+    std::string* outResolvedStatePath,
+    std::string* outError);
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
     SidecarOrientationVector* outOrientation,
     bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy,
     bool* outHasControllerPolicy,
     SidecarAutoDemoMutationHistory* outMutationHistory,
     bool* outHasMutationHistory,
+    std::string* outResolvedStatePath,
+    std::string* outError);
+
+bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
+    ViewState* ioView,
+    KernelParams* ioParams,
+    RenderSettings* ioRender,
+    SidecarOrientationVector* outOrientation,
+    bool* outHasOrientation,
+    SidecarAutoDemoControllerPolicy* outControllerPolicy,
+    bool* outHasControllerPolicy,
+    SidecarAutoDemoMutationHistory* outMutationHistory,
+    bool* outHasMutationHistory,
+    ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outResolvedStatePath,
     std::string* outError);
 

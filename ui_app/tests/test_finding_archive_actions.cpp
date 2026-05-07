@@ -1,3 +1,6 @@
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "../src/color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "../src/finding_archive_actions.h"
 
 #include <Windows.h>
@@ -46,6 +49,41 @@ bool ReadTextFile(const std::filesystem::path& path, std::string* outText) {
     text << file.rdbuf();
     *outText = text.str();
     return true;
+}
+
+ColorPipelineWindowState MakeTestColorPipelineDraft() {
+    ColorPipelineWindowState state;
+    state.initialized = true;
+    state.next_row_id = 4;
+
+    ColorPipelineLaneState sourceLane;
+    sourceLane.lane_id = "source";
+    sourceLane.label = "Source";
+    sourceLane.rows.push_back({1, true, "phase_orbit", {
+        {"signal.phase_offset", "float", 1.25, false, ""},
+        {"signal.wrap_cycles", "float", 2.5, false, ""},
+    }});
+
+    ColorPipelineLaneState shapeLane;
+    shapeLane.lane_id = "shape";
+    shapeLane.label = "Shape";
+    shapeLane.rows.push_back({2, true, "repeat", {
+        {"shape.frequency", "float", 6.0, false, ""},
+        {"shape.phase", "float", 0.2, false, ""},
+    }});
+
+    ColorPipelineLaneState paletteLane;
+    paletteLane.lane_id = "palette";
+    paletteLane.label = "Palette";
+    paletteLane.rows.push_back({3, true, "phase_wheel_palette", {
+        {"palette.phase_offset", "float", -0.75, false, ""},
+        {"palette.saturation", "float", 1.15, false, ""},
+    }});
+
+    state.lanes.push_back(std::move(sourceLane));
+    state.lanes.push_back(std::move(shapeLane));
+    state.lanes.push_back(std::move(paletteLane));
+    return state;
 }
 
 } // namespace
@@ -158,10 +196,11 @@ int main() {
         orientation.busy_beaver_metrics = 0.75;
         orientation.decode_stability = 0.5;
         orientation.diff_magnitude = 1.5;
+        const ColorPipelineWindowState colorPipelineWindow = MakeTestColorPipelineDraft();
 
         DiagnosticsCaptureResult capture;
         std::string error;
-        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &orientation, &capture, &error)) {
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &orientation, &colorPipelineWindow, &capture, &error)) {
             std::cerr << "Expected diagnostics capture bundle to succeed: " << error << "\n";
             return 1;
         }
@@ -204,8 +243,14 @@ int main() {
             std::cerr << "Diagnostics capture must serialize split-color fields explicitly, not the raw internal struct name\n";
             return 1;
         }
+        if (stateJson.find("\"color_pipeline_draft\"") == std::string::npos ||
+            stateJson.find("\"function_id\": \"repeat\"") == std::string::npos ||
+            stateJson.find("\"shape.frequency\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist the advanced color draft rows used by Capture Finding\n";
+            return 1;
+        }
 
-        if (CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size() - 1, &capture, &error)) {
+        if (CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size() - 1, &colorPipelineWindow, &capture, &error)) {
             std::cerr << "Expected diagnostics capture to reject mismatched pixel counts\n";
             return 1;
         }

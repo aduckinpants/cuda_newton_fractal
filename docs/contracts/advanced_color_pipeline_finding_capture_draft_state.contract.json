@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_finding_capture_draft_state",
+  "feature_id": "advanced_color_pipeline_finding_capture_draft_state",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_finding_capture_draft_state_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_finding_capture_draft_state_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/diagnostics_capture.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.h",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/finding_archive_actions.h",
+    "ui_app/src/finding_archive_actions.cpp",
+    "ui_app/src/finding_state_actions.h",
+    "ui_app/src/finding_state_actions.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_finding_state_actions.cpp"
+  ],
+  "required_operator_inputs": [
+    "user request that Capture Finding include advanced color state",
+    "current diagnostics/finding capture path only serializes runtime params",
+    "current advanced-color draft lives in ColorPipelineWindowState"
+  ],
+  "forbidden_operator_prompts": [
+    "serialize only duplicate scalar params and call it done",
+    "open Grade or composition scope in this slice",
+    "break older state-file compatibility"
+  ],
+  "required_defaults": {
+    "capture_finding_round_trip_draft_state": "required",
+    "optional_backward_compatible_state_field": "required"
+  },
+  "forbidden_defaults": {
+    "draft_state_dropped_on_load": "forbidden",
+    "unknown_draft_content_silently_ignored_without_validation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_finding_capture_draft_state.contract.json --out-json artifacts/validation/advanced_color_pipeline_finding_capture_draft_state_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_finding_capture_draft_state_contract_schema_valid",
+      "description": "The finding-capture draft-state contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_finding_capture_draft_state_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_finding_capture_draft_state_plan_sync_ok",
+      "description": "The finding-capture draft-state phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

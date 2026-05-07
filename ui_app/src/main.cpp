@@ -501,6 +501,7 @@ static void RunInLoopDiagnosticCapture(
     const std::string& exeDir, const ViewState& view, const KernelParams& params,
     const RenderSettings& render, const RenderStats& stats,
     const std::vector<uint32_t>& rgba, const RenderedFrameState& renderedFrame,
+    const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -513,7 +514,7 @@ static void RunInLoopDiagnosticCapture(
     } else {
         DiagnosticsCaptureResult captureResult;
         if (!CaptureDiagnosticsLastBundle(exeDir, view, params, captureRender, stats,
-                rgba.data(), rgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, &captureResult, &captureError)) {
+                rgba.data(), rgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)) {
             findingStatus = "Capture diagnostic failed: " + captureError;
         } else {
             findingStatus = "Diagnostic captured.";
@@ -524,6 +525,7 @@ static void RunInLoopDiagnosticCapture(
 static bool RunInLoopFindingCapture(
     const std::string& exeDir, ViewState& view, KernelParams& params,
     const RenderSettings& render,
+    const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -540,7 +542,7 @@ static bool RunInLoopFindingCapture(
         findingStatus = std::string("Capture finding failed: ") + (err ? err : "unknown error");
         return invalidateCaches;
     } else if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, findingStats,
-            findingRgba.data(), findingRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory,
+            findingRgba.data(), findingRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow,
             "manual_capture", "Manual viewer capture.",
             &findingDir, &captureError)) {
         findingStatus = "Capture finding failed: " + captureError;
@@ -959,6 +961,7 @@ static void DispatchUiActions(HWND hwnd,
                               bool& sidecarBudgetStateValid,
                               SidecarOrientationVector& loadedOrientationBaseline,
                               bool& loadedOrientationBaselineValid,
+                              ColorPipelineWindowState& colorPipelineWindow,
                               RuntimeWalkViewerSession& runtimeWalkViewerSession,
                               RuntimeWalkViewerPlaybackState& runtimeWalkPlayback,
                               std::string& currentLoadedStatePath,
@@ -994,6 +997,7 @@ static void DispatchUiActions(HWND hwnd,
             bool hasLoadedControllerPolicy = false;
             SidecarAutoDemoMutationHistory loadedMutationHistory;
             bool hasLoadedMutationHistory = false;
+            ColorPipelineWindowState loadedColorPipelineWindow;
             if (!LoadFindingSelectionIntoRuntime(
                     selectedPath,
                     &view,
@@ -1005,6 +1009,7 @@ static void DispatchUiActions(HWND hwnd,
                     &hasLoadedControllerPolicy,
                     &loadedMutationHistory,
                     &hasLoadedMutationHistory,
+                    &loadedColorPipelineWindow,
                     &resolvedStatePath,
                     &loadError)) {
                 findingStatus = "Load state failed: " + loadError;
@@ -1012,6 +1017,7 @@ static void DispatchUiActions(HWND hwnd,
                 sidecarControllerPolicy = hasLoadedControllerPolicy ? loadedControllerPolicy : SidecarAutoDemoControllerPolicy{};
                 sidecarMutationHistory = loadedMutationHistory;
                 sidecarMutationHistoryValid = hasLoadedMutationHistory;
+                colorPipelineWindow = std::move(loadedColorPipelineWindow);
                 loadedOrientationBaseline = loadedOrientation;
                 loadedOrientationBaselineValid = hasLoadedOrientation;
                 sidecarState = {};
@@ -1447,6 +1453,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
                                      const RenderSettings& render, const RenderStats& stats,
                                      const std::vector<uint32_t>& rgba,
                                      const RenderedFrameState& renderedFrame,
+                                     const ColorPipelineWindowState& colorPipelineWindow,
                                      const ExplainoSidecarWindowState& sidecarState,
                                      bool haveSidecarState,
                                      const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -1461,11 +1468,11 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (actions.captureDiagnostic) {
-        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus);
+        RunInLoopDiagnosticCapture(exeDir, view, params, render, stats, rgba, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus);
     }
 
     if (actions.captureFinding) {
-        if (RunInLoopFindingCapture(exeDir, view, params, render, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
+        if (RunInLoopFindingCapture(exeDir, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
             ioSidecarStateValid = false;
             ioSidecarBudgetStateValid = false;
         }
@@ -2283,6 +2290,7 @@ static void RunViewerFrame(
         sidecarState, sidecarStateValid,
         sidecarBudgetState, sidecarBudgetStateValid,
         loadedOrientationBaseline, loadedOrientationBaselineValid,
+        colorPipelineWindow,
         runtimeWalkViewerSession, runtimeWalkPlayback, currentLoadedStatePath, currentLoadedStateFractalType,
         lastPolyKind, lastFractalType,
         findingStatus, lastFindingPath);
@@ -2372,7 +2380,7 @@ static void RunViewerFrame(
         rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
-        renderedFrame, sidecarState, sidecarStateValid,
+        renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,
         sidecarControllerPolicy,
         sidecarMutationHistory, sidecarMutationHistoryValid,
         findingStatus, lastFindingPath,
