@@ -506,8 +506,8 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     }
 
     ColoringMode inferredMode = ColoringMode::root_basin;
-    if (!TryLegacyColoringModeForPipeline(liveParams.color_pipeline, &inferredMode)) {
-        if (outError) *outError = "Live runtime color pipeline does not map to an exact supported legacy mode";
+    if (!TryMirroredColoringModeForPipeline(liveParams.color_pipeline, &inferredMode)) {
+        if (outError) *outError = "Live runtime color pipeline does not map to a supported mirrored mode";
         return false;
     }
     if (!IsColorPipelineAllowedForFractal(liveFractalType, liveParams.color_pipeline)) {
@@ -779,6 +779,15 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "phase_orbit") {
         return path == "signal.phase_offset" || path == "signal.wrap_cycles";
     }
+    if (functionId == "escape_magnitude") {
+        return path == "signal.magnitude_scale" || path == "signal.magnitude_bias";
+    }
+    if (functionId == "orbit_stripe") {
+        return path == "signal.stripe_frequency" || path == "signal.phase_offset";
+    }
+    if (functionId == "root_proximity") {
+        return path == "signal.proximity_scale" || path == "signal.proximity_bias";
+    }
     if (functionId == "phase_wheel_palette") {
         return path == "palette.phase_offset";
     }
@@ -883,6 +892,18 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
+    }
+    if (ioRow->function_id == "escape_magnitude") {
+        return SetColorPipelineParamNumber(ioRow, "signal.magnitude_scale", liveParams.color_escape_magnitude_scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "signal.magnitude_bias", liveParams.color_escape_magnitude_bias, outError);
+    }
+    if (ioRow->function_id == "orbit_stripe") {
+        return SetColorPipelineParamNumber(ioRow, "signal.stripe_frequency", liveParams.color_orbit_stripe_frequency, outError) &&
+            SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_orbit_stripe_phase, outError);
+    }
+    if (ioRow->function_id == "root_proximity") {
+        return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", liveParams.color_root_proximity_scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError);
     }
     if (ioRow->function_id == "phase_wheel_palette") {
         return SetColorPipelineParamNumber(ioRow, "palette.phase_offset", liveParams.color_phase_palette_offset, outError);
@@ -1044,6 +1065,63 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             }
             if (std::fabs(ioParams->color_phase_wrap_cycles - static_cast<float>(wrapCycles)) > 1.0e-6f) {
                 ioParams->color_phase_wrap_cycles = static_cast<float>(wrapCycles);
+                changed = true;
+            }
+            continue;
+        }
+        if (row.function_id == "escape_magnitude") {
+            double magnitudeScale = 0.0;
+            double magnitudeBias = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "signal.magnitude_scale", &magnitudeScale, outError) ||
+                !TryGetColorPipelineParamNumber(row, "signal.magnitude_bias", &magnitudeBias, outError) ||
+                !ValidateColorPipelineParamRange("signal.magnitude_scale", magnitudeScale, 0.25, 4.0, outError) ||
+                !ValidateColorPipelineParamRange("signal.magnitude_bias", magnitudeBias, -1.0, 1.0, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_escape_magnitude_scale - static_cast<float>(magnitudeScale)) > 1.0e-6f) {
+                ioParams->color_escape_magnitude_scale = static_cast<float>(magnitudeScale);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_escape_magnitude_bias - static_cast<float>(magnitudeBias)) > 1.0e-6f) {
+                ioParams->color_escape_magnitude_bias = static_cast<float>(magnitudeBias);
+                changed = true;
+            }
+            continue;
+        }
+        if (row.function_id == "orbit_stripe") {
+            double stripeFrequency = 0.0;
+            double stripePhase = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "signal.stripe_frequency", &stripeFrequency, outError) ||
+                !TryGetColorPipelineParamNumber(row, "signal.phase_offset", &stripePhase, outError) ||
+                !ValidateColorPipelineParamRange("signal.stripe_frequency", stripeFrequency, 0.25, 12.0, outError) ||
+                !ValidateColorPipelineParamRange("signal.phase_offset", stripePhase, -3.141592653589793, 3.141592653589793, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_orbit_stripe_frequency - static_cast<float>(stripeFrequency)) > 1.0e-6f) {
+                ioParams->color_orbit_stripe_frequency = static_cast<float>(stripeFrequency);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_orbit_stripe_phase - static_cast<float>(stripePhase)) > 1.0e-6f) {
+                ioParams->color_orbit_stripe_phase = static_cast<float>(stripePhase);
+                changed = true;
+            }
+            continue;
+        }
+        if (row.function_id == "root_proximity") {
+            double proximityScale = 0.0;
+            double proximityBias = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "signal.proximity_scale", &proximityScale, outError) ||
+                !TryGetColorPipelineParamNumber(row, "signal.proximity_bias", &proximityBias, outError) ||
+                !ValidateColorPipelineParamRange("signal.proximity_scale", proximityScale, 0.25, 8.0, outError) ||
+                !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_root_proximity_scale - static_cast<float>(proximityScale)) > 1.0e-6f) {
+                ioParams->color_root_proximity_scale = static_cast<float>(proximityScale);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_root_proximity_bias - static_cast<float>(proximityBias)) > 1.0e-6f) {
+                ioParams->color_root_proximity_bias = static_cast<float>(proximityBias);
                 changed = true;
             }
             continue;
@@ -1241,6 +1319,15 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     } else if (sourceRow->function_id == "banded_signal" && paletteRow->function_id == "banded_heatmap") {
         pipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
         mode = ColoringMode::iteration_bands;
+    } else if (sourceRow->function_id == "escape_magnitude" && paletteRow->function_id == "heatmap") {
+        pipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        mode = ColoringMode::smooth_escape;
+    } else if (sourceRow->function_id == "orbit_stripe" && paletteRow->function_id == "phase_wheel_palette") {
+        pipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        mode = ColoringMode::phase;
+    } else if (sourceRow->function_id == "root_proximity" && paletteRow->function_id == "heatmap") {
+        pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        mode = ColoringMode::smooth_escape;
     } else {
         if (outError) {
             *outError = "Selected Source / Shape / Palette recipe is draft-only until custom pipeline runtime integration lands.";

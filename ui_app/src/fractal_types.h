@@ -39,6 +39,9 @@ enum class ColorSignal : int {
     smooth_escape = 2,
     phase_angle = 3,
     iteration_bands = 4,
+    escape_magnitude = 5,
+    orbit_stripe = 6,
+    root_proximity = 7,
 };
 
 enum class ColorPalette : int {
@@ -252,6 +255,12 @@ struct KernelParams {
     float color_iteration_band_palette_offset{0.0f};
     float color_smooth_escape_scale{1.0f};
     float color_smooth_escape_bias{0.0f};
+    float color_escape_magnitude_scale{1.0f};
+    float color_escape_magnitude_bias{0.0f};
+    float color_orbit_stripe_frequency{1.0f};
+    float color_orbit_stripe_phase{0.0f};
+    float color_root_proximity_scale{1.0f};
+    float color_root_proximity_bias{0.0f};
     float color_heatmap_cycle_scale{1.0f};
     float color_heatmap_saturation{1.0f};
     float color_contrast_lift_exposure{1.0f};

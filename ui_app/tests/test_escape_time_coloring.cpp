@@ -368,6 +368,114 @@ int main() {
         }
     }
 
+    {
+        params.color_pipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_shape_repeat_frequency = 8.0f;
+        params.color_shape_repeat_phase = 0.0f;
+        params.color_escape_magnitude_scale = 1.0f;
+        params.color_escape_magnitude_bias = 0.0f;
+        const TestColor magnitudeBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        params.color_escape_magnitude_scale = 2.0f;
+        const TestColor magnitudeScaled = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(magnitudeBase, magnitudeScaled)) {
+            std::cerr << "escape_magnitude should react to its live magnitude-scale owner field\n";
+            return 1;
+        }
+    }
+
+    {
+        params.color_pipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_shape_repeat_frequency = 8.0f;
+        params.color_shape_repeat_phase = 0.0f;
+        params.color_orbit_stripe_frequency = 1.0f;
+        params.color_orbit_stripe_phase = 0.0f;
+        const TestColor stripeBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            TestComplex{1.0f, 1.0f},
+            params);
+        params.color_orbit_stripe_frequency = 2.5f;
+        const TestColor stripeFrequencyShift = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            true,
+            12,
+            100,
+            TestComplex{1.0f, 1.0f},
+            params);
+        if (Equals(stripeBase, stripeFrequencyShift)) {
+            std::cerr << "orbit_stripe should react to its live stripe-frequency owner field\n";
+            return 1;
+        }
+        const TestColor stripeInterior = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::phase,
+            false,
+            12,
+            100,
+            TestComplex{1.0f, 1.0f},
+            params);
+        if (Equals(stripeInterior, TestColor{0, 0, 0, 255})) {
+            std::cerr << "orbit_stripe should preserve the phase-wheel interior color instead of forcing non-escaped samples to black\n";
+            return 1;
+        }
+    }
+
+    {
+        params.poly_kind = PolyKind::z3_minus_1;
+        params.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_shape_repeat_frequency = 8.0f;
+        params.color_shape_repeat_phase = 0.0f;
+        params.color_root_proximity_scale = 1.0f;
+        params.color_root_proximity_bias = 0.0f;
+        const TestColor nearRoot = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::newton,
+            ColoringMode::smooth_escape,
+            true,
+            8,
+            100,
+            TestComplex{1.0f, 0.0f},
+            params);
+        const TestColor farFromRoot = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::newton,
+            ColoringMode::smooth_escape,
+            true,
+            8,
+            100,
+            TestComplex{0.0f, 0.0f},
+            params);
+        if (Equals(nearRoot, farFromRoot)) {
+            std::cerr << "root_proximity should distinguish near-root and far-from-root samples on basin-capable families\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_escape_time_coloring: all passed\n";
     return 0;
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "basin_coloring.h"
+#include "fractal_family_rules.h"
 #include "fractal_types.h"
 
 #include <cmath>
@@ -125,6 +127,66 @@ ESCAPE_TIME_COLOR_HD inline Color MakePhaseAngleColor(float angle, bool brightVa
     hue += (params.color_phase_palette_offset / twoPi);
     const float value = brightValue ? 0.85f : 0.25f;
     return HsvToRgb<Color>(hue, 0.9f, value);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolvePhaseOrbitSignal(float angle, const KernelParams& params) {
+    const float twoPi = 6.28318530717958647692f;
+    const float wrapCycles = params.color_phase_wrap_cycles < 0.5f ? 0.5f : params.color_phase_wrap_cycles;
+    return ((angle + params.color_phase_signal_offset) / twoPi) * wrapCycles;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveIterationRatioSignal(int iteration, int maxIter) {
+    const int safeMaxIter = maxIter > 0 ? maxIter : 1;
+    return static_cast<float>(iteration) / static_cast<float>(safeMaxIter);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveEscapeMagnitudeSignal(float magnitude, const KernelParams& params) {
+    return logf(1.0f + fmaxf(magnitude, 0.0f)) * EscapeTimeColorClamp(params.color_escape_magnitude_scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(params.color_escape_magnitude_bias, -1.0f, 1.0f);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    const KernelParams& params);
+
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    const KernelParams& params) {
+    const float nu = ComputeEscapeTimeNu(fractalType, iteration, magnitude, params);
+    return nu * 0.025f * EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveOrbitStripeSignal(float angle, const KernelParams& params) {
+    return 0.5f + 0.5f * sinf(
+        angle * EscapeTimeColorClamp(params.color_orbit_stripe_frequency, 0.25f, 12.0f) +
+        EscapeTimeColorClamp(params.color_orbit_stripe_phase, -3.14159265358979323846f, 3.14159265358979323846f));
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveEscapeFamilySignal(
+    ColorSignal signal,
+    FractalType fractalType,
+    int iteration,
+    int maxIter,
+    float magnitude,
+    const KernelParams& params) {
+    if (signal == ColorSignal::smooth_escape) {
+        return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, params);
+    }
+    if (signal == ColorSignal::escape_magnitude) {
+        return ResolveEscapeMagnitudeSignal(magnitude, params);
+    }
+    return ResolveIterationRatioSignal(iteration, maxIter);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveAngularSignal(ColorSignal signal, float angle, const KernelParams& params) {
+    return signal == ColorSignal::phase_angle
+        ? ResolvePhaseOrbitSignal(angle, params)
+        : ResolveOrbitStripeSignal(angle, params);
 }
 
 template <typename Complex>
@@ -260,12 +322,32 @@ ESCAPE_TIME_COLOR_HD inline Color EscapeTimeColorFromRgb(EscapeTimeColorRgb rgb)
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter, const KernelParams& params);
 
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline bool TryMakeEscapeTimeBasinErrorColor(ColoringMode mode, Color* outColor) {
+    if (!outColor) {
+        return false;
+    }
+    if (mode != ColoringMode::root_basin && mode != ColoringMode::joy_basins) {
+        return false;
+    }
+    *outColor = EscapeTimeColorMake<Color>(255, 0, 255, 255);
+    return true;
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color MakeIterationCountEscapeTimeColor(int iteration, int maxIter) {
+    const float t = static_cast<float>(iteration) / static_cast<float>(maxIter);
+    const unsigned char value = static_cast<unsigned char>(EscapeTimeColorClamp(t, 0.0f, 1.0f) * 255.0f);
+    return EscapeTimeColorMake<Color>(64, value, static_cast<unsigned char>(255 - value), 255);
+}
+
 template <typename Color, typename Complex>
 ESCAPE_TIME_COLOR_HD inline bool TryMakeDiscreteEscapeTimeColor(FractalType, ColoringMode mode, bool escaped, int iteration, int maxIter, Complex z, const KernelParams& params, Color* outColor) {
     if (!outColor) return false;
-    if (mode == ColoringMode::root_basin || mode == ColoringMode::joy_basins) {
-        *outColor = EscapeTimeColorMake<Color>(255, 0, 255, 255);
-        return true;
+    if (TryMakeEscapeTimeBasinErrorColor(mode, outColor)) return true;
+    ColoringMode exactLegacyMode = ColoringMode::root_basin;
+    if (!TryLegacyColoringModeForPipeline(params.color_pipeline, &exactLegacyMode) || exactLegacyMode != mode) {
+        return false;
     }
     if (mode == ColoringMode::phase) {
         *outColor = MakePhaseAngleColor<Color>(atan2f(z.y, z.x), escaped, params);
@@ -281,9 +363,7 @@ ESCAPE_TIME_COLOR_HD inline bool TryMakeDiscreteEscapeTimeColor(FractalType, Col
     }
     if (!escaped) { *outColor = EscapeTimeColorMake<Color>(0, 0, 0, 255); return true; }
     if (mode == ColoringMode::iteration_count) {
-        const float t = static_cast<float>(iteration) / static_cast<float>(maxIter);
-        const unsigned char value = static_cast<unsigned char>(EscapeTimeColorClamp(t, 0.0f, 1.0f) * 255.0f);
-        *outColor = EscapeTimeColorMake<Color>(64, value, static_cast<unsigned char>(255 - value), 255);
+        *outColor = MakeIterationCountEscapeTimeColor<Color>(iteration, maxIter);
         return true;
     }
     return false;
@@ -300,6 +380,71 @@ ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
         denom = logf(params.multibrot_power_float);
     }
     return static_cast<float>(iteration) + 1.0f - logf(fmaxf(logZn / denom, 1.0e-12f)) / denom;
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(Complex z, const KernelParams& params) {
+    float nearestDistanceSquared = 1.0e30f;
+    if (params.explaino_root_count > 0) {
+        nearestDistanceSquared = static_cast<float>(NearestRootDistanceSquaredList(z, params.explaino_roots, params.explaino_root_count));
+    } else {
+        const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
+        if (polynomialRootCount > 0) {
+            nearestDistanceSquared = static_cast<float>(NearestRootDistanceSquaredUnitRoots(z, polynomialRootCount));
+        }
+    }
+    const float distance = sqrtf(fmaxf(nearestDistanceSquared, 0.0f));
+    const float scale = EscapeTimeColorClamp(params.color_root_proximity_scale, 0.25f, 8.0f);
+    const float bias = EscapeTimeColorClamp(params.color_root_proximity_bias, -1.0f, 1.0f);
+    return (1.0f / (1.0f + scale * distance)) + bias;
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
+    FractalType fractalType,
+    int iteration,
+    int maxIter,
+    Complex z,
+    const KernelParams& params) {
+    if (params.color_pipeline.signal == ColorSignal::root_proximity) {
+        return ResolveRootProximitySignal(z, params);
+    }
+    if (params.color_pipeline.signal == ColorSignal::phase_angle ||
+        params.color_pipeline.signal == ColorSignal::orbit_stripe) {
+        return ResolveAngularSignal(params.color_pipeline.signal, atan2f(z.y, z.x), params);
+    }
+    if (params.color_pipeline.signal == ColorSignal::root_index) {
+        return 0.0f;
+    }
+    return ResolveEscapeFamilySignal(
+        params.color_pipeline.signal,
+        fractalType,
+        iteration,
+        maxIter,
+        EscapeTimeColorAbs(z),
+        params);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color SampleProgrammableEscapeTimePalette(float signalValue, bool escaped, const KernelParams& params) {
+    const float twoPi = 6.28318530717958647692f;
+    if (params.color_pipeline.palette == ColorPalette::phase_wheel) {
+        const float hue = signalValue + (params.color_phase_palette_offset / twoPi);
+        return HsvToRgb<Color>(hue, 0.9f, escaped ? 0.85f : 0.25f);
+    }
+    if (params.color_pipeline.palette == ColorPalette::banded_escape) {
+        const int bandCount = params.color_iteration_band_count < 2 ? 2 : params.color_iteration_band_count;
+        const float softness = EscapeTimeColorClamp(params.color_iteration_band_softness, 0.0f, 1.0f);
+        const float emphasis = EscapeTimeColorClamp(params.color_iteration_band_emphasis, 0.0f, 2.0f);
+        const float paletteOffset = (params.color_iteration_band_palette_offset / twoPi) * static_cast<float>(bandCount);
+        EscapeTimeColorRgb rgb = SampleIterationBandPalette(signalValue * static_cast<float>(bandCount) + paletteOffset, bandCount, softness);
+        rgb = ApplyIterationBandEmphasis(rgb, emphasis);
+        return EscapeTimeColorFromRgb<Color>(rgb);
+    }
+    const float heatmapBand = params.color_pipeline.palette == ColorPalette::cyclic_escape
+        ? signalValue * EscapeTimeColorClamp(params.color_heatmap_cycle_scale, 0.25f, 4.0f)
+        : signalValue;
+    return EscapeTimeColorFromRgb<Color>(SampleEscapeHeatmap(heatmapBand, params));
 }
 
 // Cyclic iteration-band palette (8 distinct hues).
@@ -336,11 +481,15 @@ ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     if (TryMakeDiscreteEscapeTimeColor(fractalType, mode, escaped, iteration, maxIter, z, params, &discreteColor)) {
         return discreteColor;
     }
-
-    return EscapeTimeColorFromRgb<Color>(
-        SampleEscapeHeatmap(
-            ResolveSmoothEscapeHeatmapBand(ComputeEscapeTimeNu(fractalType, iteration, EscapeTimeColorAbs(z), params), params),
-            params));
+    if (!escaped &&
+        params.color_pipeline.signal != ColorSignal::root_proximity &&
+        params.color_pipeline.palette != ColorPalette::phase_wheel) {
+        return EscapeTimeColorMake<Color>(0, 0, 0, 255);
+    }
+    const float shapedSignal = ApplyColorPipelineShapeValue(
+        ResolveProgrammableEscapeTimeSignal(fractalType, iteration, maxIter, z, params),
+        params);
+    return SampleProgrammableEscapeTimePalette<Color>(shapedSignal, escaped, params);
 }
 
 #undef ESCAPE_TIME_COLOR_HD

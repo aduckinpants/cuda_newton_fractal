@@ -1060,7 +1060,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             return false;
         }
         ColoringMode derivedMode = ColoringMode::root_basin;
-        if (!TryLegacyColoringModeForPipeline(explicitPipeline, &derivedMode)) {
+        if (!TryMirroredColoringModeForPipeline(explicitPipeline, &derivedMode)) {
             if (outError) *outError = "Unsupported split-color combination in saved state";
             return false;
         }
@@ -1116,6 +1116,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorIterationBandPaletteOffset = nextParams.color_iteration_band_palette_offset;
     double colorSmoothEscapeScale = nextParams.color_smooth_escape_scale;
     double colorSmoothEscapeBias = nextParams.color_smooth_escape_bias;
+    double colorEscapeMagnitudeScale = nextParams.color_escape_magnitude_scale;
+    double colorEscapeMagnitudeBias = nextParams.color_escape_magnitude_bias;
+    double colorOrbitStripeFrequency = nextParams.color_orbit_stripe_frequency;
+    double colorOrbitStripePhase = nextParams.color_orbit_stripe_phase;
+    double colorRootProximityScale = nextParams.color_root_proximity_scale;
+    double colorRootProximityBias = nextParams.color_root_proximity_bias;
     double colorHeatmapCycleScale = nextParams.color_heatmap_cycle_scale;
     double colorHeatmapSaturation = nextParams.color_heatmap_saturation;
     double colorContrastLiftExposure = nextParams.color_contrast_lift_exposure;
@@ -1151,6 +1157,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_palette_offset", &colorIterationBandPaletteOffset, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_scale", &colorSmoothEscapeScale, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_smooth_escape_bias", &colorSmoothEscapeBias, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_escape_magnitude_scale", &colorEscapeMagnitudeScale, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_escape_magnitude_bias", &colorEscapeMagnitudeBias, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_orbit_stripe_frequency", &colorOrbitStripeFrequency, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_orbit_stripe_phase", &colorOrbitStripePhase, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_root_proximity_scale", &colorRootProximityScale, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_root_proximity_bias", &colorRootProximityBias, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_heatmap_cycle_scale", &colorHeatmapCycleScale, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_heatmap_saturation", &colorHeatmapSaturation, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast_lift_exposure", &colorContrastLiftExposure, nullptr, outError)) return false;
@@ -1173,6 +1185,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_iteration_band_palette_offset = static_cast<float>(colorIterationBandPaletteOffset);
     nextParams.color_smooth_escape_scale = static_cast<float>(colorSmoothEscapeScale);
     nextParams.color_smooth_escape_bias = static_cast<float>(colorSmoothEscapeBias);
+    nextParams.color_escape_magnitude_scale = static_cast<float>(colorEscapeMagnitudeScale);
+    nextParams.color_escape_magnitude_bias = static_cast<float>(colorEscapeMagnitudeBias);
+    nextParams.color_orbit_stripe_frequency = static_cast<float>(colorOrbitStripeFrequency);
+    nextParams.color_orbit_stripe_phase = static_cast<float>(colorOrbitStripePhase);
+    nextParams.color_root_proximity_scale = static_cast<float>(colorRootProximityScale);
+    nextParams.color_root_proximity_bias = static_cast<float>(colorRootProximityBias);
     nextParams.color_heatmap_cycle_scale = static_cast<float>(colorHeatmapCycleScale);
     nextParams.color_heatmap_saturation = static_cast<float>(colorHeatmapSaturation);
     nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);

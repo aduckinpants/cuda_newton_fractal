@@ -112,6 +112,12 @@ inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
         return "phase_orbit";
     case ColorSignal::iteration_bands:
         return "banded_signal";
+    case ColorSignal::escape_magnitude:
+        return "escape_magnitude";
+    case ColorSignal::orbit_stripe:
+        return "orbit_stripe";
+    case ColorSignal::root_proximity:
+        return "root_proximity";
     }
     return nullptr;
 }
@@ -127,6 +133,18 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
     }
     if (functionId == "banded_signal") {
         if (outValue) *outValue = ColorSignal::iteration_bands;
+        return true;
+    }
+    if (functionId == "escape_magnitude") {
+        if (outValue) *outValue = ColorSignal::escape_magnitude;
+        return true;
+    }
+    if (functionId == "orbit_stripe") {
+        if (outValue) *outValue = ColorSignal::orbit_stripe;
+        return true;
+    }
+    if (functionId == "root_proximity") {
+        if (outValue) *outValue = ColorSignal::root_proximity;
         return true;
     }
     return false;
@@ -225,6 +243,30 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineIntParam("signal.band_count", "Band Count", "Choose how many bands to carve out of the escape signal.", 2, 24, 1, 8),
                 MakeColorPipelineFloatParam("signal.softness", "Softness", "Blend between hard posterization and soft band transitions.", 0.0, 1.0, 0.01, 0.35),
+            }),
+        MakeColorPipelineFunction(
+            "escape_magnitude",
+            "Escape Magnitude",
+            "Use the orbit magnitude as the upstream escape-time source.",
+            {
+                MakeColorPipelineFloatParam("signal.magnitude_scale", "Magnitude Scale", "Expand or compress the escape-magnitude source before palette lookup.", 0.25, 4.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("signal.magnitude_bias", "Magnitude Bias", "Shift the escape-magnitude source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+            }),
+        MakeColorPipelineFunction(
+            "orbit_stripe",
+            "Orbit Stripe",
+            "Fold orbit phase into a controllable stripe source before palette lookup.",
+            {
+                MakeColorPipelineFloatParam("signal.stripe_frequency", "Stripe Frequency", "Control how often orbit stripes repeat around the phase wheel.", 0.25, 12.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Offset the stripe wave before palette lookup.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
+            }),
+        MakeColorPipelineFunction(
+            "root_proximity",
+            "Root Proximity",
+            "Use nearest-root proximity as the upstream source on basin-capable fractal families.",
+            {
+                MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
             }),
     };
 }
@@ -329,7 +371,10 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
     if (std::string(laneId) == "source") {
         return functionId == "smooth_escape_ramp" ||
             functionId == "phase_orbit" ||
-            functionId == "banded_signal";
+            functionId == "banded_signal" ||
+            functionId == "escape_magnitude" ||
+            functionId == "orbit_stripe" ||
+            functionId == "root_proximity";
     }
     if (std::string(laneId) == "shape") {
         return functionId == "identity" ||
@@ -416,6 +461,27 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.grading == ColorGradingPreset::bands_default) {
         if (outSourceFunctionId) *outSourceFunctionId = "banded_signal";
         if (outPaletteFunctionId) *outPaletteFunctionId = "banded_heatmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::escape_magnitude &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "escape_magnitude";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::orbit_stripe &&
+        pipeline.palette == ColorPalette::phase_wheel &&
+        pipeline.grading == ColorGradingPreset::phase_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "orbit_stripe";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "phase_wheel_palette";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_proximity &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }
     return false;

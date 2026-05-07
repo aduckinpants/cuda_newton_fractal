@@ -174,6 +174,7 @@ int main() {
         view.auto_max_iter = true;
         KernelParams params{};
         params.coloring_mode = ColoringMode::iteration_count;
+        params.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
         params.explaino_seed = -3.0;
         params.explaino_seed_b = -7.5;
         params.explaino_root_spread = 1.75f;
@@ -184,6 +185,12 @@ int main() {
         params.color_iteration_band_softness = 0.8f;
         params.color_iteration_band_emphasis = 1.6f;
         params.color_iteration_band_palette_offset = 0.4f;
+        params.color_escape_magnitude_scale = 1.8f;
+        params.color_escape_magnitude_bias = -0.25f;
+        params.color_orbit_stripe_frequency = 3.5f;
+        params.color_orbit_stripe_phase = 0.4f;
+        params.color_root_proximity_scale = 2.25f;
+        params.color_root_proximity_bias = -0.1f;
         RenderSettings render{};
         render.resolution = {64, 48};
         RenderStats stats{};
@@ -214,6 +221,12 @@ int main() {
             stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos ||
             stateJson.find("\"color_phase_signal_offset\": 1.25") == std::string::npos ||
             stateJson.find("\"color_iteration_band_count\": 5") == std::string::npos ||
+            stateJson.find("\"color_escape_magnitude_scale\": 1.8") == std::string::npos ||
+            stateJson.find("\"color_escape_magnitude_bias\": -0.25") == std::string::npos ||
+            stateJson.find("\"color_orbit_stripe_frequency\": 3.5") == std::string::npos ||
+            stateJson.find("\"color_orbit_stripe_phase\": 0.4") == std::string::npos ||
+            stateJson.find("\"color_root_proximity_scale\": 2.25") == std::string::npos ||
+            stateJson.find("\"color_root_proximity_bias\": -0.1") == std::string::npos ||
             stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
             stateJson.find("\"interaction_debounce_ms\": 200") == std::string::npos ||
             stateJson.find("\"preview_target_fps\": 30") == std::string::npos ||
@@ -222,17 +235,17 @@ int main() {
             stateJson.find("\"import_signature\": \"9007199254740993\"") == std::string::npos ||
             stateJson.find("\"pack_projection_hash\": \"18446744073709551614\"") == std::string::npos ||
             stateJson.find("\"field_embedding_stats\": 5.5") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist Explaino fields, phase/bands color params, adaptive preview pacing, and optional sidecar orientation state\n";
+            std::cerr << "Expected diagnostics capture to persist Explaino fields, widened source owner fields, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
-        if (stateJson.find("\"color_signal\": \"root_index\"") == std::string::npos ||
-            stateJson.find("\"color_palette\": \"root_classic\"") == std::string::npos ||
-            stateJson.find("\"color_grading\": \"basin_default\"") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist explicit split-color state during slice 2\n";
+        if (stateJson.find("\"color_signal\": \"root_proximity\"") == std::string::npos ||
+            stateJson.find("\"color_palette\": \"cyclic_escape\"") == std::string::npos ||
+            stateJson.find("\"color_grading\": \"escape_default\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist the widened split-color state during Phase 2\n";
             return 1;
         }
-        if (stateJson.find("\"coloring_mode\": \"root_basin\"") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to derive the exact legacy coloring_mode mirror from the split-color pipeline\n";
+        if (stateJson.find("\"coloring_mode\": \"smooth_escape\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to derive the widened mirrored coloring_mode from the split-color pipeline\n";
             return 1;
         }
         if (stateJson.find("\"coloring_mode\": \"iteration_count\"") != std::string::npos) {

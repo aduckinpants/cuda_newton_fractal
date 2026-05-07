@@ -78,6 +78,9 @@ const char* CaptureColorSignalId(ColorSignal signal) {
     case ColorSignal::smooth_escape: return "smooth_escape";
     case ColorSignal::phase_angle: return "phase_angle";
     case ColorSignal::iteration_bands: return "iteration_bands";
+    case ColorSignal::escape_magnitude: return "escape_magnitude";
+    case ColorSignal::orbit_stripe: return "orbit_stripe";
+    case ColorSignal::root_proximity: return "root_proximity";
     }
     return "unknown";
 }
@@ -226,6 +229,12 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_iteration_band_palette_offset\": " << static_cast<double>(params.color_iteration_band_palette_offset) << ",\n";
     js << "    \"color_smooth_escape_scale\": " << static_cast<double>(params.color_smooth_escape_scale) << ",\n";
     js << "    \"color_smooth_escape_bias\": " << static_cast<double>(params.color_smooth_escape_bias) << ",\n";
+    js << "    \"color_escape_magnitude_scale\": " << static_cast<double>(params.color_escape_magnitude_scale) << ",\n";
+    js << "    \"color_escape_magnitude_bias\": " << static_cast<double>(params.color_escape_magnitude_bias) << ",\n";
+    js << "    \"color_orbit_stripe_frequency\": " << static_cast<double>(params.color_orbit_stripe_frequency) << ",\n";
+    js << "    \"color_orbit_stripe_phase\": " << static_cast<double>(params.color_orbit_stripe_phase) << ",\n";
+    js << "    \"color_root_proximity_scale\": " << static_cast<double>(params.color_root_proximity_scale) << ",\n";
+    js << "    \"color_root_proximity_bias\": " << static_cast<double>(params.color_root_proximity_bias) << ",\n";
     js << "    \"color_heatmap_cycle_scale\": " << static_cast<double>(params.color_heatmap_cycle_scale) << ",\n";
     js << "    \"color_heatmap_saturation\": " << static_cast<double>(params.color_heatmap_saturation) << ",\n";
     js << "    \"color_contrast_lift_exposure\": " << static_cast<double>(params.color_contrast_lift_exposure) << ",\n";
@@ -377,7 +386,7 @@ std::string BuildStateJson(
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const ColorPipelineWindowState* colorPipelineWindow) {
     ColoringMode mirroredColoringMode = ColoringMode::root_basin;
-    const bool hasLegacyColoringMirror = TryLegacyColoringModeForPipeline(params.color_pipeline, &mirroredColoringMode);
+    const bool hasLegacyColoringMirror = TryMirroredColoringModeForPipeline(params.color_pipeline, &mirroredColoringMode);
 
     std::ostringstream js;
     js << "{\n";

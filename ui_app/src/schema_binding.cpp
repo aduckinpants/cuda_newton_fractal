@@ -86,15 +86,6 @@ const char* FloatControlInputFormat(const UISchemaControl& control, const UISche
     return "%.5f";
 }
 
-constexpr ColoringMode kSelectableColoringModes[] = {
-    ColoringMode::root_basin,
-    ColoringMode::joy_basins,
-    ColoringMode::iteration_count,
-    ColoringMode::smooth_escape,
-    ColoringMode::phase,
-    ColoringMode::iteration_bands,
-};
-
 bool IsAllowedColoringModeForBinding(const BindingContext& ctx, ColoringMode mode) {
     return !ctx.view || IsColoringModeAllowedForFractal(ctx.view->fractal_type, mode);
 }
@@ -105,14 +96,27 @@ bool TrySelectAllowedColorPipeline(
     MatchFn match,
     ColorPipelineSelection* outPipeline,
     ColoringMode* outMode) {
-    auto matchesMode = [&](ColoringMode mode) {
-        return IsAllowedColoringModeForBinding(ctx, mode) && match(ColorPipelineForLegacyMode(mode));
+    auto matchesPipeline = [&](const ColorPipelineSelection& pipeline, ColoringMode* outMirroredMode = nullptr) {
+        ColoringMode mirroredMode = ColoringMode::root_basin;
+        if (!TryMirroredColoringModeForPipeline(pipeline, &mirroredMode)) {
+            return false;
+        }
+        if (ctx.view && !IsColorPipelineAllowedForFractal(ctx.view->fractal_type, pipeline)) {
+            return false;
+        }
+        if (!match(pipeline)) {
+            return false;
+        }
+        if (outMirroredMode) {
+            *outMirroredMode = mirroredMode;
+        }
+        return true;
     };
 
     if (ctx.params) {
         ColoringMode currentMode = ColoringMode::root_basin;
-        if (TryLegacyColoringModeForPipeline(ctx.params->color_pipeline, &currentMode) && matchesMode(currentMode)) {
-            if (outPipeline) *outPipeline = ColorPipelineForLegacyMode(currentMode);
+        if (matchesPipeline(ctx.params->color_pipeline, &currentMode)) {
+            if (outPipeline) *outPipeline = ctx.params->color_pipeline;
             if (outMode) *outMode = currentMode;
             return true;
         }
@@ -120,17 +124,21 @@ bool TrySelectAllowedColorPipeline(
 
     if (ctx.view) {
         const ColoringMode defaultMode = DefaultColoringModeForFractal(ctx.view->fractal_type);
-        if (matchesMode(defaultMode)) {
-            if (outPipeline) *outPipeline = ColorPipelineForLegacyMode(defaultMode);
-            if (outMode) *outMode = defaultMode;
-            return true;
+        for (const ColorPipelineSelection& pipeline : kSelectableColorPipelines) {
+            ColoringMode mirroredMode = ColoringMode::root_basin;
+            if (matchesPipeline(pipeline, &mirroredMode) && mirroredMode == defaultMode) {
+                if (outPipeline) *outPipeline = pipeline;
+                if (outMode) *outMode = mirroredMode;
+                return true;
+            }
         }
     }
 
-    for (ColoringMode mode : kSelectableColoringModes) {
-        if (matchesMode(mode)) {
-            if (outPipeline) *outPipeline = ColorPipelineForLegacyMode(mode);
-            if (outMode) *outMode = mode;
+    for (const ColorPipelineSelection& pipeline : kSelectableColorPipelines) {
+        ColoringMode mirroredMode = ColoringMode::root_basin;
+        if (matchesPipeline(pipeline, &mirroredMode)) {
+            if (outPipeline) *outPipeline = pipeline;
+            if (outMode) *outMode = mirroredMode;
             return true;
         }
     }

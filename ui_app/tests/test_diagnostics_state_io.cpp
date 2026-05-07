@@ -2447,6 +2447,65 @@ int main() {
         }
     }
 
+      {
+        const fs::path statePath = tempRoot / "v3_widened_source_runtime_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+      "state_version": 3,
+      "fractal_type": "newton",
+      "view": {
+      "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+      "rotation_degrees": 0.0,
+      "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+      "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+      },
+      "params": {
+      "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+      "poly_kind": 0,
+      "coloring_mode": "iteration_count",
+      "color_signal": "root_proximity",
+      "color_shape": "identity",
+      "color_palette": "cyclic_escape",
+      "color_grading": "escape_default",
+      "nova_alpha": 0.5,
+      "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+      "multibrot_power": 3,
+      "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+      "poly_coeffs": [-1, 0, 0, 1, 0],
+      "color_escape_magnitude_scale": 1.8,
+      "color_escape_magnitude_bias": -0.25,
+      "color_orbit_stripe_frequency": 3.5,
+      "color_orbit_stripe_phase": 0.4,
+      "color_root_proximity_scale": 2.25,
+      "color_root_proximity_bias": -0.1
+      },
+      "render": { "width": 256, "height": 192, "block_size": 256, "device_id": 0 }
+    })";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+          std::cerr << "V3 widened source runtime state load failed: " << error << "\n";
+          return 1;
+        }
+        if (p.color_pipeline.signal != ColorSignal::root_proximity ||
+          p.color_pipeline.palette != ColorPalette::cyclic_escape ||
+          p.color_pipeline.grading != ColorGradingPreset::escape_default ||
+          p.coloring_mode != ColoringMode::smooth_escape ||
+          !NearlyEqual(p.color_escape_magnitude_scale, 1.8, 0.001) ||
+          !NearlyEqual(p.color_escape_magnitude_bias, -0.25, 0.001) ||
+          !NearlyEqual(p.color_orbit_stripe_frequency, 3.5, 0.001) ||
+          !NearlyEqual(p.color_orbit_stripe_phase, 0.4, 0.001) ||
+          !NearlyEqual(p.color_root_proximity_scale, 2.25, 0.001) ||
+          !NearlyEqual(p.color_root_proximity_bias, -0.1, 0.001)) {
+          std::cerr << "Expected widened source runtime state load to restore new source ids, owner fields, and the derived mirrored coloring_mode\n";
+          return 1;
+        }
+      }
+
     std::cout << "test_diagnostics_state_io: all passed\n";
     return 0;
 }

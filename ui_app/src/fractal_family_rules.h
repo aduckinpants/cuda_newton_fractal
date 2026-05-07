@@ -86,6 +86,18 @@ FRACTAL_FAMILY_RULES_HD inline constexpr ColorPipelineSelection DefaultColorPipe
     return ColorPipelineForLegacyMode(DefaultColoringModeForFractal(fractalType));
 }
 
+inline constexpr ColorPipelineSelection kSelectableColorPipelines[] = {
+    ColorPipelineForLegacyMode(ColoringMode::root_basin),
+    ColorPipelineForLegacyMode(ColoringMode::iteration_count),
+    ColorPipelineForLegacyMode(ColoringMode::smooth_escape),
+    ColorPipelineForLegacyMode(ColoringMode::joy_basins),
+    ColorPipelineForLegacyMode(ColoringMode::phase),
+    ColorPipelineForLegacyMode(ColoringMode::iteration_bands),
+    {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
+    {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default},
+    {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
+};
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
     const ColorPipelineSelection& pipeline,
     ColoringMode* outMode) {
@@ -128,11 +140,48 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
     return false;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColorSignalAllowedForFractal(
+    FractalType fractalType,
+    ColorSignal signal) {
+    if (signal == ColorSignal::root_index || signal == ColorSignal::root_proximity) {
+        return SupportsBasinColoring(fractalType);
+    }
+    return true;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline(
+    const ColorPipelineSelection& pipeline,
+    ColoringMode* outMode) {
+    if (TryLegacyColoringModeForPipeline(pipeline, outMode)) {
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::escape_magnitude &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::orbit_stripe &&
+        pipeline.palette == ColorPalette::phase_wheel &&
+        pipeline.grading == ColorGradingPreset::phase_default) {
+        if (outMode) *outMode = ColoringMode::phase;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_proximity &&
+        pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    return false;
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColorPipelineAllowedForFractal(
     FractalType fractalType,
     const ColorPipelineSelection& pipeline) {
     ColoringMode mode = ColoringMode::root_basin;
-    return TryLegacyColoringModeForPipeline(pipeline, &mode) &&
+    return IsColorSignalAllowedForFractal(fractalType, pipeline.signal) &&
+        TryMirroredColoringModeForPipeline(pipeline, &mode) &&
         IsColoringModeAllowedForFractal(fractalType, mode);
 }
 

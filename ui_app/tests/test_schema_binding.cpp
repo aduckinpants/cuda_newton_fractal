@@ -142,6 +142,37 @@ int main() {
             std::cerr << "Expected split color signal edits to coerce the rest of the color pipeline onto a valid exact runtime combination\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.params.color_signal", "escape_magnitude") ||
+            ctx.GetEnumId("fractal.params.color_signal") != "escape_magnitude" ||
+            ctx.GetEnumId("fractal.params.color_palette") != "cyclic_escape" ||
+            ctx.GetEnumId("fractal.params.color_grading") != "escape_default" ||
+            ctx.GetEnumId("fractal.params.coloring_mode") != "smooth_escape") {
+            std::cerr << "Expected widened split color signal edits to accept escape_magnitude through the runtime-supported programmable mirror\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.color_signal", "orbit_stripe") ||
+            ctx.GetEnumId("fractal.params.color_signal") != "orbit_stripe" ||
+            ctx.GetEnumId("fractal.params.color_palette") != "phase_wheel" ||
+            ctx.GetEnumId("fractal.params.color_grading") != "phase_default" ||
+            ctx.GetEnumId("fractal.params.coloring_mode") != "phase") {
+            std::cerr << "Expected widened split color signal edits to accept orbit_stripe through the runtime-supported programmable mirror\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.coloring_mode", "smooth_escape") ||
+            !ctx.SetEnumId("fractal.params.color_signal", "root_proximity") ||
+            ctx.GetEnumId("fractal.params.color_signal") != "root_proximity" ||
+            ctx.GetEnumId("fractal.params.color_palette") != "cyclic_escape" ||
+            ctx.GetEnumId("fractal.params.color_grading") != "escape_default" ||
+            ctx.GetEnumId("fractal.params.coloring_mode") != "smooth_escape") {
+            std::cerr << "Expected basin-capable split color signal edits to accept family-gated root_proximity through the current source-only programmable mirror\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::mandelbrot;
+        if (ctx.SetEnumId("fractal.params.color_signal", "root_proximity")) {
+            std::cerr << "Expected escape-time families to reject family-gated root_proximity instead of silently coercing it\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::explaino;
         if (!ctx.SetEnumId("fractal.params.coloring_mode", "smooth_escape") ||
             !ctx.SetEnumId("fractal.params.color_grading", "phase_default") ||
             ctx.GetEnumId("fractal.params.coloring_mode") != "phase" ||
@@ -225,19 +256,38 @@ int main() {
             {"smooth_escape", "Smooth Escape", ""},
             {"phase_angle", "Phase Angle", ""},
             {"iteration_bands", "Iteration Bands", ""},
+            {"escape_magnitude", "Escape Magnitude", ""},
+            {"orbit_stripe", "Orbit Stripe", ""},
+            {"root_proximity", "Root Proximity", ""},
         };
 
         view.fractal_type = FractalType::explaino;
         const std::vector<const UISchemaOption*> explainoSignalOptions = ResolveVisibleEnumOptions(colorSignal, ctx);
-        if (explainoSignalOptions.size() != 5) {
-            std::cerr << "Expected basin-capable fractals to expose the full split color signal set\n";
+        if (explainoSignalOptions.size() != 8) {
+            std::cerr << "Expected basin-capable fractals to expose the widened split color signal set including root_proximity\n";
+            return 1;
+        }
+        bool foundEscapeMagnitude = false;
+        bool foundOrbitStripe = false;
+        bool foundRootProximity = false;
+        for (const UISchemaOption* option : explainoSignalOptions) {
+            if (!option) {
+                std::cerr << "Expected widened split color signal options to remain addressable\n";
+                return 1;
+            }
+            if (option->id == "escape_magnitude") foundEscapeMagnitude = true;
+            if (option->id == "orbit_stripe") foundOrbitStripe = true;
+            if (option->id == "root_proximity") foundRootProximity = true;
+        }
+        if (!foundEscapeMagnitude || !foundOrbitStripe || !foundRootProximity) {
+            std::cerr << "Expected basin-capable fractals to expose all widened split color source ids\n";
             return 1;
         }
 
         view.fractal_type = FractalType::mandelbrot;
         const std::vector<const UISchemaOption*> mandelbrotSignalOptions = ResolveVisibleEnumOptions(colorSignal, ctx);
-        if (mandelbrotSignalOptions.size() != 4) {
-            std::cerr << "Expected escape-time fractals to hide basin-only split color signals\n";
+        if (mandelbrotSignalOptions.size() != 6) {
+            std::cerr << "Expected escape-time fractals to expose the widened reusable split color signals while still hiding basin-only ones\n";
             return 1;
         }
         for (const UISchemaOption* option : mandelbrotSignalOptions) {
@@ -245,7 +295,7 @@ int main() {
                 std::cerr << "Expected visible split color signal options to remain addressable\n";
                 return 1;
             }
-            if (option->id == "root_index") {
+            if (option->id == "root_index" || option->id == "root_proximity") {
                 std::cerr << "Escape-time fractals should not expose basin-only split color signals\n";
                 return 1;
             }
@@ -724,6 +774,43 @@ int main() {
             coreCatalogs[1].lane_id != std::string("shape") ||
             coreCatalogs[2].lane_id != std::string("palette")) {
             std::cerr << "Expected the extracted advanced color core to own the shipped Source / Shape / Palette lane catalog\n";
+            return 1;
+        }
+        const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
+        if (!coreSourceCatalog ||
+            coreSourceCatalog->default_function_id != std::string("smooth_escape_ramp") ||
+            coreSourceCatalog->functions.size() != 6 ||
+            coreSourceCatalog->functions[0].id != "smooth_escape_ramp" ||
+            coreSourceCatalog->functions[1].id != "phase_orbit" ||
+            coreSourceCatalog->functions[2].id != "banded_signal" ||
+            coreSourceCatalog->functions[3].id != "escape_magnitude" ||
+            coreSourceCatalog->functions[4].id != "orbit_stripe" ||
+            coreSourceCatalog->functions[5].id != "root_proximity") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreEscapeMagnitudeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "escape_magnitude");
+        if (!coreEscapeMagnitudeDescriptor ||
+            coreEscapeMagnitudeDescriptor->parameters.size() != 2 ||
+            coreEscapeMagnitudeDescriptor->parameters[0].path != "signal.magnitude_scale" ||
+            coreEscapeMagnitudeDescriptor->parameters[1].path != "signal.magnitude_bias") {
+            std::cerr << "Expected escape_magnitude to carry stable magnitude-scale and magnitude-bias source parameters\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreOrbitStripeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "orbit_stripe");
+        if (!coreOrbitStripeDescriptor ||
+            coreOrbitStripeDescriptor->parameters.size() != 2 ||
+            coreOrbitStripeDescriptor->parameters[0].path != "signal.stripe_frequency" ||
+            coreOrbitStripeDescriptor->parameters[1].path != "signal.phase_offset") {
+            std::cerr << "Expected orbit_stripe to carry stable stripe-frequency and phase-offset source parameters\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreRootProximityDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_proximity");
+        if (!coreRootProximityDescriptor ||
+            coreRootProximityDescriptor->parameters.size() != 2 ||
+            coreRootProximityDescriptor->parameters[0].path != "signal.proximity_scale" ||
+            coreRootProximityDescriptor->parameters[1].path != "signal.proximity_bias") {
+            std::cerr << "Expected root_proximity to carry stable proximity-scale and proximity-bias source parameters\n";
             return 1;
         }
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");

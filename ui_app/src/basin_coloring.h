@@ -14,6 +14,26 @@ BASIN_COLORING_HD inline constexpr int ResolvePolynomialRootCount(PolyKind polyK
     return polyKind == PolyKind::z3_minus_1 ? 3 : (polyKind == PolyKind::z4_minus_1 ? 4 : 0);
 }
 
+BASIN_COLORING_HD inline double BasinDistanceSquared(double x0, double y0, double x1, double y1) {
+    const double dx = x0 - x1;
+    const double dy = y0 - y1;
+    return dx * dx + dy * dy;
+}
+
+BASIN_COLORING_HD inline Double2 UnitRootCoord(int index, int count) {
+    const double angle = (2.0 * 3.14159265358979323846 * static_cast<double>(index)) / static_cast<double>(count);
+    return {std::cos(angle), std::sin(angle)};
+}
+
+template <typename Complex>
+BASIN_COLORING_HD inline double BasinDistanceSquaredToRoot(Complex z, const Float2& root) {
+    return BasinDistanceSquared(
+        static_cast<double>(z.x),
+        static_cast<double>(z.y),
+        static_cast<double>(root.x),
+        static_cast<double>(root.y));
+}
+
 template <typename Scalar>
 BASIN_COLORING_HD inline int NearestRootIndexUnitRootsImpl(Scalar x, Scalar y, int n);
 
@@ -51,15 +71,49 @@ BASIN_COLORING_HD inline int NearestRootIndexList(Complex z, const Float2* roots
     int best = 0;
     double bestD2 = 1.0e30;
     for (int i = 0; i < n; ++i) {
-        const double dx = (double)z.x - (double)roots[i].x;
-        const double dy = (double)z.y - (double)roots[i].y;
-        const double d2 = dx * dx + dy * dy;
+        const double d2 = BasinDistanceSquaredToRoot(z, roots[i]);
         if (d2 < bestD2) {
             bestD2 = d2;
             best = i;
         }
     }
     return best;
+}
+
+template <typename Scalar>
+BASIN_COLORING_HD inline double NearestRootDistanceSquaredUnitRootsImpl(Scalar x, Scalar y, int n) {
+    if (n <= 0) {
+        return 1.0e30;
+    }
+    double bestD2 = 1.0e30;
+    for (int i = 0; i < n; ++i) {
+        const Double2 root = UnitRootCoord(i, n);
+        const double d2 = BasinDistanceSquared(static_cast<double>(x), static_cast<double>(y), root.x, root.y);
+        if (d2 < bestD2) {
+            bestD2 = d2;
+        }
+    }
+    return bestD2;
+}
+
+template <typename Complex>
+BASIN_COLORING_HD inline double NearestRootDistanceSquaredUnitRoots(Complex z, int n) {
+    return NearestRootDistanceSquaredUnitRootsImpl<decltype(z.x)>(z.x, z.y, n);
+}
+
+template <typename Complex>
+BASIN_COLORING_HD inline double NearestRootDistanceSquaredList(Complex z, const Float2* roots, int n) {
+    if (!roots || n <= 0) {
+        return 1.0e30;
+    }
+    double bestD2 = 1.0e30;
+    for (int i = 0; i < n; ++i) {
+        const double d2 = BasinDistanceSquaredToRoot(z, roots[i]);
+        if (d2 < bestD2) {
+            bestD2 = d2;
+        }
+    }
+    return bestD2;
 }
 
 template <typename Color>
