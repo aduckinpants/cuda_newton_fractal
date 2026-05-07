@@ -188,11 +188,42 @@ int main() {
             return 1;
         }
 
+        params.color_shape = ColorPipelineShape::posterize;
+        params.color_shape_posterize_steps = 2;
+        params.color_shape_posterize_mix = 1.0f;
+        const TestColor posterizedSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, posterizedSignal)) {
+            std::cerr << "posterize should react to its live Shape owner fields\n";
+            return 1;
+        }
+        params.color_shape_posterize_mix = 0.0f;
+        const TestColor unblendedPosterize = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (!Equals(programmableBase, unblendedPosterize)) {
+            std::cerr << "posterize mix=0 should preserve the incoming signal\n";
+            return 1;
+        }
+
         params.color_shape = ColorPipelineShape::identity;
         params.color_shape_offset = 0.0f;
         params.color_shape_scale = 1.0f;
         params.color_shape_repeat_frequency = 8.0f;
         params.color_shape_repeat_phase = 0.0f;
+        params.color_shape_posterize_steps = 6;
+        params.color_shape_posterize_mix = 1.0f;
         const TestColor gradedBase = ApplyFractalColorGrading(programmableBase, params);
         params.color_contrast_lift_exposure = 1.8f;
         params.color_contrast_lift_saturation = 1.5f;

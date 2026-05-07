@@ -181,6 +181,9 @@ int main() {
         params.color_phase_signal_offset = 1.25f;
         params.color_phase_wrap_cycles = 2.5f;
         params.color_phase_palette_offset = -0.75f;
+        params.color_shape = ColorPipelineShape::posterize;
+        params.color_shape_posterize_steps = 5;
+        params.color_shape_posterize_mix = 0.65f;
         params.color_iteration_band_count = 5;
         params.color_iteration_band_softness = 0.8f;
         params.color_iteration_band_emphasis = 1.6f;
@@ -227,6 +230,8 @@ int main() {
             stateJson.find("\"color_orbit_stripe_phase\": 0.4") == std::string::npos ||
             stateJson.find("\"color_root_proximity_scale\": 2.25") == std::string::npos ||
             stateJson.find("\"color_root_proximity_bias\": -0.1") == std::string::npos ||
+            stateJson.find("\"color_shape_posterize_steps\": 5") == std::string::npos ||
+            stateJson.find("\"color_shape_posterize_mix\": 0.65") == std::string::npos ||
             stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
             stateJson.find("\"interaction_debounce_ms\": 200") == std::string::npos ||
             stateJson.find("\"preview_target_fps\": 30") == std::string::npos ||
@@ -239,6 +244,7 @@ int main() {
             return 1;
         }
         if (stateJson.find("\"color_signal\": \"root_proximity\"") == std::string::npos ||
+            stateJson.find("\"color_shape\": \"posterize\"") == std::string::npos ||
             stateJson.find("\"color_palette\": \"cyclic_escape\"") == std::string::npos ||
             stateJson.find("\"color_grading\": \"escape_default\"") == std::string::npos) {
             std::cerr << "Expected diagnostics capture to persist the widened split-color state during Phase 2\n";

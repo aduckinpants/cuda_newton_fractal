@@ -260,6 +260,14 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyIterationBandEmphasis(Escape
     return rgb;
 }
 
+ESCAPE_TIME_COLOR_HD inline float ApplyPosterizeShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    const int steps = params.color_shape_posterize_steps < 2 ? 2 : (params.color_shape_posterize_steps > 24 ? 24 : params.color_shape_posterize_steps);
+    const float mix = EscapeTimeColorClamp(params.color_shape_posterize_mix, 0.0f, 1.0f);
+    const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    const float quantized = floorf((value / safeWrap) * static_cast<float>(steps)) / static_cast<float>(steps) * safeWrap;
+    return value + (quantized - value) * mix;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
     if (params.color_shape == ColorPipelineShape::offset_scale) {
         value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
@@ -272,6 +280,8 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, cons
         if (value < 0.0f) {
             value += repeatWrap;
         }
+    } else if (params.color_shape == ColorPipelineShape::posterize) {
+        value = ApplyPosterizeShapeValue(value, params, repeatWrap);
     }
     return value;
 }

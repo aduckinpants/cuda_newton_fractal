@@ -214,6 +214,8 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "offset_scale";
     case ColorPipelineShape::repeat:
         return "repeat";
+    case ColorPipelineShape::posterize:
+        return "posterize";
     }
     return nullptr;
 }
@@ -379,7 +381,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
     if (std::string(laneId) == "shape") {
         return functionId == "identity" ||
             functionId == "offset_scale" ||
-            functionId == "repeat";
+            functionId == "repeat" ||
+            functionId == "posterize";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||

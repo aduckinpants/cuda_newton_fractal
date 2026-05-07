@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2 validated - the Source library now ships six runtime-real rows through the extracted descriptor core, the programmable mirror/bridge model is widened beyond the old exact-tuple choke point, and checkpoint closure remains before Phase 3 Shape widening starts
+Phase 3 in progress - `posterize` is now validated as the first new runtime-real Shape row; the next bounded Shape widening step is `mirror_repeat`, followed by the remaining shape inventory
 
 ## Phase Checklist
 
@@ -57,36 +57,43 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, and `ui_app/tests/test_finding_archive_actions.cpp` now lock the widened Source catalog, runtime behavior, diagnostics load/save, capture-finding persistence, and the phase-wheel interior-color regression found during hostile audit.
 - Validated: `artifacts/validation/advanced_color_library_foundation_phase2_source_runtime_expansion_contract.json` remains green for the Phase 2 contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` is back on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green after the hostile-audit regression fix, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the republished runtime.
 - Audit: hostile review found that programmable `orbit_stripe` samples mirrored through the phase wheel were forcing interior pixels to black instead of preserving the dim phase-wheel interior color; `ui_app/tests/test_escape_time_coloring.cpp` now locks that case and `ui_app/src/escape_time_coloring.h` allows programmable phase-wheel palettes to render their interior color.
+- Checkpointed: Phase 2 closed at commit `f3c8bd0` with the linked `ck:021d50d4` handoff entry plus machine-written validation and contract proof receipts.
+- Next bounded slice: Phase 3 starts with `posterize` as the first honest Shape widening step because the descriptor already exists while the runtime, live-bridge, and persistence seams still reject it as draft-only.
+- Landed: `ui_app/src/fractal_types.h`, `ui_app/src/enum_id_utils.h`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, and `ui_app/src/fractal_derived_fields.cpp` now treat `posterize` as a real Shape row with runtime ids, defaults, live import/apply/reset support, shape math, and diagnostics persistence.
+- Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock posterize catalog visibility, live bridge apply/sync behavior, runtime signal shaping, diagnostics round-trip, Capture Finding persistence, and reset defaults.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase3_shape_posterize_contract.json` validates the Phase 3 posterize contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed`.
+- Audit: hostile review of the posterize runtime-authority, live-bridge, and persistence diffs did not uncover a second real defect after the local draft-apply choke-point repair and the strengthened posterize runtime regression sample.
 
 ## Notes
 
 - Expected owner files for the current slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase2_source_runtime_expansion.contract.json`
-  - `ui_app/src/basin_coloring.h`
+  - `docs/contracts/advanced_color_library_foundation_phase3_shape_posterize.contract.json`
   - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/color_pipeline_window.h`
   - `ui_app/src/diagnostics_capture.cpp`
   - `ui_app/src/diagnostics_state_io.cpp`
   - `ui_app/src/enum_id_utils.h`
   - `ui_app/src/escape_time_coloring.h`
-  - `ui_app/src/fractal_family_rules.h`
+  - `ui_app/src/fractal_derived_fields.cpp`
   - `ui_app/src/fractal_types.h`
-  - `ui_app/src/schema_binding.cpp`
   - `ui_app/tests/test_diagnostics_state_io.cpp`
   - `ui_app/tests/test_escape_time_coloring.cpp`
   - `ui_app/tests/test_finding_archive_actions.cpp`
+  - `ui_app/tests/test_runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
 - Non-goals for this slice:
-  - do not widen Shape, Palette, or Grading beyond what Phase 2 source expansion strictly requires
+  - do not widen beyond `posterize` inside the Shape lane yet
   - do not implement the Balance/Void grading operator yet
   - do not implement ExplainO-BalanceVoid yet
+  - do not widen Palette or Grading yet
   - do not widen into Blend or Mask/Domain yet
-  - do not add preview-only source rows or fake bridge support
+  - do not add preview-only shape rows or fake bridge support
 
 ## Resume Point
 
-After checkpointing the validated Phase 2 runtime-source expansion, Phase 3 begins: widen Shape through the same extracted registry/core and the generalized programmable bridge rather than reintroducing exact-tuple-only logic.
+After checkpointing the validated `posterize` sub-slice, continue Phase 3 by widening `mirror_repeat`, then `bias_gain_curve`, then `smooth_window` through the same extracted registry/core and live-bridge seams.
+
 
 
 
