@@ -806,6 +806,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "bias_gain_curve") {
         return path == "shape.bias" || path == "shape.gain";
     }
+    if (functionId == "smooth_window") {
+        return path == "shape.center" || path == "shape.width" || path == "shape.softness";
+    }
     if (functionId == "banded_signal") {
         return path == "signal.band_count" || path == "signal.softness";
     }
@@ -937,6 +940,11 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
         return SetColorPipelineParamNumber(ioRow, "shape.bias", liveParams.color_shape_bias, outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.gain", liveParams.color_shape_gain, outError);
     }
+    if (ioRow->function_id == "smooth_window") {
+        return SetColorPipelineParamNumber(ioRow, "shape.center", liveParams.color_shape_window_center, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.width", liveParams.color_shape_window_width, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.softness", liveParams.color_shape_window_softness, outError);
+    }
     if (ioRow->function_id == "banded_signal") {
         return SetColorPipelineParamNumber(ioRow, "signal.band_count", static_cast<double>(liveParams.color_iteration_band_count), outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.softness", liveParams.color_iteration_band_softness, outError);
@@ -1022,6 +1030,11 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     const auto resetShapeBiasGain = [&]() {
         assignShapeFloat(&ioParams->color_shape_bias, 0.5f);
         assignShapeFloat(&ioParams->color_shape_gain, 0.5f);
+    };
+    const auto resetShapeSmoothWindow = [&]() {
+        assignShapeFloat(&ioParams->color_shape_window_center, 0.5f);
+        assignShapeFloat(&ioParams->color_shape_window_width, 1.0f);
+        assignShapeFloat(&ioParams->color_shape_window_softness, 0.0f);
     };
     for (const ColorPipelineLaneState& lane : state.lanes) {
         for (const ColorPipelineRowState& row : lane.rows) {
@@ -1182,6 +1195,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             resetShapeRepeat();
             resetShapePosterize();
             resetShapeBiasGain();
+            resetShapeSmoothWindow();
             continue;
         }
         if (row.function_id == "offset_scale") {
@@ -1202,6 +1216,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             resetShapeRepeat();
             resetShapePosterize();
             resetShapeBiasGain();
+            resetShapeSmoothWindow();
             continue;
         }
         if (row.function_id == "repeat") {
@@ -1222,6 +1237,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             assignShapeFloat(&ioParams->color_shape_repeat_phase, static_cast<float>(phase));
             resetShapePosterize();
             resetShapeBiasGain();
+            resetShapeSmoothWindow();
             continue;
         }
         if (row.function_id == "posterize") {
@@ -1242,6 +1258,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             assignShapeInt(&ioParams->color_shape_posterize_steps, steps);
             assignShapeFloat(&ioParams->color_shape_posterize_mix, static_cast<float>(mix));
             resetShapeBiasGain();
+            resetShapeSmoothWindow();
             continue;
         }
         if (row.function_id == "mirror_repeat") {
@@ -1262,6 +1279,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             assignShapeFloat(&ioParams->color_shape_repeat_frequency, static_cast<float>(frequency));
             assignShapeFloat(&ioParams->color_shape_repeat_phase, static_cast<float>(phase));
             resetShapeBiasGain();
+            resetShapeSmoothWindow();
             continue;
         }
         if (row.function_id == "bias_gain_curve") {
@@ -1282,6 +1300,32 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             resetShapePosterize();
             assignShapeFloat(&ioParams->color_shape_bias, static_cast<float>(bias));
             assignShapeFloat(&ioParams->color_shape_gain, static_cast<float>(gain));
+            resetShapeSmoothWindow();
+            continue;
+        }
+        if (row.function_id == "smooth_window") {
+            double center = 0.0;
+            double width = 0.0;
+            double softness = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "shape.center", &center, outError) ||
+                !TryGetColorPipelineParamNumber(row, "shape.width", &width, outError) ||
+                !TryGetColorPipelineParamNumber(row, "shape.softness", &softness, outError) ||
+                !ValidateColorPipelineParamRange("shape.center", center, 0.0, 1.0, outError) ||
+                !ValidateColorPipelineParamRange("shape.width", width, 0.0, 1.0, outError) ||
+                !ValidateColorPipelineParamRange("shape.softness", softness, 0.0, 1.0, outError)) {
+                return false;
+            }
+            if (ioParams->color_shape != ColorPipelineShape::smooth_window) {
+                ioParams->color_shape = ColorPipelineShape::smooth_window;
+                changed = true;
+            }
+            resetShapeOffsetScale();
+            resetShapeRepeat();
+            resetShapePosterize();
+            resetShapeBiasGain();
+            assignShapeFloat(&ioParams->color_shape_window_center, static_cast<float>(center));
+            assignShapeFloat(&ioParams->color_shape_window_width, static_cast<float>(width));
+            assignShapeFloat(&ioParams->color_shape_window_softness, static_cast<float>(softness));
             continue;
         }
         if (row.function_id == "banded_signal") {
@@ -1405,9 +1449,10 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         shapeRow->function_id != "repeat" &&
         shapeRow->function_id != "posterize" &&
         shapeRow->function_id != "mirror_repeat" &&
-        shapeRow->function_id != "bias_gain_curve") {
+        shapeRow->function_id != "bias_gain_curve" &&
+        shapeRow->function_id != "smooth_window") {
         if (outError) {
-            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, and Bias + Gain Curve Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
         }
         return false;
     }

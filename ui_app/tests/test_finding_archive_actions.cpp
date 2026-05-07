@@ -393,6 +393,56 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_smooth_window";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+        params.color_shape = ColorPipelineShape::smooth_window;
+        params.color_shape_window_center = 0.35f;
+        params.color_shape_window_width = 0.4f;
+        params.color_shape_window_softness = 0.05f;
+        RenderSettings render{};
+        render.resolution = {16, 16};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff112233u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(
+            runtimeDir.string(),
+            view,
+            params,
+            render,
+            stats,
+            rgba.data(),
+            rgba.size(),
+            static_cast<const SidecarOrientationVector*>(nullptr),
+            static_cast<const ColorPipelineWindowState*>(nullptr),
+            &capture,
+            &error)) {
+            std::cerr << "Expected smooth_window diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected smooth_window diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"color_shape\": \"smooth_window\"") == std::string::npos ||
+            stateJson.find("\"color_shape_window_center\"") == std::string::npos ||
+            stateJson.find("\"color_shape_window_width\"") == std::string::npos ||
+            stateJson.find("\"color_shape_window_softness\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist the smooth_window Shape id and dedicated owner fields once runtime-backed\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path repoRoot = tempRoot / "repo_root_probe";
         const fs::path scriptPath = repoRoot / "tools" / "reality_toolkit" / "scripts" / "run_fractal_explorer_archive_finding.py";
         fs::create_directories(scriptPath.parent_path());

@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 3 in progress - `bias_gain_curve` is now validated as the next runtime-real Shape row; the final bounded Shape widening step is `smooth_window`
+Phase 4 ready - Phase 3 Shape is now fully widened through `smooth_window`; the next bounded slice is the initial Palette library through the extracted registry/core, family-gating, live-bridge, and persistence seams
 
 ## Phase Checklist
 
 - [x] Phase 0 - check in the oracle/terminology note, architecture contract, and initial library inventory for the four-category foundation
 - [x] Phase 1 - extract category/function/catalog/live-bridge authority out of `ui_app/src/color_pipeline_window.h` so the window becomes a consumer for the shipped catalog truth before any library widening starts
 - [x] Phase 2 - land the full initial Source library through the extracted descriptor/registry core and the broader runtime-source authority refactor the user explicitly chose
-- [ ] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
+- [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [ ] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
 - [ ] Phase 5 - promote Grading to a first-class category and land the initial Grade library, including the bounded filmic Balance/Void-inspired grading operator
 - [ ] Phase 6 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
@@ -75,14 +75,18 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock bias_gain_curve catalog visibility, live bridge apply/sync behavior, runtime signal shaping, diagnostics round-trip, Capture Finding persistence, and reset defaults through the dedicated owner pair.
 - Validated: `artifacts/validation/advanced_color_library_foundation_phase3_shape_bias_gain_curve_contract.json` validates the Phase 3 bias_gain_curve contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed`.
 - Audit: hostile review of the bias_gain_curve runtime-authority, live-bridge, and persistence diffs did not uncover a second real defect after the targeted hard-coded-shape-list and owner-field audit passes.
-- Checkpoint intent: close the `bias_gain_curve` Phase 3 sub-slice through the linked `ck:bd23c697` handoff entry plus machine-written validation and contract proof receipts.
-- Next bounded slice: `smooth_window` is the final honest Shape widening step after `bias_gain_curve`, using the same extracted registry/core and live-bridge seams.
+- Checkpointed: the `bias_gain_curve` Phase 3 sub-slice closed at commit `75e63b3` with the linked `ck:bd23c697` handoff entry plus machine-written validation and contract proof receipts.
+- Next bounded slice: `smooth_window` is the final honest Shape widening step after `bias_gain_curve` because the existing `EscapeTimeColorSmoothstep(...)` helper already supports a bounded smooth window once the row gets explicit shape.center / shape.width / shape.softness runtime owners.
+- Landed: `ui_app/src/fractal_types.h`, `ui_app/src/enum_id_utils.h`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, and `ui_app/src/fractal_derived_fields.cpp` now treat `smooth_window` as a real Shape row with runtime ids, dedicated shape.center / shape.width / shape.softness owners, live import/apply support, wrapped smooth-window math, diagnostics load/save, and reset defaults.
+- Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock smooth_window catalog visibility, live bridge apply/sync behavior, runtime signal shaping, seam-wrap behavior, diagnostics round-trip, Capture Finding persistence, and reset defaults through the dedicated owner triple.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase3_shape_smooth_window_contract.json` validates the Phase 3 smooth_window contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the published runtime.
+- Audit: hostile review found that the first smooth_window implementation failed to wrap a window centered near the upper domain edge across the shape seam; `ui_app/tests/test_escape_time_coloring.cpp` now locks that case and `ui_app/src/escape_time_coloring.h` computes smooth_window via wrapped center distance instead of a non-wrapping lo/hi interval.
 
 ## Notes
 
-- Owner files for the completed `bias_gain_curve` slice:
+- Expected owner files for the current slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase3_shape_bias_gain_curve.contract.json`
+  - `docs/contracts/advanced_color_library_foundation_phase3_shape_smooth_window.contract.json`
   - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/color_pipeline_window.h`
   - `ui_app/src/diagnostics_capture.cpp`
@@ -97,7 +101,7 @@ The controlling product risk is no longer just "missing functions." The current 
   - `ui_app/tests/test_runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
 - Non-goals for this slice:
-  - do not widen beyond `bias_gain_curve` inside the Shape lane yet
+  - do not widen beyond `smooth_window` inside the Shape lane yet
   - do not implement the Balance/Void grading operator yet
   - do not implement ExplainO-BalanceVoid yet
   - do not widen Palette or Grading yet
@@ -106,7 +110,8 @@ The controlling product risk is no longer just "missing functions." The current 
 
 ## Resume Point
 
-After checkpointing the validated `bias_gain_curve` sub-slice, continue Phase 3 with `smooth_window` through the same extracted registry/core and live-bridge seams.
+After `smooth_window` lands as a validated runtime-real Shape row, close Phase 3 and continue into the initial Palette library through the same extracted registry/core, family-gating, and live-bridge seams.
+
 
 
 

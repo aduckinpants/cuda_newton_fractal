@@ -2490,6 +2490,56 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "v3_smooth_window_shape_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "smooth_window",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0],
+    "color_shape_window_center": 0.35,
+    "color_shape_window_width": 0.4,
+    "color_shape_window_softness": 0.05
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V3 smooth_window shape parameter load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_shape != ColorPipelineShape::smooth_window ||
+            !NearlyEqual(p.color_shape_window_center, 0.35, 0.001) ||
+            !NearlyEqual(p.color_shape_window_width, 0.4, 0.001) ||
+            !NearlyEqual(p.color_shape_window_softness, 0.05, 0.001)) {
+            std::cerr << "Expected smooth_window to round-trip through diagnostics state load with its dedicated owner fields\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_advanced_color_draft.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

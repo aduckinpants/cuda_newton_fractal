@@ -816,14 +816,15 @@ int main() {
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
         if (!coreShapeCatalog ||
             coreShapeCatalog->default_function_id != std::string("identity") ||
-            coreShapeCatalog->functions.size() != 6 ||
+            coreShapeCatalog->functions.size() != 7 ||
             coreShapeCatalog->functions[0].id != "identity" ||
             coreShapeCatalog->functions[1].id != "offset_scale" ||
             coreShapeCatalog->functions[2].id != "repeat" ||
             coreShapeCatalog->functions[3].id != "posterize" ||
             coreShapeCatalog->functions[4].id != "mirror_repeat" ||
-            coreShapeCatalog->functions[5].id != "bias_gain_curve") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with bias_gain_curve as the next runtime-real row\n";
+            coreShapeCatalog->functions[5].id != "bias_gain_curve" ||
+            coreShapeCatalog->functions[6].id != "smooth_window") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with smooth_window as the final runtime-real row\n";
             return 1;
         }
         const FunctionDescriptor* coreRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "repeat");
@@ -856,6 +857,15 @@ int main() {
             coreBiasGainDescriptor->parameters[0].path != "shape.bias" ||
             coreBiasGainDescriptor->parameters[1].path != "shape.gain") {
             std::cerr << "Expected bias_gain_curve to expose stable bias and gain parameter paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreSmoothWindowDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "smooth_window");
+        if (!coreSmoothWindowDescriptor ||
+            coreSmoothWindowDescriptor->parameters.size() != 3 ||
+            coreSmoothWindowDescriptor->parameters[0].path != "shape.center" ||
+            coreSmoothWindowDescriptor->parameters[1].path != "shape.width" ||
+            coreSmoothWindowDescriptor->parameters[2].path != "shape.softness") {
+            std::cerr << "Expected smooth_window to expose stable center, width, and softness parameter paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;
@@ -929,14 +939,15 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 6 ||
+            shapeCatalog->functions.size() != 7 ||
             shapeCatalog->functions[0].id != "identity" ||
             shapeCatalog->functions[1].id != "offset_scale" ||
             shapeCatalog->functions[2].id != "repeat" ||
             shapeCatalog->functions[3].id != "posterize" ||
             shapeCatalog->functions[4].id != "mirror_repeat" ||
-            shapeCatalog->functions[5].id != "bias_gain_curve") {
-            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real offset_scale, repeat, posterize, mirror_repeat, and bias_gain_curve rows\n";
+            shapeCatalog->functions[5].id != "bias_gain_curve" ||
+            shapeCatalog->functions[6].id != "smooth_window") {
+            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real offset_scale, repeat, posterize, mirror_repeat, bias_gain_curve, and smooth_window rows\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
@@ -1123,6 +1134,34 @@ int main() {
             windowState.lanes[1].rows.size() != 1 ||
             windowState.lanes[1].rows[0].function_id != "bias_gain_curve") {
             std::cerr << "Expected bias_gain_curve rows to participate in the same schedule-style Shape row editing surface\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "smooth_window") ||
+            windowState.lanes[1].rows[0].parameter_values.size() != 3 ||
+            windowState.lanes[1].rows[0].parameter_values[0].path != "shape.center" ||
+            windowState.lanes[1].rows[0].parameter_values[1].path != "shape.width" ||
+            windowState.lanes[1].rows[0].parameter_values[2].path != "shape.softness") {
+            std::cerr << "Expected the shipped Shape lane to accept smooth_window once its runtime backend exists\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[1].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 3 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2) {
+            std::cerr << "Expected smooth_window to expose its three live Shape controls\n";
+            return 1;
+        }
+        if (!AddColorPipelineLaneRow(&windowState, 1, "smooth_window") ||
+            windowState.lanes[1].rows.size() != 2 ||
+            windowState.lanes[1].rows[1].function_id != "smooth_window") {
+            std::cerr << "Expected the schedule-style Shape lane to support appending smooth_window rows once runtime-backed\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 1, 1) ||
+            windowState.lanes[1].rows.size() != 1 ||
+            windowState.lanes[1].rows[0].function_id != "smooth_window") {
+            std::cerr << "Expected smooth_window rows to participate in the same schedule-style Shape row editing surface\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
@@ -1382,6 +1421,36 @@ int main() {
             windowState.live_snapshot.lanes[1].rows[0].function_id != "bias_gain_curve" ||
             HasColorPipelineDraftEdits(windowState)) {
             std::cerr << "Expected live programmable apply to write the bias_gain_curve owner fields, reset other Shape owners, and resync the live snapshot\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "smooth_window") ||
+            !setParam(windowState.lanes[1].rows[0], "shape.center", 0.35) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.width", 0.4) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.softness", 0.05)) {
+            std::cerr << "Expected the live programmable editor to expose the smooth_window Shape controls once runtime-backed\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the live programmable editor to apply the smooth_window Shape tuple\n";
+            return 1;
+        }
+        if (params.color_shape != ColorPipelineShape::smooth_window ||
+            !NearlyEqual(params.color_shape_window_center, 0.35) ||
+            !NearlyEqual(params.color_shape_window_width, 0.4) ||
+            !NearlyEqual(params.color_shape_window_softness, 0.05) ||
+            !NearlyEqual(params.color_shape_offset, 0.0) ||
+            !NearlyEqual(params.color_shape_scale, 1.0) ||
+            !NearlyEqual(params.color_shape_repeat_frequency, 8.0) ||
+            !NearlyEqual(params.color_shape_repeat_phase, 0.0) ||
+            params.color_shape_posterize_steps != 6 ||
+            !NearlyEqual(params.color_shape_posterize_mix, 1.0) ||
+            !NearlyEqual(params.color_shape_bias, 0.5) ||
+            !NearlyEqual(params.color_shape_gain, 0.5) ||
+            !windowState.live_snapshot.valid ||
+            windowState.live_snapshot.lanes[1].rows[0].function_id != "smooth_window" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to write the smooth_window owner fields, reset other Shape owners, and resync the live snapshot\n";
             return 1;
         }
 

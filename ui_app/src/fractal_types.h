@@ -66,6 +66,7 @@ enum class ColorPipelineShape : int {
     posterize = 3,
     mirror_repeat = 4,
     bias_gain_curve = 5,
+    smooth_window = 6,
 };
 
 struct ColorPipelineSelection {
@@ -256,6 +257,9 @@ struct KernelParams {
     float color_shape_posterize_mix{1.0f};
     float color_shape_bias{0.5f};
     float color_shape_gain{0.5f};
+    float color_shape_window_center{0.5f};
+    float color_shape_window_width{1.0f};
+    float color_shape_window_softness{0.0f};
     int color_iteration_band_count{8};
     float color_iteration_band_softness{0.35f};
     float color_iteration_band_emphasis{1.0f};

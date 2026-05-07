@@ -320,6 +320,52 @@ ESCAPE_TIME_COLOR_HD inline float ApplyBiasGainShapeValue(float value, const Ker
     return segment * safeWrap + normalized * safeWrap;
 }
 
+ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorWrapPositive(float value, float wrap) {
+    wrap = wrap > 0.0f ? wrap : 1.0f;
+    value = fmodf(value, wrap);
+    if (value < 0.0f) {
+        value += wrap;
+    }
+    return value;
+}
+
+ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorWrappedDistance(float local, float center, float wrap) {
+    float delta = local - center;
+    if (delta > 0.5f * wrap) {
+        delta -= wrap;
+    } else if (delta < -0.5f * wrap) {
+        delta += wrap;
+    }
+    return fabsf(delta);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowMask(float distance, float halfWidth, float softness) {
+    if (softness <= 0.0f) {
+        return distance <= halfWidth ? 1.0f : 0.0f;
+    }
+    const float inner = halfWidth > softness ? halfWidth - softness : 0.0f;
+    const float outer = halfWidth + softness;
+    if (outer <= 0.0f) {
+        return 0.0f;
+    }
+    const float mask = 1.0f - EscapeTimeColorSmoothstep(inner, outer, distance);
+    return EscapeTimeColorClamp(mask, 0.0f, 1.0f);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    const float local = EscapeTimeColorWrapPositive(value, safeWrap);
+    const float center = EscapeTimeColorClamp(params.color_shape_window_center, 0.0f, 1.0f) * safeWrap;
+    const float width = EscapeTimeColorClamp(params.color_shape_window_width, 0.0f, 1.0f) * safeWrap;
+    const float softness = EscapeTimeColorClamp(params.color_shape_window_softness, 0.0f, 1.0f) * safeWrap;
+    if (width >= safeWrap) {
+        return safeWrap;
+    }
+    const float distance = EscapeTimeColorWrappedDistance(local, center, safeWrap);
+    const float halfWidth = 0.5f * width;
+    return ApplySmoothWindowMask(distance, halfWidth, softness) * safeWrap;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
     if (params.color_shape == ColorPipelineShape::offset_scale) {
         value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
@@ -332,6 +378,8 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, cons
         value = ApplyMirrorRepeatShapeValue(value, params, repeatWrap);
     } else if (params.color_shape == ColorPipelineShape::bias_gain_curve) {
         value = ApplyBiasGainShapeValue(value, params, repeatWrap);
+    } else if (params.color_shape == ColorPipelineShape::smooth_window) {
+        value = ApplySmoothWindowShapeValue(value, params, repeatWrap);
     }
     return value;
 }

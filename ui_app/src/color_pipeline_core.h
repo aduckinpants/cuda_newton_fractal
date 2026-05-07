@@ -220,6 +220,8 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "mirror_repeat";
     case ColorPipelineShape::bias_gain_curve:
         return "bias_gain_curve";
+    case ColorPipelineShape::smooth_window:
+        return "smooth_window";
     }
     return nullptr;
 }
@@ -353,6 +355,15 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
                 MakeColorPipelineFloatParam("shape.bias", "Bias", "Push the incoming signal toward the low or high end before gain is applied.", 0.0, 1.0, 0.01, 0.5),
                 MakeColorPipelineFloatParam("shape.gain", "Gain", "Adjust midtone contrast while preserving a neutral center at 0.5.", 0.0, 1.0, 0.01, 0.5),
             }),
+        MakeColorPipelineFunction(
+            "smooth_window",
+            "Smooth Window",
+            "Gate the incoming signal through a smoothstep window over the current wrap domain.",
+            {
+                MakeColorPipelineFloatParam("shape.center", "Center", "Choose where the smooth window is centered across the current wrap domain.", 0.0, 1.0, 0.01, 0.5),
+                MakeColorPipelineFloatParam("shape.width", "Width", "Control how much of the current wrap domain stays inside the window.", 0.0, 1.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("shape.softness", "Softness", "Feather the window edges with a smoothstep blend instead of a hard cutoff.", 0.0, 1.0, 0.01, 0.0),
+            }),
     };
 }
 
@@ -404,7 +415,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "repeat" ||
             functionId == "posterize" ||
             functionId == "mirror_repeat" ||
-            functionId == "bias_gain_curve";
+            functionId == "bias_gain_curve" ||
+            functionId == "smooth_window";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||

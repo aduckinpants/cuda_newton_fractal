@@ -1114,6 +1114,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorShapePosterizeMix = nextParams.color_shape_posterize_mix;
     double colorShapeBias = nextParams.color_shape_bias;
     double colorShapeGain = nextParams.color_shape_gain;
+    double colorShapeWindowCenter = nextParams.color_shape_window_center;
+    double colorShapeWindowWidth = nextParams.color_shape_window_width;
+    double colorShapeWindowSoftness = nextParams.color_shape_window_softness;
     int colorIterationBandCount = nextParams.color_iteration_band_count;
     double colorIterationBandCountRaw = static_cast<double>(colorIterationBandCount);
     double colorIterationBandSoftness = nextParams.color_iteration_band_softness;
@@ -1160,6 +1163,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_shape_posterize_mix", &colorShapePosterizeMix, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_shape_bias", &colorShapeBias, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_shape_gain", &colorShapeGain, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_window_center", &colorShapeWindowCenter, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_window_width", &colorShapeWindowWidth, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_window_softness", &colorShapeWindowSoftness, nullptr, outError)) return false;
     bool hasColorIterationBandCount = false;
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_count", &colorIterationBandCountRaw, &hasColorIterationBandCount, outError)) return false;
     if (hasColorIterationBandCount) {
@@ -1205,6 +1211,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_shape_posterize_mix = static_cast<float>(colorShapePosterizeMix);
     nextParams.color_shape_bias = static_cast<float>(colorShapeBias);
     nextParams.color_shape_gain = static_cast<float>(colorShapeGain);
+    nextParams.color_shape_window_center = static_cast<float>(colorShapeWindowCenter);
+    nextParams.color_shape_window_width = static_cast<float>(colorShapeWindowWidth);
+    nextParams.color_shape_window_softness = static_cast<float>(colorShapeWindowSoftness);
     nextParams.color_iteration_band_count = colorIterationBandCount;
     nextParams.color_iteration_band_softness = static_cast<float>(colorIterationBandSoftness);
     nextParams.color_iteration_band_emphasis = static_cast<float>(colorIterationBandEmphasis);

@@ -50,6 +50,9 @@ int main() {
     params.color_shape_posterize_mix = 0.65f;
     params.color_shape_bias = 0.2f;
     params.color_shape_gain = 0.8f;
+    params.color_shape_window_center = 0.35f;
+    params.color_shape_window_width = 0.4f;
+    params.color_shape_window_softness = 0.05f;
     params.color_iteration_band_count = 5;
     params.color_iteration_band_softness = 0.8f;
     params.color_iteration_band_emphasis = 1.6f;
@@ -102,6 +105,9 @@ int main() {
         !NearlyEqual(params.color_shape_posterize_mix, 1.0f) ||
         !NearlyEqual(params.color_shape_bias, 0.5f) ||
         !NearlyEqual(params.color_shape_gain, 0.5f) ||
+        !NearlyEqual(params.color_shape_window_center, 0.5f) ||
+        !NearlyEqual(params.color_shape_window_width, 1.0f) ||
+        !NearlyEqual(params.color_shape_window_softness, 0.0f) ||
         params.color_iteration_band_count != 8 ||
         !NearlyEqual(params.color_iteration_band_softness, 0.35f) ||
         !NearlyEqual(params.color_iteration_band_emphasis, 1.0f) ||

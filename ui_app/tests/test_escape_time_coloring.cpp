@@ -234,6 +234,31 @@ int main() {
             return 1;
         }
 
+        params.color_shape = ColorPipelineShape::smooth_window;
+        params.color_shape_window_center = 0.35f;
+        params.color_shape_window_width = 0.4f;
+        params.color_shape_window_softness = 0.05f;
+        const TestColor smoothWindowSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, smoothWindowSignal)) {
+            std::cerr << "smooth_window should react to its dedicated live Shape owner fields\n";
+            return 1;
+        }
+        params.color_shape_window_center = 0.95f;
+        params.color_shape_window_width = 0.2f;
+        params.color_shape_window_softness = 0.0f;
+        const float wrappedWindowValue = ApplyColorPipelineShapeValue(0.02f, params, 1.0f);
+        if (wrappedWindowValue <= 0.0f) {
+            std::cerr << "smooth_window should wrap across the shape domain seam when centered near the upper edge\n";
+            return 1;
+        }
+
         params.color_shape = ColorPipelineShape::posterize;
         params.color_shape_posterize_steps = 2;
         params.color_shape_posterize_mix = 1.0f;
