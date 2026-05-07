@@ -780,6 +780,30 @@ int main() {
             return 1;
         }
 
+        ColorPipelineWindowState stableSyncWindowState{};
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.25f;
+        params.color_shape_scale = 1.5f;
+        if (!SyncColorPipelineWindowFromLiveState(&stableSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline draft to import a supported live tuple before row-id stability coverage\n";
+            return 1;
+        }
+        const std::uint64_t stableSourceRowId = stableSyncWindowState.lanes[0].rows[0].ui_row_id;
+        const std::uint64_t stableShapeRowId = stableSyncWindowState.lanes[1].rows[0].ui_row_id;
+        const std::uint64_t stablePaletteRowId = stableSyncWindowState.lanes[2].rows[0].ui_row_id;
+        if (!SyncColorPipelineWindowFromLiveState(&stableSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected unchanged supported live tuples to keep syncing successfully during row-id stability coverage\n";
+            return 1;
+        }
+        if (stableSyncWindowState.lanes[0].rows[0].ui_row_id != stableSourceRowId ||
+            stableSyncWindowState.lanes[1].rows[0].ui_row_id != stableShapeRowId ||
+            stableSyncWindowState.lanes[2].rows[0].ui_row_id != stablePaletteRowId) {
+            std::cerr << "Expected unchanged supported live sync to preserve row ids instead of rebuilding the programmable draft between frames\n";
+            return 1;
+        }
+
         ColorPipelineWindowState invalidLiveWindowState{};
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);

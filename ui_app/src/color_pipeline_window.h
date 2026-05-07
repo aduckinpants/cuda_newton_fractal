@@ -674,6 +674,33 @@ inline bool ColorPipelineLaneStatesEqual(
     return true;
 }
 
+inline bool ColorPipelineSelectionsEqual(
+    const ColorPipelineSelection& left,
+    const ColorPipelineSelection& right) {
+    return left.signal == right.signal &&
+        left.palette == right.palette &&
+        left.grading == right.grading;
+}
+
+inline bool ColorPipelineLiveSnapshotsEqual(
+    const ColorPipelineLiveSnapshot& left,
+    const ColorPipelineLiveSnapshot& right) {
+    if (left.valid != right.valid ||
+        left.draft_import_supported != right.draft_import_supported ||
+        left.fractal_type != right.fractal_type ||
+        left.coloring_mode != right.coloring_mode ||
+        !ColorPipelineSelectionsEqual(left.pipeline, right.pipeline) ||
+        left.lanes.size() != right.lanes.size()) {
+        return false;
+    }
+    for (std::size_t index = 0; index < left.lanes.size(); ++index) {
+        if (!ColorPipelineLaneStatesEqual(left.lanes[index], right.lanes[index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline bool HasColorPipelineDraftEdits(const ColorPipelineWindowState& state) {
     if (!state.live_snapshot.valid) {
         return false;
@@ -874,12 +901,9 @@ inline bool SyncColorPipelineWindowFromLiveState(
     }
 
     const bool liveSnapshotWasValid = ioState->live_snapshot.valid;
+    const bool liveSnapshotWasImportSupported = ioState->live_snapshot.draft_import_supported;
     const bool draftHasEdits = HasColorPipelineDraftEdits(*ioState);
     const bool draftMatchesStarter = IsColorPipelineStarterDraft(*ioState);
-    const bool adoptIntoDraft =
-        !liveSnapshotWasValid ||
-        !draftHasEdits ||
-        (!ioState->live_snapshot.draft_import_supported && draftMatchesStarter);
     ColorPipelineLiveSnapshot nextSnapshot;
     std::string error;
     if (!TryBuildColorPipelineLiveSnapshot(liveFractalType, *liveParams, &nextSnapshot, &error)) {
@@ -887,6 +911,14 @@ inline bool SyncColorPipelineWindowFromLiveState(
         PushColorPipelineValidationMessage(ioState, error);
         return false;
     }
+
+    const bool liveSnapshotChanged =
+        !liveSnapshotWasValid ||
+        !ColorPipelineLiveSnapshotsEqual(ioState->live_snapshot, nextSnapshot);
+    const bool adoptIntoDraft =
+        !liveSnapshotWasValid ||
+        (liveSnapshotChanged && !draftHasEdits) ||
+        (liveSnapshotChanged && !liveSnapshotWasImportSupported && draftMatchesStarter);
 
     ioState->live_snapshot = std::move(nextSnapshot);
     if (adoptIntoDraft && ioState->live_snapshot.draft_import_supported) {

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_live_sync_row_id_stability",
+  "feature_id": "advanced_color_pipeline_live_sync_row_id_stability",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_live_sync_row_id_stability_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_live_sync_row_id_stability_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "user report that the D: runtime sliders are still broken",
+    "SyncColorPipelineWindowFromLiveState reset path in ui_app/src/color_pipeline_window.h",
+    "focused state regression in ui_app/tests/test_schema_binding.cpp"
+  ],
+  "forbidden_operator_prompts": [
+    "call the fix done without addressing per-frame draft rebuilds",
+    "paper over the issue with another debounce or timing workaround",
+    "reintroduce a separate apply affordance"
+  ],
+  "required_defaults": {
+    "unchanged_live_sync": "must_preserve_row_ids",
+    "draft_rebuild_without_live_change": "forbidden",
+    "focused_regression": "required"
+  },
+  "forbidden_defaults": {
+    "row_id_churn_on_identical_live_snapshot": "forbidden",
+    "helper_only_confidence_without_runtime_root_cause": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_live_sync_row_id_stability.contract.json --out-json artifacts/validation/advanced_color_pipeline_live_sync_row_id_stability_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_live_sync_row_id_stability_contract_schema_valid",
+      "description": "The live-sync row-id stability contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_live_sync_row_id_stability_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_live_sync_row_id_stability_plan_sync_ok",
+      "description": "The live-sync row-id stability phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
