@@ -865,6 +865,10 @@ int main() {
             std::cerr << "Expected the advanced color pipeline window helper to preserve the open state without user dismissal\n";
             return 1;
         }
+        if (!openWindowState.auto_apply_supported_recipe) {
+            std::cerr << "Expected the advanced color pipeline window to default auto-apply on instead of requiring an extra apply click\n";
+            return 1;
+        }
         if (!openWindowState.initialized || !openWindowState.live_snapshot.valid || openWindowState.lanes.size() != 3 ||
             openWindowState.lanes[0].rows.size() != 1 ||
             openWindowState.lanes[0].rows[0].function_id != "phase_orbit" ||
@@ -893,6 +897,34 @@ int main() {
             return 1;
         }
         EndFrame();
+
+        auto setParam = [](ColorPipelineRowState& row, const char* path, double value) {
+            for (ColorPipelineParamState& param : row.parameter_values) {
+                if (param.path == path) {
+                    param.number_value = value;
+                    return true;
+                }
+            }
+            return false;
+        };
+        if (!setParam(openWindowState.lanes[0].rows[0], "signal.phase_offset", 0.625) ||
+            !setParam(openWindowState.lanes[1].rows[0], "shape.scale", 2.0)) {
+            std::cerr << "Expected the advanced color pipeline window render test to find the supported live-backed controls before auto-apply coverage\n";
+            return 1;
+        }
+        BeginFrame();
+        if (!RenderColorPipelineWindow(&openWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to keep rendering while auto-applying supported edits\n";
+            return 1;
+        }
+        EndFrame();
+        if (!openWindowState.auto_apply_supported_recipe ||
+            !NearlyEqual(params.color_phase_signal_offset, 0.625) ||
+            !NearlyEqual(params.color_shape_scale, 2.0) ||
+            HasColorPipelineDraftEdits(openWindowState)) {
+            std::cerr << "Expected the default-on auto-apply checkbox to keep supported edits synced without a separate apply button click\n";
+            return 1;
+        }
 
         BeginFrame();
         if (!SelectColorPipelineLaneFunction(&openWindowState, 2, "banded_heatmap")) {

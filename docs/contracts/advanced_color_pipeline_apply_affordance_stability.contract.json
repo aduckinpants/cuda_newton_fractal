@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_apply_affordance_stability",
+  "feature_id": "advanced_color_pipeline_apply_affordance_stability",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_apply_affordance_stability_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_apply_affordance_stability_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "user report that the apply change hides/shows and vertically moves the entire UI",
+    "advanced color pipeline summary apply-affordance behavior in ui_app/src/color_pipeline_window.h",
+    "existing headless schema-binding render coverage"
+  ],
+  "forbidden_operator_prompts": [
+    "keep the apply affordance hidden when the draft matches live",
+    "require repeated extra button clicks for routine supported edits",
+    "fix the layout jump by removing status feedback entirely"
+  ],
+  "required_defaults": {
+    "apply_affordance_visibility": "persistent",
+    "apply_affordance_widget": "checkbox",
+    "auto_apply_default": "enabled",
+    "layout_behavior": "summary_row_height_stable_across_apply_states"
+  },
+  "forbidden_defaults": {
+    "visibility_toggling_apply_row": "forbidden",
+    "default_off_auto_apply": "forbidden",
+    "extra_click_required_for_supported_edits": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_apply_affordance_stability.contract.json --out-json artifacts/validation/advanced_color_pipeline_apply_affordance_stability_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_apply_affordance_contract_schema_valid",
+      "description": "The apply-affordance stability contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_apply_affordance_stability_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_apply_affordance_plan_sync_ok",
+      "description": "The apply-affordance stability plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

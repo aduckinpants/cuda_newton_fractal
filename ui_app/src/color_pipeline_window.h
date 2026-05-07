@@ -45,6 +45,7 @@ struct ColorPipelineLiveSnapshot {
 struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
+    bool auto_apply_supported_recipe = true;
     std::uint64_t next_row_id = 1;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
@@ -1639,18 +1640,30 @@ inline void RenderColorPipelineWindowSummary(
     bool* ioDirty) {
     ImGui::TextWrapped("Draft Source / Shape / Palette recipes here. The legacy Color mode and grading controls stay in the main Color panel during the schedule-editor transition.");
     ImGui::TextDisabled("This window now models three typed lane stacks instead of a fixed Signal / Palette / Grade trio.");
-    ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, Identity in Shape, and one enabled Palette row. Stacked Shape recipes remain draft-only until custom runtime integration lands.");
+    ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, one live-backed Shape row (Identity or Offset + Scale), and one enabled Palette row. Stacked Shape recipes remain draft-only until custom runtime integration lands.");
     ImGui::Separator();
     if (ioState && ioState->live_snapshot.valid) {
-        const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
+        ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
+        if (liveParams && ioState->auto_apply_supported_recipe && applyState.status == ColorPipelineDraftApplyStatus::can_apply) {
+            bool changed = false;
+            if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
+                *ioDirty = true;
+            }
+            applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
+        }
         if (ioState->live_snapshot.draft_import_supported) {
             const char* signalId = nullptr;
+            const char* shapeId = "(unsupported shape)";
             const char* paletteId = nullptr;
             TryBuildColorPipelineScheduleBridgeIds(ioState->live_snapshot.pipeline, &signalId, &paletteId);
+            if (ioState->live_snapshot.lanes.size() > 1 && !ioState->live_snapshot.lanes[1].rows.empty()) {
+                shapeId = ioState->live_snapshot.lanes[1].rows[0].function_id.c_str();
+            }
             ImGui::TextWrapped(
-                "Live bridge: %s -> %s / identity / %s",
+                "Live bridge: %s -> %s / %s / %s",
                 ColoringModeId(ioState->live_snapshot.coloring_mode),
                 signalId ? signalId : "(unsupported signal)",
+                shapeId,
                 paletteId ? paletteId : "(unsupported palette)");
         } else {
             ImGui::TextWrapped(
@@ -1658,10 +1671,10 @@ inline void RenderColorPipelineWindowSummary(
                 ColoringModeId(ioState->live_snapshot.coloring_mode));
             ImGui::TextDisabled("The schedule editor keeps its own starter draft until live runtime maps onto a supported Source / Shape / Palette bridge recipe.");
         }
+        const bool canApply = applyState.status == ColorPipelineDraftApplyStatus::can_apply;
         if (applyState.status == ColorPipelineDraftApplyStatus::matches_live) {
             ImGui::TextDisabled("%s", applyState.message.c_str());
         } else {
-            const bool canApply = applyState.status == ColorPipelineDraftApplyStatus::can_apply;
             const ImVec4 statusColor = canApply
                 ? ImVec4(0.95f, 0.83f, 0.40f, 1.0f)
                 : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
@@ -1669,30 +1682,26 @@ inline void RenderColorPipelineWindowSummary(
             if (!canApply) {
                 ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape + Heatmap, Phase Orbit + Phase Wheel, and Iteration Bands + Banded Heatmap with Identity in Shape.");
             }
-            if (liveParams) {
-                if (!canApply) {
-                    ImGui::BeginDisabled();
-                }
-                if (ImGui::Button("Apply Supported Recipe") && canApply) {
-                    bool changed = false;
-                    if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
-                        *ioDirty = true;
-                    }
-                }
-                if (!canApply) {
-                    ImGui::EndDisabled();
-                }
-                ImGui::SameLine();
-            }
-            if (!ioState->live_snapshot.draft_import_supported) {
-                ImGui::BeginDisabled();
-            }
-            if (ImGui::Button("Reset Draft From Live")) {
-                ResetColorPipelineDraftFromLiveState(ioState);
-            }
-            if (!ioState->live_snapshot.draft_import_supported) {
-                ImGui::EndDisabled();
-            }
+        }
+        if (!liveParams) {
+            ImGui::BeginDisabled();
+        }
+        ImGui::Checkbox("Auto-apply supported recipe", &ioState->auto_apply_supported_recipe);
+        if (!liveParams) {
+            ImGui::EndDisabled();
+        }
+        ImGui::SameLine();
+        if (!ioState->live_snapshot.draft_import_supported) {
+            ImGui::BeginDisabled();
+        }
+        if (ImGui::Button("Reset Draft From Live")) {
+            ResetColorPipelineDraftFromLiveState(ioState);
+        }
+        if (!ioState->live_snapshot.draft_import_supported) {
+            ImGui::EndDisabled();
+        }
+        if (ioState->auto_apply_supported_recipe && !canApply && applyState.status != ColorPipelineDraftApplyStatus::matches_live) {
+            ImGui::TextDisabled("Auto-apply stays armed and will resume as soon as the draft returns to a supported live bridge recipe.");
         }
     } else {
         ImGui::TextDisabled("Live runtime selection is not available yet.");
