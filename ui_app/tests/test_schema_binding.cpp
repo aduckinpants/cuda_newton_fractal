@@ -580,6 +580,17 @@ int main() {
     }
 
     {
+        ColorPipelineRenderInteractionState interactionState{};
+        NoteColorPipelineInteractionSnapshot(false, false, true, false, &interactionState);
+        NoteColorPipelineInteractionSnapshot(false, false, false, false, &interactionState);
+
+        if (!interactionState.has_active_item) {
+            std::cerr << "Expected a slider-side active drag to survive the combined slider-plus-input seam so end-of-frame apply stays suppressed while dragging\n";
+            return 1;
+        }
+    }
+
+    {
         ViewState view{};
         KernelParams params{};
         ColorPipelineWindowState windowState{};

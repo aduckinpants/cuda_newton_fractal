@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_slider_active_item_smoke",
+  "feature_id": "advanced_color_pipeline_slider_active_item_smoke",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_slider_active_item_smoke_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_slider_active_item_smoke_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "user report that the advanced color pipeline sliders still do not slide",
+    "RenderColorPipelineParamControl active-item seam in ui_app/src/color_pipeline_window.h",
+    "focused test coverage in ui_app/tests/test_schema_binding.cpp"
+  ],
+  "forbidden_operator_prompts": [
+    "call the fix done without a slider smoke regression",
+    "paper over the issue with another debounce or timing workaround",
+    "reintroduce a separate apply toggle"
+  ],
+  "required_defaults": {
+    "slider_drag_active_tracking": "must_mark_has_active_item",
+    "end_of_frame_apply_during_drag": "suppressed",
+    "focused_smoke_regression": "required"
+  },
+  "forbidden_defaults": {
+    "input_only_active_tracking": "forbidden",
+    "helper_only_confidence_without_slider_smoke": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_slider_active_item_smoke.contract.json --out-json artifacts/validation/advanced_color_pipeline_slider_active_item_smoke_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_slider_active_item_smoke_contract_schema_valid",
+      "description": "The active-slider smoke contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_slider_active_item_smoke_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_slider_active_item_smoke_plan_sync_ok",
+      "description": "The active-slider smoke phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

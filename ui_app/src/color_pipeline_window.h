@@ -1625,16 +1625,30 @@ inline bool ApplyColorPipelineDraftToLiveState(
     return true;
 }
 
-inline void NoteColorPipelineCurrentItemInteraction(
+inline void NoteColorPipelineInteractionSnapshot(
     bool changed,
+    bool itemActivated,
+    bool itemActive,
+    bool itemDeactivatedAfterEdit,
     ColorPipelineRenderInteractionState* ioState) {
     if (!ioState) {
         return;
     }
-    if (changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) {
+    if (changed || itemActivated || itemActive || itemDeactivatedAfterEdit) {
         ioState->interacted = true;
-        ioState->has_active_item = ioState->has_active_item || ImGui::IsItemActive();
+        ioState->has_active_item = ioState->has_active_item || itemActive;
     }
+}
+
+inline void NoteColorPipelineCurrentItemInteraction(
+    bool changed,
+    ColorPipelineRenderInteractionState* ioState) {
+    NoteColorPipelineInteractionSnapshot(
+        changed,
+        ImGui::IsItemActivated(),
+        ImGui::IsItemActive(),
+        ImGui::IsItemDeactivatedAfterEdit(),
+        ioState);
 }
 
 inline bool ShouldAutoApplySupportedColorPipelineDraft(
@@ -1696,69 +1710,75 @@ inline bool RenderColorPipelineParamControl(
         const NumericDragWidgetBounds dragBounds = ResolveColorPipelineNumericDragWidgetBounds(param);
         const float minValue = range.has_widget_min ? static_cast<float>(range.widget_min) : 0.0f;
         const float maxValue = range.has_widget_max ? static_cast<float>(range.widget_max) : 1.0f;
+        bool sliderChanged = false;
         if (range.has_widget_min && range.has_widget_max) {
-            changed = ImGui::SliderFloat(param.label.c_str(), &value, minValue, maxValue, "%.5f");
+            sliderChanged = ImGui::SliderFloat(param.label.c_str(), &value, minValue, maxValue, "%.5f");
         } else {
             const float step = param.has_step ? static_cast<float>(param.step_value) : 0.01f;
             const float dragMin = dragBounds.has_bounds ? static_cast<float>(dragBounds.min) : 0.0f;
             const float dragMax = dragBounds.has_bounds ? static_cast<float>(dragBounds.max) : 0.0f;
-            changed = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, "%.3f");
+            sliderChanged = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, "%.3f");
         }
+        NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputFloat("##value_input", &value, 0.0f, 0.0f, "%.5f");
-        if (changed || typedChanged) {
+        changed = sliderChanged || typedChanged;
+        if (changed) {
             ClampColorPipelineNumericValue(&value, range);
-            changed = true;
             ioValue->number_value = value;
             TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
-        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
+        NoteColorPipelineCurrentItemInteraction(typedChanged, ioInteraction);
     } else if (param.type == "double") {
         double value = ioValue->number_value;
         const NumericControlRange range = ResolveColorPipelineNumericControlRange(param);
         const NumericDragWidgetBounds dragBounds = ResolveColorPipelineNumericDragWidgetBounds(param);
         const double minValue = range.has_widget_min ? range.widget_min : 0.0;
         const double maxValue = range.has_widget_max ? range.widget_max : 1.0;
+        bool sliderChanged = false;
         if (range.has_widget_min && range.has_widget_max) {
-            changed = ImGui::SliderScalar(param.label.c_str(), ImGuiDataType_Double, &value, &minValue, &maxValue, "%.6f");
+            sliderChanged = ImGui::SliderScalar(param.label.c_str(), ImGuiDataType_Double, &value, &minValue, &maxValue, "%.6f");
         } else {
             const double* dragMin = dragBounds.has_bounds ? &dragBounds.min : nullptr;
             const double* dragMax = dragBounds.has_bounds ? &dragBounds.max : nullptr;
             const double step = param.has_step ? param.step_value : 0.001;
-            changed = ImGui::DragScalar(param.label.c_str(), ImGuiDataType_Double, &value, static_cast<float>(step), dragMin, dragMax, "%.6f");
+            sliderChanged = ImGui::DragScalar(param.label.c_str(), ImGuiDataType_Double, &value, static_cast<float>(step), dragMin, dragMax, "%.6f");
         }
+        NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputDouble("##value_input", &value, 0.0, 0.0, "%.6f");
-        if (changed || typedChanged) {
+        changed = sliderChanged || typedChanged;
+        if (changed) {
             ClampColorPipelineNumericValue(&value, range);
-            changed = true;
             ioValue->number_value = value;
             TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
-        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
+        NoteColorPipelineCurrentItemInteraction(typedChanged, ioInteraction);
     } else if (param.type == "int") {
         int value = static_cast<int>(std::lround(ioValue->number_value));
         const NumericControlRange range = ResolveColorPipelineNumericControlRange(param);
         const NumericDragWidgetBounds dragBounds = ResolveColorPipelineNumericDragWidgetBounds(param);
         const int minValue = range.has_widget_min ? static_cast<int>(range.widget_min) : 0;
         const int maxValue = range.has_widget_max ? static_cast<int>(range.widget_max) : 100;
+        bool sliderChanged = false;
         if (range.has_widget_min && range.has_widget_max) {
-            changed = ImGui::SliderInt(param.label.c_str(), &value, minValue, maxValue);
+            sliderChanged = ImGui::SliderInt(param.label.c_str(), &value, minValue, maxValue);
         } else {
             const float step = param.has_step ? static_cast<float>(param.step_value) : 1.0f;
             const int dragMin = dragBounds.has_bounds ? static_cast<int>(dragBounds.min) : 0;
             const int dragMax = dragBounds.has_bounds ? static_cast<int>(dragBounds.max) : 0;
-            changed = ImGui::DragInt(param.label.c_str(), &value, step, dragMin, dragMax);
+            sliderChanged = ImGui::DragInt(param.label.c_str(), &value, step, dragMin, dragMax);
         }
+        NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputInt("##value_input", &value, 0, 0);
-        if (changed || typedChanged) {
+        changed = sliderChanged || typedChanged;
+        if (changed) {
             ClampColorPipelineNumericValue(&value, range);
-            changed = true;
             ioValue->number_value = static_cast<double>(value);
             TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
-        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
+        NoteColorPipelineCurrentItemInteraction(typedChanged, ioInteraction);
     } else if (param.type == "bool") {
         bool value = ioValue->bool_value;
         changed = ImGui::Checkbox(param.label.c_str(), &value);
