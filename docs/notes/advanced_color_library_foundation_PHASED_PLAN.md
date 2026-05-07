@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 in progress - `mirror_repeat` is now validated as the next runtime-real Shape row; the next bounded Shape widening step is `bias_gain_curve`, followed by `smooth_window`
+Phase 3 in progress - `bias_gain_curve` is now validated as the next runtime-real Shape row; the final bounded Shape widening step is `smooth_window`
 
 ## Phase Checklist
 
@@ -69,27 +69,35 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, and `ui_app/tests/test_finding_archive_actions.cpp` now lock mirror_repeat catalog visibility, live bridge apply/sync behavior, runtime signal shaping, diagnostics load, and Capture Finding persistence through the reused repeat owner fields.
 - Validated: `artifacts/validation/advanced_color_library_foundation_phase3_shape_mirror_repeat_contract.json` validates the Phase 3 mirror_repeat contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed`.
 - Audit: hostile review of the mirror_repeat runtime-authority, live-bridge, and persistence diffs did not uncover a second real defect after the targeted hard-coded-shape-list audit passes.
-- Checkpoint intent: close the `mirror_repeat` Phase 3 sub-slice through the linked `ck:f44e55b8` handoff entry plus machine-written validation and contract proof receipts.
-- Next bounded slice: `bias_gain_curve` is the next honest Shape widening step after `mirror_repeat`, followed by `smooth_window`, through the same extracted registry/core and live-bridge seams.
+- Checkpointed: the `mirror_repeat` Phase 3 sub-slice closed at commit `6147b08` with the linked `ck:f44e55b8` handoff entry plus machine-written validation and contract proof receipts.
+- Next bounded slice: `bias_gain_curve` is the next honest Shape widening step after `mirror_repeat` because it needs its own explicit shape.bias / shape.gain runtime owners rather than descriptor-only coverage or owner-field reuse, followed by `smooth_window` through the same extracted registry/core and live-bridge seams.
+- Landed: `ui_app/src/fractal_types.h`, `ui_app/src/enum_id_utils.h`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, and `ui_app/src/fractal_derived_fields.cpp` now treat `bias_gain_curve` as a real Shape row with runtime ids, dedicated shape.bias / shape.gain owners, live import/apply support, runtime curve math, diagnostics load/save, and reset defaults.
+- Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock bias_gain_curve catalog visibility, live bridge apply/sync behavior, runtime signal shaping, diagnostics round-trip, Capture Finding persistence, and reset defaults through the dedicated owner pair.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase3_shape_bias_gain_curve_contract.json` validates the Phase 3 bias_gain_curve contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed`.
+- Audit: hostile review of the bias_gain_curve runtime-authority, live-bridge, and persistence diffs did not uncover a second real defect after the targeted hard-coded-shape-list and owner-field audit passes.
+- Checkpoint intent: close the `bias_gain_curve` Phase 3 sub-slice through the linked `ck:bd23c697` handoff entry plus machine-written validation and contract proof receipts.
+- Next bounded slice: `smooth_window` is the final honest Shape widening step after `bias_gain_curve`, using the same extracted registry/core and live-bridge seams.
 
 ## Notes
 
-- Owner files for the completed `mirror_repeat` slice:
+- Owner files for the completed `bias_gain_curve` slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase3_shape_mirror_repeat.contract.json`
+  - `docs/contracts/advanced_color_library_foundation_phase3_shape_bias_gain_curve.contract.json`
   - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/color_pipeline_window.h`
   - `ui_app/src/diagnostics_capture.cpp`
   - `ui_app/src/diagnostics_state_io.cpp`
   - `ui_app/src/enum_id_utils.h`
   - `ui_app/src/escape_time_coloring.h`
+  - `ui_app/src/fractal_derived_fields.cpp`
   - `ui_app/src/fractal_types.h`
   - `ui_app/tests/test_diagnostics_state_io.cpp`
   - `ui_app/tests/test_escape_time_coloring.cpp`
   - `ui_app/tests/test_finding_archive_actions.cpp`
+  - `ui_app/tests/test_runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
 - Non-goals for this slice:
-  - do not widen beyond `mirror_repeat` inside the Shape lane yet
+  - do not widen beyond `bias_gain_curve` inside the Shape lane yet
   - do not implement the Balance/Void grading operator yet
   - do not implement ExplainO-BalanceVoid yet
   - do not widen Palette or Grading yet
@@ -98,7 +106,8 @@ The controlling product risk is no longer just "missing functions." The current 
 
 ## Resume Point
 
-After checkpointing the validated `mirror_repeat` sub-slice, continue Phase 3 with `bias_gain_curve`, then `smooth_window`, through the same extracted registry/core and live-bridge seams.
+After checkpointing the validated `bias_gain_curve` sub-slice, continue Phase 3 with `smooth_window` through the same extracted registry/core and live-bridge seams.
+
 
 
 

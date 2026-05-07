@@ -218,6 +218,8 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "posterize";
     case ColorPipelineShape::mirror_repeat:
         return "mirror_repeat";
+    case ColorPipelineShape::bias_gain_curve:
+        return "bias_gain_curve";
     }
     return nullptr;
 }
@@ -343,6 +345,14 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
                 MakeColorPipelineFloatParam("shape.frequency", "Frequency", "Control how often the mirrored pattern repeats.", 0.25, 24.0, 0.01, 8.0),
                 MakeColorPipelineFloatParam("shape.phase", "Phase", "Offset the mirrored pattern without changing the source.", -1.0, 1.0, 0.01, 0.0),
             }),
+        MakeColorPipelineFunction(
+            "bias_gain_curve",
+            "Bias + Gain Curve",
+            "Remap the incoming signal through a bias/gain curve while preserving neutral defaults.",
+            {
+                MakeColorPipelineFloatParam("shape.bias", "Bias", "Push the incoming signal toward the low or high end before gain is applied.", 0.0, 1.0, 0.01, 0.5),
+                MakeColorPipelineFloatParam("shape.gain", "Gain", "Adjust midtone contrast while preserving a neutral center at 0.5.", 0.0, 1.0, 0.01, 0.5),
+            }),
     };
 }
 
@@ -393,7 +403,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "offset_scale" ||
             functionId == "repeat" ||
             functionId == "posterize" ||
-            functionId == "mirror_repeat";
+            functionId == "mirror_repeat" ||
+            functionId == "bias_gain_curve";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||

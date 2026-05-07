@@ -150,6 +150,8 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.color_shape_repeat_phase = 0.0f;
     params.color_shape_posterize_steps = 6;
     params.color_shape_posterize_mix = 1.0f;
+    params.color_shape_bias = 0.5f;
+    params.color_shape_gain = 0.5f;
     params.color_iteration_band_count = 8;
     params.color_iteration_band_softness = 0.35f;
     params.color_iteration_band_emphasis = 1.0f;

@@ -287,6 +287,39 @@ ESCAPE_TIME_COLOR_HD inline float ApplyMirrorRepeatShapeValue(float value, const
     return mirrored * safeWrap;
 }
 
+ESCAPE_TIME_COLOR_HD inline float ApplyBiasCurveUnitValue(float value, float bias) {
+    const float safeBias = EscapeTimeColorClamp(bias, 0.0f, 1.0f);
+    if (safeBias <= 0.0f) {
+        return 0.0f;
+    }
+    if (safeBias >= 1.0f) {
+        return 1.0f;
+    }
+    const float denominator = ((1.0f / safeBias) - 2.0f) * (1.0f - value) + 1.0f;
+    return denominator != 0.0f ? value / denominator : value;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplyGainCurveUnitValue(float value, float gain) {
+    const float safeGain = EscapeTimeColorClamp(gain, 0.0f, 1.0f);
+    if (value < 0.5f) {
+        return 0.5f * ApplyBiasCurveUnitValue(value * 2.0f, 1.0f - safeGain);
+    }
+    return 1.0f - 0.5f * ApplyBiasCurveUnitValue(2.0f - value * 2.0f, 1.0f - safeGain);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplyBiasGainShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    const float segment = floorf(value / safeWrap);
+    float local = value - segment * safeWrap;
+    if (local < 0.0f) {
+        local += safeWrap;
+    }
+    float normalized = EscapeTimeColorClamp(local / safeWrap, 0.0f, 1.0f);
+    normalized = ApplyBiasCurveUnitValue(normalized, params.color_shape_bias);
+    normalized = ApplyGainCurveUnitValue(normalized, params.color_shape_gain);
+    return segment * safeWrap + normalized * safeWrap;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
     if (params.color_shape == ColorPipelineShape::offset_scale) {
         value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
@@ -297,6 +330,8 @@ ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, cons
         value = ApplyPosterizeShapeValue(value, params, repeatWrap);
     } else if (params.color_shape == ColorPipelineShape::mirror_repeat) {
         value = ApplyMirrorRepeatShapeValue(value, params, repeatWrap);
+    } else if (params.color_shape == ColorPipelineShape::bias_gain_curve) {
+        value = ApplyBiasGainShapeValue(value, params, repeatWrap);
     }
     return value;
 }

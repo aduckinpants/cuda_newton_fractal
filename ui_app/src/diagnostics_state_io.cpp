@@ -1112,6 +1112,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     int colorShapePosterizeSteps = nextParams.color_shape_posterize_steps;
     double colorShapePosterizeStepsRaw = static_cast<double>(colorShapePosterizeSteps);
     double colorShapePosterizeMix = nextParams.color_shape_posterize_mix;
+    double colorShapeBias = nextParams.color_shape_bias;
+    double colorShapeGain = nextParams.color_shape_gain;
     int colorIterationBandCount = nextParams.color_iteration_band_count;
     double colorIterationBandCountRaw = static_cast<double>(colorIterationBandCount);
     double colorIterationBandSoftness = nextParams.color_iteration_band_softness;
@@ -1156,6 +1158,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         colorShapePosterizeSteps = static_cast<int>(colorShapePosterizeStepsRaw);
     }
     if (!GetOptionalNumber(*paramsObject, "color_shape_posterize_mix", &colorShapePosterizeMix, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_bias", &colorShapeBias, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_shape_gain", &colorShapeGain, nullptr, outError)) return false;
     bool hasColorIterationBandCount = false;
     if (!GetOptionalNumber(*paramsObject, "color_iteration_band_count", &colorIterationBandCountRaw, &hasColorIterationBandCount, outError)) return false;
     if (hasColorIterationBandCount) {
@@ -1199,6 +1203,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_shape_repeat_phase = static_cast<float>(colorShapeRepeatPhase);
     nextParams.color_shape_posterize_steps = colorShapePosterizeSteps;
     nextParams.color_shape_posterize_mix = static_cast<float>(colorShapePosterizeMix);
+    nextParams.color_shape_bias = static_cast<float>(colorShapeBias);
+    nextParams.color_shape_gain = static_cast<float>(colorShapeGain);
     nextParams.color_iteration_band_count = colorIterationBandCount;
     nextParams.color_iteration_band_softness = static_cast<float>(colorIterationBandSoftness);
     nextParams.color_iteration_band_emphasis = static_cast<float>(colorIterationBandEmphasis);

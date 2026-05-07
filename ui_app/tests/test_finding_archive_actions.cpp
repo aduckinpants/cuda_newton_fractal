@@ -345,6 +345,54 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_bias_gain_curve";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+        params.color_shape = ColorPipelineShape::bias_gain_curve;
+        params.color_shape_bias = 0.25f;
+        params.color_shape_gain = 0.75f;
+        RenderSettings render{};
+        render.resolution = {16, 16};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff112233u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(
+            runtimeDir.string(),
+            view,
+            params,
+            render,
+            stats,
+            rgba.data(),
+            rgba.size(),
+            static_cast<const SidecarOrientationVector*>(nullptr),
+            static_cast<const ColorPipelineWindowState*>(nullptr),
+            &capture,
+            &error)) {
+            std::cerr << "Expected bias_gain_curve diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected bias_gain_curve diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"color_shape\": \"bias_gain_curve\"") == std::string::npos ||
+            stateJson.find("\"color_shape_bias\"") == std::string::npos ||
+            stateJson.find("\"color_shape_gain\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist the bias_gain_curve Shape id and dedicated owner fields once runtime-backed\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path repoRoot = tempRoot / "repo_root_probe";
         const fs::path scriptPath = repoRoot / "tools" / "reality_toolkit" / "scripts" / "run_fractal_explorer_archive_finding.py";
         fs::create_directories(scriptPath.parent_path());

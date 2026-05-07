@@ -48,6 +48,8 @@ int main() {
     params.color_shape_repeat_phase = 0.2f;
     params.color_shape_posterize_steps = 5;
     params.color_shape_posterize_mix = 0.65f;
+    params.color_shape_bias = 0.2f;
+    params.color_shape_gain = 0.8f;
     params.color_iteration_band_count = 5;
     params.color_iteration_band_softness = 0.8f;
     params.color_iteration_band_emphasis = 1.6f;
@@ -98,6 +100,8 @@ int main() {
         !NearlyEqual(params.color_shape_repeat_phase, 0.0f) ||
         params.color_shape_posterize_steps != 6 ||
         !NearlyEqual(params.color_shape_posterize_mix, 1.0f) ||
+        !NearlyEqual(params.color_shape_bias, 0.5f) ||
+        !NearlyEqual(params.color_shape_gain, 0.5f) ||
         params.color_iteration_band_count != 8 ||
         !NearlyEqual(params.color_iteration_band_softness, 0.35f) ||
         !NearlyEqual(params.color_iteration_band_emphasis, 1.0f) ||

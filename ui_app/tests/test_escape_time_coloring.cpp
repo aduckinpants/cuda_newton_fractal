@@ -204,6 +204,36 @@ int main() {
             return 1;
         }
 
+        params.color_shape = ColorPipelineShape::bias_gain_curve;
+        params.color_shape_bias = 0.25f;
+        params.color_shape_gain = 0.75f;
+        const TestColor biasGainSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, biasGainSignal)) {
+            std::cerr << "bias_gain_curve should react to its dedicated live Shape owner fields\n";
+            return 1;
+        }
+        params.color_shape_bias = 0.5f;
+        params.color_shape_gain = 0.5f;
+        const TestColor neutralBiasGain = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (!Equals(programmableBase, neutralBiasGain)) {
+            std::cerr << "bias_gain_curve bias=gain=0.5 should preserve the incoming signal\n";
+            return 1;
+        }
+
         params.color_shape = ColorPipelineShape::posterize;
         params.color_shape_posterize_steps = 2;
         params.color_shape_posterize_mix = 1.0f;

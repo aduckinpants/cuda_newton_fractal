@@ -113,6 +113,7 @@ const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
     case ColorPipelineShape::repeat: return "repeat";
     case ColorPipelineShape::posterize: return "posterize";
     case ColorPipelineShape::mirror_repeat: return "mirror_repeat";
+    case ColorPipelineShape::bias_gain_curve: return "bias_gain_curve";
     }
     return "unknown";
 }
@@ -227,6 +228,8 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_shape_repeat_phase\": " << static_cast<double>(params.color_shape_repeat_phase) << ",\n";
     js << "    \"color_shape_posterize_steps\": " << params.color_shape_posterize_steps << ",\n";
     js << "    \"color_shape_posterize_mix\": " << static_cast<double>(params.color_shape_posterize_mix) << ",\n";
+    js << "    \"color_shape_bias\": " << static_cast<double>(params.color_shape_bias) << ",\n";
+    js << "    \"color_shape_gain\": " << static_cast<double>(params.color_shape_gain) << ",\n";
     js << "    \"color_iteration_band_count\": " << params.color_iteration_band_count << ",\n";
     js << "    \"color_iteration_band_softness\": " << static_cast<double>(params.color_iteration_band_softness) << ",\n";
     js << "    \"color_iteration_band_emphasis\": " << static_cast<double>(params.color_iteration_band_emphasis) << ",\n";

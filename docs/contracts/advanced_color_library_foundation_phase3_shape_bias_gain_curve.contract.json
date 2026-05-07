@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase3_shape_bias_gain_curve",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "land bias_gain_curve as the next runtime-real Shape row after the checkpointed mirror_repeat slice",
+    "introduce an explicit shape.bias / shape.gain owner pair instead of descriptor-only coverage or reusing unrelated Shape owner fields",
+    "keep the extracted descriptor/core architecture as the authority for shape ids and semantics",
+    "preserve existing identity, offset_scale, repeat, posterize, and mirror_repeat behavior while widening bias_gain_curve"
+  ],
+  "forbidden_operator_prompts": [
+    "ship bias_gain_curve as descriptor-only or draft-only after claiming the slice landed",
+    "reuse offset_scale, repeat, or posterize owner fields for bias_gain_curve instead of giving it a dedicated runtime owner pair",
+    "widen smooth_window in the same slice",
+    "break the existing runtime-backed Shape rows while landing bias_gain_curve"
+  ],
+  "required_defaults": {
+    "bias_gain_curve_is_runtime_real": "required",
+    "bias_gain_curve_has_explicit_bias_gain_owners": "required",
+    "existing_shape_rows_remain_stable": "required"
+  },
+  "forbidden_defaults": {
+    "descriptor_only_bias_gain_curve": "forbidden",
+    "borrowed_shape_owner_fields": "forbidden",
+    "shape_runtime_fallbacks": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase3_shape_bias_gain_curve.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase3_shape_bias_gain_curve_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase3_bias_gain_curve_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 3 bias_gain_curve contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase3_shape_bias_gain_curve_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase3_bias_gain_curve_plan_sync_ok",
+      "description": "The advanced color library foundation phased plan stays synchronized during the bias_gain_curve slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
