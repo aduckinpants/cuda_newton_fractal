@@ -347,6 +347,45 @@ int main() {
             std::cerr << "Expected momentum beta to use a signed UI-only slider range with no hard clamp\n";
             return 1;
         }
+
+        FunctionParamDescriptor phaseOffsetParam = MakeColorPipelineFloatParam(
+            "signal.phase_offset",
+            "Phase Offset",
+            "Rotate the sampled phase before downstream palette work.",
+            -3.141592653589793,
+            3.141592653589793,
+            0.01,
+            0.0);
+        NumericControlRange phaseOffsetRange = ResolveColorPipelineNumericControlRange(phaseOffsetParam);
+        if (!phaseOffsetRange.has_widget_min || !phaseOffsetRange.has_widget_max ||
+            !phaseOffsetRange.has_hard_min || !phaseOffsetRange.has_hard_max ||
+            phaseOffsetRange.widget_min != -3.141592653589793 ||
+            phaseOffsetRange.widget_max != 3.141592653589793) {
+            std::cerr << "Expected color-pipeline float params to preserve their widget and hard bounds through the shared numeric range path\n";
+            return 1;
+        }
+        float clampedPhaseOffset = 9.0f;
+        ClampColorPipelineNumericValue(&clampedPhaseOffset, phaseOffsetRange);
+        if (!NearlyEqual(clampedPhaseOffset, static_cast<float>(phaseOffsetRange.hard_max))) {
+            std::cerr << "Expected color-pipeline float params to clamp edits to their declared hard maximum\n";
+            return 1;
+        }
+
+        FunctionParamDescriptor bandCountParam = MakeColorPipelineIntParam(
+            "signal.band_count",
+            "Band Count",
+            "Choose how many bands to carve out of the escape signal.",
+            2,
+            24,
+            1,
+            8);
+        NumericControlRange bandCountRange = ResolveColorPipelineNumericControlRange(bandCountParam);
+        int clampedBandCount = 64;
+        ClampColorPipelineNumericValue(&clampedBandCount, bandCountRange);
+        if (clampedBandCount != 24) {
+            std::cerr << "Expected color-pipeline int params to clamp edits to their declared hard maximum\n";
+            return 1;
+        }
     }
 
     {
@@ -835,33 +874,22 @@ int main() {
         }
 
         ColorPipelineRenderInteractionState interactionState{};
-        if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, 0.0, &params)) {
+        if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
             std::cerr << "Expected armed auto-apply to remain eligible when no programmable control is actively being manipulated\n";
             return 1;
         }
         interactionState.has_active_item = true;
-        windowState.last_auto_apply_time_seconds = 10.0;
-        if (ShouldAutoApplySupportedColorPipelineDraft(
-                windowState,
-                validApplyState,
-                interactionState,
-                10.0 + (kColorPipelineActiveAutoApplyIntervalSeconds * 0.5),
-                &params)) {
-            std::cerr << "Expected auto-apply to stay throttled until the short active-drag debounce window has elapsed\n";
-            return 1;
-        }
         if (!ShouldAutoApplySupportedColorPipelineDraft(
                 windowState,
                 validApplyState,
                 interactionState,
-                10.0 + (kColorPipelineActiveAutoApplyIntervalSeconds * 1.5),
                 &params)) {
-            std::cerr << "Expected auto-apply to resume short-interval live preview while a programmable control stays active\n";
+            std::cerr << "Expected supported auto-apply to stay eligible while a programmable control is active once the apply path runs after lane rendering instead of depending on a custom debounce gate\n";
             return 1;
         }
         interactionState.has_active_item = false;
         windowState.auto_apply_supported_recipe = false;
-        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, 0.0, &params)) {
+        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
             std::cerr << "Expected disabled auto-apply to stay disarmed even when the draft is otherwise supported\n";
             return 1;
         }

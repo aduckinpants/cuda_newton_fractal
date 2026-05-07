@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_slider_contract_parity",
+  "feature_id": "advanced_color_pipeline_slider_contract_parity",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_slider_contract_parity_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_slider_contract_parity_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/main.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/src/function_descriptor.h"
+  ],
+  "required_operator_inputs": [
+    "operator comparison that the working app sliders behave correctly while the color-pipeline sliders do not",
+    "working slider contract in ui_app/src/schema_binding.cpp",
+    "current color-pipeline control and apply seam in ui_app/src/color_pipeline_window.h"
+  ],
+  "forbidden_operator_prompts": [
+    "revert the checkbox back to a separate apply button",
+    "solve parity by turning auto-apply off by default",
+    "keep the color-pipeline sliders on a separate custom interaction contract"
+  ],
+  "required_defaults": {
+    "slider_behavior": "match_working_schema_binding_contract",
+    "auto_apply_checkbox": "persistent_and_default_on",
+    "live_feedback": "supported_live_backed_edits_apply_during_drag_via_post_lane_frame_updates"
+  },
+  "forbidden_defaults": {
+    "custom_debounce_model": "forbidden_as_primary_fix",
+    "release_only_feedback": "forbidden",
+    "separate_draft_only_slider_contract": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_slider_contract_parity.contract.json --out-json artifacts/validation/advanced_color_pipeline_slider_contract_parity_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_slider_contract_parity_contract_schema_valid",
+      "description": "The slider-contract parity contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_slider_contract_parity_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_slider_contract_parity_plan_sync_ok",
+      "description": "The slider-contract parity plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
