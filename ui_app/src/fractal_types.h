@@ -64,6 +64,7 @@ enum class ColorPipelineShape : int {
     offset_scale = 1,
     repeat = 2,
     posterize = 3,
+    mirror_repeat = 4,
 };
 
 struct ColorPipelineSelection {

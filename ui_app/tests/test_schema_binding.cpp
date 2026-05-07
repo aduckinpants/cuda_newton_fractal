@@ -816,12 +816,13 @@ int main() {
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
         if (!coreShapeCatalog ||
             coreShapeCatalog->default_function_id != std::string("identity") ||
-            coreShapeCatalog->functions.size() != 4 ||
+            coreShapeCatalog->functions.size() != 5 ||
             coreShapeCatalog->functions[0].id != "identity" ||
             coreShapeCatalog->functions[1].id != "offset_scale" ||
             coreShapeCatalog->functions[2].id != "repeat" ||
-            coreShapeCatalog->functions[3].id != "posterize") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with posterize as the first new runtime-real row\n";
+            coreShapeCatalog->functions[3].id != "posterize" ||
+            coreShapeCatalog->functions[4].id != "mirror_repeat") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Shape catalog with mirror_repeat as the next runtime-real row\n";
             return 1;
         }
         const FunctionDescriptor* coreRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "repeat");
@@ -838,6 +839,14 @@ int main() {
             corePosterizeDescriptor->parameters[0].path != "shape.steps" ||
             corePosterizeDescriptor->parameters[1].path != "shape.mix") {
             std::cerr << "Expected posterize to expose stable steps and mix parameter paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreMirrorRepeatDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreShapeCatalog, "mirror_repeat");
+        if (!coreMirrorRepeatDescriptor ||
+            coreMirrorRepeatDescriptor->parameters.size() != 2 ||
+            coreMirrorRepeatDescriptor->parameters[0].path != "shape.frequency" ||
+            coreMirrorRepeatDescriptor->parameters[1].path != "shape.phase") {
+            std::cerr << "Expected mirror_repeat to reuse the stable repeat frequency and phase parameter paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;
@@ -911,12 +920,13 @@ int main() {
         }
         const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
         if (!shapeCatalog ||
-            shapeCatalog->functions.size() != 4 ||
+            shapeCatalog->functions.size() != 5 ||
             shapeCatalog->functions[0].id != "identity" ||
             shapeCatalog->functions[1].id != "offset_scale" ||
             shapeCatalog->functions[2].id != "repeat" ||
-            shapeCatalog->functions[3].id != "posterize") {
-            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real offset_scale, repeat, and posterize rows\n";
+            shapeCatalog->functions[3].id != "posterize" ||
+            shapeCatalog->functions[4].id != "mirror_repeat") {
+            std::cerr << "Expected the shipped Shape catalog to expose Identity plus the real offset_scale, repeat, posterize, and mirror_repeat rows\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
@@ -1051,6 +1061,32 @@ int main() {
             windowState.lanes[1].rows.size() != 1 ||
             windowState.lanes[1].rows[0].function_id != "posterize") {
             std::cerr << "Expected posterize rows to participate in the same schedule-style Shape row editing surface\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "mirror_repeat") ||
+            windowState.lanes[1].rows[0].parameter_values.size() != 2 ||
+            windowState.lanes[1].rows[0].parameter_values[0].path != "shape.frequency" ||
+            windowState.lanes[1].rows[0].parameter_values[1].path != "shape.phase") {
+            std::cerr << "Expected the shipped Shape lane to accept mirror_repeat once its runtime backend exists\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[1].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1) {
+            std::cerr << "Expected mirror_repeat to expose the reused repeat Shape controls\n";
+            return 1;
+        }
+        if (!AddColorPipelineLaneRow(&windowState, 1, "mirror_repeat") ||
+            windowState.lanes[1].rows.size() != 2 ||
+            windowState.lanes[1].rows[1].function_id != "mirror_repeat") {
+            std::cerr << "Expected the schedule-style Shape lane to support appending mirror_repeat rows once runtime-backed\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 1, 1) ||
+            windowState.lanes[1].rows.size() != 1 ||
+            windowState.lanes[1].rows[0].function_id != "mirror_repeat") {
+            std::cerr << "Expected mirror_repeat rows to participate in the same schedule-style Shape row editing surface\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
@@ -1262,6 +1298,28 @@ int main() {
             windowState.live_snapshot.lanes[1].rows[0].function_id != "posterize" ||
             HasColorPipelineDraftEdits(windowState)) {
             std::cerr << "Expected live programmable apply to write posterize owner fields, reset other Shape owners, and resync the live snapshot\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "mirror_repeat") ||
+            !setParam(windowState.lanes[1].rows[0], "shape.frequency", 3.0) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.phase", 0.15)) {
+            std::cerr << "Expected the live programmable editor to expose the mirror_repeat Shape controls once runtime-backed\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the live programmable editor to apply the mirror_repeat Shape tuple\n";
+            return 1;
+        }
+        if (params.color_shape != ColorPipelineShape::mirror_repeat ||
+            !NearlyEqual(params.color_shape_repeat_frequency, 3.0) ||
+            !NearlyEqual(params.color_shape_repeat_phase, 0.15) ||
+            !NearlyEqual(params.color_shape_offset, 0.0) ||
+            !NearlyEqual(params.color_shape_scale, 1.0) ||
+            !windowState.live_snapshot.valid ||
+            windowState.live_snapshot.lanes[1].rows[0].function_id != "mirror_repeat" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to write the mirror_repeat Shape choice through the reused repeat owner fields and resync the live snapshot\n";
             return 1;
         }
 

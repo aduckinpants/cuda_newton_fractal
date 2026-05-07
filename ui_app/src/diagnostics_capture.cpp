@@ -112,6 +112,7 @@ const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
     case ColorPipelineShape::offset_scale: return "offset_scale";
     case ColorPipelineShape::repeat: return "repeat";
     case ColorPipelineShape::posterize: return "posterize";
+    case ColorPipelineShape::mirror_repeat: return "mirror_repeat";
     }
     return "unknown";
 }

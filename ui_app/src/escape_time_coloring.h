@@ -268,20 +268,35 @@ ESCAPE_TIME_COLOR_HD inline float ApplyPosterizeShapeValue(float value, const Ke
     return value + (quantized - value) * mix;
 }
 
+ESCAPE_TIME_COLOR_HD inline float ApplyRepeatShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    value = value * EscapeTimeColorClamp(params.color_shape_repeat_frequency, 0.25f, 24.0f) +
+        EscapeTimeColorClamp(params.color_shape_repeat_phase, -1.0f, 1.0f);
+    repeatWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    value = fmodf(value, repeatWrap);
+    if (value < 0.0f) {
+        value += repeatWrap;
+    }
+    return value;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplyMirrorRepeatShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
+    const float repeated = ApplyRepeatShapeValue(value, params, safeWrap);
+    const float normalized = repeated / safeWrap;
+    const float mirrored = normalized <= 0.5f ? normalized * 2.0f : (1.0f - normalized) * 2.0f;
+    return mirrored * safeWrap;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
     if (params.color_shape == ColorPipelineShape::offset_scale) {
         value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
         value *= EscapeTimeColorClamp(params.color_shape_scale, 0.1f, 8.0f);
     } else if (params.color_shape == ColorPipelineShape::repeat) {
-        value = value * EscapeTimeColorClamp(params.color_shape_repeat_frequency, 0.25f, 24.0f) +
-            EscapeTimeColorClamp(params.color_shape_repeat_phase, -1.0f, 1.0f);
-        repeatWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
-        value = fmodf(value, repeatWrap);
-        if (value < 0.0f) {
-            value += repeatWrap;
-        }
+        value = ApplyRepeatShapeValue(value, params, repeatWrap);
     } else if (params.color_shape == ColorPipelineShape::posterize) {
         value = ApplyPosterizeShapeValue(value, params, repeatWrap);
+    } else if (params.color_shape == ColorPipelineShape::mirror_repeat) {
+        value = ApplyMirrorRepeatShapeValue(value, params, repeatWrap);
     }
     return value;
 }

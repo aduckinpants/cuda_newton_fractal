@@ -188,6 +188,22 @@ int main() {
             return 1;
         }
 
+        params.color_shape = ColorPipelineShape::mirror_repeat;
+        params.color_shape_repeat_frequency = 6.0f;
+        params.color_shape_repeat_phase = 0.2f;
+        const TestColor mirrorRepeatedSignal = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(repeatedSignal, mirrorRepeatedSignal)) {
+            std::cerr << "mirror_repeat should produce a different mirrored wave than repeat while reusing the same Shape owner fields\n";
+            return 1;
+        }
+
         params.color_shape = ColorPipelineShape::posterize;
         params.color_shape_posterize_steps = 2;
         params.color_shape_posterize_mix = 1.0f;

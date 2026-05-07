@@ -800,6 +800,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "posterize") {
         return path == "shape.steps" || path == "shape.mix";
     }
+    if (functionId == "mirror_repeat") {
+        return path == "shape.frequency" || path == "shape.phase";
+    }
     if (functionId == "banded_signal") {
         return path == "signal.band_count" || path == "signal.softness";
     }
@@ -922,6 +925,10 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     if (ioRow->function_id == "posterize") {
         return SetColorPipelineParamNumber(ioRow, "shape.steps", static_cast<double>(liveParams.color_shape_posterize_steps), outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.mix", liveParams.color_shape_posterize_mix, outError);
+    }
+    if (ioRow->function_id == "mirror_repeat") {
+        return SetColorPipelineParamNumber(ioRow, "shape.frequency", liveParams.color_shape_repeat_frequency, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.phase", liveParams.color_shape_repeat_phase, outError);
     }
     if (ioRow->function_id == "banded_signal") {
         return SetColorPipelineParamNumber(ioRow, "signal.band_count", static_cast<double>(liveParams.color_iteration_band_count), outError) &&
@@ -1222,6 +1229,25 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             assignShapeFloat(&ioParams->color_shape_posterize_mix, static_cast<float>(mix));
             continue;
         }
+        if (row.function_id == "mirror_repeat") {
+            double frequency = 0.0;
+            double phase = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "shape.frequency", &frequency, outError) ||
+                !TryGetColorPipelineParamNumber(row, "shape.phase", &phase, outError) ||
+                !ValidateColorPipelineParamRange("shape.frequency", frequency, 0.25, 24.0, outError) ||
+                !ValidateColorPipelineParamRange("shape.phase", phase, -1.0, 1.0, outError)) {
+                return false;
+            }
+            if (ioParams->color_shape != ColorPipelineShape::mirror_repeat) {
+                ioParams->color_shape = ColorPipelineShape::mirror_repeat;
+                changed = true;
+            }
+            resetShapeOffsetScale();
+            resetShapePosterize();
+            assignShapeFloat(&ioParams->color_shape_repeat_frequency, static_cast<float>(frequency));
+            assignShapeFloat(&ioParams->color_shape_repeat_phase, static_cast<float>(phase));
+            continue;
+        }
         if (row.function_id == "banded_signal") {
             int bandCount = 0;
             double softness = 0.0;
@@ -1341,9 +1367,10 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     if (shapeRow->function_id != "identity" &&
         shapeRow->function_id != "offset_scale" &&
         shapeRow->function_id != "repeat" &&
-        shapeRow->function_id != "posterize") {
+        shapeRow->function_id != "posterize" &&
+        shapeRow->function_id != "mirror_repeat") {
         if (outError) {
-            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, and Posterize Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, and Mirror Repeat Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
         }
         return false;
     }

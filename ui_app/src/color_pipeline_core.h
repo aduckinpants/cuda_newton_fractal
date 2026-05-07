@@ -216,6 +216,8 @@ inline const char* AdvancedColorShapeFunctionId(ColorPipelineShape value) {
         return "repeat";
     case ColorPipelineShape::posterize:
         return "posterize";
+    case ColorPipelineShape::mirror_repeat:
+        return "mirror_repeat";
     }
     return nullptr;
 }
@@ -333,6 +335,14 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineShapeFunctions() {
                 MakeColorPipelineIntParam("shape.steps", "Steps", "Choose how many discrete levels to keep.", 2, 24, 1, 6),
                 MakeColorPipelineFloatParam("shape.mix", "Mix", "Blend between the original signal and the stepped version.", 0.0, 1.0, 0.01, 1.0),
             }),
+        MakeColorPipelineFunction(
+            "mirror_repeat",
+            "Mirror Repeat",
+            "Tile the incoming signal into a mirrored triangle-wave pattern.",
+            {
+                MakeColorPipelineFloatParam("shape.frequency", "Frequency", "Control how often the mirrored pattern repeats.", 0.25, 24.0, 0.01, 8.0),
+                MakeColorPipelineFloatParam("shape.phase", "Phase", "Offset the mirrored pattern without changing the source.", -1.0, 1.0, 0.01, 0.0),
+            }),
     };
 }
 
@@ -382,7 +392,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
         return functionId == "identity" ||
             functionId == "offset_scale" ||
             functionId == "repeat" ||
-            functionId == "posterize";
+            functionId == "posterize" ||
+            functionId == "mirror_repeat";
     }
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||
