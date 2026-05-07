@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_auto_apply_drag_stability",
+  "feature_id": "advanced_color_pipeline_auto_apply_drag_stability",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_auto_apply_drag_stability_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_auto_apply_drag_stability_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "confirmed operator behavior that slider dragging works again when auto-apply is unchecked",
+    "advanced color pipeline summary and lane render flow in ui_app/src/color_pipeline_window.h",
+    "existing ImGui interaction tracking pattern in ui_app/src/schema_binding.cpp"
+  ],
+  "forbidden_operator_prompts": [
+    "revert the checkbox back to a button",
+    "solve drag loss by turning auto-apply off by default",
+    "keep mutating live runtime state during an active slider drag"
+  ],
+  "required_defaults": {
+    "auto_apply_checkbox": "persistent_and_default_on",
+    "drag_behavior": "no_live_apply_during_active_item_interaction",
+    "post_edit_apply": "supported_drafts_commit_after_edit_completion"
+  },
+  "forbidden_defaults": {
+    "mid_drag_runtime_mutation": "forbidden",
+    "default_off_auto_apply": "forbidden",
+    "restore_extra_apply_click": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_auto_apply_drag_stability.contract.json --out-json artifacts/validation/advanced_color_pipeline_auto_apply_drag_stability_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_auto_apply_drag_stability_contract_schema_valid",
+      "description": "The auto-apply drag-stability contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_auto_apply_drag_stability_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_auto_apply_drag_stability_plan_sync_ok",
+      "description": "The auto-apply drag-stability plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

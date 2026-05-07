@@ -833,6 +833,24 @@ int main() {
             std::cerr << "Expected valid phase drafts to classify as live-applicable\n";
             return 1;
         }
+
+        ColorPipelineRenderInteractionState interactionState{};
+        if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
+            std::cerr << "Expected armed auto-apply to remain eligible when no programmable control is actively being manipulated\n";
+            return 1;
+        }
+        interactionState.has_active_item = true;
+        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
+            std::cerr << "Expected auto-apply to defer while a programmable control is actively being manipulated\n";
+            return 1;
+        }
+        interactionState.has_active_item = false;
+        windowState.auto_apply_supported_recipe = false;
+        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
+            std::cerr << "Expected disabled auto-apply to stay disarmed even when the draft is otherwise supported\n";
+            return 1;
+        }
+        windowState.auto_apply_supported_recipe = true;
     }
 
     {

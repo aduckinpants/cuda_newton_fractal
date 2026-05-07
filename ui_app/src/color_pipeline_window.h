@@ -66,6 +66,10 @@ struct ColorPipelineDraftApplyState {
     std::string message;
 };
 
+struct ColorPipelineRenderInteractionState {
+    bool has_active_item = false;
+};
+
 struct ColorPipelineLaneCatalog {
     const char* lane_id = "";
     const char* label = "";
@@ -1557,9 +1561,32 @@ inline bool ApplyColorPipelineDraftToLiveState(
     return true;
 }
 
+inline void NoteColorPipelineCurrentItemInteraction(
+    bool changed,
+    ColorPipelineRenderInteractionState* ioState) {
+    if (!ioState) {
+        return;
+    }
+    if (changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) {
+        ioState->has_active_item = ioState->has_active_item || ImGui::IsItemActive();
+    }
+}
+
+inline bool ShouldAutoApplySupportedColorPipelineDraft(
+    const ColorPipelineWindowState& state,
+    const ColorPipelineDraftApplyState& applyState,
+    const ColorPipelineRenderInteractionState& interactionState,
+    const KernelParams* liveParams = nullptr) {
+    return liveParams &&
+        state.auto_apply_supported_recipe &&
+        applyState.status == ColorPipelineDraftApplyStatus::can_apply &&
+        !interactionState.has_active_item;
+}
+
 inline bool RenderColorPipelineParamControl(
     const FunctionParamDescriptor& param,
-    ColorPipelineParamState* ioValue) {
+    ColorPipelineParamState* ioValue,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     if (!ioValue) {
         return false;
     }
@@ -1576,6 +1603,7 @@ inline bool RenderColorPipelineParamControl(
             const float step = param.has_step ? static_cast<float>(param.step_value) : 0.01f;
             changed = ImGui::DragFloat(param.label.c_str(), &value, step);
         }
+        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
         if (changed) {
             ioValue->number_value = value;
         }
@@ -1589,12 +1617,14 @@ inline bool RenderColorPipelineParamControl(
             const float step = param.has_step ? static_cast<float>(param.step_value) : 1.0f;
             changed = ImGui::DragInt(param.label.c_str(), &value, step);
         }
+        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
         if (changed) {
             ioValue->number_value = static_cast<double>(value);
         }
     } else if (param.type == "bool") {
         bool value = ioValue->bool_value;
         changed = ImGui::Checkbox(param.label.c_str(), &value);
+        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
         if (changed) {
             ioValue->bool_value = value;
         }
@@ -1613,6 +1643,7 @@ inline bool RenderColorPipelineParamControl(
             }
             ImGui::EndCombo();
         }
+        NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
     } else {
         ImGui::TextUnformatted(param.label.c_str());
         ImGui::SameLine();
@@ -1644,13 +1675,6 @@ inline void RenderColorPipelineWindowSummary(
     ImGui::Separator();
     if (ioState && ioState->live_snapshot.valid) {
         ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
-        if (liveParams && ioState->auto_apply_supported_recipe && applyState.status == ColorPipelineDraftApplyStatus::can_apply) {
-            bool changed = false;
-            if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
-                *ioDirty = true;
-            }
-            applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
-        }
         if (ioState->live_snapshot.draft_import_supported) {
             const char* signalId = nullptr;
             const char* shapeId = "(unsupported shape)";
@@ -1680,7 +1704,7 @@ inline void RenderColorPipelineWindowSummary(
                 : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
             ImGui::TextColored(statusColor, "%s", applyState.message.c_str());
             if (!canApply) {
-                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape + Heatmap, Phase Orbit + Phase Wheel, and Iteration Bands + Banded Heatmap with Identity in Shape.");
+                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape + Heatmap, Phase Orbit + Phase Wheel, and Iteration Bands + Banded Heatmap with Identity or Offset + Scale in Shape.");
             }
         }
         if (!liveParams) {
@@ -1717,7 +1741,8 @@ inline void RenderColorPipelineWindowLane(
     ColorPipelineWindowState* ioState,
     std::size_t laneIndex,
     FractalType liveFractalType,
-    const KernelParams* liveParams) {
+    const KernelParams* liveParams,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     if (!ioState || laneIndex >= ioState->lanes.size()) {
         return;
     }
@@ -1801,7 +1826,7 @@ inline void RenderColorPipelineWindowLane(
                 if (paramIndex >= currentDescriptor->parameters.size() || paramIndex >= row.parameter_values.size()) {
                     continue;
                 }
-                RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex]);
+                RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex], ioInteraction);
             }
             if (!currentDescriptor->parameters.empty() && renderableParamIndexes.empty()) {
                 ImGui::TextDisabled("Parameter tuning preview only in this slice.");
@@ -1809,7 +1834,7 @@ inline void RenderColorPipelineWindowLane(
                 ImGui::TextDisabled("Only the visible controls are live in this slice.");
             }
             if (!currentDescriptor->parameters.empty() && lane.lane_id == "shape") {
-                ImGui::TextDisabled("Shape rows edit the schedule draft now; only Identity participates in the current live bridge.");
+                ImGui::TextDisabled("Shape rows edit the schedule draft now; only one live-backed Shape row participates in the current bridge at a time.");
             }
         });
 
@@ -1855,10 +1880,18 @@ inline bool RenderColorPipelineWindow(
     ImGui::SetNextWindowSize(ImVec2(720.0f, 520.0f), ImGuiCond_FirstUseEver);
     const bool began = ImGui::Begin("Color Pipeline", &open);
     if (began) {
+        ColorPipelineRenderInteractionState interactionState;
         RenderColorPipelineWindowSummary(ioState, liveFractalType, liveParams, ioDirty);
         for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
-            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams);
+            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams, &interactionState);
             ImGui::Spacing();
+        }
+        const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
+        if (ShouldAutoApplySupportedColorPipelineDraft(*ioState, applyState, interactionState, liveParams)) {
+            bool changed = false;
+            if (ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed) && changed && ioDirty) {
+                *ioDirty = true;
+            }
         }
     }
     ImGui::End();
