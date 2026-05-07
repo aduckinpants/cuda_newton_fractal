@@ -920,25 +920,19 @@ int main() {
 
         ColorPipelineRenderInteractionState interactionState{};
         if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
-            std::cerr << "Expected armed auto-apply to remain eligible when no programmable control is actively being manipulated\n";
+            std::cerr << "Expected supported end-of-frame apply to remain eligible when no programmable control is actively being manipulated\n";
             return 1;
         }
         interactionState.has_active_item = true;
-        if (!ShouldAutoApplySupportedColorPipelineDraft(
+        if (ShouldAutoApplySupportedColorPipelineDraft(
                 windowState,
                 validApplyState,
                 interactionState,
                 &params)) {
-            std::cerr << "Expected supported auto-apply to stay eligible while a programmable control is active once the apply path runs after lane rendering instead of depending on a custom debounce gate\n";
+            std::cerr << "Expected active programmable-control drags to bypass the end-of-frame apply helper so supported slider edits can use a direct live path instead\n";
             return 1;
         }
         interactionState.has_active_item = false;
-        windowState.auto_apply_supported_recipe = false;
-        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
-            std::cerr << "Expected disabled auto-apply to stay disarmed even when the draft is otherwise supported\n";
-            return 1;
-        }
-        windowState.auto_apply_supported_recipe = true;
     }
 
     {
@@ -969,10 +963,6 @@ int main() {
         }
         if (!openWindowState.open) {
             std::cerr << "Expected the advanced color pipeline window helper to preserve the open state without user dismissal\n";
-            return 1;
-        }
-        if (!openWindowState.auto_apply_supported_recipe) {
-            std::cerr << "Expected the advanced color pipeline window to default auto-apply on instead of requiring an extra apply click\n";
             return 1;
         }
         if (!openWindowState.initialized || !openWindowState.live_snapshot.valid || openWindowState.lanes.size() != 3 ||
@@ -1017,13 +1007,12 @@ int main() {
             return 1;
         }
         EndFrame();
-        if (!invalidLiveRenderState.auto_apply_supported_recipe ||
-            params.coloring_mode != ColoringMode::smooth_escape ||
+        if (params.coloring_mode != ColoringMode::smooth_escape ||
             params.color_pipeline.signal != ColorSignal::smooth_escape ||
             params.color_pipeline.palette != ColorPalette::cyclic_escape ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !invalidLiveRenderState.live_snapshot.valid) {
-            std::cerr << "Expected a default-on supported draft to repair an invalid live color state during render instead of leaving the runtime stuck\n";
+            std::cerr << "Expected a supported draft to repair an invalid live color state during render instead of leaving the runtime stuck\n";
             return 1;
         }
 
@@ -1047,11 +1036,10 @@ int main() {
             return 1;
         }
         EndFrame();
-        if (!openWindowState.auto_apply_supported_recipe ||
-            !NearlyEqual(params.color_phase_signal_offset, 0.625) ||
+        if (!NearlyEqual(params.color_phase_signal_offset, 0.625) ||
             !NearlyEqual(params.color_shape_scale, 2.0) ||
             HasColorPipelineDraftEdits(openWindowState)) {
-            std::cerr << "Expected the default-on auto-apply checkbox to keep supported edits synced without a separate apply button click\n";
+            std::cerr << "Expected supported edits to keep live-backed params synced without a separate apply toggle\n";
             return 1;
         }
 

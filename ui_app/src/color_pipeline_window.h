@@ -46,7 +46,6 @@ struct ColorPipelineLiveSnapshot {
 struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
-    bool auto_apply_supported_recipe = true;
     std::uint64_t next_row_id = 1;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
@@ -1643,15 +1642,47 @@ inline bool ShouldAutoApplySupportedColorPipelineDraft(
     const ColorPipelineDraftApplyState& applyState,
     const ColorPipelineRenderInteractionState& interactionState,
     const KernelParams* liveParams = nullptr) {
+    (void)state;
     (void)interactionState;
     return liveParams &&
-        state.auto_apply_supported_recipe &&
-        applyState.status == ColorPipelineDraftApplyStatus::can_apply;
+        applyState.status == ColorPipelineDraftApplyStatus::can_apply &&
+        !interactionState.has_active_item;
+}
+
+inline bool TryApplySupportedColorPipelineDraftFromControl(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    bool* ioDirty,
+    ColorPipelineRenderInteractionState* ioInteraction) {
+    if (!ioState || !liveParams) {
+        return false;
+    }
+    const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
+    if (applyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+        return false;
+    }
+
+    bool changed = false;
+    if (!ApplyColorPipelineDraftToLiveState(ioState, liveFractalType, liveParams, &changed)) {
+        return false;
+    }
+    if (changed && ioDirty) {
+        *ioDirty = true;
+    }
+    if (changed && ioInteraction) {
+        ioInteraction->interacted = true;
+    }
+    return changed;
 }
 
 inline bool RenderColorPipelineParamControl(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
     const FunctionParamDescriptor& param,
     ColorPipelineParamState* ioValue,
+    bool* ioDirty = nullptr,
     ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     if (!ioValue) {
         return false;
@@ -1679,6 +1710,7 @@ inline bool RenderColorPipelineParamControl(
             ClampColorPipelineNumericValue(&value, range);
             changed = true;
             ioValue->number_value = value;
+            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
         NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
     } else if (param.type == "double") {
@@ -1701,6 +1733,7 @@ inline bool RenderColorPipelineParamControl(
             ClampColorPipelineNumericValue(&value, range);
             changed = true;
             ioValue->number_value = value;
+            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
         NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
     } else if (param.type == "int") {
@@ -1723,6 +1756,7 @@ inline bool RenderColorPipelineParamControl(
             ClampColorPipelineNumericValue(&value, range);
             changed = true;
             ioValue->number_value = static_cast<double>(value);
+            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
         NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
     } else if (param.type == "bool") {
@@ -1731,6 +1765,7 @@ inline bool RenderColorPipelineParamControl(
         NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
         if (changed) {
             ioValue->bool_value = value;
+            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
     } else if (param.type == "enum") {
         const char* preview = ioValue->enum_value.empty() ? "(select)" : ioValue->enum_value.c_str();
@@ -1740,6 +1775,7 @@ inline bool RenderColorPipelineParamControl(
                 if (ImGui::Selectable(option.label.c_str(), isSelected)) {
                     ioValue->enum_value = option.id;
                     changed = true;
+                    TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
                 }
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();
@@ -1775,6 +1811,7 @@ inline void RenderColorPipelineWindowSummary(
     bool* ioDirty,
     ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     (void)ioDirty;
+    (void)ioInteraction;
     ImGui::TextWrapped("Draft Source / Shape / Palette recipes here. The legacy Color mode and grading controls stay in the main Color panel during the schedule-editor transition.");
     ImGui::TextDisabled("This window now models three typed lane stacks instead of a fixed Signal / Palette / Grade trio.");
     ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, one live-backed Shape row (Identity or Offset + Scale), and one enabled Palette row. Stacked Shape recipes remain draft-only until custom runtime integration lands.");
@@ -1816,21 +1853,14 @@ inline void RenderColorPipelineWindowSummary(
                 ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape + Heatmap, Phase Orbit + Phase Wheel, and Iteration Bands + Banded Heatmap with Identity or Offset + Scale in Shape.");
             }
         }
-        const bool autoApplyChanged = ImGui::Checkbox("Auto-apply supported recipe", &ioState->auto_apply_supported_recipe);
-        NoteColorPipelineCurrentItemInteraction(autoApplyChanged, ioInteraction);
-        ImGui::SameLine();
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
             ImGui::BeginDisabled();
         }
         if (ImGui::Button("Reset Draft From Live")) {
-            NoteColorPipelineCurrentItemInteraction(true, ioInteraction);
             ResetColorPipelineDraftFromLiveState(ioState);
         }
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
             ImGui::EndDisabled();
-        }
-        if (ioState->auto_apply_supported_recipe && !canApply && applyState.status != ColorPipelineDraftApplyStatus::matches_live) {
-            ImGui::TextDisabled("Auto-apply stays armed and will resume as soon as the draft returns to a supported live bridge recipe.");
         }
     } else {
         ImGui::TextDisabled("Live runtime selection is not available yet.");
@@ -1846,7 +1876,8 @@ inline void RenderColorPipelineWindowLane(
     ColorPipelineWindowState* ioState,
     std::size_t laneIndex,
     FractalType liveFractalType,
-    const KernelParams* liveParams,
+    KernelParams* liveParams,
+    bool* ioDirty = nullptr,
     ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     if (!ioState || laneIndex >= ioState->lanes.size()) {
         return;
@@ -1937,7 +1968,7 @@ inline void RenderColorPipelineWindowLane(
                 if (paramIndex >= currentDescriptor->parameters.size() || paramIndex >= row.parameter_values.size()) {
                     continue;
                 }
-                RenderColorPipelineParamControl(currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex], ioInteraction);
+                RenderColorPipelineParamControl(ioState, liveFractalType, liveParams, currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex], ioDirty, ioInteraction);
             }
             if (!currentDescriptor->parameters.empty() && renderableParamIndexes.empty()) {
                 ImGui::TextDisabled("Parameter tuning preview only in this slice.");
@@ -1999,7 +2030,7 @@ inline bool RenderColorPipelineWindow(
         ColorPipelineRenderInteractionState interactionState;
         RenderColorPipelineWindowSummary(ioState, liveFractalType, liveParams, ioDirty, &interactionState);
         for (std::size_t laneIndex = 0; laneIndex < ioState->lanes.size(); ++laneIndex) {
-            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams, &interactionState);
+            RenderColorPipelineWindowLane(ioState, laneIndex, liveFractalType, liveParams, ioDirty, &interactionState);
             ImGui::Spacing();
         }
         const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);

@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_remove_checkbox_direct_live_controls",
+  "feature_id": "advanced_color_pipeline_remove_checkbox_direct_live_controls",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_remove_checkbox_direct_live_controls_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_pipeline_remove_checkbox_direct_live_controls_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "operator report that the checkbox path still breaks slider behavior",
+    "direct live slider oracle in ui_app/src/schema_binding.cpp",
+    "current color-pipeline render/apply seam in ui_app/src/color_pipeline_window.h"
+  ],
+  "forbidden_operator_prompts": [
+    "keep the checkbox and tune it again",
+    "replace the checkbox with another apply toggle",
+    "solve the issue with another end-of-frame timing workaround"
+  ],
+  "required_defaults": {
+    "apply_checkbox": "removed",
+    "supported_numeric_edit_path": "direct_live_mutation_from_control_seam",
+    "active_drag_end_of_frame_apply": "suppressed"
+  },
+  "forbidden_defaults": {
+    "checkbox_owned_slider_updates": "forbidden",
+    "draft_only_numeric_drag_path": "forbidden",
+    "new_timing_heuristic": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_remove_checkbox_direct_live_controls.contract.json --out-json artifacts/validation/advanced_color_pipeline_remove_checkbox_direct_live_controls_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_remove_checkbox_direct_live_controls_contract_schema_valid",
+      "description": "The remove-checkbox direct-live contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_remove_checkbox_direct_live_controls_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_remove_checkbox_direct_live_controls_plan_sync_ok",
+      "description": "The remove-checkbox direct-live plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
