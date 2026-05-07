@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase0_oracle_inventory",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_oracle_and_inventory.md"
+  ],
+  "required_operator_inputs": [
+    "build a real initial library of reusable color functions per category",
+    "extract authority out of color_pipeline_window.h instead of scaling the window monolith",
+    "keep ExplainO CMap distinct from basin/root palettes and from the generic viewport colormap surface",
+    "plan the bounded Balance/Void grading operator separately from the ExplainO-BalanceVoid family track"
+  ],
+  "forbidden_operator_prompts": [
+    "treat this as just adding more dropdown options",
+    "leave color_pipeline_window.h as the authority for ids, semantics, or serialization truth",
+    "conflate ExplainO CMap with basin/root palettes or with the generic viewport colormap surface",
+    "merge the generic grading operator work into ExplainO-specific family hooks",
+    "open extra categories before the four-category foundation is locked"
+  ],
+  "required_defaults": {
+    "window_consumes_registry_authority": "required",
+    "explaino_oracle_split_is_explicit": "required",
+    "balanced_initial_library_inventory_exists": "required",
+    "balance_void_grade_is_generic_not_explaino_specific": "required",
+    "experimental_explaino_balancevoid_family_is_separately_owned": "required"
+  },
+  "forbidden_defaults": {
+    "window_owns_function_identity": "forbidden",
+    "window_owns_serialization_truth": "forbidden",
+    "theme_named_shipping_features": "forbidden",
+    "preview_only_catalog_entries": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase0_oracle_inventory.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase0_oracle_inventory_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase0_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 0 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase0_oracle_inventory_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase0_plan_sync_ok",
+      "description": "The advanced color library foundation phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
