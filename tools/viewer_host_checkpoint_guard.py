@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -40,6 +41,7 @@ STATE_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_checkpoint_guard"
 RECEIPT_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_validation_receipts"
 TASK_COMPLETE_TOOL = "task_complete"
 DELETED_MARKER = "__DELETED__"
+EXPLICIT_USER_ASK_RE = re.compile(r"^- \[([^\]]+)\]\s*(.+?)\s*$")
 
 
 @dataclass(frozen=True)
@@ -419,6 +421,61 @@ def summarize_changed_paths(paths: list[str], *, limit: int = 6) -> str:
     return f"{visible}, ... (+{len(paths) - limit} more)"
 
 
+def summarize_open_user_asks(asks: list[str], *, limit: int = 3) -> str:
+    if not asks:
+        return "none"
+    if len(asks) <= limit:
+        return " | ".join(asks)
+    visible = " | ".join(asks[:limit])
+    return f"{visible} | ... (+{len(asks) - limit} more)"
+
+
+def _load_explicit_user_asks(plan_path: Path) -> list[tuple[str, str]]:
+    asks: list[tuple[str, str]] = []
+    in_section = False
+    for raw_line in plan_path.read_text(encoding="utf-8").splitlines():
+        stripped = raw_line.strip()
+        if stripped.startswith("## "):
+            if in_section:
+                break
+            in_section = stripped == "## Explicit User Asks"
+            continue
+        if not in_section or not stripped:
+            continue
+        match = EXPLICIT_USER_ASK_RE.match(stripped)
+        if match is None:
+            continue
+        asks.append((match.group(1).strip().lower(), match.group(2).strip()))
+    return asks
+
+
+def evaluate_open_explicit_user_asks_guard(
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str, list[str]]:
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return False, "", []
+
+    plan_path_text = str(contract_state.get("plan_path", "")).strip()
+    if not plan_path_text:
+        return False, "", []
+
+    plan_path = repo_root / plan_path_text
+    if not plan_path.exists():
+        return True, f"Active phased plan is missing: {plan_path_text}", []
+
+    open_asks = [text for status, text in _load_explicit_user_asks(plan_path) if status == "open"]
+    if not open_asks:
+        return False, "", []
+
+    return (
+        True,
+        "Active phased plan still has open explicit user asks. Update the plan to mark them done or explicitly defer them before closure.",
+        open_asks,
+    )
+
+
 def evaluate_validation_receipt_guard(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
@@ -615,6 +672,10 @@ def build_pretool_response(
         if not should_block:
             should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
         if not should_block:
+            should_block, reason, open_asks = evaluate_open_explicit_user_asks_guard(session_id, repo_root)
+        else:
+            open_asks = []
+        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -628,9 +689,15 @@ def build_pretool_response(
                 "permissionDecision": "deny",
                 "permissionDecisionReason": banner + " " + reason,
                 "additionalContext": (
-                    "Expected receipt path: " + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
-                    + " | expected contract proof receipt: "
-                    + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                    (
+                        "Open explicit user asks: " + summarize_open_user_asks(open_asks)
+                    )
+                    if open_asks
+                    else (
+                        "Expected receipt path: " + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                        + " | expected contract proof receipt: "
+                        + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                    )
                 ),
             }
         }
@@ -717,12 +784,16 @@ def build_stop_response(
         if not should_block:
             should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
         if not should_block:
+            should_block, reason, open_asks = evaluate_open_explicit_user_asks_guard(session_id, repo_root)
+        else:
+            open_asks = []
+        if not should_block:
             return None
         return {
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
                 "decision": "block",
-                "reason": banner + " " + reason,
+                "reason": banner + " " + reason + (" Open explicit user asks: " + summarize_open_user_asks(open_asks) if open_asks else ""),
             }
         }
 

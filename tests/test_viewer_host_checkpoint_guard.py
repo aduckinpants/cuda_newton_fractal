@@ -45,6 +45,69 @@ def _snapshot(*, unstaged: dict[str, str] | None = None, staged: dict[str, str] 
     }
 
 
+def _write_active_contract_with_plan(
+    repo_root: Path,
+    *,
+    session_id: str = "session-1",
+    contract_id: str = "slice",
+    workflow_type: str = "workflow_only",
+    plan_text: str,
+) -> tuple[Path, Path]:
+    contract_path = repo_root / "docs" / "contracts" / f"{contract_id}.contract.json"
+    plan_path = repo_root / "docs" / "notes" / f"{contract_id}_PHASED_PLAN.md"
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(plan_text, encoding="utf-8")
+    contract_payload = {
+        "version": 1,
+        "contract_id": contract_id,
+        "feature_id": contract_id,
+        "workflow_type": workflow_type,
+        "plan_path": str(plan_path.relative_to(repo_root).as_posix()),
+        "allowed_mutation_scope": [
+            str(contract_path.relative_to(repo_root).as_posix()),
+            str(plan_path.relative_to(repo_root).as_posix()),
+            "tools",
+        ],
+        "required_operator_inputs": ["respect explicit user asks"],
+        "forbidden_operator_prompts": ["ignore explicit user asks"],
+        "required_defaults": {"explicit_user_asks_enforced": "required"},
+        "forbidden_defaults": {"closure_while_open_asks": "forbidden"},
+        "required_validation_commands": ["pytest"],
+        "required_acceptance_assertions": [
+            {
+                "assertion_id": "contract_schema_valid",
+                "description": "contract schema valid",
+                "evidence_kind": "validator_json",
+                "artifact_path": "artifacts/validation/contract.json",
+                "json_path": "ok",
+                "equals": True,
+            }
+        ],
+    }
+    contract_path.write_text(json.dumps(contract_payload, indent=2), encoding="utf-8")
+    state_path = contract_state.contract_state_path_for_session(session_id, repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": contract_id,
+                "feature_id": contract_id,
+                "workflow_type": workflow_type,
+                "contract_path": str(contract_path.relative_to(repo_root).as_posix()),
+                "plan_path": str(plan_path.relative_to(repo_root).as_posix()),
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": contract_payload["allowed_mutation_scope"],
+                "required_validation_commands": contract_payload["required_validation_commands"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return contract_path, plan_path
+
+
 def test_compare_snapshots_detects_same_file_content_changes() -> None:
     baseline = _snapshot(unstaged={"AGENTS.md": "hash-a"})
     current = _snapshot(unstaged={"AGENTS.md": "hash-b"})
@@ -482,7 +545,7 @@ def test_build_userprompt_response_warns_when_state_differs_from_baseline() -> N
     response = build_userprompt_response(baseline, current, "Please do the next task", "session-1")
 
     assert response is not None
-    assert response["continue"] is True
+    assert response["continue"] is False
     assert "session baseline" in response["systemMessage"]
     assert "ui_app/src/main.cpp" in response["systemMessage"]
     assert "Please do the next task" in response["systemMessage"]
@@ -506,9 +569,63 @@ def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_
     response = build_userprompt_response(baseline, current, "do another task", "session-1", tmp_path)
 
     assert response is not None
-    assert response["continue"] is True
+    assert response["continue"] is False
     assert "validation receipt" in response["systemMessage"]
     assert "def456.json" in response["systemMessage"]
+
+
+def test_build_pretool_response_denies_task_complete_when_explicit_user_asks_remain_open(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        plan_text=(
+            "# Plan\n\n"
+            "## Current Phase\n\n"
+            "Phase 1 in progress\n\n"
+            "## Phase Checklist\n\n"
+            "- [ ] Phase 1 - X\n\n"
+            "## Explicit User Asks\n\n"
+            "- [open] Fix the real bug\n"
+            "- [done] Keep scope bounded\n"
+        ),
+    )
+
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "explicit user asks" in hook["permissionDecisionReason"].lower()
+    assert "Fix the real bug" in hook["additionalContext"]
+
+
+def test_build_stop_response_blocks_when_explicit_user_asks_remain_open(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        plan_text=(
+            "# Plan\n\n"
+            "## Current Phase\n\n"
+            "Phase 1 in progress\n\n"
+            "## Phase Checklist\n\n"
+            "- [ ] Phase 1 - X\n\n"
+            "## Explicit User Asks\n\n"
+            "- [open] Land the runtime proof\n"
+        ),
+    )
+
+    response = build_stop_response(_snapshot(), _snapshot(), "session-1", tmp_path)
+
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "explicit user asks" in payload["reason"].lower()
+    assert "Land the runtime proof" in payload["reason"]
 
 
 def test_build_dirty_prompt_message_mentions_closure_flow() -> None:

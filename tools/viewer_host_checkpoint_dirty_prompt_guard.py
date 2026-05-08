@@ -72,7 +72,7 @@ def _extract_prompt_text(payload: Any) -> str:
 def build_dirty_prompt_message(changed_paths: list[str], prompt_text: str) -> str:
     prompt_excerpt = " ".join(prompt_text.split())[:240]
     message = (
-        "Repo workflow carryover warning: this prompt arrived while the repository still differs from the session baseline. "
+        "Repo workflow carryover block: this prompt arrived while the repository still differs from the session baseline. "
         "Prompt text is workflow context only; it is not permission to skip closure rules. "
         "That includes tool-generated prompts such as `Start implementation` and steering or reorientation interruptions. "
         "Close the prior slice cleanly before treating this as unrelated new work. "
@@ -89,7 +89,7 @@ def build_dirty_prompt_message(changed_paths: list[str], prompt_text: str) -> st
 def build_validation_receipt_prompt_message(prompt_text: str, repo_root: Path, head: str) -> str:
     prompt_excerpt = " ".join(prompt_text.split())[:240]
     message = (
-        "Repo workflow carryover warning: this prompt arrived after the session advanced HEAD, but the current committed state still lacks a validation receipt. "
+        "Repo workflow carryover block: this prompt arrived after the session advanced HEAD, but the current committed state still lacks a validation receipt. "
         "Prompt text is workflow context only; it does not override closure discipline. "
         "That includes tool-generated prompts such as `Start implementation` and steering or reorientation interruptions. "
         "Finish the prior slice first by recording the final validation evidence with `py -3.14 tools/viewer_host_write_validation_receipt.py ...`. "
@@ -113,7 +113,7 @@ def build_userprompt_response(
     status = evaluate_checkpoint_guard(baseline, current)
     if status.should_block:
         return {
-            "continue": True,
+            "continue": False,
             "systemMessage": banner + " " + build_dirty_prompt_message(status.changed_paths, prompt_text),
         }
 
@@ -122,7 +122,7 @@ def build_userprompt_response(
         should_block, _reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
     if should_block:
         return {
-            "continue": True,
+            "continue": False,
             "systemMessage": banner + " " + build_validation_receipt_prompt_message(prompt_text, repo_root, str(current.get("head", "")).strip()),
         }
     return {"continue": True, "systemMessage": banner}

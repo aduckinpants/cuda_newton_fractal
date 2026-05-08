@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "contract_id": "explaino_sidecar_paced_loop_stop_threshold",
+  "feature_id": "explaino_sidecar_paced_loop_stop_threshold",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_sidecar_paced_loop_stop_threshold_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/explaino_sidecar_paced_loop_stop_threshold.contract.json",
+    "docs/notes/explaino_sidecar_paced_loop_stop_threshold_PHASED_PLAN.md",
+    "ui_app/src/explaino_sidecar_controller.cpp",
+    "ui_app/src/explaino_sidecar_controller.h",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_explaino_sidecar_live.py"
+  ],
+  "required_operator_inputs": [
+    "keep the paced-loop zero-threshold failure in a separate bounded slice",
+    "repair the sidecar controller so zero-threshold policy stops before any mutation is applied",
+    "prove the fix on both focused headless and live runtime rails"
+  ],
+  "forbidden_operator_prompts": [
+    "reopen the Explaino color semantics slice instead of fixing the sidecar controller",
+    "close the slice on helper-only or note-only proof",
+    "mix unrelated sidecar UX work into this stop-threshold repair"
+  ],
+  "required_defaults": {
+    "zero_threshold_stops_before_mutation": "required",
+    "headless_and_live_runtime_proof": "required"
+  },
+  "forbidden_defaults": {
+    "first_mutation_slips_past_zero_threshold": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_sidecar_paced_loop_stop_threshold.contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "explaino_sidecar_paced_loop_stop_threshold_contract_schema_valid",
+      "description": "The paced-loop stop-threshold contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_sidecar_paced_loop_stop_threshold_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_sidecar_paced_loop_stop_threshold_plan_sync_ok",
+      "description": "The paced-loop stop-threshold phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
