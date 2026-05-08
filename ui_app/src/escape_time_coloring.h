@@ -710,7 +710,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
         return ResolveBasinSmoothEscapeSignal(residual, params);
     }
     if (params.color_pipeline.signal == ColorSignal::escape_magnitude) {
-        return ResolveEscapeMagnitudeSignal(ResolveBasinResidualMetric(residual), params);
+        return ResolveEscapeMagnitudeSignal(EscapeTimeColorAbs(z), params);
     }
     return ResolveIterationRatioSignal(iteration, maxIter);
 }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -41,11 +42,32 @@ def _run_headless_capture(*args: str) -> dict[str, object]:
     assert result.returncode == 0, result.stderr or result.stdout
     assert DIAGNOSTICS_STATE_FILE.exists(), f"missing diagnostics state file: {DIAGNOSTICS_STATE_FILE}"
     assert DIAGNOSTICS_FRAME_FILE.exists(), f"missing diagnostics frame file: {DIAGNOSTICS_FRAME_FILE}"
+    frame_bytes = DIAGNOSTICS_FRAME_FILE.read_bytes()
 
     return {
         "state": json.loads(DIAGNOSTICS_STATE_FILE.read_text(encoding="utf-8")),
-        "frame_hash": hashlib.sha256(DIAGNOSTICS_FRAME_FILE.read_bytes()).hexdigest(),
+        "frame_hash": hashlib.sha256(frame_bytes).hexdigest(),
+        "frame_bytes": frame_bytes,
     }
+
+
+def _bmp_pixel_bytes(frame_bytes: bytes) -> bytes:
+    if len(frame_bytes) < 14:
+        raise AssertionError("frame bytes are too short to be a BMP")
+    pixel_offset = int.from_bytes(frame_bytes[10:14], byteorder="little", signed=False)
+    if pixel_offset <= 0 or pixel_offset > len(frame_bytes):
+        raise AssertionError(f"invalid BMP pixel offset: {pixel_offset}")
+    return frame_bytes[pixel_offset:]
+
+
+def _mean_absolute_frame_delta(left_frame_bytes: bytes, right_frame_bytes: bytes) -> float:
+    left_pixels = _bmp_pixel_bytes(left_frame_bytes)
+    right_pixels = _bmp_pixel_bytes(right_frame_bytes)
+    assert len(left_pixels) == len(right_pixels), "captured frames must have identical pixel payload size"
+    if not left_pixels:
+        return 0.0
+    total_delta = sum(abs(left_byte - right_byte) for left_byte, right_byte in zip(left_pixels, right_pixels))
+    return total_delta / float(len(left_pixels))
 
 
 def _write_state_bundle(tmp_path: Path, state: dict[str, object]) -> Path:
@@ -162,6 +184,53 @@ def _with_explaino_root_proximity_color_state(
         }
     )
     params.update(param_updates)
+    return configured_state
+
+
+def _with_explaino_escape_magnitude_color_state(
+    state: dict[str, object], *, palette: str = "cyclic_escape", **param_updates: object
+) -> dict[str, object]:
+    configured_state = json.loads(json.dumps(state))
+    params = configured_state["params"]
+    assert isinstance(params, dict)
+    params.update(
+        {
+            "coloring_mode": "smooth_escape",
+            "color_signal": "escape_magnitude",
+            "color_shape": "identity",
+            "color_palette": palette,
+            "color_grading": "escape_default",
+            "color_escape_magnitude_scale": 1.0,
+            "color_escape_magnitude_bias": 0.0,
+            "color_heatmap_cycle_scale": 1.0,
+            "color_heatmap_saturation": 1.0,
+            "color_contrast_lift_exposure": 1.0,
+            "color_contrast_lift_saturation": 1.0,
+            "color_explaino_palette_seed_scale": 1.0,
+            "color_explaino_palette_seed_phase": 0.0,
+            "color_explaino_palette_colorfulness": 1.0,
+        }
+    )
+    params.update(param_updates)
+    return configured_state
+
+
+def _with_view_camera(state: dict[str, object], *, center_x: float, center_y: float, zoom: float) -> dict[str, object]:
+    configured_state = json.loads(json.dumps(state))
+    view = configured_state["view"]
+    assert isinstance(view, dict)
+    safe_zoom = max(1.0e-30, zoom)
+    view.update(
+        {
+            "center_x": center_x,
+            "center_y": center_y,
+            "zoom": safe_zoom,
+            "center_hp_x": center_x,
+            "center_hp_y": center_y,
+            "log2_zoom": math.log2(safe_zoom),
+            "auto_max_iter": False,
+        }
+    )
     return configured_state
 
 
@@ -499,6 +568,100 @@ def test_explaino_root_proximity_programmable_color_pipeline_changes_published_r
     assert shifted_params["color_root_proximity_scale"] == pytest.approx(6.0, abs=1e-6)
     assert proximity_shifted_capture["frame_hash"] != proximity_baseline_capture["frame_hash"], (
         "expected Explaino root_proximity scale to change the published runtime frame hash"
+    )
+
+
+def test_explaino_escape_magnitude_ignores_residual_exit_threshold_in_published_runtime(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino escape_magnitude runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "16",
+        "--height",
+        "16",
+    )
+
+    camera_state = _with_view_camera(
+        baseline_capture["state"],
+        center_x=1.0,
+        center_y=0.0,
+        zoom=2048.0,
+    )
+
+    escape_base_state = _with_explaino_escape_magnitude_color_state(
+        camera_state,
+        palette="cyclic_escape",
+        color_escape_magnitude_scale=0.25,
+        color_heatmap_cycle_scale=0.25,
+        max_iter=64,
+    )
+    escape_tight_state = _with_explaino_escape_magnitude_color_state(escape_base_state, epsilon=1.0e-6)
+    escape_tight_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "escape_magnitude_epsilon_tight", escape_tight_state)),
+        "--capture-diagnostic",
+    )
+
+    escape_loose_state = _with_explaino_escape_magnitude_color_state(escape_base_state, epsilon=1.0e-3)
+    escape_loose_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "escape_magnitude_epsilon_loose", escape_loose_state)),
+        "--capture-diagnostic",
+    )
+
+    smooth_base_state = _with_explaino_programmable_color_state(
+        camera_state,
+        palette="cyclic_escape",
+        color_smooth_escape_scale=1.0,
+        color_heatmap_cycle_scale=0.25,
+        max_iter=64,
+    )
+    smooth_tight_state = _with_explaino_programmable_color_state(
+        smooth_base_state,
+        palette="cyclic_escape",
+        epsilon=1.0e-6,
+    )
+    smooth_tight_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "smooth_escape_epsilon_tight", smooth_tight_state)),
+        "--capture-diagnostic",
+    )
+
+    smooth_loose_state = _with_explaino_programmable_color_state(
+        smooth_base_state,
+        palette="cyclic_escape",
+        epsilon=1.0e-3,
+    )
+    smooth_loose_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "smooth_escape_epsilon_loose", smooth_loose_state)),
+        "--capture-diagnostic",
+    )
+
+    tight_params = escape_tight_capture["state"]["params"]
+    loose_params = escape_loose_capture["state"]["params"]
+    assert isinstance(tight_params, dict)
+    assert isinstance(loose_params, dict)
+    assert tight_params["color_signal"] == "escape_magnitude"
+    assert loose_params["color_signal"] == "escape_magnitude"
+    assert tight_params["epsilon"] == pytest.approx(1.0e-6, abs=1.0e-12)
+    assert loose_params["epsilon"] == pytest.approx(1.0e-3, abs=1.0e-12)
+    escape_delta = _mean_absolute_frame_delta(escape_tight_capture["frame_bytes"], escape_loose_capture["frame_bytes"])
+    smooth_delta = _mean_absolute_frame_delta(smooth_tight_capture["frame_bytes"], smooth_loose_capture["frame_bytes"])
+    assert smooth_delta > 0.0, "expected smooth_escape to remain sensitive to epsilon changes in the published runtime witness"
+    assert escape_delta < smooth_delta * 0.25, (
+        "expected Explaino escape_magnitude to react far less than smooth_escape to residual-sensitive exit-threshold changes in the published runtime witness; "
+        f"escape_delta={escape_delta:.6f}, smooth_delta={smooth_delta:.6f}"
     )
 
 

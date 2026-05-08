@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_explaino_escape_magnitude_semantics",
+  "feature_id": "advanced_color_explaino_escape_magnitude_semantics",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_explaino_escape_magnitude_semantics_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_explaino_escape_magnitude_semantics_PHASED_PLAN.md",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py"
+  ],
+  "required_operator_inputs": [
+    "prove that Explaino programmable escape_magnitude currently aliases basin residual semantics instead of honest orbit magnitude",
+    "repair the runtime signal owner so Explaino escape_magnitude uses orbit magnitude again",
+    "validate the fix with both a focused native semantic regression and a published-runtime Explaino capture/hash regression",
+    "keep the slice bounded to the actual signal semantics bug"
+  ],
+  "forbidden_operator_prompts": [
+    "paper over the bug with another advanced-color window tweak",
+    "close the slice on helper-only proof that never touches the published runtime",
+    "change explicit root_basin, joy_basins, or root_proximity behavior in this slice",
+    "resume unrelated advanced-color foundation work in the same slice"
+  ],
+  "required_defaults": {
+    "escape_magnitude_means_orbit_magnitude": "required",
+    "published_runtime_proof_exists": "required",
+    "basin_only_sources_stay_unchanged": "required"
+  },
+  "forbidden_defaults": {
+    "escape_magnitude_aliases_residual": "forbidden",
+    "ui_only_bug_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_explaino_escape_magnitude_semantics.contract.json --out-json artifacts/validation/advanced_color_explaino_escape_magnitude_semantics_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_explaino_escape_magnitude_semantics_contract_schema_valid",
+      "description": "The Explaino escape_magnitude semantics contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_explaino_escape_magnitude_semantics_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_explaino_escape_magnitude_semantics_plan_sync_ok",
+      "description": "The Explaino escape_magnitude semantics phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

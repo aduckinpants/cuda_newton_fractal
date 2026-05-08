@@ -567,6 +567,27 @@ int main() {
             std::cerr << "escape_magnitude should react to its live magnitude-scale owner field\n";
             return 1;
         }
+
+        const TestColor explainoResidualTight = MakeProgrammableBasinColor<TestColor>(
+            FractalType::explaino,
+            true,
+            12,
+            100,
+            TestComplex{1.25f, -0.5f},
+            1.0e-6f,
+            params);
+        const TestColor explainoResidualLoose = MakeProgrammableBasinColor<TestColor>(
+            FractalType::explaino,
+            true,
+            12,
+            100,
+            TestComplex{1.25f, -0.5f},
+            1.0e-3f,
+            params);
+        if (!Equals(explainoResidualTight, explainoResidualLoose)) {
+            std::cerr << "Explaino escape_magnitude should sample orbit magnitude, not residual-sensitive basin exit state\n";
+            return 1;
+        }
     }
 
     {
