@@ -101,17 +101,18 @@ bool RenderSinglePixel(FractalType ft, const char* name) {
     return true;
 }
 
-bool RenderExplainoProgrammableFrame(const KernelParams& params, std::vector<uint32_t>* outPixels) {
+bool RenderProgrammableFrame(FractalType fractalType, const KernelParams& params, std::vector<uint32_t>* outPixels) {
     if (!outPixels) return false;
 
     ViewState view{};
-    view.fractal_type = FractalType::explaino;
+    view.fractal_type = fractalType;
     view.center_hp_x = 0.0;
     view.center_hp_y = 0.0;
     view.center.x = 0.0f;
     view.center.y = 0.0f;
     view.log2_zoom = 0.0;
     view.zoom = 1.0f;
+    view.explaino_phase = 0.35f;
 
     RenderSettings render{};
     render.resolution = {64, 64};
@@ -123,7 +124,7 @@ bool RenderExplainoProgrammableFrame(const KernelParams& params, std::vector<uin
     const char* error = nullptr;
     RenderStats stats{};
     if (!RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, &stats, &error)) {
-        std::cerr << "  RenderFractalCUDA FAILED for Explaino programmable color regression"
+        std::cerr << "  RenderFractalCUDA FAILED for programmable color regression"
                   << ": " << (error ? error : "unknown") << "\n";
         return false;
     }
@@ -167,11 +168,11 @@ void TestExplainoProgrammableColorPipeline() {
     params.explaino_warp_strength = 0.1f;
 
     std::vector<uint32_t> heatmapBaseline;
-    CHECK("explaino programmable heatmap baseline render", RenderExplainoProgrammableFrame(params, &heatmapBaseline));
+    CHECK("explaino programmable heatmap baseline render", RenderProgrammableFrame(FractalType::explaino, params, &heatmapBaseline));
 
     params.color_heatmap_cycle_scale = 2.0f;
     std::vector<uint32_t> heatmapShifted;
-    CHECK("explaino programmable heatmap shifted render", RenderExplainoProgrammableFrame(params, &heatmapShifted));
+    CHECK("explaino programmable heatmap shifted render", RenderProgrammableFrame(FractalType::explaino, params, &heatmapShifted));
     CHECK(
         "Explaino smooth_escape heatmap should react to heatmap cycle scale",
         CountPixelDiffs(heatmapBaseline, heatmapShifted) > 0);
@@ -179,14 +180,58 @@ void TestExplainoProgrammableColorPipeline() {
     params.color_heatmap_cycle_scale = 1.0f;
     params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
     std::vector<uint32_t> explainoPaletteBaseline;
-    CHECK("explaino programmable explaino_cmap baseline render", RenderExplainoProgrammableFrame(params, &explainoPaletteBaseline));
+    CHECK("explaino programmable explaino_cmap baseline render", RenderProgrammableFrame(FractalType::explaino, params, &explainoPaletteBaseline));
 
     params.color_explaino_palette_seed_phase = 0.25f;
     std::vector<uint32_t> explainoPaletteShifted;
-    CHECK("explaino programmable explaino_cmap shifted render", RenderExplainoProgrammableFrame(params, &explainoPaletteShifted));
+    CHECK("explaino programmable explaino_cmap shifted render", RenderProgrammableFrame(FractalType::explaino, params, &explainoPaletteShifted));
     CHECK(
         "Explaino smooth_escape explaino_cmap should react to seed phase",
         CountPixelDiffs(explainoPaletteBaseline, explainoPaletteShifted) > 0);
+}
+
+void TestExplainoRootPaletteShapeInteractivity() {
+    KernelParams params{};
+    params.max_iter = 64;
+    params.epsilon = 1e-6f;
+    params.exposure = 1.0f;
+    params.color_tint_r = 1.0f;
+    params.color_tint_g = 1.0f;
+    params.color_tint_b = 1.0f;
+    params.color_saturation = 1.0f;
+    params.color_contrast = 1.0f;
+    params.explaino_damping = 1.0f;
+    params.explaino_warp_strength = 0.1f;
+
+    params.coloring_mode = ColoringMode::root_basin;
+    params.color_pipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
+    params.color_shape = ColorPipelineShape::identity;
+    std::vector<uint32_t> rootClassicBaseline;
+    CHECK("explaino root_classic baseline render", RenderProgrammableFrame(FractalType::explaino, params, &rootClassicBaseline));
+
+    params.color_shape = ColorPipelineShape::offset_scale;
+    params.color_shape_offset = 0.4f;
+    params.color_shape_scale = 1.0f;
+    std::vector<uint32_t> rootClassicShifted;
+    CHECK("explaino root_classic shifted render", RenderProgrammableFrame(FractalType::explaino, params, &rootClassicShifted));
+    CHECK(
+        "Explaino root_classic should react to Shape edits",
+        CountPixelDiffs(rootClassicBaseline, rootClassicShifted) > 0);
+
+    params.color_shape = ColorPipelineShape::identity;
+    params.color_shape_offset = 0.0f;
+    params.coloring_mode = ColoringMode::joy_basins;
+    params.color_pipeline = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
+    std::vector<uint32_t> joyBaseline;
+    CHECK("explaino_joy joy_root baseline render", RenderProgrammableFrame(FractalType::explaino_joy, params, &joyBaseline));
+
+    params.color_shape = ColorPipelineShape::offset_scale;
+    params.color_shape_offset = 0.4f;
+    std::vector<uint32_t> joyShifted;
+    CHECK("explaino_joy joy_root shifted render", RenderProgrammableFrame(FractalType::explaino_joy, params, &joyShifted));
+    CHECK(
+        "Explaino Joy root palette should react to Shape edits",
+        CountPixelDiffs(joyBaseline, joyShifted) > 0);
 }
 
 } // namespace
@@ -194,6 +239,7 @@ void TestExplainoProgrammableColorPipeline() {
 int main() {
     TestSampleResultLayout();
     TestExplainoProgrammableColorPipeline();
+    TestExplainoRootPaletteShapeInteractivity();
 
     // Render every fractal type through the full pipeline.
     // After the K1 extraction, kernel_render must still produce valid output.

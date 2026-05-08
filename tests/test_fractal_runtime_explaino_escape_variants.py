@@ -555,6 +555,90 @@ def test_explaino_root_classic_and_joy_palettes_render_distinct_published_runtim
     )
 
 
+def test_explaino_root_palette_shape_changes_published_runtime_frames(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino root-palette shape runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+
+    explaino_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    root_classic_state = _with_explaino_root_basin_palette_state(
+        explaino_capture["state"],
+        palette="root_classic",
+    )
+    root_classic_shifted_state = _with_explaino_root_basin_palette_state(
+        explaino_capture["state"],
+        palette="root_classic",
+        color_shape="offset_scale",
+        color_shape_offset=0.4,
+        color_shape_scale=1.0,
+    )
+
+    root_classic_baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "root_classic_shape_baseline", root_classic_state)),
+        "--capture-diagnostic",
+    )
+    root_classic_shifted_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "root_classic_shape_shifted", root_classic_shifted_state)),
+        "--capture-diagnostic",
+    )
+
+    explaino_joy_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_joy",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    joy_state = _with_explaino_root_basin_palette_state(
+        explaino_joy_capture["state"],
+        palette="joy",
+    )
+    joy_shifted_state = _with_explaino_root_basin_palette_state(
+        explaino_joy_capture["state"],
+        palette="joy",
+        color_shape="offset_scale",
+        color_shape_offset=0.4,
+        color_shape_scale=1.0,
+    )
+
+    joy_baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "joy_shape_baseline", joy_state)),
+        "--capture-diagnostic",
+    )
+    joy_shifted_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "joy_shape_shifted", joy_shifted_state)),
+        "--capture-diagnostic",
+    )
+
+    assert root_classic_baseline_capture["frame_hash"] != root_classic_shifted_capture["frame_hash"], (
+        "expected Explaino root_classic Shape edits to change the published runtime frame hash"
+    )
+    assert joy_baseline_capture["frame_hash"] != joy_shifted_capture["frame_hash"], (
+        "expected Explaino Joy root-palette Shape edits to change the published runtime frame hash"
+    )
+
+
 def test_explaino_sidecar_headless_apply_step_changes_state_and_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino sidecar runtime regression is Windows-only")

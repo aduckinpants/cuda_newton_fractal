@@ -120,8 +120,10 @@ __global__ void kernel_render(
                 bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
 
                 if (nRoots > 0 || useCustomRoots) {
+                    const int rootCount = useCustomRoots ? params.explaino_root_count : nRoots;
                     int idx = useCustomRoots ? NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count)
                                              : NearestRootIndexUnitRoots(z, nRoots);
+                    idx = ResolveShapedColorPipelineRootIndex(idx, rootCount, params);
                     uchar4 base = PaletteJoyRoot<uchar4>(idx);
 
                     // Brightness: faster convergence => brighter, but never gloomy.
@@ -159,9 +161,11 @@ __global__ void kernel_render(
 
                 if (useCustomRoots) {
                     int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    idx = ResolveShapedColorPipelineRootIndex(idx, params.explaino_root_count, params);
                     color = PaletteRoot<uchar4>(idx);
                 } else if (nRoots > 0) {
                     int idx = NearestRootIndexUnitRoots(z, nRoots);
+                    idx = ResolveShapedColorPipelineRootIndex(idx, nRoots, params);
                     color = PaletteRoot<uchar4>(idx);
                 } else {
                     // Invalid: root identity not defined.

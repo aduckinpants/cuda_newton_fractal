@@ -509,6 +509,55 @@ ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(Complex z, const Ke
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootSample(
+    FractalType fractalType,
+    Complex z,
+    const KernelParams& params,
+    int* outRootIndex,
+    int* outRootCount) {
+    const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
+    const bool useCustomRoots = polynomialRootCount == 0 &&
+        IsExplainoFamily(fractalType) &&
+        params.explaino_root_count > 0;
+    if (useCustomRoots) {
+        if (outRootCount) *outRootCount = params.explaino_root_count;
+        if (outRootIndex) *outRootIndex = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+        return true;
+    }
+    if (polynomialRootCount <= 0) {
+        return false;
+    }
+    if (outRootCount) *outRootCount = polynomialRootCount;
+    if (outRootIndex) *outRootIndex = NearestRootIndexUnitRoots(z, polynomialRootCount);
+    return true;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineRootSignal(int rootIndex, int rootCount) {
+    if (rootIndex < 0 || rootCount <= 0) {
+        return 0.0f;
+    }
+    return (static_cast<float>(rootIndex) + 0.5f) / static_cast<float>(rootCount);
+}
+
+ESCAPE_TIME_COLOR_HD inline int ResolveShapedColorPipelineRootIndex(int rootIndex, int rootCount, const KernelParams& params) {
+    if (rootIndex < 0 || rootCount <= 0) {
+        return -1;
+    }
+    const float shapedSignal = ApplyColorPipelineShapeValue(
+        ResolveColorPipelineRootSignal(rootIndex, rootCount),
+        params);
+    float wrappedSignal = shapedSignal - floorf(shapedSignal);
+    if (wrappedSignal < 0.0f) {
+        wrappedSignal += 1.0f;
+    }
+    int shapedIndex = static_cast<int>(wrappedSignal * static_cast<float>(rootCount));
+    if (shapedIndex >= rootCount) {
+        shapedIndex = rootCount - 1;
+    }
+    return shapedIndex;
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
     FractalType fractalType,
     int iteration,
@@ -523,6 +572,11 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
         return ResolveAngularSignal(params.color_pipeline.signal, atan2f(z.y, z.x), params);
     }
     if (params.color_pipeline.signal == ColorSignal::root_index) {
+        int rootIndex = -1;
+        int rootCount = 0;
+        if (TryResolveColorPipelineRootSample(fractalType, z, params, &rootIndex, &rootCount)) {
+            return ResolveColorPipelineRootSignal(rootIndex, rootCount);
+        }
         return 0.0f;
     }
     return ResolveEscapeFamilySignal(
@@ -645,6 +699,11 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
         return ResolveAngularSignal(params.color_pipeline.signal, atan2f(z.y, z.x), params);
     }
     if (params.color_pipeline.signal == ColorSignal::root_index) {
+        int rootIndex = -1;
+        int rootCount = 0;
+        if (TryResolveColorPipelineRootSample(fractalType, z, params, &rootIndex, &rootCount)) {
+            return ResolveColorPipelineRootSignal(rootIndex, rootCount);
+        }
         return 0.0f;
     }
     if (params.color_pipeline.signal == ColorSignal::smooth_escape) {
