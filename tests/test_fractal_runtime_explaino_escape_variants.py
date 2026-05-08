@@ -165,6 +165,26 @@ def _with_explaino_root_proximity_color_state(
     return configured_state
 
 
+def _with_explaino_root_basin_palette_state(
+    state: dict[str, object], *, palette: str = "root_classic", **param_updates: object
+) -> dict[str, object]:
+    configured_state = json.loads(json.dumps(state))
+    params = configured_state["params"]
+    assert isinstance(params, dict)
+    coloring_mode = "joy_basins" if palette == "joy" else "root_basin"
+    params.update(
+        {
+            "coloring_mode": coloring_mode,
+            "color_signal": "root_index",
+            "color_shape": "identity",
+            "color_palette": palette,
+            "color_grading": "basin_default",
+        }
+    )
+    params.update(param_updates)
+    return configured_state
+
+
 def _numeric_state_deltas(before: dict[str, object], after: dict[str, object], *, abs_tol: float = 1.0e-7) -> list[str]:
     changed: list[str] = []
     for section_name in ("view", "params"):
@@ -479,6 +499,59 @@ def test_explaino_root_proximity_programmable_color_pipeline_changes_published_r
     assert shifted_params["color_root_proximity_scale"] == pytest.approx(6.0, abs=1e-6)
     assert proximity_shifted_capture["frame_hash"] != proximity_baseline_capture["frame_hash"], (
         "expected Explaino root_proximity scale to change the published runtime frame hash"
+    )
+
+
+def test_explaino_root_classic_and_joy_palettes_render_distinct_published_runtime_frames(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino basin palette runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    root_classic_state = _with_explaino_root_basin_palette_state(
+        baseline_capture["state"],
+        palette="root_classic",
+    )
+    root_classic_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "root_classic_palette", root_classic_state)),
+        "--capture-diagnostic",
+    )
+
+    joy_state = _with_explaino_root_basin_palette_state(
+        baseline_capture["state"],
+        palette="joy",
+    )
+    joy_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "joy_palette", joy_state)),
+        "--capture-diagnostic",
+    )
+
+    root_params = root_classic_capture["state"]["params"]
+    joy_params = joy_capture["state"]["params"]
+    assert isinstance(root_params, dict)
+    assert isinstance(joy_params, dict)
+    assert root_params["coloring_mode"] == "root_basin"
+    assert root_params["color_signal"] == "root_index"
+    assert root_params["color_palette"] == "root_classic"
+    assert joy_params["coloring_mode"] == "joy_basins"
+    assert joy_params["color_signal"] == "root_index"
+    assert joy_params["color_palette"] == "joy"
+    assert root_classic_capture["frame_hash"] != joy_capture["frame_hash"], (
+        "expected Explaino root_classic and joy basin palettes to produce distinct published runtime frame hashes"
     )
 
 

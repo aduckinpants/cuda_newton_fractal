@@ -779,14 +779,15 @@ int main() {
         const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
         if (!coreSourceCatalog ||
             coreSourceCatalog->default_function_id != std::string("smooth_escape_ramp") ||
-            coreSourceCatalog->functions.size() != 6 ||
+            coreSourceCatalog->functions.size() != 7 ||
             coreSourceCatalog->functions[0].id != "smooth_escape_ramp" ||
             coreSourceCatalog->functions[1].id != "phase_orbit" ||
             coreSourceCatalog->functions[2].id != "banded_signal" ||
             coreSourceCatalog->functions[3].id != "escape_magnitude" ||
             coreSourceCatalog->functions[4].id != "orbit_stripe" ||
-            coreSourceCatalog->functions[5].id != "root_proximity") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows\n";
+            coreSourceCatalog->functions[5].id != "root_proximity" ||
+            coreSourceCatalog->functions[6].id != "root_index") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Source catalog through runtime-real source rows, including root_index for basin tuples\n";
             return 1;
         }
         const FunctionDescriptor* coreEscapeMagnitudeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "escape_magnitude");
@@ -813,15 +814,21 @@ int main() {
             std::cerr << "Expected root_proximity to carry stable proximity-scale and proximity-bias source parameters\n";
             return 1;
         }
+        const FunctionDescriptor* coreRootIndexDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_index");
+        if (!coreRootIndexDescriptor || !coreRootIndexDescriptor->parameters.empty()) {
+            std::cerr << "Expected root_index to expose a stable parameterless basin source row\n";
+            return 1;
+        }
         const ColorPipelineLaneCatalog* corePaletteCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
         if (!corePaletteCatalog ||
             corePaletteCatalog->default_function_id != std::string("heatmap") ||
-            corePaletteCatalog->functions.size() != 4 ||
+            corePaletteCatalog->functions.size() != 5 ||
             corePaletteCatalog->functions[0].id != "heatmap" ||
             corePaletteCatalog->functions[1].id != "phase_wheel_palette" ||
             corePaletteCatalog->functions[2].id != "banded_heatmap" ||
-            corePaletteCatalog->functions[3].id != "explaino_cmap") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Palette catalog with explaino_cmap as the next runtime-real row\n";
+            corePaletteCatalog->functions[3].id != "explaino_cmap" ||
+            corePaletteCatalog->functions[4].id != "root_classic_palette") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Palette catalog with explaino_cmap and root_classic_palette as runtime-real rows\n";
             return 1;
         }
         const FunctionDescriptor* coreExplainoCmapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "explaino_cmap");
@@ -831,6 +838,11 @@ int main() {
             coreExplainoCmapDescriptor->parameters[1].path != "palette.seed_phase" ||
             coreExplainoCmapDescriptor->parameters[2].path != "palette.colorfulness") {
             std::cerr << "Expected explaino_cmap to expose stable seed-scale, seed-phase, and colorfulness parameter paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreRootClassicDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "root_classic_palette");
+        if (!coreRootClassicDescriptor || !coreRootClassicDescriptor->parameters.empty()) {
+            std::cerr << "Expected root_classic_palette to expose a stable parameterless basin palette row\n";
             return 1;
         }
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
@@ -918,6 +930,20 @@ int main() {
             std::cerr << "Expected the extracted advanced color core to bridge explaino_cmap through the smooth-escape runtime tuple\n";
             return 1;
         }
+        const ColorPipelineSelection rootClassicPipeline = {
+            ColorSignal::root_index,
+            ColorPalette::root_classic,
+            ColorGradingPreset::basin_default,
+        };
+        if (!color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(
+                rootClassicPipeline,
+                &bridgeSourceFunctionId,
+                &bridgePaletteFunctionId) ||
+            std::string(bridgeSourceFunctionId ? bridgeSourceFunctionId : "") != "root_index" ||
+            std::string(bridgePaletteFunctionId ? bridgePaletteFunctionId : "") != "root_classic_palette") {
+            std::cerr << "Expected the extracted advanced color core to bridge the default basin runtime tuple through root_index and root_classic_palette\n";
+            return 1;
+        }
 
         ViewState view{};
         KernelParams params{};
@@ -964,6 +990,20 @@ int main() {
             visibleParamIndexes[0] != 0 ||
             visibleParamIndexes[1] != 1) {
             std::cerr << "Expected the shipped smooth_escape_ramp signal to expose its runtime-backed parameter controls\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "root_index") ||
+            !windowState.lanes[0].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected the shipped Source lane to accept a parameterless root_index row once basin import is supported\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[0].rows[0], &visibleParamIndexes) ||
+            !visibleParamIndexes.empty()) {
+            std::cerr << "Expected root_index to stay parameterless in the live Source lane\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp")) {
+            std::cerr << "Expected the Source lane to switch back to smooth_escape_ramp after root_index coverage\n";
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[1].rows[0], &visibleParamIndexes) ||
@@ -1034,12 +1074,13 @@ int main() {
         }
         const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
         if (!paletteCatalog ||
-            paletteCatalog->functions.size() != 4 ||
+            paletteCatalog->functions.size() != 5 ||
             paletteCatalog->functions[0].id != "heatmap" ||
             paletteCatalog->functions[1].id != "phase_wheel_palette" ||
             paletteCatalog->functions[2].id != "banded_heatmap" ||
-            paletteCatalog->functions[3].id != "explaino_cmap") {
-            std::cerr << "Expected the shipped Palette catalog to expose heatmap, phase_wheel_palette, banded_heatmap, and explaino_cmap\n";
+            paletteCatalog->functions[3].id != "explaino_cmap" ||
+            paletteCatalog->functions[4].id != "root_classic_palette") {
+            std::cerr << "Expected the shipped Palette catalog to expose heatmap, phase_wheel_palette, banded_heatmap, explaino_cmap, and root_classic_palette\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
@@ -1056,6 +1097,20 @@ int main() {
             visibleParamIndexes[1] != 1 ||
             visibleParamIndexes[2] != 2) {
             std::cerr << "Expected explaino_cmap to expose its three live Palette controls\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "root_classic_palette") ||
+            !windowState.lanes[2].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected the shipped Palette lane to accept a parameterless root_classic_palette row once basin import is supported\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
+            !visibleParamIndexes.empty()) {
+            std::cerr << "Expected root_classic_palette to stay parameterless in the live Palette lane\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap")) {
+            std::cerr << "Expected the Palette lane to switch back to explaino_cmap before exercising schedule-style row editing\n";
             return 1;
         }
         if (!AddColorPipelineLaneRow(&windowState, 2, "explaino_cmap") ||
@@ -1257,18 +1312,26 @@ int main() {
         params.coloring_mode = ColoringMode::root_basin;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::root_basin);
         if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
-            std::cerr << "Expected unsupported live tuples to keep the schedule editor on its current draft instead of failing sync\n";
+            std::cerr << "Expected root-basin live tuples to sync once root_index and root_classic_palette are part of the advanced bridge\n";
             return 1;
         }
-        if (!windowState.live_snapshot.valid || windowState.live_snapshot.draft_import_supported) {
-            std::cerr << "Expected root-basin live tuples to stay outside the current Source / Shape / Palette bridge\n";
+        if (!windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() != 3 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 1 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "root_index" ||
+            !windowState.live_snapshot.lanes[0].rows[0].parameter_values.empty() ||
+            windowState.live_snapshot.lanes[2].rows.size() != 1 ||
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "root_classic_palette" ||
+            !windowState.live_snapshot.lanes[2].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected root-basin live tuples to import as a supported root_index plus root_classic_palette snapshot\n";
             return 1;
         }
 
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_orbit") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette") ||
             !HasColorPipelineDraftEdits(windowState)) {
-            std::cerr << "Expected the draft editor to diverge while the live runtime is outside the current bridge\n";
+            std::cerr << "Expected the draft editor to keep diverging independently from the supported live root-basin snapshot\n";
             return 1;
         }
 
@@ -1794,13 +1857,15 @@ int main() {
             params.color_pipeline.palette != ColorPalette::root_classic ||
             params.color_pipeline.grading != ColorGradingPreset::basin_default ||
             !unsupportedStartupWindowState.live_snapshot.valid ||
-            unsupportedStartupWindowState.live_snapshot.draft_import_supported ||
+            !unsupportedStartupWindowState.live_snapshot.draft_import_supported ||
             unsupportedStartupWindowState.lanes.size() != 3 ||
             unsupportedStartupWindowState.lanes[0].rows.size() != 1 ||
-            unsupportedStartupWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            unsupportedStartupWindowState.lanes[0].rows[0].function_id != "root_index" ||
             unsupportedStartupWindowState.lanes[2].rows.size() != 1 ||
-            unsupportedStartupWindowState.lanes[2].rows[0].function_id != "heatmap") {
-            std::cerr << "Expected opening the advanced color pipeline window from the default unsupported startup tuple to preserve the runtime until the user edits the draft\n";
+            unsupportedStartupWindowState.lanes[2].rows[0].function_id != "root_classic_palette" ||
+            !unsupportedStartupWindowState.lanes[0].rows[0].parameter_values.empty() ||
+            !unsupportedStartupWindowState.lanes[2].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected opening the advanced color pipeline window from the default basin tuple to import root_index and root_classic_palette as a supported live advanced row\n";
             return 1;
         }
 

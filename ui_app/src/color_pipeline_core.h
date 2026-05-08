@@ -118,6 +118,8 @@ inline const char* AdvancedColorSignalFunctionId(ColorSignal value) {
         return "orbit_stripe";
     case ColorSignal::root_proximity:
         return "root_proximity";
+    case ColorSignal::root_index:
+        return "root_index";
     }
     return nullptr;
 }
@@ -147,11 +149,17 @@ inline bool TryParseAdvancedColorSignalFunctionId(const std::string& functionId,
         if (outValue) *outValue = ColorSignal::root_proximity;
         return true;
     }
+    if (functionId == "root_index") {
+        if (outValue) *outValue = ColorSignal::root_index;
+        return true;
+    }
     return false;
 }
 
 inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
     switch (value) {
+    case ColorPalette::root_classic:
+        return "root_classic_palette";
     case ColorPalette::cyclic_escape:
         return "heatmap";
     case ColorPalette::phase_wheel:
@@ -165,6 +173,10 @@ inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
 }
 
 inline bool TryParseAdvancedColorPaletteFunctionId(const std::string& functionId, ColorPalette* outValue) {
+    if (functionId == "root_classic_palette") {
+        if (outValue) *outValue = ColorPalette::root_classic;
+        return true;
+    }
     if (functionId == "heatmap") {
         if (outValue) *outValue = ColorPalette::cyclic_escape;
         return true;
@@ -282,6 +294,11 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
                 MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
             }),
+        MakeColorPipelineFunction(
+            "root_index",
+            "Root Index",
+            "Use the resolved nearest-root classification index as the upstream basin source.",
+            {}),
     };
 }
 
@@ -320,6 +337,11 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
                 MakeColorPipelineFloatParam("palette.seed_phase", "Seed Phase", "Rotate the ExplainO seed palette without changing the upstream signal.", -1.0, 1.0, 0.01, 0.0),
                 MakeColorPipelineFloatParam("palette.colorfulness", "Colorfulness", "Blend between the raw ExplainO seed channels and the full nonlinear legacy color transform.", 0.0, 1.0, 0.01, 1.0),
             }),
+        MakeColorPipelineFunction(
+            "root_classic_palette",
+            "Root Classic Palette",
+            "Materialize basin root classification through the existing root-classic palette lineage.",
+            {}),
     };
 }
 
@@ -422,7 +444,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "banded_signal" ||
             functionId == "escape_magnitude" ||
             functionId == "orbit_stripe" ||
-            functionId == "root_proximity";
+            functionId == "root_proximity" ||
+            functionId == "root_index";
     }
     if (std::string(laneId) == "shape") {
         return functionId == "identity" ||
@@ -437,7 +460,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
         return functionId == "heatmap" ||
             functionId == "phase_wheel_palette" ||
             functionId == "banded_heatmap" ||
-            functionId == "explaino_cmap";
+            functionId == "explaino_cmap" ||
+            functionId == "root_classic_palette";
     }
     return false;
 }
@@ -556,6 +580,13 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.grading == ColorGradingPreset::escape_default) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_index &&
+        pipeline.palette == ColorPalette::root_classic &&
+        pipeline.grading == ColorGradingPreset::basin_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_index";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "root_classic_palette";
         return true;
     }
     return false;

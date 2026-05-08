@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 in progress - `explaino_cmap` is now a validated runtime-real Palette row with the open-window auto-apply regression repaired; before resuming the family-gated root palette widening, checkpoint this slice and run the requested reset/dropdown desync issues pass
+Phase 4 in progress - `root_classic_palette` is now a validated advanced row with its companion `root_index` source bridge; keep Phase 4 open and continue with `joy_root_palette` as the next family-gated Palette slice
 
 ## Phase Checklist
 
@@ -88,39 +88,34 @@ The controlling product risk is no longer just "missing functions." The current 
 - Audit: hostile review found that the first explaino_cmap runtime sampler duplicated the ExplainO wedge tween math inline instead of reusing the existing shared seed-curve seam; `ui_app/src/escape_time_coloring.h` now routes that palette through `ui_app/src/explaino_seed_curve.h` and the helper plus runtime rails stayed green on the repaired state.
 - Audit: confidence rebuild after the user's runtime report found that opening the advanced color pipeline window on an unsupported or invalid live tuple was auto-applying the starter draft on first render; `ui_app/src/color_pipeline_window.h` now requires actual in-window interaction before the end-of-frame auto-apply helper can mutate the runtime, and `ui_app/tests/test_schema_binding.cpp` now locks both the unsupported-startup-open path and the live `explaino_cmap` render path.
 - Next bounded slice: after checkpointing this explaino_cmap sub-slice, run the requested reset/dropdown desync issues pass before returning to the family-gated root palette rows.
+- Closed detour: the requested reset/dropdown desync issues pass landed separately and no longer blocks Palette widening.
+- Closed detour: the published-runtime ExplainO programmable basin bugfix landed separately, so Phase 4 can now resume without the dead-slider/runtime-truth blocker.
+- Closed detour: the viewer-first runtime-proof guardrail follow-up landed separately, so the next Palette slice should close under the stronger runtime publish plus published-runtime proof enforcement.
+- Next bounded slice: `root_classic_palette` is the first honest family-gated Palette widening step because the runtime tuple already exists as the basin default while the advanced palette catalog and bridge table still treat it as unsupported.
+- Landed: `ui_app/src/color_pipeline_core.h` now treats `root_index` as a runtime-backed Source row and `root_classic_palette` as a runtime-backed Palette row, with advanced-id parsing and bridge ids for the default basin tuple.
+- Landed: `ui_app/tests/test_schema_binding.cpp` now locks the extracted core catalogs, the shipped window catalogs, the default basin live-snapshot import, and the diverged-draft sync behavior for the `root_index` plus `root_classic_palette` bridge.
+- Landed: `tests/test_fractal_runtime_explaino_escape_variants.py` now proves the published runtime still renders distinct Explaino basin frames for `root_classic` versus `joy` palettes after the `root_classic` advanced-row widening.
+- Validated: `artifacts/root_classic_green_native_3.log` is green for `ui_app/build_tests_vsdevcmd.cmd`, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -q -k root_classic_and_joy_palettes_render_distinct_published_runtime_frames` passed against the freshly published runtime.
+- Next bounded slice: `joy_root_palette` is next because the runtime tuple already exists and the remaining family-gated advanced Palette work should keep one root-lineage row per slice.
 
 ## Notes
 
 - Expected owner files for the current slice:
-  - `KNOWN_ISSUES.md`
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase4_palette_explaino_cmap.contract.json`
+  - `docs/contracts/advanced_color_library_foundation_phase4_palette_root_classic.contract.json`
   - `ui_app/src/color_pipeline_core.h`
-  - `ui_app/src/color_pipeline_window.h`
-  - `ui_app/src/diagnostics_capture.cpp`
-  - `ui_app/src/diagnostics_state_io.cpp`
-  - `ui_app/src/enum_id_utils.h`
-  - `ui_app/src/escape_time_coloring.h`
-  - `ui_app/src/fractal_family_rules.h`
-  - `ui_app/src/fractal_derived_fields.cpp`
-  - `ui_app/src/fractal_types.h`
-  - `ui_app/tests/test_diagnostics_state_io.cpp`
-  - `ui_app/tests/test_escape_time_coloring.cpp`
-  - `ui_app/tests/test_finding_archive_actions.cpp`
-  - `ui_app/tests/test_runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
+  - `tests/test_fractal_runtime_explaino_escape_variants.py`
 - Non-goals for this slice:
-  - do not widen beyond `explaino_cmap` inside the Palette lane yet
-  - do not implement the Balance/Void grading operator yet
-  - do not implement ExplainO-BalanceVoid yet
-  - do not widen the family-gated root palettes or Grading yet
-  - do not widen into Blend or Mask/Domain yet
-  - do not add preview-only shape rows or fake bridge support
-  - do not claim to fix the newly logged reset/dropdown/smooth-escape UI bug in the same slice unless it proves to be a direct blocker
+  - do not widen `joy_root_palette` in the same slice
+  - do not add fake parameters or borrowed owner fields to `root_classic_palette`
+  - do not widen Grading, Blend, or Mask/Domain yet
+  - do not reopen the closed reset/dropdown or ExplainO runtime bugfix detours unless the new row proves they regressed again
 
 ## Resume Point
 
-Checkpoint the `explaino_cmap` sub-slice first, then run the requested reset/dropdown desync issues pass; once that bug-fix detour is closed, continue Phase 4 with the family-gated root palette rows through the same extracted registry/core, family-gating, and live-bridge seams.
+Checkpoint the `root_classic_palette` slice, then continue Phase 4 with `joy_root_palette` as the next separate bounded family-gated palette row through the same extracted catalog/bridge authority and published-runtime proof rails.
+
 
 
 

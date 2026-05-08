@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase4_palette_root_classic",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py"
+  ],
+  "required_operator_inputs": [
+    "land root_classic_palette as the first family-gated advanced Palette row after explaino_cmap",
+    "treat root_classic_palette as the existing basin/root classification palette lineage instead of a new generic escape palette",
+    "make the default basin tuple import as a supported live advanced row instead of the current unsupported-startup fallback",
+    "keep joy_root_palette as a separate later bounded slice"
+  ],
+  "forbidden_operator_prompts": [
+    "ship root_classic_palette as descriptor-only or draft-only after claiming the slice landed",
+    "invent new runtime palette math or new owner fields when the existing root_classic runtime tuple already exists",
+    "widen joy_root_palette in the same slice",
+    "treat unsupported-startup fallback behavior as acceptable for the default basin tuple once root_classic_palette is part of the advanced catalog"
+  ],
+  "required_defaults": {
+    "root_classic_palette_is_runtime_real": "required",
+    "default_basin_tuple_imports_as_supported_advanced_row": "required",
+    "joy_root_palette_remains_deferred": "required"
+  },
+  "forbidden_defaults": {
+    "descriptor_only_root_classic_palette": "forbidden",
+    "unsupported_default_root_classic_live_tuple": "forbidden",
+    "borrowed_explaino_palette_owner_fields": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase4_palette_root_classic.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase4_palette_root_classic_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase4_root_classic_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 4 root_classic contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase4_palette_root_classic_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase4_root_classic_plan_sync_ok",
+      "description": "The advanced color library foundation phased plan stays synchronized during the root_classic slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
