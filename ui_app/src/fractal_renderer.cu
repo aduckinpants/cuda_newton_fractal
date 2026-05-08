@@ -148,10 +148,10 @@ __global__ void kernel_render(
                     color = errorColor;
                 }
             }
-        } else {
+        } else if (mode == ColoringMode::root_basin) {
             if (!converged) {
                 color = {0, 0, 0, 255};
-            } else if (mode == ColoringMode::root_basin) {
+            } else {
                 int nRoots = ResolvePolynomialRootCount(params.poly_kind);
 
                 bool isExplainoFamily = IsExplainoFamily(ft);
@@ -168,22 +168,8 @@ __global__ void kernel_render(
                     color = errorColor;
                 }
             }
-
-            if (mode == ColoringMode::iteration_count) {
-                float t = (float)it / (float)maxIter;
-                unsigned char v = (unsigned char)(fminf(1.0f, t) * 255.0f);
-                color = {v, (unsigned char)(255 - v), 128, 255};
-            } else if (mode == ColoringMode::smooth_escape) {
-                float s = -logf(fmaxf(pAbs, 1e-12f));
-                float t = fminf(1.0f, s / 20.0f);
-                unsigned char r = (unsigned char)(t * 255.0f);
-                unsigned char g = (unsigned char)(sqrtf(t) * 255.0f);
-                color = {r, g, (unsigned char)(255 - r), 255};
-            } else if (mode == ColoringMode::phase) {
-                color = MakePhaseAngleColor<uchar4>(atan2f(z.y, z.x), converged, params);
-            } else if (mode == ColoringMode::iteration_bands) {
-                color = IterationBandColor<uchar4>(it, maxIter, params);
-            }
+        } else {
+            color = MakeProgrammableBasinColor<uchar4>(ft, converged, it, maxIter, z, pAbs, params);
         }
     } else {
         // Escape-time coloring.

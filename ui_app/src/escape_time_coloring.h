@@ -619,6 +619,63 @@ ESCAPE_TIME_COLOR_HD inline Color IterationBandColor(int iteration, int maxIter,
         255);
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolveBasinResidualMetric(float residual) {
+    return -logf(fmaxf(residual, 1.0e-12f));
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveBasinSmoothEscapeSignal(float residual, const KernelParams& params) {
+    return ResolveBasinResidualMetric(residual) * 0.05f *
+        EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
+    FractalType fractalType,
+    int iteration,
+    int maxIter,
+    Complex z,
+    float residual,
+    const KernelParams& params) {
+    if (params.color_pipeline.signal == ColorSignal::root_proximity) {
+        return ResolveRootProximitySignal(z, params);
+    }
+    if (params.color_pipeline.signal == ColorSignal::phase_angle ||
+        params.color_pipeline.signal == ColorSignal::orbit_stripe) {
+        return ResolveAngularSignal(params.color_pipeline.signal, atan2f(z.y, z.x), params);
+    }
+    if (params.color_pipeline.signal == ColorSignal::root_index) {
+        return 0.0f;
+    }
+    if (params.color_pipeline.signal == ColorSignal::smooth_escape) {
+        return ResolveBasinSmoothEscapeSignal(residual, params);
+    }
+    if (params.color_pipeline.signal == ColorSignal::escape_magnitude) {
+        return ResolveEscapeMagnitudeSignal(ResolveBasinResidualMetric(residual), params);
+    }
+    return ResolveIterationRatioSignal(iteration, maxIter);
+}
+
+template <typename Color, typename Complex>
+ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
+    FractalType fractalType,
+    bool converged,
+    int iteration,
+    int maxIter,
+    Complex z,
+    float residual,
+    const KernelParams& params) {
+    if (!converged &&
+        params.color_pipeline.signal != ColorSignal::root_proximity &&
+        params.color_pipeline.palette != ColorPalette::phase_wheel) {
+        return EscapeTimeColorMake<Color>(0, 0, 0, 255);
+    }
+    const float shapedSignal = ApplyColorPipelineShapeValue(
+        ResolveProgrammableBasinSignal(fractalType, iteration, maxIter, z, residual, params),
+        params);
+    return SampleProgrammableEscapeTimePalette<Color>(shapedSignal, converged, params);
+}
+
 template <typename Color, typename Complex>
 ESCAPE_TIME_COLOR_HD inline Color MakeEscapeTimeBaseColor(
     FractalType fractalType,

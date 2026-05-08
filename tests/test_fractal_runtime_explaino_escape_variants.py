@@ -113,6 +113,34 @@ def _with_sidecar_mutation_history(
     return configured_state
 
 
+def _with_explaino_programmable_color_state(
+    state: dict[str, object], *, palette: str, **param_updates: object
+) -> dict[str, object]:
+    configured_state = json.loads(json.dumps(state))
+    params = configured_state["params"]
+    assert isinstance(params, dict)
+    params.update(
+        {
+            "coloring_mode": "smooth_escape",
+            "color_signal": "smooth_escape",
+            "color_shape": "identity",
+            "color_palette": palette,
+            "color_grading": "escape_default",
+            "color_smooth_escape_scale": 1.0,
+            "color_smooth_escape_bias": 0.0,
+            "color_heatmap_cycle_scale": 1.0,
+            "color_heatmap_saturation": 1.0,
+            "color_contrast_lift_exposure": 1.0,
+            "color_contrast_lift_saturation": 1.0,
+            "color_explaino_palette_seed_scale": 1.0,
+            "color_explaino_palette_seed_phase": 0.0,
+            "color_explaino_palette_colorfulness": 1.0,
+        }
+    )
+    params.update(param_updates)
+    return configured_state
+
+
 def _numeric_state_deltas(before: dict[str, object], after: dict[str, object], *, abs_tol: float = 1.0e-7) -> list[str]:
     changed: list[str] = []
     for section_name in ("view", "params"):
@@ -296,6 +324,87 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
     assert reloaded_capture["frame_hash"] == initial_capture["frame_hash"]
     assert reloaded_state["render"]["width"] == initial_state["render"]["width"]
     assert reloaded_state["render"]["height"] == initial_state["render"]["height"]
+
+
+def test_explaino_programmable_color_pipeline_changes_published_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino programmable runtime color regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    heatmap_baseline_state = _with_explaino_programmable_color_state(
+        baseline_capture["state"],
+        palette="cyclic_escape",
+    )
+    heatmap_baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "heatmap_baseline", heatmap_baseline_state)),
+        "--capture-diagnostic",
+    )
+
+    heatmap_shifted_state = _with_explaino_programmable_color_state(
+        baseline_capture["state"],
+        palette="cyclic_escape",
+        color_heatmap_cycle_scale=2.0,
+    )
+    heatmap_shifted_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "heatmap_shifted", heatmap_shifted_state)),
+        "--capture-diagnostic",
+    )
+
+    heatmap_shifted_params = heatmap_shifted_capture["state"]["params"]
+    assert isinstance(heatmap_shifted_params, dict)
+    assert heatmap_shifted_params["coloring_mode"] == "smooth_escape"
+    assert heatmap_shifted_params["color_palette"] == "cyclic_escape"
+    assert heatmap_shifted_params["color_heatmap_cycle_scale"] == pytest.approx(2.0, abs=1e-6)
+    assert heatmap_shifted_capture["frame_hash"] != heatmap_baseline_capture["frame_hash"], (
+        "expected Explaino smooth_escape heatmap cycle scale to change the published runtime frame hash"
+    )
+
+    explaino_baseline_state = _with_explaino_programmable_color_state(
+        baseline_capture["state"],
+        palette="explaino_cmap",
+    )
+    explaino_baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_palette_baseline", explaino_baseline_state)),
+        "--capture-diagnostic",
+    )
+
+    explaino_shifted_state = _with_explaino_programmable_color_state(
+        baseline_capture["state"],
+        palette="explaino_cmap",
+        color_explaino_palette_seed_phase=0.25,
+    )
+    explaino_shifted_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_palette_shifted", explaino_shifted_state)),
+        "--capture-diagnostic",
+    )
+
+    explaino_shifted_params = explaino_shifted_capture["state"]["params"]
+    assert isinstance(explaino_shifted_params, dict)
+    assert explaino_shifted_params["coloring_mode"] == "smooth_escape"
+    assert explaino_shifted_params["color_palette"] == "explaino_cmap"
+    assert explaino_shifted_params["color_explaino_palette_seed_phase"] == pytest.approx(0.25, abs=1e-6)
+    assert explaino_shifted_capture["frame_hash"] != explaino_baseline_capture["frame_hash"], (
+        "expected Explaino smooth_escape explaino_cmap seed phase to change the published runtime frame hash"
+    )
 
 
 def test_explaino_sidecar_headless_apply_step_changes_state_and_frame(tmp_path: Path) -> None:

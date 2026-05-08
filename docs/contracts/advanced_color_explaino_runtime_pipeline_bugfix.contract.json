@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_explaino_runtime_pipeline_bugfix",
+  "feature_id": "advanced_color_explaino_runtime_pipeline_bugfix",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_explaino_runtime_pipeline_bugfix_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_explaino_runtime_pipeline_bugfix_PHASED_PLAN.md",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/tests/test_fractal_sample_device.cu",
+    "tests/test_fractal_runtime_explaino_escape_variants.py"
+  ],
+  "required_operator_inputs": [
+    "prove on the real renderer seam that Explaino supported programmable color tuples currently do not affect rendered output",
+    "repair the basin-family renderer path so supported non-basin advanced color tuples honor the programmable color pipeline",
+    "validate the fix with both a focused native regression and a published-runtime Explaino capture/hash regression",
+    "keep the detour bounded so the paused advanced-color foundation plan can resume afterward"
+  ],
+  "forbidden_operator_prompts": [
+    "paper over the bug with another color-window UI patch",
+    "close the slice on helper-only proof that never exercises the basin-family renderer path",
+    "change explicit root_basin or joy_basins semantics without a regression proving that expansion is necessary",
+    "resume unrelated advanced-color library work in the same slice"
+  ],
+  "required_defaults": {
+    "renderer_path_is_proven_before_fix": "required",
+    "supported_explaino_programmable_tuples_affect_rendered_output": "required",
+    "published_runtime_proof_exists": "required"
+  },
+  "forbidden_defaults": {
+    "ui_only_bug_closure": "forbidden",
+    "helper_only_runtime_claims": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_explaino_runtime_pipeline_bugfix.contract.json --out-json artifacts/validation/advanced_color_explaino_runtime_pipeline_bugfix_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_explaino_runtime_pipeline_bugfix_contract_schema_valid",
+      "description": "The Explaino programmable runtime pipeline bugfix contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_explaino_runtime_pipeline_bugfix_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_explaino_runtime_pipeline_bugfix_plan_sync_ok",
+      "description": "The Explaino programmable runtime pipeline bugfix phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

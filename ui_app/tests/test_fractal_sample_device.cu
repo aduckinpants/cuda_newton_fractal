@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <vector>
 
 static int gPass = 0;
 static int gFail = 0;
@@ -100,10 +101,99 @@ bool RenderSinglePixel(FractalType ft, const char* name) {
     return true;
 }
 
+bool RenderExplainoProgrammableFrame(const KernelParams& params, std::vector<uint32_t>* outPixels) {
+    if (!outPixels) return false;
+
+    ViewState view{};
+    view.fractal_type = FractalType::explaino;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.center.x = 0.0f;
+    view.center.y = 0.0f;
+    view.log2_zoom = 0.0;
+    view.zoom = 1.0f;
+
+    RenderSettings render{};
+    render.resolution = {64, 64};
+    render.block_size = 256;
+    render.device_id = 0;
+    render.sample_tier = SampleTier::fast;
+
+    outPixels->assign(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0u);
+    const char* error = nullptr;
+    RenderStats stats{};
+    if (!RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, &stats, &error)) {
+        std::cerr << "  RenderFractalCUDA FAILED for Explaino programmable color regression"
+                  << ": " << (error ? error : "unknown") << "\n";
+        return false;
+    }
+    return true;
+}
+
+int CountPixelDiffs(const std::vector<uint32_t>& left, const std::vector<uint32_t>& right) {
+    if (left.size() != right.size()) return -1;
+    int diffs = 0;
+    for (size_t i = 0; i < left.size(); ++i) {
+        if (left[i] != right[i]) {
+            ++diffs;
+        }
+    }
+    return diffs;
+}
+
+void TestExplainoProgrammableColorPipeline() {
+    KernelParams params{};
+    params.max_iter = 64;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    params.color_shape = ColorPipelineShape::identity;
+    params.exposure = 1.0f;
+    params.color_tint_r = 1.0f;
+    params.color_tint_g = 1.0f;
+    params.color_tint_b = 1.0f;
+    params.color_saturation = 1.0f;
+    params.color_contrast = 1.0f;
+    params.color_smooth_escape_scale = 1.0f;
+    params.color_smooth_escape_bias = 0.0f;
+    params.color_heatmap_cycle_scale = 1.0f;
+    params.color_heatmap_saturation = 1.0f;
+    params.color_contrast_lift_exposure = 1.0f;
+    params.color_contrast_lift_saturation = 1.0f;
+    params.color_explaino_palette_seed_scale = 1.0f;
+    params.color_explaino_palette_seed_phase = 0.0f;
+    params.color_explaino_palette_colorfulness = 1.0f;
+    params.explaino_damping = 1.0f;
+    params.explaino_warp_strength = 0.1f;
+
+    std::vector<uint32_t> heatmapBaseline;
+    CHECK("explaino programmable heatmap baseline render", RenderExplainoProgrammableFrame(params, &heatmapBaseline));
+
+    params.color_heatmap_cycle_scale = 2.0f;
+    std::vector<uint32_t> heatmapShifted;
+    CHECK("explaino programmable heatmap shifted render", RenderExplainoProgrammableFrame(params, &heatmapShifted));
+    CHECK(
+        "Explaino smooth_escape heatmap should react to heatmap cycle scale",
+        CountPixelDiffs(heatmapBaseline, heatmapShifted) > 0);
+
+    params.color_heatmap_cycle_scale = 1.0f;
+    params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+    std::vector<uint32_t> explainoPaletteBaseline;
+    CHECK("explaino programmable explaino_cmap baseline render", RenderExplainoProgrammableFrame(params, &explainoPaletteBaseline));
+
+    params.color_explaino_palette_seed_phase = 0.25f;
+    std::vector<uint32_t> explainoPaletteShifted;
+    CHECK("explaino programmable explaino_cmap shifted render", RenderExplainoProgrammableFrame(params, &explainoPaletteShifted));
+    CHECK(
+        "Explaino smooth_escape explaino_cmap should react to seed phase",
+        CountPixelDiffs(explainoPaletteBaseline, explainoPaletteShifted) > 0);
+}
+
 } // namespace
 
 int main() {
     TestSampleResultLayout();
+    TestExplainoProgrammableColorPipeline();
 
     // Render every fractal type through the full pipeline.
     // After the K1 extraction, kernel_render must still produce valid output.
