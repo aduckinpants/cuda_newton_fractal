@@ -41,6 +41,8 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_checkpoint_guard"
 RECEIPT_DIR = REPO_ROOT / "artifacts" / "hooks" / "viewer_host_validation_receipts"
+RECOVERY_DIRNAME = "recovery"
+ACTIVE_RECOVERY_ADOPTION_FILENAME = "active_recovery_adoption.json"
 TASK_COMPLETE_TOOL = "task_complete"
 DELETED_MARKER = "__DELETED__"
 EXPLICIT_USER_ASK_RE = re.compile(r"^- \[([^\]]+)\]\s*(.+?)\s*$")
@@ -51,6 +53,16 @@ class GuardStatus:
     should_block: bool
     reason: str
     changed_paths: list[str]
+
+
+@dataclass(frozen=True)
+class SessionBaselineResolution:
+    baseline: dict[str, Any] | None
+    status: str
+    changed_paths: list[str]
+    baseline_path: str | None = None
+    recovery_report_path: str | None = None
+    recovery_adoption_path: str | None = None
 
 
 def _run_git(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -110,6 +122,10 @@ def _index_fingerprint(repo_root: Path, relative_path: str) -> str:
 
 def _current_head(repo_root: Path) -> str:
     return _git_output(repo_root, "rev-parse", "HEAD").strip()
+
+
+def _current_branch(repo_root: Path) -> str:
+    return _git_output(repo_root, "rev-parse", "--abbrev-ref", "HEAD").strip()
 
 
 def _find_values(obj: Any, key: str) -> list[Any]:
@@ -211,6 +227,7 @@ def _is_allowed_raw_shell_command(command_text: str) -> bool:
         "py -3.14 tools\\viewer_host_begin_work_slice.py",
         "py -3.14 tools\\viewer_host_prepare_slice.py",
         "py -3.14 tools\\viewer_host_revise_contract.py",
+        "py -3.14 tools\\viewer_host_recover_crash_state.py",
         "py -3.14 tools\\viewer_host_assert_phased_plan_sync.py",
         "py -3.14 tools\\viewer_host_validate_slice_contract.py",
         "py -3.14 tools\\viewer_host_validate_fits_contract.py",
@@ -280,6 +297,68 @@ def capture_repo_snapshot(repo_root: Path = REPO_ROOT) -> dict[str, Any]:
     }
     snapshot["clean"] = snapshot_is_clean(snapshot)
     return snapshot
+
+
+def recovery_dir(repo_root: Path = REPO_ROOT) -> Path:
+    return repo_root / "artifacts" / "hooks" / "viewer_host_checkpoint_guard" / RECOVERY_DIRNAME
+
+
+def recovery_adoption_path(repo_root: Path = REPO_ROOT) -> Path:
+    return recovery_dir(repo_root) / ACTIVE_RECOVERY_ADOPTION_FILENAME
+
+
+def snapshot_digest(snapshot: dict[str, Any]) -> str:
+    return hashlib.sha256(
+        json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def recovery_report_path_for_snapshot(snapshot: dict[str, Any], repo_root: Path = REPO_ROOT) -> Path:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return recovery_dir(repo_root) / f"recovery_{stamp}_{snapshot_digest(snapshot)[:12]}.json"
+
+
+def load_active_recovery_adoption(repo_root: Path = REPO_ROOT) -> dict[str, Any] | None:
+    path = recovery_adoption_path(repo_root)
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def recovery_adoption_matches_snapshot(adoption_payload: dict[str, Any], snapshot: dict[str, Any]) -> bool:
+    expected = str(adoption_payload.get("snapshot_digest", "")).strip()
+    return bool(expected) and expected == snapshot_digest(snapshot)
+
+
+def consume_active_recovery_adoption(repo_root: Path = REPO_ROOT) -> None:
+    path = recovery_adoption_path(repo_root)
+    if path.exists():
+        path.unlink()
+
+
+def write_active_recovery_adoption(
+    snapshot: dict[str, Any],
+    *,
+    report_path: Path,
+    summary: str,
+    reason: str,
+    repo_root: Path = REPO_ROOT,
+) -> Path:
+    path = recovery_adoption_path(repo_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    changed_paths = compare_snapshots({"unstaged": {}, "staged": {}, "untracked": {}}, snapshot)
+    payload = {
+        "repo_root": repo_root.as_posix(),
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "summary": summary,
+        "reason": reason,
+        "head": str(snapshot.get("head", "")).strip(),
+        "snapshot_digest": snapshot_digest(snapshot),
+        "changed_paths": changed_paths,
+        "report_path": report_path.relative_to(repo_root).as_posix(),
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def compare_snapshots(baseline: dict[str, Any], current: dict[str, Any]) -> list[str]:
@@ -896,33 +975,115 @@ def load_session_baseline(session_id: str, repo_root: Path = REPO_ROOT) -> dict[
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def recovery_helper_command() -> str:
+    return 'py -3.14 tools/viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state'
+
+
+def resolve_session_baseline(
+    session_id: str,
+    current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
+) -> SessionBaselineResolution:
+    baseline = load_session_baseline(session_id, repo_root)
+    if baseline is not None:
+        return SessionBaselineResolution(
+            baseline=baseline,
+            status="existing",
+            changed_paths=compare_snapshots({"unstaged": {}, "staged": {}, "untracked": {}}, baseline),
+            baseline_path=state_path_for_session(session_id, repo_root).relative_to(repo_root).as_posix(),
+        )
+
+    if snapshot_is_clean(current):
+        path = write_session_baseline(session_id, current, repo_root)
+        return SessionBaselineResolution(
+            baseline=current,
+            status="bootstrapped_clean",
+            changed_paths=[],
+            baseline_path=path.relative_to(repo_root).as_posix(),
+        )
+
+    adoption_payload = load_active_recovery_adoption(repo_root)
+    changed_paths = compare_snapshots({"unstaged": {}, "staged": {}, "untracked": {}}, current)
+    if adoption_payload is None:
+        return SessionBaselineResolution(
+            baseline=None,
+            status="adoption_required",
+            changed_paths=changed_paths,
+        )
+
+    adoption_path_text = recovery_adoption_path(repo_root).relative_to(repo_root).as_posix()
+    report_path_text = str(adoption_payload.get("report_path", "")).strip() or None
+    if not recovery_adoption_matches_snapshot(adoption_payload, current):
+        return SessionBaselineResolution(
+            baseline=None,
+            status="adoption_stale",
+            changed_paths=changed_paths,
+            recovery_report_path=report_path_text,
+            recovery_adoption_path=adoption_path_text,
+        )
+
+    path = write_session_baseline(session_id, current, repo_root)
+    consume_active_recovery_adoption(repo_root)
+    return SessionBaselineResolution(
+        baseline=current,
+        status="adopted_dirty",
+        changed_paths=changed_paths,
+        baseline_path=path.relative_to(repo_root).as_posix(),
+        recovery_report_path=report_path_text,
+        recovery_adoption_path=adoption_path_text,
+    )
+
+
 def _bootstrap_missing_baseline_if_clean(
     session_id: str,
     current: dict[str, Any],
     repo_root: Path,
 ) -> dict[str, Any] | None:
-    baseline = load_session_baseline(session_id, repo_root)
-    if baseline is not None:
-        return baseline
-    if not snapshot_is_clean(current):
-        return None
-    write_session_baseline(session_id, current, repo_root)
-    return current
+    return resolve_session_baseline(session_id, current, repo_root).baseline
 
 
 def _session_start_response(session_id: str, repo_root: Path) -> dict[str, Any]:
     snapshot = capture_repo_snapshot(repo_root)
-    path = write_session_baseline(session_id, snapshot, repo_root)
     active_contract = load_active_contract_state(GLOBAL_CONTRACT_SESSION_ID, repo_root)
+    resolution = resolve_session_baseline(session_id, snapshot, repo_root)
+    if resolution.status in {"existing", "bootstrapped_clean", "adopted_dirty"}:
+        detail = (
+            build_strict_banner(active_contract)
+            + " viewer_host_checkpoint_guard baseline captured at "
+            + str(resolution.baseline_path)
+            + f" | clean={snapshot_is_clean(snapshot)} | head={snapshot.get('head', '')[:12]}"
+        )
+        if resolution.status == "adopted_dirty":
+            detail += (
+                " | crash recovery resumed the stranded dirty slice"
+                + (
+                    f" | recovery_report={resolution.recovery_report_path}"
+                    if resolution.recovery_report_path
+                    else ""
+                )
+            )
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "SessionStart",
+                "additionalContext": detail,
+            }
+        }
+
+    detail = (
+        build_strict_banner(active_contract)
+        + " viewer_host_checkpoint_guard did not capture a dirty-session baseline automatically. "
+        + "Run "
+        + recovery_helper_command()
+        + " and retry once the recovery adoption artifact is in place. "
+        + "Changed paths: "
+        + summarize_changed_paths(resolution.changed_paths)
+    )
+    if resolution.status == "adoption_stale":
+        detail += " Existing recovery adoption artifact does not match the current dirty snapshot; rerun the recovery helper."
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": (
-                build_strict_banner(active_contract)
-                + " viewer_host_checkpoint_guard baseline captured at "
-                + path.relative_to(repo_root).as_posix()
-                + f" | clean={snapshot_is_clean(snapshot)} | head={snapshot.get('head', '')[:12]}"
-            ),
+            "additionalContext": detail,
         }
     }
 

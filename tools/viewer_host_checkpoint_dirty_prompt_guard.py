@@ -16,7 +16,8 @@ try:
         evaluate_contract_proof_receipt_guard,
         evaluate_validation_receipt_guard,
         load_active_contract_state,
-        load_session_baseline,
+        recovery_helper_command,
+        resolve_session_baseline,
         summarize_changed_paths,
         validation_receipt_path,
     )
@@ -31,7 +32,8 @@ except ModuleNotFoundError:
         evaluate_contract_proof_receipt_guard,
         evaluate_validation_receipt_guard,
         load_active_contract_state,
-        load_session_baseline,
+        recovery_helper_command,
+        resolve_session_baseline,
         summarize_changed_paths,
         validation_receipt_path,
     )
@@ -102,14 +104,88 @@ def build_validation_receipt_prompt_message(prompt_text: str, repo_root: Path, h
     return message
 
 
+def build_recovery_required_prompt_message(changed_paths: list[str], prompt_text: str) -> str:
+    prompt_excerpt = " ".join(prompt_text.split())[:240]
+    message = (
+        "Crash recovery required: the repository is dirty, but this session has no checkpoint baseline. "
+        "This usually means VS Code crashed, the host rolled back, or the chat session changed mid-slice. "
+        "Do not treat this as a fresh session. Run "
+        + recovery_helper_command()
+        + ", inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, and retry the prompt only after explicit recovery adoption. "
+        "Changed paths: "
+        + summarize_changed_paths(changed_paths)
+        + "."
+    )
+    if prompt_excerpt:
+        message += " Prompt excerpt: " + prompt_excerpt
+    return message
+
+
+def build_recovery_mismatch_prompt_message(changed_paths: list[str], prompt_text: str) -> str:
+    prompt_excerpt = " ".join(prompt_text.split())[:240]
+    message = (
+        "Crash recovery required: a recovery adoption artifact exists, but it no longer matches the current dirty snapshot. "
+        "Rerun "
+        + recovery_helper_command()
+        + " so the repo records the current stranded state before resuming. "
+        "Changed paths: "
+        + summarize_changed_paths(changed_paths)
+        + "."
+    )
+    if prompt_excerpt:
+        message += " Prompt excerpt: " + prompt_excerpt
+    return message
+
+
+def build_recovery_resumed_prompt_message(prompt_text: str, report_path: str | None) -> str:
+    prompt_excerpt = " ".join(prompt_text.split())[:240]
+    message = (
+        "Crash recovery resumed this stranded dirty slice through explicit recovery adoption. "
+        "Continue the existing slice and close its checkpoint debt before treating any new prompt as unrelated work."
+    )
+    if report_path:
+        message += " Recovery report: " + report_path + "."
+    if prompt_excerpt:
+        message += " Prompt excerpt: " + prompt_excerpt
+    return message
+
+
 def build_userprompt_response(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
     prompt_text: str,
     session_id: str,
     repo_root: Path = REPO_ROOT,
+    *,
+    baseline_resolution: Any | None = None,
 ) -> dict[str, Any] | None:
     banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
+    resolution_status = "" if baseline_resolution is None else str(getattr(baseline_resolution, "status", ""))
+    if resolution_status == "adopted_dirty":
+        return {
+            "continue": True,
+            "systemMessage": banner + " " + build_recovery_resumed_prompt_message(
+                prompt_text,
+                str(getattr(baseline_resolution, "recovery_report_path", "")).strip() or None,
+            ),
+        }
+
+    if baseline is None and not bool(current.get("clean", False)):
+        changed_paths = (
+            evaluate_checkpoint_guard(None, current).changed_paths
+            if baseline_resolution is None
+            else list(getattr(baseline_resolution, "changed_paths", []))
+        )
+        if resolution_status == "adoption_stale":
+            return {
+                "continue": False,
+                "systemMessage": banner + " " + build_recovery_mismatch_prompt_message(changed_paths, prompt_text),
+            }
+        return {
+            "continue": False,
+            "systemMessage": banner + " " + build_recovery_required_prompt_message(changed_paths, prompt_text),
+        }
+
     status = evaluate_checkpoint_guard(baseline, current)
     if status.should_block:
         return {
@@ -141,8 +217,15 @@ def main() -> int:
         session_id = str(payload.get("sessionId", "unknown_session")) if isinstance(payload, dict) else "unknown_session"
         repo_root = _resolve_repo_root(payload if isinstance(payload, dict) else {})
         current = capture_repo_snapshot(repo_root)
-        baseline = load_session_baseline(session_id, repo_root)
-        response = build_userprompt_response(baseline, current, _extract_prompt_text(payload), session_id, repo_root)
+        baseline_resolution = resolve_session_baseline(session_id, current, repo_root)
+        response = build_userprompt_response(
+            baseline_resolution.baseline,
+            current,
+            _extract_prompt_text(payload),
+            session_id,
+            repo_root,
+            baseline_resolution=baseline_resolution,
+        )
         print(json.dumps(response))
         return 0
     except Exception as exc:

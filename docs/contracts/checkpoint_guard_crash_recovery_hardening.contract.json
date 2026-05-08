@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "contract_id": "checkpoint_guard_crash_recovery_hardening",
+  "feature_id": "checkpoint_guard_crash_recovery_hardening",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/checkpoint_guard_crash_recovery_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/checkpoint_guard_crash_recovery_hardening.contract.json",
+    "docs/notes/checkpoint_guard_crash_recovery_hardening_PHASED_PLAN.md",
+    "docs/notes/checkpoint_guard_crash_recovery_playbook.md",
+    "tools/viewer_host_checkpoint_guard.py",
+    "tools/viewer_host_checkpoint_dirty_prompt_guard.py",
+    "tools/viewer_host_checkpoint_slice.py",
+    "tools/viewer_host_recover_crash_state.py",
+    "tools/viewer_host_session_bootstrap.py",
+    "tests/test_viewer_host_checkpoint_guard.py",
+    "tests/test_viewer_host_recover_crash_state.py",
+    "tests/test_agent_workflow_tools.py",
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md",
+    "AGENT_TERMINAL_PROTOCOL.md",
+    ".github/copilot-instructions.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "preserve fail-closed workflow policy while replacing the crash dead-end with an explicit recovery lane",
+    "add a repo-local recovery helper for dirty repo plus missing session baseline after a crash or rollback",
+    "require explicit operator adoption before a stranded dirty snapshot can resume in a fresh session",
+    "leave durable repo-local documentation that explains diagnosis, recovery, and the portable pattern for similar repos",
+    "allow a clean-side checkpoint commit to scope itself to recovery files only when unrelated dirty carryover is still present"
+  ],
+  "forbidden_operator_prompts": [
+    "add a broad ignore-hooks or bypass-recovery switch",
+    "auto-adopt dirty crash state without explicit operator action",
+    "treat a crash-resumed dirty session as a fresh clean session",
+    "weaken PreToolUse, PostToolUse, or Stop fail-closed behavior"
+  ],
+  "required_defaults": {
+    "recovery_reports_are_durable": "required",
+    "dirty_state_adoption_is_explicit": "required",
+    "stale_recovery_adoption_blocks_resume": "required",
+    "workflow_docs_explain_crash_safe_resume": "required",
+    "checkpoint_wrapper_can_scope_commit_paths": "required"
+  },
+  "forbidden_defaults": {
+    "warning_only_crash_recovery": "forbidden",
+    "silent_dirty_resume": "forbidden",
+    "indefinite_reuse_of_recovery_adoption": "forbidden",
+    "checkpoint_wrapper_stages_unrelated_dirty_paths": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_recover_crash_state.py -q --junitxml artifacts/pytest/test_viewer_host_recover_crash_state.junit.xml",
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/checkpoint_guard_crash_recovery_hardening.contract.json --out-json artifacts/validation/checkpoint_guard_crash_recovery_hardening_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "checkpoint_guard_crash_recovery_hardening_contract_schema_valid",
+      "description": "The crash-recovery hardening contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/checkpoint_guard_crash_recovery_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "checkpoint_guard_crash_recovery_hardening_plan_sync_ok",
+      "description": "The crash-recovery hardening phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

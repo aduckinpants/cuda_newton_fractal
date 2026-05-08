@@ -190,6 +190,7 @@ def build_bootstrap_state(*, py: str = sys.executable, run_audit: bool, tail_han
             "append_handoff_legacy_pending": "py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> \"<message>\"",
             "assert_plan_sync": "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
             "prepare_slice": "py -3.14 tools/viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>",
+            "crash_recovery": "py -3.14 tools/viewer_host_recover_crash_state.py --summary \"<operator note>\" --adopt-current-state",
             "profiles": "Use the VS Code tasks under verify: profile ...; bootstrap now lists each profile's steps and artifact paths.",
         },
     }

@@ -108,6 +108,16 @@ def _write_active_contract_with_plan(
     return contract_path, plan_path
 
 
+def _init_git_repo(repo_root: Path) -> None:
+    repo_root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.email", "agent@example.com"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.name", "Agent"], cwd=repo_root, check=True, capture_output=True, text=True)
+    (repo_root / "README.md").write_text("hello\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+
 def test_compare_snapshots_detects_same_file_content_changes() -> None:
     baseline = _snapshot(unstaged={"AGENTS.md": "hash-a"})
     current = _snapshot(unstaged={"AGENTS.md": "hash-b"})
@@ -574,6 +584,77 @@ def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_
     assert "def456.json" in response["systemMessage"]
 
 
+def test_build_userprompt_response_requires_explicit_crash_recovery_when_dirty_baseline_missing() -> None:
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+    resolution = checkpoint_guard.SessionBaselineResolution(
+        baseline=None,
+        status="adoption_required",
+        changed_paths=["ui_app/src/main.cpp"],
+    )
+
+    response = build_userprompt_response(
+        None,
+        current,
+        "Please keep going",
+        "session-1",
+        baseline_resolution=resolution,
+    )
+
+    assert response is not None
+    assert response["continue"] is False
+    assert "Crash recovery required" in response["systemMessage"]
+    assert "viewer_host_recover_crash_state.py" in response["systemMessage"]
+    assert "ui_app/src/main.cpp" in response["systemMessage"]
+
+
+def test_build_userprompt_response_requires_rerun_when_recovery_adoption_is_stale() -> None:
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+    resolution = checkpoint_guard.SessionBaselineResolution(
+        baseline=None,
+        status="adoption_stale",
+        changed_paths=["ui_app/src/main.cpp"],
+        recovery_report_path="artifacts/hooks/viewer_host_checkpoint_guard/recovery/recovery_20260508T210000Z_deadbeef.json",
+        recovery_adoption_path="artifacts/hooks/viewer_host_checkpoint_guard/recovery/active_recovery_adoption.json",
+    )
+
+    response = build_userprompt_response(
+        None,
+        current,
+        "Please keep going",
+        "session-1",
+        baseline_resolution=resolution,
+    )
+
+    assert response is not None
+    assert response["continue"] is False
+    assert "no longer matches the current dirty snapshot" in response["systemMessage"]
+    assert "viewer_host_recover_crash_state.py" in response["systemMessage"]
+
+
+def test_build_userprompt_response_resumes_after_dirty_recovery_adoption() -> None:
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+    resolution = checkpoint_guard.SessionBaselineResolution(
+        baseline=current,
+        status="adopted_dirty",
+        changed_paths=["ui_app/src/main.cpp"],
+        recovery_report_path="artifacts/hooks/viewer_host_checkpoint_guard/recovery/recovery_20260508T210000Z_deadbeef.json",
+    )
+
+    response = build_userprompt_response(
+        current,
+        current,
+        "Continue this slice",
+        "session-1",
+        baseline_resolution=resolution,
+    )
+
+    assert response is not None
+    assert response["continue"] is True
+    assert "Crash recovery resumed" in response["systemMessage"]
+    assert "Continue this slice" in response["systemMessage"]
+    assert "recovery_20260508T210000Z_deadbeef.json" in response["systemMessage"]
+
+
 def test_build_pretool_response_denies_task_complete_when_explicit_user_asks_remain_open(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
@@ -693,8 +774,44 @@ def test_build_dirty_prompt_message_mentions_closure_flow() -> None:
     assert "HANDOFF_LOG.md" in text
     assert "workflow context only" in text
     assert "Start implementation" in text
-    assert "tool-generated prompts" in text
-    assert "validation receipt" in text
+
+
+def test_session_start_does_not_auto_capture_dirty_baseline_without_recovery_adoption(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / "README.md").write_text("changed\n", encoding="utf-8")
+
+    response = checkpoint_guard._session_start_response("session-1", repo_root)
+
+    payload = response["hookSpecificOutput"]
+    assert "did not capture a dirty-session baseline automatically" in payload["additionalContext"]
+    assert "viewer_host_recover_crash_state.py" in payload["additionalContext"]
+    assert not checkpoint_guard.state_path_for_session("session-1", repo_root).exists()
+
+
+def test_resolve_session_baseline_adopts_dirty_snapshot_and_consumes_recovery_artifact(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / "README.md").write_text("changed\n", encoding="utf-8")
+    snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    report_path = checkpoint_guard.recovery_report_path_for_snapshot(snapshot, repo_root)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text('{"ok": true}\n', encoding="utf-8")
+    checkpoint_guard.write_active_recovery_adoption(
+        snapshot,
+        report_path=report_path,
+        summary="host crashed",
+        reason="dirty baseline missing",
+        repo_root=repo_root,
+    )
+
+    resolution = checkpoint_guard.resolve_session_baseline("session-1", snapshot, repo_root)
+
+    assert resolution.status == "adopted_dirty"
+    assert resolution.baseline == snapshot
+    assert checkpoint_guard.state_path_for_session("session-1", repo_root).exists()
+    assert report_path.exists()
+    assert not checkpoint_guard.recovery_adoption_path(repo_root).exists()
 
 
 def test_build_validation_receipt_prompt_message_mentions_expected_receipt_path(tmp_path: Path) -> None:

@@ -282,6 +282,9 @@ def test_bootstrap_surface_advertises_checkpoint_id_handoff_flow() -> None:
     assert state["next_commands"]["prepare_slice"] == (
         'py -3.14 tools/viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>'
     )
+    assert state["next_commands"]["crash_recovery"] == (
+        'py -3.14 tools/viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state'
+    )
     assert state["next_commands"]["append_handoff_legacy_pending"] == (
         'py -3.14 tools/viewer_host_append_handoff.py --resolve-last-pending --score <n> "<message>"'
     )
@@ -334,13 +337,16 @@ def test_core_workflow_docs_advertise_session_start_checkpoint_flow() -> None:
         REPO_ROOT / "AGENTS.md": [
             "append a session-start breadcrumb first",
             'py -3.14 tools\\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"',
+            'py -3.14 tools\\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state',
         ],
         REPO_ROOT / "AGENT_WORKING_PROTOCOL.md": [
             "session-start breadcrumb",
             'py -3.14 tools\\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"',
+            'py -3.14 tools\\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state',
         ],
         REPO_ROOT / ".github" / "copilot-instructions.md": [
             "append a session-start breadcrumb first",
+            'py -3.14 tools\\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state',
         ],
         REPO_ROOT / "docs" / "PHASED_PLAN_CONTINUITY_PROTOCOL.md": [
             "session-start slice breadcrumb",
@@ -488,6 +494,14 @@ def test_checkpoint_slice_commit_refuses_pending_hostile_audit(monkeypatch, tmp_
         lambda _session_id, _repo_root: ({"plan_path": "docs/notes/plan_PHASED_PLAN.md"}, ""),
     )
     monkeypatch.setattr("tools.viewer_host_checkpoint_slice.build_handoff_append_commands", lambda **_kwargs: [])
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.file_path_is_in_contract_scope",
+        lambda path, _contract_state, _repo_root: path in {
+            "tools/viewer_host_recover_crash_state.py",
+            "docs/notes/checkpoint_guard_crash_recovery_playbook.md",
+            "HANDOFF_LOG.md",
+        },
+    )
 
     commands: list[list[str]] = []
 
@@ -518,6 +532,227 @@ def test_checkpoint_slice_commit_refuses_pending_hostile_audit(monkeypatch, tmp_
 
     assert rc != 0
     assert not any(command[:2] == ["git", "commit"] for command in commands)
+
+
+def test_checkpoint_slice_commit_scopes_git_add_and_commit_to_selected_paths(monkeypatch, tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Current Phase\n\n"
+        "Phase 1 in progress\n\n"
+        "## Phase Checklist\n\n"
+        "- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.validate_locked_contract_state",
+        lambda _session_id, _repo_root: ({"plan_path": "docs/notes/plan_PHASED_PLAN.md"}, ""),
+    )
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.build_handoff_append_commands", lambda **_kwargs: [])
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.file_path_is_in_contract_scope",
+        lambda path, _contract_state, _repo_root: path in {
+            "tools/viewer_host_recover_crash_state.py",
+            "docs/notes/checkpoint_guard_crash_recovery_playbook.md",
+            "HANDOFF_LOG.md",
+        },
+    )
+
+    commands: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    def fake_run(command: list[str], cwd: str, check: bool = False):
+        commands.append(command)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.subprocess.run", fake_run)
+
+    rc = checkpoint_slice_main([
+        "commit",
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+        "--checkpoint-id",
+        "ck:test1234",
+        "--score",
+        "95",
+        "--handoff-message",
+        "test handoff",
+        "--commit-message",
+        "ck:test1234 test",
+        "--path",
+        "tools/viewer_host_recover_crash_state.py",
+        "--path",
+        "docs/notes/checkpoint_guard_crash_recovery_playbook.md",
+    ])
+
+    assert rc == 0
+    assert [command for command in commands if command[:2] == ["git", "add"]] == [
+        [
+            "git",
+            "add",
+            "--",
+            "tools/viewer_host_recover_crash_state.py",
+            "docs/notes/checkpoint_guard_crash_recovery_playbook.md",
+            "HANDOFF_LOG.md",
+        ]
+    ]
+    assert [command for command in commands if command[:2] == ["git", "commit"]] == [
+        [
+            "git",
+            "commit",
+            "-m",
+            "ck:test1234 test",
+            "--",
+            "tools/viewer_host_recover_crash_state.py",
+            "docs/notes/checkpoint_guard_crash_recovery_playbook.md",
+            "HANDOFF_LOG.md",
+        ]
+    ]
+    assert not any(command == ["git", "add", "-A"] for command in commands)
+
+
+def test_checkpoint_slice_commit_auto_includes_handoff_log_in_scoped_paths(monkeypatch, tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Current Phase\n\n"
+        "Phase 1 in progress\n\n"
+        "## Phase Checklist\n\n"
+        "- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.validate_locked_contract_state",
+        lambda _session_id, _repo_root: ({"plan_path": "docs/notes/plan_PHASED_PLAN.md"}, ""),
+    )
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.build_handoff_append_commands", lambda **_kwargs: [])
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.file_path_is_in_contract_scope",
+        lambda path, _contract_state, _repo_root: path in {
+            "tools/viewer_host_recover_crash_state.py",
+            "HANDOFF_LOG.md",
+        },
+    )
+
+    commands: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    def fake_run(command: list[str], cwd: str, check: bool = False):
+        commands.append(command)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.subprocess.run", fake_run)
+
+    rc = checkpoint_slice_main([
+        "commit",
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+        "--checkpoint-id",
+        "ck:test1234",
+        "--score",
+        "95",
+        "--handoff-message",
+        "test handoff",
+        "--commit-message",
+        "ck:test1234 test",
+        "--path",
+        "tools/viewer_host_recover_crash_state.py",
+    ])
+
+    assert rc == 0
+    assert [command for command in commands if command[:2] == ["git", "add"]] == [
+        [
+            "git",
+            "add",
+            "--",
+            "tools/viewer_host_recover_crash_state.py",
+            "HANDOFF_LOG.md",
+        ]
+    ]
+    assert [command for command in commands if command[:2] == ["git", "commit"]] == [
+        [
+            "git",
+            "commit",
+            "-m",
+            "ck:test1234 test",
+            "--",
+            "tools/viewer_host_recover_crash_state.py",
+            "HANDOFF_LOG.md",
+        ]
+    ]
+
+
+def test_checkpoint_slice_commit_refuses_scoped_path_outside_contract(monkeypatch, tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Current Phase\n\n"
+        "Phase 1 in progress\n\n"
+        "## Phase Checklist\n\n"
+        "- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.validate_locked_contract_state",
+        lambda _session_id, _repo_root: ({"plan_path": "docs/notes/plan_PHASED_PLAN.md"}, ""),
+    )
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.build_handoff_append_commands", lambda **_kwargs: [])
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.file_path_is_in_contract_scope",
+        lambda path, _contract_state, _repo_root: path == "HANDOFF_LOG.md",
+    )
+
+    commands: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    def fake_run(command: list[str], cwd: str, check: bool = False):
+        commands.append(command)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.subprocess.run", fake_run)
+
+    rc = checkpoint_slice_main([
+        "commit",
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+        "--checkpoint-id",
+        "ck:test1234",
+        "--score",
+        "95",
+        "--handoff-message",
+        "test handoff",
+        "--commit-message",
+        "ck:test1234 test",
+        "--path",
+        "tools/viewer_host_recover_crash_state.py",
+    ])
+
+    assert rc != 0
+    assert not commands
 
 
 def test_checkpoint_slice_write_receipts_refuses_pending_hostile_audit(monkeypatch, tmp_path: Path) -> None:

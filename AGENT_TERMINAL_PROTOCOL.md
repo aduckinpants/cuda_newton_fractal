@@ -67,5 +67,7 @@ If a command destabilizes VS Code, the chat session, or the terminal wrapper, sw
 
 1. Kill terminals that are no longer needed.
 2. Confirm the repo state with `py -3.14 tools/viewer_host_repo_status.py`.
-3. Resume with one bounded command at a time.
-4. Prefer the logged-command wrapper or task surface before retrying a heavy validation lane.
+3. If the repo is dirty and the new session says it has no checkpoint baseline, run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state` before retrying prompts.
+4. Inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/` and confirm the stranded slice you are resuming.
+5. Resume with one bounded command at a time.
+6. Prefer the logged-command wrapper or task surface before retrying a heavy validation lane.

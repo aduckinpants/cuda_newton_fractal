@@ -23,6 +23,7 @@ Do these before making architecture claims or starting broad edits:
    - Protocol: `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`.
    - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, `## Proof Ledger`, `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings` alongside `## Current Phase` and `## Phase Checklist`.
 9. Read `.github/copilot-instructions.md` after this file, not instead of it.
+10. If the repo is already dirty and `SessionStart` or `UserPromptSubmit` says the session has no checkpoint baseline, do not treat the session as fresh. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`, inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, then resume the stranded slice in crash-safe mode.
 
 The VS Code task surface mirrors these commands:
 - `agent: session bootstrap`
@@ -66,6 +67,7 @@ The VS Code task surface mirrors these commands:
 - Do not smear a new request across an uncheckpointed carryover slice.
 - Treat prompt text as context only. Tool-generated prompts such as `Start implementation` and abrupt steering/reorientation prompts do not relax checkpoint, receipt, or carryover rules.
 - The `UserPromptSubmit` warning in `.github/hooks/checkpoint_guard.json` now surfaces this condition immediately, but the agent is still responsible for resolving the carryover cleanly.
+- If the repo is dirty but the current session has no baseline because VS Code or the host crashed mid-slice, do not improvise around the lockout. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state` first, then continue the stranded slice one bounded command at a time.
 
 ## Mandatory Audit Rule
 
@@ -142,6 +144,7 @@ The VS Code task surface is the canonical profile surface under `verify: profile
 - Prefer one terminal command at a time for heavy build/test flows.
 - If terminal output is likely to be large, redirect to an `artifacts/` log and inspect the file instead of streaming everything through the wrapper.
 - If a command destabilizes VS Code or the terminal wrapper, switch to crash-safe mode for the rest of the session: one command at a time, no parallel terminal work, and prefer the logged-command wrapper or task surfaces.
+- If a crash or rollback leaves the repo dirty and the next session has no baseline, run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state` before retrying prompts.
 - Reuse the public task and tool surfaces instead of opening extra ad hoc terminals.
 
 ## End Of Slice

@@ -180,6 +180,12 @@ If repo closure requires a checkpoint commit or validation receipt and a higher-
 
 This repo now carries a `UserPromptSubmit` warning hook in `.github/hooks/checkpoint_guard.json` to surface that condition immediately. It is a warning surface, not a substitute for judgment.
 
+Crash-recovery corollary:
+- if the repo is dirty but the current session has no baseline because VS Code, the extension host, or rollback replaced the session mid-slice, do not bypass the prompt denial
+- run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`
+- inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`
+- then resume the same stranded slice in crash-safe mode, one bounded command at a time
+
 ### 3. No Implicit Fallback
 
 This is a hard architectural rule, not a suggestion:
@@ -217,6 +223,7 @@ Public workflow surface:
 | Begin work slice | `py -3.14 tools\viewer_host_begin_work_slice.py --intent "<slice>" --profile <native|runtime|catalog|checkpoint|unspecified> --plan <plan> --contract <contract>` | Repo-specific adapter that appends a session-start breadcrumb, validates the phased plan + contract, prints the `ck:` token to reuse at checkpoint time, and locks the active contract. |
 | Prepare / lock slice contract | `py -3.14 tools\viewer_host_prepare_slice.py --session-id <session_id> --plan <plan> --contract <contract>` | Validates the phased plan and checked-in contract, then locks the active contract state for mutation enforcement. |
 | Revise locked contract | `py -3.14 tools\viewer_host_revise_contract.py --session-id <session_id> --contract <contract>` | Required after a checked-in contract changes mid-slice. |
+| Crash recovery adoption | `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state` | Use when a dirty slice lost its session baseline after VS Code, the host, or rollback replaced the session. Writes a durable recovery report, records the dirty snapshot, and authorizes one-shot baseline materialization for the next fresh session. |
 | Contract validation | `py -3.14 tools\viewer_host_validate_slice_contract.py --contract <contract>` | Deterministic contract schema/shape validation. |
 | FITS default contract validation | `py -3.14 tools\viewer_host_validate_fits_contract.py --contract docs/contracts/runtime_walk_fits.contract.json` | Blocks default warp binding, non-`explaino` fallback, and stale default warp UI. |
 | Append checkpoint handoff | `py -3.14 tools\viewer_host_append_handoff.py --commit <checkpoint_id> --score <n> "<message>"` | Preferred final-checkpoint surface after `viewer_host_begin_work_slice.py`: reuse the printed `ck:` token explicitly so the session-start breadcrumb and the closing handoff stay linked without a follow-up continuity commit. Keep `--resolve-last-pending` only for legacy pending-entry repair or after-the-fact cleanup. |

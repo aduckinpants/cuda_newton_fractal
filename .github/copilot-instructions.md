@@ -9,6 +9,7 @@
     VS Code task `agent: session bootstrap` as the repeatable new-session bootstrap.
 - Then read `spec_intake/_STATUS.md`, `DEFERRED_THREADS.md`, `KNOWN_ISSUES.md`,
     and the last few entries of `HANDOFF_LOG.md` for current state.
+- If `SessionStart` or `UserPromptSubmit` reports a dirty repo with no checkpoint baseline, do not treat the session as fresh. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`, inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, and only then retry the stranded slice in crash-safe mode.
 
 ## Mission
 - Treat this repo as the bootstrap and extraction surface for the viewer-host effort.
@@ -83,3 +84,4 @@
 - Prefer foreground terminal runs for finite commands.
 - Prefer `py -3.14 tools/viewer_host_run_logged_command.py --label ... --log artifacts/... -- <command ...>` when build/test output is large.
 - If a command destabilizes VS Code or the wrapper, switch to crash-safe mode for the rest of the session: one command at a time, no parallel terminal work, and inspect captured logs instead of streaming large transcripts.
+- If the instability also lost the session baseline for a dirty repo, run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state` before retrying prompts or validation.

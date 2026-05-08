@@ -8,12 +8,12 @@ from pathlib import Path
 try:
     from tools.viewer_host_append_handoff import build_handoff_append_commands
     from tools.viewer_host_checkpoint_guard import discover_repo_root
-    from tools.viewer_host_contract_state import validate_locked_contract_state
+    from tools.viewer_host_contract_state import file_path_is_in_contract_scope, validate_locked_contract_state
     from tools.viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 except ModuleNotFoundError:
     from viewer_host_append_handoff import build_handoff_append_commands
     from viewer_host_checkpoint_guard import discover_repo_root
-    from viewer_host_contract_state import validate_locked_contract_state
+    from viewer_host_contract_state import file_path_is_in_contract_scope, validate_locked_contract_state
     from viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 
 
@@ -52,6 +52,22 @@ def _run_all(commands: list[list[str]], cwd: Path) -> int:
     return 0
 
 
+def _scoped_commit_paths(paths: list[str]) -> list[str]:
+    scoped: list[str] = []
+    for path in [*paths, "HANDOFF_LOG.md"]:
+        candidate = str(path).strip()
+        if candidate and candidate not in scoped:
+            scoped.append(candidate)
+    return scoped
+
+
+def _validate_scoped_commit_paths(contract_state: dict[str, object] | None, repo_root: Path, paths: list[str]) -> str:
+    for path in paths:
+        if not file_path_is_in_contract_scope(path, contract_state, repo_root):
+            return f"scoped checkpoint path outside contract scope: {path}"
+    return ""
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Repo-enforced checkpoint wrapper for handoff append and commit")
     subparsers = parser.add_subparsers(dest="mode", required=True)
@@ -63,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     commit_parser.add_argument("--score", required=True, type=int)
     commit_parser.add_argument("--handoff-message", required=True)
     commit_parser.add_argument("--commit-message", required=True)
+    commit_parser.add_argument("--path", action="append", default=[], help="Optional repo-relative path to include in the checkpoint commit; repeat for multiple paths")
 
     receipt_parser = subparsers.add_parser("write-receipts")
     receipt_parser.add_argument("--session-id", required=True)
@@ -82,6 +99,11 @@ def main(argv: list[str] | None = None) -> int:
         if hostile_audit_error:
             sys.stderr.write("viewer_host_checkpoint_slice: hostile review is incomplete: " + hostile_audit_error + "\n")
             return 2
+        commit_paths = _scoped_commit_paths(args.path)
+        scope_error = _validate_scoped_commit_paths(_contract_state or {}, repo_root, commit_paths) if commit_paths else ""
+        if scope_error:
+            sys.stderr.write("viewer_host_checkpoint_slice: " + scope_error + "\n")
+            return 2
         commands = build_handoff_append_commands(
             py=sys.executable,
             message=args.handoff_message,
@@ -93,10 +115,16 @@ def main(argv: list[str] | None = None) -> int:
         rc = _run_all(commands, repo_root)
         if rc != 0:
             return rc
-        stage_rc = subprocess.run(["git", "add", "-A"], cwd=str(repo_root), check=False).returncode
+        if commit_paths:
+            stage_command = ["git", "add", "--", *commit_paths]
+            commit_command = ["git", "commit", "-m", args.commit_message, "--", *commit_paths]
+        else:
+            stage_command = ["git", "add", "-A"]
+            commit_command = ["git", "commit", "-m", args.commit_message]
+        stage_rc = subprocess.run(stage_command, cwd=str(repo_root), check=False).returncode
         if stage_rc != 0:
             return int(stage_rc)
-        commit_rc = subprocess.run(["git", "commit", "-m", args.commit_message], cwd=str(repo_root), check=False).returncode
+        commit_rc = subprocess.run(commit_command, cwd=str(repo_root), check=False).returncode
         return int(commit_rc)
 
     hostile_audit_error = _validate_hostile_audit_before_commit(_contract_state or {}, repo_root)
