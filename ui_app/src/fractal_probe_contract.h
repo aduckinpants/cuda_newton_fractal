@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fractal_types.h"
 #include "json_min.h"
 
 #include <map>
@@ -209,11 +210,14 @@ struct FractalProbeSample {
     double coord_y{0.0};
     int iterations{0};
     FractalProbeSampleStatus status{FractalProbeSampleStatus::bounded};
+    TerminationKind termination_kind{TerminationKind::none};
     double final_z_x{0.0};
     double final_z_y{0.0};
     double final_abs2{0.0};
     bool has_residual{false};
     double residual{0.0};
+    bool has_far_field_delta{false};
+    double far_field_delta{0.0};
     bool has_root_index{false};
     int root_index{-1};
     double derivative_x{0.0};
@@ -261,3 +265,4 @@ bool FractalProbeSelectionIncludesAnySampleMetrics(const FractalProbeMetricSelec
 const char* FractalProbeModeId(FractalProbeMode mode);
 const char* FractalProbeOutputModeId(FractalProbeOutputMode mode);
 const char* FractalProbeSampleStatusId(FractalProbeSampleStatus status);
+const char* TerminationKindId(TerminationKind terminationKind);

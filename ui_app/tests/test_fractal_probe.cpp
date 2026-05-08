@@ -384,6 +384,52 @@ int main() {
     }
 
     {
+        FractalProbeResponse response{};
+        response.request_id = "termination-transport";
+        response.function_id = "fractal.sample";
+        response.ok = true;
+        response.summary.sample_count = 1;
+        response.metric_selection = BuildFractalProbeMetricSelection({});
+
+        FractalProbeSample sample{};
+        sample.sequence_index = 0;
+        sample.grid_x = 0;
+        sample.grid_y = 0;
+        sample.coord_x = 0.125;
+        sample.coord_y = -0.25;
+        sample.iterations = 12;
+        sample.status = FractalProbeSampleStatus::bounded;
+        sample.termination_kind = TerminationKind::none;
+        sample.final_z_x = 1.0;
+        sample.final_z_y = 2.0;
+        sample.final_abs2 = 5.0;
+        sample.has_far_field_delta = false;
+        response.samples.push_back(sample);
+
+        const std::string responseJson = SerializeFractalProbeResponseJson(response);
+        json_min::ParseResult pr = json_min::Parse(responseJson);
+        if (!pr.error.empty()) {
+            std::cerr << "Termination transport response should serialize as valid JSON: " << pr.error << "\n";
+            return 1;
+        }
+        const json_min::Value* samples = pr.value.get("samples");
+        if (!samples || !samples->is_array() || samples->as_array().empty() || !samples->as_array()[0].is_object()) {
+            std::cerr << "Termination transport response missing sample payload\n";
+            return 1;
+        }
+        const json_min::Value* terminationKind = samples->as_array()[0].get("termination_kind");
+        const json_min::Value* farFieldDelta = samples->as_array()[0].get("far_field_delta");
+        if (!terminationKind || !terminationKind->is_string() || terminationKind->as_string() != "none") {
+            std::cerr << "Termination transport response should include termination_kind=none\n";
+            return 1;
+        }
+        if (!farFieldDelta || !farFieldDelta->is_null()) {
+            std::cerr << "Termination transport response should serialize far_field_delta as null when absent\n";
+            return 1;
+        }
+    }
+
+    {
         FractalProbeRequest request{};
         request.request_version = 1;
         request.request_id = "sequence-grid-variant-crossfade";

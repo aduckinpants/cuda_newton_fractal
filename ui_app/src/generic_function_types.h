@@ -3,11 +3,15 @@
 // No dependency on fractal_types.h, ViewState, KernelParams, or viewer code.
 // Usable from both .cu and .cpp translation units.
 
+#include <cstdint>
+
 #ifndef __CUDACC__
 #define GF_HOST_DEVICE
 #else
 #define GF_HOST_DEVICE __host__ __device__
 #endif
+
+enum class TerminationKind : std::uint8_t;
 
 enum class GFNodeOp : int {
     // Leaf nodes
@@ -69,6 +73,9 @@ struct GenericSampleResult {
     int iterations;       // Iteration count (for gf_iterate nodes)
     bool converged;       // |f(z)| < epsilon after iteration
     bool diverged;        // |f(z)| > escape_radius
+    TerminationKind termination_kind{};
+    bool has_far_field_delta{false};
+    double far_field_delta{0.0};
 };
 
 // --- Descriptor validation ---

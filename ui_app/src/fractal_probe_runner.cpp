@@ -1907,6 +1907,9 @@ FractalProbeSample MarshalGenericSampleToProbeSample(
     sample.final_abs2 = gsr.abs2;
     sample.derivative_x = gsr.derivative_x;
     sample.derivative_y = gsr.derivative_y;
+    sample.termination_kind = gsr.termination_kind;
+    sample.has_far_field_delta = gsr.has_far_field_delta;
+    sample.far_field_delta = gsr.far_field_delta;
 
     if (gsr.converged) {
         sample.status = FractalProbeSampleStatus::converged;

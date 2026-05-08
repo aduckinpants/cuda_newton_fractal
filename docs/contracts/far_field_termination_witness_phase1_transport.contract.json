@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "contract_id": "far_field_termination_witness_phase1_transport",
+  "feature_id": "far_field_termination_witness",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/far_field_termination_witness_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/far_field_termination_witness_PHASED_PLAN.md",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/fractal_sample_result.h",
+    "ui_app/src/generic_function_types.h",
+    "ui_app/src/fractal_probe_contract.h",
+    "ui_app/src/fractal_probe_contract.cpp",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/tests"
+  ],
+  "required_operator_inputs": [
+    "add termination vocabulary and witness transport fields without changing current iteration behavior",
+    "keep the existing converged/escaped flags and existing probe status semantics compatible for the first slice",
+    "back the transport change with compatibility-first tests before and after the implementation",
+    "keep the witness work additive to the existing advanced-color foundation instead of superseding it"
+  ],
+  "forbidden_operator_prompts": [
+    "implement the witness math or enable it on any family in this transport slice",
+    "add a new advanced color source row in this slice",
+    "break existing probe status consumers by replacing the current status enum outright",
+    "treat the current parameterless basin rows as solved by this slice"
+  ],
+  "required_defaults": {
+    "transport_fields_default_inert": "required",
+    "existing_status_semantics_preserved": "required",
+    "advanced_color_foundation_not_superseded": "required"
+  },
+  "forbidden_defaults": {
+    "witness_behavior_enabled": "forbidden",
+    "color_pipeline_coupling": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/far_field_termination_witness_phase1_transport.contract.json --out-json artifacts/validation/far_field_termination_witness_phase1_transport_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "far_field_termination_witness_phase1_transport_contract_schema_valid",
+      "description": "The far-field termination witness Phase 1 transport contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/far_field_termination_witness_phase1_transport_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "far_field_termination_witness_phase1_transport_plan_sync_ok",
+      "description": "The far-field termination witness phased plan stays synchronized during the transport slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

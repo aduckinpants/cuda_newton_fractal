@@ -535,6 +535,7 @@ std::vector<std::pair<std::string, std::string>> BuildSampleEntries(
     if (selection.include_status) {
         entries.push_back({"status", JsonStringLiteral(FractalProbeSampleStatusId(sample.status))});
     }
+    entries.push_back({"termination_kind", JsonStringLiteral(TerminationKindId(sample.termination_kind))});
     if (selection.include_final_z) {
         entries.push_back({"final_z_x", DoubleToJson(sample.final_z_x)});
         entries.push_back({"final_z_y", DoubleToJson(sample.final_z_y)});
@@ -545,6 +546,7 @@ std::vector<std::pair<std::string, std::string>> BuildSampleEntries(
     if (selection.include_residual) {
         entries.push_back({"residual", sample.has_residual ? DoubleToJson(sample.residual) : std::string("null")});
     }
+    entries.push_back({"far_field_delta", sample.has_far_field_delta ? DoubleToJson(sample.far_field_delta) : std::string("null")});
     if (selection.include_root_index) {
         entries.push_back({"root_index", sample.has_root_index ? std::to_string(sample.root_index) : std::string("null")});
     }
@@ -686,6 +688,18 @@ const char* FractalProbeSampleStatusId(FractalProbeSampleStatus status) {
     case FractalProbeSampleStatus::invalid_param: return "invalid_param";
     }
     return "bounded";
+}
+
+const char* TerminationKindId(TerminationKind terminationKind) {
+    switch (terminationKind) {
+    case TerminationKind::none: return "none";
+    case TerminationKind::root_converged: return "root_converged";
+    case TerminationKind::escaped_radius: return "escaped_radius";
+    case TerminationKind::far_field_settled: return "far_field_settled";
+    case TerminationKind::max_iterations: return "max_iterations";
+    case TerminationKind::nonfinite: return "nonfinite";
+    }
+    return "none";
 }
 
 bool ParseFractalProbeRequestFromValue(const json_min::Value& value,

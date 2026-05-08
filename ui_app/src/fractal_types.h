@@ -24,6 +24,25 @@ enum class PolyKind : int {
     custom = 2,
 };
 
+enum class TerminationKind : uint8_t {
+    none = 0,
+    root_converged = 1,
+    escaped_radius = 2,
+    far_field_settled = 3,
+    max_iterations = 4,
+    nonfinite = 5,
+};
+
+struct OrbitTerminationConfig {
+    bool enable_root_convergence{true};
+    bool enable_escape_radius{true};
+    bool enable_far_field_settled{false};
+    int far_field_min_iter{12};
+    float far_field_epsilon{1.0e-4f};
+    float far_field_min_r2{16.0f};
+    float denominator_floor{1.0e-12f};
+};
+
 enum class ColoringMode : int {
     root_basin = 0,
     iteration_count = 1,
