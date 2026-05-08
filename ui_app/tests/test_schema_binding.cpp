@@ -822,13 +822,14 @@ int main() {
         const ColorPipelineLaneCatalog* corePaletteCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
         if (!corePaletteCatalog ||
             corePaletteCatalog->default_function_id != std::string("heatmap") ||
-            corePaletteCatalog->functions.size() != 5 ||
+            corePaletteCatalog->functions.size() != 6 ||
             corePaletteCatalog->functions[0].id != "heatmap" ||
             corePaletteCatalog->functions[1].id != "phase_wheel_palette" ||
             corePaletteCatalog->functions[2].id != "banded_heatmap" ||
             corePaletteCatalog->functions[3].id != "explaino_cmap" ||
-            corePaletteCatalog->functions[4].id != "root_classic_palette") {
-            std::cerr << "Expected the extracted advanced color core to widen the shipped Palette catalog with explaino_cmap and root_classic_palette as runtime-real rows\n";
+            corePaletteCatalog->functions[4].id != "root_classic_palette" ||
+            corePaletteCatalog->functions[5].id != "joy_root_palette") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Palette catalog with explaino_cmap, root_classic_palette, and joy_root_palette as runtime-real rows\n";
             return 1;
         }
         const FunctionDescriptor* coreExplainoCmapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "explaino_cmap");
@@ -843,6 +844,11 @@ int main() {
         const FunctionDescriptor* coreRootClassicDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "root_classic_palette");
         if (!coreRootClassicDescriptor || !coreRootClassicDescriptor->parameters.empty()) {
             std::cerr << "Expected root_classic_palette to expose a stable parameterless basin palette row\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreJoyRootDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "joy_root_palette");
+        if (!coreJoyRootDescriptor || !coreJoyRootDescriptor->parameters.empty()) {
+            std::cerr << "Expected joy_root_palette to expose a stable parameterless joy-basins palette row\n";
             return 1;
         }
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
@@ -942,6 +948,20 @@ int main() {
             std::string(bridgeSourceFunctionId ? bridgeSourceFunctionId : "") != "root_index" ||
             std::string(bridgePaletteFunctionId ? bridgePaletteFunctionId : "") != "root_classic_palette") {
             std::cerr << "Expected the extracted advanced color core to bridge the default basin runtime tuple through root_index and root_classic_palette\n";
+            return 1;
+        }
+        const ColorPipelineSelection joyRootPipeline = {
+            ColorSignal::root_index,
+            ColorPalette::joy,
+            ColorGradingPreset::basin_default,
+        };
+        if (!color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(
+                joyRootPipeline,
+                &bridgeSourceFunctionId,
+                &bridgePaletteFunctionId) ||
+            std::string(bridgeSourceFunctionId ? bridgeSourceFunctionId : "") != "root_index" ||
+            std::string(bridgePaletteFunctionId ? bridgePaletteFunctionId : "") != "joy_root_palette") {
+            std::cerr << "Expected the extracted advanced color core to bridge the joy-basins runtime tuple through root_index and joy_root_palette\n";
             return 1;
         }
 
@@ -1074,13 +1094,14 @@ int main() {
         }
         const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
         if (!paletteCatalog ||
-            paletteCatalog->functions.size() != 5 ||
+            paletteCatalog->functions.size() != 6 ||
             paletteCatalog->functions[0].id != "heatmap" ||
             paletteCatalog->functions[1].id != "phase_wheel_palette" ||
             paletteCatalog->functions[2].id != "banded_heatmap" ||
             paletteCatalog->functions[3].id != "explaino_cmap" ||
-            paletteCatalog->functions[4].id != "root_classic_palette") {
-            std::cerr << "Expected the shipped Palette catalog to expose heatmap, phase_wheel_palette, banded_heatmap, explaino_cmap, and root_classic_palette\n";
+            paletteCatalog->functions[4].id != "root_classic_palette" ||
+            paletteCatalog->functions[5].id != "joy_root_palette") {
+            std::cerr << "Expected the shipped Palette catalog to expose heatmap, phase_wheel_palette, banded_heatmap, explaino_cmap, root_classic_palette, and joy_root_palette\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
@@ -1107,6 +1128,16 @@ int main() {
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
             !visibleParamIndexes.empty()) {
             std::cerr << "Expected root_classic_palette to stay parameterless in the live Palette lane\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "joy_root_palette") ||
+            !windowState.lanes[2].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected the shipped Palette lane to accept a parameterless joy_root_palette row once joy-basins import is supported\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
+            !visibleParamIndexes.empty()) {
+            std::cerr << "Expected joy_root_palette to stay parameterless in the live Palette lane\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap")) {
@@ -1366,6 +1397,55 @@ int main() {
             std::cerr << "Expected the test to restore the banded tuple after root_classic co-switch coverage\n";
             return 1;
         }
+        params.coloring_mode = ColoringMode::iteration_bands;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params) ||
+            windowState.lanes[0].rows[0].function_id != "banded_signal" ||
+            windowState.lanes[2].rows[0].function_id != "banded_heatmap") {
+            std::cerr << "Expected syncing from a supported non-basin live tuple to restore the banded draft before joy_root coverage\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState joyRootCandidateState = DescribeColorPipelineCandidateApplyState(
+            windowState,
+            2,
+            "joy_root_palette",
+            view.fractal_type,
+            &params);
+        if (joyRootCandidateState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected selecting joy_root_palette from a supported non-basin editor state to auto-complete root_index instead of reading as draft-only\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "joy_root_palette") ||
+            windowState.lanes[2].rows[0].function_id != "joy_root_palette" ||
+            windowState.lanes[0].rows[0].function_id != "root_index") {
+            std::cerr << "Expected selecting joy_root_palette to co-switch the matching root_index row\n";
+            return 1;
+        }
+        bool joyRootTupleChanged = false;
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params, &joyRootTupleChanged) ||
+            !joyRootTupleChanged ||
+            params.coloring_mode != ColoringMode::joy_basins ||
+            params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::joy ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "Expected applying joy_root_palette to move the live runtime from a non-basin tuple into the joy-basins root palette\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState joyRootAlignedState = DescribeColorPipelineCandidateApplyState(
+            windowState,
+            2,
+            "joy_root_palette",
+            view.fractal_type,
+            &params);
+        if (joyRootAlignedState.status != ColorPipelineDraftApplyStatus::matches_live) {
+            std::cerr << "Expected the matching joy_root_palette candidate to stop reading as draft-only once the joy tuple is aligned\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap") ||
+            !SelectColorPipelineLaneFunction(&windowState, 0, "banded_signal")) {
+            std::cerr << "Expected the test to restore the banded tuple after joy_root co-switch coverage\n";
+            return 1;
+        }
         if (SelectColorPipelineLaneFunction(&windowState, 0, "not_real")) {
             std::cerr << "Unknown advanced color lane functions should fail instead of silently falling back\n";
             return 1;
@@ -1391,6 +1471,19 @@ int main() {
             windowState.live_snapshot.lanes[2].rows[0].function_id != "root_classic_palette" ||
             !windowState.live_snapshot.lanes[2].rows[0].parameter_values.empty()) {
             std::cerr << "Expected root-basin live tuples to import as a supported root_index plus root_classic_palette snapshot\n";
+            return 1;
+        }
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::joy_basins);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected joy-basins live tuples to sync once joy_root_palette is part of the advanced bridge\n";
+            return 1;
+        }
+        if (!windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "root_index" ||
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "joy_root_palette") {
+            std::cerr << "Expected joy-basins live tuples to import as a supported root_index plus joy_root_palette snapshot\n";
             return 1;
         }
 

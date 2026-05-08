@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 in progress - `root_classic_palette` is now a validated advanced row with its companion `root_index` source bridge, the tuple-switch follow-up has repaired the editor dead-end UX, and `joy_root_palette` is again the next bounded family-gated Palette slice once this closure checkpoints cleanly
+Phase 5 in progress - Phase 4 now closes the initial Palette library with `explaino_cmap`, `root_classic_palette`, and `joy_root_palette`; the next bounded step is promoting Grading to a first-class category and landing the initial Grade library
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 4 in progress - `root_classic_palette` is now a validated advanced row wit
 - [x] Phase 1 - extract category/function/catalog/live-bridge authority out of `ui_app/src/color_pipeline_window.h` so the window becomes a consumer for the shipped catalog truth before any library widening starts
 - [x] Phase 2 - land the full initial Source library through the extracted descriptor/registry core and the broader runtime-source authority refactor the user explicitly chose
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
-- [ ] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
+- [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
 - [ ] Phase 5 - promote Grading to a first-class category and land the initial Grade library, including the bounded filmic Balance/Void-inspired grading operator
 - [ ] Phase 6 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
 - [ ] Phase 7 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
@@ -99,7 +99,10 @@ The controlling product risk is no longer just "missing functions." The current 
 - Follow-up landed: `ui_app/src/color_pipeline_window.h` now auto-completes shipped single-row Source/Palette selections into their supported companion pairs, recognizes `root_index + root_classic_palette` through a shared tuple builder, and explains that parameterless fixed Source/Palette rows change the live bridge directly rather than exposing tunable controls.
 - Follow-up landed: `ui_app/tests/test_schema_binding.cpp` now locks the repaired root tuple-switch path from a non-basin live tuple into the basin pair and updates the shipped-pair classification coverage so selector choices no longer present as bogus preview-only dead ends.
 - Follow-up validated: `artifacts/root_tuple_switch_native_v5.log` is green for the focused native helper rail, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the active runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the freshly published runtime.
-- Next bounded slice: `joy_root_palette` is next because the runtime tuple already exists and the remaining family-gated advanced Palette work should keep one root-lineage row per slice.
+- Landed: `ui_app/src/color_pipeline_core.h` and `ui_app/src/color_pipeline_window.h` now treat `joy_root_palette` as a runtime-real advanced Palette row, bridge the `joy_basins` tuple through `root_index`, and let the editor co-switch/apply joy-basin selections without falling back to a draft-only dead end.
+- Landed: `ui_app/tests/test_schema_binding.cpp` now locks the joy palette row in the extracted core catalog, the shipped palette lane, the manual non-basin-to-joy apply path, and live joy-basins import as a supported `root_index + joy_root_palette` snapshot.
+- Validated: `artifacts/joy_root_green_native.log` is green for the focused native helper rail, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the active runtime cleanly, and `artifacts/joy_root_runtime_smoke.log` reports the published-runtime `root_classic` versus `joy` Explaino basin smoke passing.
+- Phase boundary advanced: the initial Palette library is now complete, so the next bounded slice is Phase 5 grading promotion instead of another Phase 4 palette row.
 
 ## Notes
 
@@ -117,7 +120,7 @@ The controlling product risk is no longer just "missing functions." The current 
 
 ## Resume Point
 
-Checkpoint the tuple-switch follow-up on top of the `root_classic_palette` slice, then continue Phase 4 with `joy_root_palette` as the next separate bounded family-gated palette row through the same extracted catalog/bridge authority and published-runtime proof rails.
+Checkpoint the `joy_root_palette` slice, then continue at Phase 5 by promoting Grading to a first-class category and landing the initial Grade library through the same extracted catalog/bridge authority and viewer-first proof rails.
 
 
 

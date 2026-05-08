@@ -160,6 +160,8 @@ inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
     switch (value) {
     case ColorPalette::root_classic:
         return "root_classic_palette";
+    case ColorPalette::joy:
+        return "joy_root_palette";
     case ColorPalette::cyclic_escape:
         return "heatmap";
     case ColorPalette::phase_wheel:
@@ -175,6 +177,10 @@ inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
 inline bool TryParseAdvancedColorPaletteFunctionId(const std::string& functionId, ColorPalette* outValue) {
     if (functionId == "root_classic_palette") {
         if (outValue) *outValue = ColorPalette::root_classic;
+        return true;
+    }
+    if (functionId == "joy_root_palette") {
+        if (outValue) *outValue = ColorPalette::joy;
         return true;
     }
     if (functionId == "heatmap") {
@@ -342,6 +348,11 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             "Root Classic Palette",
             "Materialize basin root classification through the existing root-classic palette lineage.",
             {}),
+        MakeColorPipelineFunction(
+            "joy_root_palette",
+            "Joy Root Palette",
+            "Materialize basin root classification through the existing joy-basins palette lineage.",
+            {}),
     };
 }
 
@@ -461,7 +472,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "phase_wheel_palette" ||
             functionId == "banded_heatmap" ||
             functionId == "explaino_cmap" ||
-            functionId == "root_classic_palette";
+            functionId == "root_classic_palette" ||
+            functionId == "joy_root_palette";
     }
     return false;
 }
@@ -587,6 +599,13 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.grading == ColorGradingPreset::basin_default) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_index";
         if (outPaletteFunctionId) *outPaletteFunctionId = "root_classic_palette";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_index &&
+        pipeline.palette == ColorPalette::joy &&
+        pipeline.grading == ColorGradingPreset::basin_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_index";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "joy_root_palette";
         return true;
     }
     return false;

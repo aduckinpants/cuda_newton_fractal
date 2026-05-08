@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase4_palette_joy_root",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py"
+  ],
+  "required_operator_inputs": [
+    "land joy_root_palette as the next family-gated advanced Palette row after the root_classic tuple-switch follow-up closed cleanly",
+    "treat joy_root_palette as the existing joy-basins palette lineage instead of inventing new runtime math or fake parameter fields",
+    "mirror the existing joy_basins runtime tuple through the advanced palette catalog, schedule bridge, and editor selector/apply path",
+    "keep root_classic_palette and joy_root_palette as separate explicit advanced Palette rows"
+  ],
+  "forbidden_operator_prompts": [
+    "ship joy_root_palette as descriptor-only or draft-only after claiming the slice landed",
+    "invent new palette owner fields or borrowed explaino controls for joy_root_palette",
+    "collapse joy_root_palette back into root_classic_palette or hide the distinction behind implicit fallback",
+    "widen a later Phase 4 palette row in the same slice"
+  ],
+  "required_defaults": {
+    "joy_root_palette_is_runtime_real": "required",
+    "joy_basins_tuple_imports_as_supported_advanced_row": "required",
+    "root_classic_and_joy_remain_distinct_rows": "required"
+  },
+  "forbidden_defaults": {
+    "descriptor_only_joy_root_palette": "forbidden",
+    "unsupported_joy_basins_live_tuple": "forbidden",
+    "fake_joy_palette_parameters": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase4_palette_joy_root.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase4_palette_joy_root_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase4_joy_root_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 4 joy_root contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase4_palette_joy_root_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase4_joy_root_plan_sync_ok",
+      "description": "The advanced color library foundation phased plan stays synchronized during the joy_root slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

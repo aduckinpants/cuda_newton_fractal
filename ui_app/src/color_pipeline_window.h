@@ -759,6 +759,9 @@ inline bool SelectColorPipelineRowFunction(
                 } else if (lane.rows[rowIndex].function_id == "banded_heatmap") {
                     companionLaneId = "source";
                     companionFunctionId = "banded_signal";
+                } else if (lane.rows[rowIndex].function_id == "joy_root_palette") {
+                    companionLaneId = "source";
+                    companionFunctionId = "root_index";
                 } else if (lane.rows[rowIndex].function_id == "root_classic_palette") {
                     companionLaneId = "source";
                     companionFunctionId = "root_index";
@@ -1650,6 +1653,11 @@ inline bool TryBuildColorPipelineSelectionFromLaneIds(
         *outMode = ColoringMode::root_basin;
         return true;
     }
+    if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "joy_root_palette") == 0) {
+        *outPipeline = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
+        *outMode = ColoringMode::joy_basins;
+        return true;
+    }
 
     return false;
 }
@@ -2109,7 +2117,7 @@ inline void RenderColorPipelineWindowSummary(
                 : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
             ImGui::TextColored(statusColor, "%s", applyState.message.c_str());
             if (!canApply) {
-                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette.");
+                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette or Joy Root Palette.");
             }
         }
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
