@@ -8,6 +8,7 @@
     "docs/contracts",
     "docs/notes/viewport_camera_drag_regression_PHASED_PLAN.md",
     "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/main.cpp",
     "ui_app/src/schema_binding.h",
     "ui_app/src/schema_binding.cpp",
     "ui_app/src/safe_mode_schema.cpp",
@@ -17,7 +18,8 @@
   "required_operator_inputs": [
     "user reported viewport X/Y/Zoom dragging broke",
     "zoom should not be re-capped to a tiny UI maximum",
-    "fix must be locked down with unit and regression tests"
+    "fix must be locked down with unit and regression tests",
+    "live controls must not re-sync HP view state back from stale float camera mirrors after schema camera edits"
   ],
   "forbidden_operator_prompts": [
     "paper over the bug without a failing regression",

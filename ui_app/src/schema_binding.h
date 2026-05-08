@@ -9,6 +9,7 @@ struct BindingContext {
     KernelParams* params = nullptr;
     RenderSettings* render = nullptr;
     LensSettings* lens = nullptr;
+    bool edited_camera_hp_authority = false;
 
     std::string GetEnumId(const std::string& path) const;
     bool SetEnumId(const std::string& path, const std::string& id);
@@ -51,4 +52,5 @@ NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& c)
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& c, const BindingContext& ctx);
 bool TryGetFloatControlDisplayValue(const UISchemaBinding& binding, const BindingContext& ctx, double* outValue);
 bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value);
+bool ShouldSyncViewHpFromSchemaUiMirrors(const BindingContext& ctx, Float2 uiCenterBefore, float uiZoomBefore);
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);

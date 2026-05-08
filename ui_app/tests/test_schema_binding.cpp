@@ -537,6 +537,37 @@ int main() {
             std::cerr << "Expected camera zoom edits to respect only the hard zoom floor when clamped\n";
             return 1;
         }
+
+        view.center_hp_x = 0.123456789012345;
+        view.center_hp_y = -0.987654321098765;
+        view.log2_zoom = TestLog2(32.0);
+        SyncTestViewUiFromHp(view);
+        cameraCtx.edited_camera_hp_authority = false;
+        const Float2 uiCenterBefore = view.center;
+        const float uiZoomBefore = view.zoom;
+        const double originalCenterHpX = view.center_hp_x;
+        const double originalCenterHpY = view.center_hp_y;
+        if (!ApplyFloatControlEdit(zoomBinding, cameraCtx, cameraZoomRange, 1000000.0)) {
+            std::cerr << "Expected zoom regression witness to reuse the HP-aware camera zoom edit seam\n";
+            return 1;
+        }
+        if (!cameraCtx.edited_camera_hp_authority) {
+            std::cerr << "Expected HP-aware camera edits to mark the binding context so the live controls window can skip stale post-panel resync\n";
+            return 1;
+        }
+        if (ShouldSyncViewHpFromSchemaUiMirrors(cameraCtx, uiCenterBefore, uiZoomBefore)) {
+            std::cerr << "Expected live schema camera edits to skip the old post-panel SyncViewHpFromUi round-trip\n";
+            return 1;
+        }
+        ViewState forcedLegacyResync = view;
+        forcedLegacyResync.center_hp_x = static_cast<double>(forcedLegacyResync.center.x);
+        forcedLegacyResync.center_hp_y = static_cast<double>(forcedLegacyResync.center.y);
+        forcedLegacyResync.log2_zoom = TestLog2((std::fmax)(1.0e-30, static_cast<double>(forcedLegacyResync.zoom)));
+        if (NearlyEqual(forcedLegacyResync.center_hp_x, originalCenterHpX, 1.0e-12) ||
+            NearlyEqual(forcedLegacyResync.center_hp_y, originalCenterHpY, 1.0e-12)) {
+            std::cerr << "Expected the legacy post-panel SyncViewHpFromUi path to visibly collapse HP center precision for the regression witness\n";
+            return 1;
+        }
     }
 
     {

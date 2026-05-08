@@ -872,7 +872,7 @@ static UiActionFlags RenderControlsWindow(
     Float2 uiCenterBefore = view.center;
     float uiZoomBefore = view.zoom;
     UiActionFlags actions = RenderSchemaPanels(schema, bind, canLoadFits, loadFitsHint, colorPipelineWindow, dirty);
-    if (view.center.x != uiCenterBefore.x || view.center.y != uiCenterBefore.y || view.zoom != uiZoomBefore) {
+    if (ShouldSyncViewHpFromSchemaUiMirrors(bind, uiCenterBefore, uiZoomBefore)) {
         SyncViewHpFromUi(view);
     }
     if (IsEscapeTimeFamily(view.fractal_type)) {

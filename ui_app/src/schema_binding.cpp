@@ -210,6 +210,7 @@ bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, 
         }
         ctx.view->center_hp_x = nextValue;
         SyncCameraUiMirrorFromHp(*ctx.view);
+        ctx.edited_camera_hp_authority = true;
         return true;
     }
     if (binding.path == "fractal.view.center.y") {
@@ -218,6 +219,7 @@ bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, 
         }
         ctx.view->center_hp_y = nextValue;
         SyncCameraUiMirrorFromHp(*ctx.view);
+        ctx.edited_camera_hp_authority = true;
         return true;
     }
     if (binding.path == "fractal.view.zoom") {
@@ -226,6 +228,7 @@ bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, 
         }
         ctx.view->log2_zoom = LocalLog2((std::fmax)(1.0e-30, nextValue));
         SyncCameraUiMirrorFromHp(*ctx.view);
+        ctx.edited_camera_hp_authority = true;
         return true;
     }
 
@@ -237,6 +240,17 @@ bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, 
     ClampNumericValue(&nextFloat, range);
     *target = nextFloat;
     return true;
+}
+
+bool ShouldSyncViewHpFromSchemaUiMirrors(const BindingContext& ctx, Float2 uiCenterBefore, float uiZoomBefore) {
+    if (!ctx.view) {
+        return false;
+    }
+    const bool cameraUiMirrorChanged =
+        ctx.view->center.x != uiCenterBefore.x ||
+        ctx.view->center.y != uiCenterBefore.y ||
+        ctx.view->zoom != uiZoomBefore;
+    return cameraUiMirrorChanged && !ctx.edited_camera_hp_authority;
 }
 
 NumericControlRange ResolveNumericControlRange(const UISchemaControl& control) {
