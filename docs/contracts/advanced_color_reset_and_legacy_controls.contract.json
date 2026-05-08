@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_reset_and_legacy_controls",
+  "feature_id": "advanced_color_known_issues_pass",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_reset_and_legacy_controls_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "KNOWN_ISSUES.md",
+    "docs/contracts",
+    "docs/notes/advanced_color_reset_and_legacy_controls_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "make Reset All restore the Color-panel saturation, contrast, and tint defaults again",
+    "stop the simple Coloring Mode and Grading dropdowns from fighting the advanced color window while that window owns the live color path",
+    "prove the repair with focused regressions before implementation",
+    "keep this pass bounded so the planned palette work can resume cleanly afterward"
+  ],
+  "forbidden_operator_prompts": [
+    "resume the planned root-palette widening in the same slice",
+    "paper over the bug with manual-only verification",
+    "leave the simple Color-panel combos live while the advanced color window is the active editing surface",
+    "change unrelated color/runtime behavior without a regression proving it belongs to this detour"
+  ],
+  "required_defaults": {
+    "reset_all_restores_base_color_panel_defaults": "required",
+    "advanced_window_owns_legacy_color_controls_while_open": "required",
+    "new_behavior_has_focused_regressions": "required"
+  },
+  "forbidden_defaults": {
+    "manual_only_bug_closure": "forbidden",
+    "legacy_and_advanced_controls_fight_simultaneously": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_reset_and_legacy_controls.contract.json --out-json artifacts/validation/advanced_color_reset_and_legacy_controls_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_reset_and_legacy_controls_contract_schema_valid",
+      "description": "The advanced color reset and legacy-controls contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_reset_and_legacy_controls_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_reset_and_legacy_controls_plan_sync_ok",
+      "description": "The advanced color reset and legacy-controls phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -756,6 +756,7 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
     BindingContext& bind,
     bool canLoadFits,
     const std::string& loadFitsHint,
+    const ColorPipelineWindowState& colorPipelineWindow,
     bool& dirty) {
     UiActionFlags a;
     for (const auto& panel : schema.panels) {
@@ -800,12 +801,25 @@ static UiActionFlags RenderSchemaPanels(const UISchema& schema,
                 } else {
                     prevWasSeedButton = false;
                     bool controlInteracted = false;
+                    const bool disableForAdvancedWindow =
+                        ctrl.has_binding &&
+                        ctrl.binding.kind == "param" &&
+                        ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(colorPipelineWindow, ctrl.binding.path);
                     const bool isColoringModeControl =
                         ctrl.has_binding &&
                         ctrl.binding.kind == "param" &&
                         ctrl.binding.path == "fractal.params.coloring_mode" &&
                         (!ctrl.has_visible_if || bind.EvalVisibleIf(ctrl.visible_if));
+                    if (disableForAdvancedWindow) {
+                        ImGui::BeginDisabled();
+                    }
                     RenderControlFromSchema(ctrl, bind, &dirty, &a.renderOnce, &controlInteracted);
+                    if (disableForAdvancedWindow) {
+                        ImGui::EndDisabled();
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                            ImGui::SetTooltip("Close the Color Pipeline window to use the legacy Coloring Mode and Grading controls.");
+                        }
+                    }
                     if (isColoringModeControl) {
                         ImGui::SameLine();
                         ImGui::PushID("color_pipeline_entry");
@@ -841,6 +855,7 @@ static UiActionFlags RenderControlsWindow(
         bool canLoadFits, const std::string& loadFitsHint,
         const SweepPlayerConfig& sweepConfig, SweepPlayerState& sweepState,
         bool& sweepPaused, bool& sweepSingleStep,
+    const ColorPipelineWindowState& colorPipelineWindow,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
     ImGui::Begin("Controls");
     if (!schemaWarning.empty()) {
@@ -856,7 +871,7 @@ static UiActionFlags RenderControlsWindow(
     bind.lens = &lens;
     Float2 uiCenterBefore = view.center;
     float uiZoomBefore = view.zoom;
-    UiActionFlags actions = RenderSchemaPanels(schema, bind, canLoadFits, loadFitsHint, dirty);
+    UiActionFlags actions = RenderSchemaPanels(schema, bind, canLoadFits, loadFitsHint, colorPipelineWindow, dirty);
     if (view.center.x != uiCenterBefore.x || view.center.y != uiCenterBefore.y || view.zoom != uiZoomBefore) {
         SyncViewHpFromUi(view);
     }
@@ -2280,6 +2295,7 @@ static void RunViewerFrame(
         findingStatus, lastFindingPath,
         true, loadFitsHint,
         cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
+        colorPipelineWindow,
         lastFractalType, lastPolyKind, dirty);
 
     DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,

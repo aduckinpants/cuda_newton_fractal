@@ -1340,6 +1340,30 @@ int main() {
             return 1;
         }
 
+        ColorPipelineWindowState legacyControlOwnershipState{};
+        if (ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(
+                legacyControlOwnershipState,
+                "fractal.params.coloring_mode") ||
+            ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(
+                legacyControlOwnershipState,
+                "fractal.params.color_grading")) {
+            std::cerr << "Expected the simple Coloring Mode and Grading controls to remain available while the advanced color window stays closed\n";
+            return 1;
+        }
+        legacyControlOwnershipState.open = true;
+        if (!ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(
+                legacyControlOwnershipState,
+                "fractal.params.coloring_mode") ||
+            !ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(
+                legacyControlOwnershipState,
+                "fractal.params.color_grading") ||
+            ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(
+                legacyControlOwnershipState,
+                "fractal.params.color_saturation")) {
+            std::cerr << "Expected the advanced color window to own only the legacy Coloring Mode and Grading controls while it is open\n";
+            return 1;
+        }
+
         ColorPipelineWindowState invalidLiveWindowState{};
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);

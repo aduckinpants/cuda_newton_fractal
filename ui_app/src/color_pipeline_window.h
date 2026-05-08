@@ -92,6 +92,17 @@ struct ColorPipelineRenderInteractionState {
     bool interacted = false;
 };
 
+inline bool IsLegacyColorPanelControlBindingPath(const std::string& bindingPath) {
+    return bindingPath == "fractal.params.coloring_mode" ||
+        bindingPath == "fractal.params.color_grading";
+}
+
+inline bool ShouldDisableLegacyColorPanelControlWhileAdvancedWindowOpen(
+    const ColorPipelineWindowState& state,
+    const std::string& bindingPath) {
+    return state.open && IsLegacyColorPanelControlBindingPath(bindingPath);
+}
+
 template <typename T>
 inline void ClampColorPipelineNumericValue(T* value, const NumericControlRange& range) {
     if (!value) {

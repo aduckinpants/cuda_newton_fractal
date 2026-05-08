@@ -140,6 +140,11 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.multibrot_power_float = 3.0f;
     params.lambda_real = 2.9685855f;
     params.lambda_imag = -0.27446103f;
+    params.color_saturation = 1.15f;
+    params.color_contrast = 1.10f;
+    params.color_tint_r = 1.0f;
+    params.color_tint_g = 1.0f;
+    params.color_tint_b = 1.0f;
     params.color_phase_signal_offset = 0.0f;
     params.color_phase_wrap_cycles = 1.0f;
     params.color_phase_palette_offset = 0.0f;

@@ -59,6 +59,11 @@ int main() {
     params.color_iteration_band_palette_offset = 0.4f;
     params.color_smooth_escape_scale = 2.0f;
     params.color_smooth_escape_bias = -0.25f;
+    params.color_saturation = 0.55f;
+    params.color_contrast = 2.2f;
+    params.color_tint_r = 0.4f;
+    params.color_tint_g = 1.7f;
+    params.color_tint_b = 0.25f;
     params.color_heatmap_cycle_scale = 1.75f;
     params.color_heatmap_saturation = 1.4f;
     params.color_explaino_palette_seed_scale = 1.5f;
@@ -117,6 +122,11 @@ int main() {
         !NearlyEqual(params.color_iteration_band_palette_offset, 0.0f) ||
         !NearlyEqual(params.color_smooth_escape_scale, 1.0f) ||
         !NearlyEqual(params.color_smooth_escape_bias, 0.0f) ||
+        !NearlyEqual(params.color_saturation, 1.15f) ||
+        !NearlyEqual(params.color_contrast, 1.10f) ||
+        !NearlyEqual(params.color_tint_r, 1.0f) ||
+        !NearlyEqual(params.color_tint_g, 1.0f) ||
+        !NearlyEqual(params.color_tint_b, 1.0f) ||
         !NearlyEqual(params.color_heatmap_cycle_scale, 1.0f) ||
         !NearlyEqual(params.color_heatmap_saturation, 1.0f) ||
         !NearlyEqual(params.color_explaino_palette_seed_scale, 1.0f) ||
@@ -124,7 +134,7 @@ int main() {
         !NearlyEqual(params.color_explaino_palette_colorfulness, 1.0f) ||
         !NearlyEqual(params.color_contrast_lift_exposure, 1.0f) ||
         !NearlyEqual(params.color_contrast_lift_saturation, 1.0f)) {
-        std::cerr << "Reset should restore phase, band, and advanced programmable color parameter defaults\n";
+        std::cerr << "Reset should restore the base Color-panel defaults alongside the phase, band, and advanced programmable color parameter defaults\n";
         return 1;
     }
     if (render.resolution.x != 2048 || render.resolution.y != 1536 || render.block_size != 256 || render.device_id != 0 || render.benchmark) {

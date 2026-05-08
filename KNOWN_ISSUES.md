@@ -88,26 +88,23 @@ None of these have real implementations yet.
 
 ## P1 — Advanced color reset and mode controls can desync live color state
 
-**Status:** open
+**Status:** resolved by `ck:80387857`
 **Area:** advanced color / UI / reset semantics
 
-Current symptoms:
-- `Reset All` can leave the color-area tint and brightness/saturation/contrast style controls in a non-neutral state even after the rest of the fractal runtime is reset.
-- The legacy color-mode dropdown path and the advanced-color pipeline dropdown path are still confusing and can interact in bad ways, leaving advanced color in partially adopted or stale live states.
-- Under those desynchronized states, the `smooth_escape_ramp` source row can appear broken or no-op, but the root cause is not isolated yet between stale reset/default behavior and the dual-dropdown authority problem.
+Resolution summary:
+- `Reset All` now restores the Color-panel saturation, contrast, and tint defaults through the same shared preset authority that already resets the widened programmable color owners.
+- While the advanced color window is open, the simple `Coloring Mode` and `Grading` combos are now disabled so the advanced editor owns the live color path instead of fighting the legacy dropdown seam.
+- The reported `smooth_escape_ramp` no-op symptom was not reproducible after those state-ownership repairs, and the existing smooth-escape runtime regressions stayed green without any separate renderer math change.
 
-Likely ownership hotspots:
+Owning seams touched by the fix:
 - `ui_app/src/main.cpp` — reset-all dispatch and the legacy `coloring_mode` UI path
-- `ui_app/src/runtime_reset.cpp` — reset/default application
+- `ui_app/src/fractal_derived_fields.cpp` — shared color default authority used by reset and preset application
 - `ui_app/src/color_pipeline_window.h` — draft/live adoption, lane selection, and advanced-color import/apply behavior
-- `ui_app/src/escape_time_coloring.h` — runtime smooth-escape signal path once state reaches the renderer
+- `ui_app/tests/test_runtime_reset.cpp` and `ui_app/tests/test_schema_binding.cpp` — focused regressions for the reset/default seam and the live control-ownership seam
 
-Potential fixes:
-1. Make `Reset All` re-neutralize the color-area tint and brightness/saturation/contrast style state at the same authority layer that resets the advanced-color lane owners.
-2. Collapse or hard-disable conflicting dropdown combinations so one control surface owns the live color path at a time instead of letting legacy and advanced-color state fight.
-3. Add a focused regression that toggles reset-all plus legacy/advanced-color dropdown transitions and proves the smooth escape source still changes rendered output.
+Checkpoint: `ck:80387857`
 
-**Files:** `ui_app/src/main.cpp`, `ui_app/src/runtime_reset.cpp`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`
+**Files:** `ui_app/src/main.cpp`, `ui_app/src/fractal_derived_fields.cpp`, `ui_app/src/color_pipeline_window.h`, `ui_app/tests/test_runtime_reset.cpp`, `ui_app/tests/test_schema_binding.cpp`
 
 ---
 
