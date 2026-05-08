@@ -43,7 +43,7 @@
 - Treat the workspace checkpoint guard hook as mandatory enforcement, not advice: if it blocks `task_complete` or stop because repo state differs from the session baseline, resolve the repo state before trying to end the slice.
 - Treat the always-on strict banner as expected repo state. The banner is not just prose: if the hook denies the action, fix the contract/receipt state or route through the approved wrapper.
 - If repo closure still requires a checkpoint commit or validation receipt, surface that requirement explicitly instead of silently stopping on a validated dirty slice.
-- For viewer-first features, helper-only or CLI-only proof is not enough. Closure requires runtime viewer-path proof and a machine-written contract proof receipt.
+- For viewer-first features, helper-only or CLI-only proof is not enough. Closure requires a validation receipt that records both runtime publish and runtime viewer-path proof, plus a machine-written contract proof receipt; the checkpoint guard denies viewer-first receipts missing either command class.
 - Prefer the public validation task surface instead of reconstructing command bundles from memory:
     the `verify: profile ...` VS Code tasks.
 - Do not fork core workflow tools from mainline into this repo under the same names;

@@ -292,6 +292,153 @@ def test_write_validation_receipt_records_current_clean_head(tmp_path: Path) -> 
     assert receipt["commands"] == ["ui_app/build_tests_vsdevcmd.cmd", "ui_app/build_vsdevcmd.cmd"]
 
 
+def test_write_validation_receipt_rejects_viewer_first_missing_published_runtime_proof(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    subprocess.run(["git", "init"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.email", "agent@example.com"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.name", "Agent"], cwd=repo_root, check=True, capture_output=True, text=True)
+    (repo_root / "README.md").write_text("hello\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.parent.mkdir(parents=True)
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["runtime proof"],
+                "forbidden_operator_prompts": ["helper-only proof"],
+                "required_defaults": {"runtime_publish": "required"},
+                "forbidden_defaults": {"helper_only": "forbidden"},
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "contract_schema_valid",
+                        "description": "contract schema valid",
+                        "evidence_kind": "validator_json",
+                        "artifact_path": "artifacts/validation/contract.json",
+                        "json_path": "ok",
+                        "equals": True
+                    }
+                ]
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session(contract_state.GLOBAL_CONTRACT_SESSION_ID, repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "add", "."], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock viewer-first slice"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+    try:
+        write_validation_receipt(
+            "viewer-first publish only",
+            repo_root=repo_root,
+            commands=["ui_app/build_vsdevcmd.cmd"],
+        )
+        assert False, "Expected viewer-first validation receipt write to reject missing published-runtime proof"
+    except RuntimeError as exc:
+        assert "published-runtime proof" in str(exc)
+
+
+def test_write_validation_receipt_accepts_viewer_first_publish_and_runtime_proof(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    subprocess.run(["git", "init"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.email", "agent@example.com"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.name", "Agent"], cwd=repo_root, check=True, capture_output=True, text=True)
+    (repo_root / "README.md").write_text("hello\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.parent.mkdir(parents=True)
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["runtime proof"],
+                "forbidden_operator_prompts": ["helper-only proof"],
+                "required_defaults": {"runtime_publish": "required"},
+                "forbidden_defaults": {"helper_only": "forbidden"},
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "contract_schema_valid",
+                        "description": "contract schema valid",
+                        "evidence_kind": "validator_json",
+                        "artifact_path": "artifacts/validation/contract.json",
+                        "json_path": "ok",
+                        "equals": True
+                    }
+                ]
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session(contract_state.GLOBAL_CONTRACT_SESSION_ID, repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "add", "."], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock viewer-first slice"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+    path = write_validation_receipt(
+        "viewer-first publish and runtime proof",
+        repo_root=repo_root,
+        commands=[
+            "ui_app/build_vsdevcmd.cmd",
+            "py -3.14 -m pytest tests/test_explaino_runtime_walk_tool.py -q",
+        ],
+    )
+
+    assert path.exists()
+
+
 def test_write_validation_receipt_rejects_dirty_repo(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
@@ -805,3 +952,91 @@ def test_evaluate_contract_proof_receipt_guard_blocks_when_locked_contract_has_d
 
     assert should_block is True
     assert "changed after it was locked" in reason
+
+
+def test_evaluate_contract_proof_receipt_guard_blocks_viewer_first_missing_published_runtime_proof(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / "docs" / "contracts").mkdir(parents=True)
+    (repo_root / "docs" / "notes").mkdir(parents=True)
+    (repo_root / "tools").mkdir()
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["tools"],
+                "required_operator_inputs": ["runtime proof"],
+                "forbidden_operator_prompts": ["helper-only proof"],
+                "required_defaults": {"runtime_publish": "required"},
+                "forbidden_defaults": {"helper_only": "forbidden"},
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "strict_banner_emitted",
+                        "description": "Strict banner emitted",
+                        "evidence_kind": "pytest_junit_case",
+                        "artifact_path": "artifacts/pytest/banner.junit.xml",
+                        "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_allows_other_tools_but_still_emits_strict_banner"
+                    }
+                ]
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md").write_text(
+        "# Plan\n\n## Current Phase\n\nPhase 1 - X\n\n## Phase Checklist\n\n- [ ] Phase 1 - X\n",
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session("session-1", repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": ["tools"],
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    receipt_path = validation_receipt_path("def456", repo_root)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(
+        json.dumps(
+            {
+                "head": "def456",
+                "summary": "publish only",
+                "commands": ["ui_app/build_vsdevcmd.cmd"],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    baseline = _snapshot()
+    baseline["head"] = "abc123"
+    current = _snapshot()
+    current["head"] = "def456"
+
+    should_block, reason = checkpoint_guard.evaluate_contract_proof_receipt_guard(
+        baseline,
+        current,
+        "session-1",
+        repo_root,
+    )
+
+    assert should_block is True
+    assert "published-runtime proof" in reason

@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "contract_id": "viewer_first_runtime_proof_guardrail_followup",
+  "feature_id": "viewer_first_runtime_proof_guardrail_followup",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/viewer_first_runtime_proof_guardrail_followup_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    ".github/copilot-instructions.md",
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md",
+    "docs/contracts",
+    "docs/notes/viewer_first_runtime_proof_guardrail_followup_PHASED_PLAN.md",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_viewer_host_checkpoint_guard.py",
+    "tools/viewer_host_checkpoint_guard.py"
+  ],
+  "required_operator_inputs": [
+    "add one more published-runtime Explaino basin smoke for the new programmable basin path",
+    "make viewer-first closure fail when validation receipts omit runtime publish or published-runtime proof",
+    "update the checked-in repo workflow guidance so the new enforcement rule is explicit instead of implied",
+    "keep the follow-up bounded so real feature work can resume afterward"
+  ],
+  "forbidden_operator_prompts": [
+    "close the slice on headless-only or helper-only proof",
+    "treat a receipt as sufficient just because it exists",
+    "resume unrelated advanced-color roadmap work in the same slice",
+    "leave the viewer-first proof requirement as prose-only guidance"
+  ],
+  "required_defaults": {
+    "viewer_first_receipts_require_runtime_publish": "required",
+    "viewer_first_receipts_require_published_runtime_proof": "required",
+    "new_basin_runtime_smoke_is_published_runtime": "required"
+  },
+  "forbidden_defaults": {
+    "helper_only_runtime_closure": "forbidden",
+    "receipt_exists_so_close_anyway": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/viewer_first_runtime_proof_guardrail_followup.contract.json --out-json artifacts/validation/viewer_first_runtime_proof_guardrail_followup_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "viewer_first_runtime_proof_guardrail_followup_contract_schema_valid",
+      "description": "The viewer-first runtime proof guardrail follow-up contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_first_runtime_proof_guardrail_followup_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "viewer_first_runtime_proof_guardrail_followup_plan_sync_ok",
+      "description": "The viewer-first runtime proof guardrail follow-up phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

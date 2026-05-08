@@ -43,7 +43,7 @@ The VS Code task surface mirrors these commands:
 - Raw `apply_patch` is forbidden by the hook guard; use the approved `viewer_host_*` mutation wrappers.
 - Raw mutating shell commands are forbidden; only read/search/build/test/check commands may run directly.
 - The active slice contract is hash-locked. If it changes mid-slice, mutation and closure are blocked until `py -3.14 tools/viewer_host_revise_contract.py --session-id <session_id> --contract <contract>` re-locks it.
-- Viewer-first work cannot close on helper-only or CLI-only proof.
+- Viewer-first work cannot close on helper-only or CLI-only proof. The validation receipt must record both a runtime publish command and a published-runtime proof command, or receipt writing and closure are denied.
 - Closure without a machine-written contract proof receipt is forbidden.
 
 ## Strict Banner Rule
@@ -154,6 +154,7 @@ Before ending a meaningful work slice:
    - `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`
    - `py -3.14 tools\viewer_host_write_contract_proof_receipt.py --session-id global_active_contract`
    - or use `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id global_active_contract --summary "<what passed>" --command "<validation cmd>" ...`
+   - for `viewer_first` runtime-visible slices, the validation receipt must include both runtime publish (`ui_app/build_vsdevcmd.cmd` or `verify: profile runtime|checkpoint`) and published-runtime proof (`tools/viewer_host_runtime_pytest_lane.py` or direct `pytest tests/test_fractal_runtime*.py` / equivalent runtime CLI pytest)
 6. Follow the repo checkpoint discipline from `AGENT_WORKING_PROTOCOL.md`.
 7. Do not say done unless the explicit closure standard above is satisfied end-to-end.
 8. If the current prompt arrived while the repo already differed from the session baseline, resolve that carryover before treating any new request as a fresh slice.

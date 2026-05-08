@@ -303,6 +303,72 @@ def load_validation_receipt(head: str, repo_root: Path = REPO_ROOT) -> dict[str,
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _viewer_first_validation_commands(commands: Any) -> list[str]:
+    if not isinstance(commands, list):
+        return []
+    out: list[str] = []
+    for command in commands:
+        text = str(command).strip()
+        if text:
+            out.append(text)
+    return out
+
+
+def _command_counts_as_runtime_publish(command: str) -> bool:
+    normalized = _normalize_text(command)
+    return any(
+        token in normalized
+        for token in (
+            "ui_app\\build_vsdevcmd.cmd",
+            "verify: runtime publish",
+            "verify: profile runtime",
+            "verify: profile checkpoint",
+        )
+    )
+
+
+def _command_counts_as_published_runtime_proof(command: str) -> bool:
+    normalized = _normalize_text(command)
+    if "verify: profile runtime" in normalized or "verify: profile checkpoint" in normalized:
+        return True
+    if "tools\\viewer_host_runtime_pytest_lane.py" in normalized:
+        return True
+    if "pytest" not in normalized:
+        return False
+    return any(
+        token in normalized
+        for token in (
+            "tests\\test_explaino_runtime_walk_tool.py",
+            "tests\\test_flashlight_bridge_runner.py",
+            "tests\\test_fractal_runtime",
+            "tests\\test_function_descriptor_cli.py",
+            "tests\\test_generic_probe_cli.py",
+        )
+    )
+
+
+def evaluate_viewer_first_validation_command_guard(
+    commands: Any,
+    workflow_type: str | None,
+) -> tuple[bool, str]:
+    if str(workflow_type or "").strip() != "viewer_first":
+        return False, ""
+
+    command_list = _viewer_first_validation_commands(commands)
+    if not any(_command_counts_as_runtime_publish(command) for command in command_list):
+        return True, (
+            "Viewer-first validation receipt is missing a runtime publish command. "
+            "Record `ui_app/build_vsdevcmd.cmd` or the equivalent runtime/checkpoint profile before closure."
+        )
+    if not any(_command_counts_as_published_runtime_proof(command) for command in command_list):
+        return True, (
+            "Viewer-first validation receipt is missing published-runtime proof. "
+            "Record `tools/viewer_host_runtime_pytest_lane.py` or direct pytest against `tests/test_fractal_runtime*.py` "
+            "(or the runtime/checkpoint profile) before closure."
+        )
+    return False, ""
+
+
 def write_validation_receipt(
     summary: str,
     *,
@@ -315,6 +381,18 @@ def write_validation_receipt(
     if not snapshot_is_clean(snapshot):
         raise RuntimeError("Validation receipt requires a clean repository state")
 
+    commands_list = _viewer_first_validation_commands(list(commands or []))
+    contract_state, contract_error = validate_locked_contract_state(GLOBAL_CONTRACT_SESSION_ID, repo_root)
+    if contract_error and contract_error != "no active contract state":
+        raise RuntimeError(contract_error)
+
+    should_block, reason = evaluate_viewer_first_validation_command_guard(
+        commands_list,
+        None if contract_error else str(contract_state.get("workflow_type", "")).strip(),
+    )
+    if should_block:
+        raise RuntimeError(reason)
+
     head = str(snapshot.get("head", "")).strip()
     path = validation_receipt_path(head, repo_root)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -322,8 +400,8 @@ def write_validation_receipt(
         "repo_root": repo_root.as_posix(),
         "head": head,
         "summary": summary,
-        "commands": list(commands or []),
-        "evidence": build_validation_evidence_entries(list(commands or []), repo_root),
+        "commands": commands_list,
+        "evidence": build_validation_evidence_entries(commands_list, repo_root),
         "notes": list(notes or []),
         "clean": True,
         "written_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -389,6 +467,14 @@ def evaluate_contract_proof_receipt_guard(
     contract_payload, contract_result = load_and_validate_slice_contract(contract_path, repo_root)
     if contract_payload is None or not contract_result.ok:
         return True, "Active slice contract failed validation during closure."
+
+    validation_receipt = load_validation_receipt(current_head, repo_root)
+    should_block, reason = evaluate_viewer_first_validation_command_guard(
+        None if validation_receipt is None else validation_receipt.get("commands", []),
+        str(contract_payload.get("workflow_type", "")).strip(),
+    )
+    if should_block:
+        return True, reason
 
     receipt = load_contract_proof_receipt(current_head, repo_root)
     if receipt is None:

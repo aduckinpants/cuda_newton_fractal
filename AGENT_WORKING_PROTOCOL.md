@@ -140,6 +140,12 @@ Clean git state alone is not enough to justify closure after a commit in the sam
 If the current `HEAD` differs from the session-start `HEAD`, completion also requires a
 validation receipt and a machine-written contract proof receipt for the current committed state.
 
+For `viewer_first` runtime-visible work, the validation receipt is only valid if it records both:
+- a runtime publish command (`ui_app/build_vsdevcmd.cmd` or the equivalent runtime/checkpoint profile)
+- a published-runtime proof command (`tools/viewer_host_runtime_pytest_lane.py`, direct `pytest tests/test_fractal_runtime*.py`, or equivalent runtime CLI pytest)
+
+If either command class is missing, receipt writing and final closure are blocked.
+
 Required flow after the final validation commands pass for the slice:
 1. ensure the repo is clean at the final committed `HEAD`
 2. write a receipt with `py -3.14 tools\viewer_host_write_validation_receipt.py --summary "<what passed>" --command "<validation cmd>" ...`
@@ -151,6 +157,7 @@ The checkpoint guard enforces this deterministically:
 - `PostToolUse` reminds immediately when `HEAD` advanced without a receipt
 - `PreToolUse` denies `task_complete` for a clean-but-unreceipted committed state
 - `Stop` blocks ending the slice until the receipt exists
+- for `viewer_first` slices, receipt writing and closure are also denied if the recorded commands omit runtime publish or published-runtime proof
 
 ### 2.6 Carryover Prompt Rule
 
