@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basin_coloring.h"
+#include "explaino_seed_curve.h"
 #include "fractal_family_rules.h"
 #include "fractal_types.h"
 
@@ -533,9 +534,51 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
         params);
 }
 
+ESCAPE_TIME_COLOR_HD inline float EscapeTimeColorExplainoSeed(float value) {
+    double wrapped = static_cast<double>(value) - std::floor(static_cast<double>(value));
+    if (wrapped < 0.0) {
+        wrapped += 1.0;
+    }
+    return static_cast<float>(ExplainoWedgeTween(wrapped));
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleExplainoSeedChannels(float basePhase) {
+    return {
+        EscapeTimeColorExplainoSeed(basePhase),
+        EscapeTimeColorExplainoSeed(basePhase + 0.33f),
+        EscapeTimeColorExplainoSeed(basePhase + 0.66f),
+    };
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyExplainoColorfulness(EscapeTimeColorRgb baseRgb, float colorfulness) {
+    const float twoPi = 6.28318530717958647692f;
+    const EscapeTimeColorRgb vividRgb{
+        0.5f + 0.5f * sinf(twoPi * baseRgb.r),
+        0.5f + 0.5f * cosf(twoPi * baseRgb.g),
+        0.5f + 0.5f * sinf((2.0f * twoPi) * baseRgb.b),
+    };
+    const float blend = EscapeTimeColorClamp(colorfulness, 0.0f, 1.0f);
+    return {
+        EscapeTimeColorLerp(baseRgb.r, vividRgb.r, blend),
+        EscapeTimeColorLerp(baseRgb.g, vividRgb.g, blend),
+        EscapeTimeColorLerp(baseRgb.b, vividRgb.b, blend),
+    };
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleExplainoCmap(float signalValue, const KernelParams& params) {
+    const float basePhase = signalValue * EscapeTimeColorClamp(params.color_explaino_palette_seed_scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(params.color_explaino_palette_seed_phase, -1.0f, 1.0f);
+    return ApplyExplainoColorfulness(
+        SampleExplainoSeedChannels(basePhase),
+        params.color_explaino_palette_colorfulness);
+}
+
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color SampleProgrammableEscapeTimePalette(float signalValue, bool escaped, const KernelParams& params) {
     const float twoPi = 6.28318530717958647692f;
+    if (params.color_pipeline.palette == ColorPalette::explaino_cmap) {
+        return EscapeTimeColorFromRgb<Color>(SampleExplainoCmap(signalValue, params));
+    }
     if (params.color_pipeline.palette == ColorPalette::phase_wheel) {
         const float hue = signalValue + (params.color_phase_palette_offset / twoPi);
         return HsvToRgb<Color>(hue, 0.9f, escaped ? 0.85f : 0.25f);

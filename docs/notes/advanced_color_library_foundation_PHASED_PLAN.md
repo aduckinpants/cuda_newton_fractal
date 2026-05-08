@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 ready - Phase 3 Shape is now fully widened through `smooth_window`; the next bounded slice is the initial Palette library through the extracted registry/core, family-gating, live-bridge, and persistence seams
+Phase 4 in progress - `explaino_cmap` is now a validated runtime-real Palette row with the open-window auto-apply regression repaired; before resuming the family-gated root palette widening, checkpoint this slice and run the requested reset/dropdown desync issues pass
 
 ## Phase Checklist
 
@@ -81,18 +81,27 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock smooth_window catalog visibility, live bridge apply/sync behavior, runtime signal shaping, seam-wrap behavior, diagnostics round-trip, Capture Finding persistence, and reset defaults through the dedicated owner triple.
 - Validated: `artifacts/validation/advanced_color_library_foundation_phase3_shape_smooth_window_contract.json` validates the Phase 3 smooth_window contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the published runtime.
 - Audit: hostile review found that the first smooth_window implementation failed to wrap a window centered near the upper domain edge across the shape seam; `ui_app/tests/test_escape_time_coloring.cpp` now locks that case and `ui_app/src/escape_time_coloring.h` computes smooth_window via wrapped center distance instead of a non-wrapping lo/hi interval.
+- Known issue tracked separately: `KNOWN_ISSUES.md` now records that Reset All, the legacy/advanced-color dropdown surfaces, and the smooth-escape source row can still desynchronize in the live UI; that product bug is documented but not claimed as part of the `explaino_cmap` slice unless the new palette row proves it depends on the same defect.
+- Landed: `ui_app/src/fractal_types.h`, `ui_app/src/enum_id_utils.h`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/fractal_family_rules.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, and `ui_app/src/fractal_derived_fields.cpp` now treat `explaino_cmap` as a real Palette row with explicit palette.seed_scale / palette.seed_phase / palette.colorfulness owners, runtime tuple mirroring, live import/apply/reset support, Capture Finding persistence, diagnostics load support, and reset defaults.
+- Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock explaino_cmap catalog visibility, bridge selection, live apply/sync behavior, runtime palette behavior, diagnostics load, Capture Finding persistence, and reset defaults.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase4_palette_explaino_cmap_contract.json` validates the Phase 4 explaino_cmap contract, `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green, `artifacts/code_quality_report.json` remains on the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the published runtime.
+- Audit: hostile review found that the first explaino_cmap runtime sampler duplicated the ExplainO wedge tween math inline instead of reusing the existing shared seed-curve seam; `ui_app/src/escape_time_coloring.h` now routes that palette through `ui_app/src/explaino_seed_curve.h` and the helper plus runtime rails stayed green on the repaired state.
+- Audit: confidence rebuild after the user's runtime report found that opening the advanced color pipeline window on an unsupported or invalid live tuple was auto-applying the starter draft on first render; `ui_app/src/color_pipeline_window.h` now requires actual in-window interaction before the end-of-frame auto-apply helper can mutate the runtime, and `ui_app/tests/test_schema_binding.cpp` now locks both the unsupported-startup-open path and the live `explaino_cmap` render path.
+- Next bounded slice: after checkpointing this explaino_cmap sub-slice, run the requested reset/dropdown desync issues pass before returning to the family-gated root palette rows.
 
 ## Notes
 
 - Expected owner files for the current slice:
+  - `KNOWN_ISSUES.md`
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase3_shape_smooth_window.contract.json`
+  - `docs/contracts/advanced_color_library_foundation_phase4_palette_explaino_cmap.contract.json`
   - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/color_pipeline_window.h`
   - `ui_app/src/diagnostics_capture.cpp`
   - `ui_app/src/diagnostics_state_io.cpp`
   - `ui_app/src/enum_id_utils.h`
   - `ui_app/src/escape_time_coloring.h`
+  - `ui_app/src/fractal_family_rules.h`
   - `ui_app/src/fractal_derived_fields.cpp`
   - `ui_app/src/fractal_types.h`
   - `ui_app/tests/test_diagnostics_state_io.cpp`
@@ -101,16 +110,18 @@ The controlling product risk is no longer just "missing functions." The current 
   - `ui_app/tests/test_runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
 - Non-goals for this slice:
-  - do not widen beyond `smooth_window` inside the Shape lane yet
+  - do not widen beyond `explaino_cmap` inside the Palette lane yet
   - do not implement the Balance/Void grading operator yet
   - do not implement ExplainO-BalanceVoid yet
-  - do not widen Palette or Grading yet
+  - do not widen the family-gated root palettes or Grading yet
   - do not widen into Blend or Mask/Domain yet
   - do not add preview-only shape rows or fake bridge support
+  - do not claim to fix the newly logged reset/dropdown/smooth-escape UI bug in the same slice unless it proves to be a direct blocker
 
 ## Resume Point
 
-After `smooth_window` lands as a validated runtime-real Shape row, close Phase 3 and continue into the initial Palette library through the same extracted registry/core, family-gating, and live-bridge seams.
+Checkpoint the `explaino_cmap` sub-slice first, then run the requested reset/dropdown desync issues pass; once that bug-fix detour is closed, continue Phase 4 with the family-gated root palette rows through the same extracted registry/core, family-gating, and live-bridge seams.
+
 
 
 

@@ -156,6 +156,73 @@ int main() {
         }
 
         params.color_heatmap_cycle_scale = 1.0f;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        params.color_explaino_palette_seed_scale = 1.0f;
+        params.color_explaino_palette_seed_phase = 0.0f;
+        params.color_explaino_palette_colorfulness = 1.0f;
+        const TestColor explainoBase = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(programmableBase, explainoBase)) {
+            std::cerr << "explaino_cmap should not silently fall back to the shipped heatmap palette\n";
+            return 1;
+        }
+
+        params.color_explaino_palette_seed_scale = 1.75f;
+        const TestColor scaledExplaino = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(explainoBase, scaledExplaino)) {
+            std::cerr << "explaino_cmap should react to its dedicated seed-scale owner field\n";
+            return 1;
+        }
+
+        params.color_explaino_palette_seed_scale = 1.0f;
+        params.color_explaino_palette_seed_phase = 0.25f;
+        const TestColor shiftedExplaino = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(explainoBase, shiftedExplaino)) {
+            std::cerr << "explaino_cmap should react to its dedicated seed-phase owner field\n";
+            return 1;
+        }
+
+        params.color_explaino_palette_seed_phase = 0.0f;
+        params.color_explaino_palette_colorfulness = 0.0f;
+        const TestColor mutedExplaino = MakeEscapeTimeBaseColor<TestColor>(
+            FractalType::mandelbrot,
+            ColoringMode::smooth_escape,
+            true,
+            10,
+            100,
+            TestComplex{4.0f, 0.0f},
+            params);
+        if (Equals(explainoBase, mutedExplaino)) {
+            std::cerr << "explaino_cmap should react to its dedicated colorfulness owner field\n";
+            return 1;
+        }
+
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_explaino_palette_seed_scale = 1.0f;
+        params.color_explaino_palette_seed_phase = 0.0f;
+        params.color_explaino_palette_colorfulness = 1.0f;
+
+        params.color_heatmap_cycle_scale = 1.0f;
         params.color_shape = ColorPipelineShape::offset_scale;
         params.color_shape_offset = 0.35f;
         params.color_shape_scale = 1.8f;

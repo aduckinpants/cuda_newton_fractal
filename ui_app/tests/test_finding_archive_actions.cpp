@@ -393,6 +393,55 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_explaino_cmap";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        params.color_explaino_palette_seed_scale = 1.5f;
+        params.color_explaino_palette_seed_phase = 0.25f;
+        params.color_explaino_palette_colorfulness = 0.8f;
+        RenderSettings render{};
+        render.resolution = {16, 16};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff112233u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(
+            runtimeDir.string(),
+            view,
+            params,
+            render,
+            stats,
+            rgba.data(),
+            rgba.size(),
+            static_cast<const SidecarOrientationVector*>(nullptr),
+            static_cast<const ColorPipelineWindowState*>(nullptr),
+            &capture,
+            &error)) {
+            std::cerr << "Expected explaino_cmap diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected explaino_cmap diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"color_palette\": \"explaino_cmap\"") == std::string::npos ||
+            stateJson.find("\"color_explaino_palette_seed_scale\"") == std::string::npos ||
+            stateJson.find("\"color_explaino_palette_seed_phase\"") == std::string::npos ||
+            stateJson.find("\"color_explaino_palette_colorfulness\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist the explaino_cmap palette id and dedicated owner fields once runtime-backed\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path runtimeDir = tempRoot / "capture_bundle_smooth_window";
         fs::create_directories(runtimeDir);
 

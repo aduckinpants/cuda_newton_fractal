@@ -791,6 +791,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "phase_wheel_palette") {
         return path == "palette.phase_offset";
     }
+    if (functionId == "explaino_cmap") {
+        return path == "palette.seed_scale" || path == "palette.seed_phase" || path == "palette.colorfulness";
+    }
     if (functionId == "offset_scale") {
         return path == "shape.offset" || path == "shape.scale";
     }
@@ -920,6 +923,11 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     if (ioRow->function_id == "phase_wheel_palette") {
         return SetColorPipelineParamNumber(ioRow, "palette.phase_offset", liveParams.color_phase_palette_offset, outError);
     }
+    if (ioRow->function_id == "explaino_cmap") {
+        return SetColorPipelineParamNumber(ioRow, "palette.seed_scale", liveParams.color_explaino_palette_seed_scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.seed_phase", liveParams.color_explaino_palette_seed_phase, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.colorfulness", liveParams.color_explaino_palette_colorfulness, outError);
+    }
     if (ioRow->function_id == "offset_scale") {
         return SetColorPipelineParamNumber(ioRow, "shape.offset", liveParams.color_shape_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "shape.scale", liveParams.color_shape_scale, outError);
@@ -1036,6 +1044,22 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         assignShapeFloat(&ioParams->color_shape_window_width, 1.0f);
         assignShapeFloat(&ioParams->color_shape_window_softness, 0.0f);
     };
+    const auto resetPaletteHeatmap = [&]() {
+        assignShapeFloat(&ioParams->color_heatmap_cycle_scale, 1.0f);
+        assignShapeFloat(&ioParams->color_heatmap_saturation, 1.0f);
+    };
+    const auto resetPalettePhaseWheel = [&]() {
+        assignShapeFloat(&ioParams->color_phase_palette_offset, 0.0f);
+    };
+    const auto resetPaletteBandedHeatmap = [&]() {
+        assignShapeFloat(&ioParams->color_iteration_band_emphasis, 1.0f);
+        assignShapeFloat(&ioParams->color_iteration_band_palette_offset, 0.0f);
+    };
+    const auto resetPaletteExplaino = [&]() {
+        assignShapeFloat(&ioParams->color_explaino_palette_seed_scale, 1.0f);
+        assignShapeFloat(&ioParams->color_explaino_palette_seed_phase, 0.0f);
+        assignShapeFloat(&ioParams->color_explaino_palette_colorfulness, 1.0f);
+    };
     for (const ColorPipelineLaneState& lane : state.lanes) {
         for (const ColorPipelineRowState& row : lane.rows) {
         if (!row.enabled) {
@@ -1077,6 +1101,9 @@ inline bool ApplySupportedColorPipelineParamsToLive(
                 ioParams->color_heatmap_saturation = static_cast<float>(saturation);
                 changed = true;
             }
+            resetPalettePhaseWheel();
+            resetPaletteBandedHeatmap();
+            resetPaletteExplaino();
             continue;
         }
         if (row.function_id == "contrast_lift") {
@@ -1184,6 +1211,38 @@ inline bool ApplySupportedColorPipelineParamsToLive(
                 ioParams->color_phase_palette_offset = static_cast<float>(paletteOffset);
                 changed = true;
             }
+            resetPaletteHeatmap();
+            resetPaletteBandedHeatmap();
+            resetPaletteExplaino();
+            continue;
+        }
+        if (row.function_id == "explaino_cmap") {
+            double seedScale = 0.0;
+            double seedPhase = 0.0;
+            double colorfulness = 0.0;
+            if (!TryGetColorPipelineParamNumber(row, "palette.seed_scale", &seedScale, outError) ||
+                !TryGetColorPipelineParamNumber(row, "palette.seed_phase", &seedPhase, outError) ||
+                !TryGetColorPipelineParamNumber(row, "palette.colorfulness", &colorfulness, outError) ||
+                !ValidateColorPipelineParamRange("palette.seed_scale", seedScale, 0.25, 4.0, outError) ||
+                !ValidateColorPipelineParamRange("palette.seed_phase", seedPhase, -1.0, 1.0, outError) ||
+                !ValidateColorPipelineParamRange("palette.colorfulness", colorfulness, 0.0, 1.0, outError)) {
+                return false;
+            }
+            if (std::fabs(ioParams->color_explaino_palette_seed_scale - static_cast<float>(seedScale)) > 1.0e-6f) {
+                ioParams->color_explaino_palette_seed_scale = static_cast<float>(seedScale);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_explaino_palette_seed_phase - static_cast<float>(seedPhase)) > 1.0e-6f) {
+                ioParams->color_explaino_palette_seed_phase = static_cast<float>(seedPhase);
+                changed = true;
+            }
+            if (std::fabs(ioParams->color_explaino_palette_colorfulness - static_cast<float>(colorfulness)) > 1.0e-6f) {
+                ioParams->color_explaino_palette_colorfulness = static_cast<float>(colorfulness);
+                changed = true;
+            }
+            resetPaletteHeatmap();
+            resetPalettePhaseWheel();
+            resetPaletteBandedHeatmap();
             continue;
         }
         if (row.function_id == "identity") {
@@ -1364,6 +1423,9 @@ inline bool ApplySupportedColorPipelineParamsToLive(
                 ioParams->color_iteration_band_palette_offset = static_cast<float>(paletteOffset);
                 changed = true;
             }
+            resetPaletteHeatmap();
+            resetPalettePhaseWheel();
+            resetPaletteExplaino();
             continue;
         }
         }
@@ -1462,6 +1524,9 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     if (sourceRow->function_id == "smooth_escape_ramp" && paletteRow->function_id == "heatmap") {
         pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
         mode = ColoringMode::smooth_escape;
+    } else if (sourceRow->function_id == "smooth_escape_ramp" && paletteRow->function_id == "explaino_cmap") {
+        pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        mode = ColoringMode::smooth_escape;
     } else if (sourceRow->function_id == "phase_orbit" && paletteRow->function_id == "phase_wheel_palette") {
         pipeline = {ColorSignal::phase_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
         mode = ColoringMode::phase;
@@ -1471,11 +1536,17 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     } else if (sourceRow->function_id == "escape_magnitude" && paletteRow->function_id == "heatmap") {
         pipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
         mode = ColoringMode::smooth_escape;
+    } else if (sourceRow->function_id == "escape_magnitude" && paletteRow->function_id == "explaino_cmap") {
+        pipeline = {ColorSignal::escape_magnitude, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        mode = ColoringMode::smooth_escape;
     } else if (sourceRow->function_id == "orbit_stripe" && paletteRow->function_id == "phase_wheel_palette") {
         pipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
         mode = ColoringMode::phase;
     } else if (sourceRow->function_id == "root_proximity" && paletteRow->function_id == "heatmap") {
         pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        mode = ColoringMode::smooth_escape;
+    } else if (sourceRow->function_id == "root_proximity" && paletteRow->function_id == "explaino_cmap") {
+        pipeline = {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
         mode = ColoringMode::smooth_escape;
     } else {
         if (outError) {
@@ -1676,9 +1747,9 @@ inline bool ShouldAutoApplySupportedColorPipelineDraft(
     const ColorPipelineRenderInteractionState& interactionState,
     const KernelParams* liveParams = nullptr) {
     (void)state;
-    (void)interactionState;
     return liveParams &&
         applyState.status == ColorPipelineDraftApplyStatus::can_apply &&
+        interactionState.interacted &&
         !interactionState.has_active_item;
 }
 

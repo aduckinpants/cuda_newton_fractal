@@ -61,6 +61,9 @@ int main() {
     params.color_smooth_escape_bias = -0.25f;
     params.color_heatmap_cycle_scale = 1.75f;
     params.color_heatmap_saturation = 1.4f;
+    params.color_explaino_palette_seed_scale = 1.5f;
+    params.color_explaino_palette_seed_phase = 0.25f;
+    params.color_explaino_palette_colorfulness = 0.8f;
     params.color_contrast_lift_exposure = 1.8f;
     params.color_contrast_lift_saturation = 1.3f;
     render.resolution = {2048, 1024};
@@ -116,6 +119,9 @@ int main() {
         !NearlyEqual(params.color_smooth_escape_bias, 0.0f) ||
         !NearlyEqual(params.color_heatmap_cycle_scale, 1.0f) ||
         !NearlyEqual(params.color_heatmap_saturation, 1.0f) ||
+        !NearlyEqual(params.color_explaino_palette_seed_scale, 1.0f) ||
+        !NearlyEqual(params.color_explaino_palette_seed_phase, 0.0f) ||
+        !NearlyEqual(params.color_explaino_palette_colorfulness, 1.0f) ||
         !NearlyEqual(params.color_contrast_lift_exposure, 1.0f) ||
         !NearlyEqual(params.color_contrast_lift_saturation, 1.0f)) {
         std::cerr << "Reset should restore phase, band, and advanced programmable color parameter defaults\n";

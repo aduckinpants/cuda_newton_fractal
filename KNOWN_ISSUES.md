@@ -86,6 +86,31 @@ None of these have real implementations yet.
 
 ---
 
+## P1 — Advanced color reset and mode controls can desync live color state
+
+**Status:** open
+**Area:** advanced color / UI / reset semantics
+
+Current symptoms:
+- `Reset All` can leave the color-area tint and brightness/saturation/contrast style controls in a non-neutral state even after the rest of the fractal runtime is reset.
+- The legacy color-mode dropdown path and the advanced-color pipeline dropdown path are still confusing and can interact in bad ways, leaving advanced color in partially adopted or stale live states.
+- Under those desynchronized states, the `smooth_escape_ramp` source row can appear broken or no-op, but the root cause is not isolated yet between stale reset/default behavior and the dual-dropdown authority problem.
+
+Likely ownership hotspots:
+- `ui_app/src/main.cpp` — reset-all dispatch and the legacy `coloring_mode` UI path
+- `ui_app/src/runtime_reset.cpp` — reset/default application
+- `ui_app/src/color_pipeline_window.h` — draft/live adoption, lane selection, and advanced-color import/apply behavior
+- `ui_app/src/escape_time_coloring.h` — runtime smooth-escape signal path once state reaches the renderer
+
+Potential fixes:
+1. Make `Reset All` re-neutralize the color-area tint and brightness/saturation/contrast style state at the same authority layer that resets the advanced-color lane owners.
+2. Collapse or hard-disable conflicting dropdown combinations so one control surface owns the live color path at a time instead of letting legacy and advanced-color state fight.
+3. Add a focused regression that toggles reset-all plus legacy/advanced-color dropdown transitions and proves the smooth escape source still changes rendered output.
+
+**Files:** `ui_app/src/main.cpp`, `ui_app/src/runtime_reset.cpp`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`
+
+---
+
 ## P2 — Perturbation deep zoom only for Mandelbrot / Julia
 
 **Status:** open

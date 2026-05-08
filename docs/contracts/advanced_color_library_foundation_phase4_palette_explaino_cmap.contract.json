@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase4_palette_explaino_cmap",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "KNOWN_ISSUES.md",
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "land explaino_cmap as the first missing broad reusable Palette row after the already-shipped heatmap, phase_wheel_palette, and banded_heatmap rows",
+    "anchor explaino_cmap semantics to the legacy ExplainO CMap oracle instead of the basin/root palette lineage",
+    "use explicit palette owner fields and runtime-backed coverage instead of descriptor-only coverage or overloading the existing heatmap, phase wheel, or banded heatmap owners",
+    "preserve the separation between broad reusable palette work and the later family-gated root_classic_palette / joy_root_palette slices"
+  ],
+  "forbidden_operator_prompts": [
+    "ship explaino_cmap as descriptor-only or draft-only after claiming the slice landed",
+    "borrow the basin/root palette lineage for explaino_cmap instead of using the legacy ExplainO CMap oracle",
+    "reuse heatmap, phase_wheel_palette, or banded_heatmap owner fields for explaino_cmap instead of giving it a dedicated palette owner pack",
+    "widen the family-gated root palettes or Grading in the same slice"
+  ],
+  "required_defaults": {
+    "explaino_cmap_is_runtime_real": "required",
+    "explaino_cmap_uses_explicit_palette_owners": "required",
+    "existing_palette_rows_remain_stable": "required"
+  },
+  "forbidden_defaults": {
+    "descriptor_only_explaino_cmap": "forbidden",
+    "borrowed_palette_owner_fields": "forbidden",
+    "palette_runtime_fallbacks": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase4_palette_explaino_cmap.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase4_palette_explaino_cmap_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase4_explaino_cmap_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 4 explaino_cmap contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase4_palette_explaino_cmap_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase4_explaino_cmap_plan_sync_ok",
+      "description": "The advanced color library foundation phased plan stays synchronized during the explaino_cmap slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

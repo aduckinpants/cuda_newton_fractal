@@ -77,6 +77,7 @@ inline constexpr EnumIdPair<ColorPalette> kColorPaletteIds[] = {
     {ColorPalette::cyclic_escape, "cyclic_escape"},
     {ColorPalette::phase_wheel, "phase_wheel"},
     {ColorPalette::banded_escape, "banded_escape"},
+    {ColorPalette::explaino_cmap, "explaino_cmap"},
 };
 
 inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {

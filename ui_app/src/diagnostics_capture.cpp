@@ -92,6 +92,7 @@ const char* CaptureColorPaletteId(ColorPalette palette) {
     case ColorPalette::cyclic_escape: return "cyclic_escape";
     case ColorPalette::phase_wheel: return "phase_wheel";
     case ColorPalette::banded_escape: return "banded_escape";
+    case ColorPalette::explaino_cmap: return "explaino_cmap";
     }
     return "unknown";
 }
@@ -248,6 +249,9 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_root_proximity_bias\": " << static_cast<double>(params.color_root_proximity_bias) << ",\n";
     js << "    \"color_heatmap_cycle_scale\": " << static_cast<double>(params.color_heatmap_cycle_scale) << ",\n";
     js << "    \"color_heatmap_saturation\": " << static_cast<double>(params.color_heatmap_saturation) << ",\n";
+    js << "    \"color_explaino_palette_seed_scale\": " << static_cast<double>(params.color_explaino_palette_seed_scale) << ",\n";
+    js << "    \"color_explaino_palette_seed_phase\": " << static_cast<double>(params.color_explaino_palette_seed_phase) << ",\n";
+    js << "    \"color_explaino_palette_colorfulness\": " << static_cast<double>(params.color_explaino_palette_colorfulness) << ",\n";
     js << "    \"color_contrast_lift_exposure\": " << static_cast<double>(params.color_contrast_lift_exposure) << ",\n";
     js << "    \"color_contrast_lift_saturation\": " << static_cast<double>(params.color_contrast_lift_saturation) << "\n";
 }

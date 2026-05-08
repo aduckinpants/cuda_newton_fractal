@@ -163,6 +163,9 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.color_smooth_escape_bias = 0.0f;
     params.color_heatmap_cycle_scale = 1.0f;
     params.color_heatmap_saturation = 1.0f;
+    params.color_explaino_palette_seed_scale = 1.0f;
+    params.color_explaino_palette_seed_phase = 0.0f;
+    params.color_explaino_palette_colorfulness = 1.0f;
     params.color_contrast_lift_exposure = 1.0f;
     params.color_contrast_lift_saturation = 1.0f;
 }

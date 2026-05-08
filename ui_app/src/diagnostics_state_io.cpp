@@ -1132,6 +1132,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorRootProximityBias = nextParams.color_root_proximity_bias;
     double colorHeatmapCycleScale = nextParams.color_heatmap_cycle_scale;
     double colorHeatmapSaturation = nextParams.color_heatmap_saturation;
+    double colorExplainoPaletteSeedScale = nextParams.color_explaino_palette_seed_scale;
+    double colorExplainoPaletteSeedPhase = nextParams.color_explaino_palette_seed_phase;
+    double colorExplainoPaletteColorfulness = nextParams.color_explaino_palette_colorfulness;
     double colorContrastLiftExposure = nextParams.color_contrast_lift_exposure;
     double colorContrastLiftSaturation = nextParams.color_contrast_lift_saturation;
     if (!GetOptionalNumber(*paramsObject, "color_saturation", &colorSaturation, nullptr, outError)) return false;
@@ -1193,6 +1196,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_root_proximity_bias", &colorRootProximityBias, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_heatmap_cycle_scale", &colorHeatmapCycleScale, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_heatmap_saturation", &colorHeatmapSaturation, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_explaino_palette_seed_scale", &colorExplainoPaletteSeedScale, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_explaino_palette_seed_phase", &colorExplainoPaletteSeedPhase, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_explaino_palette_colorfulness", &colorExplainoPaletteColorfulness, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast_lift_exposure", &colorContrastLiftExposure, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast_lift_saturation", &colorContrastLiftSaturation, nullptr, outError)) return false;
     nextParams.color_saturation = static_cast<float>(colorSaturation);
@@ -1228,6 +1234,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_root_proximity_bias = static_cast<float>(colorRootProximityBias);
     nextParams.color_heatmap_cycle_scale = static_cast<float>(colorHeatmapCycleScale);
     nextParams.color_heatmap_saturation = static_cast<float>(colorHeatmapSaturation);
+    nextParams.color_explaino_palette_seed_scale = static_cast<float>(colorExplainoPaletteSeedScale);
+    nextParams.color_explaino_palette_seed_phase = static_cast<float>(colorExplainoPaletteSeedPhase);
+    nextParams.color_explaino_palette_colorfulness = static_cast<float>(colorExplainoPaletteColorfulness);
     nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);
     nextParams.color_contrast_lift_saturation = static_cast<float>(colorContrastLiftSaturation);
 

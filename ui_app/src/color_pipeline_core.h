@@ -158,6 +158,8 @@ inline const char* AdvancedColorPaletteFunctionId(ColorPalette value) {
         return "phase_wheel_palette";
     case ColorPalette::banded_escape:
         return "banded_heatmap";
+    case ColorPalette::explaino_cmap:
+        return "explaino_cmap";
     }
     return nullptr;
 }
@@ -173,6 +175,10 @@ inline bool TryParseAdvancedColorPaletteFunctionId(const std::string& functionId
     }
     if (functionId == "banded_heatmap") {
         if (outValue) *outValue = ColorPalette::banded_escape;
+        return true;
+    }
+    if (functionId == "explaino_cmap") {
+        if (outValue) *outValue = ColorPalette::explaino_cmap;
         return true;
     }
     return false;
@@ -305,6 +311,15 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
                 MakeColorPipelineFloatParam("palette.band_emphasis", "Band Emphasis", "Increase or relax the contrast between neighboring bands.", 0.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.phase_offset", "Phase Offset", "Offset the band palette without changing the source signal.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
             }),
+        MakeColorPipelineFunction(
+            "explaino_cmap",
+            "Explaino CMap",
+            "Map scalar signals through the legacy ExplainO seed colormap lineage.",
+            {
+                MakeColorPipelineFloatParam("palette.seed_scale", "Seed Scale", "Control how quickly the ExplainO seed palette cycles across the incoming signal.", 0.25, 4.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("palette.seed_phase", "Seed Phase", "Rotate the ExplainO seed palette without changing the upstream signal.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("palette.colorfulness", "Colorfulness", "Blend between the raw ExplainO seed channels and the full nonlinear legacy color transform.", 0.0, 1.0, 0.01, 1.0),
+            }),
     };
 }
 
@@ -421,7 +436,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
     if (std::string(laneId) == "palette") {
         return functionId == "heatmap" ||
             functionId == "phase_wheel_palette" ||
-            functionId == "banded_heatmap";
+            functionId == "banded_heatmap" ||
+            functionId == "explaino_cmap";
     }
     return false;
 }
@@ -519,6 +535,27 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         pipeline.grading == ColorGradingPreset::escape_default) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::smooth_escape &&
+        pipeline.palette == ColorPalette::explaino_cmap &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "smooth_escape_ramp";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::escape_magnitude &&
+        pipeline.palette == ColorPalette::explaino_cmap &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "escape_magnitude";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_proximity &&
+        pipeline.palette == ColorPalette::explaino_cmap &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
+        if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;
     }
     return false;

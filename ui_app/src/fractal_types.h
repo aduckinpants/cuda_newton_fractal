@@ -50,6 +50,7 @@ enum class ColorPalette : int {
     cyclic_escape = 2,
     phase_wheel = 3,
     banded_escape = 4,
+    explaino_cmap = 5,
 };
 
 enum class ColorGradingPreset : int {
@@ -274,6 +275,9 @@ struct KernelParams {
     float color_root_proximity_bias{0.0f};
     float color_heatmap_cycle_scale{1.0f};
     float color_heatmap_saturation{1.0f};
+    float color_explaino_palette_seed_scale{1.0f};
+    float color_explaino_palette_seed_phase{0.0f};
+    float color_explaino_palette_colorfulness{1.0f};
     float color_contrast_lift_exposure{1.0f};
     float color_contrast_lift_saturation{1.0f};
 

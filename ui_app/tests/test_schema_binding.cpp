@@ -813,6 +813,26 @@ int main() {
             std::cerr << "Expected root_proximity to carry stable proximity-scale and proximity-bias source parameters\n";
             return 1;
         }
+        const ColorPipelineLaneCatalog* corePaletteCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+        if (!corePaletteCatalog ||
+            corePaletteCatalog->default_function_id != std::string("heatmap") ||
+            corePaletteCatalog->functions.size() != 4 ||
+            corePaletteCatalog->functions[0].id != "heatmap" ||
+            corePaletteCatalog->functions[1].id != "phase_wheel_palette" ||
+            corePaletteCatalog->functions[2].id != "banded_heatmap" ||
+            corePaletteCatalog->functions[3].id != "explaino_cmap") {
+            std::cerr << "Expected the extracted advanced color core to widen the shipped Palette catalog with explaino_cmap as the next runtime-real row\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreExplainoCmapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "explaino_cmap");
+        if (!coreExplainoCmapDescriptor ||
+            coreExplainoCmapDescriptor->parameters.size() != 3 ||
+            coreExplainoCmapDescriptor->parameters[0].path != "palette.seed_scale" ||
+            coreExplainoCmapDescriptor->parameters[1].path != "palette.seed_phase" ||
+            coreExplainoCmapDescriptor->parameters[2].path != "palette.colorfulness") {
+            std::cerr << "Expected explaino_cmap to expose stable seed-scale, seed-phase, and colorfulness parameter paths\n";
+            return 1;
+        }
         const ColorPipelineLaneCatalog* coreShapeCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
         if (!coreShapeCatalog ||
             coreShapeCatalog->default_function_id != std::string("identity") ||
@@ -882,6 +902,20 @@ int main() {
             std::string(bridgeSourceFunctionId ? bridgeSourceFunctionId : "") != "banded_signal" ||
             std::string(bridgePaletteFunctionId ? bridgePaletteFunctionId : "") != "banded_heatmap") {
             std::cerr << "Expected the extracted advanced color core to preserve the shipped schedule bridge ids for runtime-backed tuples\n";
+            return 1;
+        }
+        const ColorPipelineSelection explainoPipeline = {
+            ColorSignal::smooth_escape,
+            ColorPalette::explaino_cmap,
+            ColorGradingPreset::escape_default,
+        };
+        if (!color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(
+                explainoPipeline,
+                &bridgeSourceFunctionId,
+                &bridgePaletteFunctionId) ||
+            std::string(bridgeSourceFunctionId ? bridgeSourceFunctionId : "") != "smooth_escape_ramp" ||
+            std::string(bridgePaletteFunctionId ? bridgePaletteFunctionId : "") != "explaino_cmap") {
+            std::cerr << "Expected the extracted advanced color core to bridge explaino_cmap through the smooth-escape runtime tuple\n";
             return 1;
         }
 
@@ -998,6 +1032,48 @@ int main() {
             std::cerr << "Expected the shipped heatmap palette to expose its runtime-backed parameter controls\n";
             return 1;
         }
+        const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
+        if (!paletteCatalog ||
+            paletteCatalog->functions.size() != 4 ||
+            paletteCatalog->functions[0].id != "heatmap" ||
+            paletteCatalog->functions[1].id != "phase_wheel_palette" ||
+            paletteCatalog->functions[2].id != "banded_heatmap" ||
+            paletteCatalog->functions[3].id != "explaino_cmap") {
+            std::cerr << "Expected the shipped Palette catalog to expose heatmap, phase_wheel_palette, banded_heatmap, and explaino_cmap\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
+            windowState.lanes[2].rows[0].parameter_values.size() != 3 ||
+            windowState.lanes[2].rows[0].parameter_values[0].path != "palette.seed_scale" ||
+            windowState.lanes[2].rows[0].parameter_values[1].path != "palette.seed_phase" ||
+            windowState.lanes[2].rows[0].parameter_values[2].path != "palette.colorfulness") {
+            std::cerr << "Expected the shipped Palette lane to accept explaino_cmap once its runtime backend exists\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 3 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2) {
+            std::cerr << "Expected explaino_cmap to expose its three live Palette controls\n";
+            return 1;
+        }
+        if (!AddColorPipelineLaneRow(&windowState, 2, "explaino_cmap") ||
+            windowState.lanes[2].rows.size() != 2 ||
+            windowState.lanes[2].rows[1].function_id != "explaino_cmap") {
+            std::cerr << "Expected the schedule-style Palette lane to support appending explaino_cmap rows once runtime-backed\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 2, 1) ||
+            windowState.lanes[2].rows.size() != 1 ||
+            windowState.lanes[2].rows[0].function_id != "explaino_cmap") {
+            std::cerr << "Expected explaino_cmap rows to participate in the same schedule-style Palette row editing surface\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "heatmap")) {
+            std::cerr << "Expected the Palette lane to switch back to heatmap after explaino_cmap coverage\n";
+            return 1;
+        }
 
         if (SelectColorPipelineLaneFunction(&windowState, 0, "phase_angle")) {
             std::cerr << "Expected the raw legacy enum ids to stop working as advanced color function ids\n";
@@ -1031,7 +1107,7 @@ int main() {
         if (!AddColorPipelineLaneRow(&windowState, 1, "offset_scale") ||
             windowState.lanes[1].rows.size() != 2 ||
             windowState.lanes[1].rows[1].function_id != "offset_scale" ||
-            windowState.lanes[1].rows[1].ui_row_id != 4) {
+            windowState.lanes[1].rows[1].ui_row_id != 5) {
             std::cerr << "Expected the schedule-style Shape lane to support appending a second shipped row with a stable row id\n";
             return 1;
         }
@@ -1242,6 +1318,28 @@ int main() {
             return 1;
         }
 
+        ColorPipelineWindowState explainoSyncWindowState{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_explaino_palette_seed_scale = 1.5f;
+        params.color_explaino_palette_seed_phase = 0.25f;
+        params.color_explaino_palette_colorfulness = 0.8f;
+        if (!SyncColorPipelineWindowFromLiveState(&explainoSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline draft to import the explaino_cmap runtime tuple once it is supported\n";
+            return 1;
+        }
+        if (!explainoSyncWindowState.live_snapshot.valid ||
+            !explainoSyncWindowState.live_snapshot.draft_import_supported ||
+            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].function_id != "explaino_cmap" ||
+            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values.size() != 3 ||
+            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[0].path != "palette.seed_scale") {
+            std::cerr << "Expected explaino_cmap live sync to import the dedicated Palette owner fields\n";
+            return 1;
+        }
+
         ColorPipelineWindowState invalidLiveWindowState{};
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
@@ -1265,12 +1363,21 @@ int main() {
             return 1;
         }
         ColorPipelineRenderInteractionState invalidLiveInteractionState{};
+        if (ShouldAutoApplySupportedColorPipelineDraft(
+                invalidLiveWindowState,
+                invalidLiveApplyState,
+                invalidLiveInteractionState,
+                &params)) {
+            std::cerr << "Expected supported auto-apply to stay dormant until the user actually interacts with the advanced color window\n";
+            return 1;
+        }
+        invalidLiveInteractionState.interacted = true;
         if (!ShouldAutoApplySupportedColorPipelineDraft(
                 invalidLiveWindowState,
                 invalidLiveApplyState,
                 invalidLiveInteractionState,
                 &params)) {
-            std::cerr << "Expected supported auto-apply to stay eligible while recovering an invalid live color state\n";
+            std::cerr << "Expected supported auto-apply to become eligible once the user has interacted with the advanced color window\n";
             return 1;
         }
         if (!ApplyColorPipelineDraftToLiveState(&invalidLiveWindowState, view.fractal_type, &params)) {
@@ -1454,7 +1561,46 @@ int main() {
             return 1;
         }
 
-        if (!SelectColorPipelineLaneFunction(&windowState, 2, "heatmap")) {
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
+            !setParam(windowState.lanes[2].rows[0], "palette.seed_scale", 1.5) ||
+            !setParam(windowState.lanes[2].rows[0], "palette.seed_phase", 0.25) ||
+            !setParam(windowState.lanes[2].rows[0], "palette.colorfulness", 0.8)) {
+            std::cerr << "Expected the live programmable editor to expose the explaino_cmap Palette controls once runtime-backed\n";
+            return 1;
+        }
+        if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
+            visibleParamIndexes.size() != 3 ||
+            visibleParamIndexes[0] != 0 ||
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2) {
+            std::cerr << "Expected explaino_cmap to expose only its dedicated live Palette controls\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the live programmable editor to apply the explaino_cmap Palette tuple\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::explaino_cmap ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
+            !NearlyEqual(params.color_explaino_palette_seed_scale, 1.5) ||
+            !NearlyEqual(params.color_explaino_palette_seed_phase, 0.25) ||
+            !NearlyEqual(params.color_explaino_palette_colorfulness, 0.8) ||
+            !NearlyEqual(params.color_heatmap_cycle_scale, 1.0) ||
+            !NearlyEqual(params.color_heatmap_saturation, 1.0) ||
+            !NearlyEqual(params.color_phase_palette_offset, 0.0) ||
+            !NearlyEqual(params.color_iteration_band_emphasis, 1.0) ||
+            !NearlyEqual(params.color_iteration_band_palette_offset, 0.0) ||
+            !windowState.live_snapshot.valid ||
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "explaino_cmap" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to write the explaino_cmap owner fields, reset other Palette owners, and resync the live snapshot\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
             std::cerr << "Expected the rebuilt programmable editor to construct an unsupported shipped lane mix for preview-state coverage\n";
             return 1;
         }
@@ -1496,8 +1642,13 @@ int main() {
         }
 
         ColorPipelineRenderInteractionState interactionState{};
+        if (ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
+            std::cerr << "Expected supported end-of-frame apply to stay dormant until the user interacts with the programmable controls\n";
+            return 1;
+        }
+        interactionState.interacted = true;
         if (!ShouldAutoApplySupportedColorPipelineDraft(windowState, validApplyState, interactionState, &params)) {
-            std::cerr << "Expected supported end-of-frame apply to remain eligible when no programmable control is actively being manipulated\n";
+            std::cerr << "Expected supported end-of-frame apply to become eligible after the user interacts with the programmable controls\n";
             return 1;
         }
         interactionState.has_active_item = true;
@@ -1572,6 +1723,64 @@ int main() {
         EndFrame();
 
         BeginFrame();
+        ColorPipelineWindowState explainoRenderWindowState{};
+        explainoRenderWindowState.open = true;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_explaino_palette_seed_scale = 1.5f;
+        params.color_explaino_palette_seed_phase = 0.25f;
+        params.color_explaino_palette_colorfulness = 0.8f;
+        if (!RenderColorPipelineWindow(&explainoRenderWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to render a live explaino_cmap tuple\n";
+            return 1;
+        }
+        EndFrame();
+        if (!explainoRenderWindowState.live_snapshot.valid ||
+            !explainoRenderWindowState.live_snapshot.draft_import_supported ||
+            explainoRenderWindowState.lanes.size() != 3 ||
+            explainoRenderWindowState.lanes[2].rows.size() != 1 ||
+            explainoRenderWindowState.lanes[2].rows[0].function_id != "explaino_cmap" ||
+            explainoRenderWindowState.lanes[2].rows[0].parameter_values.size() != 3 ||
+            !NearlyEqual(explainoRenderWindowState.lanes[2].rows[0].parameter_values[0].number_value, 1.5) ||
+            !NearlyEqual(explainoRenderWindowState.lanes[2].rows[0].parameter_values[1].number_value, 0.25) ||
+            !NearlyEqual(explainoRenderWindowState.lanes[2].rows[0].parameter_values[2].number_value, 0.8) ||
+            params.color_pipeline.palette != ColorPalette::explaino_cmap ||
+            !NearlyEqual(params.color_explaino_palette_seed_scale, 1.5) ||
+            !NearlyEqual(params.color_explaino_palette_seed_phase, 0.25) ||
+            !NearlyEqual(params.color_explaino_palette_colorfulness, 0.8)) {
+            std::cerr << "Expected opening the advanced color pipeline window on a live explaino_cmap tuple to preserve the runtime and visible explaino controls\n";
+            return 1;
+        }
+
+        BeginFrame();
+        ColorPipelineWindowState unsupportedStartupWindowState{};
+        unsupportedStartupWindowState.open = true;
+        params = KernelParams{};
+        view.fractal_type = FractalType::explaino;
+        if (!RenderColorPipelineWindow(&unsupportedStartupWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the advanced color pipeline window to render even when startup begins on an unsupported live tuple\n";
+            return 1;
+        }
+        EndFrame();
+        if (params.coloring_mode != ColoringMode::root_basin ||
+            params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::root_classic ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default ||
+            !unsupportedStartupWindowState.live_snapshot.valid ||
+            unsupportedStartupWindowState.live_snapshot.draft_import_supported ||
+            unsupportedStartupWindowState.lanes.size() != 3 ||
+            unsupportedStartupWindowState.lanes[0].rows.size() != 1 ||
+            unsupportedStartupWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            unsupportedStartupWindowState.lanes[2].rows.size() != 1 ||
+            unsupportedStartupWindowState.lanes[2].rows[0].function_id != "heatmap") {
+            std::cerr << "Expected opening the advanced color pipeline window from the default unsupported startup tuple to preserve the runtime until the user edits the draft\n";
+            return 1;
+        }
+
+        BeginFrame();
         ColorPipelineWindowState invalidLiveRenderState{};
         invalidLiveRenderState.open = true;
         params.coloring_mode = ColoringMode::phase;
@@ -1580,16 +1789,19 @@ int main() {
         params.color_shape_offset = 0.0f;
         params.color_shape_scale = 1.0f;
         if (!RenderColorPipelineWindow(&invalidLiveRenderState, view.fractal_type, &params)) {
-            std::cerr << "Expected the advanced color pipeline window to keep rendering while repairing an invalid live color state\n";
+            std::cerr << "Expected the advanced color pipeline window to keep rendering while surfacing an invalid live color state\n";
             return 1;
         }
         EndFrame();
-        if (params.coloring_mode != ColoringMode::smooth_escape ||
+        if (params.coloring_mode != ColoringMode::phase ||
             params.color_pipeline.signal != ColorSignal::smooth_escape ||
             params.color_pipeline.palette != ColorPalette::cyclic_escape ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
-            !invalidLiveRenderState.live_snapshot.valid) {
-            std::cerr << "Expected a supported draft to repair an invalid live color state during render instead of leaving the runtime stuck\n";
+            invalidLiveRenderState.live_snapshot.valid ||
+            invalidLiveRenderState.lanes.size() != 3 ||
+            invalidLiveRenderState.lanes[0].rows.size() != 1 ||
+            invalidLiveRenderState.lanes[0].rows[0].function_id != "smooth_escape_ramp") {
+            std::cerr << "Expected opening the advanced color pipeline window on an invalid live state to preserve the runtime until the user edits the draft\n";
             return 1;
         }
 
@@ -1607,14 +1819,21 @@ int main() {
             std::cerr << "Expected the advanced color pipeline window render test to find the supported live-backed controls before auto-apply coverage\n";
             return 1;
         }
-        BeginFrame();
-        if (!RenderColorPipelineWindow(&openWindowState, view.fractal_type, &params)) {
-            std::cerr << "Expected the advanced color pipeline window to keep rendering while auto-applying supported edits\n";
+        bool directControlDirty = false;
+        ColorPipelineRenderInteractionState directControlInteraction{};
+        if (!TryApplySupportedColorPipelineDraftFromControl(
+                &openWindowState,
+                view.fractal_type,
+                &params,
+                &directControlDirty,
+                &directControlInteraction)) {
+            std::cerr << "Expected the advanced color pipeline control helper to keep supported live-backed edits synced without a separate apply toggle\n";
             return 1;
         }
-        EndFrame();
         if (!NearlyEqual(params.color_phase_signal_offset, 0.625) ||
             !NearlyEqual(params.color_shape_scale, 2.0) ||
+            !directControlDirty ||
+            !directControlInteraction.interacted ||
             HasColorPipelineDraftEdits(openWindowState)) {
             std::cerr << "Expected supported edits to keep live-backed params synced without a separate apply toggle\n";
             return 1;

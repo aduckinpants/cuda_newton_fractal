@@ -96,6 +96,9 @@ inline constexpr ColorPipelineSelection kSelectableColorPipelines[] = {
     {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
     {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default},
     {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default},
+    {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default},
+    {ColorSignal::escape_magnitude, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default},
+    {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default},
 };
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
@@ -169,6 +172,24 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::cyclic_escape &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::smooth_escape &&
+        pipeline.palette == ColorPalette::explaino_cmap &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::escape_magnitude &&
+        pipeline.palette == ColorPalette::explaino_cmap &&
+        pipeline.grading == ColorGradingPreset::escape_default) {
+        if (outMode) *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (pipeline.signal == ColorSignal::root_proximity &&
+        pipeline.palette == ColorPalette::explaino_cmap &&
         pipeline.grading == ColorGradingPreset::escape_default) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
