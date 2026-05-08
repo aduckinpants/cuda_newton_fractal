@@ -394,6 +394,38 @@ inline bool EnsureColorPipelineLaneRowsInitialized(ColorPipelineLaneState* ioLan
     return true;
 }
 
+inline bool ImportSupportedColorPipelineParamsFromShapeStackEntry(
+    ColorPipelineRowState* ioRow,
+    const ColorPipelineShapeStackEntry& shapeEntry,
+    std::string* outError = nullptr);
+
+inline bool CollectEnabledColorPipelineRows(
+    const ColorPipelineWindowState& state,
+    const char* laneId,
+    std::vector<const ColorPipelineRowState*>* outRows,
+    std::string* outError = nullptr);
+
+inline bool IsSupportedColorPipelineShapeFunctionId(const std::string& functionId);
+
+inline bool ColorPipelineShapeRuntimeParamsEqual(
+    const ColorPipelineShapeRuntimeParams& left,
+    const ColorPipelineShapeRuntimeParams& right);
+
+inline bool ColorPipelineShapeStackEntriesEqual(
+    const ColorPipelineShapeStackEntry& left,
+    const ColorPipelineShapeStackEntry& right);
+
+inline bool TryBuildColorPipelineShapeStackEntryFromRow(
+    const ColorPipelineRowState& row,
+    ColorPipelineShapeStackEntry* outEntry,
+    std::string* outError = nullptr);
+
+inline bool TryBuildColorPipelineShapeLaneFromLive(
+    const KernelParams& liveParams,
+    ColorPipelineLaneState* outLane,
+    bool* outDraftImportSupported,
+    std::string* outError = nullptr);
+
 inline bool ColorPipelineParamStatesEqual(
     const ColorPipelineParamState& left,
     const ColorPipelineParamState& right) {
@@ -537,7 +569,6 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     }
 
     const char* sourceFunctionId = nullptr;
-    const char* shapeFunctionId = AdvancedColorShapeFunctionId(liveParams.color_shape);
     const char* paletteFunctionId = nullptr;
     ColorPipelineLiveSnapshot snapshot;
     snapshot.valid = true;
@@ -548,30 +579,40 @@ inline bool TryBuildColorPipelineLiveSnapshot(
         liveParams.color_pipeline,
         &sourceFunctionId,
         &paletteFunctionId);
-    if (!shapeFunctionId) {
-        snapshot.draft_import_supported = false;
-    }
     if (!snapshot.draft_import_supported) {
         *outSnapshot = std::move(snapshot);
         return true;
     }
-    const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
-    snapshot.lanes.reserve(catalogs.size());
-    const char* laneFunctionIds[] = {
-        sourceFunctionId,
-        shapeFunctionId,
-        paletteFunctionId,
-    };
-    for (std::size_t index = 0; index < catalogs.size(); ++index) {
-        ColorPipelineLaneState lane;
-        if (!BuildColorPipelineLaneWithSingleRow(catalogs[index], laneFunctionIds[index], 0, &lane, outError)) {
-            return false;
-        }
-        if (!lane.rows.empty() && !ImportSupportedColorPipelineParamsFromLive(&lane.rows.front(), liveParams, outError)) {
-            return false;
-        }
-        snapshot.lanes.push_back(std::move(lane));
+
+    const ColorPipelineLaneCatalog* sourceCatalog = FindColorPipelineLaneCatalog("source");
+    const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
+    if (!sourceCatalog || !paletteCatalog) {
+        if (outError) *outError = "Missing advanced color Source or Palette lane catalog";
+        return false;
     }
+
+    ColorPipelineLaneState sourceLane;
+    if (!BuildColorPipelineLaneWithSingleRow(*sourceCatalog, sourceFunctionId, 0, &sourceLane, outError) ||
+        !ImportSupportedColorPipelineParamsFromLive(&sourceLane.rows.front(), liveParams, outError)) {
+        return false;
+    }
+
+    ColorPipelineLaneState shapeLane;
+    bool shapeDraftImportSupported = true;
+    if (!TryBuildColorPipelineShapeLaneFromLive(liveParams, &shapeLane, &shapeDraftImportSupported, outError)) {
+        return false;
+    }
+
+    ColorPipelineLaneState paletteLane;
+    if (!BuildColorPipelineLaneWithSingleRow(*paletteCatalog, paletteFunctionId, 0, &paletteLane, outError) ||
+        !ImportSupportedColorPipelineParamsFromLive(&paletteLane.rows.front(), liveParams, outError)) {
+        return false;
+    }
+
+    snapshot.draft_import_supported = snapshot.draft_import_supported && shapeDraftImportSupported;
+    snapshot.lanes.push_back(std::move(sourceLane));
+    snapshot.lanes.push_back(std::move(shapeLane));
+    snapshot.lanes.push_back(std::move(paletteLane));
     *outSnapshot = std::move(snapshot);
     return true;
 }
@@ -1106,6 +1147,263 @@ inline bool TryReadColorPipelineIntegerParam(
     return true;
 }
 
+inline bool ImportSupportedColorPipelineParamsFromShapeStackEntry(
+    ColorPipelineRowState* ioRow,
+    const ColorPipelineShapeStackEntry& shapeEntry,
+    std::string* outError) {
+    if (!ioRow) {
+        if (outError) *outError = "Advanced color Shape-stack import requires a row";
+        return false;
+    }
+    if (ioRow->function_id == "offset_scale") {
+        return SetColorPipelineParamNumber(ioRow, "shape.offset", shapeEntry.params.offset, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.scale", shapeEntry.params.scale, outError);
+    }
+    if (ioRow->function_id == "repeat") {
+        return SetColorPipelineParamNumber(ioRow, "shape.frequency", shapeEntry.params.repeat_frequency, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.phase", shapeEntry.params.repeat_phase, outError);
+    }
+    if (ioRow->function_id == "posterize") {
+        return SetColorPipelineParamNumber(ioRow, "shape.steps", static_cast<double>(shapeEntry.params.posterize_steps), outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.mix", shapeEntry.params.posterize_mix, outError);
+    }
+    if (ioRow->function_id == "mirror_repeat") {
+        return SetColorPipelineParamNumber(ioRow, "shape.frequency", shapeEntry.params.repeat_frequency, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.phase", shapeEntry.params.repeat_phase, outError);
+    }
+    if (ioRow->function_id == "bias_gain_curve") {
+        return SetColorPipelineParamNumber(ioRow, "shape.bias", shapeEntry.params.bias, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.gain", shapeEntry.params.gain, outError);
+    }
+    if (ioRow->function_id == "smooth_window") {
+        return SetColorPipelineParamNumber(ioRow, "shape.center", shapeEntry.params.window_center, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.width", shapeEntry.params.window_width, outError) &&
+            SetColorPipelineParamNumber(ioRow, "shape.softness", shapeEntry.params.window_softness, outError);
+    }
+    return true;
+}
+
+inline bool CollectEnabledColorPipelineRows(
+    const ColorPipelineWindowState& state,
+    const char* laneId,
+    std::vector<const ColorPipelineRowState*>* outRows,
+    std::string* outError) {
+    if (!outRows) {
+        if (outError) *outError = "Advanced color row collection requires output storage";
+        return false;
+    }
+    outRows->clear();
+    const ColorPipelineLaneState* lane = nullptr;
+    for (const ColorPipelineLaneState& candidateLane : state.lanes) {
+        if (candidateLane.lane_id == laneId) {
+            lane = &candidateLane;
+            break;
+        }
+    }
+    if (!lane) {
+        if (outError) *outError = std::string("Unknown advanced color pipeline lane id: ") + (laneId ? laneId : "");
+        return false;
+    }
+    for (const ColorPipelineRowState& row : lane->rows) {
+        if (row.enabled) {
+            outRows->push_back(&row);
+        }
+    }
+    if (outRows->empty()) {
+        if (outError) {
+            *outError = std::string("Current live bridge requires one enabled row in the ") + lane->label + " lane.";
+        }
+        return false;
+    }
+    return true;
+}
+
+inline bool IsSupportedColorPipelineShapeFunctionId(const std::string& functionId) {
+    return functionId == "identity" ||
+        functionId == "offset_scale" ||
+        functionId == "repeat" ||
+        functionId == "posterize" ||
+        functionId == "mirror_repeat" ||
+        functionId == "bias_gain_curve" ||
+        functionId == "smooth_window";
+}
+
+inline bool ColorPipelineShapeRuntimeParamsEqual(
+    const ColorPipelineShapeRuntimeParams& left,
+    const ColorPipelineShapeRuntimeParams& right) {
+    return std::fabs(left.offset - right.offset) <= 1.0e-6f &&
+        std::fabs(left.scale - right.scale) <= 1.0e-6f &&
+        std::fabs(left.repeat_frequency - right.repeat_frequency) <= 1.0e-6f &&
+        std::fabs(left.repeat_phase - right.repeat_phase) <= 1.0e-6f &&
+        left.posterize_steps == right.posterize_steps &&
+        std::fabs(left.posterize_mix - right.posterize_mix) <= 1.0e-6f &&
+        std::fabs(left.bias - right.bias) <= 1.0e-6f &&
+        std::fabs(left.gain - right.gain) <= 1.0e-6f &&
+        std::fabs(left.window_center - right.window_center) <= 1.0e-6f &&
+        std::fabs(left.window_width - right.window_width) <= 1.0e-6f &&
+        std::fabs(left.window_softness - right.window_softness) <= 1.0e-6f;
+}
+
+inline bool ColorPipelineShapeStackEntriesEqual(
+    const ColorPipelineShapeStackEntry& left,
+    const ColorPipelineShapeStackEntry& right) {
+    return left.shape == right.shape &&
+        ColorPipelineShapeRuntimeParamsEqual(left.params, right.params);
+}
+
+inline bool TryBuildColorPipelineShapeStackEntryFromRow(
+    const ColorPipelineRowState& row,
+    ColorPipelineShapeStackEntry* outEntry,
+    std::string* outError) {
+    if (!outEntry) {
+        if (outError) *outError = "Advanced color Shape-stack apply requires output storage";
+        return false;
+    }
+    if (!IsSupportedColorPipelineShapeFunctionId(row.function_id)) {
+        if (outError) {
+            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+        }
+        return false;
+    }
+
+    ColorPipelineShape shape = ColorPipelineShape::identity;
+    if (!TryParseColorPipelineShapeId(row.function_id, &shape)) {
+        if (outError) {
+            *outError = std::string("Unknown advanced color Shape row id: ") + row.function_id;
+        }
+        return false;
+    }
+
+    ColorPipelineShapeStackEntry entry;
+    entry.shape = shape;
+    if (row.function_id == "offset_scale") {
+        double offset = 0.0;
+        double scale = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.offset", &offset, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.scale", &scale, outError) ||
+            !ValidateColorPipelineParamRange("shape.offset", offset, -2.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.scale", scale, 0.1, 8.0, outError)) {
+            return false;
+        }
+        entry.params.offset = static_cast<float>(offset);
+        entry.params.scale = static_cast<float>(scale);
+    } else if (row.function_id == "repeat" || row.function_id == "mirror_repeat") {
+        double frequency = 0.0;
+        double phase = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.frequency", &frequency, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.phase", &phase, outError) ||
+            !ValidateColorPipelineParamRange("shape.frequency", frequency, 0.25, 24.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.phase", phase, -1.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.repeat_frequency = static_cast<float>(frequency);
+        entry.params.repeat_phase = static_cast<float>(phase);
+    } else if (row.function_id == "posterize") {
+        int steps = 0;
+        double mix = 0.0;
+        if (!TryReadColorPipelineIntegerParam(row, "shape.steps", &steps, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.mix", &mix, outError) ||
+            !ValidateColorPipelineParamRange("shape.steps", static_cast<double>(steps), 2.0, 24.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.mix", mix, 0.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.posterize_steps = steps;
+        entry.params.posterize_mix = static_cast<float>(mix);
+    } else if (row.function_id == "bias_gain_curve") {
+        double bias = 0.0;
+        double gain = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.bias", &bias, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.gain", &gain, outError) ||
+            !ValidateColorPipelineParamRange("shape.bias", bias, 0.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.gain", gain, 0.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.bias = static_cast<float>(bias);
+        entry.params.gain = static_cast<float>(gain);
+    } else if (row.function_id == "smooth_window") {
+        double center = 0.0;
+        double width = 0.0;
+        double softness = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "shape.center", &center, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.width", &width, outError) ||
+            !TryGetColorPipelineParamNumber(row, "shape.softness", &softness, outError) ||
+            !ValidateColorPipelineParamRange("shape.center", center, 0.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.width", width, 0.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("shape.softness", softness, 0.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.window_center = static_cast<float>(center);
+        entry.params.window_width = static_cast<float>(width);
+        entry.params.window_softness = static_cast<float>(softness);
+    }
+
+    *outEntry = entry;
+    return true;
+}
+
+inline bool TryBuildColorPipelineShapeLaneFromLive(
+    const KernelParams& liveParams,
+    ColorPipelineLaneState* outLane,
+    bool* outDraftImportSupported,
+    std::string* outError) {
+    if (!outLane || !outDraftImportSupported) {
+        if (outError) *outError = "Advanced color Shape lane snapshot requires output storage";
+        return false;
+    }
+    const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog("shape");
+    if (!catalog) {
+        if (outError) *outError = "Missing advanced color Shape lane catalog";
+        return false;
+    }
+
+    ColorPipelineLaneState lane;
+    lane.lane_id = catalog->lane_id;
+    lane.label = catalog->label;
+    *outDraftImportSupported = true;
+
+    int shapeStackCount = liveParams.color_shape_stack_count;
+    if (shapeStackCount > kColorPipelineMaxShapeStackCount) {
+        shapeStackCount = kColorPipelineMaxShapeStackCount;
+    }
+    if (shapeStackCount > 0) {
+        for (int index = 0; index < shapeStackCount; ++index) {
+            const ColorPipelineShapeStackEntry& shapeEntry = liveParams.color_shape_stack[index];
+            const char* functionId = AdvancedColorShapeFunctionId(shapeEntry.shape);
+            if (!functionId) {
+                *outDraftImportSupported = false;
+                *outLane = std::move(lane);
+                return true;
+            }
+            ColorPipelineRowState row;
+            if (!BuildColorPipelineRowFromFunctionId(*catalog, functionId, 0, &row, outError) ||
+                !ImportSupportedColorPipelineParamsFromShapeStackEntry(&row, shapeEntry, outError)) {
+                return false;
+            }
+            lane.rows.push_back(std::move(row));
+        }
+        if (lane.rows.empty()) {
+            *outDraftImportSupported = false;
+        }
+        *outLane = std::move(lane);
+        return true;
+    }
+
+    const char* functionId = AdvancedColorShapeFunctionId(liveParams.color_shape);
+    if (!functionId) {
+        *outDraftImportSupported = false;
+        *outLane = std::move(lane);
+        return true;
+    }
+    ColorPipelineRowState row;
+    if (!BuildColorPipelineRowFromFunctionId(*catalog, functionId, 0, &row, outError) ||
+        !ImportSupportedColorPipelineParamsFromLive(&row, liveParams, outError)) {
+        return false;
+    }
+    lane.rows.push_back(std::move(row));
+    *outLane = std::move(lane);
+    return true;
+}
+
 inline bool ApplySupportedColorPipelineParamsToLive(
     const ColorPipelineWindowState& state,
     KernelParams* ioParams,
@@ -1169,7 +1467,88 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         assignShapeFloat(&ioParams->color_explaino_palette_seed_phase, 0.0f);
         assignShapeFloat(&ioParams->color_explaino_palette_colorfulness, 1.0f);
     };
+
+    std::vector<const ColorPipelineRowState*> shapeRows;
+    if (!CollectEnabledColorPipelineRows(state, "shape", &shapeRows, outError)) {
+        return false;
+    }
+    if (shapeRows.size() > static_cast<std::size_t>(kColorPipelineMaxShapeStackCount)) {
+        if (outError) {
+            *outError = "Current live bridge only supports a bounded number of enabled Shape rows in the schedule lane.";
+        }
+        return false;
+    }
+
+    std::vector<ColorPipelineShapeStackEntry> nextShapeStack;
+    nextShapeStack.reserve(shapeRows.size());
+    for (const ColorPipelineRowState* shapeRow : shapeRows) {
+        ColorPipelineShapeStackEntry shapeEntry;
+        if (!shapeRow || !TryBuildColorPipelineShapeStackEntryFromRow(*shapeRow, &shapeEntry, outError)) {
+            return false;
+        }
+        nextShapeStack.push_back(shapeEntry);
+    }
+
+    if (ioParams->color_shape_stack_count != static_cast<int>(nextShapeStack.size())) {
+        ioParams->color_shape_stack_count = static_cast<int>(nextShapeStack.size());
+        changed = true;
+    }
+    for (int index = 0; index < kColorPipelineMaxShapeStackCount; ++index) {
+        ColorPipelineShapeStackEntry nextEntry;
+        if (index < static_cast<int>(nextShapeStack.size())) {
+            nextEntry = nextShapeStack[static_cast<std::size_t>(index)];
+        }
+        if (!ColorPipelineShapeStackEntriesEqual(ioParams->color_shape_stack[index], nextEntry)) {
+            ioParams->color_shape_stack[index] = nextEntry;
+            changed = true;
+        }
+    }
+
+    ColorPipelineShapeStackEntry legacyMirrorEntry;
+    if (!nextShapeStack.empty()) {
+        legacyMirrorEntry = nextShapeStack.back();
+    }
+    if (ioParams->color_shape != legacyMirrorEntry.shape) {
+        ioParams->color_shape = legacyMirrorEntry.shape;
+        changed = true;
+    }
+    resetShapeOffsetScale();
+    resetShapeRepeat();
+    resetShapePosterize();
+    resetShapeBiasGain();
+    resetShapeSmoothWindow();
+    switch (legacyMirrorEntry.shape) {
+    case ColorPipelineShape::offset_scale:
+        assignShapeFloat(&ioParams->color_shape_offset, legacyMirrorEntry.params.offset);
+        assignShapeFloat(&ioParams->color_shape_scale, legacyMirrorEntry.params.scale);
+        break;
+    case ColorPipelineShape::repeat:
+    case ColorPipelineShape::mirror_repeat:
+        assignShapeFloat(&ioParams->color_shape_repeat_frequency, legacyMirrorEntry.params.repeat_frequency);
+        assignShapeFloat(&ioParams->color_shape_repeat_phase, legacyMirrorEntry.params.repeat_phase);
+        break;
+    case ColorPipelineShape::posterize:
+        assignShapeInt(&ioParams->color_shape_posterize_steps, legacyMirrorEntry.params.posterize_steps);
+        assignShapeFloat(&ioParams->color_shape_posterize_mix, legacyMirrorEntry.params.posterize_mix);
+        break;
+    case ColorPipelineShape::bias_gain_curve:
+        assignShapeFloat(&ioParams->color_shape_bias, legacyMirrorEntry.params.bias);
+        assignShapeFloat(&ioParams->color_shape_gain, legacyMirrorEntry.params.gain);
+        break;
+    case ColorPipelineShape::smooth_window:
+        assignShapeFloat(&ioParams->color_shape_window_center, legacyMirrorEntry.params.window_center);
+        assignShapeFloat(&ioParams->color_shape_window_width, legacyMirrorEntry.params.window_width);
+        assignShapeFloat(&ioParams->color_shape_window_softness, legacyMirrorEntry.params.window_softness);
+        break;
+    case ColorPipelineShape::identity:
+    default:
+        break;
+    }
+
     for (const ColorPipelineLaneState& lane : state.lanes) {
+        if (lane.lane_id == "shape") {
+            continue;
+        }
         for (const ColorPipelineRowState& row : lane.rows) {
         if (!row.enabled) {
             continue;
@@ -1676,8 +2055,8 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     if (!sourceRow) {
         return false;
     }
-    const ColorPipelineRowState* shapeRow = FindSingleEnabledColorPipelineRow(state, "shape", outError);
-    if (!shapeRow) {
+    std::vector<const ColorPipelineRowState*> shapeRows;
+    if (!CollectEnabledColorPipelineRows(state, "shape", &shapeRows, outError)) {
         return false;
     }
     const ColorPipelineRowState* paletteRow = FindSingleEnabledColorPipelineRow(state, "palette", outError);
@@ -1685,17 +2064,19 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         return false;
     }
 
-    if (shapeRow->function_id != "identity" &&
-        shapeRow->function_id != "offset_scale" &&
-        shapeRow->function_id != "repeat" &&
-        shapeRow->function_id != "posterize" &&
-        shapeRow->function_id != "mirror_repeat" &&
-        shapeRow->function_id != "bias_gain_curve" &&
-        shapeRow->function_id != "smooth_window") {
+    if (shapeRows.size() > static_cast<std::size_t>(kColorPipelineMaxShapeStackCount)) {
         if (outError) {
-            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            *outError = "Current live bridge only supports a bounded number of enabled Shape rows in the schedule lane.";
         }
         return false;
+    }
+    for (const ColorPipelineRowState* shapeRow : shapeRows) {
+        if (!shapeRow || !IsSupportedColorPipelineShapeFunctionId(shapeRow->function_id)) {
+            if (outError) {
+                *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            }
+            return false;
+        }
     }
 
     ColorPipelineSelection pipeline{};

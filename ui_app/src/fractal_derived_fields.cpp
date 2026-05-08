@@ -149,6 +149,10 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.color_phase_wrap_cycles = 1.0f;
     params.color_phase_palette_offset = 0.0f;
     params.color_shape = ColorPipelineShape::identity;
+    params.color_shape_stack_count = 0;
+    for (ColorPipelineShapeStackEntry& shapeEntry : params.color_shape_stack) {
+        shapeEntry = {};
+    }
     params.color_shape_offset = 0.0f;
     params.color_shape_scale = 1.0f;
     params.color_shape_repeat_frequency = 8.0f;

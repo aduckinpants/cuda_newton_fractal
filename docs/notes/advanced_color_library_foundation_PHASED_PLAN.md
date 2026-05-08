@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 queued - repair the stack/backend requirement and grading authority boundary so the next executable slice can land truthful multi-row lane support instead of jumping straight to Grading
+Phase 5 in progress - the first bounded backend-recovery slice landed truthful two-row Shape-stack runtime support; continue the remaining stack/backend and grading-boundary recovery from that honest base instead of jumping straight to Grading
 
 ## Phase Checklist
 
@@ -104,6 +104,11 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - Landed: `ui_app/tests/test_schema_binding.cpp` now locks the joy palette row in the extracted core catalog, the shipped palette lane, the manual non-basin-to-joy apply path, and live joy-basins import as a supported `root_index + joy_root_palette` snapshot.
 - Validated: `artifacts/joy_root_green_native.log` is green for the focused native helper rail, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the active runtime cleanly, and `artifacts/joy_root_runtime_smoke.log` reports the published-runtime `root_classic` versus `joy` Explaino basin smoke passing.
 - Phase boundary advanced: the initial Palette library is now complete, but hostile review found the next truthful step is not direct Grading promotion. Phase 5 must first repair the stack/backend requirement and grading authority boundary so the mapped Grade library can land honestly.
+- Landed: `ui_app/src/fractal_types.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/fractal_derived_fields.cpp`, `ui_app/src/diagnostics_capture.cpp`, and `ui_app/src/diagnostics_state_io.cpp` now give the Shape lane a bounded runtime stack owner, ordered runtime execution, live apply/snapshot support, reset/default coverage, and diagnostics persistence while mirroring the final stack row back into the legacy flat Shape fields.
+- Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock truthful two-row Shape apply/sync behavior, ordered runtime composition, diagnostics round-trip, archive capture persistence, and reset clearing for the new bounded Shape stack.
+- Validated: `artifacts/code_quality_report.json` stays on the repository baseline, `artifacts/verify_native_helper_tests_shape_stack.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` for the published runtime after the bounded Phase 5 Shape-stack recovery slice.
+- Audit: hostile review of the first Phase 5 implementation found a real persistence omission where `color_shape_stack` would have been lost on save/load and archive capture, plus a code-quality regression in the first loader refactor; both defects are repaired and the re-read repaired state did not expose another hidden single-row fallback within the bounded Shape slice.
+- Next bounded slice: continue Phase 5 backend recovery from this truthful Shape-stack base; do not claim Grading is ready until the remaining stack/backend and grading-authority seams are named and closed honestly.
 
 ## Hostile Audit
 
@@ -114,12 +119,14 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 
 - [done] Pass 1 - re-read the main foundation plan against the mapped inventory and record the concrete planning defects: phase drift, missing hostile-audit state, globally open user asks, and the vague direct-to-Grading resume point.
 - [done] Pass 2 - re-read the live backend seams and record the concrete technical blockers: `ui_app/src/color_pipeline_window.h` still enforces one enabled row per lane and `ui_app/src/fractal_types.h` still stores Shape state as one flat parameter set.
-- [open] Pass 3 - audit the repaired planning surfaces after the bounded Phase 5 recovery slice lands and confirm the next executable implementation slice is backend recovery rather than an underspecified Grading continuation.
+- [done] Pass 3 - audit the repaired planning surfaces after the bounded Phase 5 recovery slice lands and confirm the next executable implementation slice is backend recovery rather than an underspecified Grading continuation.
+- [open] Pass 4 - name the next remaining Phase 5 backend-recovery seam after the bounded Shape-stack slice and keep the foundation plan from drifting back into a false direct-to-Grading continuation.
 
 ## Audit Findings
 
 - [done] Real defect found: this plan previously said Phase 5 was in progress and pointed straight to Grading even though the mapped lane-stack requirement remained open and the plan lacked the hostile-audit sections now required by the repo workflow.
 - [done] Real defect found: the live advanced-color backend still hard-rejects more than one enabled row per lane and imports/snapshots through single-row builders, so the next truthful implementation slice must repair backend/state authority before any honest Grading continuation.
+- [done] Real defect found during the first executable Phase 5 slice: supported Shape stacks became runtime-real in apply/math, but the first pass still dropped them on diagnostics save/load and archive capture until explicit `color_shape_stack` persistence landed.
 
 ## Notes
 
@@ -140,7 +147,7 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 
 ## Resume Point
 
-Checkpoint the bounded Phase 5 planning-repair slice, then start the backend-recovery implementation slice under `docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md` and `docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json`, targeting the one-enabled-row live bridge, single-row import/snapshot helpers, flat Shape parameter scoping, and the first truthful multi-row runtime REDs before any Grading implementation.
+Checkpoint the bounded Phase 5 Shape-stack runtime slice, then pick the next remaining backend-recovery seam from the truthful Phase 5 base instead of resuming a false direct-to-Grading thread.
 
 
 

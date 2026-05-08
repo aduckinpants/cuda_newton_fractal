@@ -1838,6 +1838,38 @@ int main() {
             return 1;
         }
 
+        if (!SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
+            !setParam(windowState.lanes[1].rows[0], "shape.offset", 0.25) ||
+            !setParam(windowState.lanes[1].rows[0], "shape.scale", 1.5) ||
+            !AddColorPipelineLaneRow(&windowState, 1, "repeat") ||
+            windowState.lanes[1].rows.size() != 2 ||
+            !setParam(windowState.lanes[1].rows[1], "shape.frequency", 6.0) ||
+            !setParam(windowState.lanes[1].rows[1], "shape.phase", 0.2)) {
+            std::cerr << "Expected the backend-recovery RED to construct a supported two-row Shape lane with independent owner packs\n";
+            return 1;
+        }
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected a supported two-row Shape lane to apply to live runtime state instead of failing at the single-row bridge\n";
+            return 1;
+        }
+        if (params.color_shape_stack_count != 2 ||
+            params.color_shape_stack[0].shape != ColorPipelineShape::offset_scale ||
+            !NearlyEqual(params.color_shape_stack[0].params.offset, 0.25) ||
+            !NearlyEqual(params.color_shape_stack[0].params.scale, 1.5) ||
+            params.color_shape_stack[1].shape != ColorPipelineShape::repeat ||
+            !NearlyEqual(params.color_shape_stack[1].params.repeat_frequency, 6.0) ||
+            !NearlyEqual(params.color_shape_stack[1].params.repeat_phase, 0.2) ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() < 3 ||
+            windowState.live_snapshot.lanes[1].rows.size() != 2 ||
+            windowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
+            windowState.live_snapshot.lanes[1].rows[1].function_id != "repeat" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to persist and resync a supported two-row Shape lane instead of collapsing back to one row\n";
+            return 1;
+        }
+
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
             !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
@@ -1896,9 +1928,8 @@ int main() {
             return 1;
         }
         const ColorPipelineDraftApplyState stackedShapeState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
-        if (stackedShapeState.status != ColorPipelineDraftApplyStatus::unsupported_tuple ||
-            stackedShapeState.message.find("one enabled row in the Shape lane") == std::string::npos) {
-            std::cerr << "Expected invalid schedule stacks to surface the specific live-bridge reason instead of a generic preview-only message\n";
+        if (stackedShapeState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected supported stacked Shape lanes to classify as live-applicable once the backend-recovery slice lands\n";
             return 1;
         }
         if (!RemoveColorPipelineLaneRow(&windowState, 1, 1)) {

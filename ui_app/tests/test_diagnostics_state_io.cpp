@@ -2590,6 +2590,63 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "v3_shape_stack_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "phase",
+    "color_signal": "phase_angle",
+    "color_shape": "repeat",
+    "color_palette": "phase_wheel",
+    "color_grading": "phase_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0],
+    "color_shape_stack": [
+      { "shape": "offset_scale", "offset": 0.25, "scale": 1.5 },
+      { "shape": "repeat", "repeat_frequency": 6.0, "repeat_phase": 0.2 }
+    ]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V3 shape-stack parameter load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_shape_stack_count != 2 ||
+            p.color_shape_stack[0].shape != ColorPipelineShape::offset_scale ||
+            !NearlyEqual(p.color_shape_stack[0].params.offset, 0.25, 0.001) ||
+            !NearlyEqual(p.color_shape_stack[0].params.scale, 1.5, 0.001) ||
+            p.color_shape_stack[1].shape != ColorPipelineShape::repeat ||
+            !NearlyEqual(p.color_shape_stack[1].params.repeat_frequency, 6.0, 0.001) ||
+            !NearlyEqual(p.color_shape_stack[1].params.repeat_phase, 0.2, 0.001) ||
+            p.color_shape != ColorPipelineShape::repeat ||
+            !NearlyEqual(p.color_shape_repeat_frequency, 6.0, 0.001) ||
+            !NearlyEqual(p.color_shape_repeat_phase, 0.2, 0.001)) {
+            std::cerr << "Expected supported Shape stacks to round-trip through diagnostics state load with a legacy mirror of the final row\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_advanced_color_draft.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

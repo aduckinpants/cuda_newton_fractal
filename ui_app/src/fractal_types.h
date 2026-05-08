@@ -89,6 +89,27 @@ enum class ColorPipelineShape : int {
     smooth_window = 6,
 };
 
+constexpr int kColorPipelineMaxShapeStackCount = 8;
+
+struct ColorPipelineShapeRuntimeParams {
+    float offset{0.0f};
+    float scale{1.0f};
+    float repeat_frequency{8.0f};
+    float repeat_phase{0.0f};
+    int posterize_steps{6};
+    float posterize_mix{1.0f};
+    float bias{0.5f};
+    float gain{0.5f};
+    float window_center{0.5f};
+    float window_width{1.0f};
+    float window_softness{0.0f};
+};
+
+struct ColorPipelineShapeStackEntry {
+    ColorPipelineShape shape{ColorPipelineShape::identity};
+    ColorPipelineShapeRuntimeParams params{};
+};
+
 struct ColorPipelineSelection {
     ColorSignal signal{ColorSignal::root_index};
     ColorPalette palette{ColorPalette::root_classic};
@@ -269,6 +290,8 @@ struct KernelParams {
     float color_phase_wrap_cycles{1.0f};
     float color_phase_palette_offset{0.0f};
     ColorPipelineShape color_shape{ColorPipelineShape::identity};
+    int color_shape_stack_count{0};
+    ColorPipelineShapeStackEntry color_shape_stack[kColorPipelineMaxShapeStackCount]{};
     float color_shape_offset{0.0f};
     float color_shape_scale{1.0f};
     float color_shape_repeat_frequency{8.0f};

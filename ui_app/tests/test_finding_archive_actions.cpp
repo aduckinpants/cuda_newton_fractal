@@ -182,6 +182,13 @@ int main() {
         params.color_phase_wrap_cycles = 2.5f;
         params.color_phase_palette_offset = -0.75f;
         params.color_shape = ColorPipelineShape::posterize;
+        params.color_shape_stack_count = 2;
+        params.color_shape_stack[0].shape = ColorPipelineShape::offset_scale;
+        params.color_shape_stack[0].params.offset = 0.25f;
+        params.color_shape_stack[0].params.scale = 1.5f;
+        params.color_shape_stack[1].shape = ColorPipelineShape::posterize;
+        params.color_shape_stack[1].params.posterize_steps = 5;
+        params.color_shape_stack[1].params.posterize_mix = 0.65f;
         params.color_shape_posterize_steps = 5;
         params.color_shape_posterize_mix = 0.65f;
         params.color_iteration_band_count = 5;
@@ -232,6 +239,9 @@ int main() {
             stateJson.find("\"color_root_proximity_bias\": -0.1") == std::string::npos ||
             stateJson.find("\"color_shape_posterize_steps\": 5") == std::string::npos ||
             stateJson.find("\"color_shape_posterize_mix\": 0.65") == std::string::npos ||
+            stateJson.find("\"color_shape_stack\"") == std::string::npos ||
+            stateJson.find("\"shape\": \"offset_scale\"") == std::string::npos ||
+            stateJson.find("\"shape\": \"posterize\"") == std::string::npos ||
             stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
             stateJson.find("\"interaction_debounce_ms\": 200") == std::string::npos ||
             stateJson.find("\"preview_target_fps\": 30") == std::string::npos ||
@@ -240,7 +250,7 @@ int main() {
             stateJson.find("\"import_signature\": \"9007199254740993\"") == std::string::npos ||
             stateJson.find("\"pack_projection_hash\": \"18446744073709551614\"") == std::string::npos ||
             stateJson.find("\"field_embedding_stats\": 5.5") == std::string::npos) {
-            std::cerr << "Expected diagnostics capture to persist Explaino fields, widened source owner fields, adaptive preview pacing, and optional sidecar orientation state\n";
+            std::cerr << "Expected diagnostics capture to persist Explaino fields, Shape stacks, widened source owner fields, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
         if (stateJson.find("\"color_signal\": \"root_proximity\"") == std::string::npos ||

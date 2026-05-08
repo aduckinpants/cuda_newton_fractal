@@ -243,6 +243,198 @@ bool ParseColorPipelineShape(const std::string& text, ColorPipelineShape* outSha
     return TryParseColorPipelineShapeId(text, outShape);
 }
 
+void ResetLegacyColorShapeMirror(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    ioParams->color_shape = ColorPipelineShape::identity;
+    ioParams->color_shape_offset = 0.0f;
+    ioParams->color_shape_scale = 1.0f;
+    ioParams->color_shape_repeat_frequency = 8.0f;
+    ioParams->color_shape_repeat_phase = 0.0f;
+    ioParams->color_shape_posterize_steps = 6;
+    ioParams->color_shape_posterize_mix = 1.0f;
+    ioParams->color_shape_bias = 0.5f;
+    ioParams->color_shape_gain = 0.5f;
+    ioParams->color_shape_window_center = 0.5f;
+    ioParams->color_shape_window_width = 1.0f;
+    ioParams->color_shape_window_softness = 0.0f;
+}
+
+void MirrorLegacyColorShapeFromStackEntry(const ColorPipelineShapeStackEntry& shapeEntry, KernelParams* ioParams) {
+    if (!ioParams) return;
+    ResetLegacyColorShapeMirror(ioParams);
+    ioParams->color_shape = shapeEntry.shape;
+    switch (shapeEntry.shape) {
+    case ColorPipelineShape::offset_scale:
+        ioParams->color_shape_offset = shapeEntry.params.offset;
+        ioParams->color_shape_scale = shapeEntry.params.scale;
+        break;
+    case ColorPipelineShape::repeat:
+    case ColorPipelineShape::mirror_repeat:
+        ioParams->color_shape_repeat_frequency = shapeEntry.params.repeat_frequency;
+        ioParams->color_shape_repeat_phase = shapeEntry.params.repeat_phase;
+        break;
+    case ColorPipelineShape::posterize:
+        ioParams->color_shape_posterize_steps = shapeEntry.params.posterize_steps;
+        ioParams->color_shape_posterize_mix = shapeEntry.params.posterize_mix;
+        break;
+    case ColorPipelineShape::bias_gain_curve:
+        ioParams->color_shape_bias = shapeEntry.params.bias;
+        ioParams->color_shape_gain = shapeEntry.params.gain;
+        break;
+    case ColorPipelineShape::smooth_window:
+        ioParams->color_shape_window_center = shapeEntry.params.window_center;
+        ioParams->color_shape_window_width = shapeEntry.params.window_width;
+        ioParams->color_shape_window_softness = shapeEntry.params.window_softness;
+        break;
+    case ColorPipelineShape::identity:
+    default:
+        break;
+    }
+}
+
+void ClearColorShapeStack(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    ioParams->color_shape_stack_count = 0;
+    for (ColorPipelineShapeStackEntry& shapeEntry : ioParams->color_shape_stack) {
+        shapeEntry = {};
+    }
+}
+
+bool ParseColorShapeStackEntryShape(const json_min::Value& entryValue,
+                                    ColorPipelineShapeStackEntry* outEntry,
+                                    std::string* outError) {
+    std::string shapeId;
+    if (!GetRequiredString(entryValue, "shape", &shapeId, outError)) {
+        return false;
+    }
+    if (!ParseColorPipelineShape(shapeId, &outEntry->shape)) {
+        if (outError) *outError = std::string("Unknown color_shape_stack shape id: ") + shapeId;
+        return false;
+    }
+    return true;
+}
+
+void ApplyColorShapeStackEntryNumbers(ColorPipelineShapeRuntimeParams* outParams,
+                                      double offset,
+                                      double scale,
+                                      double repeatFrequency,
+                                      double repeatPhase,
+                                      double posterizeMix,
+                                      double bias,
+                                      double gain,
+                                      double windowCenter,
+                                      double windowWidth,
+                                      double windowSoftness) {
+    outParams->offset = static_cast<float>(offset);
+    outParams->scale = static_cast<float>(scale);
+    outParams->repeat_frequency = static_cast<float>(repeatFrequency);
+    outParams->repeat_phase = static_cast<float>(repeatPhase);
+    outParams->posterize_mix = static_cast<float>(posterizeMix);
+    outParams->bias = static_cast<float>(bias);
+    outParams->gain = static_cast<float>(gain);
+    outParams->window_center = static_cast<float>(windowCenter);
+    outParams->window_width = static_cast<float>(windowWidth);
+    outParams->window_softness = static_cast<float>(windowSoftness);
+}
+
+bool LoadColorShapeStackEntryNumbers(const json_min::Value& entryValue,
+                                     ColorPipelineShapeRuntimeParams* outParams,
+                                     std::string* outError) {
+    double offset = outParams->offset;
+    double scale = outParams->scale;
+    double repeatFrequency = outParams->repeat_frequency;
+    double repeatPhase = outParams->repeat_phase;
+    double posterizeMix = outParams->posterize_mix;
+    double bias = outParams->bias;
+    double gain = outParams->gain;
+    double windowCenter = outParams->window_center;
+    double windowWidth = outParams->window_width;
+    double windowSoftness = outParams->window_softness;
+    if (!GetOptionalNumber(entryValue, "offset", &offset, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "scale", &scale, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "repeat_frequency", &repeatFrequency, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "repeat_phase", &repeatPhase, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "posterize_mix", &posterizeMix, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "bias", &bias, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "gain", &gain, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "window_center", &windowCenter, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "window_width", &windowWidth, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "window_softness", &windowSoftness, nullptr, outError)) {
+        return false;
+    }
+    ApplyColorShapeStackEntryNumbers(
+        outParams, offset, scale, repeatFrequency, repeatPhase, posterizeMix, bias, gain, windowCenter, windowWidth, windowSoftness);
+    return true;
+}
+
+bool LoadColorShapeStackPosterizeSteps(const json_min::Value& entryValue,
+                                       ColorPipelineShapeRuntimeParams* outParams,
+                                       std::string* outError) {
+    double posterizeStepsRaw = static_cast<double>(outParams->posterize_steps);
+    bool hasPosterizeSteps = false;
+    if (!GetOptionalNumber(entryValue, "posterize_steps", &posterizeStepsRaw, &hasPosterizeSteps, outError)) {
+        return false;
+    }
+    if (!hasPosterizeSteps) {
+        return true;
+    }
+    if (!std::isfinite(posterizeStepsRaw) || std::floor(posterizeStepsRaw) != posterizeStepsRaw) {
+        if (outError) *outError = "Invalid integer field: color_shape_stack.posterize_steps";
+        return false;
+    }
+    outParams->posterize_steps = static_cast<int>(posterizeStepsRaw);
+    return true;
+}
+
+bool ParseColorShapeStackEntry(const json_min::Value& entryValue,
+                               ColorPipelineShapeStackEntry* outEntry,
+                               std::string* outError) {
+    if (!entryValue.is_object()) {
+        if (outError) *outError = "color_shape_stack entries must be objects";
+        return false;
+    }
+    *outEntry = {};
+    return ParseColorShapeStackEntryShape(entryValue, outEntry, outError) &&
+           LoadColorShapeStackEntryNumbers(entryValue, &outEntry->params, outError) &&
+           LoadColorShapeStackPosterizeSteps(entryValue, &outEntry->params, outError);
+}
+
+bool ParseOptionalColorShapeStack(const json_min::Value& paramsObject, KernelParams* ioParams, std::string* outError) {
+    if (!ioParams) {
+        return false;
+    }
+    ClearColorShapeStack(ioParams);
+    const json_min::Value* stackValue = paramsObject.get("color_shape_stack");
+    if (!stackValue) {
+        return true;
+    }
+    if (!stackValue->is_array()) {
+        if (outError) *outError = "Field color_shape_stack must be an array";
+        return false;
+    }
+
+    const auto& stackArray = stackValue->as_array();
+    if (stackArray.size() > static_cast<std::size_t>(kColorPipelineMaxShapeStackCount)) {
+        if (outError) *outError = "color_shape_stack exceeds the supported maximum row count";
+        return false;
+    }
+
+    ioParams->color_shape_stack_count = static_cast<int>(stackArray.size());
+    for (std::size_t index = 0; index < stackArray.size(); ++index) {
+        if (!ParseColorShapeStackEntry(stackArray[index], &ioParams->color_shape_stack[index], outError)) {
+            return false;
+        }
+    }
+    if (!stackArray.empty()) {
+        MirrorLegacyColorShapeFromStackEntry(ioParams->color_shape_stack[stackArray.size() - 1], ioParams);
+    }
+    return true;
+}
+
 bool ParseIntField(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
     double rawValue = 0.0;
     if (!GetRequiredNumber(object, key, &rawValue, outError)) return false;
@@ -1239,6 +1431,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_explaino_palette_colorfulness = static_cast<float>(colorExplainoPaletteColorfulness);
     nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);
     nextParams.color_contrast_lift_saturation = static_cast<float>(colorContrastLiftSaturation);
+    if (!ParseOptionalColorShapeStack(*paramsObject, &nextParams, outError)) return false;
 
     // explaino_cluster_radius (optional for backward compat)
     double explainoClusterRadius = nextParams.explaino_cluster_radius;

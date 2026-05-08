@@ -261,17 +261,39 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyIterationBandEmphasis(Escape
     return rgb;
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplyPosterizeShapeValue(float value, const KernelParams& params, float repeatWrap) {
-    const int steps = params.color_shape_posterize_steps < 2 ? 2 : (params.color_shape_posterize_steps > 24 ? 24 : params.color_shape_posterize_steps);
-    const float mix = EscapeTimeColorClamp(params.color_shape_posterize_mix, 0.0f, 1.0f);
+ESCAPE_TIME_COLOR_HD inline ColorPipelineShapeRuntimeParams LegacyColorPipelineShapeRuntimeParams(const KernelParams& params) {
+    ColorPipelineShapeRuntimeParams shapeParams;
+    shapeParams.offset = params.color_shape_offset;
+    shapeParams.scale = params.color_shape_scale;
+    shapeParams.repeat_frequency = params.color_shape_repeat_frequency;
+    shapeParams.repeat_phase = params.color_shape_repeat_phase;
+    shapeParams.posterize_steps = params.color_shape_posterize_steps;
+    shapeParams.posterize_mix = params.color_shape_posterize_mix;
+    shapeParams.bias = params.color_shape_bias;
+    shapeParams.gain = params.color_shape_gain;
+    shapeParams.window_center = params.color_shape_window_center;
+    shapeParams.window_width = params.color_shape_window_width;
+    shapeParams.window_softness = params.color_shape_window_softness;
+    return shapeParams;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplyPosterizeShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
+    const int steps = params.posterize_steps < 2 ? 2 : (params.posterize_steps > 24 ? 24 : params.posterize_steps);
+    const float mix = EscapeTimeColorClamp(params.posterize_mix, 0.0f, 1.0f);
     const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
     const float quantized = floorf((value / safeWrap) * static_cast<float>(steps)) / static_cast<float>(steps) * safeWrap;
     return value + (quantized - value) * mix;
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplyRepeatShapeValue(float value, const KernelParams& params, float repeatWrap) {
-    value = value * EscapeTimeColorClamp(params.color_shape_repeat_frequency, 0.25f, 24.0f) +
-        EscapeTimeColorClamp(params.color_shape_repeat_phase, -1.0f, 1.0f);
+ESCAPE_TIME_COLOR_HD inline float ApplyRepeatShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
+    value = value * EscapeTimeColorClamp(params.repeat_frequency, 0.25f, 24.0f) +
+        EscapeTimeColorClamp(params.repeat_phase, -1.0f, 1.0f);
     repeatWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
     value = fmodf(value, repeatWrap);
     if (value < 0.0f) {
@@ -280,7 +302,14 @@ ESCAPE_TIME_COLOR_HD inline float ApplyRepeatShapeValue(float value, const Kerne
     return value;
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplyMirrorRepeatShapeValue(float value, const KernelParams& params, float repeatWrap) {
+ESCAPE_TIME_COLOR_HD inline float ApplyRepeatShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    return ApplyRepeatShapeValue(value, LegacyColorPipelineShapeRuntimeParams(params), repeatWrap);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplyMirrorRepeatShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
     const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
     const float repeated = ApplyRepeatShapeValue(value, params, safeWrap);
     const float normalized = repeated / safeWrap;
@@ -308,7 +337,10 @@ ESCAPE_TIME_COLOR_HD inline float ApplyGainCurveUnitValue(float value, float gai
     return 1.0f - 0.5f * ApplyBiasCurveUnitValue(2.0f - value * 2.0f, 1.0f - safeGain);
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplyBiasGainShapeValue(float value, const KernelParams& params, float repeatWrap) {
+ESCAPE_TIME_COLOR_HD inline float ApplyBiasGainShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
     const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
     const float segment = floorf(value / safeWrap);
     float local = value - segment * safeWrap;
@@ -316,8 +348,8 @@ ESCAPE_TIME_COLOR_HD inline float ApplyBiasGainShapeValue(float value, const Ker
         local += safeWrap;
     }
     float normalized = EscapeTimeColorClamp(local / safeWrap, 0.0f, 1.0f);
-    normalized = ApplyBiasCurveUnitValue(normalized, params.color_shape_bias);
-    normalized = ApplyGainCurveUnitValue(normalized, params.color_shape_gain);
+    normalized = ApplyBiasCurveUnitValue(normalized, params.bias);
+    normalized = ApplyGainCurveUnitValue(normalized, params.gain);
     return segment * safeWrap + normalized * safeWrap;
 }
 
@@ -353,12 +385,15 @@ ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowMask(float distance, float ha
     return EscapeTimeColorClamp(mask, 0.0f, 1.0f);
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowShapeValue(float value, const KernelParams& params, float repeatWrap) {
+ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowShapeValue(
+    float value,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
     const float safeWrap = repeatWrap > 0.0f ? repeatWrap : 1.0f;
     const float local = EscapeTimeColorWrapPositive(value, safeWrap);
-    const float center = EscapeTimeColorClamp(params.color_shape_window_center, 0.0f, 1.0f) * safeWrap;
-    const float width = EscapeTimeColorClamp(params.color_shape_window_width, 0.0f, 1.0f) * safeWrap;
-    const float softness = EscapeTimeColorClamp(params.color_shape_window_softness, 0.0f, 1.0f) * safeWrap;
+    const float center = EscapeTimeColorClamp(params.window_center, 0.0f, 1.0f) * safeWrap;
+    const float width = EscapeTimeColorClamp(params.window_width, 0.0f, 1.0f) * safeWrap;
+    const float softness = EscapeTimeColorClamp(params.window_softness, 0.0f, 1.0f) * safeWrap;
     if (width >= safeWrap) {
         return safeWrap;
     }
@@ -367,22 +402,48 @@ ESCAPE_TIME_COLOR_HD inline float ApplySmoothWindowShapeValue(float value, const
     return ApplySmoothWindowMask(distance, halfWidth, softness) * safeWrap;
 }
 
-ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
-    if (params.color_shape == ColorPipelineShape::offset_scale) {
-        value += EscapeTimeColorClamp(params.color_shape_offset, -2.0f, 2.0f);
-        value *= EscapeTimeColorClamp(params.color_shape_scale, 0.1f, 8.0f);
-    } else if (params.color_shape == ColorPipelineShape::repeat) {
+ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeRowValue(
+    float value,
+    ColorPipelineShape shape,
+    const ColorPipelineShapeRuntimeParams& params,
+    float repeatWrap) {
+    if (shape == ColorPipelineShape::offset_scale) {
+        value += EscapeTimeColorClamp(params.offset, -2.0f, 2.0f);
+        value *= EscapeTimeColorClamp(params.scale, 0.1f, 8.0f);
+    } else if (shape == ColorPipelineShape::repeat) {
         value = ApplyRepeatShapeValue(value, params, repeatWrap);
-    } else if (params.color_shape == ColorPipelineShape::posterize) {
+    } else if (shape == ColorPipelineShape::posterize) {
         value = ApplyPosterizeShapeValue(value, params, repeatWrap);
-    } else if (params.color_shape == ColorPipelineShape::mirror_repeat) {
+    } else if (shape == ColorPipelineShape::mirror_repeat) {
         value = ApplyMirrorRepeatShapeValue(value, params, repeatWrap);
-    } else if (params.color_shape == ColorPipelineShape::bias_gain_curve) {
+    } else if (shape == ColorPipelineShape::bias_gain_curve) {
         value = ApplyBiasGainShapeValue(value, params, repeatWrap);
-    } else if (params.color_shape == ColorPipelineShape::smooth_window) {
+    } else if (shape == ColorPipelineShape::smooth_window) {
         value = ApplySmoothWindowShapeValue(value, params, repeatWrap);
     }
     return value;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap) {
+    int shapeStackCount = params.color_shape_stack_count;
+    if (shapeStackCount > kColorPipelineMaxShapeStackCount) {
+        shapeStackCount = kColorPipelineMaxShapeStackCount;
+    }
+    if (shapeStackCount > 0) {
+        for (int index = 0; index < shapeStackCount; ++index) {
+            value = ApplyColorPipelineShapeRowValue(
+                value,
+                params.color_shape_stack[index].shape,
+                params.color_shape_stack[index].params,
+                repeatWrap);
+        }
+        return value;
+    }
+    return ApplyColorPipelineShapeRowValue(
+        value,
+        params.color_shape,
+        LegacyColorPipelineShapeRuntimeParams(params),
+        repeatWrap);
 }
 
 ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeHeatmapBand(float nu, const KernelParams& params) {

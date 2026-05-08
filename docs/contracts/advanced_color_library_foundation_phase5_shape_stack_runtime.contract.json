@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase5_shape_stack_runtime",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase5_shape_stack_runtime_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase5_shape_stack_runtime_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "make the first backend-recovery slice truthful by landing real multi-row Shape support instead of another editor-only or plan-only pass",
+    "keep the mapped advanced-color inventory fixed and only widen the Shape lane runtime authority in this slice",
+    "preserve single-row backward compatibility for legacy live tuples and persisted state while making supported two-row Shape lanes real",
+    "follow strict TDD: add the focused RED first, then land the minimal runtime owner and live-bridge fix"
+  ],
+  "forbidden_operator_prompts": [
+    "claim stacked Shape support while the live bridge still rejects more than one enabled Shape row",
+    "leave the new Shape stack out of defaults, reset, or diagnostics persistence after claiming the slice landed",
+    "widen Grading, Blend, Mask/Domain, or the common-fractal queue in the same slice",
+    "reopen the advanced-color inventory definition instead of treating the checked-in mapping as authority"
+  ],
+  "required_defaults": {
+    "two_row_shape_lane_is_runtime_real": "required",
+    "shape_stack_has_bounded_runtime_owner": "required",
+    "legacy_single_row_shape_sync_remains_supported": "required"
+  },
+  "forbidden_defaults": {
+    "editor_only_shape_stack": "forbidden",
+    "single_row_live_bridge_fallback": "forbidden",
+    "persistence_ignores_shape_stack": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_shape_stack_runtime.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_shape_stack_runtime_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_shape_stack_runtime_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 5 shape-stack runtime contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase5_shape_stack_runtime_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_shape_stack_runtime_plan_sync_ok",
+      "description": "The advanced color foundation and shape-stack recovery plans stay synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

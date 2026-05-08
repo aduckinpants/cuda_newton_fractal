@@ -1,6 +1,7 @@
 #include "../src/escape_time_coloring.h"
 #include "../src/fractal_family_rules.h"
 
+#include <cmath>
 #include <iostream>
 
 namespace {
@@ -326,7 +327,42 @@ int main() {
             return 1;
         }
 
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_stack_count = 2;
+        params.color_shape_stack[0].shape = ColorPipelineShape::offset_scale;
+        params.color_shape_stack[0].params.offset = 0.35f;
+        params.color_shape_stack[0].params.scale = 1.8f;
+        params.color_shape_stack[1].shape = ColorPipelineShape::repeat;
+        params.color_shape_stack[1].params.repeat_frequency = 6.0f;
+        params.color_shape_stack[1].params.repeat_phase = 0.2f;
+
+        KernelParams offsetOnlyParams = params;
+        offsetOnlyParams.color_shape_stack_count = 0;
+        offsetOnlyParams.color_shape = ColorPipelineShape::offset_scale;
+        offsetOnlyParams.color_shape_offset = 0.35f;
+        offsetOnlyParams.color_shape_scale = 1.8f;
+        KernelParams repeatOnlyParams = params;
+        repeatOnlyParams.color_shape_stack_count = 0;
+        repeatOnlyParams.color_shape = ColorPipelineShape::repeat;
+        repeatOnlyParams.color_shape_repeat_frequency = 6.0f;
+        repeatOnlyParams.color_shape_repeat_phase = 0.2f;
+        const float stackedShapeValue = ApplyColorPipelineShapeValue(0.25f, params, 1.0f);
+        const float repeatedOnlyValue = ApplyColorPipelineShapeValue(0.25f, repeatOnlyParams, 1.0f);
+        const float manualStackedValue = ApplyRepeatShapeValue(
+            ApplyColorPipelineShapeValue(0.25f, offsetOnlyParams, 1.0f),
+            repeatOnlyParams,
+            1.0f);
+        if (std::fabs(stackedShapeValue - repeatedOnlyValue) <= 1.0e-6f) {
+            std::cerr << "A two-row Shape stack should not collapse to the final Shape row only\n";
+            return 1;
+        }
+        if (std::fabs(stackedShapeValue - manualStackedValue) > 1.0e-6f) {
+            std::cerr << "A two-row Shape stack should execute supported Shape rows in order\n";
+            return 1;
+        }
+
         params.color_shape = ColorPipelineShape::posterize;
+        params.color_shape_stack_count = 0;
         params.color_shape_posterize_steps = 2;
         params.color_shape_posterize_mix = 1.0f;
         const TestColor posterizedSignal = MakeEscapeTimeBaseColor<TestColor>(

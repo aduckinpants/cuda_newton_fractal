@@ -235,6 +235,31 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_shape_window_center\": " << static_cast<double>(params.color_shape_window_center) << ",\n";
     js << "    \"color_shape_window_width\": " << static_cast<double>(params.color_shape_window_width) << ",\n";
     js << "    \"color_shape_window_softness\": " << static_cast<double>(params.color_shape_window_softness) << ",\n";
+    if (params.color_shape_stack_count > 0) {
+        int shapeStackCount = params.color_shape_stack_count;
+        if (shapeStackCount > kColorPipelineMaxShapeStackCount) {
+            shapeStackCount = kColorPipelineMaxShapeStackCount;
+        }
+        js << "    \"color_shape_stack\": [\n";
+        for (int index = 0; index < shapeStackCount; ++index) {
+            const ColorPipelineShapeStackEntry& shapeEntry = params.color_shape_stack[index];
+            js << "      {\n";
+            js << "        \"shape\": \"" << CaptureColorPipelineShapeId(shapeEntry.shape) << "\",\n";
+            js << "        \"offset\": " << static_cast<double>(shapeEntry.params.offset) << ",\n";
+            js << "        \"scale\": " << static_cast<double>(shapeEntry.params.scale) << ",\n";
+            js << "        \"repeat_frequency\": " << static_cast<double>(shapeEntry.params.repeat_frequency) << ",\n";
+            js << "        \"repeat_phase\": " << static_cast<double>(shapeEntry.params.repeat_phase) << ",\n";
+            js << "        \"posterize_steps\": " << shapeEntry.params.posterize_steps << ",\n";
+            js << "        \"posterize_mix\": " << static_cast<double>(shapeEntry.params.posterize_mix) << ",\n";
+            js << "        \"bias\": " << static_cast<double>(shapeEntry.params.bias) << ",\n";
+            js << "        \"gain\": " << static_cast<double>(shapeEntry.params.gain) << ",\n";
+            js << "        \"window_center\": " << static_cast<double>(shapeEntry.params.window_center) << ",\n";
+            js << "        \"window_width\": " << static_cast<double>(shapeEntry.params.window_width) << ",\n";
+            js << "        \"window_softness\": " << static_cast<double>(shapeEntry.params.window_softness) << "\n";
+            js << "      }" << (index + 1 < shapeStackCount ? "," : "") << "\n";
+        }
+        js << "    ],\n";
+    }
     js << "    \"color_iteration_band_count\": " << params.color_iteration_band_count << ",\n";
     js << "    \"color_iteration_band_softness\": " << static_cast<double>(params.color_iteration_band_softness) << ",\n";
     js << "    \"color_iteration_band_emphasis\": " << static_cast<double>(params.color_iteration_band_emphasis) << ",\n";
