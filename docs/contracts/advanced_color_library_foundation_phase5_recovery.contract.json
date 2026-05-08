@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase5_recovery",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md"
+  ],
+  "required_operator_inputs": [
+    "treat the mapped advanced-color function inventory as binding authority instead of redefining the MVP",
+    "preserve the lane-stack and ordered-composition requirement already recorded in the checked-in advanced-color plans",
+    "repair the main advanced-color foundation plan so the next executable slice is backend recovery rather than an underspecified Grading continuation",
+    "follow the repo's phased-plan and contract workflow instead of chat-only sequencing"
+  ],
+  "forbidden_operator_prompts": [
+    "redefine the advanced-color MVP from scratch",
+    "treat the current foundation plan as executable without repairing its phase drift and missing hostile-audit state",
+    "start Grading implementation before the stack/backend recovery slice is planned honestly",
+    "promote the common-fractal wave or CUDA catalog refactor ahead of the advanced-color recovery thread"
+  ],
+  "required_defaults": {
+    "mapped_inventory_remains_authority": "required",
+    "lane_stack_requirement_preserved": "required",
+    "next_slice_is_backend_recovery": "required"
+  },
+  "forbidden_defaults": {
+    "mvp_rediscovery": "forbidden",
+    "grading_as_next_without_backend_recovery": "forbidden",
+    "workflow_invalid_foundation_plan": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_recovery_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_recovery_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 5 recovery contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase5_recovery_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_recovery_plan_sync_ok",
+      "description": "The advanced color recovery phased plans stay synchronized during the planning-repair slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

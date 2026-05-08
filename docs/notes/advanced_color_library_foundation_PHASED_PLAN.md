@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - Phase 4 now closes the initial Palette library with `explaino_cmap`, `root_classic_palette`, and `joy_root_palette`; the next bounded step is promoting Grading to a first-class category and landing the initial Grade library
+Phase 5 queued - repair the stack/backend requirement and grading authority boundary so the next executable slice can land truthful multi-row lane support instead of jumping straight to Grading
 
 ## Phase Checklist
 
@@ -11,33 +11,34 @@ Phase 5 in progress - Phase 4 now closes the initial Palette library with `expla
 - [x] Phase 2 - land the full initial Source library through the extracted descriptor/registry core and the broader runtime-source authority refactor the user explicitly chose
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
-- [ ] Phase 5 - promote Grading to a first-class category and land the initial Grade library, including the bounded filmic Balance/Void-inspired grading operator
-- [ ] Phase 6 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
-- [ ] Phase 7 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
+- [ ] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
+- [ ] Phase 6 - promote Grading to a first-class category and land the initial Grade library, including the bounded generic Balance/Void operator, only after the backend recovery slice closes honestly
+- [ ] Phase 7 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
+- [ ] Phase 8 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
 ## Explicit User Asks
 
-- [open] Do the next step as a real planned-out full initial library of reusable functions per category, not a vague "3-ish" placeholder.
-- [open] Treat this as a critical move that needs real effort, not a lazy option pass.
-- [open] Use ExplainO CMap as part of the palette planning, but do not conflate it with basin/root/joy palette work.
-- [open] Make the result simple to extend with nice module boundaries and clean coding.
-- [open] Strengthen the architecture beyond dropdowns: make this a reusable, descriptor-driven color-pipeline core that could plausibly become its own DLL/static library later.
-- [open] `color_pipeline_window.h` must stop being the authority for category/function identity, parameter meaning, runtime applicability, import/apply behavior, reset/default behavior, or serialization truth.
-- [open] Add a bounded generic filmic Balance/Void grading operator, but keep that separate from fractal-family geometry work.
-- [open] Plan one experimental ExplainO-BalanceVoid deformation-pack family with three neutral-default axes instead of a branch explosion of separate fractals.
-- [open] Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
+- [open] Phase 5-7 - Do the next step as a real planned-out full initial library of reusable functions per category, not a vague "3-ish" placeholder.
+- [open] Phase 5-7 - Treat this as a critical move that needs real effort, not a lazy option pass.
+- [done] Phase 4 - Use ExplainO CMap as part of the palette planning, but do not conflate it with basin/root/joy palette work.
+- [open] Phase 5-7 - Make the result simple to extend with nice module boundaries and clean coding.
+- [open] Phase 5-7 - Strengthen the architecture beyond dropdowns: make this a reusable, descriptor-driven color-pipeline core that could plausibly become its own DLL/static library later.
+- [open] Phase 5-6 - `color_pipeline_window.h` must stop being the authority for category/function identity, parameter meaning, runtime applicability, import/apply behavior, reset/default behavior, or serialization truth.
+- [open] Phase 6 - Add a bounded generic filmic Balance/Void grading operator, but keep that separate from fractal-family geometry work.
+- [done] Phase 0 - Plan one experimental ExplainO-BalanceVoid deformation-pack family with three neutral-default axes instead of a branch explosion of separate fractals.
+- [open] Phase 5-7 - Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
 
 ## Presumption Loop
 
-The controlling product risk is no longer just "missing functions." The current advanced-color surface still keeps too much identity and behavior authority inline in `ui_app/src/color_pipeline_window.h`, which means any widening work risks scaling the window monolith instead of proving a reusable foundation. The most falsifiable first hypothesis is that a checked-in oracle/terminology note plus a checked-in inventory/architecture contract will remove the remaining authority ambiguity: ExplainO CMap, basin/root palettes, and the generic viewport colormap will stop being conflated, and later implementation slices will have a durable contract for where descriptors, runtime adapters, and serialization truth are allowed to live. The cheapest disconfirming checks are deterministic repo rails: the contract must validate, the phased plan must stay synchronized, and the note must name a balanced initial library plus the stronger ownership rules in a way future slices can point to directly.
+The controlling product risk is no longer uncertainty about the advanced-color inventory. That mapping already exists in `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md`, and the lane-stack requirement already exists in `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md`. The current blocker is planning drift plus a still-single-row live/backend model: this plan previously pointed straight to Grading even though `ui_app/src/color_pipeline_window.h` still hard-rejects more than one enabled row per lane and `ui_app/src/fractal_types.h` still stores Shape state as one enum plus one flat parameter set. The most falsifiable current hypothesis is that Phase 5 must first repair the stack/backend requirement and grading authority boundary so the next executable slice is a bounded backend recovery rather than a dishonest Grading continuation. The cheapest disconfirming checks are deterministic repo rails: the Phase 5 recovery contract must validate, the phased plans must stay synchronized, and the next implementation slice must start with focused reds around the one-enabled-row live bridge and per-row parameter scoping.
 
 ## Presumption Evidence
 
-- `ui_app/src/color_pipeline_window.h` still contains the shipped lane catalogs, runtime-backed filtering, descriptor builders, and live-bridge logic inline, which proves the window is still too close to the authority surface.
-- `ui_app/src/function_descriptor.h` already provides reusable descriptor types, so the repo has a natural extraction seam for a future registry/catalog core.
-- The verified references split the ExplainO surfaces cleanly: the legacy LUT lineage lives in `c:\code\salticid-cuda\carl-ca-python\ca_viewer.py`, while the current basin/root palettes live in `c:\code\salticid-cuda\content\packs\explaino\cuda\explaino_cuda_helpers.inl` and `c:\code\salticid-cuda\cuda_core\src\ops_special.cu`, and the generic viewport colormap surface in `c:\code\salticid-cuda\ide_ui_dx11\ui_app\src\viewport_colormap.cpp` / `.h` does not contain an ExplainO colormap.
-- `docs/EXPLAINO_EXPERIMENTAL_FAMILY_REFERENCE.md` already shows the current ExplainO-family proliferation surface, which supports the user's request to rehearse a future meta-family pattern rather than keep branching into standalone fractal types.
-- The recent advanced-color roadmap in `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already says widening must happen one runtime-real row family at a time, so a stronger foundation contract is the next logical prerequisite rather than a detour.
+- `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` already locks the four-category foundation and the initial Source / Shape / Palette / Grading inventory, including the bounded generic Balance/Void operator and the separate ExplainO-BalanceVoid family track.
+- `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already maps the lane-stack requirement: Source / Shape / Palette lane stacks, plus-button row insertion, ordered composition, and runtime-real-only shipping.
+- `ui_app/src/color_pipeline_window.h` still initializes, imports, snapshots, and applies the live path through single-row helpers plus explicit one-enabled-row bridge checks, which proves backend recovery must come before any honest Grading follow-on.
+- `ui_app/src/fractal_types.h` still stores Shape state as one active enum plus one flat parameter set, which means the first real multi-row runtime slice needs an explicit per-row parameter-scoping strategy instead of silent implementation drift.
+- The verified references still split the ExplainO surfaces cleanly: the legacy LUT lineage lives in `c:\code\salticid-cuda\carl-ca-python\ca_viewer.py`, while the current basin/root palettes live in `c:\code\salticid-cuda\content\packs\explaino\cuda\explaino_cuda_helpers.inl` and `c:\code\salticid-cuda\cuda_core\src\ops_special.cu`, and the generic viewport colormap surface in `c:\code\salticid-cuda\ide_ui_dx11\ui_app\src\viewport_colormap.cpp` / `.h` does not contain an ExplainO colormap.
 
 ## Proof Ledger
 
@@ -102,25 +103,44 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `ui_app/src/color_pipeline_core.h` and `ui_app/src/color_pipeline_window.h` now treat `joy_root_palette` as a runtime-real advanced Palette row, bridge the `joy_basins` tuple through `root_index`, and let the editor co-switch/apply joy-basin selections without falling back to a draft-only dead end.
 - Landed: `ui_app/tests/test_schema_binding.cpp` now locks the joy palette row in the extracted core catalog, the shipped palette lane, the manual non-basin-to-joy apply path, and live joy-basins import as a supported `root_index + joy_root_palette` snapshot.
 - Validated: `artifacts/joy_root_green_native.log` is green for the focused native helper rail, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the active runtime cleanly, and `artifacts/joy_root_runtime_smoke.log` reports the published-runtime `root_classic` versus `joy` Explaino basin smoke passing.
-- Phase boundary advanced: the initial Palette library is now complete, so the next bounded slice is Phase 5 grading promotion instead of another Phase 4 palette row.
+- Phase boundary advanced: the initial Palette library is now complete, but hostile review found the next truthful step is not direct Grading promotion. Phase 5 must first repair the stack/backend requirement and grading authority boundary so the mapped Grade library can land honestly.
+
+## Hostile Audit
+
+- Status: in progress
+- Required posture: treat the mapped inventory as settled and keep auditing the backend/planning seams until the live multi-row stack requirement and the grading authority boundary are both proven instead of inferred.
+
+## Audit Passes
+
+- [done] Pass 1 - re-read the main foundation plan against the mapped inventory and record the concrete planning defects: phase drift, missing hostile-audit state, globally open user asks, and the vague direct-to-Grading resume point.
+- [done] Pass 2 - re-read the live backend seams and record the concrete technical blockers: `ui_app/src/color_pipeline_window.h` still enforces one enabled row per lane and `ui_app/src/fractal_types.h` still stores Shape state as one flat parameter set.
+- [open] Pass 3 - audit the repaired planning surfaces after the bounded Phase 5 recovery slice lands and confirm the next executable implementation slice is backend recovery rather than an underspecified Grading continuation.
+
+## Audit Findings
+
+- [done] Real defect found: this plan previously said Phase 5 was in progress and pointed straight to Grading even though the mapped lane-stack requirement remained open and the plan lacked the hostile-audit sections now required by the repo workflow.
+- [done] Real defect found: the live advanced-color backend still hard-rejects more than one enabled row per lane and imports/snapshots through single-row builders, so the next truthful implementation slice must repair backend/state authority before any honest Grading continuation.
 
 ## Notes
 
-- Expected owner files for the current slice:
+- Expected owner files for the next bounded slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase4_palette_root_classic.contract.json`
-  - `ui_app/src/color_pipeline_core.h`
+  - `docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md`
+  - `docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json`
+  - `ui_app/src/color_pipeline_window.h`
+  - `ui_app/src/fractal_types.h`
+  - `ui_app/src/escape_time_coloring.h`
   - `ui_app/tests/test_schema_binding.cpp`
-  - `tests/test_fractal_runtime_explaino_escape_variants.py`
-- Non-goals for this slice:
-  - do not widen `joy_root_palette` in the same slice
-  - do not add fake parameters or borrowed owner fields to `root_classic_palette`
-  - do not widen Grading, Blend, or Mask/Domain yet
-  - do not reopen the closed reset/dropdown or ExplainO runtime bugfix detours unless the new row proves they regressed again
+  - `ui_app/tests/test_escape_time_coloring.cpp`
+- Non-goals for Phase 5:
+  - do not redefine the mapped Source / Shape / Palette / Grading inventory
+  - do not start Grading implementation before the backend recovery slice closes honestly
+  - do not reopen the common-fractal wave or the CUDA catalog refactor as the active thread yet
+  - do not treat editor-only stack behavior as satisfying the live/runtime requirement
 
 ## Resume Point
 
-Checkpoint the `joy_root_palette` slice, then continue at Phase 5 by promoting Grading to a first-class category and landing the initial Grade library through the same extracted catalog/bridge authority and viewer-first proof rails.
+Checkpoint the bounded Phase 5 planning-repair slice, then start the backend-recovery implementation slice under `docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md` and `docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json`, targeting the one-enabled-row live bridge, single-row import/snapshot helpers, flat Shape parameter scoping, and the first truthful multi-row runtime REDs before any Grading implementation.
 
 
 
