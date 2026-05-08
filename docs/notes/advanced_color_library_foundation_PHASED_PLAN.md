@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 in progress - `root_classic_palette` is now a validated advanced row with its companion `root_index` source bridge; keep Phase 4 open and continue with `joy_root_palette` as the next family-gated Palette slice
+Phase 4 in progress - `root_classic_palette` is now a validated advanced row with its companion `root_index` source bridge, the tuple-switch follow-up has repaired the editor dead-end UX, and `joy_root_palette` is again the next bounded family-gated Palette slice once this closure checkpoints cleanly
 
 ## Phase Checklist
 
@@ -96,6 +96,9 @@ The controlling product risk is no longer just "missing functions." The current 
 - Landed: `ui_app/tests/test_schema_binding.cpp` now locks the extracted core catalogs, the shipped window catalogs, the default basin live-snapshot import, and the diverged-draft sync behavior for the `root_index` plus `root_classic_palette` bridge.
 - Landed: `tests/test_fractal_runtime_explaino_escape_variants.py` now proves the published runtime still renders distinct Explaino basin frames for `root_classic` versus `joy` palettes after the `root_classic` advanced-row widening.
 - Validated: `artifacts/root_classic_green_native_3.log` is green for `ui_app/build_tests_vsdevcmd.cmd`, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -q -k root_classic_and_joy_palettes_render_distinct_published_runtime_frames` passed against the freshly published runtime.
+- Follow-up landed: `ui_app/src/color_pipeline_window.h` now auto-completes shipped single-row Source/Palette selections into their supported companion pairs, recognizes `root_index + root_classic_palette` through a shared tuple builder, and explains that parameterless fixed Source/Palette rows change the live bridge directly rather than exposing tunable controls.
+- Follow-up landed: `ui_app/tests/test_schema_binding.cpp` now locks the repaired root tuple-switch path from a non-basin live tuple into the basin pair and updates the shipped-pair classification coverage so selector choices no longer present as bogus preview-only dead ends.
+- Follow-up validated: `artifacts/root_tuple_switch_native_v5.log` is green for the focused native helper rail, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/verify_native_helper_tests.log` is green, `artifacts/verify_runtime_publish.log` republished the active runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the freshly published runtime.
 - Next bounded slice: `joy_root_palette` is next because the runtime tuple already exists and the remaining family-gated advanced Palette work should keep one root-lineage row per slice.
 
 ## Notes
@@ -114,7 +117,7 @@ The controlling product risk is no longer just "missing functions." The current 
 
 ## Resume Point
 
-Checkpoint the `root_classic_palette` slice, then continue Phase 4 with `joy_root_palette` as the next separate bounded family-gated palette row through the same extracted catalog/bridge authority and published-runtime proof rails.
+Checkpoint the tuple-switch follow-up on top of the `root_classic_palette` slice, then continue Phase 4 with `joy_root_palette` as the next separate bounded family-gated palette row through the same extracted catalog/bridge authority and published-runtime proof rails.
 
 
 

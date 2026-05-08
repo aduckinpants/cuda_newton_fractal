@@ -1300,6 +1300,72 @@ int main() {
             std::cerr << "Expected the Shape lane to keep accepting lane-local function changes after reorder/remove coverage\n";
             return 1;
         }
+        params.coloring_mode = ColoringMode::iteration_bands;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params) ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.lanes[0].rows[0].function_id != "banded_signal" ||
+            windowState.lanes[2].rows[0].function_id != "banded_heatmap") {
+            std::cerr << "Expected syncing from a supported non-basin live tuple to import the banded draft before root tuple-switch coverage\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState rootIndexCandidateState = DescribeColorPipelineCandidateApplyState(
+            windowState,
+            0,
+            "root_index",
+            view.fractal_type,
+            &params);
+        if (rootIndexCandidateState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected selecting root_index from a supported single-row editor state to auto-complete the matching Palette row instead of reading as draft-only\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "root_index") ||
+            windowState.lanes[0].rows[0].function_id != "root_index" ||
+            windowState.lanes[2].rows[0].function_id != "root_classic_palette") {
+            std::cerr << "Expected selecting root_index to co-switch the matching root_classic_palette row\n";
+            return 1;
+        }
+        if (!HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected tuple-aware co-switching to count as a real draft edit\n";
+            return 1;
+        }
+        bool rootTupleChanged = false;
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params, &rootTupleChanged) ||
+            !rootTupleChanged ||
+            params.coloring_mode != ColoringMode::root_basin ||
+            params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::root_classic ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "Expected applying the tuple-aware root selection to move the live runtime from a non-basin tuple into root_index plus root_classic\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState rootClassicCandidateState = DescribeColorPipelineCandidateApplyState(
+            windowState,
+            2,
+            "root_classic_palette",
+            view.fractal_type,
+            &params);
+        if (rootClassicCandidateState.status != ColorPipelineDraftApplyStatus::matches_live) {
+            std::cerr << "Expected the matching root_classic_palette candidate to stop reading as draft-only once the tuple is aligned\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap") ||
+            windowState.lanes[2].rows[0].function_id != "banded_heatmap") {
+            std::cerr << "Expected the Palette lane to switch back to banded_heatmap after root_classic tuple coverage\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "root_classic_palette") ||
+            windowState.lanes[2].rows[0].function_id != "root_classic_palette" ||
+            windowState.lanes[0].rows[0].function_id != "root_index") {
+            std::cerr << "Expected selecting root_classic_palette to co-switch the matching root_index row\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap") ||
+            !SelectColorPipelineLaneFunction(&windowState, 0, "banded_signal")) {
+            std::cerr << "Expected the test to restore the banded tuple after root_classic co-switch coverage\n";
+            return 1;
+        }
         if (SelectColorPipelineLaneFunction(&windowState, 0, "not_real")) {
             std::cerr << "Unknown advanced color lane functions should fail instead of silently falling back\n";
             return 1;
@@ -1688,12 +1754,17 @@ int main() {
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
-            std::cerr << "Expected the rebuilt programmable editor to construct an unsupported shipped lane mix for preview-state coverage\n";
+            std::cerr << "Expected the rebuilt programmable editor to accept phase_wheel_palette during tuple auto-complete coverage\n";
             return 1;
         }
-        const ColorPipelineDraftApplyState invalidApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
-        if (invalidApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
-            std::cerr << "Expected unsupported shipped lane mixes to classify as preview-only before apply\n";
+        if (windowState.lanes[0].rows[0].function_id != "phase_orbit" ||
+            windowState.lanes[2].rows[0].function_id != "phase_wheel_palette") {
+            std::cerr << "Expected selecting phase_wheel_palette to co-switch the matching phase_orbit row instead of leaving a dead preview-only tuple\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState phaseWheelApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
+        if (phaseWheelApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected shipped Source / Palette selections to auto-complete into a supported live-applicable tuple before apply\n";
             return 1;
         }
         if (!AddColorPipelineLaneRow(&windowState, 1, "identity")) {

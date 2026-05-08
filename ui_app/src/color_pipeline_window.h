@@ -288,6 +288,12 @@ inline void PushColorPipelineValidationMessage(ColorPipelineWindowState* ioState
     ioState->validation_messages.push_back(message);
 }
 
+inline bool TryBuildColorPipelineSelectionFromLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode);
+
 inline bool SetColorPipelineRowFunction(
     ColorPipelineRowState* ioRow,
     const FunctionDescriptor& descriptor) {
@@ -693,7 +699,96 @@ inline bool SelectColorPipelineRowFunction(
         return false;
     }
 
-    return SetColorPipelineRowFunction(&lane.rows[rowIndex], *descriptor);
+    if (!SetColorPipelineRowFunction(&lane.rows[rowIndex], *descriptor)) {
+        return false;
+    }
+
+    if (rowIndex == 0 && lane.rows.size() == 1 &&
+        (lane.lane_id == "source" || lane.lane_id == "palette")) {
+        const ColorPipelineLaneState* sourceLane = nullptr;
+        const ColorPipelineLaneState* paletteLane = nullptr;
+        for (const ColorPipelineLaneState& candidateLane : ioState->lanes) {
+            if (candidateLane.lane_id == "source") {
+                sourceLane = &candidateLane;
+            } else if (candidateLane.lane_id == "palette") {
+                paletteLane = &candidateLane;
+            }
+        }
+
+        ColorPipelineSelection pipeline{};
+        ColoringMode mode = ColoringMode::root_basin;
+        const char* companionLaneId = nullptr;
+        const char* companionFunctionId = nullptr;
+        const bool singleSourcePaletteRows =
+            sourceLane && paletteLane &&
+            sourceLane->rows.size() == 1 &&
+            paletteLane->rows.size() == 1;
+        const bool pairAlreadySupported =
+            singleSourcePaletteRows &&
+            TryBuildColorPipelineSelectionFromLaneIds(
+                sourceLane->rows[0].function_id.c_str(),
+                paletteLane->rows[0].function_id.c_str(),
+                &pipeline,
+                &mode);
+        if (!pairAlreadySupported) {
+            if (lane.lane_id == "source") {
+                if (lane.rows[rowIndex].function_id == "smooth_escape_ramp" ||
+                    lane.rows[rowIndex].function_id == "escape_magnitude" ||
+                    lane.rows[rowIndex].function_id == "root_proximity") {
+                    companionLaneId = "palette";
+                    companionFunctionId = "heatmap";
+                } else if (lane.rows[rowIndex].function_id == "phase_orbit" ||
+                           lane.rows[rowIndex].function_id == "orbit_stripe") {
+                    companionLaneId = "palette";
+                    companionFunctionId = "phase_wheel_palette";
+                } else if (lane.rows[rowIndex].function_id == "banded_signal") {
+                    companionLaneId = "palette";
+                    companionFunctionId = "banded_heatmap";
+                } else if (lane.rows[rowIndex].function_id == "root_index") {
+                    companionLaneId = "palette";
+                    companionFunctionId = "root_classic_palette";
+                }
+            } else if (lane.lane_id == "palette") {
+                if (lane.rows[rowIndex].function_id == "heatmap" ||
+                    lane.rows[rowIndex].function_id == "explaino_cmap") {
+                    companionLaneId = "source";
+                    companionFunctionId = "smooth_escape_ramp";
+                } else if (lane.rows[rowIndex].function_id == "phase_wheel_palette") {
+                    companionLaneId = "source";
+                    companionFunctionId = "phase_orbit";
+                } else if (lane.rows[rowIndex].function_id == "banded_heatmap") {
+                    companionLaneId = "source";
+                    companionFunctionId = "banded_signal";
+                } else if (lane.rows[rowIndex].function_id == "root_classic_palette") {
+                    companionLaneId = "source";
+                    companionFunctionId = "root_index";
+                }
+            }
+
+            if (companionLaneId && companionFunctionId) {
+                for (ColorPipelineLaneState& companionLane : ioState->lanes) {
+                    if (companionLane.lane_id != companionLaneId) {
+                        continue;
+                    }
+                    if (companionLane.rows.size() != 1) {
+                        break;
+                    }
+                    const ColorPipelineLaneCatalog* companionCatalog = FindColorPipelineLaneCatalog(companionLane.lane_id);
+                    if (!companionCatalog) {
+                        break;
+                    }
+                    const FunctionDescriptor* companionDescriptor = FindColorPipelineFunctionDescriptor(*companionCatalog, companionFunctionId);
+                    if (!companionDescriptor) {
+                        break;
+                    }
+                    SetColorPipelineRowFunction(&companionLane.rows[0], *companionDescriptor);
+                    break;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 inline bool SelectColorPipelineLaneFunction(
@@ -1494,6 +1589,71 @@ inline const ColorPipelineRowState* FindSingleEnabledColorPipelineRow(
     return singleRow;
 }
 
+inline bool TryBuildColorPipelineSelectionFromLaneIds(
+    const char* sourceFunctionId,
+    const char* paletteFunctionId,
+    ColorPipelineSelection* outPipeline,
+    ColoringMode* outMode) {
+    if (!sourceFunctionId || sourceFunctionId[0] == '\0' ||
+        !paletteFunctionId || paletteFunctionId[0] == '\0' ||
+        !outPipeline || !outMode) {
+        return false;
+    }
+
+    if (std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
+        *outPipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 && std::strcmp(paletteFunctionId, "explaino_cmap") == 0) {
+        *outPipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "phase_orbit") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
+        *outPipeline = {ColorSignal::phase_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        *outMode = ColoringMode::phase;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "banded_signal") == 0 && std::strcmp(paletteFunctionId, "banded_heatmap") == 0) {
+        *outPipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
+        *outMode = ColoringMode::iteration_bands;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "escape_magnitude") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
+        *outPipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "escape_magnitude") == 0 && std::strcmp(paletteFunctionId, "explaino_cmap") == 0) {
+        *outPipeline = {ColorSignal::escape_magnitude, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "orbit_stripe") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
+        *outPipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
+        *outMode = ColoringMode::phase;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "root_proximity") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
+        *outPipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "root_proximity") == 0 && std::strcmp(paletteFunctionId, "explaino_cmap") == 0) {
+        *outPipeline = {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        *outMode = ColoringMode::smooth_escape;
+        return true;
+    }
+    if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "root_classic_palette") == 0) {
+        *outPipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
+        *outMode = ColoringMode::root_basin;
+        return true;
+    }
+
+    return false;
+}
+
 inline bool TryBuildColorPipelineSelectionFromDraft(
     const ColorPipelineWindowState& state,
     ColorPipelineSelection* outPipeline,
@@ -1532,36 +1692,13 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
 
     ColorPipelineSelection pipeline{};
     ColoringMode mode = ColoringMode::root_basin;
-    if (sourceRow->function_id == "smooth_escape_ramp" && paletteRow->function_id == "heatmap") {
-        pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
-        mode = ColoringMode::smooth_escape;
-    } else if (sourceRow->function_id == "smooth_escape_ramp" && paletteRow->function_id == "explaino_cmap") {
-        pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
-        mode = ColoringMode::smooth_escape;
-    } else if (sourceRow->function_id == "phase_orbit" && paletteRow->function_id == "phase_wheel_palette") {
-        pipeline = {ColorSignal::phase_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
-        mode = ColoringMode::phase;
-    } else if (sourceRow->function_id == "banded_signal" && paletteRow->function_id == "banded_heatmap") {
-        pipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
-        mode = ColoringMode::iteration_bands;
-    } else if (sourceRow->function_id == "escape_magnitude" && paletteRow->function_id == "heatmap") {
-        pipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
-        mode = ColoringMode::smooth_escape;
-    } else if (sourceRow->function_id == "escape_magnitude" && paletteRow->function_id == "explaino_cmap") {
-        pipeline = {ColorSignal::escape_magnitude, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
-        mode = ColoringMode::smooth_escape;
-    } else if (sourceRow->function_id == "orbit_stripe" && paletteRow->function_id == "phase_wheel_palette") {
-        pipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
-        mode = ColoringMode::phase;
-    } else if (sourceRow->function_id == "root_proximity" && paletteRow->function_id == "heatmap") {
-        pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
-        mode = ColoringMode::smooth_escape;
-    } else if (sourceRow->function_id == "root_proximity" && paletteRow->function_id == "explaino_cmap") {
-        pipeline = {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
-        mode = ColoringMode::smooth_escape;
-    } else {
+    if (!TryBuildColorPipelineSelectionFromLaneIds(
+            sourceRow->function_id.c_str(),
+            paletteRow->function_id.c_str(),
+            &pipeline,
+            &mode)) {
         if (outError) {
-            *outError = "Selected Source / Shape / Palette recipe is draft-only until custom pipeline runtime integration lands.";
+            *outError = "Selected Source / Shape / Palette recipe is draft-only until custom pipeline runtime integration lands or you choose a matching supported Source / Palette pair.";
         }
         return false;
     }
@@ -1935,7 +2072,8 @@ inline void RenderColorPipelineWindowSummary(
     (void)ioInteraction;
     ImGui::TextWrapped("Draft Source / Shape / Palette recipes here. The legacy Color mode and grading controls stay in the main Color panel during the schedule-editor transition.");
     ImGui::TextDisabled("This window now models three typed lane stacks instead of a fixed Signal / Palette / Grade trio.");
-    ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, one live-backed Shape row (Identity or Offset + Scale), and one enabled Palette row. Stacked Shape recipes remain draft-only until custom runtime integration lands.");
+    ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, one enabled Palette row, and one live-backed Shape row (Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, or Smooth Window).");
+    ImGui::TextDisabled("Some Source / Palette rows are fixed presets with no tunable parameters; choosing the row is itself the live change.");
     ImGui::Separator();
     if (ioState && liveParams) {
         ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
@@ -1971,7 +2109,7 @@ inline void RenderColorPipelineWindowSummary(
                 : ImVec4(1.0f, 0.62f, 0.48f, 1.0f);
             ImGui::TextColored(statusColor, "%s", applyState.message.c_str());
             if (!canApply) {
-                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape + Heatmap, Phase Orbit + Phase Wheel, and Iteration Bands + Banded Heatmap with Identity or Offset + Scale in Shape.");
+                ImGui::TextDisabled("Supported live bridge recipes right now: Smooth Escape / Escape Magnitude / Root Proximity with Heatmap or Explaino Cmap, Phase Orbit / Orbit Stripe with Phase Wheel, Iteration Bands with Banded Heatmap, and Root Index with Root Classic Palette.");
             }
         }
         if (!ioState->live_snapshot.valid || !ioState->live_snapshot.draft_import_supported) {
@@ -2091,7 +2229,10 @@ inline void RenderColorPipelineWindowLane(
                 }
                 RenderColorPipelineParamControl(ioState, liveFractalType, liveParams, currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex], ioDirty, ioInteraction);
             }
-            if (!currentDescriptor->parameters.empty() && renderableParamIndexes.empty()) {
+            if (currentDescriptor->parameters.empty() &&
+                (lane.lane_id == "source" || lane.lane_id == "palette")) {
+                ImGui::TextDisabled("This fixed %s row has no tunable parameters; choosing it changes the live bridge tuple directly.", lane.label.c_str());
+            } else if (!currentDescriptor->parameters.empty() && renderableParamIndexes.empty()) {
                 ImGui::TextDisabled("Parameter tuning preview only in this slice.");
             } else if (hasHiddenParams) {
                 ImGui::TextDisabled("Only the visible controls are live in this slice.");

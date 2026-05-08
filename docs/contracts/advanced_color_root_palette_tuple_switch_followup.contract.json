@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_root_palette_tuple_switch_followup",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_root_palette_tuple_switch_followup_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/advanced_color_root_palette_tuple_switch_followup_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp"
+  ],
+  "required_operator_inputs": [
+    "repair the source/palette selector friction so root_index and root_classic_palette do not look like dead draft-only rows in normal use",
+    "keep the fix local to the advanced editor selection/apply surface instead of widening runtime palette math again",
+    "make parameterless fixed rows explain themselves instead of looking broken"
+  ],
+  "forbidden_operator_prompts": [
+    "treat mere list visibility as sufficient when the rows still look unusable",
+    "add fake tuning parameters to root_classic_palette just to make the UI look busier",
+    "resume joy_root_palette before fixing the just-landed root_classic interaction defect"
+  ],
+  "required_defaults": {
+    "root_classic_selector_is_usable": "required",
+    "tuple_switch_is_local_to_editor_surface": "required",
+    "fixed_row_text_is_explicit": "required"
+  },
+  "forbidden_defaults": {
+    "draft_only_dead_end_for_root_classic": "forbidden",
+    "fake_palette_parameters": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_root_palette_tuple_switch_followup.contract.json --out-json artifacts/validation/advanced_color_root_palette_tuple_switch_followup_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_root_palette_tuple_switch_followup_contract_schema_valid",
+      "description": "The advanced color root palette tuple switch follow-up contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_root_palette_tuple_switch_followup_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_root_palette_tuple_switch_followup_plan_sync_ok",
+      "description": "The root palette tuple switch follow-up phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
