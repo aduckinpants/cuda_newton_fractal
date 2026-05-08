@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.viewer_host_contract_proof import evaluate_assertion, load_artifact_evidence
+from tools.viewer_host_contract_proof import evaluate_assertion, load_artifact_evidence, validation_evidence_spec_for_command
 
 
 def test_load_artifact_evidence_reads_junit_case_results(tmp_path: Path) -> None:
@@ -101,6 +101,20 @@ def test_evaluate_assertion_rejects_validation_artifact_hash_drift(tmp_path: Pat
 
     assert result["ok"] is False
     assert "hash mismatch" in result["failure_detail"]
+
+
+def test_validation_evidence_spec_for_command_recognizes_hostile_audit_validator() -> None:
+    command = (
+        "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan "
+        "docs/notes/workflow_guard_hostile_review_enforcement_PHASED_PLAN.md --out-json "
+        "artifacts/validation/workflow_guard_hostile_review_enforcement_hostile_audit.json"
+    )
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/validation/workflow_guard_hostile_review_enforcement_hostile_audit.json"
 
 
 def test_contract_proof_writer_fails_when_required_assertion_evidence_is_missing(tmp_path: Path) -> None:

@@ -628,6 +628,65 @@ def test_build_stop_response_blocks_when_explicit_user_asks_remain_open(tmp_path
     assert "Land the runtime proof" in payload["reason"]
 
 
+def test_build_pretool_response_denies_task_complete_when_hostile_audit_is_pending(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        plan_text=(
+            "# Plan\n\n"
+            "## Current Phase\n\n"
+            "Phase 1 in progress\n\n"
+            "## Phase Checklist\n\n"
+            "- [ ] Phase 1 - X\n\n"
+            "## Explicit User Asks\n\n"
+            "- [done] Start implementation\n\n"
+            "## Hostile Audit\n\n"
+            "- Status: pending\n\n"
+            "## Audit Passes\n\n"
+            "- [open] Pass 1 - hostile review still pending\n"
+        ),
+    )
+
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "hostile" in hook["permissionDecisionReason"].lower()
+
+
+def test_build_stop_response_blocks_when_hostile_audit_is_pending(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        plan_text=(
+            "# Plan\n\n"
+            "## Current Phase\n\n"
+            "Phase 1 in progress\n\n"
+            "## Phase Checklist\n\n"
+            "- [ ] Phase 1 - X\n\n"
+            "## Explicit User Asks\n\n"
+            "- [done] Start implementation\n\n"
+            "## Hostile Audit\n\n"
+            "- Status: pending\n\n"
+            "## Audit Passes\n\n"
+            "- [open] Pass 1 - hostile review still pending\n"
+        ),
+    )
+
+    response = build_stop_response(_snapshot(), _snapshot(), "session-1", tmp_path)
+
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "hostile" in payload["reason"].lower()
+
+
 def test_build_dirty_prompt_message_mentions_closure_flow() -> None:
     text = build_dirty_prompt_message(["HANDOFF_LOG.md", "ui_app/src/main.cpp"], "Start implementation")
 

@@ -120,6 +120,25 @@ def _head_commit_plan_paths() -> list[Path]:
     return guard._head_commit_plan_paths()
 
 
+def _has_heading(text: str, heading: str) -> bool:
+    return heading in text
+
+
+def _local_hostile_audit_plan_error(text: str, *, display_path: str) -> str | None:
+    if not _has_heading(text, "## Explicit User Asks"):
+        return None
+    missing: list[str] = []
+    for heading in ("## Hostile Audit", "## Audit Passes", "## Audit Findings"):
+        if not _has_heading(text, heading):
+            missing.append(heading.replace("## ", ""))
+    if not missing:
+        return None
+    return (
+        f"{display_path}: missing required hostile-audit sections for a meaningful phased plan: "
+        + ", ".join(missing)
+    )
+
+
 def _default_target_paths() -> tuple[list[Path], str]:
     dirty = _dirty_plan_paths()
     if dirty:
@@ -135,7 +154,10 @@ def validate_plan_text(text: str, *, display_path: str) -> str | None:
     path = Path(display_path)
     if not path.is_absolute():
         path = REPO_ROOT / path
-    return guard.validate_plan_text(path, text)
+    message = guard.validate_plan_text(path, text)
+    if message is not None:
+        return message
+    return _local_hostile_audit_plan_error(text, display_path=display_path)
 
 
 def _validate_plan_file(path: Path) -> str | None:

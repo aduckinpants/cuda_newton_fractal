@@ -70,16 +70,17 @@ KNOWN_VALIDATION_EVIDENCE_SPECS: tuple[ValidationEvidenceSpec, ...] = (
 KNOWN_VALIDATION_EVIDENCE_BY_COMMAND = {spec.command: spec for spec in KNOWN_VALIDATION_EVIDENCE_SPECS}
 
 
-def _dynamic_slice_contract_validation_spec(command: str) -> ValidationEvidenceSpec | None:
+def _dynamic_validator_json_spec(command: str) -> ValidationEvidenceSpec | None:
     match = re.search(r"--out-json\s+(?P<artifact>\S+)", command)
     if match is None:
         return None
-    if "tools/viewer_host_validate_slice_contract.py" not in command.replace("\\", "/"):
+    normalized = command.replace("\\", "/")
+    if "tools/viewer_host_validate_" not in normalized:
         return None
     artifact_path = match.group("artifact").replace("\\", "/")
     safe_suffix = re.sub(r"[^A-Za-z0-9]+", "_", artifact_path).strip("_") or "artifact"
     return ValidationEvidenceSpec(
-        evidence_id=f"validator_slice_contract_{safe_suffix}",
+        evidence_id=f"validator_json_{safe_suffix}",
         command=command,
         artifact_kind="validator_json",
         artifact_path=artifact_path,
@@ -98,7 +99,7 @@ def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec
             artifact_kind="validator_json",
             artifact_path="artifacts/validation/viewer_host_assert_phased_plan_sync.json",
         )
-    return _dynamic_slice_contract_validation_spec(command)
+    return _dynamic_validator_json_spec(command)
 
 
 def build_validation_evidence_entries(commands: list[str], repo_root: Path) -> list[dict[str, str]]:

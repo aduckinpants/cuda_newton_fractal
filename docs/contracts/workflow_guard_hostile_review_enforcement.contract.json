@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "workflow_guard_hostile_review_enforcement",
+  "feature_id": "workflow_guard_hostile_review_enforcement",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/workflow_guard_hostile_review_enforcement_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/workflow_guard_hostile_review_enforcement.contract.json",
+    "docs/notes/workflow_guard_hostile_review_enforcement_PHASED_PLAN.md",
+    "tools/viewer_host_validate_hostile_audit.py",
+    "tools/viewer_host_checkpoint_guard.py",
+    "tools/viewer_host_checkpoint_dirty_prompt_guard.py",
+    "tools/viewer_host_checkpoint_slice.py",
+    "tools/viewer_host_contract_proof.py",
+    "tools/viewer_host_write_contract_proof_receipt.py",
+    "tests/test_viewer_host_checkpoint_guard.py",
+    "tests/test_viewer_host_contract_proof.py",
+    "tests/test_agent_workflow_tools.py",
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md"
+  ],
+  "required_operator_inputs": [
+    "reuse useful workflow patterns from the mainline salticid-cuda repo instead of inventing a new workflow stack",
+    "make hostile review machine-checkable instead of prose-only",
+    "block checkpoint commit, contract proof, carryover prompts, task_complete, and Stop when hostile-review proof is missing",
+    "keep the hostile-review continuity anchored in the checked-in phased plan"
+  ],
+  "forbidden_operator_prompts": [
+    "treat hostile review as a warning-only convention",
+    "allow checkpoint commit or receipt writing to bypass hostile-review proof",
+    "invent a second continuity source outside the checked-in phased plan",
+    "mix the separate paced-loop runtime bugfix into this workflow slice"
+  ],
+  "required_defaults": {
+    "mainline_workflow_patterns_reused": "required",
+    "hostile_review_validator_artifact": "required",
+    "checkpoint_commit_blocks_on_missing_hostile_review": "required",
+    "contract_proof_requires_hostile_review_evidence": "required"
+  },
+  "forbidden_defaults": {
+    "warning_only_hostile_review": "forbidden",
+    "unaudited_checkpoint_commit": "forbidden",
+    "prose_only_audit_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/workflow_guard_hostile_review_enforcement_PHASED_PLAN.md --out-json artifacts/validation/workflow_guard_hostile_review_enforcement_hostile_audit.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_guard_hostile_review_enforcement.contract.json --out-json artifacts/validation/workflow_guard_hostile_review_enforcement_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "workflow_guard_hostile_review_enforcement_contract_schema_valid",
+      "description": "The workflow guard hostile-review enforcement contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/workflow_guard_hostile_review_enforcement_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "workflow_guard_hostile_review_enforcement_plan_sync_ok",
+      "description": "The workflow guard hostile-review enforcement phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "workflow_guard_hostile_review_enforcement_hostile_audit_ok",
+      "description": "The hostile-review validator reports the active plan audit state is closure-ready",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/workflow_guard_hostile_review_enforcement_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

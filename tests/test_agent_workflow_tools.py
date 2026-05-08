@@ -10,6 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.viewer_host_begin_work_slice import build_breadcrumb_append_plan, build_breadcrumb_message, main as begin_work_slice_main
+from tools.viewer_host_checkpoint_slice import main as checkpoint_slice_main
 from tools.viewer_host_contract_proof import build_validation_evidence_entries, validation_evidence_spec_for_command
 from tools.viewer_host_session_bootstrap import build_bootstrap_state, build_validation_profiles, legacy_pending_handoff_entries, tail_handoff_entries
 from tools.viewer_host_assert_phased_plan_sync import PLAN_SYNC_VALIDATION_ARTIFACT, main as assert_plan_sync_main, validate_plan_text
@@ -160,6 +161,29 @@ Phase 3 - Cleanup
     message = validate_plan_text(text, display_path="docs/notes/example_PHASED_PLAN.md")
     assert message is not None
     assert "unsynced phased checklist" in message
+
+
+def test_validate_plan_text_requires_hostile_audit_sections_when_explicit_user_asks_exist() -> None:
+    text = """
+# Example
+
+## Current Phase
+
+Phase 1 - Runtime lock-down
+
+## Phase Checklist
+
+- [ ] Phase 1 - Runtime lock-down
+
+## Explicit User Asks
+
+- [open] Start implementation
+"""
+
+    message = validate_plan_text(text, display_path="docs/notes/example_PHASED_PLAN.md")
+
+    assert message is not None
+    assert "Hostile Audit" in message
 
 
 def test_validate_plan_text_requires_complete_when_all_done() -> None:
@@ -437,3 +461,112 @@ def test_tasks_surface_exposes_plan_and_contract_inputs_for_begin_work_slice() -
     assert '"id": "agentSliceContract"' in tasks_json
     assert '"--plan"' in tasks_json
     assert '"--contract"' in tasks_json
+
+
+def test_checkpoint_slice_commit_refuses_pending_hostile_audit(monkeypatch, tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Current Phase\n\n"
+        "Phase 1 in progress\n\n"
+        "## Phase Checklist\n\n"
+        "- [ ] Phase 1 - X\n\n"
+        "## Explicit User Asks\n\n"
+        "- [done] Start implementation\n\n"
+        "## Hostile Audit\n\n"
+        "- Status: pending\n\n"
+        "## Audit Passes\n\n"
+        "- [open] Pass 1 - hostile review still pending\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.validate_locked_contract_state",
+        lambda _session_id, _repo_root: ({"plan_path": "docs/notes/plan_PHASED_PLAN.md"}, ""),
+    )
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.build_handoff_append_commands", lambda **_kwargs: [])
+
+    commands: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    def fake_run(command: list[str], cwd: str, check: bool = False):
+        commands.append(command)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.subprocess.run", fake_run)
+
+    rc = checkpoint_slice_main([
+        "commit",
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+        "--checkpoint-id",
+        "ck:test1234",
+        "--score",
+        "95",
+        "--handoff-message",
+        "test handoff",
+        "--commit-message",
+        "ck:test1234 test",
+    ])
+
+    assert rc != 0
+    assert not any(command[:2] == ["git", "commit"] for command in commands)
+
+
+def test_checkpoint_slice_write_receipts_refuses_pending_hostile_audit(monkeypatch, tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    plan_path = repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Current Phase\n\n"
+        "Phase 1 in progress\n\n"
+        "## Phase Checklist\n\n"
+        "- [ ] Phase 1 - X\n\n"
+        "## Explicit User Asks\n\n"
+        "- [done] Start implementation\n\n"
+        "## Hostile Audit\n\n"
+        "- Status: pending\n\n"
+        "## Audit Passes\n\n"
+        "- [open] Pass 1 - hostile review still pending\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.discover_repo_root", lambda _path: repo_root)
+    monkeypatch.setattr(
+        "tools.viewer_host_checkpoint_slice.validate_locked_contract_state",
+        lambda _session_id, _repo_root: ({"plan_path": "docs/notes/plan_PHASED_PLAN.md"}, ""),
+    )
+
+    commands: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    def fake_run(command: list[str], cwd: str, check: bool = False):
+        commands.append(command)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_checkpoint_slice.subprocess.run", fake_run)
+
+    rc = checkpoint_slice_main([
+        "write-receipts",
+        "--session-id",
+        "session-1",
+        "--cwd",
+        str(repo_root),
+        "--validation-summary",
+        "tests passed",
+        "--validation-command",
+        "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q",
+    ])
+
+    assert rc != 0
+    assert commands == []

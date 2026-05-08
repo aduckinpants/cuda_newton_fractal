@@ -22,6 +22,7 @@ try:
         validate_locked_contract_state,
     )
     from tools.viewer_host_contract_proof import build_validation_evidence_entries
+    from tools.viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 except ModuleNotFoundError:
     from viewer_host_contract_state import (
         GLOBAL_CONTRACT_SESSION_ID,
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
         validate_locked_contract_state,
     )
     from viewer_host_contract_proof import build_validation_evidence_entries
+    from viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -476,6 +478,45 @@ def evaluate_open_explicit_user_asks_guard(
     )
 
 
+def _contract_requires_hostile_audit(contract_state: dict[str, Any] | None) -> bool:
+    if not isinstance(contract_state, dict):
+        return False
+    commands = contract_state.get("required_validation_commands", [])
+    if not isinstance(commands, list):
+        return False
+    return any(
+        isinstance(command, str) and "tools/viewer_host_validate_hostile_audit.py" in command.replace("\\", "/")
+        for command in commands
+    )
+
+
+def evaluate_hostile_audit_guard(
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str, dict[str, Any]]:
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return False, "", {}
+
+    plan_path_text = str(contract_state.get("plan_path", "")).strip()
+    if not plan_path_text:
+        return True, "Active phased plan is missing from the locked contract state.", {}
+
+    plan_path = repo_root / plan_path_text
+    if not plan_path.exists():
+        return True, f"Active phased plan is missing: {plan_path_text}", {}
+
+    if not plan_declares_hostile_audit(plan_path) and not _contract_requires_hostile_audit(contract_state):
+        return False, "", {}
+
+    payload = validate_hostile_audit_plan(plan_path)
+    if bool(payload.get("ok", False)):
+        return False, "", payload
+
+    reason = str(payload.get("blocked_reason", "")).strip() or "Hostile review is incomplete."
+    return True, "Hostile review is incomplete: " + reason, payload
+
+
 def evaluate_validation_receipt_guard(
     baseline: dict[str, Any] | None,
     current: dict[str, Any],
@@ -676,6 +717,10 @@ def build_pretool_response(
         else:
             open_asks = []
         if not should_block:
+            should_block, reason, hostile_audit_payload = evaluate_hostile_audit_guard(session_id, repo_root)
+        else:
+            hostile_audit_payload = {}
+        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -693,6 +738,12 @@ def build_pretool_response(
                         "Open explicit user asks: " + summarize_open_user_asks(open_asks)
                     )
                     if open_asks
+                    else (
+                        "Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
+                        + " | blocked_reason: "
+                        + str(hostile_audit_payload.get("blocked_reason", ""))
+                    )
+                    if hostile_audit_payload
                     else (
                         "Expected receipt path: " + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
                         + " | expected contract proof receipt: "
@@ -788,12 +839,22 @@ def build_stop_response(
         else:
             open_asks = []
         if not should_block:
+            should_block, reason, hostile_audit_payload = evaluate_hostile_audit_guard(session_id, repo_root)
+        else:
+            hostile_audit_payload = {}
+        if not should_block:
             return None
         return {
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
                 "decision": "block",
-                "reason": banner + " " + reason + (" Open explicit user asks: " + summarize_open_user_asks(open_asks) if open_asks else ""),
+                "reason": banner + " " + reason + (
+                    " Open explicit user asks: " + summarize_open_user_asks(open_asks)
+                    if open_asks
+                    else " Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
+                    if hostile_audit_payload
+                    else ""
+                ),
             }
         }
 

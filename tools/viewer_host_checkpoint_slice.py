@@ -9,10 +9,39 @@ try:
     from tools.viewer_host_append_handoff import build_handoff_append_commands
     from tools.viewer_host_checkpoint_guard import discover_repo_root
     from tools.viewer_host_contract_state import validate_locked_contract_state
+    from tools.viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
 except ModuleNotFoundError:
     from viewer_host_append_handoff import build_handoff_append_commands
     from viewer_host_checkpoint_guard import discover_repo_root
     from viewer_host_contract_state import validate_locked_contract_state
+    from viewer_host_validate_hostile_audit import plan_declares_hostile_audit, validate_hostile_audit_plan
+
+
+def _contract_requires_hostile_audit(contract_state: dict[str, object] | None) -> bool:
+    if not isinstance(contract_state, dict):
+        return False
+    commands = contract_state.get("required_validation_commands", [])
+    if not isinstance(commands, list):
+        return False
+    return any(
+        isinstance(command, str) and "tools/viewer_host_validate_hostile_audit.py" in command.replace("\\", "/")
+        for command in commands
+    )
+
+
+def _validate_hostile_audit_before_commit(contract_state: dict[str, object], repo_root: Path) -> str:
+    plan_path_text = str(contract_state.get("plan_path", "")).strip()
+    if not plan_path_text:
+        return ""
+    plan_path = repo_root / plan_path_text
+    if not plan_path.exists():
+        return f"hostile-audit validation plan is missing: {plan_path_text}"
+    if not plan_declares_hostile_audit(plan_path) and not _contract_requires_hostile_audit(contract_state):
+        return ""
+    payload = validate_hostile_audit_plan(plan_path)
+    if bool(payload.get("ok", False)):
+        return ""
+    return str(payload.get("blocked_reason", "")).strip() or "hostile review is incomplete"
 
 
 def _run_all(commands: list[list[str]], cwd: Path) -> int:
@@ -49,6 +78,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.mode == "commit":
+        hostile_audit_error = _validate_hostile_audit_before_commit(_contract_state or {}, repo_root)
+        if hostile_audit_error:
+            sys.stderr.write("viewer_host_checkpoint_slice: hostile review is incomplete: " + hostile_audit_error + "\n")
+            return 2
         commands = build_handoff_append_commands(
             py=sys.executable,
             message=args.handoff_message,
@@ -65,6 +98,11 @@ def main(argv: list[str] | None = None) -> int:
             return int(stage_rc)
         commit_rc = subprocess.run(["git", "commit", "-m", args.commit_message], cwd=str(repo_root), check=False).returncode
         return int(commit_rc)
+
+    hostile_audit_error = _validate_hostile_audit_before_commit(_contract_state or {}, repo_root)
+    if hostile_audit_error:
+        sys.stderr.write("viewer_host_checkpoint_slice: hostile review is incomplete: " + hostile_audit_error + "\n")
+        return 2
 
     validation_command_args: list[str] = []
     for command in args.validation_command:

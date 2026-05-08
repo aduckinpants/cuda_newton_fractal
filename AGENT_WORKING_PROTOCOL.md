@@ -85,6 +85,7 @@ Audit evidence must be durable:
 - record meaningful audit findings or "repair follow-up" checkpoints in `HANDOFF_LOG.md`
 - update the phased plan stop point if the audit changes the real phase boundary
 - call out workflow/tooling friction found during the audit in the final summary
+- meaningful phased plans that carry `## Explicit User Asks` must also carry `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings`; the repo-local phased-plan sync adapter now fails when those sections are missing
 
 ### 2.2 Deterministic Completion Guard
 
@@ -93,8 +94,8 @@ This repo has a workspace hook guard at `.github/hooks/checkpoint_guard.json` ba
 
 It exists to enforce the closure invariant at runtime, not just in prose:
 - `SessionStart` captures the repository dirty-state baseline for the session
-- `PreToolUse` denies `task_complete` when the repo state differs from that baseline
-- `Stop` blocks the agent from ending while the repo state still differs from that baseline
+- `PreToolUse` denies `task_complete` when the repo state differs from that baseline, when required receipts are missing, when explicit user asks remain open, or when the active hostile audit is still pending
+- `Stop` blocks the agent from ending while the repo state still differs from that baseline or while the active hostile audit is still pending
 
 Do not treat the hook as optional guidance. If it fires, fix the repo state by committing,
 reverting to the session baseline, or otherwise resolving the discrepancy before trying to stop.
@@ -152,6 +153,10 @@ Required flow after the final validation commands pass for the slice:
 3. write contract proof with `py -3.14 tools\viewer_host_write_contract_proof_receipt.py --session-id <id>`
    or use the combined wrapper `py -3.14 tools\viewer_host_checkpoint_slice.py write-receipts --session-id <id> ...`
 4. only then use `task_complete` / stop the slice
+
+Hostile-audit corollary:
+- `py -3.14 tools\viewer_host_checkpoint_slice.py commit ...` and `write-receipts ...` now both fail when the locked plan's hostile audit is still pending
+- the wrapper reads hostile-audit state from the checked-in phased plan so the proof chain cannot be downgraded to prose-only closure
 
 The checkpoint guard enforces this deterministically:
 - `PostToolUse` reminds immediately when `HEAD` advanced without a receipt
@@ -283,6 +288,7 @@ For any multi-slice initiative:
 - Each turn updates the checklist: mark completed steps, note blockers
 - The plan is the resumable state — not chat history
 - For new meaningful multi-step plans, carry `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, and `## Proof Ledger` alongside `## Current Phase` and `## Phase Checklist`
+- For new meaningful multi-step plans, also carry `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings`; `tools/viewer_host_assert_phased_plan_sync.py` now fails meaningful plans with explicit user asks when those hostile-audit sections are missing
 - Keep those added sections short, evidence-driven, and repo-specific instead of copying mainline ritual verbatim
 
 Required continuity rules:

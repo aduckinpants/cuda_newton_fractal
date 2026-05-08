@@ -21,7 +21,7 @@ Do these before making architecture claims or starting broad edits:
    - Prefer the nearest existing plan doc.
    - Otherwise create `docs/notes/<slug>_PHASED_PLAN.md`.
    - Protocol: `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`.
-   - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, and `## Proof Ledger` alongside `## Current Phase` and `## Phase Checklist`.
+   - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, `## Proof Ledger`, `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings` alongside `## Current Phase` and `## Phase Checklist`.
 9. Read `.github/copilot-instructions.md` after this file, not instead of it.
 
 The VS Code task surface mirrors these commands:
@@ -57,6 +57,7 @@ The VS Code task surface mirrors these commands:
 - If you edit a `*_PHASED_PLAN.md` file, update `## Phase Checklist` and `## Current Phase` in the same edit.
 - Do not leave a plan saying a later phase is current while earlier phases are still unchecked.
 - Do not leave stale blocker text in a phased plan after another checked-in slice already closed that blocker.
+- Meaningful plans that declare `## Explicit User Asks` must also carry `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings`; `tools/viewer_host_assert_phased_plan_sync.py` now fails fast when those sections are missing.
 - Deterministic check surface: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` or task `agent: assert phased plan sync`.
 
 ## Carryover Rule
@@ -75,6 +76,7 @@ The VS Code task surface mirrors these commands:
    2. keep digging until a real defect, omission, or workflow mistake is found, or a second and third pass fail to find one
    3. if an audit pass finds a real issue, add the regression first, fix it, revalidate, and repeat the audit on the repaired state
 - Do not wait for the user to ask for this review explicitly; it is part of normal slice closure in this repo.
+- The hostile-audit state must be recorded in the active phased plan because the checkpoint wrapper and closure guard now read that plan directly; pending audit state blocks `task_complete`, `Stop`, `viewer_host_checkpoint_slice.py commit`, and `viewer_host_checkpoint_slice.py write-receipts`.
 - Record audit findings and follow-up checkpoint commits in `HANDOFF_LOG.md`.
 
 ## Explicit Closure Standard
