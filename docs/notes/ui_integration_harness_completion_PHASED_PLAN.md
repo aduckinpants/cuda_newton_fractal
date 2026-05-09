@@ -2,22 +2,22 @@
 
 ## Current Phase
 
-Phase 4 in progress - the public runtime rails and workflow-hardening closure surface are now explicit; next document the stop-line, explicit exclusions, and the gate that still blocks product work before restart
+Phase 5 in progress - Gate G1 is now closed for the harness thread; the explicit stop-line and exclusions are documented, and the next required work is product planning-authority repair before any advanced-color, preset, composition, or new-fractal implementation resumes
 
 ## Phase Checklist
 
 - [x] Phase 1 - split planning authority so the harness-completion thread is its own checked-in plan/contract with a hard gate before product work resumes
 - [x] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
 - [x] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
-- [ ] Phase 4 - close the harness thread for now with a documented stop-line, explicit exclusions, and a hard gate that blocks product work until this thread is complete
+- [x] Phase 4 - close the harness thread for now with a documented stop-line, explicit exclusions, and a hard gate that blocks product work until this thread is complete
 - [ ] Phase 5 - after the harness gate closes, repair product planning authority before any advanced-color, preset, composition, or new-fractal implementation resumes
 
 ## Explicit User Asks
 
-- [open] Stop conflating the color-pipeline/new-fractal thread with the testing-harness and coverage-backfill thread.
-- [open] Finish the current testing and harness effort as its own phased set of slices before returning to presets, library completion, composition, or new fractal work.
-- [open] Make the harness useful, reusable, and in the right shape for future real work rather than a half-done temporary measure.
-- [open] It is acceptable to draw a professional stop-line for now as long as the line is explicit and documented.
+- [done] Stop conflating the color-pipeline/new-fractal thread with the testing-harness and coverage-backfill thread.
+- [done] Finish the current testing and harness effort as its own phased set of slices before returning to presets, library completion, composition, or new fractal work.
+- [done] Make the harness useful, reusable, and in the right shape for future real work rather than a half-done temporary measure.
+- [done] It is acceptable to draw a professional stop-line for now as long as the line is explicit and documented.
 - [open] Only after the harness path and the already-defined pending product slices are complete should other backlog work be considered.
 
 ## Presumption Loop
@@ -38,6 +38,7 @@ The controlling defect is planning authority, not a missing runtime rail or a mi
 - Landed: the existing harness-foundation plan now records the foundation as complete and points all remaining harness-first work at this plan instead of mixing in product restart.
 - Landed: `tests/test_function_descriptor_cli.py` and `tests/test_generic_probe_cli.py` now reuse `tests/runtime_harness.py` for active-runtime lookup, eliminating the last obvious low-risk copy of the `fractal_ui_active.txt` reader from the published-runtime CLI test family.
 - Landed: the residual "remaining hardening" note is now retired; the public runtime closure surface is explicit and already locked by task-surface regression coverage instead of depending on a chat-era to-do.
+- Landed: Gate G1 is closed for the harness thread; the repo now has an explicit stop-line for mandatory rails, named opt-in rails, helper/unit-test exclusions, and the rule that product work must not resume until planning authority is repaired first.
 - Validated: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json` passed for the new planning-only contract.
 - Validated: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed for both the completed foundation plan and this new harness-completion plan.
 - Validated: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json` passed after the explicit stop-line and product gate were recorded.
@@ -81,7 +82,11 @@ The controlling defect is planning authority, not a missing runtime rail or a mi
   - the mandatory published-runtime closure surface is explicit: `verify: runtime probe/session pytest`, `verify: runtime artifact tools`, and `verify: runtime ui harness`
   - the non-mandatory sibling rail is explicit: `verify: runtime walk FITS witnesses`
   - runtime-adjacent helper/unit tests such as `tests/test_viewer_host_runtime_pytest_lane.py`, `tests/test_runtime_walk_extract_fits_orientation.py`, and `tests/test_fractal_probe_client.py` stay outside the published-runtime rail set because they validate helper/tool seams rather than runtime-visible witness families
+- Phase 4 stop-line:
+  - Gate G1 is closed once the harness thread has: a dedicated checked-in authority surface, explicit mandatory published-runtime rails, explicit non-mandatory sibling rails, and no remaining obvious low-risk shared-helper duplication in the published-runtime CLI family
+  - the stop-line for now is intentional: do not reopen this thread for exhaustive GUI automation, IDE/Science Mode expansion, or new helper-only rail proliferation unless a concrete user-facing regression or closure gap appears
+  - product work remains blocked until Phase 5 repairs the advanced-color planning authority so the restart order is explicit: product planning repair first, then the already-defined product slices, and only afterward any broader backlog work
 
 ## Resume Point
 
-Document the final harness stop-line for now, including the explicit exclusions and the gate that still blocks product restart, then checkpoint that Phase 4 closure before opening the product planning-authority repair slice.
+Open the product planning-authority repair slice next: reconcile the active advanced-color foundation and Phase 5 recovery plans with the already-landed checkpoints before any advanced-color, preset, composition, or new-fractal implementation resumes.
