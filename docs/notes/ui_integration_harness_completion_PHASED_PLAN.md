@@ -18,7 +18,7 @@ Phase 5 in progress - Gate G1 is now closed for the harness thread; the explicit
 - [done] Finish the current testing and harness effort as its own phased set of slices before returning to presets, library completion, composition, or new fractal work.
 - [done] Make the harness useful, reusable, and in the right shape for future real work rather than a half-done temporary measure.
 - [done] It is acceptable to draw a professional stop-line for now as long as the line is explicit and documented.
-- [open] Only after the harness path and the already-defined pending product slices are complete should other backlog work be considered.
+- [done] Only after the harness path and the already-defined pending product slices are complete should other backlog work be considered; the live plan now records that sequencing explicitly by closing Gate G1 for the harness thread, routing next work to product planning-authority repair, and keeping broader backlog work out of scope until those pending product slices finish.
 
 ## Presumption Loop
 
