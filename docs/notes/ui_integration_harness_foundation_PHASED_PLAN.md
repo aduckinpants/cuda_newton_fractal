@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs, the neighboring zoom-control seam now has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
+Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs, the first extracted shared helper surface now lives in `tests/runtime_harness.py`, the neighboring zoom-control seam now has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
 
 ## Phase Checklist
 
@@ -27,8 +27,8 @@ Phase 2 in progress - a checked-in loaded-state scenario driver now powers both 
 
 - Extend the new layered checkpoint hook chain with the remaining mainline hardening surfaces, especially any viewer-host-specific post-tool dirty warning or bootstrap-rail gaps that still rely on the old monolithic guard.
 - Widen the loaded-state scenario driver to additional neighboring workflows that already use the same publish/load-state/capture pattern instead of leaving them on hand-built command assembly.
-- Decide the first extracted helper surface outside the monolithic test file once a second consumer beyond `test_fractal_runtime_explaino_escape_variants.py` is ready.
-- Start wiring the driver-backed scenario subset into a named public validation rail so future UI slices can depend on it deterministically.
+- Promote the new named `verify: runtime ui harness` task from an initial public rail into a broader profile/receipt surface once the shared scenario set is stable enough to make mandatory.
+- Keep moving neighboring published-runtime consumers onto `tests/runtime_harness.py` so the harness expansion keeps shrinking ad hoc CLI/state-bundle duplication instead of just documenting it.
 - Keep hostile-audit validation in the proof chain as the driver expands; do not let the new helper become a loophole for helper-only fake greens.
 
 ## Presumption Loop
@@ -73,6 +73,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: `tools/viewer_host_checkpoint_dirty_prompt_guard.py` now persists explicit carryover state for dirty prompt-submit blocks, so the next PreToolUse event can deny unrelated work instead of relying on the agent to treat a warning as binding workflow state.
 - Done: focused proof is green on the checkpoint workflow surface: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q` passed with the dedicated hook tests, and the adjacent crash-recovery proof `py -3.14 -m pytest tests/test_viewer_host_recover_crash_state.py -q` remained green after the carryover-state change.
 - Done: hostile closure testing exposed one more real workflow bug in the repo-approved checkpoint wrapper itself: `tools/viewer_host_checkpoint_slice.py commit` treated the implicit no-`--path` case as a scoped commit containing only `HANDOFF_LOG.md`. The wrapper now stages all changes when no paths are provided, and `tests/test_agent_workflow_tools.py -k checkpoint_slice -q` locks that regression down.
+- Done: the first extracted helper surface outside the monolithic runtime test file is now real: `tests/runtime_harness.py` owns active-runtime lookup, diagnostics capture, state-bundle writing, and loaded-state scenario execution, and both `tests/test_fractal_runtime_explaino_escape_variants.py` and `tests/test_fractal_runtime_explaino_sidecar_live.py` now consume it.
+- Done: the driver-backed subset now has an initial named public rail: `.vscode/tasks.json` exposes `verify: runtime ui harness`, `tests/test_agent_workflow_tools.py` locks that task surface, and the logged runtime-lane execution passed with `24 passed` across the two current consumer files.
 
 ## Hostile Audit
 
@@ -94,6 +96,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 11 - challenged the workflow fix against the exact repeated failure mode by moving dirty carryover, completion, and Stop ownership into dedicated hooks modeled on the proven mainline examples instead of extending the monolithic viewer-host guard again.
 - [done] Pass 12 - challenged the new hook chain on the focused workflow test surface plus the adjacent crash-recovery tests so the carryover-state write/read path could not silently regress the emergency recovery story.
 - [done] Pass 13 - challenged the actual checkpoint closure path itself and repaired the wrapper bug that silently committed only `HANDOFF_LOG.md` when no explicit `--path` list was provided.
+- [done] Pass 14 - challenged whether the loaded-state scenario driver was truly ready for extraction and public reuse by forcing it through a second consumer plus a named runtime lane instead of leaving the sharing story as plan prose.
 
 ## Audit Findings
 
@@ -114,6 +117,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The viewer-host workflow had the same structural bug the user kept calling out: one monolithic checkpoint guard still owned too many unrelated policy decisions, so the agent could behave as if a slice were finished before the completion/Stop boundaries had been made independently hard.
 - [done] Importing the mainline pattern as a layered chain is the right fix, not another ad hoc branch inside `viewer_host_checkpoint_guard.py`. The first critical split is now landed: dirty prompt-submit writes carryover state, dedicated PreToolUse carryover gating blocks unrelated work, dedicated completion gating owns `task_complete`, and dedicated Stop gating owns dirty-session end.
 - [done] The repo-approved checkpoint wrapper still had a closure loophole of its own: omitting `--path` should have meant "commit the whole dirty slice," but the implementation always auto-populated a scoped path list with `HANDOFF_LOG.md` and therefore committed only the handoff entry. That bug is now fixed and covered.
+- [done] The second consumer was already real: `tests/test_fractal_runtime_explaino_sidecar_live.py` duplicated the same active-runtime lookup, headless Explaino baseline capture, and state-bundle setup that the monolithic escape-variants file owned, so the right extraction boundary was shared headless runtime setup, not the live-window capture code.
+- [done] `tools/viewer_host_runtime_pytest_lane.py` already had the exact extension seam needed for a public harness rail because it accepts an override list of pytest files; the missing piece was a named task that points it at the shared runtime-harness consumers instead of another new execution helper.
 
 ## Notes
 
@@ -137,4 +142,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Use the now-validated loaded-state scenario driver across more published-runtime workflows, then lift that same truthful interaction pattern into a named mandatory validation rail without relaxing hostile-audit or receipt enforcement.
+Use `tests/runtime_harness.py` across more published-runtime workflows, then lift the new `verify: runtime ui harness` task into a stronger profile/receipt surface without relaxing hostile-audit or receipt enforcement.

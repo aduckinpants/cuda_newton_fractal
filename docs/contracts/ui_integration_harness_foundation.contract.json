@@ -9,6 +9,7 @@
     "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
     "docs/notes/advanced_color_preset_pit_of_success_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
+    ".vscode/tasks.json",
     ".github/hooks/checkpoint_guard.json",
     "tools/viewer_host_checkpoint_guard.py",
     "tools/viewer_host_checkpoint_dirty_prompt_guard.py",
@@ -37,7 +38,9 @@
     "ui_app/tests/test_schema_binding.cpp",
     "ui_app/tests/test_ui_schema.cpp",
     "ui/fractal_binding_surface_v1.ui_schema.json",
+    "tests/runtime_harness.py",
     "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_explaino_sidecar_live.py",
     "tests/test_agent_workflow_tools.py",
     "tests/test_viewer_host_checkpoint_guard.py",
     "tests/test_viewer_host_recover_crash_state.py"

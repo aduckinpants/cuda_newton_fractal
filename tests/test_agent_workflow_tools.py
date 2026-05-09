@@ -332,6 +332,15 @@ def test_runtime_pytest_task_uses_runtime_lane_helper() -> None:
     assert '"tools/viewer_host_runtime_pytest_lane.py"' in tasks_json
 
 
+def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
+    tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
+
+    assert '"label": "verify: runtime ui harness"' in tasks_json
+    assert '"artifacts/verify_runtime_ui_harness.log"' in tasks_json
+    assert '"tests/test_fractal_runtime_explaino_escape_variants.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_explaino_sidecar_live.py"' in tasks_json
+
+
 def test_core_workflow_docs_advertise_session_start_checkpoint_flow() -> None:
     expected = {
         REPO_ROOT / "AGENTS.md": [

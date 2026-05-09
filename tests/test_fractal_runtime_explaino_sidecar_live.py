@@ -10,11 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.runtime_harness import RUNTIME_DIR, active_runtime_exe as _active_runtime_exe, run_headless_capture as _run_headless_capture, write_state_bundle as _write_state_bundle
 
-RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
-ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
-DIAGNOSTICS_STATE_FILE = RUNTIME_DIR / "diagnostics" / "last" / "state.json"
-DIAGNOSTICS_FRAME_FILE = RUNTIME_DIR / "diagnostics" / "last" / "frame.bmp"
 
 WM_CLOSE = 0x0010
 SRCCOPY = 0x00CC0020
@@ -52,18 +49,6 @@ class BITMAPINFO(ctypes.Structure):
         ("bmiHeader", BITMAPINFOHEADER),
         ("bmiColors", wintypes.DWORD * 3),
     ]
-
-
-def _active_runtime_exe() -> Path:
-    if not ACTIVE_RUNTIME_FILE.exists():
-        pytest.skip(f"missing active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    active_name = ACTIVE_RUNTIME_FILE.read_text(encoding="utf-8").strip()
-    if not active_name:
-        pytest.skip(f"empty active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    exe_path = RUNTIME_DIR / active_name
-    if not exe_path.exists():
-        pytest.skip(f"active runtime missing: {exe_path}")
-    return exe_path
 
 
 def _find_window_for_pid(pid: int) -> int | None:
@@ -159,30 +144,6 @@ def _mean_abs_diff(left: bytes, right: bytes) -> float:
     return total / len(left)
 
 
-def _run_headless_capture(*args: str) -> dict[str, object]:
-    DIAGNOSTICS_STATE_FILE.unlink(missing_ok=True)
-    DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
-
-    result = subprocess.run(
-        list(args),
-        cwd=str(RUNTIME_DIR),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr or result.stdout
-    assert DIAGNOSTICS_STATE_FILE.exists(), f"missing diagnostics state file: {DIAGNOSTICS_STATE_FILE}"
-    assert DIAGNOSTICS_FRAME_FILE.exists(), f"missing diagnostics frame file: {DIAGNOSTICS_FRAME_FILE}"
-    return json.loads(DIAGNOSTICS_STATE_FILE.read_text(encoding="utf-8"))
-
-
-def _write_state_bundle(tmp_path: Path, state: dict[str, object]) -> Path:
-    state_path = tmp_path / "state.json"
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    return state_path
-
-
 def _configure_sidecar_policy(state: dict[str, object], **updates: object) -> dict[str, object]:
     configured_state = json.loads(json.dumps(state))
     policy = configured_state["sidecar_auto_demo_policy"]
@@ -257,7 +218,7 @@ def test_runtime_loaded_sidecar_paced_loop_changes_live_view_multiple_times(tmp_
         pytest.skip("live Explaino runtime regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    baseline_state = _run_headless_capture(
+    baseline_capture = _run_headless_capture(
         str(exe_path),
         "--capture-diagnostic",
         "--fractal-type",
@@ -270,7 +231,7 @@ def test_runtime_loaded_sidecar_paced_loop_changes_live_view_multiple_times(tmp_
     moving_state_path = _write_state_bundle(
         tmp_path / "moving",
         _configure_sidecar_policy(
-            baseline_state,
+            baseline_capture["state"],
             enabled=True,
             allow_runtime_mutation=True,
             run_paced_loop=True,
@@ -314,7 +275,7 @@ def test_runtime_loaded_sidecar_zero_threshold_stays_visually_stable(tmp_path: P
         pytest.skip("live Explaino runtime regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    baseline_state = _run_headless_capture(
+    baseline_capture = _run_headless_capture(
         str(exe_path),
         "--capture-diagnostic",
         "--fractal-type",
@@ -327,7 +288,7 @@ def test_runtime_loaded_sidecar_zero_threshold_stays_visually_stable(tmp_path: P
     stopped_state_path = _write_state_bundle(
         tmp_path / "stopped",
         _configure_sidecar_policy(
-            baseline_state,
+            baseline_capture["state"],
             enabled=True,
             allow_runtime_mutation=True,
             run_paced_loop=True,
