@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase5_source_palette_family_definition",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json",
+    "docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "name the first truthful Source/Palette runtime family from already shipped coupled tuples instead of inventing generic composition math",
+    "keep the Source / Shape / Palette editor lanes intact while defining the first family as row-indexed root-basin pair recipes with last-enabled-valid-pair selection",
+    "explicitly defer generic Source generator composition, generic Palette chaining, root_proximity pairing, and Grading from this planning-only slice",
+    "follow the repo phased-plan and contract workflow instead of leaving the family definition as chat-only authority"
+  ],
+  "forbidden_operator_prompts": [
+    "claim generic multi-row Source generator composition is already defined by the current runtime math",
+    "claim generic Palette chaining or new root-palette parameter surfaces in this planning-only slice",
+    "pull root_proximity into the first paired family without checked-in palette math that consumes it",
+    "resume Grading or touch runtime/editor implementation in the same planning slice"
+  ],
+  "required_defaults": {
+    "root_basin_pair_family_is_first": "required",
+    "row_index_pairing_rule_is_named": "required",
+    "last_enabled_valid_pair_rule_is_named": "required",
+    "generic_source_palette_composition_is_explicitly_deferred": "required"
+  },
+  "forbidden_defaults": {
+    "generic_source_generator_stack_claim": "forbidden",
+    "generic_palette_chaining_claim": "forbidden",
+    "mixed_pair_silent_fallback_claim": "forbidden",
+    "grading_resume_without_pair_runtime_slice": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_source_palette_family_definition_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_source_palette_family_definition_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 5 Source/Palette family-definition contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase5_source_palette_family_definition_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_source_palette_family_definition_plan_sync_ok",
+      "description": "The advanced color family-definition phased plans stay synchronized during the planning slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

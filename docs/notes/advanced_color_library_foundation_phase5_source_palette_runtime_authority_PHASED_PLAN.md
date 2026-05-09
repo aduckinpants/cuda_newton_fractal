@@ -36,6 +36,7 @@ The nearest controlling backend seam is now Source and Palette, not Shape. `ui_a
 - Landed: `ui_app/src/color_pipeline_core.h` now owns the shared Source/Palette row and lane model types plus the shipped tuple rebuild, row build/defaults, live import, and row apply/reset helpers.
 - Landed: `ui_app/src/color_pipeline_window.h` now delegates the shipped Source/Palette tuple and row-param seams to `ui_app/src/color_pipeline_core.h` instead of defining those behaviors inline.
 - Landed: `ui_app/tests/test_schema_binding.cpp` now locks the extracted core through shipped tuple rebuild coverage, `phase_orbit` row import coverage, and `explaino_cmap` row apply/reset coverage.
+- Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json` now define the first truthful Source/Palette multi-row family as the row-indexed root-basin pair family and bind the next bounded implementation slice.
 - Validated: `artifacts/validation/advanced_color_library_foundation_phase5_source_palette_runtime_authority_contract.json` validates the revised bounded extraction contract and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green.
 - Validated: `artifacts/code_quality_report.json` stayed at the repository baseline, `artifacts/verify_native_helper_tests_red_check.log` is green for the fresh native helper rebuild, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
 
@@ -81,4 +82,4 @@ The nearest controlling backend seam is now Source and Palette, not Shape. `ui_a
 
 ## Resume Point
 
-Open the next bounded Phase 5 Source/Palette slice from this landed extraction seam by naming the first concrete multi-row Source/Palette runtime family and the matching runtime-owner/live-bridge strategy; do not reopen Grading until that next runtime truth is defined and proven.
+Treat this as a completed predecessor. Resume from `docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md` under `docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json` instead of reopening the shipped-seam extraction slice.

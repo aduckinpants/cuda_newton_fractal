@@ -8,6 +8,8 @@
     "docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json",
     "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
     "docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md",
+    "docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md",
     "ui_app/src/color_pipeline_core.h",
     "ui_app/src/color_pipeline_window.h",
     "ui_app/src/diagnostics_capture.cpp",
