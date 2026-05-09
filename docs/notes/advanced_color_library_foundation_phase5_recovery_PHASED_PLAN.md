@@ -32,6 +32,7 @@ The controlling defect is no longer uncertainty about the advanced-color functio
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md` and `docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json` now bound the planning-repair slice so the correction happens under the repo's phased-plan and contract workflow.
 - Landed: `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` now treats the mapped inventory as settled, sequences backend recovery ahead of Grading, adds hostile-audit sections, maps explicit asks to remaining phases, and replaces the vague direct-to-Grading resume point.
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_shape_stack_runtime_PHASED_PLAN.md` is now reconciled with the landed `e6b55b9` / `ck:1fbf6d4d` checkpoint instead of still pointing at already-closed closure work.
+- Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` and `docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json` now bound the next executable backend-recovery slice around Source/Palette live-bridge and runtime-state authority.
 - Validated: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` now passes for both the repaired foundation plan and this recovery plan, and `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_recovery_contract.json` validated the new recovery contract cleanly.
 - Checkpointed: the original planning-repair slice closed at commit `433829c` with the linked `ck:e33c073e` handoff entry plus machine-written validation and contract proof receipts.
 
@@ -66,4 +67,4 @@ The controlling defect is no longer uncertainty about the advanced-color functio
 
 ## Resume Point
 
-Treat this as a completed predecessor. Resume from `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` and start the next bounded backend-recovery slice on Source/Palette live-bridge and runtime-state authority instead of reopening already-closed checkpoint work.
+Treat this as a completed predecessor. Resume from `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` under `docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json` instead of reopening already-closed checkpoint work.

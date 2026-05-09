@@ -110,6 +110,7 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - Audit: hostile review of the first Phase 5 implementation found a real persistence omission where `color_shape_stack` would have been lost on save/load and archive capture, plus a code-quality regression in the first loader refactor; both defects are repaired and the re-read repaired state did not expose another hidden single-row fallback within the bounded Shape slice.
 - Checkpointed: the bounded Phase 5 Shape-stack recovery slice closed at commit `e6b55b9` with the linked `ck:1fbf6d4d` handoff entry plus machine-written validation and contract proof receipts.
 - Landed: planning-authority repair now names the next remaining Phase 5 blocker explicitly: `ui_app/src/color_pipeline_window.h` still imports and applies Source/Palette through `BuildColorPipelineLaneWithSingleRow(...)`, `rows.front()`, and `FindSingleEnabledColorPipelineRow(...)`, while `ui_app/src/fractal_types.h` only owns a runtime stack for Shape.
+- Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json` now bound the next executable backend-recovery slice instead of leaving Source/Palette recovery as a chat-only resume point.
 - Next bounded slice: repair Source/Palette live-bridge and runtime-state authority from this truthful Shape-stack base; do not claim Grading is ready until those remaining backend seams and the grading-authority boundary are closed honestly.
 
 ## Hostile Audit
@@ -150,7 +151,7 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 
 ## Resume Point
 
-Start the next bounded Phase 5 slice by replacing the single-row Source/Palette import/apply path in `ui_app/src/color_pipeline_window.h` and introducing truthful runtime state ownership for those lanes before any Grading implementation resumes.
+Start the next bounded Phase 5 slice from `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` by replacing the single-row Source/Palette import/apply path in `ui_app/src/color_pipeline_window.h` and introducing truthful runtime state ownership for those lanes before any Grading implementation resumes.
 
 
 
