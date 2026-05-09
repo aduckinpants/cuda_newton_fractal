@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 in progress - the low-risk active-runtime lookup seam harvest is complete; next audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit before product work can resume
+Phase 4 in progress - the public runtime rails and workflow-hardening closure surface are now explicit; next document the stop-line, explicit exclusions, and the gate that still blocks product work before restart
 
 ## Phase Checklist
 
 - [x] Phase 1 - split planning authority so the harness-completion thread is its own checked-in plan/contract with a hard gate before product work resumes
 - [x] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
-- [ ] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
+- [x] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
 - [ ] Phase 4 - close the harness thread for now with a documented stop-line, explicit exclusions, and a hard gate that blocks product work until this thread is complete
 - [ ] Phase 5 - after the harness gate closes, repair product planning authority before any advanced-color, preset, composition, or new-fractal implementation resumes
 
@@ -37,10 +37,12 @@ The controlling defect is planning authority, not a missing runtime rail or a mi
 - Landed: the dedicated harness-completion plan/contract pair now exists, so the restart gate lives in checked-in repo authority rather than only in chat.
 - Landed: the existing harness-foundation plan now records the foundation as complete and points all remaining harness-first work at this plan instead of mixing in product restart.
 - Landed: `tests/test_function_descriptor_cli.py` and `tests/test_generic_probe_cli.py` now reuse `tests/runtime_harness.py` for active-runtime lookup, eliminating the last obvious low-risk copy of the `fractal_ui_active.txt` reader from the published-runtime CLI test family.
+- Landed: the residual "remaining hardening" note is now retired; the public runtime closure surface is explicit and already locked by task-surface regression coverage instead of depending on a chat-era to-do.
 - Validated: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json` passed for the new planning-only contract.
 - Validated: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed for both the completed foundation plan and this new harness-completion plan.
 - Validated: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json` passed after the explicit stop-line and product gate were recorded.
 - Validated: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_function_descriptor_cli.py tests/test_generic_probe_cli.py` passed with 23 tests after the helper extraction.
+- Validated: the exact runtime/checkpoint profile labels and the named non-mandatory FITS sibling rail are already locked in `tests/test_agent_workflow_tools.py`, so no additional public runtime rail surfaced during the Phase 3 audit.
 
 ## Hostile Audit
 
@@ -75,7 +77,11 @@ The controlling defect is planning authority, not a missing runtime rail or a mi
 - Phase 2 closure note:
   - the remaining obvious active-runtime metadata duplication in the published-runtime CLI family is now gone
   - the next extraction candidates would need a broader support-module decision rather than another low-risk helper move
+- Phase 3 closure note:
+  - the mandatory published-runtime closure surface is explicit: `verify: runtime probe/session pytest`, `verify: runtime artifact tools`, and `verify: runtime ui harness`
+  - the non-mandatory sibling rail is explicit: `verify: runtime walk FITS witnesses`
+  - runtime-adjacent helper/unit tests such as `tests/test_viewer_host_runtime_pytest_lane.py`, `tests/test_runtime_walk_extract_fits_orientation.py`, and `tests/test_fractal_probe_client.py` stay outside the published-runtime rail set because they validate helper/tool seams rather than runtime-visible witness families
 
 ## Resume Point
 
-Audit the public runtime rails and residual workflow-hardening items for any still-implicit closure requirement, then either make the rail explicit or document the deferral before moving to the final harness stop-line phase.
+Document the final harness stop-line for now, including the explicit exclusions and the gate that still blocks product restart, then checkpoint that Phase 4 closure before opening the product planning-authority repair slice.
