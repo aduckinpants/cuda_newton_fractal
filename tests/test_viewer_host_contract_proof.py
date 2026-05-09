@@ -117,6 +117,19 @@ def test_validation_evidence_spec_for_command_recognizes_hostile_audit_validator
     assert spec.artifact_path == "artifacts/validation/workflow_guard_hostile_review_enforcement_hostile_audit.json"
 
 
+def test_validation_evidence_spec_for_command_recognizes_logged_command_pytest() -> None:
+    command = (
+        "py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py -q --junitxml "
+        "artifacts/pytest/test_viewer_host_run_logged_command.junit.xml"
+    )
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "junit_xml"
+    assert spec.artifact_path == "artifacts/pytest/test_viewer_host_run_logged_command.junit.xml"
+
+
 def test_contract_proof_writer_fails_when_required_assertion_evidence_is_missing(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()

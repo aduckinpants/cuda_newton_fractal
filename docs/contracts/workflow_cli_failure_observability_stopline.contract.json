@@ -10,9 +10,11 @@
     "docs/notes/workflow_cli_friction_closure_PHASED_PLAN.md",
     ".vscode/tasks.json",
     "tools/viewer_host_run_logged_command.py",
+    "tools/viewer_host_contract_proof.py",
     "tools/call_vsdevcmd.cmd",
     "tests/test_viewer_host_run_logged_command.py",
     "tests/test_agent_workflow_tools.py",
+    "tests/test_viewer_host_contract_proof.py",
     "AGENT_TERMINAL_PROTOCOL.md",
     "AGENT_WORKING_PROTOCOL.md",
     "HANDOFF_LOG.md"
@@ -38,7 +40,9 @@
     "product_scope_blend": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/workflow_cli_failure_observability_stopline.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py -q --junitxml artifacts/pytest/test_viewer_host_run_logged_command.junit.xml",
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_cli_failure_observability_stopline.contract.json --out-json artifacts/validation/workflow_cli_failure_observability_stopline_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
   ],
@@ -63,14 +67,14 @@
       "assertion_id": "logged_command_failure_summary_is_explicit",
       "description": "The logged-command wrapper emits an explicit failure summary for nonzero exits",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/workflow_cli_failure_observability_stopline.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_run_logged_command.junit.xml",
       "test_nodeid": "tests/test_viewer_host_run_logged_command.py::test_logged_command_failure_preserves_exit_and_tail"
     },
     {
       "assertion_id": "workflow_tasks_use_direct_wrapper_batch_launch",
       "description": "Wrapped batch validation tasks use direct batch launch instead of cmd /c indirection",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/workflow_cli_failure_observability_stopline.junit.xml",
+      "artifact_path": "artifacts/pytest/test_agent_workflow_tools.junit.xml",
       "test_nodeid": "tests/test_agent_workflow_tools.py::test_wrapped_build_tasks_do_not_use_cmd_c_batch_indirection"
     }
   ]

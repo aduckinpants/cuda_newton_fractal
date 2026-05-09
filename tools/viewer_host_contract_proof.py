@@ -35,6 +35,12 @@ KNOWN_VALIDATION_EVIDENCE_SPECS: tuple[ValidationEvidenceSpec, ...] = (
         artifact_path="artifacts/pytest/test_agent_workflow_tools.junit.xml",
     ),
     ValidationEvidenceSpec(
+        evidence_id="pytest_viewer_host_run_logged_command",
+        command="py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py -q --junitxml artifacts/pytest/test_viewer_host_run_logged_command.junit.xml",
+        artifact_kind="junit_xml",
+        artifact_path="artifacts/pytest/test_viewer_host_run_logged_command.junit.xml",
+    ),
+    ValidationEvidenceSpec(
         evidence_id="pytest_viewer_host_contract_tools",
         command="py -3.14 -m pytest tests/test_viewer_host_contract_tools.py -q --junitxml artifacts/pytest/test_viewer_host_contract_tools.junit.xml",
         artifact_kind="junit_xml",
