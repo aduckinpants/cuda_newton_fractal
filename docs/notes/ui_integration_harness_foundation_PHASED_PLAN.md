@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 1 in progress - the reusable typed advanced-color scenario surface is landed with direct native helper coverage, published-runtime proof, and workflow-guard hardening; next work should extract the broader mandatory integration rail instead of adding ad hoc one-off seams
+Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs; next work should widen that driver to more neighboring workflows and promote it into the mandatory integration rail
 
 ## Phase Checklist
 
-- [ ] Phase 1 - lock the reusable scenario vocabulary and closure bar: typed action surface, direct native helper coverage, published-runtime proof, and workflow-guard behavior that refuses false recovery/carryover paths.
+- [x] Phase 1 - lock the reusable scenario vocabulary and closure bar: typed action surface, direct native helper coverage, published-runtime proof, and workflow-guard behavior that refuses false recovery/carryover paths.
 - [ ] Phase 2 - extract a checked-in scenario driver around runtime publish, load-state/draft hydration, action execution, and deterministic capture so scripted scenarios stop depending on ad hoc CLI seams.
 - [ ] Phase 3 - land truthful RED/GREEN scenarios for advanced-color plus at least one neighboring user-facing workflow through the same driver instead of helper-only seams.
 - [ ] Phase 4 - wire the scenario driver into a mandatory public validation rail and contract proof chain so future UI slices cannot close without published-runtime proof and hostile-audit evidence.
@@ -23,10 +23,10 @@ Phase 1 in progress - the reusable typed advanced-color scenario surface is land
 
 ## Immediate Next Slice
 
-- Define the checked-in scenario-driver boundary explicitly: scenario input, runtime publish/setup contract, action execution contract, and capture/assertion outputs.
-- Reuse the typed `--color-pipeline-action` surface as the first scenario payload instead of inventing a parallel DSL for Phase 2.
-- Add a second user-facing scenario through the same driver so the harness proves it can outgrow the first advanced-color vertical seam.
-- Promote hostile-audit validation into the contract proof chain so the mandatory rail checks both scenario proof and audit completion.
+- Widen the loaded-state scenario driver to additional neighboring workflows that already use the same publish/load-state/capture pattern instead of leaving them on hand-built command assembly.
+- Decide the first extracted helper surface outside the monolithic test file once a second consumer beyond `test_fractal_runtime_explaino_escape_variants.py` is ready.
+- Start wiring the driver-backed scenario subset into a named public validation rail so future UI slices can depend on it deterministically.
+- Keep hostile-audit validation in the proof chain as the driver expands; do not let the new helper become a loophole for helper-only fake greens.
 
 ## Presumption Loop
 
@@ -57,6 +57,10 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: workflow guard hardening now rejects clean-repo crash-recovery adoption and refreshes stale clean baselines only when the current head is already fully receipted, which closes the false-recovery loop without masking receipt debt.
 - Done: hostile audit tightened the stale-baseline refresh path again so it validates receipt identity, not just receipt file existence; malformed placeholder receipts can no longer reset the guard.
 - Done: the slice contract now requires `viewer_host_validate_hostile_audit.py` and records hostile-audit success as a machine-checked acceptance assertion instead of relying on prose-only discipline.
+- Done: the first neighboring workflow now rides the same harness seam: a sidecar mutation-history replay scenario proves a frame-changing user-visible state transition through the same published-runtime load-state/capture pattern as the advanced-color scenarios.
+- Done: Phase 2 is now seeded with an explicit `_HeadlessLoadedStateScenario` driver inside the published-runtime test file so advanced-color and sidecar scenarios share one checked-in setup/action/capture flow instead of duplicating CLI assembly by hand.
+- Done: the canonical native-helper build rail reran clean on the recovered worktree, so the earlier `ApplyCliOverrides` compile failure was stale log noise rather than a live source mismatch on current disk state.
+- Done: the full `tests/test_fractal_runtime_explaino_escape_variants.py` file is green again after fixing the paced-loop stop-threshold proof to compare pumped output against the matching loaded-state baseline instead of the raw startup state.
 
 ## Hostile Audit
 
@@ -71,6 +75,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 4 - challenged the new typed scenario refactor against the native helper build surface so parser ownership, stale test seams, and explicit source-list dependencies fail before closure.
 - [done] Pass 5 - challenged the workflow guard/recovery path itself so stale baselines and clean-repo misuse cannot produce bogus crash-recovery loops while still preserving receipt enforcement.
 - [done] Pass 6 - challenged the stale-baseline refresh path against malformed receipt metadata so placeholder receipt files cannot silently clear carryover debt.
+- [done] Pass 7 - challenged the first sidecar replay scenario witness against actual rendered-frame proof instead of accepting a state-only mutation as sufficient harness evidence.
+- [done] Pass 8 - challenged the neighboring paced-loop runtime failure against a no-pump control capture so the slice would fix the real baseline defect instead of chasing a nonexistent sidecar mutation bug.
 
 ## Audit Findings
 
@@ -84,6 +90,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The crash-recovery helper would still generate a recovery report for a clean repository, which turned a no-op workflow state into noisy faux recovery and trained the operator to mistrust the guard surface.
 - [done] The session-baseline resolver had no safe way to refresh a stale clean baseline after a fully receipted checkpoint, so sticky fallback-session state could keep reporting bogus carryover until someone manually intervened.
 - [done] The first stale-baseline refresh fix still trusted receipt file presence alone; malformed receipt placeholders could have refreshed the baseline anyway, so the refresh path now validates receipt head metadata and the active contract identity before accepting the clean head as a new baseline.
+- [done] The first sidecar replay scenario choice (`ripple_amplitude`) mutated persisted state but did not move the rendered frame on the published-runtime baseline, so it was not a truthful harness witness; the scenario now replays `explaino_seed`, which does produce a user-visible frame change through the same driver.
+- [done] The neighboring paced-loop runtime failure was a false comparison against the raw startup capture: plain `--load-state-json` already changes derived `params.multibrot_power` without any frame change, so the truthful stop-threshold proof must compare pumped output against its matching loaded-state baseline, not the pre-load startup state.
 
 ## Notes
 
@@ -107,4 +115,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Use the now-validated typed `--color-pipeline-action` surface plus its native helper/runtime proof pattern as the seed of Phase 2's checked-in scenario driver, then widen that same truthful interaction pattern into the broader mandatory UI integration harness work without relaxing hostile-audit or receipt enforcement.
+Use the now-validated loaded-state scenario driver across more published-runtime workflows, then lift that same truthful interaction pattern into a named mandatory validation rail without relaxing hostile-audit or receipt enforcement.

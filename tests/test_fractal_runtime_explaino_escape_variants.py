@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import hashlib
 import json
 import math
@@ -14,6 +15,20 @@ RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
 ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
 DIAGNOSTICS_STATE_FILE = RUNTIME_DIR / "diagnostics" / "last" / "state.json"
 DIAGNOSTICS_FRAME_FILE = RUNTIME_DIR / "diagnostics" / "last" / "frame.bmp"
+
+
+@dataclass(frozen=True)
+class _HeadlessLoadedStateScenario:
+    name: str
+    state: dict[str, object]
+    action_args: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class _HeadlessLoadedStateScenarioResult:
+    state_path: Path
+    baseline_capture: dict[str, object]
+    scenario_capture: dict[str, object]
 
 
 def _active_runtime_exe() -> Path:
@@ -49,6 +64,46 @@ def _run_headless_capture(*args: str) -> dict[str, object]:
         "frame_hash": hashlib.sha256(frame_bytes).hexdigest(),
         "frame_bytes": frame_bytes,
     }
+
+
+def _capture_explaino_runtime_baseline(exe_path: Path, *, width: int = 320, height: int = 240) -> dict[str, object]:
+    return _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        str(width),
+        "--height",
+        str(height),
+    )
+
+
+def _run_headless_loaded_state_scenario(
+    tmp_path: Path,
+    *,
+    exe_path: Path,
+    scenario: _HeadlessLoadedStateScenario,
+) -> _HeadlessLoadedStateScenarioResult:
+    state_path = _write_state_bundle(tmp_path / scenario.name, scenario.state)
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--capture-diagnostic",
+    )
+    scenario_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        *scenario.action_args,
+        "--capture-diagnostic",
+    )
+    return _HeadlessLoadedStateScenarioResult(
+        state_path=state_path,
+        baseline_capture=baseline_capture,
+        scenario_capture=scenario_capture,
+    )
 
 
 def _bmp_pixel_bytes(frame_bytes: bytes) -> bytes:
@@ -779,39 +834,26 @@ def test_explaino_headless_color_pipeline_scenario_actions_change_draft_state_an
         pytest.skip("Explaino advanced-color runtime regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    baseline_capture = _run_headless_capture(
-        str(exe_path),
-        "--capture-diagnostic",
-        "--fractal-type",
-        "explaino",
-        "--width",
-        "320",
-        "--height",
-        "240",
-    )
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
 
     draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
-    draft_state_path = _write_state_bundle(tmp_path / "headless_color_pipeline_switch", draft_state)
-
-    baseline_draft_capture = _run_headless_capture(
-        str(exe_path),
-        "--load-state-json",
-        str(draft_state_path),
-        "--capture-diagnostic",
+    scenario_result = _run_headless_loaded_state_scenario(
+        tmp_path,
+        exe_path=exe_path,
+        scenario=_HeadlessLoadedStateScenario(
+            name="headless_color_pipeline_switch",
+            state=draft_state,
+            action_args=(
+                "--color-pipeline-action",
+                "select_function:source:0:root_proximity",
+                "--color-pipeline-action",
+                "set_param:source:0:signal.proximity_scale:number:6.0",
+                "--color-pipeline-action",
+                "set_param:source:0:signal.proximity_bias:number:0.25",
+            ),
+        ),
     )
-
-    switched_capture = _run_headless_capture(
-        str(exe_path),
-        "--load-state-json",
-        str(draft_state_path),
-        "--color-pipeline-action",
-        "select_function:source:0:root_proximity",
-        "--color-pipeline-action",
-        "set_param:source:0:signal.proximity_scale:number:6.0",
-        "--color-pipeline-action",
-        "set_param:source:0:signal.proximity_bias:number:0.25",
-        "--capture-diagnostic",
-    )
+    switched_capture = scenario_result.scenario_capture
 
     switched_params = switched_capture["state"]["params"]
     assert isinstance(switched_params, dict)
@@ -845,7 +887,7 @@ def test_explaino_headless_color_pipeline_scenario_actions_change_draft_state_an
     assert _color_pipeline_number_param(switched_palette_row, "palette.cycle_scale") == pytest.approx(0.5, abs=1e-6)
     assert _color_pipeline_number_param(switched_palette_row, "palette.saturation") == pytest.approx(1.25, abs=1e-6)
 
-    assert switched_capture["frame_hash"] != baseline_draft_capture["frame_hash"], (
+    assert switched_capture["frame_hash"] != scenario_result.baseline_capture["frame_hash"], (
         "expected a headless advanced-color function switch to change the published runtime frame while preserving the loaded repeat/heatmap draft rows"
     )
 
@@ -855,39 +897,26 @@ def test_explaino_headless_color_pipeline_scenario_can_add_shape_row_and_change_
         pytest.skip("Explaino advanced-color runtime regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    baseline_capture = _run_headless_capture(
-        str(exe_path),
-        "--capture-diagnostic",
-        "--fractal-type",
-        "explaino",
-        "--width",
-        "320",
-        "--height",
-        "240",
-    )
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
 
     draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
-    draft_state_path = _write_state_bundle(tmp_path / "headless_color_pipeline_add_shape_row", draft_state)
-
-    baseline_draft_capture = _run_headless_capture(
-        str(exe_path),
-        "--load-state-json",
-        str(draft_state_path),
-        "--capture-diagnostic",
+    scenario_result = _run_headless_loaded_state_scenario(
+        tmp_path,
+        exe_path=exe_path,
+        scenario=_HeadlessLoadedStateScenario(
+            name="headless_color_pipeline_add_shape_row",
+            state=draft_state,
+            action_args=(
+                "--color-pipeline-action",
+                "add_row:shape:mirror_repeat",
+                "--color-pipeline-action",
+                "set_param:shape:1:shape.frequency:number:7.0",
+                "--color-pipeline-action",
+                "set_param:shape:1:shape.phase:number:0.35",
+            ),
+        ),
     )
-
-    scenario_capture = _run_headless_capture(
-        str(exe_path),
-        "--load-state-json",
-        str(draft_state_path),
-        "--color-pipeline-action",
-        "add_row:shape:mirror_repeat",
-        "--color-pipeline-action",
-        "set_param:shape:1:shape.frequency:number:7.0",
-        "--color-pipeline-action",
-        "set_param:shape:1:shape.phase:number:0.35",
-        "--capture-diagnostic",
-    )
+    scenario_capture = scenario_result.scenario_capture
 
     first_shape_row = _color_pipeline_row(scenario_capture["state"], "shape", 0)
     second_shape_row = _color_pipeline_row(scenario_capture["state"], "shape", 1)
@@ -904,7 +933,7 @@ def test_explaino_headless_color_pipeline_scenario_can_add_shape_row_and_change_
     assert shape_stack[1]["repeat_frequency"] == pytest.approx(7.0, abs=1e-6)
     assert shape_stack[1]["repeat_phase"] == pytest.approx(0.35, abs=1e-6)
 
-    assert scenario_capture["frame_hash"] != baseline_draft_capture["frame_hash"], (
+    assert scenario_capture["frame_hash"] != scenario_result.baseline_capture["frame_hash"], (
         "expected a headless advanced-color add-row scenario to change the published runtime frame while persisting the second Shape row"
     )
 
@@ -1408,6 +1437,60 @@ def test_explaino_sidecar_headless_replay_mutation_history_count_replays_ordered
     assert replay_two_capture["state"].get("sidecar_mutation_history") == mutation_history
 
 
+def test_explaino_sidecar_headless_replay_scenario_changes_frame_and_preserves_history(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino sidecar runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
+
+    mutation_history = [
+        {
+            "label": "replay-step-1",
+            "path": "fractal.params.explaino_seed",
+            "type": "double",
+            "target_value": 3.0,
+            "utility": 1.0,
+        },
+        {
+            "label": "replay-step-2",
+            "path": "fractal.params.explaino_seed",
+            "type": "double",
+            "target_value": 4.0,
+            "utility": 1.0,
+        },
+    ]
+    scenario_result = _run_headless_loaded_state_scenario(
+        tmp_path,
+        exe_path=exe_path,
+        scenario=_HeadlessLoadedStateScenario(
+            name="replay_scenario",
+            state=_with_sidecar_mutation_history(
+                baseline_capture["state"],
+                mutation_history,
+                explaino_seed=1.0,
+            ),
+            action_args=(
+                "--sidecar-replay-mutation-history-count",
+                "2",
+            ),
+        ),
+    )
+
+    baseline_replay_capture = scenario_result.baseline_capture
+    assert baseline_replay_capture["state"]["params"]["explaino_seed"] == pytest.approx(1.0, abs=1e-6)
+
+    replay_capture = scenario_result.scenario_capture
+
+    replay_params = replay_capture["state"]["params"]
+    assert isinstance(replay_params, dict)
+    assert replay_params["explaino_seed"] == pytest.approx(4.0, abs=1e-6)
+    assert replay_capture["state"].get("sidecar_mutation_history") == mutation_history
+    assert replay_capture["frame_hash"] != baseline_replay_capture["frame_hash"], (
+        "expected headless mutation-history replay to change the published runtime frame while preserving the persisted replay records"
+    )
+
+
 def test_explaino_exploration_advisor_report_is_deterministic_for_loaded_state(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino advisor runtime regression is Windows-only")
@@ -1521,16 +1604,7 @@ def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: 
         pytest.skip("Explaino sidecar runtime regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    baseline_capture = _run_headless_capture(
-        str(exe_path),
-        "--capture-diagnostic",
-        "--fractal-type",
-        "explaino",
-        "--width",
-        "320",
-        "--height",
-        "240",
-    )
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
 
     moving_state_path = _write_state_bundle(
         tmp_path / "moving",
@@ -1557,6 +1631,19 @@ def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: 
         ),
     )
 
+    moving_loaded_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(moving_state_path),
+        "--capture-diagnostic",
+    )
+    stopped_loaded_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(stopped_state_path),
+        "--capture-diagnostic",
+    )
+
     moving_capture = _run_headless_capture(
         str(exe_path),
         "--load-state-json",
@@ -1574,16 +1661,16 @@ def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: 
         "--capture-diagnostic",
     )
 
-    moving_fields = _numeric_state_deltas(baseline_capture["state"], moving_capture["state"])
-    stopped_fields = _numeric_state_deltas(baseline_capture["state"], stopped_capture["state"])
+    moving_fields = _numeric_state_deltas(moving_loaded_capture["state"], moving_capture["state"])
+    stopped_fields = _numeric_state_deltas(stopped_loaded_capture["state"], stopped_capture["state"])
 
     assert moving_fields, "expected paced-loop proof to mutate at least one numeric state field"
-    assert moving_capture["frame_hash"] != baseline_capture["frame_hash"], (
+    assert moving_capture["frame_hash"] != moving_loaded_capture["frame_hash"], (
         "expected paced-loop proof to change the rendered frame hash"
     )
     assert not stopped_fields, (
         "expected zero-coverage stop threshold to halt the paced loop before mutating state"
     )
-    assert stopped_capture["frame_hash"] == baseline_capture["frame_hash"], (
+    assert stopped_capture["frame_hash"] == stopped_loaded_capture["frame_hash"], (
         "expected zero-coverage stop threshold to leave the rendered frame unchanged"
     )
