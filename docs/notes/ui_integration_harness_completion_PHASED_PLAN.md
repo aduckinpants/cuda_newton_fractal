@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 2 in progress - the dedicated harness-completion authority surface now exists; next finish the remaining low-risk shared-harness seam harvest and explicit deferral decisions before product work can resume
+Phase 3 in progress - the low-risk active-runtime lookup seam harvest is complete; next audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit before product work can resume
 
 ## Phase Checklist
 
 - [x] Phase 1 - split planning authority so the harness-completion thread is its own checked-in plan/contract with a hard gate before product work resumes
-- [ ] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
+- [x] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
 - [ ] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
 - [ ] Phase 4 - close the harness thread for now with a documented stop-line, explicit exclusions, and a hard gate that blocks product work until this thread is complete
 - [ ] Phase 5 - after the harness gate closes, repair product planning authority before any advanced-color, preset, composition, or new-fractal implementation resumes
@@ -36,9 +36,11 @@ The controlling defect is planning authority, not a missing runtime rail or a mi
 
 - Landed: the dedicated harness-completion plan/contract pair now exists, so the restart gate lives in checked-in repo authority rather than only in chat.
 - Landed: the existing harness-foundation plan now records the foundation as complete and points all remaining harness-first work at this plan instead of mixing in product restart.
+- Landed: `tests/test_function_descriptor_cli.py` and `tests/test_generic_probe_cli.py` now reuse `tests/runtime_harness.py` for active-runtime lookup, eliminating the last obvious low-risk copy of the `fractal_ui_active.txt` reader from the published-runtime CLI test family.
 - Validated: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json` passed for the new planning-only contract.
 - Validated: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed for both the completed foundation plan and this new harness-completion plan.
 - Validated: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json` passed after the explicit stop-line and product gate were recorded.
+- Validated: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_function_descriptor_cli.py tests/test_generic_probe_cli.py` passed with 23 tests after the helper extraction.
 
 ## Hostile Audit
 
@@ -70,7 +72,10 @@ The controlling defect is planning authority, not a missing runtime rail or a mi
   - do not start multi-function composition work
   - do not start the new fractal thread
   - do not create new runtime rails unless the authority split itself proves one is needed
+- Phase 2 closure note:
+  - the remaining obvious active-runtime metadata duplication in the published-runtime CLI family is now gone
+  - the next extraction candidates would need a broader support-module decision rather than another low-risk helper move
 
 ## Resume Point
 
-Checkpoint the H0 planning-authority split, then execute Phase 2 by harvesting the remaining low-risk `tests/runtime_harness.py` consumers or explicitly deferring any candidate that does not justify the seam.
+Audit the public runtime rails and residual workflow-hardening items for any still-implicit closure requirement, then either make the rail explicit or document the deferral before moving to the final harness stop-line phase.

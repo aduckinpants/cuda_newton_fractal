@@ -9,6 +9,10 @@
     "docs/contracts/ui_integration_harness_foundation.contract.json",
     "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
     "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
+    "tests/runtime_harness.py",
+    "tests/test_function_descriptor_cli.py",
+    "tests/test_generic_probe_cli.py",
+    "docs/handoffs/archive/HANDOFF_LOG_20260509_135329.md",
     "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [

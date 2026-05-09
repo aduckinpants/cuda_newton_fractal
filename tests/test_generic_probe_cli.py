@@ -5,30 +5,15 @@ import json
 import math
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 
-
-RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
-ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
-
-
-def _active_runtime_exe() -> Path:
-    if not ACTIVE_RUNTIME_FILE.exists():
-        pytest.skip(f"missing active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    active_name = ACTIVE_RUNTIME_FILE.read_text(encoding="utf-8").strip()
-    if not active_name:
-        pytest.skip(f"empty active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    exe_path = RUNTIME_DIR / active_name
-    if not exe_path.exists():
-        pytest.skip(f"active runtime missing: {exe_path}")
-    return exe_path
+from tests.runtime_harness import RUNTIME_DIR, active_runtime_exe
 
 
 def _run_probe(request: dict) -> dict:
     """Send a probe request via stdin/stdout and return the parsed response."""
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -327,7 +312,7 @@ def test_generic_sample_unknown_iterate_count_param_is_rejected() -> None:
         "metrics": ["value"],
     }
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -368,7 +353,7 @@ def test_generic_sample_invalid_iterate_counts_are_rejected(steps: float, expect
         "metrics": ["value"],
     }
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -484,7 +469,7 @@ def test_generic_sample_malformed_expression() -> None:
         "points": [{"x": 0.0, "y": 0.0}],
     }
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -513,7 +498,7 @@ def test_generic_sample_unknown_function_id() -> None:
         "points": [{"x": 0.0, "y": 0.0}],
     }
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -544,7 +529,7 @@ def test_generic_sample_unknown_backend_preference_is_rejected() -> None:
         "points": [{"x": 0.0, "y": 0.0}],
     }
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -576,7 +561,7 @@ def test_fractal_sample_rejects_pinned_backend_preference() -> None:
         "metrics": ["iterations", "status"],
     }
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
         cwd=str(RUNTIME_DIR),
@@ -599,7 +584,7 @@ def test_describe_functions_includes_generic_sample() -> None:
     if sys.platform != "win32":
         pytest.skip("probe CLI runtime regression is Windows-only")
 
-    exe_path = _active_runtime_exe()
+    exe_path = active_runtime_exe()
     result = subprocess.run(
         [str(exe_path), "--describe-functions"],
         cwd=str(RUNTIME_DIR),

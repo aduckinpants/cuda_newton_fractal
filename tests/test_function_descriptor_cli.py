@@ -4,31 +4,16 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 
-
-RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
-ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
-
-
-def _active_runtime_exe() -> Path:
-    if not ACTIVE_RUNTIME_FILE.exists():
-        pytest.skip(f"missing active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    active_name = ACTIVE_RUNTIME_FILE.read_text(encoding="utf-8").strip()
-    if not active_name:
-        pytest.skip(f"empty active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    exe_path = RUNTIME_DIR / active_name
-    if not exe_path.exists():
-        pytest.skip(f"active runtime missing: {exe_path}")
-    return exe_path
+from tests.runtime_harness import active_runtime_exe
 
 
 def test_describe_functions_emits_valid_catalog() -> None:
     if sys.platform != "win32":
         pytest.skip("Windows-only")
-    exe = _active_runtime_exe()
+    exe = active_runtime_exe()
 
     result = subprocess.run(
         [str(exe), "--describe-functions"],
@@ -136,7 +121,7 @@ def test_describe_functions_emits_valid_catalog() -> None:
 def test_describe_functions_json_file_output() -> None:
     if sys.platform != "win32":
         pytest.skip("Windows-only")
-    exe = _active_runtime_exe()
+    exe = active_runtime_exe()
 
     import tempfile, os
     fd, tmppath = tempfile.mkstemp(suffix=".json")
@@ -161,7 +146,7 @@ def test_describe_functions_json_file_output() -> None:
 def test_probe_with_explicit_function_id() -> None:
     if sys.platform != "win32":
         pytest.skip("Windows-only")
-    exe = _active_runtime_exe()
+    exe = active_runtime_exe()
 
     import tempfile, os
 
@@ -208,7 +193,7 @@ def test_probe_with_explicit_function_id() -> None:
 def test_probe_with_unknown_function_id_fails() -> None:
     if sys.platform != "win32":
         pytest.skip("Windows-only")
-    exe = _active_runtime_exe()
+    exe = active_runtime_exe()
 
     import tempfile, os
 
