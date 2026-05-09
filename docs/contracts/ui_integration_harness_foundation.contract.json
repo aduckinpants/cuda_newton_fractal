@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "contract_id": "ui_integration_harness_foundation",
+  "feature_id": "ui_integration_harness_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/ui_integration_harness_foundation.contract.json",
+    "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_preset_pit_of_success_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "build a real deterministic app-level UI integration harness instead of relying on helper-only greens for user-facing behavior",
+    "design the harness so it can survive merge into mainline and later exercise the IDE, Science Mode, and related DX11/ImGui surfaces",
+    "keep the harness deterministic, professional, and broadly agent-usable rather than viewer-specific",
+    "treat Slice 2 preset work as design-only until the harness becomes mandatory workflow proof"
+  ],
+  "forbidden_operator_prompts": [
+    "ship a one-off viewer-only UI test hack and call the integration problem solved",
+    "treat screenshot-only smokes or helper-only state mutation as sufficient proof for user-facing UI changes",
+    "start preset implementation before the harness is mandatory and trusted",
+    "leave the harness as chat-only intent without checked-in plan and contract surfaces"
+  ],
+  "required_defaults": {
+    "harness_is_merge_grade": "required",
+    "harness_is_deterministic": "required",
+    "workflow_enforcement_is_planned": "required",
+    "slice_2_remains_gated": "required"
+  },
+  "forbidden_defaults": {
+    "viewer_only_throwaway_harness": "forbidden",
+    "helper_only_fake_greens": "forbidden",
+    "preset_implementation_before_harness_gate": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_foundation.contract.json --out-json artifacts/validation/ui_integration_harness_foundation_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "ui_integration_harness_foundation_contract_schema_valid",
+      "description": "The UI integration harness foundation contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_integration_harness_foundation_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "ui_integration_harness_foundation_plan_sync_ok",
+      "description": "The UI integration harness foundation phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
