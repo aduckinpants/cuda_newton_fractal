@@ -165,8 +165,10 @@
         "py",
         "-3.14",
         "tools/viewer_host_runtime_pytest_lane.py",
+        "tests/test_fractal_runtime_explaino_dual.py",
         "tests/test_fractal_runtime_explaino_escape_variants.py",
-        "tests/test_fractal_runtime_explaino_sidecar_live.py"
+        "tests/test_fractal_runtime_explaino_sidecar_live.py",
+        "tests/test_fractal_runtime_shutdown.py"
       ],
       "problemMatcher": [],
       "group": "build"
@@ -223,7 +225,8 @@
       "dependsOn": [
         "verify: code quality audit",
         "verify: runtime publish",
-        "verify: runtime probe/session pytest"
+        "verify: runtime probe/session pytest",
+        "verify: runtime ui harness"
       ],
       "problemMatcher": [],
       "group": "build"
@@ -260,7 +263,8 @@
         "verify: code quality audit",
         "verify: native helper tests",
         "verify: runtime publish",
-        "verify: runtime probe/session pytest"
+        "verify: runtime probe/session pytest",
+        "verify: runtime ui harness"
       ],
       "problemMatcher": [],
       "group": "build"

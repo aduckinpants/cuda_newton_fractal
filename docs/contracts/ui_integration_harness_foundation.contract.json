@@ -39,8 +39,12 @@
     "ui_app/tests/test_ui_schema.cpp",
     "ui/fractal_binding_surface_v1.ui_schema.json",
     "tests/runtime_harness.py",
+    "tests/test_fractal_runtime_batch_cli.py",
+    "tests/test_fractal_runtime_explaino_dual.py",
     "tests/test_fractal_runtime_explaino_escape_variants.py",
     "tests/test_fractal_runtime_explaino_sidecar_live.py",
+    "tests/test_fractal_runtime_probe_cli.py",
+    "tests/test_fractal_runtime_shutdown.py",
     "tests/test_agent_workflow_tools.py",
     "tests/test_viewer_host_checkpoint_guard.py",
     "tests/test_viewer_host_recover_crash_state.py"

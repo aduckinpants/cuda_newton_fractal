@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs, the first extracted shared helper surface now lives in `tests/runtime_harness.py`, the neighboring zoom-control seam now has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
+Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs, the first extracted shared helper surface now lives in `tests/runtime_harness.py`, the runtime/checkpoint public profiles now require the named `verify: runtime ui harness` rail, the rail itself now covers dual-seed headless capture plus sidecar-live plus shutdown viewer behavior, the neighboring zoom-control seam now has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
 
 ## Phase Checklist
 
@@ -27,8 +27,9 @@ Phase 2 in progress - a checked-in loaded-state scenario driver now powers both 
 
 - Extend the new layered checkpoint hook chain with the remaining mainline hardening surfaces, especially any viewer-host-specific post-tool dirty warning or bootstrap-rail gaps that still rely on the old monolithic guard.
 - Widen the loaded-state scenario driver to additional neighboring workflows that already use the same publish/load-state/capture pattern instead of leaving them on hand-built command assembly.
-- Promote the new named `verify: runtime ui harness` task from an initial public rail into a broader profile/receipt surface once the shared scenario set is stable enough to make mandatory.
 - Keep moving neighboring published-runtime consumers onto `tests/runtime_harness.py` so the harness expansion keeps shrinking ad hoc CLI/state-bundle duplication instead of just documenting it.
+- Decide the next UI-facing runtime witness to add to `verify: runtime ui harness` without diluting the rail into generic CLI coverage.
+- Decide whether the remaining active-runtime-only runtime tests should import `tests/runtime_harness.py` directly or wait for a broader shared runtime-test support module.
 - Keep hostile-audit validation in the proof chain as the driver expands; do not let the new helper become a loophole for helper-only fake greens.
 
 ## Presumption Loop
@@ -75,6 +76,9 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: hostile closure testing exposed one more real workflow bug in the repo-approved checkpoint wrapper itself: `tools/viewer_host_checkpoint_slice.py commit` treated the implicit no-`--path` case as a scoped commit containing only `HANDOFF_LOG.md`. The wrapper now stages all changes when no paths are provided, and `tests/test_agent_workflow_tools.py -k checkpoint_slice -q` locks that regression down.
 - Done: the first extracted helper surface outside the monolithic runtime test file is now real: `tests/runtime_harness.py` owns active-runtime lookup, diagnostics capture, state-bundle writing, and loaded-state scenario execution, and both `tests/test_fractal_runtime_explaino_escape_variants.py` and `tests/test_fractal_runtime_explaino_sidecar_live.py` now consume it.
 - Done: the driver-backed subset now has an initial named public rail: `.vscode/tasks.json` exposes `verify: runtime ui harness`, `tests/test_agent_workflow_tools.py` locks that task surface, and the logged runtime-lane execution passed with `24 passed` across the two current consumer files.
+- Done: the named `verify: runtime ui harness` rail is now promoted into both `verify: profile runtime` and `verify: profile checkpoint`, so standard runtime/checkpoint closure now requires the shared UI harness rail instead of treating it as an optional side task.
+- Done: the next low-risk published-runtime consumers now reuse the shared runtime metadata lookup instead of duplicating it: `tests/test_fractal_runtime_explaino_dual.py`, `tests/test_fractal_runtime_batch_cli.py`, `tests/test_fractal_runtime_probe_cli.py`, and `tests/test_fractal_runtime_shutdown.py` now import `active_runtime_exe` from `tests/runtime_harness.py`.
+- Done: the named UI harness rail itself now covers four current viewer-facing/runtime-visible witnesses together: `tests/test_fractal_runtime_explaino_dual.py`, `tests/test_fractal_runtime_explaino_escape_variants.py`, `tests/test_fractal_runtime_explaino_sidecar_live.py`, and `tests/test_fractal_runtime_shutdown.py`, and the logged rail run passed with `26 passed`.
 
 ## Hostile Audit
 
@@ -97,6 +101,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 12 - challenged the new hook chain on the focused workflow test surface plus the adjacent crash-recovery tests so the carryover-state write/read path could not silently regress the emergency recovery story.
 - [done] Pass 13 - challenged the actual checkpoint closure path itself and repaired the wrapper bug that silently committed only `HANDOFF_LOG.md` when no explicit `--path` list was provided.
 - [done] Pass 14 - challenged whether the loaded-state scenario driver was truly ready for extraction and public reuse by forcing it through a second consumer plus a named runtime lane instead of leaving the sharing story as plan prose.
+- [done] Pass 15 - challenged whether the named UI harness rail was still optional in practice by forcing it into the runtime/checkpoint public profiles and expanding it to another user-facing viewer behavior before closure.
 
 ## Audit Findings
 
@@ -119,6 +124,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The repo-approved checkpoint wrapper still had a closure loophole of its own: omitting `--path` should have meant "commit the whole dirty slice," but the implementation always auto-populated a scoped path list with `HANDOFF_LOG.md` and therefore committed only the handoff entry. That bug is now fixed and covered.
 - [done] The second consumer was already real: `tests/test_fractal_runtime_explaino_sidecar_live.py` duplicated the same active-runtime lookup, headless Explaino baseline capture, and state-bundle setup that the monolithic escape-variants file owned, so the right extraction boundary was shared headless runtime setup, not the live-window capture code.
 - [done] `tools/viewer_host_runtime_pytest_lane.py` already had the exact extension seam needed for a public harness rail because it accepts an override list of pytest files; the missing piece was a named task that points it at the shared runtime-harness consumers instead of another new execution helper.
+- [done] Once the named rail existed and stayed green, keeping it outside `verify: profile runtime` and `verify: profile checkpoint` would have left the harness optional at the exact closure points the user wants hardened. The right promotion was to add the task as a profile dependency, not to create yet another profile or receipt ritual.
+- [done] The next safe helper reuse after the loaded-state scenario extraction was not more live-window code; it was the repeated active-runtime lookup duplicated across many runtime pytest files. Pulling that into `tests/runtime_harness.py` shrinks ad hoc runtime metadata boilerplate without conflating it with the more specialized window-capture code.
 
 ## Notes
 
@@ -142,4 +149,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Use `tests/runtime_harness.py` across more published-runtime workflows, then lift the new `verify: runtime ui harness` task into a stronger profile/receipt surface without relaxing hostile-audit or receipt enforcement.
+Keep extending `tests/runtime_harness.py` across the remaining worthwhile published-runtime consumers, and keep curating `verify: runtime ui harness` as the mandatory runtime/checkpoint UI witness rail without relaxing hostile-audit or receipt enforcement.

@@ -337,8 +337,37 @@ def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
 
     assert '"label": "verify: runtime ui harness"' in tasks_json
     assert '"artifacts/verify_runtime_ui_harness.log"' in tasks_json
+    assert '"tests/test_fractal_runtime_explaino_dual.py"' in tasks_json
     assert '"tests/test_fractal_runtime_explaino_escape_variants.py"' in tasks_json
     assert '"tests/test_fractal_runtime_explaino_sidecar_live.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_shutdown.py"' in tasks_json
+
+
+def test_runtime_profile_includes_runtime_ui_harness_task() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    runtime = state["validation_profiles"]["runtime"]
+
+    assert [step["label"] for step in runtime["steps"]] == [
+        "verify: code quality audit",
+        "verify: runtime publish",
+        "verify: runtime probe/session pytest",
+        "verify: runtime ui harness",
+    ]
+
+
+def test_checkpoint_profile_includes_runtime_ui_harness_task() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    checkpoint = state["validation_profiles"]["checkpoint"]
+
+    assert [step["label"] for step in checkpoint["steps"]] == [
+        "verify: code quality audit",
+        "verify: native helper tests",
+        "verify: runtime publish",
+        "verify: runtime probe/session pytest",
+        "verify: runtime ui harness",
+    ]
 
 
 def test_core_workflow_docs_advertise_session_start_checkpoint_flow() -> None:
