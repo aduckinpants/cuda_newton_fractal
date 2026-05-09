@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 1 in progress - add focused REDs proving the advanced editor still has no grading lane and that only legacy `contrast_lift` currently round-trips through the live owner seam after the root-basin checkpoint at `b596af6`
+Phase 1 paused - the focused grading RED is preserved, but the runtime-backed grading promotion is temporarily deferred behind the workflow-hardening stop-line required to make failures report truthfully
 
 ## Phase Checklist
 
@@ -15,8 +15,8 @@ Phase 1 in progress - add focused REDs proving the advanced editor still has no 
 
 - [done] Phase 5 - keep moving on the defined advanced-color path instead of circling on already-closed work.
 - [done] Phase 5-7 - keep the reusable color pipeline generic and separately owned instead of baking window-local exceptions into the product story.
-- [open] Phase 6 - promote Grading to a first-class category through a real runtime-backed slice, not a planning-only placeholder.
-- [open] Phase 6 - keep the bounded generic Balance/Void operator separate from fractal-family geometry work and only widen into it when the simpler grading lane truth is already proven.
+- [deferred] Phase 6 - deferred for the workflow-hardening stop-line pivot; the real runtime-backed grading-category promotion remains the required next product slice after terminal/tooling hardening closes.
+- [deferred] Phase 6 - deferred beyond the bounded grading-lane truth slice; Balance/Void stays separate from geometry work and will not widen until the simpler grading lane is proven end-to-end.
 
 ## Presumption Loop
 
@@ -39,18 +39,18 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 
 ## Hostile Audit
 
-- Status: in progress
-- Required posture: assume the first grading-lane implementation will either expose draft-only Grade rows or create a second grading authority until the repaired state proves otherwise.
+- Status: complete
+- Required posture: assume the eventual grading-lane implementation will either expose draft-only Grade rows or create a second grading authority until the resumed runtime-backed slice proves otherwise.
 
 ## Audit Passes
 
-- [open] Pass 1 - inspect the first REDs and ensure they fail because the advanced editor still has no grading lane and no bounded grading live snapshot.
-- [open] Pass 2 - inspect the landed grading-lane diff for hidden second-authority behavior between the advanced lane and the legacy Color panel.
-- [open] Pass 3 - re-read reset/default and diagnostics/archive persistence so the bounded grading lane is not just an editor-only illusion.
+- [deferred] Pass 1 - resume this when the focused grading REDs are rerun after the workflow-hardening stop-line closes.
+- [deferred] Pass 2 - resume this when a grading-lane implementation diff exists to inspect for hidden second-authority behavior between the advanced lane and the legacy Color panel.
+- [deferred] Pass 3 - resume this when reset/default and diagnostics/archive persistence work lands for the bounded grading lane.
 
 ## Audit Findings
 
-- [open] Pending the executable grading-runtime slice.
+- [done] Plan-only repair: the exploratory grading probe was restored instead of checkpointed, so this checkpoint closes only the active-plan deferral/pause repair and leaves the executable grading hostile review deferred until implementation resumes.
 
 ## Notes
 
@@ -80,4 +80,4 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 
 ## Resume Point
 
-Start with focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest grading owner tests that prove the advanced editor still lacks a grading lane and cannot yet round-trip the bounded `contrast_lift` grading surface through live import, apply, reset, and diagnostics/archive persistence.
+After the workflow-hardening stop-line closes, resume by rerunning the preserved focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest grading owner tests that prove the advanced editor still lacks a grading lane and cannot yet round-trip the bounded `contrast_lift` grading surface through live import, apply, reset, and diagnostics/archive persistence.
