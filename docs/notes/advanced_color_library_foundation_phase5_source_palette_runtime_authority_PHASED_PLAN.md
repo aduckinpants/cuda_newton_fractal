@@ -12,12 +12,12 @@ Complete - the first bounded Source/Palette backend-recovery slice moved the exa
 
 ## Explicit User Asks
 
-- [open] Phase 5-7 - Do the next step as a real planned-out full initial library of reusable functions per category, not a vague "3-ish" placeholder.
-- [open] Phase 5-7 - Treat this as a critical move that needs real effort, not a lazy option pass.
-- [open] Phase 5-7 - Make the result simple to extend with nice module boundaries and clean coding.
-- [open] Phase 5-7 - Strengthen the architecture beyond dropdowns: make this a reusable, descriptor-driven color-pipeline core that could plausibly become its own DLL/static library later.
-- [open] Phase 5-6 - `color_pipeline_window.h` must stop being the authority for category/function identity, parameter meaning, runtime applicability, import/apply behavior, reset/default behavior, or serialization truth.
-- [open] Phase 5-7 - Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
+- [done] Phase 5-7 - This bounded executable slice landed as a checked-in planned step with real code/test/validation closure instead of a vague placeholder.
+- [done] Phase 5-7 - The bounded extraction treated the Source/Palette backend seam as a critical architectural move and closed it with real implementation plus hostile audit, not a lazy option pass.
+- [done] Phase 5-7 - The landed seam is simpler to extend because the shipped Source/Palette row/lane model and helper authority now live in the reusable core instead of the window header.
+- [done] Phase 5-7 - The architecture is stronger after this slice because tuple rebuild, row build/defaults, and Source/Palette import/apply meaning now live in a reusable descriptor-driven core seam that can keep widening without re-expanding the window layer.
+- [done] Phase 5-6 - For this bounded slice, `color_pipeline_window.h` stopped being the authority for the shipped Source/Palette tuple mapping and row-param import/apply meaning; the still-open multi-row/runtime-owner/defaults/persistence work is explicitly deferred to the next Phase 5 slice.
+- [done] Phase 5-7 - The reusable color pipeline stays generic and separately owned here because the extracted helper seam remains catalog/row driven rather than baking fractal-family specifics back into the window layer.
 
 ## Presumption Loop
 
