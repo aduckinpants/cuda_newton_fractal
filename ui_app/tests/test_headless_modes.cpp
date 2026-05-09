@@ -243,13 +243,16 @@ bool TestApplyHeadlessColorPipelineProofActionsMutatesRuntimeAndDraft() {
     ASSERT(NearlyEqual(params.color_shape_stack[1].params.repeat_phase, 0.35),
         "shape phase should flow through the live Shape stack entry");
 
-    ASSERT(colorPipelineWindow.lanes.size() == 3, "draft state should remain initialized after headless apply");
+    ASSERT(colorPipelineWindow.lanes.size() == 4, "draft state should remain initialized after headless apply");
     const ColorPipelineLaneState& sourceLane = colorPipelineWindow.lanes[0];
     ASSERT(sourceLane.rows.size() == 1, "source lane should still contain one row");
     ASSERT(sourceLane.rows[0].function_id == "root_proximity", "draft source row should preserve the selected function");
     const ColorPipelineLaneState& shapeLane = colorPipelineWindow.lanes[1];
     ASSERT(shapeLane.rows.size() == 2, "shape lane should contain the added second row");
     ASSERT(shapeLane.rows[1].function_id == "mirror_repeat", "draft shape row should preserve the added function");
+    const ColorPipelineLaneState& gradingLane = colorPipelineWindow.lanes[3];
+    ASSERT(gradingLane.rows.size() == 1, "grading lane should contain the shipped contrast_lift row for escape-default tuples");
+    ASSERT(gradingLane.rows[0].function_id == "contrast_lift", "draft grading row should preserve the bounded runtime grading function");
     return true;
 }
 

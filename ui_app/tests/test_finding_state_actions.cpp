@@ -263,8 +263,8 @@ int main() {
             std::cerr << "Expected render settings from saved state\n";
             return 1;
         }
-        if (colorPipelineWindow.next_row_id != 4 || colorPipelineWindow.lanes.size() != 3) {
-            std::cerr << "Expected finding-state load to restore the captured advanced color draft lanes\n";
+        if (colorPipelineWindow.next_row_id != 5 || colorPipelineWindow.lanes.size() != 4) {
+            std::cerr << "Expected finding-state load to upgrade captured legacy advanced color drafts with the shipped Grading lane\n";
             return 1;
         }
         if (colorPipelineWindow.lanes[1].rows.size() != 1 ||
@@ -272,6 +272,15 @@ int main() {
             !DraftRowHasNumberParam(colorPipelineWindow.lanes[1].rows[0], "shape.frequency", 6.0) ||
             !DraftRowHasNumberParam(colorPipelineWindow.lanes[1].rows[0], "shape.phase", 0.2)) {
             std::cerr << "Expected finding-state load to restore the advanced color Shape draft row and params\n";
+            return 1;
+        }
+        if (colorPipelineWindow.lanes[3].lane_id != "grading" ||
+            colorPipelineWindow.lanes[3].rows.size() != 1 ||
+            colorPipelineWindow.lanes[3].rows[0].function_id != "contrast_lift" ||
+            colorPipelineWindow.lanes[3].rows[0].ui_row_id != 4 ||
+            !DraftRowHasNumberParam(colorPipelineWindow.lanes[3].rows[0], "grade.exposure", 1.0) ||
+            !DraftRowHasNumberParam(colorPipelineWindow.lanes[3].rows[0], "grade.saturation", 1.0)) {
+            std::cerr << "Expected finding-state load to seed the bounded contrast_lift grading row when upgrading a captured legacy draft\n";
             return 1;
         }
     }

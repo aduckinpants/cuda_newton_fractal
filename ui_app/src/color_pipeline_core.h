@@ -508,6 +508,9 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "root_classic_palette" ||
             functionId == "joy_root_palette";
     }
+    if (std::string(laneId) == "grading") {
+        return functionId == "contrast_lift";
+    }
     return false;
 }
 
@@ -529,6 +532,7 @@ inline const std::vector<ColorPipelineLaneCatalog>& GetColorPipelineLaneCatalogs
         {"source", "Source", "smooth_escape_ramp", FilterRuntimeBackedColorPipelineFunctions("source", BuildColorPipelineSignalFunctions())},
         {"shape", "Shape", "identity", FilterRuntimeBackedColorPipelineFunctions("shape", BuildColorPipelineShapeFunctions())},
         {"palette", "Palette", "heatmap", FilterRuntimeBackedColorPipelineFunctions("palette", BuildColorPipelinePaletteFunctions())},
+        {"grading", "Grading", "contrast_lift", FilterRuntimeBackedColorPipelineFunctions("grading", BuildColorPipelineGradeFunctions())},
     };
     return catalogs;
 }

@@ -832,11 +832,12 @@ int main() {
 
     {
         const std::vector<ColorPipelineLaneCatalog>& coreCatalogs = color_pipeline_core::GetColorPipelineLaneCatalogs();
-        if (coreCatalogs.size() != 3 ||
+        if (coreCatalogs.size() != 4 ||
             coreCatalogs[0].lane_id != std::string("source") ||
             coreCatalogs[1].lane_id != std::string("shape") ||
-            coreCatalogs[2].lane_id != std::string("palette")) {
-            std::cerr << "Expected the extracted advanced color core to own the shipped Source / Shape / Palette lane catalog\n";
+            coreCatalogs[2].lane_id != std::string("palette") ||
+            coreCatalogs[3].lane_id != std::string("grading")) {
+            std::cerr << "Expected the extracted advanced color core to own the shipped Source / Shape / Palette / Grading lane catalog\n";
             return 1;
         }
         const ColorPipelineLaneCatalog* coreSourceCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("source");
@@ -967,6 +968,22 @@ int main() {
             coreSmoothWindowDescriptor->parameters[1].path != "shape.width" ||
             coreSmoothWindowDescriptor->parameters[2].path != "shape.softness") {
             std::cerr << "Expected smooth_window to expose stable center, width, and softness parameter paths\n";
+            return 1;
+        }
+        const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
+        if (!coreGradingCatalog ||
+            coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
+            coreGradingCatalog->functions.size() != 1 ||
+            coreGradingCatalog->functions[0].id != "contrast_lift") {
+            std::cerr << "Expected the extracted advanced color core to ship a bounded Grading catalog with contrast_lift as the first runtime-real row\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
+        if (!coreContrastLiftDescriptor ||
+            coreContrastLiftDescriptor->parameters.size() != 2 ||
+            coreContrastLiftDescriptor->parameters[0].path != "grade.exposure" ||
+            coreContrastLiftDescriptor->parameters[1].path != "grade.saturation") {
+            std::cerr << "Expected contrast_lift to expose stable exposure and saturation grading parameter paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;
@@ -1128,8 +1145,8 @@ int main() {
             std::cerr << "Expected the advanced color pipeline window to initialize a fixed draft editor state\n";
             return 1;
         }
-        if (!windowState.initialized || windowState.lanes.size() != 3 || windowState.next_row_id != 4) {
-            std::cerr << "Expected the advanced color pipeline window to initialize exactly three schedule lanes with stable row ids\n";
+        if (!windowState.initialized || windowState.lanes.size() != 4 || windowState.next_row_id != 5) {
+            std::cerr << "Expected the advanced color pipeline window to initialize exactly four schedule lanes with stable row ids\n";
             return 1;
         }
         if (windowState.lanes[0].label != "Source" ||
@@ -1140,14 +1157,18 @@ int main() {
             windowState.lanes[1].rows[0].ui_row_id != 2 ||
             windowState.lanes[2].label != "Palette" ||
             windowState.lanes[2].rows.size() != 1 ||
-            windowState.lanes[2].rows[0].ui_row_id != 3) {
-            std::cerr << "Expected the advanced color pipeline draft lanes to keep deterministic Source / Shape / Palette starter rows\n";
+            windowState.lanes[2].rows[0].ui_row_id != 3 ||
+            windowState.lanes[3].label != "Grading" ||
+            windowState.lanes[3].rows.size() != 1 ||
+            windowState.lanes[3].rows[0].ui_row_id != 4) {
+            std::cerr << "Expected the advanced color pipeline draft lanes to keep deterministic Source / Shape / Palette / Grading starter rows\n";
             return 1;
         }
         if (windowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
             windowState.lanes[1].rows[0].function_id != "identity" ||
-            windowState.lanes[2].rows[0].function_id != "heatmap") {
-            std::cerr << "Expected the advanced color pipeline draft editor to start from Source / Shape / Palette starter rows instead of a fixed legacy trio\n";
+            windowState.lanes[2].rows[0].function_id != "heatmap" ||
+            windowState.lanes[3].rows[0].function_id != "contrast_lift") {
+            std::cerr << "Expected the advanced color pipeline draft editor to start from Source / Shape / Palette / Grading starter rows instead of a fixed legacy trio\n";
             return 1;
         }
 
@@ -1340,7 +1361,7 @@ int main() {
         if (!AddColorPipelineLaneRow(&windowState, 1, "offset_scale") ||
             windowState.lanes[1].rows.size() != 2 ||
             windowState.lanes[1].rows[1].function_id != "offset_scale" ||
-            windowState.lanes[1].rows[1].ui_row_id != 5) {
+            windowState.lanes[1].rows[1].ui_row_id != 6) {
             std::cerr << "Expected the schedule-style Shape lane to support appending a second shipped row with a stable row id\n";
             return 1;
         }
@@ -1702,10 +1723,16 @@ int main() {
         }
         if (!explainoSyncWindowState.live_snapshot.valid ||
             !explainoSyncWindowState.live_snapshot.draft_import_supported ||
+            explainoSyncWindowState.live_snapshot.lanes.size() != 4 ||
             explainoSyncWindowState.live_snapshot.lanes[2].rows[0].function_id != "explaino_cmap" ||
             explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values.size() != 3 ||
-            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[0].path != "palette.seed_scale") {
-            std::cerr << "Expected explaino_cmap live sync to import the dedicated Palette owner fields\n";
+            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[0].path != "palette.seed_scale" ||
+            explainoSyncWindowState.live_snapshot.lanes[3].rows.size() != 1 ||
+            explainoSyncWindowState.live_snapshot.lanes[3].rows[0].function_id != "contrast_lift" ||
+            explainoSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values.size() != 2 ||
+            explainoSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[0].path != "grade.exposure" ||
+            explainoSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[1].path != "grade.saturation") {
+            std::cerr << "Expected explaino_cmap live sync to import the dedicated Palette owner fields plus the bounded contrast_lift grading lane\n";
             return 1;
         }
 
@@ -2210,10 +2237,15 @@ int main() {
         EndFrame();
         if (!explainoRenderWindowState.live_snapshot.valid ||
             !explainoRenderWindowState.live_snapshot.draft_import_supported ||
-            explainoRenderWindowState.lanes.size() != 3 ||
+            explainoRenderWindowState.lanes.size() != 4 ||
             explainoRenderWindowState.lanes[2].rows.size() != 1 ||
             explainoRenderWindowState.lanes[2].rows[0].function_id != "explaino_cmap" ||
             explainoRenderWindowState.lanes[2].rows[0].parameter_values.size() != 3 ||
+            explainoRenderWindowState.lanes[3].rows.size() != 1 ||
+            explainoRenderWindowState.lanes[3].rows[0].function_id != "contrast_lift" ||
+            explainoRenderWindowState.lanes[3].rows[0].parameter_values.size() != 2 ||
+            !NearlyEqual(explainoRenderWindowState.lanes[3].rows[0].parameter_values[0].number_value, 1.0) ||
+            !NearlyEqual(explainoRenderWindowState.lanes[3].rows[0].parameter_values[1].number_value, 1.0) ||
             !NearlyEqual(explainoRenderWindowState.lanes[2].rows[0].parameter_values[0].number_value, 1.5) ||
             !NearlyEqual(explainoRenderWindowState.lanes[2].rows[0].parameter_values[1].number_value, 0.25) ||
             !NearlyEqual(explainoRenderWindowState.lanes[2].rows[0].parameter_values[2].number_value, 0.8) ||
@@ -2270,9 +2302,11 @@ int main() {
             params.color_pipeline.palette != ColorPalette::cyclic_escape ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             invalidLiveRenderState.live_snapshot.valid ||
-            invalidLiveRenderState.lanes.size() != 3 ||
+            invalidLiveRenderState.lanes.size() != 4 ||
             invalidLiveRenderState.lanes[0].rows.size() != 1 ||
-            invalidLiveRenderState.lanes[0].rows[0].function_id != "smooth_escape_ramp") {
+            invalidLiveRenderState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            invalidLiveRenderState.lanes[3].rows.size() != 1 ||
+            invalidLiveRenderState.lanes[3].rows[0].function_id != "contrast_lift") {
             std::cerr << "Expected opening the advanced color pipeline window on an invalid live state to preserve the runtime until the user edits the draft\n";
             return 1;
         }

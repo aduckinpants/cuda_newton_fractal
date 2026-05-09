@@ -916,7 +916,32 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
     std::uint64_t nextRowId = 0;
     if (!ParsePositiveUInt64Field(*draftObject, "next_row_id", &nextRowId, outError)) return false;
     if (!GetRequiredArray(*draftObject, "lanes", &lanesValue, outError)) return false;
+    bool allowLegacyMissingGradingLane = false;
     if (lanesValue->as_array().size() != catalogs.size()) {
+        if (lanesValue->as_array().size() + 1 == catalogs.size()) {
+            bool sawGradingLane = false;
+            bool onlyKnownLanes = true;
+            for (const json_min::Value& laneValue : lanesValue->as_array()) {
+                if (!laneValue.is_object()) {
+                    onlyKnownLanes = false;
+                    break;
+                }
+                std::string laneId;
+                if (!GetRequiredString(laneValue, "lane_id", &laneId, outError)) return false;
+                if (laneId == "grading") {
+                    sawGradingLane = true;
+                }
+                std::size_t catalogIndex = 0;
+                if (!FindColorPipelineLaneCatalogIndex(laneId, &catalogIndex)) {
+                    onlyKnownLanes = false;
+                    break;
+                }
+            }
+            allowLegacyMissingGradingLane = onlyKnownLanes && !sawGradingLane &&
+                FindColorPipelineLaneCatalog("grading") != nullptr;
+        }
+    }
+    if (lanesValue->as_array().size() != catalogs.size() && !allowLegacyMissingGradingLane) {
         if (outError) *outError = "color_pipeline_draft must contain exactly the shipped programmable lanes";
         return false;
     }
@@ -965,6 +990,23 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
 
     for (std::size_t index = 0; index < seenLanes.size(); ++index) {
         if (!seenLanes[index]) {
+            if (allowLegacyMissingGradingLane && catalogs[index].lane_id == std::string("grading")) {
+                const std::uint64_t insertedRowId = parsedState.next_row_id;
+                ColorPipelineLaneState lane;
+                if (!BuildColorPipelineLaneWithSingleRow(
+                        catalogs[index],
+                        catalogs[index].default_function_id,
+                        insertedRowId,
+                        &lane,
+                        outError)) {
+                    return false;
+                }
+                parsedState.lanes[index] = std::move(lane);
+                seenLanes[index] = true;
+                maxRowId = insertedRowId;
+                parsedState.next_row_id = insertedRowId + 1;
+                continue;
+            }
             if (outError) *outError = "Missing color_pipeline_draft lane id: " + std::string(catalogs[index].lane_id);
             return false;
         }

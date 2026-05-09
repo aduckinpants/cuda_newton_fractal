@@ -2790,8 +2790,8 @@ int main() {
             std::cerr << "V3 advanced color draft load failed: " << error << "\n";
             return 1;
         }
-        if (draft.next_row_id != 4 || draft.lanes.size() != 3) {
-            std::cerr << "Expected advanced color draft load to restore all three programmable lanes and next_row_id\n";
+        if (draft.next_row_id != 5 || draft.lanes.size() != 4) {
+          std::cerr << "Expected advanced color draft load to upgrade legacy three-lane drafts with the shipped Grading lane and next_row_id\n";
             return 1;
         }
         if (draft.lanes[1].rows.size() != 1 ||
@@ -2800,6 +2800,15 @@ int main() {
             !DraftRowHasNumberParam(draft.lanes[1].rows[0], "shape.phase", 0.2)) {
             std::cerr << "Expected advanced color draft load to restore the programmable Shape repeat row and its params\n";
             return 1;
+        }
+        if (draft.lanes[3].lane_id != "grading" ||
+          draft.lanes[3].rows.size() != 1 ||
+          draft.lanes[3].rows[0].function_id != "contrast_lift" ||
+          draft.lanes[3].rows[0].ui_row_id != 4 ||
+          !DraftRowHasNumberParam(draft.lanes[3].rows[0], "grade.exposure", 1.0) ||
+          !DraftRowHasNumberParam(draft.lanes[3].rows[0], "grade.saturation", 1.0)) {
+          std::cerr << "Expected advanced color draft load to seed the bounded contrast_lift grading row when upgrading a legacy three-lane draft\n";
+          return 1;
         }
     }
 

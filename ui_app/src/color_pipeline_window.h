@@ -539,10 +539,31 @@ inline bool TryBuildColorPipelineLiveSnapshot(
         return false;
     }
 
+    ColorPipelineLaneState gradingLane;
+    bool hasGradingLane = false;
+    const char* gradingFunctionId = AdvancedColorGradingFunctionId(liveParams.color_pipeline.grading);
+    if (gradingFunctionId && gradingFunctionId[0] != '\0') {
+        const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog("grading");
+        if (!gradingCatalog) {
+            if (outError) *outError = "Missing advanced color Grading lane catalog";
+            return false;
+        }
+        if (FindColorPipelineFunctionDescriptor(*gradingCatalog, gradingFunctionId)) {
+            if (!BuildColorPipelineLaneWithSingleRow(*gradingCatalog, gradingFunctionId, 0, &gradingLane, outError) ||
+                !ImportSupportedColorPipelineParamsFromLive(&gradingLane.rows.front(), liveParams, outError)) {
+                return false;
+            }
+            hasGradingLane = true;
+        }
+    }
+
     snapshot.draft_import_supported = sourcePaletteDraftImportSupported && shapeDraftImportSupported;
     snapshot.lanes.push_back(std::move(sourceLane));
     snapshot.lanes.push_back(std::move(shapeLane));
     snapshot.lanes.push_back(std::move(paletteLane));
+    if (hasGradingLane) {
+        snapshot.lanes.push_back(std::move(gradingLane));
+    }
     *outSnapshot = std::move(snapshot);
     return true;
 }
@@ -1876,6 +1897,10 @@ inline bool ApplyColorPipelineDraftToLiveState(
     ioParams->coloring_mode = nextMode;
     ioParams->color_pipeline = nextPipeline;
     if (!SyncColorPipelineWindowFromLiveState(ioState, liveFractalType, ioParams)) {
+        return false;
+    }
+    if (ioState->live_snapshot.draft_import_supported &&
+        !ResetColorPipelineDraftFromLiveState(ioState)) {
         return false;
     }
     if (outChanged) {

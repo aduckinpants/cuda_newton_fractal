@@ -19,6 +19,8 @@
     "ui_app/tests/test_diagnostics_state_io.cpp",
     "ui_app/tests/test_escape_time_coloring.cpp",
     "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_finding_state_actions.cpp",
+    "ui_app/tests/test_headless_modes.cpp",
     "ui_app/tests/test_runtime_reset.cpp",
     "ui_app/tests/test_schema_binding.cpp",
     "HANDOFF_LOG.md"
