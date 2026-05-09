@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 1 in progress - define the merge-grade harness contract, scenario model, and first truthful RED targets before any one-off viewer test code lands
+Phase 1 in progress - the first truthful published-runtime advanced-color draft interaction seam is landed; next work should broaden the scenario vocabulary and lift this proof style into a reusable mandatory harness rail
 
 ## Phase Checklist
 
@@ -37,7 +37,11 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: this checked-in Slice 1 phased plan now captures the merge-to-mainline requirement explicitly so the harness is designed as shared infrastructure instead of a viewer-only patch.
 - Done: the bootstrap contract for this slice now reserves the planning surface needed to start the harness on approved repo rails instead of leaving it as chat-only intent.
 - Done: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_foundation.contract.json --out-json artifacts/validation/ui_integration_harness_foundation_contract.json` and `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` both passed for this planning bootstrap slice.
-- Planned: add the first harness-facing RED that proves the advanced-color support-change UX defect through the real app/runtime path.
+- Done: discovery confirmed the published runtime already supports `--load-state-json` plus `--capture-diagnostic`, while no checked-in headless verb currently scripts an advanced-color draft function change through the same draft/apply helpers the UI uses.
+- Done: the first harness-facing RED/GREEN now proves an advanced-color draft function switch through the published runtime path via `--color-pipeline-select-function <lane>:<row>:<function>`.
+- Done: CLI startup now preserves loaded `color_pipeline_draft` state for headless runtime proof and headless diagnostic/finding capture now serializes that draft back out.
+- Done: hostile audit found and repaired one real defect in the new seam: CLI fractal overrides could invalidate live params while leaving the preserved draft stale; startup now resynchronizes the draft when those overrides change the loaded family path.
+- Planned: broaden the interaction vocabulary beyond a single function-switch verb and start extracting a reusable scenario layer from this first vertical seam.
 
 ## Hostile Audit
 
@@ -46,13 +50,16 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Audit Passes
 
-- [done] Pass 1 - challenged the initial harness shape for any hidden dependence on helper-only state mutation, screenshot-only proof, or per-feature special cases.
-- [done] Pass 2 - challenged the workflow plan for any path that would still allow user-facing UI slices to close without the harness receipt.
-- [done] Pass 3 - challenged the reuse story for any assumption that only works in this repo but would break once merged into the IDE/mainline host.
+- [done] Pass 1 - challenged the first headless interaction seam for any path that still bypasses the real draft/apply controller used by the advanced-color UI.
+- [done] Pass 2 - challenged the first runtime RED for any path that only proves state-file mutation rather than a real checked-in interaction seam.
+- [done] Pass 3 - challenged the first harness helper for any viewer-only assumption that would block reuse in the IDE, Science Mode, or merged mainline host.
 
 ## Audit Findings
 
-- [done] No additional planning-scope defect was found after re-reading the harness bootstrap docs for viewer-only drift, fake-proof loopholes, or premature preset-scope expansion.
+- [done] The published runtime already has deterministic load-state plus diagnostics-capture proof rails.
+- [done] The missing local seam is a checked-in way to script an advanced-color draft function change through the same draft/apply helpers the UI uses; manual JSON param edits alone are not sufficient harness proof for this slice.
+- [done] The CLI startup path currently restores loaded view/params/render plus sidecar state, but it drops the saved `color_pipeline_draft` window state that the interactive load-state path preserves. The first headless advanced-color proof must carry that draft state through startup before it can mutate it honestly.
+- [done] After preserving the loaded draft, CLI fractal overrides still left that draft stale even when the live runtime selection had been resynchronized away from a disallowed family-gated tuple. Added a focused published-runtime regression and fixed startup to resynchronize the preserved draft whenever those overrides change the loaded family path.
 
 ## Notes
 
@@ -76,4 +83,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Start with the smallest real-host RED for the advanced-color support-change UX failure, using the existing runtime publish plus diagnostics state/capture seams to prove state and frame outcomes through the actual app/runtime path.
+Extend the first vertical seam into a reusable scenario layer: add more than one advanced-color interaction verb, centralize the scenario encoding instead of using ad hoc CLI fields, and start wiring the resulting proof style into a mandatory validation rail that future UI slices must satisfy.

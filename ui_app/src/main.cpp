@@ -445,6 +445,7 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
 static int RunHeadlessDiagnosticCapture(
     const std::string& exeDir, const ViewState& view,
     const KernelParams& params, const RenderSettings& render,
+    const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy) {
@@ -458,7 +459,7 @@ static int RunHeadlessDiagnosticCapture(
     std::string captureError;
     DiagnosticsCaptureResult captureResult;
     if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, &captureResult, &captureError)) {
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)) {
         return 1;
     }
     return 0;
@@ -467,6 +468,7 @@ static int RunHeadlessDiagnosticCapture(
 static int RunHeadlessFindingCapture(
     const std::string& exeDir, const ViewerCliArgs& cli,
     const ViewState& view, const KernelParams& params, const RenderSettings& render,
+    const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy) {
@@ -486,7 +488,7 @@ static int RunHeadlessFindingCapture(
     const std::string findingGroup = cli.have_finding_group ? cli.finding_group : "manual_capture";
     const std::string findingWhy = cli.have_finding_why ? cli.finding_why : "Headless finding capture.";
     if (!CaptureAndArchiveFindingBundle(exeDir, view, params, findingRender, headlessStats,
-            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory,
+            headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow,
             findingGroup, findingWhy, &findingDir, &findingError)) {
         WriteHeadlessErrorFile(exeDir, "capture_finding_error.txt",
             findingError.empty() ? "CaptureAndArchiveFindingBundle failed during headless finding capture." : findingError);
@@ -1107,8 +1109,10 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
+    const bool colorPipelineHeadlessProof = cli.have_color_pipeline_select_function;
     if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
+    if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
     if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend)) return false;
@@ -1118,6 +1122,7 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
 
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
                                     ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens, bool& dirty,
+                                    ColorPipelineWindowState& colorPipelineWindow,
                                     const EngineFunctionCatalog& engineCatalog,
                                     BindingContext& bind,
                                     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
@@ -1140,6 +1145,13 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     }
     if (cli.have_sidecar_pump_paced_loop_seconds) {
         sidecarHeadlessProofConfig.pump_paced_loop_seconds = cli.sidecar_pump_paced_loop_seconds;
+    }
+    ColorPipelineHeadlessProofConfig colorPipelineHeadlessProofConfig;
+    if (cli.have_color_pipeline_select_function) {
+        colorPipelineHeadlessProofConfig.have_select_function = true;
+        colorPipelineHeadlessProofConfig.lane_id = cli.color_pipeline_select_lane_id;
+        colorPipelineHeadlessProofConfig.row_index = cli.color_pipeline_select_row_index;
+        colorPipelineHeadlessProofConfig.function_id = cli.color_pipeline_select_function_id;
     }
 
     if (exploreRecommend) {
@@ -1190,6 +1202,21 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     }
 
     if (cli.capture_diagnostic_only || cli.capture_finding_only) {
+        if (HasColorPipelineHeadlessProofActions(colorPipelineHeadlessProofConfig)) {
+            bool colorPipelineChanged = false;
+            std::string colorPipelineError;
+            if (!ApplyHeadlessColorPipelineProofActions(
+                    colorPipelineHeadlessProofConfig,
+                    view,
+                    params,
+                    &colorPipelineWindow,
+                    &colorPipelineChanged,
+                    &colorPipelineError)) {
+                std::fprintf(stderr, "%s\n", colorPipelineError.c_str());
+                return 1;
+            }
+            dirty = dirty || colorPipelineChanged;
+        }
         if (IsExplainoFamily(view.fractal_type)) {
             UpdateExplainoPolynomial(view, params, &dirty);
         }
@@ -1243,8 +1270,8 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     const SidecarAutoDemoMutationHistory* mutationHistory =
         sidecarMutationHistoryValid ? &sidecarMutationHistory : nullptr;
     if (cli.validate_ui_only) return 0;
-    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
-    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_diagnostic_only) return RunHeadlessDiagnosticCapture(exeDir, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
+    if (cli.capture_finding_only) return RunHeadlessFindingCapture(exeDir, cli, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy);
     return -1;
 }
 
@@ -1330,6 +1357,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
                                              const std::vector<std::string>& schemaCandidates,
                                              ViewState& view, KernelParams& params,
                                              RenderSettings& render, LensSettings& lens,
+                                             ColorPipelineWindowState& colorPipelineWindow,
                                              SidecarAutoDemoControllerPolicy& sidecarControllerPolicy,
                                              SidecarOrientationVector& loadedOrientationBaseline,
                                              bool& loadedOrientationBaselineValid,
@@ -1368,6 +1396,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         &loadedOrientationBaselineValid,
         &sidecarMutationHistory,
         &sidecarMutationHistoryValid,
+        &colorPipelineWindow,
         &currentLoadedStatePath,
         &dirty);
 }
@@ -2467,12 +2496,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sidecarBudgetStateValid = false;
     SidecarOrientationVector loadedOrientationBaseline{};
     bool loadedOrientationBaselineValid = false;
-    SidecarAutoDemoMutationHistory sidecarMutationHistory;
-    bool sidecarMutationHistoryValid = false;
-    std::string currentLoadedStatePath;
-    FractalType currentLoadedStateFractalType = FractalType::newton;
+    SidecarAutoDemoMutationHistory sidecarMutationHistory; bool sidecarMutationHistoryValid = false;
+    std::string currentLoadedStatePath; FractalType currentLoadedStateFractalType = FractalType::newton;
+    ColorPipelineWindowState colorPipelineWindow{};
 
-        { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens,
+        { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens, colorPipelineWindow,
             sidecarControllerPolicy,
           loadedOrientationBaseline, loadedOrientationBaselineValid,
           sidecarMutationHistory, sidecarMutationHistoryValid,
@@ -2486,6 +2514,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
     { int headless = TryDispatchHeadlessMode(cli, exeDir, view, params, render, lens, dirty,
+        colorPipelineWindow,
           engineCatalog, bind, sidecarControllerPolicy, sidecarMeasurementHost,
             loadedOrientationBaseline, loadedOrientationBaselineValid,
             sidecarMutationHistory, sidecarMutationHistoryValid,
@@ -2513,7 +2542,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     bool sweepPaused = false;
     bool sweepSingleStep = false;
     float seedScrubAccel = 0.0f; // acceleration state for arrow-key seed scrubbing
-    RuntimeWalkViewerSession runtimeWalkViewerSession{}; ColorPipelineWindowState colorPipelineWindow{};
+    RuntimeWalkViewerSession runtimeWalkViewerSession{};
     RuntimeWalkViewerImportPanelState runtimeWalkImportPanel{};
     RuntimeWalkViewerPlaybackState runtimeWalkPlayback{};
     RuntimeWalkOverlayProviderConfig runtimeWalkOverlayConfig{};

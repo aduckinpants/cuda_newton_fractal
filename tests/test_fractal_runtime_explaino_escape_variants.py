@@ -225,6 +225,168 @@ def _with_explaino_escape_magnitude_color_state(
     return configured_state
 
 
+def _with_explaino_repeat_heatmap_draft_state(state: dict[str, object]) -> dict[str, object]:
+    configured_state = _with_explaino_programmable_color_state(
+        state,
+        palette="cyclic_escape",
+        color_shape="repeat",
+        color_smooth_escape_scale=1.25,
+        color_smooth_escape_bias=0.1,
+        color_shape_repeat_frequency=4.0,
+        color_shape_repeat_phase=0.2,
+        color_heatmap_cycle_scale=0.5,
+        color_heatmap_saturation=1.25,
+    )
+    configured_state["color_pipeline_draft"] = {
+        "next_row_id": 14,
+        "lanes": [
+            {
+                "lane_id": "source",
+                "label": "Source",
+                "rows": [
+                    {
+                        "ui_row_id": 11,
+                        "enabled": True,
+                        "function_id": "smooth_escape_ramp",
+                        "parameter_values": [
+                            {"path": "signal.scale", "type": "float", "number_value": 1.25},
+                            {"path": "signal.bias", "type": "float", "number_value": 0.1},
+                        ],
+                    }
+                ],
+            },
+            {
+                "lane_id": "shape",
+                "label": "Shape",
+                "rows": [
+                    {
+                        "ui_row_id": 12,
+                        "enabled": True,
+                        "function_id": "repeat",
+                        "parameter_values": [
+                            {"path": "shape.frequency", "type": "float", "number_value": 4.0},
+                            {"path": "shape.phase", "type": "float", "number_value": 0.2},
+                        ],
+                    }
+                ],
+            },
+            {
+                "lane_id": "palette",
+                "label": "Palette",
+                "rows": [
+                    {
+                        "ui_row_id": 13,
+                        "enabled": True,
+                        "function_id": "heatmap",
+                        "parameter_values": [
+                            {"path": "palette.cycle_scale", "type": "float", "number_value": 0.5},
+                            {"path": "palette.saturation", "type": "float", "number_value": 1.25},
+                        ],
+                    }
+                ],
+            },
+        ],
+    }
+    return configured_state
+
+
+def _with_explaino_root_proximity_repeat_heatmap_draft_state(state: dict[str, object]) -> dict[str, object]:
+    configured_state = _with_explaino_root_proximity_color_state(
+        state,
+        palette="cyclic_escape",
+        color_shape="repeat",
+        color_root_proximity_scale=0.75,
+        color_root_proximity_bias=0.15,
+        color_shape_repeat_frequency=4.0,
+        color_shape_repeat_phase=0.2,
+        color_heatmap_cycle_scale=0.5,
+        color_heatmap_saturation=1.25,
+    )
+    configured_state["color_pipeline_draft"] = {
+        "next_row_id": 24,
+        "lanes": [
+            {
+                "lane_id": "source",
+                "label": "Source",
+                "rows": [
+                    {
+                        "ui_row_id": 21,
+                        "enabled": True,
+                        "function_id": "root_proximity",
+                        "parameter_values": [
+                            {"path": "signal.proximity_scale", "type": "float", "number_value": 0.75},
+                            {"path": "signal.proximity_bias", "type": "float", "number_value": 0.15},
+                        ],
+                    }
+                ],
+            },
+            {
+                "lane_id": "shape",
+                "label": "Shape",
+                "rows": [
+                    {
+                        "ui_row_id": 22,
+                        "enabled": True,
+                        "function_id": "repeat",
+                        "parameter_values": [
+                            {"path": "shape.frequency", "type": "float", "number_value": 4.0},
+                            {"path": "shape.phase", "type": "float", "number_value": 0.2},
+                        ],
+                    }
+                ],
+            },
+            {
+                "lane_id": "palette",
+                "label": "Palette",
+                "rows": [
+                    {
+                        "ui_row_id": 23,
+                        "enabled": True,
+                        "function_id": "heatmap",
+                        "parameter_values": [
+                            {"path": "palette.cycle_scale", "type": "float", "number_value": 0.5},
+                            {"path": "palette.saturation", "type": "float", "number_value": 1.25},
+                        ],
+                    }
+                ],
+            },
+        ],
+    }
+    return configured_state
+
+
+def _color_pipeline_first_row(state: dict[str, object], lane_id: str) -> dict[str, object]:
+    draft = state.get("color_pipeline_draft")
+    assert isinstance(draft, dict), "expected captured state to include color_pipeline_draft"
+    lanes = draft.get("lanes")
+    assert isinstance(lanes, list), "expected color_pipeline_draft.lanes to be a list"
+    for lane in lanes:
+        if not isinstance(lane, dict):
+            continue
+        if lane.get("lane_id") != lane_id:
+            continue
+        rows = lane.get("rows")
+        assert isinstance(rows, list) and rows, f"expected lane {lane_id} to include at least one row"
+        row = rows[0]
+        assert isinstance(row, dict), f"expected lane {lane_id} row to be an object"
+        return row
+    raise AssertionError(f"missing color pipeline lane: {lane_id}")
+
+
+def _color_pipeline_number_param(row: dict[str, object], path: str) -> float:
+    parameter_values = row.get("parameter_values")
+    assert isinstance(parameter_values, list), "expected parameter_values to be a list"
+    for param in parameter_values:
+        if not isinstance(param, dict):
+            continue
+        if param.get("path") != path:
+            continue
+        value = param.get("number_value")
+        assert isinstance(value, (int, float)), f"expected numeric value for {path}"
+        return float(value)
+    raise AssertionError(f"missing color pipeline param: {path}")
+
+
 def _with_view_camera(state: dict[str, object], *, center_x: float, center_y: float, zoom: float) -> dict[str, object]:
     configured_state = json.loads(json.dumps(state))
     view = configured_state["view"]
@@ -590,6 +752,115 @@ def test_explaino_root_proximity_programmable_color_pipeline_changes_published_r
     )
     assert proximity_shifted_capture["frame_hash"] != proximity_baseline_capture["frame_hash"], (
         "expected Explaino root_proximity scale to change the published runtime frame hash"
+    )
+
+
+def test_explaino_headless_color_pipeline_function_switch_changes_draft_state_and_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advanced-color runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
+    draft_state_path = _write_state_bundle(tmp_path / "headless_color_pipeline_switch", draft_state)
+
+    baseline_draft_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(draft_state_path),
+        "--capture-diagnostic",
+    )
+
+    switched_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(draft_state_path),
+        "--color-pipeline-select-function",
+        "source:0:root_proximity",
+        "--capture-diagnostic",
+    )
+
+    switched_params = switched_capture["state"]["params"]
+    assert isinstance(switched_params, dict)
+    assert switched_params["color_signal"] == "root_proximity"
+    assert switched_params["color_palette"] == "cyclic_escape"
+    assert switched_params["color_shape"] == "repeat"
+    assert switched_params["color_shape_repeat_frequency"] == pytest.approx(4.0, abs=1e-6)
+    assert switched_params["color_shape_repeat_phase"] == pytest.approx(0.2, abs=1e-6)
+    assert switched_params["color_heatmap_cycle_scale"] == pytest.approx(0.5, abs=1e-6)
+    assert switched_params["color_heatmap_saturation"] == pytest.approx(1.25, abs=1e-6)
+
+    switched_draft = switched_capture["state"].get("color_pipeline_draft")
+    assert isinstance(switched_draft, dict)
+    assert switched_draft["next_row_id"] == 14
+
+    switched_source_row = _color_pipeline_first_row(switched_capture["state"], "source")
+    assert switched_source_row["ui_row_id"] == 11
+    assert switched_source_row["function_id"] == "root_proximity"
+
+    switched_shape_row = _color_pipeline_first_row(switched_capture["state"], "shape")
+    assert switched_shape_row["ui_row_id"] == 12
+    assert switched_shape_row["function_id"] == "repeat"
+    assert _color_pipeline_number_param(switched_shape_row, "shape.frequency") == pytest.approx(4.0, abs=1e-6)
+    assert _color_pipeline_number_param(switched_shape_row, "shape.phase") == pytest.approx(0.2, abs=1e-6)
+
+    switched_palette_row = _color_pipeline_first_row(switched_capture["state"], "palette")
+    assert switched_palette_row["ui_row_id"] == 13
+    assert switched_palette_row["function_id"] == "heatmap"
+    assert _color_pipeline_number_param(switched_palette_row, "palette.cycle_scale") == pytest.approx(0.5, abs=1e-6)
+    assert _color_pipeline_number_param(switched_palette_row, "palette.saturation") == pytest.approx(1.25, abs=1e-6)
+
+    assert switched_capture["frame_hash"] != baseline_draft_capture["frame_hash"], (
+        "expected a headless advanced-color function switch to change the published runtime frame while preserving the loaded repeat/heatmap draft rows"
+    )
+
+
+def test_loaded_color_pipeline_draft_resyncs_when_cli_fractal_override_invalidates_it(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advanced-color runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    draft_state = _with_explaino_root_proximity_repeat_heatmap_draft_state(baseline_capture["state"])
+    draft_state_path = _write_state_bundle(tmp_path / "override_invalidated_color_pipeline_draft", draft_state)
+
+    override_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(draft_state_path),
+        "--fractal-type",
+        "mandelbrot",
+        "--capture-diagnostic",
+    )
+
+    assert override_capture["state"]["fractal_type"] == "mandelbrot"
+    override_params = override_capture["state"]["params"]
+    assert isinstance(override_params, dict)
+    assert override_params["color_signal"] != "root_proximity"
+
+    override_source_row = _color_pipeline_first_row(override_capture["state"], "source")
+    assert override_source_row["function_id"] != "root_proximity", (
+        "expected CLI fractal overrides that invalidate a saved advanced-color draft to resynchronize the captured draft away from disallowed root_proximity"
     )
 
 

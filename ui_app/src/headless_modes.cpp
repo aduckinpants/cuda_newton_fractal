@@ -11,6 +11,9 @@
 #include <limits>
 #include <sstream>
 
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "explaino_sidecar_controller.h"
 #include "explaino_exploration_advisor.h"
 #include "explaino_sidecar_measurement.h"
@@ -25,6 +28,38 @@
 #include "viewer_schema_load.h"
 
 namespace {
+
+std::string DescribeColorPipelineHeadlessError(
+    const ColorPipelineWindowState& state,
+    const char* fallback) {
+    if (!state.validation_messages.empty()) {
+        std::ostringstream out;
+        for (std::size_t index = 0; index < state.validation_messages.size(); ++index) {
+            if (index > 0) {
+                out << "; ";
+            }
+            out << state.validation_messages[index];
+        }
+        return out.str();
+    }
+    return fallback ? std::string(fallback) : std::string();
+}
+
+bool FindColorPipelineLaneIndex(
+    const ColorPipelineWindowState& state,
+    const std::string& laneId,
+    std::size_t* outLaneIndex) {
+    if (!outLaneIndex) {
+        return false;
+    }
+    for (std::size_t index = 0; index < state.lanes.size(); ++index) {
+        if (state.lanes[index].lane_id == laneId) {
+            *outLaneIndex = index;
+            return true;
+        }
+    }
+    return false;
+}
 
 void PrepareHeadlessSidecarState(ViewState& view, KernelParams& params) {
     if (IsExplainoFamily(view.fractal_type)) {
@@ -284,6 +319,81 @@ bool PumpHeadlessPacedLoop(
 }
 
 } // namespace
+
+bool HasColorPipelineHeadlessProofActions(const ColorPipelineHeadlessProofConfig& config) {
+    return config.have_select_function;
+}
+
+bool ApplyHeadlessColorPipelineProofActions(
+    const ColorPipelineHeadlessProofConfig& config,
+    ViewState& view,
+    KernelParams& params,
+    ColorPipelineWindowState* ioColorPipelineWindow,
+    bool* outChanged,
+    std::string* outError) {
+    if (outChanged) {
+        *outChanged = false;
+    }
+    if (outError) {
+        outError->clear();
+    }
+    if (!HasColorPipelineHeadlessProofActions(config)) {
+        return true;
+    }
+    if (!ioColorPipelineWindow) {
+        if (outError) *outError = "advanced-color headless proof requires a draft window state";
+        return false;
+    }
+
+    ClearColorPipelineValidationMessages(ioColorPipelineWindow);
+    if (!SyncColorPipelineWindowFromLiveState(ioColorPipelineWindow, view.fractal_type, &params)) {
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(
+                *ioColorPipelineWindow,
+                "failed to sync advanced-color draft from the live runtime state");
+        }
+        return false;
+    }
+
+    std::size_t laneIndex = 0;
+    if (!FindColorPipelineLaneIndex(*ioColorPipelineWindow, config.lane_id, &laneIndex)) {
+        if (outError) *outError = "unknown advanced-color lane id: " + config.lane_id;
+        return false;
+    }
+    const ColorPipelineLaneState& lane = ioColorPipelineWindow->lanes[laneIndex];
+    if (config.row_index < 0 || static_cast<std::size_t>(config.row_index) >= lane.rows.size()) {
+        if (outError) *outError = "advanced-color row index out of range for lane: " + config.lane_id;
+        return false;
+    }
+
+    if (!SelectColorPipelineRowFunction(
+            ioColorPipelineWindow,
+            laneIndex,
+            static_cast<std::size_t>(config.row_index),
+            config.function_id.c_str())) {
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(
+                *ioColorPipelineWindow,
+                "failed to select advanced-color function in headless proof mode");
+        }
+        return false;
+    }
+
+    bool changed = false;
+    if (!ApplyColorPipelineDraftToLiveState(ioColorPipelineWindow, view.fractal_type, &params, &changed)) {
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(
+                *ioColorPipelineWindow,
+                "failed to apply advanced-color draft in headless proof mode");
+        }
+        return false;
+    }
+
+    if (outChanged) {
+        *outChanged = changed;
+    }
+    return true;
+}
 
 bool ReplayLoadedSidecarMutationHistory(
     int replayMutationHistoryCount,

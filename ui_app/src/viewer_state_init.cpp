@@ -1,5 +1,8 @@
 #include "viewer_state_init.h"
 
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "explaino_seed.h"
 #include "explaino_seed_dynamics.h"
 #include "finding_state_actions.h"
@@ -24,6 +27,12 @@ bool CliOverridesLoadedStateSnapshot(const ViewerCliArgs& cli) {
         cli.sweep_config.enabled;
 }
 
+    bool CliOverridesLoadedColorPipelineDraft(const ViewerCliArgs& cli) {
+        return cli.have_fractal_type ||
+        cli.have_explaino_seed ||
+        cli.sweep_config.enabled;
+    }
+
 } // namespace
 
 int ApplyCliOverrides(const ViewerCliArgs& cli,
@@ -34,12 +43,14 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                       bool* outHasLoadedOrientation,
                       SidecarAutoDemoMutationHistory* outLoadedMutationHistory,
                       bool* outHasLoadedMutationHistory,
+                      ColorPipelineWindowState* ioColorPipelineWindow,
                       std::string* outResolvedLoadedStatePath,
                       bool* dirty) {
     if (outLoadedOrientation) *outLoadedOrientation = {};
     if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
     if (outLoadedMutationHistory) outLoadedMutationHistory->clear();
     if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = false;
+    if (ioColorPipelineWindow) *ioColorPipelineWindow = {};
     if (outResolvedLoadedStatePath) outResolvedLoadedStatePath->clear();
 
     bool loadedState = false;
@@ -53,6 +64,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         bool hasLoadedControllerPolicy = false;
         SidecarAutoDemoMutationHistory loadedMutationHistory;
         bool hasLoadedMutationHistory = false;
+        ColorPipelineWindowState loadedColorPipelineWindow;
         if (!LoadFindingSelectionIntoRuntime(
                 cli.load_state_json,
                 &view,
@@ -62,8 +74,9 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                 &hasLoadedOrientation,
                 &loadedControllerPolicy,
                 &hasLoadedControllerPolicy,
-            &loadedMutationHistory,
-            &hasLoadedMutationHistory,
+                &loadedMutationHistory,
+                &hasLoadedMutationHistory,
+                &loadedColorPipelineWindow,
                 &loadedStatePath,
                 &loadError)) {
             return 1;
@@ -77,6 +90,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         if (outHasLoadedOrientation) *outHasLoadedOrientation = hasLoadedOrientation;
         if (outLoadedMutationHistory) *outLoadedMutationHistory = loadedMutationHistory;
         if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = hasLoadedMutationHistory;
+        if (ioColorPipelineWindow) *ioColorPipelineWindow = std::move(loadedColorPipelineWindow);
         if (dirty) *dirty = true;
     }
 
@@ -124,6 +138,12 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         UpdateExplainoPolynomial(view, params, dirty);
     }
 
+    if (loadedState && ioColorPipelineWindow && CliOverridesLoadedColorPipelineDraft(cli)) {
+        if (!SyncColorPipelineWindowFromLiveState(ioColorPipelineWindow, view.fractal_type, &params)) {
+            return 1;
+        }
+    }
+
     if (loadedState && CliOverridesLoadedStateSnapshot(cli)) {
         if (outLoadedOrientation) *outLoadedOrientation = {};
         if (outHasLoadedOrientation) *outHasLoadedOrientation = false;
@@ -137,5 +157,5 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render, bool* dirty) {
-    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
+    return ApplyCliOverrides(cli, view, params, render, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, dirty);
 }

@@ -104,6 +104,12 @@ struct ViewerCliArgs {
     bool have_load_state_json = false;
     std::string load_state_json;
 
+    // Headless advanced-color proof overrides
+    bool have_color_pipeline_select_function = false;
+    std::string color_pipeline_select_lane_id;
+    int color_pipeline_select_row_index = 0;
+    std::string color_pipeline_select_function_id;
+
     // Headless sidecar proof overrides
     bool have_sidecar_apply_armed_step_count = false;
     int sidecar_apply_armed_step_count = 0;

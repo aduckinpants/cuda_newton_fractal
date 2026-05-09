@@ -7,6 +7,8 @@
 #include "ui_schema.h"
 #include "schema_binding.h"
 
+struct ColorPipelineWindowState;
+
 int ApplyCliOverrides(const ViewerCliArgs& cli,
                       ViewState& view, KernelParams& params,
                       RenderSettings& render,
@@ -15,6 +17,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                       bool* outHasLoadedOrientation,
                       SidecarAutoDemoMutationHistory* outLoadedMutationHistory,
                       bool* outHasLoadedMutationHistory,
+                      ColorPipelineWindowState* ioColorPipelineWindow,
                       std::string* outResolvedLoadedStatePath,
                       bool* dirty);
 

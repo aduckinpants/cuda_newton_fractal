@@ -9,6 +9,7 @@
 #include "fractal_probe_contract.h"
 
 struct BindingContext;
+struct ColorPipelineWindowState;
 struct EngineFunctionCatalog;
 struct ExplainoSidecarWindowState;
 struct KernelParams;
@@ -72,7 +73,24 @@ struct SidecarHeadlessProofConfig {
     double pump_paced_loop_seconds = 0.0;
 };
 
+struct ColorPipelineHeadlessProofConfig {
+    bool have_select_function = false;
+    std::string lane_id;
+    int row_index = 0;
+    std::string function_id;
+};
+
 bool HasSidecarHeadlessProofActions(const SidecarHeadlessProofConfig& config);
+
+bool HasColorPipelineHeadlessProofActions(const ColorPipelineHeadlessProofConfig& config);
+
+bool ApplyHeadlessColorPipelineProofActions(
+    const ColorPipelineHeadlessProofConfig& config,
+    ViewState& view,
+    KernelParams& params,
+    ColorPipelineWindowState* ioColorPipelineWindow,
+    bool* outChanged,
+    std::string* outError);
 
 bool ReplayLoadedSidecarMutationHistory(
     int replayMutationHistoryCount,

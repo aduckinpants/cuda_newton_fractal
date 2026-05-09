@@ -84,6 +84,48 @@ static bool TryParseRuntimeWalkArgs(const std::vector<std::string>& args, Viewer
     return true;
 }
 
+static bool TryParseColorPipelineSelectFunctionSpec(
+    const std::string& spec,
+    std::string* outLaneId,
+    int* outRowIndex,
+    std::string* outFunctionId) {
+    if (!outLaneId || !outRowIndex || !outFunctionId) {
+        return false;
+    }
+
+    const std::size_t firstColon = spec.find(':');
+    if (firstColon == std::string::npos) {
+        return false;
+    }
+    const std::size_t secondColon = spec.find(':', firstColon + 1);
+    if (secondColon == std::string::npos) {
+        return false;
+    }
+
+    const std::string laneId = spec.substr(0, firstColon);
+    const std::string rowIndexText = spec.substr(firstColon + 1, secondColon - firstColon - 1);
+    const std::string functionId = spec.substr(secondColon + 1);
+    if (laneId.empty() || rowIndexText.empty() || functionId.empty()) {
+        return false;
+    }
+
+    int rowIndex = 0;
+    try {
+        std::size_t consumed = 0;
+        rowIndex = std::stoi(rowIndexText, &consumed, 10);
+        if (consumed != rowIndexText.size() || rowIndex < 0) {
+            return false;
+        }
+    } catch (...) {
+        return false;
+    }
+
+    *outLaneId = laneId;
+    *outRowIndex = rowIndex;
+    *outFunctionId = functionId;
+    return true;
+}
+
 int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     *out = ViewerCliArgs{};
 
@@ -136,6 +178,17 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
 
     // State loading
     if (!TryStr(args, "--load-state-json", &out->have_load_state_json, &out->load_state_json)) return 1;
+    std::string colorPipelineSelectFunctionSpec;
+    bool haveColorPipelineSelectFunctionSpec = false;
+    if (!TryStr(args, "--color-pipeline-select-function", &haveColorPipelineSelectFunctionSpec, &colorPipelineSelectFunctionSpec)) return 1;
+    if (haveColorPipelineSelectFunctionSpec) {
+        out->have_color_pipeline_select_function = TryParseColorPipelineSelectFunctionSpec(
+            colorPipelineSelectFunctionSpec,
+            &out->color_pipeline_select_lane_id,
+            &out->color_pipeline_select_row_index,
+            &out->color_pipeline_select_function_id);
+        if (!out->have_color_pipeline_select_function) return 1;
+    }
     if (!TryInt(args, "--sidecar-apply-armed-step-count", &out->have_sidecar_apply_armed_step_count, &out->sidecar_apply_armed_step_count)) return 1;
     if (!TryInt(args, "--sidecar-replay-mutation-history-count", &out->have_sidecar_replay_mutation_history_count, &out->sidecar_replay_mutation_history_count)) return 1;
     if (!TryDouble(args, "--sidecar-pump-paced-loop-seconds", &out->have_sidecar_pump_paced_loop_seconds, &out->sidecar_pump_paced_loop_seconds)) return 1;
