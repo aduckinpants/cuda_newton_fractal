@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     return_code = 0
+    launch_failed = False
     with log_path.open("w", encoding="utf-8", errors="replace") as handle:
         try:
             proc = subprocess.run(
@@ -96,11 +97,20 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as exc:
             handle.write(f"viewer_host_run_logged_command: failed to launch command: {exc}\n")
             return_code = 127
+            launch_failed = True
+
+    if launch_failed:
+        result_label = "launch-failure"
+    elif return_code == 0:
+        result_label = "success"
+    else:
+        result_label = "failure"
 
     print(f"viewer_host_run_logged_command: label={args.label}")
     print(f"viewer_host_run_logged_command: cwd={_relative_to_repo(cwd)}")
     print(f"viewer_host_run_logged_command: command={_format_command(command)}")
     print(f"viewer_host_run_logged_command: log={_relative_to_repo(log_path)}")
+    print(f"viewer_host_run_logged_command: result={result_label}")
     print(f"viewer_host_run_logged_command: exit={return_code}")
 
     for line in _tail_lines(log_path, args.tail):

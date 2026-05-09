@@ -325,6 +325,19 @@ def test_bootstrap_surface_describes_catalog_smoke_log_and_output_dir() -> None:
     }
 
 
+def test_wrapped_build_tasks_do_not_use_cmd_c_batch_indirection() -> None:
+    tasks = json.loads((REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8"))["tasks"]
+    tasks_by_label = {task["label"]: task for task in tasks}
+
+    native_command = tasks_by_label["verify: native helper tests"]["args"]
+    native_command = native_command[native_command.index("--") + 1 :]
+    runtime_command = tasks_by_label["verify: runtime publish"]["args"]
+    runtime_command = runtime_command[runtime_command.index("--") + 1 :]
+
+    assert native_command == ["ui_app\\build_tests_vsdevcmd.cmd"]
+    assert runtime_command == ["ui_app\\build_vsdevcmd.cmd"]
+
+
 def test_runtime_pytest_task_uses_runtime_lane_helper() -> None:
     tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
 

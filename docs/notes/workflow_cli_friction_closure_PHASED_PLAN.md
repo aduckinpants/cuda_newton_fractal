@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 - final overall hostile workflow review
+Phase 8 pending - the final overall hostile workflow review spun out one bounded CLI failure-observability mismatch into `workflow_cli_failure_observability_stopline`; resume the audit here once that repair is checkpointed
 
 ## Phase Checklist
 
@@ -81,7 +81,16 @@ Phase 8 - final overall hostile workflow review
   - perform one final end-to-end hostile review of the full workflow_cli_friction_closure initiative after the documentation stack survives its own dedicated audit
   - use the live helper and task surfaces as the proof source: bootstrap, begin-work-slice, append-handoff, validation-receipt expectations, phased-plan sync, and checkpoint-guard closure semantics
   - treat any remaining mismatch as a bounded repair slice instead of blending it into the audit checkpoint
+- Phase 8 spun-out mismatch:
+  - the live hostile review found one bounded mismatch worth separating before the final audit can close: fast nonzero exits from the logged-command/task stack were still too easy to mistake for terminal hangs because the operator-facing summary did not emit an explicit failure classification and the validation tasks still routed batch files through `cmd /c` even though the wrapper already supports direct batch launch
+- Phase 8 successor repair:
+  - successor repair authority: `docs/notes/workflow_cli_failure_observability_stopline_PHASED_PLAN.md`
+  - successor repair contract: `docs/contracts/workflow_cli_failure_observability_stopline.contract.json`
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+
+## Resume Point
+
+Return to the final overall hostile workflow review after the bounded `workflow_cli_failure_observability_stopline` slice closes with focused workflow tests, plan/contract validation, and a clean checkpoint.

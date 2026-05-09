@@ -66,6 +66,7 @@ def test_logged_command_failure_preserves_exit_and_tail(tmp_path: Path) -> None:
 
     assert result.returncode == 7
     assert "before-fail" in log_path.read_text(encoding="utf-8")
+    assert "viewer_host_run_logged_command: result=failure" in result.stdout
     assert "viewer_host_run_logged_command: exit=7" in result.stdout
     assert "viewer_host_run_logged_command: tail: before-fail" in result.stdout
 
@@ -94,6 +95,7 @@ def test_logged_command_missing_executable_still_summarizes(tmp_path: Path) -> N
     assert result.returncode == 127
     log_text = log_path.read_text(encoding="utf-8")
     assert "failed to launch command" in log_text
+    assert "viewer_host_run_logged_command: result=launch-failure" in result.stdout
     assert "viewer_host_run_logged_command: exit=127" in result.stdout
     assert "viewer_host_run_logged_command: tail: viewer_host_run_logged_command: failed to launch command:" in result.stdout
 
