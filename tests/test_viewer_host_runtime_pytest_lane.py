@@ -19,6 +19,16 @@ def test_extract_pytest_counts_parses_summary_fields() -> None:
     assert counts == {"passed": 47, "skipped": 3}
 
 
+def test_default_test_files_match_probe_session_bundle() -> None:
+    assert runtime_pytest_lane.DEFAULT_TEST_FILES == [
+        "tests/test_fractal_runtime_batch_cli.py",
+        "tests/test_fractal_runtime_probe_cli.py",
+        "tests/test_fractal_runtime_session.py",
+        "tests/test_function_descriptor_cli.py",
+        "tests/test_generic_probe_cli.py",
+    ]
+
+
 def test_active_runtime_exe_requires_metadata_file(tmp_path: Path, monkeypatch) -> None:
     runtime_dir = tmp_path / "runtime"
     runtime_dir.mkdir()

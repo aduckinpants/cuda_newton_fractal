@@ -330,6 +330,11 @@ def test_runtime_pytest_task_uses_runtime_lane_helper() -> None:
 
     assert '"label": "verify: runtime probe/session pytest"' in tasks_json
     assert '"tools/viewer_host_runtime_pytest_lane.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_batch_cli.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_probe_cli.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_session.py"' in tasks_json
+    assert '"tests/test_function_descriptor_cli.py"' in tasks_json
+    assert '"tests/test_generic_probe_cli.py"' in tasks_json
 
 
 def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
@@ -366,6 +371,47 @@ def test_runtime_walk_fits_witness_task_stays_outside_mandatory_profiles() -> No
     assert "verify: runtime walk FITS witnesses" not in checkpoint_labels
 
 
+def test_runtime_artifact_tools_task_surfaces_explicit_headless_bundle() -> None:
+    tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
+
+    assert '"label": "verify: runtime artifact tools"' in tasks_json
+    assert '"artifacts/verify_runtime_artifact_tools.log"' in tasks_json
+    assert '"tests/test_explaino_runtime_walk_tool.py"' in tasks_json
+    assert '"tests/test_flashlight_bridge_runner.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_flashlight_probe.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_flashlight_bridge.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_explaino_runtime_walk.py"' in tasks_json
+
+
+def test_runtime_profile_includes_runtime_artifact_tools_task() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    runtime = state["validation_profiles"]["runtime"]
+
+    assert [step["label"] for step in runtime["steps"]] == [
+        "verify: code quality audit",
+        "verify: runtime publish",
+        "verify: runtime probe/session pytest",
+        "verify: runtime artifact tools",
+        "verify: runtime ui harness",
+    ]
+
+
+def test_checkpoint_profile_includes_runtime_artifact_tools_task() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    checkpoint = state["validation_profiles"]["checkpoint"]
+
+    assert [step["label"] for step in checkpoint["steps"]] == [
+        "verify: code quality audit",
+        "verify: native helper tests",
+        "verify: runtime publish",
+        "verify: runtime probe/session pytest",
+        "verify: runtime artifact tools",
+        "verify: runtime ui harness",
+    ]
+
+
 def test_runtime_profile_includes_runtime_ui_harness_task() -> None:
     state = build_bootstrap_state(run_audit=False, tail_handoff=1)
 
@@ -375,6 +421,7 @@ def test_runtime_profile_includes_runtime_ui_harness_task() -> None:
         "verify: code quality audit",
         "verify: runtime publish",
         "verify: runtime probe/session pytest",
+        "verify: runtime artifact tools",
         "verify: runtime ui harness",
     ]
 
@@ -389,6 +436,7 @@ def test_checkpoint_profile_includes_runtime_ui_harness_task() -> None:
         "verify: native helper tests",
         "verify: runtime publish",
         "verify: runtime probe/session pytest",
+        "verify: runtime artifact tools",
         "verify: runtime ui harness",
     ]
 

@@ -145,7 +145,36 @@
         "--",
         "py",
         "-3.14",
-        "tools/viewer_host_runtime_pytest_lane.py"
+        "tools/viewer_host_runtime_pytest_lane.py",
+        "tests/test_fractal_runtime_batch_cli.py",
+        "tests/test_fractal_runtime_probe_cli.py",
+        "tests/test_fractal_runtime_session.py",
+        "tests/test_function_descriptor_cli.py",
+        "tests/test_generic_probe_cli.py"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "verify: runtime artifact tools",
+      "type": "shell",
+      "command": "py",
+      "args": [
+        "-3.14",
+        "tools/viewer_host_run_logged_command.py",
+        "--label",
+        "runtime artifact tools",
+        "--log",
+        "artifacts/verify_runtime_artifact_tools.log",
+        "--",
+        "py",
+        "-3.14",
+        "tools/viewer_host_runtime_pytest_lane.py",
+        "tests/test_explaino_runtime_walk_tool.py",
+        "tests/test_flashlight_bridge_runner.py",
+        "tests/test_fractal_runtime_flashlight_probe.py",
+        "tests/test_fractal_runtime_flashlight_bridge.py",
+        "tests/test_fractal_runtime_explaino_runtime_walk.py"
       ],
       "problemMatcher": [],
       "group": "build"
@@ -252,6 +281,7 @@
         "verify: code quality audit",
         "verify: runtime publish",
         "verify: runtime probe/session pytest",
+        "verify: runtime artifact tools",
         "verify: runtime ui harness"
       ],
       "problemMatcher": [],
@@ -290,6 +320,7 @@
         "verify: native helper tests",
         "verify: runtime publish",
         "verify: runtime probe/session pytest",
+        "verify: runtime artifact tools",
         "verify: runtime ui harness"
       ],
       "problemMatcher": [],

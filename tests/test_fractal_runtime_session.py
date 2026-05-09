@@ -7,25 +7,10 @@ import subprocess
 import sys
 import time
 import uuid
-from pathlib import Path
 
 import pytest
 
-
-RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
-ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
-
-
-def _active_runtime_exe() -> Path:
-    if not ACTIVE_RUNTIME_FILE.exists():
-        pytest.skip(f"missing active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    active_name = ACTIVE_RUNTIME_FILE.read_text(encoding="utf-8").strip()
-    if not active_name:
-        pytest.skip(f"empty active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    exe_path = RUNTIME_DIR / active_name
-    if not exe_path.exists():
-        pytest.skip(f"active runtime missing: {exe_path}")
-    return exe_path
+from tests.runtime_harness import RUNTIME_DIR, active_runtime_exe as _active_runtime_exe
 
 
 def _run_session(lines: list[str], timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
