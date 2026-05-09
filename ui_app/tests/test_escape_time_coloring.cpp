@@ -22,6 +22,11 @@ bool Equals(TestColor left, TestColor right) {
     return left.x == right.x && left.y == right.y && left.z == right.z && left.w == right.w;
 }
 
+bool NearlyEqual(float left, float right, float eps = 1.0e-6f) {
+    const float delta = left - right;
+    return delta < eps && delta > -eps;
+}
+
 } // namespace
 
 int main() {
@@ -698,6 +703,16 @@ int main() {
             params);
         if (Equals(nearRoot, farFromRoot)) {
             std::cerr << "root_proximity should distinguish near-root and far-from-root samples on basin-capable families\n";
+            return 1;
+        }
+    }
+
+    {
+        params.poly_kind = PolyKind::custom;
+        params.explaino_root_count = 0;
+        const float noRootSignal = ResolveRootProximitySignal(TestComplex{0.5f, -0.5f}, params);
+        if (!NearlyEqual(noRootSignal, 0.0f, 1.0e-6)) {
+            std::cerr << "root_proximity should fail closed to a zero signal when no roots are available\n";
             return 1;
         }
     }

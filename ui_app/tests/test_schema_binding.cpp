@@ -340,6 +340,16 @@ int main() {
             std::cerr << "Expected zoom drags to avoid in-widget clamp bounds when only a one-sided hard limit exists\n";
             return 1;
         }
+        UISchemaBinding zoomBoundsBinding;
+        zoomBoundsBinding.kind = "param";
+        zoomBoundsBinding.path = "fractal.view.zoom";
+        NumericDragWidgetBounds cameraZoomDragBounds = ResolveFloatControlDragWidgetBounds(zoom, zoomBoundsBinding);
+        if (!cameraZoomDragBounds.has_bounds ||
+            !NearlyEqual(cameraZoomDragBounds.min, 1.0e-12, 1.0e-18) ||
+            !NearlyEqual(cameraZoomDragBounds.max, 1.0e30, 1.0e18)) {
+            std::cerr << "Expected the live camera zoom drag widget to use positive finite bounds instead of the generic unbounded one-sided path\n";
+            return 1;
+        }
 
         UISchemaControl epsilon = MakeBoundControl("epsilon", "slider_float", "Epsilon", "float", "param", "fractal.params.epsilon");
         epsilon.has_min = true;

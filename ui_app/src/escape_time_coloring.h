@@ -553,20 +553,33 @@ ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
 }
 
 template <typename Complex>
-ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(Complex z, const KernelParams& params) {
-    float nearestDistanceSquared = 1.0e30f;
+ESCAPE_TIME_COLOR_HD inline bool TryResolveRootProximityDistance(Complex z, const KernelParams& params, float* outDistance) {
+    float nearestDistanceSquared = 0.0f;
     if (params.explaino_root_count > 0) {
         nearestDistanceSquared = static_cast<float>(NearestRootDistanceSquaredList(z, params.explaino_roots, params.explaino_root_count));
     } else {
         const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
-        if (polynomialRootCount > 0) {
-            nearestDistanceSquared = static_cast<float>(NearestRootDistanceSquaredUnitRoots(z, polynomialRootCount));
+        if (polynomialRootCount <= 0) {
+            return false;
         }
+        nearestDistanceSquared = static_cast<float>(NearestRootDistanceSquaredUnitRoots(z, polynomialRootCount));
     }
-    const float distance = sqrtf(fmaxf(nearestDistanceSquared, 0.0f));
+    if (outDistance) {
+        *outDistance = sqrtf(fmaxf(nearestDistanceSquared, 0.0f));
+    }
+    return true;
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(Complex z, const KernelParams& params) {
+    float distance = 0.0f;
+    if (!TryResolveRootProximityDistance(z, params, &distance)) {
+        return 0.0f;
+    }
     const float scale = EscapeTimeColorClamp(params.color_root_proximity_scale, 0.25f, 8.0f);
     const float bias = EscapeTimeColorClamp(params.color_root_proximity_bias, -1.0f, 1.0f);
-    return (1.0f / (1.0f + scale * distance)) + bias;
+    const float safeDistance = fmaxf(distance, 1.0e-12f);
+    return -log2f(fmaxf(scale * safeDistance, 1.0e-12f)) + bias;
 }
 
 template <typename Complex>

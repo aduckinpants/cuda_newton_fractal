@@ -70,6 +70,16 @@ def _mean_absolute_frame_delta(left_frame_bytes: bytes, right_frame_bytes: bytes
     return total_delta / float(len(left_pixels))
 
 
+def _distinct_rgb_triplet_count(frame_bytes: bytes) -> int:
+    pixels = _bmp_pixel_bytes(frame_bytes)
+    return len({pixels[index:index + 3] for index in range(0, len(pixels), 4)})
+
+
+def _non_black_rgb_triplet_count(frame_bytes: bytes) -> int:
+    pixels = _bmp_pixel_bytes(frame_bytes)
+    return sum(1 for index in range(0, len(pixels), 4) if pixels[index:index + 3] != b"\x00\x00\x00")
+
+
 def _write_state_bundle(tmp_path: Path, state: dict[str, object]) -> Path:
     state_path = tmp_path / "state.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -566,8 +576,85 @@ def test_explaino_root_proximity_programmable_color_pipeline_changes_published_r
     assert shifted_params["color_signal"] == "root_proximity"
     assert shifted_params["color_palette"] == "cyclic_escape"
     assert shifted_params["color_root_proximity_scale"] == pytest.approx(6.0, abs=1e-6)
+    assert _distinct_rgb_triplet_count(proximity_baseline_capture["frame_bytes"]) > 8, (
+        "expected Explaino root_proximity baseline capture to contain visible color variation instead of collapsing to one flat color"
+    )
+    assert _distinct_rgb_triplet_count(proximity_shifted_capture["frame_bytes"]) > 8, (
+        "expected Explaino root_proximity shifted capture to contain visible color variation instead of collapsing to one flat color"
+    )
+    assert _non_black_rgb_triplet_count(proximity_baseline_capture["frame_bytes"]) > 0, (
+        "expected Explaino root_proximity baseline capture to retain non-black pixels"
+    )
+    assert _non_black_rgb_triplet_count(proximity_shifted_capture["frame_bytes"]) > 0, (
+        "expected Explaino root_proximity shifted capture to retain non-black pixels"
+    )
     assert proximity_shifted_capture["frame_hash"] != proximity_baseline_capture["frame_hash"], (
         "expected Explaino root_proximity scale to change the published runtime frame hash"
+    )
+
+
+def test_explaino_nearby_zoom_state_round_trips_and_stays_visible_in_published_runtime(tmp_path: Path) -> None:
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "32",
+        "--height",
+        "32",
+    )
+
+    view = baseline_capture["state"]["view"]
+    assert isinstance(view, dict)
+    center_x = float(view["center_hp_x"])
+    center_y = float(view["center_hp_y"])
+    base_zoom = float(view["zoom"])
+    nearby_zoom = base_zoom * 1.02
+
+    base_state = _with_explaino_programmable_color_state(
+        _with_view_camera(baseline_capture["state"], center_x=center_x, center_y=center_y, zoom=base_zoom),
+        palette="cyclic_escape",
+        color_heatmap_cycle_scale=0.25,
+        max_iter=64,
+    )
+    base_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "zoom_continuity_base", base_state)),
+        "--capture-diagnostic",
+    )
+
+    nearby_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(
+            _write_state_bundle(
+                tmp_path / "zoom_continuity_nearby",
+                _with_view_camera(base_state, center_x=center_x, center_y=center_y, zoom=nearby_zoom),
+            )
+        ),
+        "--capture-diagnostic",
+    )
+
+    for label, capture in {
+        "base": base_capture,
+        "nearby": nearby_capture,
+    }.items():
+        assert _non_black_rgb_triplet_count(capture["frame_bytes"]) > 0, (
+            f"expected Explaino {label} zoom continuity witness to retain non-black pixels"
+        )
+        assert _distinct_rgb_triplet_count(capture["frame_bytes"]) > 8, (
+            f"expected Explaino {label} zoom continuity witness to retain visible color structure"
+        )
+
+    nearby_view = nearby_capture["state"]["view"]
+    assert isinstance(nearby_view, dict)
+    assert nearby_view["zoom"] == pytest.approx(nearby_zoom, rel=1.0e-6, abs=1.0e-6)
+    assert nearby_view["log2_zoom"] == pytest.approx(math.log2(nearby_zoom), rel=1.0e-6, abs=1.0e-6)
+    assert nearby_capture["frame_hash"] != base_capture["frame_hash"], (
+        "expected a nearby zoom edit to change the published runtime frame without collapsing the camera state"
     )
 
 

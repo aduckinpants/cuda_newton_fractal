@@ -291,6 +291,17 @@ NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& co
     return bounds;
 }
 
+NumericDragWidgetBounds ResolveFloatControlDragWidgetBounds(const UISchemaControl& control, const UISchemaBinding& binding) {
+    NumericDragWidgetBounds bounds = ResolveNumericDragWidgetBounds(control);
+    if (binding.path == "fractal.view.zoom") {
+        const NumericControlRange range = ResolveNumericControlRange(control);
+        bounds.min = range.has_hard_min ? range.hard_min : 1.0e-30;
+        bounds.max = 1.0e30;
+        bounds.has_bounds = true;
+    }
+    return bounds;
+}
+
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& control, const BindingContext& ctx) {
     std::vector<const UISchemaOption*> options;
     options.reserve(control.options.size());
@@ -1104,7 +1115,7 @@ bool RenderFloatControl(
     const NumericControlRange range = ResolveNumericControlRange(control);
     const float minValue = range.has_widget_min ? static_cast<float>(range.widget_min) : 0.0f;
     const float maxValue = range.has_widget_max ? static_cast<float>(range.widget_max) : (control.type == "slider_float" ? 1.0f : 0.0f);
-    const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
+    const NumericDragWidgetBounds dragBounds = ResolveFloatControlDragWidgetBounds(control, binding);
     const float speed = control.has_step ? static_cast<float>(control.step) : 0.01f;
     const ImGuiSliderFlags flags = control.logarithmic ? ImGuiSliderFlags_Logarithmic : 0;
     const char* displayFormat = FloatControlDisplayFormat(control, binding);
