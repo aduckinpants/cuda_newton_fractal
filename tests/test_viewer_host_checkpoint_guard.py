@@ -814,6 +814,36 @@ def test_resolve_session_baseline_adopts_dirty_snapshot_and_consumes_recovery_ar
     assert not checkpoint_guard.recovery_adoption_path(repo_root).exists()
 
 
+def test_resolve_session_baseline_replaces_stale_existing_baseline_when_recovery_adoption_matches(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    readme = repo_root / "README.md"
+    readme.write_text("changed once\n", encoding="utf-8")
+    first_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    checkpoint_guard.write_session_baseline("unknown_session", first_snapshot, repo_root)
+
+    readme.write_text("changed twice\n", encoding="utf-8")
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    report_path = checkpoint_guard.recovery_report_path_for_snapshot(current_snapshot, repo_root)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text('{"ok": true}\n', encoding="utf-8")
+    checkpoint_guard.write_active_recovery_adoption(
+        current_snapshot,
+        report_path=report_path,
+        summary="host crashed again",
+        reason="stale unknown_session baseline masked recovery adoption",
+        repo_root=repo_root,
+    )
+    snapshot_with_recovery_artifacts = checkpoint_guard.capture_repo_snapshot(repo_root)
+
+    resolution = checkpoint_guard.resolve_session_baseline("unknown_session", snapshot_with_recovery_artifacts, repo_root)
+
+    assert resolution.status == "adopted_dirty"
+    assert resolution.baseline == current_snapshot
+    assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == current_snapshot
+    assert not checkpoint_guard.recovery_adoption_path(repo_root).exists()
+
+
 def test_build_validation_receipt_prompt_message_mentions_expected_receipt_path(tmp_path: Path) -> None:
     text = build_validation_receipt_prompt_message("Start implementation", tmp_path, "abc123")
 

@@ -325,9 +325,36 @@ def load_active_recovery_adoption(repo_root: Path = REPO_ROOT) -> dict[str, Any]
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def recovery_adoption_matches_snapshot(adoption_payload: dict[str, Any], snapshot: dict[str, Any]) -> bool:
+def _snapshot_without_paths(
+    snapshot: dict[str, Any],
+    *,
+    repo_root: Path = REPO_ROOT,
+    ignored_relative_paths: list[str] | None = None,
+) -> dict[str, Any]:
+    normalized = json.loads(json.dumps(snapshot))
+    ignored = {path.replace("\\", "/") for path in (ignored_relative_paths or []) if str(path).strip()}
+    for section in ("unstaged", "staged", "untracked"):
+        entries = normalized.get(section, {}) or {}
+        normalized[section] = {path: value for path, value in entries.items() if path not in ignored}
+    normalized["clean"] = snapshot_is_clean(normalized)
+    return normalized
+
+
+def recovery_adoption_matches_snapshot(
+    adoption_payload: dict[str, Any],
+    snapshot: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
+) -> bool:
     expected = str(adoption_payload.get("snapshot_digest", "")).strip()
-    return bool(expected) and expected == snapshot_digest(snapshot)
+    comparable_snapshot = _snapshot_without_paths(
+        snapshot,
+        repo_root=repo_root,
+        ignored_relative_paths=[
+            str(adoption_payload.get("report_path", "")).strip(),
+            recovery_adoption_path(repo_root).relative_to(repo_root).as_posix(),
+        ],
+    )
+    return bool(expected) and expected == snapshot_digest(comparable_snapshot)
 
 
 def consume_active_recovery_adoption(repo_root: Path = REPO_ROOT) -> None:
@@ -985,7 +1012,38 @@ def resolve_session_baseline(
     repo_root: Path = REPO_ROOT,
 ) -> SessionBaselineResolution:
     baseline = load_session_baseline(session_id, repo_root)
+    adoption_payload = load_active_recovery_adoption(repo_root)
+    changed_paths = compare_snapshots({"unstaged": {}, "staged": {}, "untracked": {}}, current)
+    adoption_path_text = (
+        None
+        if adoption_payload is None
+        else recovery_adoption_path(repo_root).relative_to(repo_root).as_posix()
+    )
+    report_path_text = None if adoption_payload is None else str(adoption_payload.get("report_path", "")).strip() or None
+    adopted_snapshot = _snapshot_without_paths(
+        current,
+        repo_root=repo_root,
+        ignored_relative_paths=[
+            report_path_text or "",
+            adoption_path_text or "",
+        ],
+    )
     if baseline is not None:
+        if (
+            adoption_payload is not None
+            and recovery_adoption_matches_snapshot(adoption_payload, current, repo_root)
+            and snapshot_digest(baseline) != snapshot_digest(adopted_snapshot)
+        ):
+            path = write_session_baseline(session_id, adopted_snapshot, repo_root)
+            consume_active_recovery_adoption(repo_root)
+            return SessionBaselineResolution(
+                baseline=adopted_snapshot,
+                status="adopted_dirty",
+                changed_paths=changed_paths,
+                baseline_path=path.relative_to(repo_root).as_posix(),
+                recovery_report_path=report_path_text,
+                recovery_adoption_path=adoption_path_text,
+            )
         return SessionBaselineResolution(
             baseline=baseline,
             status="existing",
@@ -1002,8 +1060,6 @@ def resolve_session_baseline(
             baseline_path=path.relative_to(repo_root).as_posix(),
         )
 
-    adoption_payload = load_active_recovery_adoption(repo_root)
-    changed_paths = compare_snapshots({"unstaged": {}, "staged": {}, "untracked": {}}, current)
     if adoption_payload is None:
         return SessionBaselineResolution(
             baseline=None,
@@ -1011,9 +1067,7 @@ def resolve_session_baseline(
             changed_paths=changed_paths,
         )
 
-    adoption_path_text = recovery_adoption_path(repo_root).relative_to(repo_root).as_posix()
-    report_path_text = str(adoption_payload.get("report_path", "")).strip() or None
-    if not recovery_adoption_matches_snapshot(adoption_payload, current):
+    if not recovery_adoption_matches_snapshot(adoption_payload, current, repo_root):
         return SessionBaselineResolution(
             baseline=None,
             status="adoption_stale",
@@ -1022,10 +1076,10 @@ def resolve_session_baseline(
             recovery_adoption_path=adoption_path_text,
         )
 
-    path = write_session_baseline(session_id, current, repo_root)
+    path = write_session_baseline(session_id, adopted_snapshot, repo_root)
     consume_active_recovery_adoption(repo_root)
     return SessionBaselineResolution(
-        baseline=current,
+        baseline=adopted_snapshot,
         status="adopted_dirty",
         changed_paths=changed_paths,
         baseline_path=path.relative_to(repo_root).as_posix(),
