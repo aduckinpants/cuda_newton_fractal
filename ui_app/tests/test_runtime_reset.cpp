@@ -49,6 +49,9 @@ int main() {
     params.color_shape_stack[1].shape = ColorPipelineShape::repeat;
     params.color_shape_stack[1].params.repeat_frequency = 6.0f;
     params.color_shape_stack[1].params.repeat_phase = 0.2f;
+    params.color_root_basin_pair_count = 2;
+    params.color_root_basin_pairs[0] = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
+    params.color_root_basin_pairs[1] = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
     params.color_shape_offset = 0.35f;
     params.color_shape_scale = 1.8f;
     params.color_shape_repeat_frequency = 6.0f;
@@ -111,6 +114,7 @@ int main() {
     if (!NearlyEqual(params.color_phase_signal_offset, 0.0f) ||
         !NearlyEqual(params.color_phase_wrap_cycles, 1.0f) ||
         !NearlyEqual(params.color_phase_palette_offset, 0.0f) ||
+        params.color_root_basin_pair_count != 0 ||
         params.color_shape != ColorPipelineShape::identity ||
         params.color_shape_stack_count != 0 ||
         !NearlyEqual(params.color_shape_offset, 0.0f) ||

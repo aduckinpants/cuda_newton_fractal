@@ -25,6 +25,7 @@ The controlling blocker is now semantic, not ownership extraction. `ui_app/src/c
 
 - `ui_app/src/escape_time_coloring.h` still resolves one Source signal and one Palette mapper, while Shape owns the only ordered composition seam.
 - `ui_app/src/fractal_types.h` still stores flat Source/Palette owner fields, but it already carries the per-shipped owner fields needed by `root_index`, `root_classic_palette`, and `joy_root_palette`.
+- `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already records the simple Factorio train-scheduler-style schedule metaphor for Source / Shape / Palette lane stacks, so the current deferment is about generic runtime composition math, not about forgetting or retracting the mapped UX direction.
 - `docs/notes/advanced_color_root_palette_tuple_switch_followup_PHASED_PLAN.md` proves the editor already auto-completes `root_index + root_classic_palette` as a supported companion pair instead of a fake draft-only dead end.
 - `docs/notes/advanced_color_root_palette_shape_interactivity_PHASED_PLAN.md` proves `root_index + root_classic_palette` and `root_index + joy_root_palette` now render through the shared programmable basin/Shape path, so they are the nearest runtime-real coupled Source/Palette family.
 - `root_proximity` shares the root-sample substrate, but the checked-in root palettes are still explicit root-index palette lineages, so `root_proximity` remains out of the first paired family until a later slice defines how non-index root signals should feed those palettes.
@@ -35,6 +36,7 @@ The controlling blocker is now semantic, not ownership extraction. `ui_app/src/c
 - Landed: the first truthful Source/Palette multi-row runtime family is now defined as the row-indexed root-basin pair family with supported first pairs `root_index + root_classic_palette` and `root_index + joy_root_palette`.
 - Landed: the next implementation slice must keep separate Source / Shape / Palette editor lanes intact, pair Source and Palette rows by shared row index at the live bridge, and promote only the last enabled valid root-basin pair into the runtime.
 - Landed: the next implementation slice must add bounded runtime-owner state for paired Source/Palette rows while mirroring the selected active pair back into the legacy flat fields for current renderer/runtime compatibility.
+- Landed: the conceptual schedule model remains the already-mapped simple Factorio train-scheduler pattern; only the unsupported generic Source/Palette runtime semantics stay deferred.
 - Landed: generic Source generator composition, generic Palette chaining, `root_proximity` pairing, and Grading are explicitly deferred until later plan authority names the needed math.
 
 ## Hostile Audit
@@ -69,4 +71,4 @@ The controlling blocker is now semantic, not ownership extraction. `ui_app/src/c
 
 ## Resume Point
 
-Treat this as the completed predecessor for the next executable Phase 5 slice. Resume by adding focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest runtime-owner/runtime-color tests that prove row-indexed root-basin pair selection fails until bounded Source/Palette pair-stack owners and the last-enabled-valid-pair live bridge exist.
+Treat this as the completed predecessor for the next executable Phase 5 slice. Resume from `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` under `docs/contracts/advanced_color_library_foundation_phase5_root_basin_pair_runtime.contract.json`, starting with focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest runtime-owner/runtime-color tests that prove row-indexed root-basin pair selection fails until bounded Source/Palette pair-stack owners and the last-enabled-valid-pair live bridge exist.

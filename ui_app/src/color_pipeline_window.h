@@ -454,6 +454,15 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         outPaletteFunctionId);
 }
 
+inline bool TryBuildRootBasinPairLanesFromLive(
+    const KernelParams& liveParams,
+    ColorPipelineLaneState* outSourceLane,
+    ColorPipelineLaneState* outPaletteLane,
+    bool* outDraftImportSupported,
+    std::string* outError = nullptr);
+
+inline bool HasCoherentRootBasinPairSchedule(const KernelParams& liveParams);
+
 inline bool TryBuildColorPipelineLiveSnapshot(
     FractalType liveFractalType,
     const KernelParams& liveParams,
@@ -478,21 +487,11 @@ inline bool TryBuildColorPipelineLiveSnapshot(
         return false;
     }
 
-    const char* sourceFunctionId = nullptr;
-    const char* paletteFunctionId = nullptr;
     ColorPipelineLiveSnapshot snapshot;
     snapshot.valid = true;
     snapshot.fractal_type = liveFractalType;
     snapshot.coloring_mode = liveParams.coloring_mode;
     snapshot.pipeline = liveParams.color_pipeline;
-    snapshot.draft_import_supported = TryBuildColorPipelineScheduleBridgeIds(
-        liveParams.color_pipeline,
-        &sourceFunctionId,
-        &paletteFunctionId);
-    if (!snapshot.draft_import_supported) {
-        *outSnapshot = std::move(snapshot);
-        return true;
-    }
 
     const ColorPipelineLaneCatalog* sourceCatalog = FindColorPipelineLaneCatalog("source");
     const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
@@ -502,9 +501,36 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     }
 
     ColorPipelineLaneState sourceLane;
-    if (!BuildColorPipelineLaneWithSingleRow(*sourceCatalog, sourceFunctionId, 0, &sourceLane, outError) ||
-        !ImportSupportedColorPipelineParamsFromLive(&sourceLane.rows.front(), liveParams, outError)) {
-        return false;
+    ColorPipelineLaneState paletteLane;
+    bool sourcePaletteDraftImportSupported = true;
+    if (HasCoherentRootBasinPairSchedule(liveParams)) {
+        if (!TryBuildRootBasinPairLanesFromLive(
+                liveParams,
+                &sourceLane,
+                &paletteLane,
+                &sourcePaletteDraftImportSupported,
+                outError)) {
+            return false;
+        }
+    } else {
+        const char* sourceFunctionId = nullptr;
+        const char* paletteFunctionId = nullptr;
+        sourcePaletteDraftImportSupported = TryBuildColorPipelineScheduleBridgeIds(
+            liveParams.color_pipeline,
+            &sourceFunctionId,
+            &paletteFunctionId);
+        if (!sourcePaletteDraftImportSupported) {
+            *outSnapshot = std::move(snapshot);
+            return true;
+        }
+        if (!BuildColorPipelineLaneWithSingleRow(*sourceCatalog, sourceFunctionId, 0, &sourceLane, outError) ||
+            !ImportSupportedColorPipelineParamsFromLive(&sourceLane.rows.front(), liveParams, outError)) {
+            return false;
+        }
+        if (!BuildColorPipelineLaneWithSingleRow(*paletteCatalog, paletteFunctionId, 0, &paletteLane, outError) ||
+            !ImportSupportedColorPipelineParamsFromLive(&paletteLane.rows.front(), liveParams, outError)) {
+            return false;
+        }
     }
 
     ColorPipelineLaneState shapeLane;
@@ -513,13 +539,7 @@ inline bool TryBuildColorPipelineLiveSnapshot(
         return false;
     }
 
-    ColorPipelineLaneState paletteLane;
-    if (!BuildColorPipelineLaneWithSingleRow(*paletteCatalog, paletteFunctionId, 0, &paletteLane, outError) ||
-        !ImportSupportedColorPipelineParamsFromLive(&paletteLane.rows.front(), liveParams, outError)) {
-        return false;
-    }
-
-    snapshot.draft_import_supported = snapshot.draft_import_supported && shapeDraftImportSupported;
+    snapshot.draft_import_supported = sourcePaletteDraftImportSupported && shapeDraftImportSupported;
     snapshot.lanes.push_back(std::move(sourceLane));
     snapshot.lanes.push_back(std::move(shapeLane));
     snapshot.lanes.push_back(std::move(paletteLane));
@@ -1066,6 +1086,164 @@ inline bool ColorPipelineShapeStackEntriesEqual(
         ColorPipelineShapeRuntimeParamsEqual(left.params, right.params);
 }
 
+inline bool IsSupportedRootBasinPaletteFunctionId(const std::string& functionId) {
+    return functionId == "root_classic_palette" ||
+        functionId == "joy_root_palette";
+}
+
+inline bool IsRootBasinPairCandidateRows(
+    const std::vector<const ColorPipelineRowState*>& sourceRows,
+    const std::vector<const ColorPipelineRowState*>& paletteRows) {
+    if (sourceRows.empty() || paletteRows.empty() || sourceRows.size() != paletteRows.size()) {
+        return false;
+    }
+    for (const ColorPipelineRowState* row : sourceRows) {
+        if (!row || row->function_id != "root_index") {
+            return false;
+        }
+    }
+    for (const ColorPipelineRowState* row : paletteRows) {
+        if (!row || !IsSupportedRootBasinPaletteFunctionId(row->function_id)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool TryBuildRootBasinPairSelectionsFromRows(
+    const std::vector<const ColorPipelineRowState*>& sourceRows,
+    const std::vector<const ColorPipelineRowState*>& paletteRows,
+    std::vector<ColorPipelineSelection>* outSelections,
+    ColoringMode* outFinalMode,
+    std::string* outError) {
+    if (!outSelections || !outFinalMode) {
+        if (outError) *outError = "Advanced color root-basin pair build requires output storage";
+        return false;
+    }
+    outSelections->clear();
+    if (sourceRows.empty() || paletteRows.empty() || sourceRows.size() != paletteRows.size()) {
+        if (outError) {
+            *outError = "Current live bridge only supports row-indexed root-basin schedules when enabled Source and Palette row counts match.";
+        }
+        return false;
+    }
+    if (sourceRows.size() > static_cast<std::size_t>(kColorPipelineMaxRootBasinPairCount)) {
+        if (outError) {
+            *outError = "Current live bridge only supports a bounded number of enabled root-basin Source / Palette pairs.";
+        }
+        return false;
+    }
+    for (std::size_t index = 0; index < sourceRows.size(); ++index) {
+        const ColorPipelineRowState* sourceRow = sourceRows[index];
+        const ColorPipelineRowState* paletteRow = paletteRows[index];
+        if (!sourceRow || !paletteRow || sourceRow->function_id != "root_index" || !IsSupportedRootBasinPaletteFunctionId(paletteRow->function_id)) {
+            if (outError) {
+                *outError = "Current live bridge only supports row-indexed root-basin pairs of root_index with root_classic_palette or joy_root_palette.";
+            }
+            return false;
+        }
+        ColorPipelineSelection selection{};
+        ColoringMode mode = ColoringMode::root_basin;
+        if (!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+                sourceRow->function_id.c_str(),
+                paletteRow->function_id.c_str(),
+                &selection,
+                &mode)) {
+            if (outError) {
+                *outError = "Selected root-basin pair is not runtime-backed by the current Source / Palette bridge.";
+            }
+            return false;
+        }
+        outSelections->push_back(selection);
+        *outFinalMode = mode;
+    }
+    return !outSelections->empty();
+}
+
+inline bool HasCoherentRootBasinPairSchedule(const KernelParams& liveParams) {
+    if (liveParams.color_root_basin_pair_count <= 0 ||
+        liveParams.color_root_basin_pair_count > kColorPipelineMaxRootBasinPairCount) {
+        return false;
+    }
+    const ColorPipelineSelection& activePair =
+        liveParams.color_root_basin_pairs[liveParams.color_root_basin_pair_count - 1];
+    if (!ColorPipelineSelectionsEqual(activePair, liveParams.color_pipeline)) {
+        return false;
+    }
+    const char* sourceFunctionId = nullptr;
+    const char* paletteFunctionId = nullptr;
+    return TryBuildColorPipelineScheduleBridgeIds(activePair, &sourceFunctionId, &paletteFunctionId) &&
+        sourceFunctionId &&
+        paletteFunctionId &&
+        std::strcmp(sourceFunctionId, "root_index") == 0 &&
+        IsSupportedRootBasinPaletteFunctionId(paletteFunctionId);
+}
+
+inline bool TryBuildRootBasinPairLanesFromLive(
+    const KernelParams& liveParams,
+    ColorPipelineLaneState* outSourceLane,
+    ColorPipelineLaneState* outPaletteLane,
+    bool* outDraftImportSupported,
+    std::string* outError) {
+    if (!outSourceLane || !outPaletteLane || !outDraftImportSupported) {
+        if (outError) *outError = "Advanced color root-basin pair snapshot requires output storage";
+        return false;
+    }
+
+    const ColorPipelineLaneCatalog* sourceCatalog = FindColorPipelineLaneCatalog("source");
+    const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
+    if (!sourceCatalog || !paletteCatalog) {
+        if (outError) *outError = "Missing advanced color Source or Palette lane catalog";
+        return false;
+    }
+
+    ColorPipelineLaneState sourceLane;
+    sourceLane.lane_id = sourceCatalog->lane_id;
+    sourceLane.label = sourceCatalog->label;
+    ColorPipelineLaneState paletteLane;
+    paletteLane.lane_id = paletteCatalog->lane_id;
+    paletteLane.label = paletteCatalog->label;
+    *outDraftImportSupported = true;
+
+    int pairCount = liveParams.color_root_basin_pair_count;
+    if (pairCount > kColorPipelineMaxRootBasinPairCount) {
+        pairCount = kColorPipelineMaxRootBasinPairCount;
+    }
+    for (int index = 0; index < pairCount; ++index) {
+        const ColorPipelineSelection& pairSelection = liveParams.color_root_basin_pairs[index];
+        const char* sourceFunctionId = nullptr;
+        const char* paletteFunctionId = nullptr;
+        if (!TryBuildColorPipelineScheduleBridgeIds(pairSelection, &sourceFunctionId, &paletteFunctionId) ||
+            !sourceFunctionId ||
+            !paletteFunctionId ||
+            std::strcmp(sourceFunctionId, "root_index") != 0 ||
+            !IsSupportedRootBasinPaletteFunctionId(paletteFunctionId)) {
+            *outDraftImportSupported = false;
+            *outSourceLane = std::move(sourceLane);
+            *outPaletteLane = std::move(paletteLane);
+            return true;
+        }
+
+        ColorPipelineRowState sourceRow;
+        if (!BuildColorPipelineRowFromFunctionId(*sourceCatalog, sourceFunctionId, index, &sourceRow, outError) ||
+            !ImportSupportedColorPipelineParamsFromLive(&sourceRow, liveParams, outError)) {
+            return false;
+        }
+        sourceLane.rows.push_back(std::move(sourceRow));
+
+        ColorPipelineRowState paletteRow;
+        if (!BuildColorPipelineRowFromFunctionId(*paletteCatalog, paletteFunctionId, index, &paletteRow, outError) ||
+            !ImportSupportedColorPipelineParamsFromLive(&paletteRow, liveParams, outError)) {
+            return false;
+        }
+        paletteLane.rows.push_back(std::move(paletteRow));
+    }
+
+    *outSourceLane = std::move(sourceLane);
+    *outPaletteLane = std::move(paletteLane);
+    return true;
+}
+
 inline bool TryBuildColorPipelineShapeStackEntryFromRow(
     const ColorPipelineRowState& row,
     ColorPipelineShapeStackEntry* outEntry,
@@ -1456,16 +1634,16 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         return false;
     }
 
-    const ColorPipelineRowState* sourceRow = FindSingleEnabledColorPipelineRow(state, "source", outError);
-    if (!sourceRow) {
+    std::vector<const ColorPipelineRowState*> sourceRows;
+    if (!CollectEnabledColorPipelineRows(state, "source", &sourceRows, outError)) {
         return false;
     }
     std::vector<const ColorPipelineRowState*> shapeRows;
     if (!CollectEnabledColorPipelineRows(state, "shape", &shapeRows, outError)) {
         return false;
     }
-    const ColorPipelineRowState* paletteRow = FindSingleEnabledColorPipelineRow(state, "palette", outError);
-    if (!paletteRow) {
+    std::vector<const ColorPipelineRowState*> paletteRows;
+    if (!CollectEnabledColorPipelineRows(state, "palette", &paletteRows, outError)) {
         return false;
     }
 
@@ -1484,11 +1662,29 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         }
     }
 
+    if (IsRootBasinPairCandidateRows(sourceRows, paletteRows)) {
+        std::vector<ColorPipelineSelection> rootBasinPairs;
+        ColoringMode mode = ColoringMode::root_basin;
+        if (!TryBuildRootBasinPairSelectionsFromRows(sourceRows, paletteRows, &rootBasinPairs, &mode, outError)) {
+            return false;
+        }
+        *outPipeline = rootBasinPairs.back();
+        *outMode = mode;
+        return true;
+    }
+
+    if (sourceRows.size() != 1 || paletteRows.size() != 1) {
+        if (outError) {
+            *outError = "Current live bridge only supports one enabled Source row and one enabled Palette row unless every enabled Source / Palette row participates in the bounded row-indexed root-basin pair family.";
+        }
+        return false;
+    }
+
     ColorPipelineSelection pipeline{};
     ColoringMode mode = ColoringMode::root_basin;
     if (!TryBuildColorPipelineSelectionFromLaneIds(
-            sourceRow->function_id.c_str(),
-            paletteRow->function_id.c_str(),
+            sourceRows.front()->function_id.c_str(),
+            paletteRows.front()->function_id.c_str(),
             &pipeline,
             &mode)) {
         if (outError) {
@@ -1627,6 +1823,23 @@ inline bool ApplyColorPipelineDraftToLiveState(
         PushColorPipelineValidationMessage(ioState, error);
         return false;
     }
+
+    std::vector<const ColorPipelineRowState*> sourceRows;
+    if (!CollectEnabledColorPipelineRows(*ioState, "source", &sourceRows, &error)) {
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+    std::vector<const ColorPipelineRowState*> paletteRows;
+    if (!CollectEnabledColorPipelineRows(*ioState, "palette", &paletteRows, &error)) {
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
+    std::vector<ColorPipelineSelection> nextRootBasinPairs;
+    if (IsRootBasinPairCandidateRows(sourceRows, paletteRows) &&
+        !TryBuildRootBasinPairSelectionsFromRows(sourceRows, paletteRows, &nextRootBasinPairs, &nextMode, &error)) {
+        PushColorPipelineValidationMessage(ioState, error);
+        return false;
+    }
     if (!IsColorPipelineAllowedForFractal(liveFractalType, nextPipeline)) {
         PushColorPipelineValidationMessage(ioState,
             "Selected advanced color tuple is not allowed for the current fractal family");
@@ -1643,6 +1856,21 @@ inline bool ApplyColorPipelineDraftToLiveState(
     if (!ApplySupportedColorPipelineParamsToLive(*ioState, ioParams, &paramChanged, &error)) {
         PushColorPipelineValidationMessage(ioState, error);
         return false;
+    }
+
+    if (ioParams->color_root_basin_pair_count != static_cast<int>(nextRootBasinPairs.size())) {
+        ioParams->color_root_basin_pair_count = static_cast<int>(nextRootBasinPairs.size());
+        paramChanged = true;
+    }
+    for (int index = 0; index < kColorPipelineMaxRootBasinPairCount; ++index) {
+        ColorPipelineSelection nextPair{};
+        if (index < static_cast<int>(nextRootBasinPairs.size())) {
+            nextPair = nextRootBasinPairs[static_cast<std::size_t>(index)];
+        }
+        if (!ColorPipelineSelectionsEqual(ioParams->color_root_basin_pairs[index], nextPair)) {
+            ioParams->color_root_basin_pairs[index] = nextPair;
+            paramChanged = true;
+        }
     }
 
     ioParams->coloring_mode = nextMode;

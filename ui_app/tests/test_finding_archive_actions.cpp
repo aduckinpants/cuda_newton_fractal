@@ -173,8 +173,8 @@ int main() {
         view.explaino_phase_strength = -2.5f;
         view.auto_max_iter = true;
         KernelParams params{};
-        params.coloring_mode = ColoringMode::iteration_count;
-        params.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.color_pipeline = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
         params.explaino_seed = -3.0;
         params.explaino_seed_b = -7.5;
         params.explaino_root_spread = 1.75f;
@@ -189,6 +189,9 @@ int main() {
         params.color_shape_stack[1].shape = ColorPipelineShape::posterize;
         params.color_shape_stack[1].params.posterize_steps = 5;
         params.color_shape_stack[1].params.posterize_mix = 0.65f;
+        params.color_root_basin_pair_count = 2;
+        params.color_root_basin_pairs[0] = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
+        params.color_root_basin_pairs[1] = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
         params.color_shape_posterize_steps = 5;
         params.color_shape_posterize_mix = 0.65f;
         params.color_iteration_band_count = 5;
@@ -240,6 +243,9 @@ int main() {
             stateJson.find("\"color_shape_posterize_steps\": 5") == std::string::npos ||
             stateJson.find("\"color_shape_posterize_mix\": 0.65") == std::string::npos ||
             stateJson.find("\"color_shape_stack\"") == std::string::npos ||
+            stateJson.find("\"color_root_basin_pairs\"") == std::string::npos ||
+            stateJson.find("\"palette\": \"root_classic\"") == std::string::npos ||
+            stateJson.find("\"palette\": \"joy\"") == std::string::npos ||
             stateJson.find("\"shape\": \"offset_scale\"") == std::string::npos ||
             stateJson.find("\"shape\": \"posterize\"") == std::string::npos ||
             stateJson.find("\"auto_max_iter\": true") == std::string::npos ||
@@ -253,14 +259,14 @@ int main() {
             std::cerr << "Expected diagnostics capture to persist Explaino fields, Shape stacks, widened source owner fields, adaptive preview pacing, and optional sidecar orientation state\n";
             return 1;
         }
-        if (stateJson.find("\"color_signal\": \"root_proximity\"") == std::string::npos ||
+        if (stateJson.find("\"color_signal\": \"root_index\"") == std::string::npos ||
             stateJson.find("\"color_shape\": \"posterize\"") == std::string::npos ||
-            stateJson.find("\"color_palette\": \"cyclic_escape\"") == std::string::npos ||
-            stateJson.find("\"color_grading\": \"escape_default\"") == std::string::npos) {
+            stateJson.find("\"color_palette\": \"joy\"") == std::string::npos ||
+            stateJson.find("\"color_grading\": \"basin_default\"") == std::string::npos) {
             std::cerr << "Expected diagnostics capture to persist the widened split-color state during Phase 2\n";
             return 1;
         }
-        if (stateJson.find("\"coloring_mode\": \"smooth_escape\"") == std::string::npos) {
+        if (stateJson.find("\"coloring_mode\": \"joy_basins\"") == std::string::npos) {
             std::cerr << "Expected diagnostics capture to derive the widened mirrored coloring_mode from the split-color pipeline\n";
             return 1;
         }

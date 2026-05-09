@@ -32,6 +32,10 @@ void ResetRuntimeStateForCurrentFractal(
     params.explaino_cluster_radius = 0.0f;
     params.momentum_beta = 0.0f;
     ApplyFractalPresetDefaults(view, params, ioDirty);
+    params.color_root_basin_pair_count = 0;
+    for (ColorPipelineSelection& pairSelection : params.color_root_basin_pairs) {
+        pairSelection = {};
+    }
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
     }

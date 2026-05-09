@@ -1986,6 +1986,47 @@ int main() {
             return 1;
         }
 
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "root_index") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "root_classic_palette") ||
+            !AddColorPipelineLaneRow(&windowState, 0, "root_index") ||
+            windowState.lanes[0].rows.size() != 2 ||
+            !AddColorPipelineLaneRow(&windowState, 2, "joy_root_palette") ||
+            windowState.lanes[2].rows.size() != 2) {
+            std::cerr << "Expected the root-basin pair RED to construct a two-row Source/Palette schedule with paired root rows\n";
+            return 1;
+        }
+        bool rootBasinScheduleChanged = false;
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params, &rootBasinScheduleChanged)) {
+            std::cerr << "Expected a supported two-row root-basin schedule to apply to live runtime state instead of failing at the single-row Source/Palette bridge\n";
+            return 1;
+        }
+        if (!rootBasinScheduleChanged ||
+            params.coloring_mode != ColoringMode::joy_basins ||
+            params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::joy ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() < 3 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 2 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "root_index" ||
+            windowState.live_snapshot.lanes[0].rows[1].function_id != "root_index" ||
+            windowState.live_snapshot.lanes[2].rows.size() != 2 ||
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "root_classic_palette" ||
+            windowState.live_snapshot.lanes[2].rows[1].function_id != "joy_root_palette" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to persist and resync a bounded two-row root-basin pair schedule while mirroring the final valid pair into the legacy runtime tuple\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 0, 1) ||
+            !RemoveColorPipelineLaneRow(&windowState, 2, 1) ||
+            windowState.lanes[0].rows.size() != 1 ||
+            windowState.lanes[2].rows.size() != 1) {
+            std::cerr << "Expected the root-basin pair coverage to restore the draft editor to one Source row and one Palette row before later single-row tuple tests\n";
+            return 1;
+        }
+
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
             !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||

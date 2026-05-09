@@ -115,6 +115,8 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - Landed: `ui_app/tests/test_schema_binding.cpp` now locks the extracted Source/Palette core through shipped tuple rebuild coverage, `phase_orbit` live-param import coverage, and `explaino_cmap` row apply/reset coverage.
 - Validated: the revised Source/Palette bounded extraction contract and phased-plan sync are green, `artifacts/code_quality_report.json` stayed at the repository baseline, `artifacts/verify_native_helper_tests_red_check.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json` now define the first truthful Source/Palette multi-row family as the row-indexed root-basin pair family with `root_index + root_classic_palette` and `root_index + joy_root_palette` as the initial supported paired recipes.
+- Landed: the deferred generic composition story still preserves the already-mapped simple Factorio train-scheduler UX direction; the current deferral is only about unsupported generic runtime semantics, not about retracting the lane-stack schedule model.
+- Landed: `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_root_basin_pair_runtime.contract.json` now bind the next executable Phase 5 slice around bounded root-basin pair-stack owners and the last-enabled-valid-pair live bridge.
 - Next bounded slice: implement the bounded row-indexed root-basin pair runtime-owner/live-bridge step from the extracted core seam; generic Source/Palette composition remains explicitly deferred, and Grading still cannot resume honestly before that runtime slice closes.
 
 ## Hostile Audit
@@ -155,7 +157,7 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 
 ## Resume Point
 
-Start the next bounded Phase 5 slice from `docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md` by adding focused REDs for bounded root-basin pair-stack owners and the last-enabled-valid-pair live bridge before any Grading implementation resumes.
+Start the next bounded Phase 5 slice from `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` by adding focused REDs for bounded root-basin pair-stack owners and the last-enabled-valid-pair live bridge before any Grading implementation resumes.
 
 
 

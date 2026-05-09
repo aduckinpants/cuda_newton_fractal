@@ -9,6 +9,7 @@
 #include "json_min.h"
 
 #include <cmath>
+#include <cstring>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -302,6 +303,98 @@ void ClearColorShapeStack(KernelParams* ioParams) {
     for (ColorPipelineShapeStackEntry& shapeEntry : ioParams->color_shape_stack) {
         shapeEntry = {};
     }
+}
+
+void ClearColorRootBasinPairs(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    ioParams->color_root_basin_pair_count = 0;
+    for (ColorPipelineSelection& pairSelection : ioParams->color_root_basin_pairs) {
+        pairSelection = {};
+    }
+}
+
+bool ParseColorRootBasinPairEntry(const json_min::Value& entryValue,
+                                  ColorPipelineSelection* outSelection,
+                                  std::string* outError) {
+    if (!outSelection) {
+        if (outError) *outError = "color_root_basin_pairs requires output storage";
+        return false;
+    }
+    if (!entryValue.is_object()) {
+        if (outError) *outError = "color_root_basin_pairs entries must be objects";
+        return false;
+    }
+
+    std::string signalId;
+    std::string paletteId;
+    std::string gradingId;
+    if (!GetRequiredString(entryValue, "signal", &signalId, outError) ||
+        !GetRequiredString(entryValue, "palette", &paletteId, outError) ||
+        !GetRequiredString(entryValue, "grading", &gradingId, outError)) {
+        return false;
+    }
+
+    ColorPipelineSelection selection{};
+    if (!ParseColorSignal(signalId, &selection.signal)) {
+        if (outError) *outError = "Unknown color_root_basin_pairs signal: " + signalId;
+        return false;
+    }
+    if (!ParseColorPalette(paletteId, &selection.palette)) {
+        if (outError) *outError = "Unknown color_root_basin_pairs palette: " + paletteId;
+        return false;
+    }
+    if (!ParseColorGradingPreset(gradingId, &selection.grading)) {
+        if (outError) *outError = "Unknown color_root_basin_pairs grading: " + gradingId;
+        return false;
+    }
+
+    const char* sourceFunctionId = nullptr;
+    const char* paletteFunctionId = nullptr;
+    if (!TryBuildColorPipelineScheduleBridgeIds(selection, &sourceFunctionId, &paletteFunctionId) ||
+        !sourceFunctionId ||
+        !paletteFunctionId ||
+        std::strcmp(sourceFunctionId, "root_index") != 0 ||
+        (std::strcmp(paletteFunctionId, "root_classic_palette") != 0 &&
+         std::strcmp(paletteFunctionId, "joy_root_palette") != 0)) {
+        if (outError) *outError = "color_root_basin_pairs only supports root_index paired with root_classic_palette or joy_root_palette";
+        return false;
+    }
+
+    *outSelection = selection;
+    return true;
+}
+
+bool ParseOptionalColorRootBasinPairs(const json_min::Value& paramsObject,
+                                      KernelParams* ioParams,
+                                      std::string* outError) {
+    if (!ioParams) {
+        return false;
+    }
+    ClearColorRootBasinPairs(ioParams);
+    const json_min::Value* pairsValue = paramsObject.get("color_root_basin_pairs");
+    if (!pairsValue) {
+        return true;
+    }
+    if (!pairsValue->is_array()) {
+        if (outError) *outError = "Field color_root_basin_pairs must be an array";
+        return false;
+    }
+
+    const auto& pairArray = pairsValue->as_array();
+    if (pairArray.size() > static_cast<std::size_t>(kColorPipelineMaxRootBasinPairCount)) {
+        if (outError) *outError = "color_root_basin_pairs exceeds the supported maximum row count";
+        return false;
+    }
+
+    ioParams->color_root_basin_pair_count = static_cast<int>(pairArray.size());
+    for (std::size_t index = 0; index < pairArray.size(); ++index) {
+        if (!ParseColorRootBasinPairEntry(pairArray[index], &ioParams->color_root_basin_pairs[index], outError)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool ParseColorShapeStackEntryShape(const json_min::Value& entryValue,
@@ -1266,6 +1359,17 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.color_pipeline = stateVersion >= 2
             ? ColorPipelineForLegacyMode(nextParams.coloring_mode)
             : DefaultColorPipelineForFractal(nextView.fractal_type);
+    }
+    if (!ParseOptionalColorRootBasinPairs(*paramsObject, &nextParams, outError)) return false;
+    if (nextParams.color_root_basin_pair_count > 0) {
+        const ColorPipelineSelection& finalPair =
+            nextParams.color_root_basin_pairs[nextParams.color_root_basin_pair_count - 1];
+        if (finalPair.signal != nextParams.color_pipeline.signal ||
+            finalPair.palette != nextParams.color_pipeline.palette ||
+            finalPair.grading != nextParams.color_pipeline.grading) {
+            if (outError) *outError = "color_root_basin_pairs final entry must mirror the saved flat color pipeline tuple";
+            return false;
+        }
     }
     if (!RequirePositiveIntField(maxIter, "max_iter", outError)) return false;
     nextParams.max_iter = maxIter;

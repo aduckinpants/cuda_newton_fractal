@@ -8,6 +8,7 @@
 
 #include <Windows.h>
 
+#include <cstring>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -118,6 +119,33 @@ const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
     case ColorPipelineShape::smooth_window: return "smooth_window";
     }
     return "unknown";
+}
+
+bool IsPersistableRootBasinPairSelection(const ColorPipelineSelection& selection) {
+    const char* sourceFunctionId = nullptr;
+    const char* paletteFunctionId = nullptr;
+    return TryBuildColorPipelineScheduleBridgeIds(selection, &sourceFunctionId, &paletteFunctionId) &&
+        sourceFunctionId &&
+        paletteFunctionId &&
+        std::strcmp(sourceFunctionId, "root_index") == 0 &&
+        (std::strcmp(paletteFunctionId, "root_classic_palette") == 0 ||
+         std::strcmp(paletteFunctionId, "joy_root_palette") == 0);
+}
+
+bool HasCoherentRootBasinPairPersistence(const KernelParams& params) {
+    if (params.color_root_basin_pair_count <= 0 ||
+        params.color_root_basin_pair_count > kColorPipelineMaxRootBasinPairCount) {
+        return false;
+    }
+    for (int index = 0; index < params.color_root_basin_pair_count; ++index) {
+        if (!IsPersistableRootBasinPairSelection(params.color_root_basin_pairs[index])) {
+            return false;
+        }
+    }
+    const ColorPipelineSelection& finalPair = params.color_root_basin_pairs[params.color_root_basin_pair_count - 1];
+    return finalPair.signal == params.color_pipeline.signal &&
+        finalPair.palette == params.color_pipeline.palette &&
+        finalPair.grading == params.color_pipeline.grading;
 }
 
 const char* CaptureTranscendentalFuncId(TranscendentalFunc func) {
@@ -460,6 +488,19 @@ std::string BuildStateJson(
     js << "    \"color_shape\": \"" << CaptureColorPipelineShapeId(params.color_shape) << "\",\n";
     js << "    \"color_palette\": \"" << CaptureColorPaletteId(params.color_pipeline.palette) << "\",\n";
     js << "    \"color_grading\": \"" << CaptureColorGradingPresetId(params.color_pipeline.grading) << "\",\n";
+    if (HasCoherentRootBasinPairPersistence(params)) {
+        const int rootBasinPairCount = params.color_root_basin_pair_count;
+        js << "    \"color_root_basin_pairs\": [\n";
+        for (int index = 0; index < rootBasinPairCount; ++index) {
+            const ColorPipelineSelection& pairSelection = params.color_root_basin_pairs[index];
+            js << "      {\n";
+            js << "        \"signal\": \"" << CaptureColorSignalId(pairSelection.signal) << "\",\n";
+            js << "        \"palette\": \"" << CaptureColorPaletteId(pairSelection.palette) << "\",\n";
+            js << "        \"grading\": \"" << CaptureColorGradingPresetId(pairSelection.grading) << "\"\n";
+            js << "      }" << (index + 1 < rootBasinPairCount ? "," : "") << "\n";
+        }
+        js << "    ],\n";
+    }
     js << "    \"nova_alpha\": " << static_cast<double>(params.nova_alpha) << ",\n";
     js << "    \"phoenix_p_real\": " << static_cast<double>(params.phoenix_p_real) << ",\n";
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";

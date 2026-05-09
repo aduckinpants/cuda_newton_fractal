@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase5_root_basin_pair_runtime",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json",
+    "docs/contracts/advanced_color_library_foundation_phase5_root_basin_pair_runtime.contract.json",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "make the next executable Phase 5 slice truthful by landing bounded row-indexed root-basin pair runtime support instead of another planning-only pass",
+    "preserve the already-mapped simple Factorio train-scheduler lane model while keeping generic Source/Palette composition deferred",
+    "pair Source and Palette rows by shared row index, fail closed on unmatched or unsupported enabled rows, and mirror only the last enabled valid pair into the legacy flat runtime tuple",
+    "follow strict TDD: add the focused RED first, then land the minimal bounded runtime-owner and live-bridge fix"
+  ],
+  "forbidden_operator_prompts": [
+    "claim generic multi-row Source generator composition or generic Palette chaining in this slice",
+    "leave the Source / Palette live bridge single-row only after claiming bounded root-basin pair runtime support landed",
+    "accept unmatched enabled Source or Palette rows through silent fallback",
+    "resume Grading, root_proximity pairing, or unrelated backlog work in the same slice"
+  ],
+  "required_defaults": {
+    "two_row_root_basin_schedule_is_runtime_real": "required",
+    "bounded_root_basin_pair_owner_exists": "required",
+    "last_enabled_valid_pair_mirrors_to_legacy_tuple": "required",
+    "legacy_single_pair_sync_remains_supported": "required"
+  },
+  "forbidden_defaults": {
+    "editor_only_root_basin_schedule": "forbidden",
+    "single_row_source_palette_bridge_fallback": "forbidden",
+    "unmatched_row_silent_fallback": "forbidden",
+    "persistence_ignores_root_basin_schedule": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_root_basin_pair_runtime.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_root_basin_pair_runtime_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_root_basin_pair_runtime_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 5 root-basin pair runtime contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase5_root_basin_pair_runtime_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase5_root_basin_pair_runtime_plan_sync_ok",
+      "description": "The advanced color family-definition and root-basin runtime phased plans stay synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

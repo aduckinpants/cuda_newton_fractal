@@ -90,6 +90,7 @@ enum class ColorPipelineShape : int {
 };
 
 constexpr int kColorPipelineMaxShapeStackCount = 8;
+constexpr int kColorPipelineMaxRootBasinPairCount = 8;
 
 struct ColorPipelineShapeRuntimeParams {
     float offset{0.0f};
@@ -292,6 +293,8 @@ struct KernelParams {
     ColorPipelineShape color_shape{ColorPipelineShape::identity};
     int color_shape_stack_count{0};
     ColorPipelineShapeStackEntry color_shape_stack[kColorPipelineMaxShapeStackCount]{};
+    int color_root_basin_pair_count{0};
+    ColorPipelineSelection color_root_basin_pairs[kColorPipelineMaxRootBasinPairCount]{};
     float color_shape_offset{0.0f};
     float color_shape_scale{1.0f};
     float color_shape_repeat_frequency{8.0f};
