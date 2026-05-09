@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "contract_id": "ui_integration_harness_completion",
+  "feature_id": "ui_integration_harness_completion",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/ui_integration_harness_completion.contract.json",
+    "docs/contracts/ui_integration_harness_foundation.contract.json",
+    "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
+    "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "separate the reusable testing/harness completion thread from the advanced-color, preset, composition, and new-fractal product thread",
+    "finish the current testing and harness effort as its own phased set of slices before resuming product work",
+    "draw a professional documented stop-line for the harness for now rather than pretending every future harness feature must land immediately",
+    "treat presets, function-library continuation, composition, and new fractal work as blocked until the harness gate closes"
+  ],
+  "forbidden_operator_prompts": [
+    "resume advanced-color implementation while the harness-completion gate is still open",
+    "start preset code before the harness-completion gate closes",
+    "start multi-function composition or new fractal work before the harness-completion gate closes",
+    "leave the harness-versus-product split as chat-only intent without checked-in planning authority"
+  ],
+  "required_defaults": {
+    "harness_first_gate_is_explicit": "required",
+    "product_work_is_gated": "required",
+    "stop_line_is_documented": "required"
+  },
+  "forbidden_defaults": {
+    "harness_product_conflation": "forbidden",
+    "chat_only_restart_plan": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "ui_integration_harness_completion_contract_schema_valid",
+      "description": "The harness-completion contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_integration_harness_completion_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "ui_integration_harness_completion_plan_sync_ok",
+      "description": "The harness-completion phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "ui_integration_harness_completion_hostile_audit_ok",
+      "description": "The harness-completion hostile audit validates as complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_integration_harness_completion_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

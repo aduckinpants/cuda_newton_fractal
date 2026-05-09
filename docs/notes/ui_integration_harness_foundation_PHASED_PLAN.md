@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 complete - the checked-in loaded-state scenario driver and shared `tests/runtime_harness.py` surface now back a mandatory published-runtime UI harness rail across dual-seed capture, escape variants, sidecar live, shutdown, sweep-pause, and a second mode-family runtime-walk replay/pause witness; the runtime/checkpoint public profiles now also expose a separate mandatory headless runtime artifact-tools rail while the remaining runtime-walk FITS-path proofs live on their own named non-mandatory sibling rail, the runtime pytest lane forwards focused pytest selectors without dropping its active-runtime preflight, the neighboring zoom-control seam has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
+Complete - the harness foundation itself is closed: the checked-in loaded-state scenario driver and shared `tests/runtime_harness.py` surface back the mandatory published-runtime UI harness, probe/session, and artifact-tools rails, the runtime/checkpoint profiles require the mandatory rails, the runtime-walk FITS-path proofs live on their own non-mandatory sibling rail, the runtime pytest lane forwards focused pytest selectors, the neighboring zoom-control seam has a dedicated schema-binding regression plus runtime witness, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces. Remaining harness-completion work now continues under `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` instead of this foundation plan.
 
 ## Phase Checklist
 
@@ -25,12 +25,9 @@ Phase 5 complete - the checked-in loaded-state scenario driver and shared `tests
 
 ## Immediate Next Slice
 
-- Extend the new layered checkpoint hook chain with the remaining mainline hardening surfaces, especially any viewer-host-specific post-tool dirty warning or bootstrap-rail gaps that still rely on the old monolithic guard.
-- Widen the loaded-state scenario driver to additional neighboring workflows that already use the same publish/load-state/capture pattern instead of leaving them on hand-built command assembly.
-- Keep moving neighboring published-runtime consumers onto `tests/runtime_harness.py` so the harness expansion keeps shrinking ad hoc CLI/state-bundle duplication instead of just documenting it.
-- Decide whether any other non-core runtime-visible witness families deserve sibling named rails now that runtime-walk FITS-path proof has established the "mandatory core rail plus named opt-in rail" pattern and the headless artifact generators now have their own mandatory rail.
-- Keep moving the remaining active-runtime-only runtime tests onto `tests/runtime_harness.py` when they only duplicate runtime lookup or live-window boilerplate; stop short when the next step needs a broader runtime-test support module.
-- Keep hostile-audit validation in the proof chain as the driver expands; do not let the new helper become a loophole for helper-only fake greens.
+- Execute the remaining harness-first work from `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md`, not from this foundation plan.
+- Keep product work gated until the harness-completion plan closes its explicit stop-line for now.
+- After the harness gate closes, repair product planning authority before resuming advanced-color, preset, composition, or new-fractal implementation.
 
 ## Presumption Loop
 
@@ -87,6 +84,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: the remaining runtime-walk FITS-path proofs now have a checked-in public surface too: `.vscode/tasks.json` exposes `verify: runtime walk FITS witnesses`, `tests/test_agent_workflow_tools.py` locks both its presence and its non-mandatory status, and the logged sibling-rail run passed with `2 passed, 1 deselected`.
 - Done: the generic `verify: runtime probe/session pytest` surface no longer hides the headless artifact generators behind `tools/viewer_host_runtime_pytest_lane.py` defaults. `.vscode/tasks.json` now exposes a separate mandatory `verify: runtime artifact tools` rail for `test_explaino_runtime_walk_tool.py`, `test_flashlight_bridge_runner.py`, `test_fractal_runtime_flashlight_probe.py`, `test_fractal_runtime_flashlight_bridge.py`, and `test_fractal_runtime_explaino_runtime_walk.py`, while the explicit probe/session rail now carries `batch_cli`, `probe_cli`, `session`, `function_descriptor_cli`, and `generic_probe_cli`.
 - Done: `tests/test_fractal_runtime_session.py`, `tests/test_fractal_runtime_flashlight_probe.py`, and `tests/test_fractal_runtime_explaino_runtime_walk.py` now consume `active_runtime_exe` from `tests/runtime_harness.py`, shrinking the remaining active-runtime metadata duplication across the runtime rails.
+- Done: the harness-versus-product split is now explicit in checked-in authority; `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` and `docs/contracts/ui_integration_harness_completion.contract.json` own the remaining harness-completion thread and keep product work gated until that thread reaches a documented stop-line.
 
 ## Hostile Audit
 
@@ -168,4 +166,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Checkpoint the explicit runtime artifact-tools rail slice, then inspect the remaining active-runtime-only runtime tests for the next low-risk `tests/runtime_harness.py` extraction or the next warranted sibling rail.
+Do not treat this plan as the active restart authority anymore. Resume the remaining harness-first work from `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md`, then repair product planning authority only after that gate closes.

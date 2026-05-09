@@ -6,7 +6,9 @@
   "plan_path": "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts/ui_integration_harness_foundation.contract.json",
+    "docs/contracts/ui_integration_harness_completion.contract.json",
     "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
+    "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
     "docs/notes/advanced_color_preset_pit_of_success_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
     ".vscode/tasks.json",
