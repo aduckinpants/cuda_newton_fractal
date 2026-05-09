@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the first bounded backend-recovery slice landed truthful two-row Shape-stack runtime support; continue the remaining stack/backend and grading-boundary recovery from that honest base instead of jumping straight to Grading
+Phase 5 in progress - the first bounded backend-recovery slice landed truthful two-row Shape-stack runtime support; the next remaining backend seam is that Source and Palette still import/apply through single-row live-bridge helpers, so continue recovery from that truthful base instead of jumping straight to Grading
 
 ## Phase Checklist
 
@@ -108,7 +108,9 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - Landed: `ui_app/tests/test_schema_binding.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now lock truthful two-row Shape apply/sync behavior, ordered runtime composition, diagnostics round-trip, archive capture persistence, and reset clearing for the new bounded Shape stack.
 - Validated: `artifacts/code_quality_report.json` stays on the repository baseline, `artifacts/verify_native_helper_tests_shape_stack.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` for the published runtime after the bounded Phase 5 Shape-stack recovery slice.
 - Audit: hostile review of the first Phase 5 implementation found a real persistence omission where `color_shape_stack` would have been lost on save/load and archive capture, plus a code-quality regression in the first loader refactor; both defects are repaired and the re-read repaired state did not expose another hidden single-row fallback within the bounded Shape slice.
-- Next bounded slice: continue Phase 5 backend recovery from this truthful Shape-stack base; do not claim Grading is ready until the remaining stack/backend and grading-authority seams are named and closed honestly.
+- Checkpointed: the bounded Phase 5 Shape-stack recovery slice closed at commit `e6b55b9` with the linked `ck:1fbf6d4d` handoff entry plus machine-written validation and contract proof receipts.
+- Landed: planning-authority repair now names the next remaining Phase 5 blocker explicitly: `ui_app/src/color_pipeline_window.h` still imports and applies Source/Palette through `BuildColorPipelineLaneWithSingleRow(...)`, `rows.front()`, and `FindSingleEnabledColorPipelineRow(...)`, while `ui_app/src/fractal_types.h` only owns a runtime stack for Shape.
+- Next bounded slice: repair Source/Palette live-bridge and runtime-state authority from this truthful Shape-stack base; do not claim Grading is ready until those remaining backend seams and the grading-authority boundary are closed honestly.
 
 ## Hostile Audit
 
@@ -120,13 +122,14 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - [done] Pass 1 - re-read the main foundation plan against the mapped inventory and record the concrete planning defects: phase drift, missing hostile-audit state, globally open user asks, and the vague direct-to-Grading resume point.
 - [done] Pass 2 - re-read the live backend seams and record the concrete technical blockers: `ui_app/src/color_pipeline_window.h` still enforces one enabled row per lane and `ui_app/src/fractal_types.h` still stores Shape state as one flat parameter set.
 - [done] Pass 3 - audit the repaired planning surfaces after the bounded Phase 5 recovery slice lands and confirm the next executable implementation slice is backend recovery rather than an underspecified Grading continuation.
-- [open] Pass 4 - name the next remaining Phase 5 backend-recovery seam after the bounded Shape-stack slice and keep the foundation plan from drifting back into a false direct-to-Grading continuation.
+- [done] Pass 4 - name the next remaining Phase 5 backend-recovery seam after the bounded Shape-stack slice and keep the foundation plan from drifting back into a false direct-to-Grading continuation.
 
 ## Audit Findings
 
 - [done] Real defect found: this plan previously said Phase 5 was in progress and pointed straight to Grading even though the mapped lane-stack requirement remained open and the plan lacked the hostile-audit sections now required by the repo workflow.
 - [done] Real defect found: the live advanced-color backend still hard-rejects more than one enabled row per lane and imports/snapshots through single-row builders, so the next truthful implementation slice must repair backend/state authority before any honest Grading continuation.
 - [done] Real defect found during the first executable Phase 5 slice: supported Shape stacks became runtime-real in apply/math, but the first pass still dropped them on diagnostics save/load and archive capture until explicit `color_shape_stack` persistence landed.
+- [done] Real defect named after the bounded Shape-stack slice: Source and Palette still route live import/apply through single-row builders and `FindSingleEnabledColorPipelineRow(...)`, and `KernelParams` still has no equivalent runtime stack authority for those lanes, so the next truthful backend slice must repair those state/bridge seams before Grading.
 
 ## Notes
 
@@ -147,7 +150,7 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 
 ## Resume Point
 
-Checkpoint the bounded Phase 5 Shape-stack runtime slice, then pick the next remaining backend-recovery seam from the truthful Phase 5 base instead of resuming a false direct-to-Grading thread.
+Start the next bounded Phase 5 slice by replacing the single-row Source/Palette import/apply path in `ui_app/src/color_pipeline_window.h` and introducing truthful runtime state ownership for those lanes before any Grading implementation resumes.
 
 
 

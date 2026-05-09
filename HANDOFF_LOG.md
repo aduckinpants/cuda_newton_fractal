@@ -127,3 +127,5 @@
 - `ck:d2ebe58e` 2026-05-09 14:01 UTC | score 97 — H3 landed: closed Gate G1 for the harness thread by documenting the explicit stop-line, exclusions, and the rule that product work stays blocked until planning authority repair runs next.
 - `ck:89be5596` 2026-05-09 14:02 UTC — session-start | branch=feature/advanced-color-pipeline-draft-editor-reframe | head=d2b574f | status=clean | intent=close remaining explicit user ask in harness completion plan
 - `ck:89be5596` 2026-05-09 14:03 UTC | score 97 — Closure fix landed: resolved the last open explicit user ask in the harness-completion plan by marking the already-enforced backlog sequencing rule done.
+- `ck:5bb1d7d8` 2026-05-09 14:11 UTC — session-start | branch=feature/advanced-color-pipeline-draft-editor-reframe | head=0166bfe | status=clean | intent=repair advanced color product planning authority after harness gate closure
+- `ck:5bb1d7d8` 2026-05-09 14:16 UTC | score 97 — Product planning authority repair landed: reconciled the stale Phase 5 recovery and Shape-stack subplans with their landed checkpoints and named Source/Palette single-row live-bridge authority as the next truthful backend-recovery seam.

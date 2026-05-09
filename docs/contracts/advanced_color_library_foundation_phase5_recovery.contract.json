@@ -7,7 +7,9 @@
   "allowed_mutation_scope": [
     "docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json",
     "docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md",
-    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md"
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase5_shape_stack_runtime_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
     "treat the mapped advanced-color function inventory as binding authority instead of redefining the MVP",

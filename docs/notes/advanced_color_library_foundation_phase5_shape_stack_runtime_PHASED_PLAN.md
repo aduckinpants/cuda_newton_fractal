@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 complete - the bounded Shape-stack runtime slice is validated and hostile-audited; checkpoint closure is the only remaining step for this sub-slice
+Complete - the bounded Shape-stack runtime slice closed at `e6b55b9` under `ck:1fbf6d4d`; this subplan is now a completed predecessor for the remaining Phase 5 backend-recovery thread
 
 ## Phase Checklist
 
@@ -13,10 +13,10 @@ Phase 4 complete - the bounded Shape-stack runtime slice is validated and hostil
 
 ## Explicit User Asks
 
-- [open] Stop forcing the advanced color system to behave like only one function per area is real.
-- [open] Do the work correctly instead of asking whether to proceed.
-- [open] Keep the mapped advanced-color inventory as binding authority rather than reopening MVP definition.
-- [open] Follow the mainline phased-plan and contract workflow while landing the first real backend-recovery slice.
+- [done] Stop forcing the advanced color system to behave like only one function per area is real.
+- [done] Do the work correctly instead of asking whether to proceed.
+- [done] Keep the mapped advanced-color inventory as binding authority rather than reopening MVP definition.
+- [done] Follow the mainline phased-plan and contract workflow while landing the first real backend-recovery slice.
 
 ## Presumption Loop
 
@@ -37,7 +37,7 @@ The nearest controlling seam is the Shape lane live bridge in `ui_app/src/color_
 - Landed: `ui_app/src/fractal_types.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/color_pipeline_window.h`, and `ui_app/src/fractal_derived_fields.cpp` now own a bounded Shape-stack runtime authority with legacy single-row fallback and reset/default coverage.
 - Landed: `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` now keep `color_shape_stack` truthful through diagnostics save/load, capture/archive output, and reset behavior while mirroring the last stack row back into the legacy flat Shape fields.
 - Validated: `artifacts/code_quality_report.json` is back on the repository baseline after the loader refactor, `artifacts/verify_native_helper_tests_shape_stack.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `68 passed` against the published runtime.
-- Pending: validate the slice contract, assert phased-plan sync, checkpoint the slice under `ck:1fbf6d4d`, and write the machine receipts for the committed state.
+- Checkpointed: the slice closed at commit `e6b55b9` with the linked `ck:1fbf6d4d` handoff entry plus machine-written validation and contract proof receipts.
 
 ## Hostile Audit
 
@@ -81,4 +81,4 @@ The nearest controlling seam is the Shape lane live bridge in `ui_app/src/color_
 
 ## Resume Point
 
-Checkpoint this bounded Shape-stack runtime slice under `ck:1fbf6d4d`, then return to the main Phase 5 foundation plan and choose the next backend-recovery seam without pretending Grading is unblocked yet.
+Do not reopen checkpoint closure from this subplan. Return to the main Phase 5 foundation plan and continue backend recovery from the truthful Shape-stack base, with Source/Palette live-bridge and runtime-state authority as the next remaining seam.

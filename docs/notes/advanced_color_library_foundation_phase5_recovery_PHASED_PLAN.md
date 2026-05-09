@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 2 in progress - checkpoint the validated planning-repair slice cleanly so the next executable slice is the mapped backend-recovery thread
+Complete - the planning-repair slice closed at `433829c` under `ck:e33c073e`, and this follow-up sync repair keeps the main foundation plan plus the Shape-stack subplan aligned with that landed state
 
 ## Phase Checklist
 
 - [x] Phase 1 - add the recovery contract/plan pair and repair the main foundation plan so it stops claiming Grading is the next executable step while the stack/backend requirement is still open
-- [ ] Phase 2 - validate phased-plan sync and contract shape, then checkpoint the planning-repair slice cleanly
+- [x] Phase 2 - validate phased-plan sync and contract shape, then checkpoint the planning-repair slice cleanly
 
 ## Explicit User Asks
 
@@ -31,7 +31,9 @@ The controlling defect is no longer uncertainty about the advanced-color functio
 
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md` and `docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json` now bound the planning-repair slice so the correction happens under the repo's phased-plan and contract workflow.
 - Landed: `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` now treats the mapped inventory as settled, sequences backend recovery ahead of Grading, adds hostile-audit sections, maps explicit asks to remaining phases, and replaces the vague direct-to-Grading resume point.
+- Landed: `docs/notes/advanced_color_library_foundation_phase5_shape_stack_runtime_PHASED_PLAN.md` is now reconciled with the landed `e6b55b9` / `ck:1fbf6d4d` checkpoint instead of still pointing at already-closed closure work.
 - Validated: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` now passes for both the repaired foundation plan and this recovery plan, and `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_recovery_contract.json` validated the new recovery contract cleanly.
+- Checkpointed: the original planning-repair slice closed at commit `433829c` with the linked `ck:e33c073e` handoff entry plus machine-written validation and contract proof receipts.
 
 ## Hostile Audit
 
@@ -64,4 +66,4 @@ The controlling defect is no longer uncertainty about the advanced-color functio
 
 ## Resume Point
 
-Append the `ck:e33c073e` handoff entry, checkpoint this planning-repair slice, write the machine receipts for the clean committed HEAD, and leave the next executable implementation slice anchored to the bounded backend-recovery thread instead of a false Grading continuation.
+Treat this as a completed predecessor. Resume from `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` and start the next bounded backend-recovery slice on Source/Palette live-bridge and runtime-state authority instead of reopening already-closed checkpoint work.
