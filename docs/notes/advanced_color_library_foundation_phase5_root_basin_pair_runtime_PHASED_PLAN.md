@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 in progress - validation and hostile audit are now green; next close the slice through handoff, checkpoint, and machine receipts
+Complete - the bounded root-basin pair runtime slice closed at `b596af6` under `ck:6460d382`; this subplan is now a completed predecessor for Phase 6 Grading promotion
 
 ## Phase Checklist
 
 - [x] Phase 1 - add focused REDs that prove two row-indexed root-basin pairs must apply to live state, mirror the last enabled valid pair into the legacy flat tuple, and resync from live state without collapsing back to one row
 - [x] Phase 2 - add a bounded root-basin pair runtime owner while preserving backward-compatible single-pair imports and the existing root-basin renderer path
 - [x] Phase 3 - wire the advanced window live bridge to pair Source and Palette rows by shared row index, fail closed on unmatched or unsupported enabled rows, and mirror the final valid pair into the legacy flat fields
-- [ ] Phase 4 - keep reset/defaults plus diagnostics/archive persistence truthful for the bounded pair schedule, then validate, hostile-audit, and checkpoint the slice cleanly
+- [x] Phase 4 - keep reset/defaults plus diagnostics/archive persistence truthful for the bounded pair schedule, then validate, hostile-audit, and checkpoint the slice cleanly
 
 ## Explicit User Asks
 
@@ -39,6 +39,7 @@ The nearest controlling seam is the Source / Palette live bridge in `ui_app/src/
 - Validated: `artifacts/root_basin_pair_runtime_green_check_5.log` is green for `ui_app/build_tests_vsdevcmd.cmd` after the bounded root-basin pair owner/live-bridge changes.
 - Validated: `artifacts/root_basin_pair_persistence_native.log` and `artifacts/root_basin_pair_persistence_native_rerun.log` are green for `ui_app/build_tests_vsdevcmd.cmd` after the reset/default and diagnostics/archive persistence follow-up plus the stale-owner capture audit repair.
 - Validated: `artifacts/code_quality_report.json` stayed at the repo baseline, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
+- Checkpointed: the bounded root-basin pair runtime slice closed at commit `b596af6` with the linked `ck:6460d382` handoff entry plus machine-written validation and contract proof receipts.
 
 ## Hostile Audit
 
@@ -82,4 +83,4 @@ The nearest controlling seam is the Source / Palette live bridge in `ui_app/src/
 
 ## Resume Point
 
-Checkpoint `ck:6460d382` next, then write the validation and contract-proof receipts for the committed root-basin pair runtime slice.
+Do not reopen checkpoint closure from this subplan. Return to `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` under `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json` and start with focused REDs around the missing grading lane plus bounded `contrast_lift` promotion.

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the truthful Shape-stack slice, the bounded shipped Source/Palette authority extraction, and the first-family planning slice are landed; the next remaining backend seam is implementing the row-indexed root-basin pair runtime-owner/live-bridge path before any honest Grading continuation
+Phase 6 in progress - the bounded Phase 5 backend-recovery chain closed at `b596af6`, and the next remaining slice is promoting Grading to a first-class category through a bounded grading runtime-authority step that starts with the already-runtime-real `contrast_lift` row
 
 ## Phase Checklist
 
@@ -11,33 +11,34 @@ Phase 5 in progress - the truthful Shape-stack slice, the bounded shipped Source
 - [x] Phase 2 - land the full initial Source library through the extracted descriptor/registry core and the broader runtime-source authority refactor the user explicitly chose
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
-- [ ] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
+- [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
 - [ ] Phase 6 - promote Grading to a first-class category and land the initial Grade library, including the bounded generic Balance/Void operator, only after the backend recovery slice closes honestly
 - [ ] Phase 7 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
 - [ ] Phase 8 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
 ## Explicit User Asks
 
-- [open] Phase 5-7 - Do the next step as a real planned-out full initial library of reusable functions per category, not a vague "3-ish" placeholder.
-- [open] Phase 5-7 - Treat this as a critical move that needs real effort, not a lazy option pass.
+- [open] Phase 6-7 - Do the next step as a real planned-out full initial library of reusable functions per category, not a vague "3-ish" placeholder.
+- [open] Phase 6-7 - Treat this as a critical move that needs real effort, not a lazy option pass.
 - [done] Phase 4 - Use ExplainO CMap as part of the palette planning, but do not conflate it with basin/root/joy palette work.
-- [open] Phase 5-7 - Make the result simple to extend with nice module boundaries and clean coding.
-- [open] Phase 5-7 - Strengthen the architecture beyond dropdowns: make this a reusable, descriptor-driven color-pipeline core that could plausibly become its own DLL/static library later.
-- [open] Phase 5-6 - `color_pipeline_window.h` must stop being the authority for category/function identity, parameter meaning, runtime applicability, import/apply behavior, reset/default behavior, or serialization truth.
+- [open] Phase 6-7 - Make the result simple to extend with nice module boundaries and clean coding.
+- [open] Phase 6-7 - Strengthen the architecture beyond dropdowns: make this a reusable, descriptor-driven color-pipeline core that could plausibly become its own DLL/static library later.
+- [open] Phase 6 - `color_pipeline_window.h` must stop being the authority for category/function identity, parameter meaning, runtime applicability, import/apply behavior, reset/default behavior, or serialization truth.
 - [open] Phase 6 - Add a bounded generic filmic Balance/Void grading operator, but keep that separate from fractal-family geometry work.
 - [done] Phase 0 - Plan one experimental ExplainO-BalanceVoid deformation-pack family with three neutral-default axes instead of a branch explosion of separate fractals.
-- [open] Phase 5-7 - Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
+- [open] Phase 6-7 - Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
 
 ## Presumption Loop
 
-The controlling product risk is no longer uncertainty about the advanced-color inventory. That mapping already exists in `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md`, and the lane-stack requirement already exists in `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md`. The current blocker is planning drift plus a still-single-row live/backend model: this plan previously pointed straight to Grading even though `ui_app/src/color_pipeline_window.h` still hard-rejects more than one enabled row per lane and `ui_app/src/fractal_types.h` still stores Shape state as one enum plus one flat parameter set. The most falsifiable current hypothesis is that Phase 5 must first repair the stack/backend requirement and grading authority boundary so the next executable slice is a bounded backend recovery rather than a dishonest Grading continuation. The cheapest disconfirming checks are deterministic repo rails: the Phase 5 recovery contract must validate, the phased plans must stay synchronized, and the next implementation slice must start with focused reds around the one-enabled-row live bridge and per-row parameter scoping.
+The controlling product risk is no longer the Phase 5 backend seam; the bounded root-basin pair runtime slice closed that blocker at `b596af6`. The mapped Grade inventory already exists in `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md`, but the checked-in runtime/editor authority is still only partial: `ui_app/src/color_pipeline_core.h` already defines grading descriptors for `contrast_lift`, `phase_finish`, and `band_finish`, `KernelParams` plus `ui_app/src/escape_time_coloring.h` already carry the legacy grading owner surface, and `ApplyFractalColorGrading(...)` already honors the legacy grading preset, yet the shipped lane catalogs still omit a `grading` lane and only `contrast_lift` currently round-trips through the reusable live import/apply seam. The most falsifiable current hypothesis is that Phase 6 must begin with a bounded grading runtime-authority slice that promotes Grading to a first-class lane while shipping only the first runtime-real grading row, `contrast_lift`, before widening `phase_finish`, `band_finish`, `neutral_finish`, `tone_map_finish`, or `balance_void_grade`. The cheapest disconfirming checks are deterministic planning rails for the new Phase 6 authority plus focused REDs in `ui_app/tests/test_schema_binding.cpp` that prove the advanced editor still lacks a grading lane and cannot yet round-trip the bounded grading surface.
 
 ## Presumption Evidence
 
 - `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` already locks the four-category foundation and the initial Source / Shape / Palette / Grading inventory, including the bounded generic Balance/Void operator and the separate ExplainO-BalanceVoid family track.
 - `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already maps the lane-stack requirement: Source / Shape / Palette lane stacks, plus-button row insertion, ordered composition, and runtime-real-only shipping.
-- `ui_app/src/color_pipeline_window.h` still initializes, imports, snapshots, and applies the live path through single-row helpers plus explicit one-enabled-row bridge checks, which proves backend recovery must come before any honest Grading follow-on.
-- `ui_app/src/fractal_types.h` still stores Shape state as one active enum plus one flat parameter set, which means the first real multi-row runtime slice needs an explicit per-row parameter-scoping strategy instead of silent implementation drift.
+- `ui_app/src/color_pipeline_core.h` already defines `BuildColorPipelineGradeFunctions()` for `contrast_lift`, `phase_finish`, and `band_finish`, which proves the reusable core has started carrying Grade identity even though the shipped lane catalogs still omit it.
+- `ui_app/src/color_pipeline_core.h` still returns only `source`, `shape`, and `palette` from `GetColorPipelineLaneCatalogs()`, which hard-proves the advanced editor still cannot expose Grading as a first-class lane.
+- `ui_app/src/color_pipeline_core.h` only wires `contrast_lift` through `ImportSupportedColorPipelineParamsFromLive(...)` and `ApplySupportedColorPipelineRowParamsToLive(...)`, while `phase_finish` and `band_finish` descriptors exist without equivalent live owner/apply support; that makes `contrast_lift` the first truthful shipped grading row for the next bounded slice.
 - The verified references still split the ExplainO surfaces cleanly: the legacy LUT lineage lives in `c:\code\salticid-cuda\carl-ca-python\ca_viewer.py`, while the current basin/root palettes live in `c:\code\salticid-cuda\content\packs\explaino\cuda\explaino_cuda_helpers.inl` and `c:\code\salticid-cuda\cuda_core\src\ops_special.cu`, and the generic viewport colormap surface in `c:\code\salticid-cuda\ide_ui_dx11\ui_app\src\viewport_colormap.cpp` / `.h` does not contain an ExplainO colormap.
 
 ## Proof Ledger
@@ -117,7 +118,10 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_family_definition_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_source_palette_family_definition.contract.json` now define the first truthful Source/Palette multi-row family as the row-indexed root-basin pair family with `root_index + root_classic_palette` and `root_index + joy_root_palette` as the initial supported paired recipes.
 - Landed: the deferred generic composition story still preserves the already-mapped simple Factorio train-scheduler UX direction; the current deferral is only about unsupported generic runtime semantics, not about retracting the lane-stack schedule model.
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_root_basin_pair_runtime.contract.json` now bind the next executable Phase 5 slice around bounded root-basin pair-stack owners and the last-enabled-valid-pair live bridge.
-- Next bounded slice: implement the bounded row-indexed root-basin pair runtime-owner/live-bridge step from the extracted core seam; generic Source/Palette composition remains explicitly deferred, and Grading still cannot resume honestly before that runtime slice closes.
+- Checkpointed: the bounded Phase 5 root-basin pair runtime slice closed at commit `b596af6` with the linked `ck:6460d382` handoff entry plus machine-written validation and contract proof receipts.
+- Phase boundary advanced: Phase 5 backend recovery is now complete; the live multi-row backend requirement is proven through the bounded root-basin pair family, so the next blocker is no longer backend honesty but missing Grading authority.
+- Landed: `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json` now bind the next executable Phase 6 slice around promoting a grading lane through the first runtime-real `contrast_lift` row while keeping wider Grade inventory rows fail-closed until their runtime math is real.
+- Next bounded slice: start Phase 6 from `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` by adding focused REDs for the missing grading lane and the bounded `contrast_lift` live import/apply path before wider grading-library promotion resumes.
 
 ## Hostile Audit
 
@@ -134,30 +138,39 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 ## Audit Findings
 
 - [done] Real defect found: this plan previously said Phase 5 was in progress and pointed straight to Grading even though the mapped lane-stack requirement remained open and the plan lacked the hostile-audit sections now required by the repo workflow.
-- [done] Real defect found: the live advanced-color backend still hard-rejects more than one enabled row per lane and imports/snapshots through single-row builders, so the next truthful implementation slice must repair backend/state authority before any honest Grading continuation.
+- [done] Real defect found: the live advanced-color backend still hard-rejects more than one enabled row per lane and imports/snapshots through single-row builders, so the next truthful implementation slice had to repair backend/state authority before any honest Grading continuation.
 - [done] Real defect found during the first executable Phase 5 slice: supported Shape stacks became runtime-real in apply/math, but the first pass still dropped them on diagnostics save/load and archive capture until explicit `color_shape_stack` persistence landed.
-- [done] Real defect named after the bounded Shape-stack slice: Source and Palette still route live import/apply through single-row builders and `FindSingleEnabledColorPipelineRow(...)`, and `KernelParams` still has no equivalent runtime stack authority for those lanes, so the next truthful backend slice must repair those state/bridge seams before Grading.
+- [done] Real defect named after the bounded Shape-stack slice: Source and Palette still routed live import/apply through single-row builders and `FindSingleEnabledColorPipelineRow(...)`, and `KernelParams` still had no equivalent runtime stack authority for those lanes, so the next truthful backend slice had to repair those state/bridge seams before Grading.
+- [done] Real defect found after the root-basin pair checkpoint: this main foundation plan still said Phase 5 was in progress and still pointed at the now-closed root-basin runtime subplan, leaving Phase 6 Grading without checked-in successor authority.
 
 ## Notes
 
 - Expected owner files for the next bounded slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/notes/advanced_color_library_foundation_phase5_recovery_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase5_recovery.contract.json`
+  - `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md`
+  - `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json`
+  - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/color_pipeline_window.h`
+  - `ui_app/src/diagnostics_capture.cpp`
+  - `ui_app/src/diagnostics_state_io.cpp`
   - `ui_app/src/fractal_types.h`
   - `ui_app/src/escape_time_coloring.h`
+  - `ui_app/src/runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
   - `ui_app/tests/test_escape_time_coloring.cpp`
-- Non-goals for Phase 5:
+  - `ui_app/tests/test_diagnostics_state_io.cpp`
+  - `ui_app/tests/test_finding_archive_actions.cpp`
+  - `ui_app/tests/test_runtime_reset.cpp`
+- Non-goals for Phase 6:
   - do not redefine the mapped Source / Shape / Palette / Grading inventory
-  - do not start Grading implementation before the backend recovery slice closes honestly
+  - do not ship non-runtime grading rows just because they are named in the inventory
+  - do not implement `balance_void_grade` in the first grading-authority slice
   - do not reopen the common-fractal wave or the CUDA catalog refactor as the active thread yet
-  - do not treat editor-only stack behavior as satisfying the live/runtime requirement
+  - do not create a second grading authority outside the legacy Color-panel mirror
 
 ## Resume Point
 
-Start the next bounded Phase 5 slice from `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` by adding focused REDs for bounded root-basin pair-stack owners and the last-enabled-valid-pair live bridge before any Grading implementation resumes.
+Start the next bounded Phase 6 slice from `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` under `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json` by adding focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest grading owner tests that prove the advanced editor still lacks a grading lane and cannot yet round-trip the bounded `contrast_lift` grading surface.
 
 
 

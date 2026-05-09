@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase6_grading_runtime_authority",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "promote Grading to a first-class advanced-color category only after the Phase 5 backend-recovery chain closed honestly",
+    "keep the advanced grading lane and the legacy Color-panel grading controls on one authoritative mirrored runtime surface",
+    "ship only runtime-real grading rows, starting with contrast_lift as the first bounded grading row",
+    "follow strict TDD by proving the grading lane is still missing before landing the minimal bounded runtime-authority repair"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the full grading inventory ships in one slice",
+    "expose phase_finish, band_finish, neutral_finish, tone_map_finish, or balance_void_grade before their runtime math is proven",
+    "create a second grading authority outside the legacy Color-panel mirror",
+    "couple balance_void grading work to ExplainO-specific geometry in this slice"
+  ],
+  "required_defaults": {
+    "grading_lane_becomes_first_class": "required",
+    "contrast_lift_is_first_shipped_grading_row": "required",
+    "legacy_color_grading_mirror_remains_authoritative": "required",
+    "non_runtime_grade_rows_stay_fail_closed": "required"
+  },
+  "forbidden_defaults": {
+    "draft_only_grading_rows_visible": "forbidden",
+    "stale_advanced_vs_legacy_grading_divergence": "forbidden",
+    "balance_void_in_first_grading_slice": "forbidden",
+    "geometry_coupled_grading_surface": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase6_grading_runtime_authority_contract_schema_valid",
+      "description": "The advanced color library foundation Phase 6 grading runtime authority contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase6_grading_runtime_authority_plan_sync_ok",
+      "description": "The advanced color foundation and grading runtime phased plans stay synchronized during the grading-authority slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
