@@ -7,6 +7,7 @@
 
 bool HasArg(const std::vector<std::string>& args, const char* flag);
 bool TryGetArgValue(const std::vector<std::string>& args, const char* flag, std::string* outValue);
+bool TryGetArgValues(const std::vector<std::string>& args, const char* flag, std::vector<std::string>* outValues);
 bool TryParseDoubleArg(const std::vector<std::string>& args, const char* flag, double* outValue);
 bool TryParseIntArg(const std::vector<std::string>& args, const char* flag, int* outValue);
 bool TryParseFractalTypeArg(const std::vector<std::string>& args, FractalType* outType);

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 1 in progress - the first truthful published-runtime advanced-color draft interaction seam is landed; next work should broaden the scenario vocabulary and lift this proof style into a reusable mandatory harness rail
+Phase 1 in progress - the reusable typed advanced-color scenario surface is landed with direct native helper coverage and published-runtime proof; next work should widen scenario coverage and carry this proof style into the broader mandatory integration rail
 
 ## Phase Checklist
 
@@ -38,10 +38,13 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: the bootstrap contract for this slice now reserves the planning surface needed to start the harness on approved repo rails instead of leaving it as chat-only intent.
 - Done: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_foundation.contract.json --out-json artifacts/validation/ui_integration_harness_foundation_contract.json` and `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` both passed for this planning bootstrap slice.
 - Done: discovery confirmed the published runtime already supports `--load-state-json` plus `--capture-diagnostic`, while no checked-in headless verb currently scripts an advanced-color draft function change through the same draft/apply helpers the UI uses.
-- Done: the first harness-facing RED/GREEN now proves an advanced-color draft function switch through the published runtime path via `--color-pipeline-select-function <lane>:<row>:<function>`.
+- Done: the first harness-facing RED/GREEN proved an advanced-color draft function switch through the published runtime path, which exposed the need for a reusable multi-action surface.
 - Done: CLI startup now preserves loaded `color_pipeline_draft` state for headless runtime proof and headless diagnostic/finding capture now serializes that draft back out.
 - Done: hostile audit found and repaired one real defect in the new seam: CLI fractal overrides could invalidate live params while leaving the preserved draft stale; startup now resynchronizes the draft when those overrides change the loaded family path.
-- Planned: broaden the interaction vocabulary beyond a single function-switch verb and start extracting a reusable scenario layer from this first vertical seam.
+- Done: headless runtime proof now accepts repeated `--color-pipeline-action` specs, parses them into typed scenario actions, dispatches them through a visitor-style executor over the draft model, and proves both multi-step function/param mutation and structural Shape-row edits through the published runtime path.
+- Done: native helper coverage now exercises the typed action surface directly in `test_viewer_cli` and `test_headless_modes`, so CLI parsing and draft executor behavior both fail fast before the published-runtime rail.
+- Done: hostile audit found and repaired a real ownership defect in the typed scenario refactor: pure `--color-pipeline-action` parsing had drifted into `headless_modes.cpp`, which broke the native helper link surface; parsing now lives in `viewer_cli.cpp` while executor tests build typed actions directly.
+- Done: hostile audit found and repaired stale `ApplyCliOverrides` helper seams in `test_viewer_state_init` and its native build source list so the native helper profile stays green against the current load-state/color-pipeline signature and JSON dependency set.
 
 ## Hostile Audit
 
@@ -53,6 +56,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 1 - challenged the first headless interaction seam for any path that still bypasses the real draft/apply controller used by the advanced-color UI.
 - [done] Pass 2 - challenged the first runtime RED for any path that only proves state-file mutation rather than a real checked-in interaction seam.
 - [done] Pass 3 - challenged the first harness helper for any viewer-only assumption that would block reuse in the IDE, Science Mode, or merged mainline host.
+- [done] Pass 4 - challenged the new typed scenario refactor against the native helper build surface so parser ownership, stale test seams, and explicit source-list dependencies fail before closure.
 
 ## Audit Findings
 
@@ -60,6 +64,9 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The missing local seam is a checked-in way to script an advanced-color draft function change through the same draft/apply helpers the UI uses; manual JSON param edits alone are not sufficient harness proof for this slice.
 - [done] The CLI startup path currently restores loaded view/params/render plus sidecar state, but it drops the saved `color_pipeline_draft` window state that the interactive load-state path preserves. The first headless advanced-color proof must carry that draft state through startup before it can mutate it honestly.
 - [done] After preserving the loaded draft, CLI fractal overrides still left that draft stale even when the live runtime selection had been resynchronized away from a disallowed family-gated tuple. Added a focused published-runtime regression and fixed startup to resynchronize the preserved draft whenever those overrides change the loaded family path.
+- [done] Replaced the one-off `--color-pipeline-select-function` seam with a repeated typed `--color-pipeline-action` surface so future headless UI proofs can extend behavior without adding ad hoc per-verb CLI flags.
+- [done] The first typed-action implementation accidentally coupled CLI parsing to `headless_modes.cpp`, which broke the lightweight `test_viewer_cli` link surface and would have hidden parser regressions behind a heavier runtime object graph.
+- [done] The same hostile audit uncovered stale `test_viewer_state_init` helper seams: the lightweight load-state stub lagged the newer `ColorPipelineWindowState*` import signature and the explicit native helper source list needed `json_min.cpp` once `viewer_state_init.cpp` started resolving color-pipeline defaults through `json_min::Value`.
 
 ## Notes
 
@@ -83,4 +90,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Extend the first vertical seam into a reusable scenario layer: add more than one advanced-color interaction verb, centralize the scenario encoding instead of using ad hoc CLI fields, and start wiring the resulting proof style into a mandatory validation rail that future UI slices must satisfy.
+Use the now-validated typed `--color-pipeline-action` surface plus its native helper/runtime proof pattern as the reusable scenario seam for future advanced-color runtime proofs, then widen the same truthful interaction pattern into the broader mandatory UI integration harness work.

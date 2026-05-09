@@ -20,6 +20,7 @@ bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParam
     RenderSettings*, SidecarOrientationVector* outOrientation, bool* outHasOrientation,
     SidecarAutoDemoControllerPolicy* outControllerPolicy, bool* outHasControllerPolicy,
     SidecarAutoDemoMutationHistory* outMutationHistory, bool* outHasMutationHistory,
+    ColorPipelineWindowState*,
     std::string*, std::string*) {
     if (!gLoadStateShouldSucceed) return false;
     if (outOrientation) *outOrientation = gLoadedOrientationStub;
@@ -363,6 +364,7 @@ static void TestLoadStateReturnsPersistedOrientationBaseline() {
         &loadedMutationHistory,
         &hasLoadedMutationHistory,
         nullptr,
+        nullptr,
         &dirty);
     CHECK("LoadStateBaseline_ReturnCode", rc == 0);
     CHECK("LoadStateBaseline_HasOrientation", hasLoadedOrientation == true);
@@ -416,6 +418,7 @@ static void TestFractalOverrideClearsLoadedOrientationBaseline() {
         &loadedMutationHistory,
         &hasLoadedMutationHistory,
         nullptr,
+        nullptr,
         &dirty);
     CHECK("LoadStateOverride_ReturnCode", rc == 0);
     CHECK("LoadStateOverride_Type", view.fractal_type == FractalType::mandelbrot);
@@ -464,6 +467,7 @@ static void TestLegacyLoadStateResetsControllerPolicy() {
         &hasLoadedOrientation,
         &loadedMutationHistory,
         &hasLoadedMutationHistory,
+        nullptr,
         nullptr,
         &dirty);
     CHECK("LegacyLoadStatePolicy_ReturnCode", rc == 0);

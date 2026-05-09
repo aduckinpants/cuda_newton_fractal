@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <variant>
 
 #include "explaino_sidecar_controller.h"
 #include "fractal_probe_contract.h"
@@ -73,11 +74,46 @@ struct SidecarHeadlessProofConfig {
     double pump_paced_loop_seconds = 0.0;
 };
 
-struct ColorPipelineHeadlessProofConfig {
-    bool have_select_function = false;
+using ColorPipelineHeadlessParamValue = std::variant<double, bool, std::string>;
+
+struct ColorPipelineHeadlessSelectFunctionAction {
     std::string lane_id;
     int row_index = 0;
     std::string function_id;
+};
+
+struct ColorPipelineHeadlessAddRowAction {
+    std::string lane_id;
+    std::string function_id;
+};
+
+struct ColorPipelineHeadlessMoveRowAction {
+    std::string lane_id;
+    int row_index = 0;
+    int direction = 0;
+};
+
+struct ColorPipelineHeadlessRemoveRowAction {
+    std::string lane_id;
+    int row_index = 0;
+};
+
+struct ColorPipelineHeadlessSetParamAction {
+    std::string lane_id;
+    int row_index = 0;
+    std::string param_path;
+    ColorPipelineHeadlessParamValue value;
+};
+
+using ColorPipelineHeadlessAction = std::variant<
+    ColorPipelineHeadlessSelectFunctionAction,
+    ColorPipelineHeadlessAddRowAction,
+    ColorPipelineHeadlessMoveRowAction,
+    ColorPipelineHeadlessRemoveRowAction,
+    ColorPipelineHeadlessSetParamAction>;
+
+struct ColorPipelineHeadlessProofConfig {
+    std::vector<ColorPipelineHeadlessAction> actions;
 };
 
 bool HasSidecarHeadlessProofActions(const SidecarHeadlessProofConfig& config);

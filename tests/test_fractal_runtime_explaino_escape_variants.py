@@ -373,6 +373,25 @@ def _color_pipeline_first_row(state: dict[str, object], lane_id: str) -> dict[st
     raise AssertionError(f"missing color pipeline lane: {lane_id}")
 
 
+def _color_pipeline_row(state: dict[str, object], lane_id: str, row_index: int) -> dict[str, object]:
+    draft = state.get("color_pipeline_draft")
+    assert isinstance(draft, dict), "expected captured state to include color_pipeline_draft"
+    lanes = draft.get("lanes")
+    assert isinstance(lanes, list), "expected color_pipeline_draft.lanes to be a list"
+    for lane in lanes:
+        if not isinstance(lane, dict):
+            continue
+        if lane.get("lane_id") != lane_id:
+            continue
+        rows = lane.get("rows")
+        assert isinstance(rows, list), f"expected lane {lane_id} rows to be a list"
+        assert 0 <= row_index < len(rows), f"expected lane {lane_id} to contain row {row_index}"
+        row = rows[row_index]
+        assert isinstance(row, dict), f"expected lane {lane_id} row {row_index} to be an object"
+        return row
+    raise AssertionError(f"missing color pipeline lane: {lane_id}")
+
+
 def _color_pipeline_number_param(row: dict[str, object], path: str) -> float:
     parameter_values = row.get("parameter_values")
     assert isinstance(parameter_values, list), "expected parameter_values to be a list"
@@ -755,7 +774,7 @@ def test_explaino_root_proximity_programmable_color_pipeline_changes_published_r
     )
 
 
-def test_explaino_headless_color_pipeline_function_switch_changes_draft_state_and_frame(tmp_path: Path) -> None:
+def test_explaino_headless_color_pipeline_scenario_actions_change_draft_state_and_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino advanced-color runtime regression is Windows-only")
 
@@ -785,14 +804,20 @@ def test_explaino_headless_color_pipeline_function_switch_changes_draft_state_an
         str(exe_path),
         "--load-state-json",
         str(draft_state_path),
-        "--color-pipeline-select-function",
-        "source:0:root_proximity",
+        "--color-pipeline-action",
+        "select_function:source:0:root_proximity",
+        "--color-pipeline-action",
+        "set_param:source:0:signal.proximity_scale:number:6.0",
+        "--color-pipeline-action",
+        "set_param:source:0:signal.proximity_bias:number:0.25",
         "--capture-diagnostic",
     )
 
     switched_params = switched_capture["state"]["params"]
     assert isinstance(switched_params, dict)
     assert switched_params["color_signal"] == "root_proximity"
+    assert switched_params["color_root_proximity_scale"] == pytest.approx(6.0, abs=1e-6)
+    assert switched_params["color_root_proximity_bias"] == pytest.approx(0.25, abs=1e-6)
     assert switched_params["color_palette"] == "cyclic_escape"
     assert switched_params["color_shape"] == "repeat"
     assert switched_params["color_shape_repeat_frequency"] == pytest.approx(4.0, abs=1e-6)
@@ -822,6 +847,65 @@ def test_explaino_headless_color_pipeline_function_switch_changes_draft_state_an
 
     assert switched_capture["frame_hash"] != baseline_draft_capture["frame_hash"], (
         "expected a headless advanced-color function switch to change the published runtime frame while preserving the loaded repeat/heatmap draft rows"
+    )
+
+
+def test_explaino_headless_color_pipeline_scenario_can_add_shape_row_and_change_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advanced-color runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
+    draft_state_path = _write_state_bundle(tmp_path / "headless_color_pipeline_add_shape_row", draft_state)
+
+    baseline_draft_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(draft_state_path),
+        "--capture-diagnostic",
+    )
+
+    scenario_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(draft_state_path),
+        "--color-pipeline-action",
+        "add_row:shape:mirror_repeat",
+        "--color-pipeline-action",
+        "set_param:shape:1:shape.frequency:number:7.0",
+        "--color-pipeline-action",
+        "set_param:shape:1:shape.phase:number:0.35",
+        "--capture-diagnostic",
+    )
+
+    first_shape_row = _color_pipeline_row(scenario_capture["state"], "shape", 0)
+    second_shape_row = _color_pipeline_row(scenario_capture["state"], "shape", 1)
+    assert first_shape_row["function_id"] == "repeat"
+    assert second_shape_row["function_id"] == "mirror_repeat"
+    assert _color_pipeline_number_param(second_shape_row, "shape.frequency") == pytest.approx(7.0, abs=1e-6)
+    assert _color_pipeline_number_param(second_shape_row, "shape.phase") == pytest.approx(0.35, abs=1e-6)
+
+    scenario_params = scenario_capture["state"]["params"]
+    assert isinstance(scenario_params, dict)
+    shape_stack = scenario_params.get("color_shape_stack")
+    assert isinstance(shape_stack, list) and len(shape_stack) == 2
+    assert shape_stack[1]["shape"] == "mirror_repeat"
+    assert shape_stack[1]["repeat_frequency"] == pytest.approx(7.0, abs=1e-6)
+    assert shape_stack[1]["repeat_phase"] == pytest.approx(0.35, abs=1e-6)
+
+    assert scenario_capture["frame_hash"] != baseline_draft_capture["frame_hash"], (
+        "expected a headless advanced-color add-row scenario to change the published runtime frame while persisting the second Shape row"
     )
 
 

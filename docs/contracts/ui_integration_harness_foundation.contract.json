@@ -9,6 +9,8 @@
     "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
     "docs/notes/advanced_color_preset_pit_of_success_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
+    "ui_app/src/cli_args.h",
+    "ui_app/src/cli_args.cpp",
     "ui_app/src/main.cpp",
     "ui_app/src/headless_modes.h",
     "ui_app/src/headless_modes.cpp",
@@ -17,6 +19,10 @@
     "ui_app/src/viewer_cli.cpp",
     "ui_app/src/viewer_state_init.h",
     "ui_app/src/viewer_state_init.cpp",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/tests/test_viewer_cli.cpp",
+    "ui_app/tests/test_headless_modes.cpp",
+    "ui_app/tests/test_viewer_state_init.cpp",
     "tests/test_fractal_runtime_explaino_escape_variants.py"
   ],
   "required_operator_inputs": [

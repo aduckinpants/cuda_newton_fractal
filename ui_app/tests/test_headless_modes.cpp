@@ -7,6 +7,9 @@
 #include <vector>
 #include <Windows.h>
 #include "../src/headless_modes.h"
+#define COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "../src/color_pipeline_window.h"
+#undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "../src/json_min.h"
 #include "../src/schema_binding.h"
 
@@ -196,6 +199,81 @@ bool TestReplayLoadedSidecarMutationHistoryRejectsOutOfRangeCount() {
     ASSERT(!error.empty(), "out-of-range replay failure should explain the problem");
     ASSERT(NearlyEqual(params.ripple_amplitude, 0.5),
         "out-of-range replay should leave the bound parameter unchanged");
+    return true;
+}
+
+bool TestApplyHeadlessColorPipelineProofActionsMutatesRuntimeAndDraft() {
+    ViewState view{};
+    KernelParams params{};
+    view.fractal_type = FractalType::explaino;
+
+    ColorPipelineHeadlessProofConfig config;
+    config.actions.push_back(ColorPipelineHeadlessSelectFunctionAction{"source", 0, "root_proximity"});
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"source", 0, "signal.proximity_scale", 6.0});
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"source", 0, "signal.proximity_bias", 0.25});
+    config.actions.push_back(ColorPipelineHeadlessAddRowAction{"shape", "mirror_repeat"});
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"shape", 1, "shape.frequency", 7.0});
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"shape", 1, "shape.phase", 0.35});
+
+    std::string error;
+    ColorPipelineWindowState colorPipelineWindow;
+    bool changed = false;
+    ASSERT(ApplyHeadlessColorPipelineProofActions(
+            config,
+            view,
+            params,
+            &colorPipelineWindow,
+            &changed,
+            &error),
+        "typed headless color-pipeline actions should apply successfully");
+    ASSERT(error.empty(), "successful headless color-pipeline apply should not emit an error");
+    ASSERT(changed, "applying headless color-pipeline actions should report changed runtime state");
+    ASSERT(params.color_pipeline.signal == ColorSignal::root_proximity,
+        "select_function should update the live color signal");
+    ASSERT(NearlyEqual(params.color_root_proximity_scale, 6.0),
+        "set_param should update the live root-proximity scale");
+    ASSERT(NearlyEqual(params.color_root_proximity_bias, 0.25),
+        "set_param should update the live root-proximity bias");
+    ASSERT(params.color_shape_stack_count == 2,
+        "add_row should materialize a second Shape stack entry in live params");
+    ASSERT(params.color_shape_stack[1].shape == ColorPipelineShape::mirror_repeat,
+        "the second Shape stack entry should use the requested function id");
+    ASSERT(NearlyEqual(params.color_shape_stack[1].params.repeat_frequency, 7.0),
+        "shape frequency should flow through the live Shape stack entry");
+    ASSERT(NearlyEqual(params.color_shape_stack[1].params.repeat_phase, 0.35),
+        "shape phase should flow through the live Shape stack entry");
+
+    ASSERT(colorPipelineWindow.lanes.size() == 3, "draft state should remain initialized after headless apply");
+    const ColorPipelineLaneState& sourceLane = colorPipelineWindow.lanes[0];
+    ASSERT(sourceLane.rows.size() == 1, "source lane should still contain one row");
+    ASSERT(sourceLane.rows[0].function_id == "root_proximity", "draft source row should preserve the selected function");
+    const ColorPipelineLaneState& shapeLane = colorPipelineWindow.lanes[1];
+    ASSERT(shapeLane.rows.size() == 2, "shape lane should contain the added second row");
+    ASSERT(shapeLane.rows[1].function_id == "mirror_repeat", "draft shape row should preserve the added function");
+    return true;
+}
+
+bool TestApplyHeadlessColorPipelineProofActionsRejectsMissingParamPath() {
+    ViewState view{};
+    KernelParams params{};
+    view.fractal_type = FractalType::explaino;
+
+    ColorPipelineHeadlessProofConfig config;
+    config.actions.push_back(ColorPipelineHeadlessSetParamAction{"source", 0, "signal.no_such_path", 1.0});
+
+    ColorPipelineWindowState colorPipelineWindow;
+    bool changed = false;
+    std::string error;
+    ASSERT(!ApplyHeadlessColorPipelineProofActions(
+            config,
+            view,
+            params,
+            &colorPipelineWindow,
+            &changed,
+            &error),
+        "unknown parameter paths should be rejected by the headless color-pipeline executor");
+    ASSERT(!error.empty(), "executor failure should explain the missing parameter path");
+    ASSERT(!changed, "failed headless color-pipeline apply should not report changed runtime state");
     return true;
 }
 
@@ -1988,6 +2066,8 @@ int main() {
     RUN(TestEmitProbeResponseEmptyPath);
     RUN(TestReplayLoadedSidecarMutationHistoryAppliesOrderedTargets);
     RUN(TestReplayLoadedSidecarMutationHistoryRejectsOutOfRangeCount);
+    RUN(TestApplyHeadlessColorPipelineProofActionsMutatesRuntimeAndDraft);
+    RUN(TestApplyHeadlessColorPipelineProofActionsRejectsMissingParamPath);
     RUN(TestSampleModeNoSource);
     RUN(TestSampleModeNoSink);
     RUN(TestSampleModeDualSource);

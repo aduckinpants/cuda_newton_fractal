@@ -359,6 +359,45 @@ static void TestLoadStateJson() {
     Check(cli.load_state_json == "state.json", "TestLoadStateJson_Path");
 }
 
+static void TestColorPipelineActionsParseTypedSequence() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--load-state-json", "state.json",
+        "--color-pipeline-action", "select_function:source:0:root_proximity",
+        "--color-pipeline-action", "set_param:source:0:signal.proximity_scale:number:6.0",
+        "--color-pipeline-action", "add_row:shape:mirror_repeat"
+    }), &cli);
+    Check(rc == 0, "TestColorPipelineActionsParseTypedSequence_ReturnCode");
+    Check(cli.color_pipeline_headless_proof.actions.size() == 3, "TestColorPipelineActionsParseTypedSequence_Count");
+
+    const auto* selectAction = std::get_if<ColorPipelineHeadlessSelectFunctionAction>(&cli.color_pipeline_headless_proof.actions[0]);
+    Check(selectAction != nullptr, "TestColorPipelineActionsParseTypedSequence_SelectType");
+    Check(selectAction && selectAction->lane_id == "source", "TestColorPipelineActionsParseTypedSequence_SelectLane");
+    Check(selectAction && selectAction->row_index == 0, "TestColorPipelineActionsParseTypedSequence_SelectRow");
+    Check(selectAction && selectAction->function_id == "root_proximity", "TestColorPipelineActionsParseTypedSequence_SelectFunction");
+
+    const auto* setParamAction = std::get_if<ColorPipelineHeadlessSetParamAction>(&cli.color_pipeline_headless_proof.actions[1]);
+    Check(setParamAction != nullptr, "TestColorPipelineActionsParseTypedSequence_SetParamType");
+    Check(setParamAction && setParamAction->lane_id == "source", "TestColorPipelineActionsParseTypedSequence_SetParamLane");
+    Check(setParamAction && setParamAction->param_path == "signal.proximity_scale", "TestColorPipelineActionsParseTypedSequence_SetParamPath");
+    const double* numericValue = setParamAction ? std::get_if<double>(&setParamAction->value) : nullptr;
+    Check(numericValue != nullptr, "TestColorPipelineActionsParseTypedSequence_SetParamValueType");
+    Check(numericValue && std::fabs(*numericValue - 6.0) < 1e-9, "TestColorPipelineActionsParseTypedSequence_SetParamValue");
+
+    const auto* addRowAction = std::get_if<ColorPipelineHeadlessAddRowAction>(&cli.color_pipeline_headless_proof.actions[2]);
+    Check(addRowAction != nullptr, "TestColorPipelineActionsParseTypedSequence_AddRowType");
+    Check(addRowAction && addRowAction->lane_id == "shape", "TestColorPipelineActionsParseTypedSequence_AddRowLane");
+    Check(addRowAction && addRowAction->function_id == "mirror_repeat", "TestColorPipelineActionsParseTypedSequence_AddRowFunction");
+}
+
+static void TestColorPipelineActionsRejectInvalidSpec() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--color-pipeline-action", "set_param:source:0:signal.proximity_scale:bogus:6.0"
+    }), &cli);
+    Check(rc != 0, "TestColorPipelineActionsRejectInvalidSpec_Fails");
+}
+
 static void TestSidecarApplyArmedStepCount() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({"--sidecar-apply-armed-step-count", "2"}), &cli);
@@ -531,6 +570,8 @@ int main() {
     TestDescribeFunctionsJson();
     TestDescribeFunctionsJsonMissingValue();
     TestLoadStateJson();
+    TestColorPipelineActionsParseTypedSequence();
+    TestColorPipelineActionsRejectInvalidSpec();
     TestSidecarApplyArmedStepCount();
     TestSidecarApplyArmedStepCountMissingValue();
     TestSidecarReplayMutationHistoryCount();

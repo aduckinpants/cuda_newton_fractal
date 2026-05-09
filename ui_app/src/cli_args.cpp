@@ -24,6 +24,25 @@ bool TryGetArgValue(const std::vector<std::string>& args, const char* flag, std:
     return false;
 }
 
+bool TryGetArgValues(const std::vector<std::string>& args, const char* flag, std::vector<std::string>* outValues) {
+    if (outValues) {
+        outValues->clear();
+    }
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] != flag) {
+            continue;
+        }
+        if (i + 1 >= args.size()) {
+            return false;
+        }
+        if (outValues) {
+            outValues->push_back(args[i + 1]);
+        }
+        ++i;
+    }
+    return true;
+}
+
 bool TryParseDoubleArg(const std::vector<std::string>& args, const char* flag, double* outValue) {
     std::string text;
     if (!TryGetArgValue(args, flag, &text)) return false;

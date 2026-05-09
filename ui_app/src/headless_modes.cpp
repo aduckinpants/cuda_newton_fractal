@@ -3,8 +3,10 @@
 #include <Windows.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -45,6 +47,10 @@ std::string DescribeColorPipelineHeadlessError(
     return fallback ? std::string(fallback) : std::string();
 }
 
+bool IsColorPipelineNumericDescriptorType(const std::string& type) {
+    return type == "float" || type == "double" || type == "int";
+}
+
 bool FindColorPipelineLaneIndex(
     const ColorPipelineWindowState& state,
     const std::string& laneId,
@@ -60,6 +66,335 @@ bool FindColorPipelineLaneIndex(
     }
     return false;
 }
+
+bool TryResolveColorPipelineLaneIndex(
+    ColorPipelineWindowState* ioState,
+    const std::string& laneId,
+    std::size_t* outLaneIndex,
+    std::string* outError) {
+    if (!ioState || !outLaneIndex) {
+        if (outError) {
+            *outError = "Advanced color headless actions require a lane output slot";
+        }
+        return false;
+    }
+    if (!FindColorPipelineLaneIndex(*ioState, laneId, outLaneIndex)) {
+        PushColorPipelineValidationMessage(ioState,
+            std::string("Unknown advanced color pipeline lane id: ") + laneId);
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(*ioState, "Unknown advanced color pipeline lane id");
+        }
+        return false;
+    }
+    return true;
+}
+
+bool TryResolveColorPipelineRow(
+    ColorPipelineWindowState* ioState,
+    const std::string& laneId,
+    int rowIndex,
+    std::size_t* outLaneIndex,
+    ColorPipelineRowState** outRow,
+    std::string* outError) {
+    if (!ioState || !outRow) {
+        if (outError) {
+            *outError = "Advanced color headless actions require a row output slot";
+        }
+        return false;
+    }
+    if (rowIndex < 0) {
+        PushColorPipelineValidationMessage(ioState, "Advanced color pipeline row index was out of range.");
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(*ioState, "Advanced color pipeline row index was out of range.");
+        }
+        return false;
+    }
+    std::size_t laneIndex = 0;
+    if (!TryResolveColorPipelineLaneIndex(ioState, laneId, &laneIndex, outError)) {
+        return false;
+    }
+    ColorPipelineLaneState& lane = ioState->lanes[laneIndex];
+    if (static_cast<std::size_t>(rowIndex) >= lane.rows.size()) {
+        PushColorPipelineValidationMessage(ioState, "Advanced color pipeline row index was out of range.");
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(*ioState, "Advanced color pipeline row index was out of range.");
+        }
+        return false;
+    }
+    if (outLaneIndex) {
+        *outLaneIndex = laneIndex;
+    }
+    *outRow = &lane.rows[static_cast<std::size_t>(rowIndex)];
+    return true;
+}
+
+ColorPipelineParamState* FindColorPipelineParamState(
+    ColorPipelineRowState* ioRow,
+    const std::string& path) {
+    if (!ioRow) {
+        return nullptr;
+    }
+    for (ColorPipelineParamState& param : ioRow->parameter_values) {
+        if (param.path == path) {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
+const FunctionParamDescriptor* FindColorPipelineParamDescriptor(
+    const std::string& laneId,
+    const ColorPipelineRowState& row,
+    const std::string& path,
+    std::string* outError) {
+    const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog(laneId);
+    if (!catalog) {
+        if (outError) {
+            *outError = std::string("Unknown advanced color pipeline lane id: ") + laneId;
+        }
+        return nullptr;
+    }
+    const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
+    if (!descriptor) {
+        if (outError) {
+            *outError = std::string("Unknown advanced color function '") + row.function_id + "' for lane " + catalog->label;
+        }
+        return nullptr;
+    }
+    for (const FunctionParamDescriptor& param : descriptor->parameters) {
+        if (param.path == path) {
+            return &param;
+        }
+    }
+    if (outError) {
+        *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + row.function_id + "'";
+    }
+    return nullptr;
+}
+
+bool PrepareColorPipelineHeadlessDraft(
+    FractalType liveFractalType,
+    const KernelParams& liveParams,
+    ColorPipelineWindowState* ioState,
+    std::string* outError) {
+    if (!ioState) {
+        if (outError) {
+            *outError = "Advanced color headless actions require a draft window state.";
+        }
+        return false;
+    }
+
+    const bool hadInitializedDraft = ioState->initialized;
+    if (!EnsureColorPipelineWindowInitialized(ioState)) {
+        if (outError) {
+            *outError = DescribeColorPipelineHeadlessError(*ioState, "Failed to initialize the advanced color draft window.");
+        }
+        return false;
+    }
+
+    ClearColorPipelineValidationMessages(ioState);
+
+    ColorPipelineLiveSnapshot liveSnapshot;
+    std::string snapshotError;
+    if (!TryBuildColorPipelineLiveSnapshot(liveFractalType, liveParams, &liveSnapshot, &snapshotError)) {
+        ioState->live_snapshot = {};
+        return true;
+    }
+
+    ioState->live_snapshot = std::move(liveSnapshot);
+    if (!hadInitializedDraft && ioState->live_snapshot.draft_import_supported) {
+        if (!ResetColorPipelineDraftFromLiveState(ioState)) {
+            if (outError) {
+                *outError = DescribeColorPipelineHeadlessError(*ioState, "Failed to seed the advanced color draft from the live runtime state.");
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+struct ColorPipelineHeadlessSetParamValueVisitor {
+    const FunctionParamDescriptor& descriptor;
+    ColorPipelineParamState* param = nullptr;
+    const std::string& path;
+    const std::string& functionId;
+    std::string* outError = nullptr;
+
+    bool operator()(double value) const {
+        if (!param) {
+            if (outError) {
+                *outError = "Advanced color numeric assignment requires a parameter slot.";
+            }
+            return false;
+        }
+        if (!IsColorPipelineNumericDescriptorType(descriptor.type)) {
+            if (outError) {
+                *outError = std::string("Advanced color parameter '") + path + "' for function '" + functionId + "' is not numeric";
+            }
+            return false;
+        }
+        double clamped = value;
+        ClampColorPipelineNumericValue(&clamped, ResolveColorPipelineNumericControlRange(descriptor));
+        if (descriptor.type == "int") {
+            const double rounded = std::round(clamped);
+            if (std::fabs(clamped - rounded) > 1.0e-6) {
+                if (outError) {
+                    *outError = std::string("Advanced color parameter '") + path + "' for function '" + functionId + "' requires an integer value";
+                }
+                return false;
+            }
+            clamped = rounded;
+        }
+        param->number_value = clamped;
+        return true;
+    }
+
+    bool operator()(bool value) const {
+        if (!param) {
+            if (outError) {
+                *outError = "Advanced color bool assignment requires a parameter slot.";
+            }
+            return false;
+        }
+        if (descriptor.type != "bool") {
+            if (outError) {
+                *outError = std::string("Advanced color parameter '") + path + "' for function '" + functionId + "' is not bool-typed";
+            }
+            return false;
+        }
+        param->bool_value = value;
+        return true;
+    }
+
+    bool operator()(const std::string& value) const {
+        if (!param) {
+            if (outError) {
+                *outError = "Advanced color enum assignment requires a parameter slot.";
+            }
+            return false;
+        }
+        if (descriptor.type != "enum") {
+            if (outError) {
+                *outError = std::string("Advanced color parameter '") + path + "' for function '" + functionId + "' is not enum-typed";
+            }
+            return false;
+        }
+        bool found = false;
+        for (const UISchemaOption& option : descriptor.options) {
+            if (option.id == value) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            if (outError) {
+                *outError = std::string("Advanced color parameter '") + path + "' for function '" + functionId + "' does not accept enum value '" + value + "'";
+            }
+            return false;
+        }
+        param->enum_value = value;
+        return true;
+    }
+};
+
+struct ColorPipelineHeadlessActionExecutor {
+    ColorPipelineWindowState* state = nullptr;
+    std::string* outError = nullptr;
+
+    bool operator()(const ColorPipelineHeadlessSelectFunctionAction& action) const {
+        std::size_t laneIndex = 0;
+        ColorPipelineRowState* row = nullptr;
+        if (!TryResolveColorPipelineRow(state, action.lane_id, action.row_index, &laneIndex, &row, outError)) {
+            return false;
+        }
+        (void)row;
+        if (!SelectColorPipelineRowFunction(state, laneIndex, static_cast<std::size_t>(action.row_index), action.function_id.c_str())) {
+            if (outError) {
+                *outError = DescribeColorPipelineHeadlessError(*state, "Failed to select advanced color function.");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool operator()(const ColorPipelineHeadlessAddRowAction& action) const {
+        std::size_t laneIndex = 0;
+        if (!TryResolveColorPipelineLaneIndex(state, action.lane_id, &laneIndex, outError)) {
+            return false;
+        }
+        const char* functionId = action.function_id.empty() ? nullptr : action.function_id.c_str();
+        if (!AddColorPipelineLaneRow(state, laneIndex, functionId)) {
+            if (outError) {
+                *outError = DescribeColorPipelineHeadlessError(*state, "Failed to add advanced color row.");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool operator()(const ColorPipelineHeadlessMoveRowAction& action) const {
+        std::size_t laneIndex = 0;
+        ColorPipelineRowState* row = nullptr;
+        if (!TryResolveColorPipelineRow(state, action.lane_id, action.row_index, &laneIndex, &row, outError)) {
+            return false;
+        }
+        (void)row;
+        if (!MoveColorPipelineLaneRow(state, laneIndex, static_cast<std::size_t>(action.row_index), action.direction)) {
+            if (outError) {
+                *outError = DescribeColorPipelineHeadlessError(*state, "Failed to move advanced color row.");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool operator()(const ColorPipelineHeadlessRemoveRowAction& action) const {
+        std::size_t laneIndex = 0;
+        ColorPipelineRowState* row = nullptr;
+        if (!TryResolveColorPipelineRow(state, action.lane_id, action.row_index, &laneIndex, &row, outError)) {
+            return false;
+        }
+        (void)row;
+        if (!RemoveColorPipelineLaneRow(state, laneIndex, static_cast<std::size_t>(action.row_index))) {
+            if (outError) {
+                *outError = DescribeColorPipelineHeadlessError(*state, "Failed to remove advanced color row.");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool operator()(const ColorPipelineHeadlessSetParamAction& action) const {
+        std::size_t laneIndex = 0;
+        ColorPipelineRowState* row = nullptr;
+        if (!TryResolveColorPipelineRow(state, action.lane_id, action.row_index, &laneIndex, &row, outError)) {
+            return false;
+        }
+        (void)laneIndex;
+        std::string descriptorError;
+        const FunctionParamDescriptor* descriptor = FindColorPipelineParamDescriptor(
+            action.lane_id,
+            *row,
+            action.param_path,
+            &descriptorError);
+        if (!descriptor) {
+            if (outError) {
+                *outError = descriptorError;
+            }
+            return false;
+        }
+        ColorPipelineParamState* param = FindColorPipelineParamState(row, action.param_path);
+        if (!param) {
+            if (outError) {
+                *outError = std::string("Missing advanced color parameter path '") + action.param_path + "' for function '" + row->function_id + "'";
+            }
+            return false;
+        }
+        return std::visit(
+            ColorPipelineHeadlessSetParamValueVisitor{*descriptor, param, action.param_path, row->function_id, outError},
+            action.value);
+    }
+};
 
 void PrepareHeadlessSidecarState(ViewState& view, KernelParams& params) {
     if (IsExplainoFamily(view.fractal_type)) {
@@ -321,7 +656,7 @@ bool PumpHeadlessPacedLoop(
 } // namespace
 
 bool HasColorPipelineHeadlessProofActions(const ColorPipelineHeadlessProofConfig& config) {
-    return config.have_select_function;
+    return !config.actions.empty();
 }
 
 bool ApplyHeadlessColorPipelineProofActions(
@@ -334,49 +669,28 @@ bool ApplyHeadlessColorPipelineProofActions(
     if (outChanged) {
         *outChanged = false;
     }
-    if (outError) {
-        outError->clear();
-    }
     if (!HasColorPipelineHeadlessProofActions(config)) {
         return true;
     }
+    if (outError) {
+        outError->clear();
+    }
     if (!ioColorPipelineWindow) {
-        if (outError) *outError = "advanced-color headless proof requires a draft window state";
-        return false;
-    }
-
-    ClearColorPipelineValidationMessages(ioColorPipelineWindow);
-    if (!SyncColorPipelineWindowFromLiveState(ioColorPipelineWindow, view.fractal_type, &params)) {
         if (outError) {
-            *outError = DescribeColorPipelineHeadlessError(
-                *ioColorPipelineWindow,
-                "failed to sync advanced-color draft from the live runtime state");
+            *outError = "Headless advanced-color proof actions require a color pipeline window state.";
         }
         return false;
     }
 
-    std::size_t laneIndex = 0;
-    if (!FindColorPipelineLaneIndex(*ioColorPipelineWindow, config.lane_id, &laneIndex)) {
-        if (outError) *outError = "unknown advanced-color lane id: " + config.lane_id;
-        return false;
-    }
-    const ColorPipelineLaneState& lane = ioColorPipelineWindow->lanes[laneIndex];
-    if (config.row_index < 0 || static_cast<std::size_t>(config.row_index) >= lane.rows.size()) {
-        if (outError) *outError = "advanced-color row index out of range for lane: " + config.lane_id;
+    if (!PrepareColorPipelineHeadlessDraft(view.fractal_type, params, ioColorPipelineWindow, outError)) {
         return false;
     }
 
-    if (!SelectColorPipelineRowFunction(
-            ioColorPipelineWindow,
-            laneIndex,
-            static_cast<std::size_t>(config.row_index),
-            config.function_id.c_str())) {
-        if (outError) {
-            *outError = DescribeColorPipelineHeadlessError(
-                *ioColorPipelineWindow,
-                "failed to select advanced-color function in headless proof mode");
+    const ColorPipelineHeadlessActionExecutor executor{ioColorPipelineWindow, outError};
+    for (const ColorPipelineHeadlessAction& action : config.actions) {
+        if (!std::visit(executor, action)) {
+            return false;
         }
-        return false;
     }
 
     bool changed = false;

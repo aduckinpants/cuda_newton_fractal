@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "fractal_types.h"
+#include "headless_modes.h"
 #include "sweep_player.h"
 
 // Parsed CLI arguments for the viewer.  Produced by ParseViewerCli() and
@@ -105,10 +106,7 @@ struct ViewerCliArgs {
     std::string load_state_json;
 
     // Headless advanced-color proof overrides
-    bool have_color_pipeline_select_function = false;
-    std::string color_pipeline_select_lane_id;
-    int color_pipeline_select_row_index = 0;
-    std::string color_pipeline_select_function_id;
+    ColorPipelineHeadlessProofConfig color_pipeline_headless_proof;
 
     // Headless sidecar proof overrides
     bool have_sidecar_apply_armed_step_count = false;

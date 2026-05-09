@@ -1109,7 +1109,7 @@ static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
     const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
-    const bool colorPipelineHeadlessProof = cli.have_color_pipeline_select_function;
+    const bool colorPipelineHeadlessProof = HasColorPipelineHeadlessProofActions(cli.color_pipeline_headless_proof);
     if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
     if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
     if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
@@ -1146,13 +1146,7 @@ static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& 
     if (cli.have_sidecar_pump_paced_loop_seconds) {
         sidecarHeadlessProofConfig.pump_paced_loop_seconds = cli.sidecar_pump_paced_loop_seconds;
     }
-    ColorPipelineHeadlessProofConfig colorPipelineHeadlessProofConfig;
-    if (cli.have_color_pipeline_select_function) {
-        colorPipelineHeadlessProofConfig.have_select_function = true;
-        colorPipelineHeadlessProofConfig.lane_id = cli.color_pipeline_select_lane_id;
-        colorPipelineHeadlessProofConfig.row_index = cli.color_pipeline_select_row_index;
-        colorPipelineHeadlessProofConfig.function_id = cli.color_pipeline_select_function_id;
-    }
+    const ColorPipelineHeadlessProofConfig& colorPipelineHeadlessProofConfig = cli.color_pipeline_headless_proof;
 
     if (exploreRecommend) {
         if (HasSidecarHeadlessProofActions(sidecarHeadlessProofConfig)) {
