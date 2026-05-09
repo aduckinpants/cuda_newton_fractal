@@ -183,6 +183,12 @@ def main(argv: list[str] | None = None) -> int:
         repo_root = (REPO_ROOT / repo_root).resolve()
 
     snapshot = capture_repo_snapshot(repo_root)
+    if snapshot_is_clean(snapshot):
+        sys.stderr.write(
+            "viewer_host_recover_crash_state: clean repository state does not need crash recovery adoption.\n"
+        )
+        return 2
+
     report = build_recovery_report(repo_root=repo_root, summary=args.summary, snapshot=snapshot)
     report_path = write_recovery_report(report, snapshot=snapshot, repo_root=repo_root)
 

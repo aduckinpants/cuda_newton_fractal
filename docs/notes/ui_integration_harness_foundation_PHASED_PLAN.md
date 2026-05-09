@@ -2,15 +2,15 @@
 
 ## Current Phase
 
-Phase 1 in progress - the reusable typed advanced-color scenario surface is landed with direct native helper coverage and published-runtime proof; next work should widen scenario coverage and carry this proof style into the broader mandatory integration rail
+Phase 1 in progress - the reusable typed advanced-color scenario surface is landed with direct native helper coverage, published-runtime proof, and workflow-guard hardening; next work should extract the broader mandatory integration rail instead of adding ad hoc one-off seams
 
 ## Phase Checklist
 
-- [ ] Phase 1 - define the reusable app-level harness contract, scenario vocabulary, and workflow proof bar for the viewer host, future IDE surfaces, Science Mode, and other merged DX11/ImGui clients
-- [ ] Phase 2 - formalize the driver/session seams around runtime publish, diagnostics capture/load-state, and real app frame execution so scripted scenarios can drive the actual host deterministically
-- [ ] Phase 3 - land the first truthful RED/GREEN scenarios for the advanced-color UX regression through the real app/runtime path instead of helper-only seams
-- [ ] Phase 4 - wire the harness into a mandatory public validation rail and document the agent-facing usage pattern so future UI slices cannot close on fake greens
-- [ ] Phase 5 - prove the harness generalizes beyond the current viewer by exercising at least one second host surface or mode family that will matter during merge back to mainline
+- [ ] Phase 1 - lock the reusable scenario vocabulary and closure bar: typed action surface, direct native helper coverage, published-runtime proof, and workflow-guard behavior that refuses false recovery/carryover paths.
+- [ ] Phase 2 - extract a checked-in scenario driver around runtime publish, load-state/draft hydration, action execution, and deterministic capture so scripted scenarios stop depending on ad hoc CLI seams.
+- [ ] Phase 3 - land truthful RED/GREEN scenarios for advanced-color plus at least one neighboring user-facing workflow through the same driver instead of helper-only seams.
+- [ ] Phase 4 - wire the scenario driver into a mandatory public validation rail and contract proof chain so future UI slices cannot close without published-runtime proof and hostile-audit evidence.
+- [ ] Phase 5 - prove the harness generalizes beyond the current viewer by exercising at least one second host surface or mode family that matters for merge back to mainline.
 
 ## Explicit User Asks
 
@@ -18,6 +18,15 @@ Phase 1 in progress - the reusable typed advanced-color scenario surface is land
 - [open] Make the harness robust enough to survive merge into the mainline repo and later exercise the IDE, Science Mode, and other UI surfaces built on the same DX11/ImGui framework.
 - [open] Keep the harness deterministic, professional, pure, functional, and generally agent-usable instead of turning it into a one-off advanced-color test hack.
 - [open] Make this harness, alongside normal unit coverage, the required deterministic workflow proof for future user-facing UI behavior changes.
+- [open] Keep the next harness expansion phase-bounded and explicit in the checked-in plan/contract instead of improvising new one-off seams.
+- [done] Hostile review is mandatory closure evidence for this work and must stay machine-enforced instead of being treated as optional prose.
+
+## Immediate Next Slice
+
+- Define the checked-in scenario-driver boundary explicitly: scenario input, runtime publish/setup contract, action execution contract, and capture/assertion outputs.
+- Reuse the typed `--color-pipeline-action` surface as the first scenario payload instead of inventing a parallel DSL for Phase 2.
+- Add a second user-facing scenario through the same driver so the harness proves it can outgrow the first advanced-color vertical seam.
+- Promote hostile-audit validation into the contract proof chain so the mandatory rail checks both scenario proof and audit completion.
 
 ## Presumption Loop
 
@@ -45,6 +54,9 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: native helper coverage now exercises the typed action surface directly in `test_viewer_cli` and `test_headless_modes`, so CLI parsing and draft executor behavior both fail fast before the published-runtime rail.
 - Done: hostile audit found and repaired a real ownership defect in the typed scenario refactor: pure `--color-pipeline-action` parsing had drifted into `headless_modes.cpp`, which broke the native helper link surface; parsing now lives in `viewer_cli.cpp` while executor tests build typed actions directly.
 - Done: hostile audit found and repaired stale `ApplyCliOverrides` helper seams in `test_viewer_state_init` and its native build source list so the native helper profile stays green against the current load-state/color-pipeline signature and JSON dependency set.
+- Done: workflow guard hardening now rejects clean-repo crash-recovery adoption and refreshes stale clean baselines only when the current head is already fully receipted, which closes the false-recovery loop without masking receipt debt.
+- Done: hostile audit tightened the stale-baseline refresh path again so it validates receipt identity, not just receipt file existence; malformed placeholder receipts can no longer reset the guard.
+- Done: the slice contract now requires `viewer_host_validate_hostile_audit.py` and records hostile-audit success as a machine-checked acceptance assertion instead of relying on prose-only discipline.
 
 ## Hostile Audit
 
@@ -57,6 +69,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 2 - challenged the first runtime RED for any path that only proves state-file mutation rather than a real checked-in interaction seam.
 - [done] Pass 3 - challenged the first harness helper for any viewer-only assumption that would block reuse in the IDE, Science Mode, or merged mainline host.
 - [done] Pass 4 - challenged the new typed scenario refactor against the native helper build surface so parser ownership, stale test seams, and explicit source-list dependencies fail before closure.
+- [done] Pass 5 - challenged the workflow guard/recovery path itself so stale baselines and clean-repo misuse cannot produce bogus crash-recovery loops while still preserving receipt enforcement.
+- [done] Pass 6 - challenged the stale-baseline refresh path against malformed receipt metadata so placeholder receipt files cannot silently clear carryover debt.
 
 ## Audit Findings
 
@@ -67,6 +81,9 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Replaced the one-off `--color-pipeline-select-function` seam with a repeated typed `--color-pipeline-action` surface so future headless UI proofs can extend behavior without adding ad hoc per-verb CLI flags.
 - [done] The first typed-action implementation accidentally coupled CLI parsing to `headless_modes.cpp`, which broke the lightweight `test_viewer_cli` link surface and would have hidden parser regressions behind a heavier runtime object graph.
 - [done] The same hostile audit uncovered stale `test_viewer_state_init` helper seams: the lightweight load-state stub lagged the newer `ColorPipelineWindowState*` import signature and the explicit native helper source list needed `json_min.cpp` once `viewer_state_init.cpp` started resolving color-pipeline defaults through `json_min::Value`.
+- [done] The crash-recovery helper would still generate a recovery report for a clean repository, which turned a no-op workflow state into noisy faux recovery and trained the operator to mistrust the guard surface.
+- [done] The session-baseline resolver had no safe way to refresh a stale clean baseline after a fully receipted checkpoint, so sticky fallback-session state could keep reporting bogus carryover until someone manually intervened.
+- [done] The first stale-baseline refresh fix still trusted receipt file presence alone; malformed receipt placeholders could have refreshed the baseline anyway, so the refresh path now validates receipt head metadata and the active contract identity before accepting the clean head as a new baseline.
 
 ## Notes
 
@@ -90,4 +107,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Use the now-validated typed `--color-pipeline-action` surface plus its native helper/runtime proof pattern as the reusable scenario seam for future advanced-color runtime proofs, then widen the same truthful interaction pattern into the broader mandatory UI integration harness work.
+Use the now-validated typed `--color-pipeline-action` surface plus its native helper/runtime proof pattern as the seed of Phase 2's checked-in scenario driver, then widen that same truthful interaction pattern into the broader mandatory UI integration harness work without relaxing hostile-audit or receipt enforcement.

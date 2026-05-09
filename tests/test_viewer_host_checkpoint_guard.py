@@ -12,6 +12,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+
+TEST_PLAN_TEXT = (
+    "# Plan\n\n"
+    "## Current Phase\n\n"
+    "Phase 1 in progress\n\n"
+    "## Phase Checklist\n\n"
+    "- [ ] Phase 1 - X\n"
+)
+
 import tools.viewer_host_checkpoint_guard as checkpoint_guard
 import tools.viewer_host_contract_state as contract_state
 
@@ -842,6 +851,131 @@ def test_resolve_session_baseline_replaces_stale_existing_baseline_when_recovery
     assert resolution.baseline == current_snapshot
     assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == current_snapshot
     assert not checkpoint_guard.recovery_adoption_path(repo_root).exists()
+
+
+def test_resolve_session_baseline_refreshes_stale_clean_baseline_when_current_head_is_receipted(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "ignore artifacts"], cwd=repo_root, check=True, capture_output=True, text=True)
+    contract_file_path, _ = _write_active_contract_with_plan(
+        repo_root,
+        session_id=contract_state.GLOBAL_CONTRACT_SESSION_ID,
+        plan_text=TEST_PLAN_TEXT,
+    )
+    subprocess.run(["git", "add", "docs"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock slice contract"], cwd=repo_root, check=True, capture_output=True, text=True)
+    first_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    checkpoint_guard.write_session_baseline("unknown_session", first_snapshot, repo_root)
+
+    readme = repo_root / "README.md"
+    readme.write_text("closed slice\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "closed slice"], cwd=repo_root, check=True, capture_output=True, text=True)
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    current_head = str(current_snapshot["head"])
+
+    validation_path = validation_receipt_path(current_head, repo_root)
+    validation_path.parent.mkdir(parents=True, exist_ok=True)
+    validation_path.write_text(json.dumps({"head": current_head}, indent=2) + "\n", encoding="utf-8")
+
+    contract_receipt_path = contract_proof_receipt_path(current_head, repo_root)
+    contract_receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_receipt_path.write_text(
+        json.dumps(
+            {
+                "head": current_head,
+                "contract_id": "slice",
+                "contract_hash": contract_state.hash_file(contract_file_path),
+            },
+            indent=2,
+        ) + "\n",
+        encoding="utf-8",
+    )
+
+    resolution = checkpoint_guard.resolve_session_baseline("unknown_session", current_snapshot, repo_root)
+
+    assert resolution.status == "refreshed_clean"
+    assert resolution.baseline == current_snapshot
+    assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == current_snapshot
+
+
+def test_resolve_session_baseline_keeps_stale_clean_baseline_when_current_head_lacks_receipts(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "ignore artifacts"], cwd=repo_root, check=True, capture_output=True, text=True)
+    _write_active_contract_with_plan(
+        repo_root,
+        session_id=contract_state.GLOBAL_CONTRACT_SESSION_ID,
+        plan_text=TEST_PLAN_TEXT,
+    )
+    subprocess.run(["git", "add", "docs"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock slice contract"], cwd=repo_root, check=True, capture_output=True, text=True)
+    first_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    checkpoint_guard.write_session_baseline("unknown_session", first_snapshot, repo_root)
+
+    readme = repo_root / "README.md"
+    readme.write_text("unreceipted commit\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "unreceipted commit"], cwd=repo_root, check=True, capture_output=True, text=True)
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+
+    resolution = checkpoint_guard.resolve_session_baseline("unknown_session", current_snapshot, repo_root)
+
+    assert resolution.status == "existing"
+    assert resolution.baseline == first_snapshot
+    assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == first_snapshot
+
+
+def test_resolve_session_baseline_keeps_stale_clean_baseline_when_receipt_metadata_is_malformed(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "ignore artifacts"], cwd=repo_root, check=True, capture_output=True, text=True)
+    _write_active_contract_with_plan(
+        repo_root,
+        session_id=contract_state.GLOBAL_CONTRACT_SESSION_ID,
+        plan_text=TEST_PLAN_TEXT,
+    )
+    subprocess.run(["git", "add", "docs"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock slice contract"], cwd=repo_root, check=True, capture_output=True, text=True)
+    first_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    checkpoint_guard.write_session_baseline("unknown_session", first_snapshot, repo_root)
+
+    readme = repo_root / "README.md"
+    readme.write_text("bad receipt metadata\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "bad receipt metadata"], cwd=repo_root, check=True, capture_output=True, text=True)
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    current_head = str(current_snapshot["head"])
+
+    validation_path = validation_receipt_path(current_head, repo_root)
+    validation_path.parent.mkdir(parents=True, exist_ok=True)
+    validation_path.write_text(json.dumps({"head": "wrong-head"}, indent=2) + "\n", encoding="utf-8")
+
+    contract_path = contract_proof_receipt_path(current_head, repo_root)
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_path.write_text(
+        json.dumps(
+            {
+                "head": current_head,
+                "contract_id": "wrong-slice",
+                "contract_hash": "wrong-hash",
+            },
+            indent=2,
+        ) + "\n",
+        encoding="utf-8",
+    )
+
+    resolution = checkpoint_guard.resolve_session_baseline("unknown_session", current_snapshot, repo_root)
+
+    assert resolution.status == "existing"
+    assert resolution.baseline == first_snapshot
+    assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == first_snapshot
 
 
 def test_build_validation_receipt_prompt_message_mentions_expected_receipt_path(tmp_path: Path) -> None:

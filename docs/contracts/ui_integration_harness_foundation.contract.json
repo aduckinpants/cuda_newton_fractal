@@ -9,6 +9,9 @@
     "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
     "docs/notes/advanced_color_preset_pit_of_success_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
+    "tools/viewer_host_checkpoint_guard.py",
+    "tools/viewer_host_checkpoint_dirty_prompt_guard.py",
+    "tools/viewer_host_recover_crash_state.py",
     "ui_app/src/cli_args.h",
     "ui_app/src/cli_args.cpp",
     "ui_app/src/main.cpp",
@@ -23,7 +26,9 @@
     "ui_app/tests/test_viewer_cli.cpp",
     "ui_app/tests/test_headless_modes.cpp",
     "ui_app/tests/test_viewer_state_init.cpp",
-    "tests/test_fractal_runtime_explaino_escape_variants.py"
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_viewer_host_checkpoint_guard.py",
+    "tests/test_viewer_host_recover_crash_state.py"
   ],
   "required_operator_inputs": [
     "build a real deterministic app-level UI integration harness instead of relying on helper-only greens for user-facing behavior",
@@ -55,7 +60,8 @@
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_foundation.contract.json --out-json artifacts/validation/ui_integration_harness_foundation_contract.json",
-    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_foundation_hostile_audit.json"
   ],
   "required_acceptance_assertions": [
     {
@@ -71,6 +77,14 @@
       "description": "The UI integration harness foundation phased plan stays synchronized",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "ui_integration_harness_foundation_hostile_audit_ok",
+      "description": "The UI integration harness foundation hostile audit validates as complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/ui_integration_harness_foundation_hostile_audit.json",
       "json_path": "ok",
       "equals": true
     }

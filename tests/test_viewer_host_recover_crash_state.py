@@ -133,3 +133,25 @@ def test_main_writes_report_and_adoption_artifact(tmp_path: Path) -> None:
     payload = json.loads(adoption_path.read_text(encoding="utf-8"))
     assert payload["summary"] == "host crashed and rollback reset the chat"
     assert payload["report_path"] == reports[-1].relative_to(repo_root).as_posix()
+
+
+def test_main_rejects_clean_repo_recovery_adoption(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+
+    stdout_buf = io.StringIO()
+    stderr_buf = io.StringIO()
+    with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
+        rc = recover_crash_state.main([
+            "--repo-root",
+            str(repo_root),
+            "--summary",
+            "clean repo should not need recovery",
+            "--adopt-current-state",
+        ])
+
+    assert rc == 2
+    assert "clean repository state does not need crash recovery adoption" in stderr_buf.getvalue()
+    recovery_root = checkpoint_guard.recovery_dir(repo_root)
+    assert not recovery_root.exists() or not list(recovery_root.glob("recovery_*.json"))
+    assert not checkpoint_guard.recovery_adoption_path(repo_root).exists()
