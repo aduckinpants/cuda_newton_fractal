@@ -347,6 +347,25 @@ def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
     assert 'not test_runtime_walk_viewer_can_boot_from_fits_only_cli' in tasks_json
 
 
+def test_runtime_walk_fits_witness_task_surfaces_non_mandatory_pair() -> None:
+    tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
+
+    assert '"label": "verify: runtime walk FITS witnesses"' in tasks_json
+    assert '"artifacts/verify_runtime_walk_fits_witnesses.log"' in tasks_json
+    assert '"tests/test_fractal_runtime_runtime_walk_viewer.py"' in tasks_json
+    assert 'test_runtime_walk_viewer_tolerates_missing_companion_fits or test_runtime_walk_viewer_can_boot_from_fits_only_cli' in tasks_json
+
+
+def test_runtime_walk_fits_witness_task_stays_outside_mandatory_profiles() -> None:
+    state = build_bootstrap_state(run_audit=False, tail_handoff=1)
+
+    runtime_labels = [step["label"] for step in state["validation_profiles"]["runtime"]["steps"]]
+    checkpoint_labels = [step["label"] for step in state["validation_profiles"]["checkpoint"]["steps"]]
+
+    assert "verify: runtime walk FITS witnesses" not in runtime_labels
+    assert "verify: runtime walk FITS witnesses" not in checkpoint_labels
+
+
 def test_runtime_profile_includes_runtime_ui_harness_task() -> None:
     state = build_bootstrap_state(run_audit=False, tail_handoff=1)
 
