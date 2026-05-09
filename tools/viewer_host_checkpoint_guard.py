@@ -824,26 +824,16 @@ def build_pretool_response(
     payload: dict[str, Any] | None = None,
     repo_root: Path = REPO_ROOT,
 ) -> dict[str, Any] | None:
-    payload = payload or {}
-    banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
-    mutation_block, mutation_reason = _evaluate_mutation_guard(payload, session_id, repo_root)
-    if mutation_block:
-        return {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": banner + " " + mutation_reason,
-            }
-        }
+    general_response = build_general_pretool_response(session_id, payload, repo_root)
+    hook_payload = general_response["hookSpecificOutput"]
+    if hook_payload.get("permissionDecision") == "deny":
+        return general_response
     if tool_name != TASK_COMPLETE_TOOL:
-        return {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "allow",
-                "permissionDecisionReason": banner,
-            }
-        }
+        return general_response
 
+    banner = str(hook_payload.get("permissionDecisionReason", "")).strip() or build_strict_banner(load_active_contract_state(session_id, repo_root))
+
+    payload = payload or {}
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
         should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
@@ -898,6 +888,31 @@ def build_pretool_response(
             "additionalContext": (
                 "Paths changed vs session baseline: " + summarize_changed_paths(status.changed_paths)
             ),
+        }
+    }
+
+
+def build_general_pretool_response(
+    session_id: str,
+    payload: dict[str, Any] | None = None,
+    repo_root: Path = REPO_ROOT,
+) -> dict[str, Any]:
+    payload = payload or {}
+    banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
+    mutation_block, mutation_reason = _evaluate_mutation_guard(payload, session_id, repo_root)
+    if mutation_block:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": banner + " " + mutation_reason,
+            }
+        }
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "allow",
+            "permissionDecisionReason": banner,
         }
     }
 
@@ -1213,23 +1228,15 @@ def main(argv: list[str] | None = None) -> int:
         if event_name not in ("PreToolUse", "PostToolUse", "Stop"):
             return 0
 
-        current = capture_repo_snapshot(repo_root)
-        baseline = _bootstrap_missing_baseline_if_clean(session_id, current, repo_root)
-
         if event_name == "PreToolUse":
-            tool_name = TASK_COMPLETE_TOOL if _payload_requests_task_complete(payload) else _extract_payload_tool_name(payload, default="unknown_tool")
-            response = build_pretool_response(
-                tool_name,
-                baseline,
-                current,
-                session_id,
-                payload,
-                repo_root,
-            )
-        elif event_name == "PostToolUse":
-            response = build_posttool_response(_extract_payload_tool_name(payload, default="unknown_tool"), baseline, current, session_id, repo_root)
+            response = build_general_pretool_response(session_id, payload, repo_root)
         else:
-            response = build_stop_response(baseline, current, session_id, repo_root)
+            current = capture_repo_snapshot(repo_root)
+            baseline = _bootstrap_missing_baseline_if_clean(session_id, current, repo_root)
+            if event_name == "PostToolUse":
+                response = build_posttool_response(_extract_payload_tool_name(payload, default="unknown_tool"), baseline, current, session_id, repo_root)
+            else:
+                response = build_stop_response(baseline, current, session_id, repo_root)
 
         if response is not None:
             print(json.dumps(response))

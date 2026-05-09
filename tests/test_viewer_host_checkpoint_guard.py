@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -22,7 +23,11 @@ TEST_PLAN_TEXT = (
 )
 
 import tools.viewer_host_checkpoint_guard as checkpoint_guard
+import tools.viewer_host_checkpoint_dirty_prompt_guard as checkpoint_dirty_prompt_guard
 import tools.viewer_host_contract_state as contract_state
+import tools.viewer_host_hook_require_checkpoint_before_complete as completion_hook
+import tools.viewer_host_hook_require_checkpoint_carryover as carryover_hook
+import tools.viewer_host_hook_stop_if_dirty_worktree as stop_hook
 
 from tools.viewer_host_checkpoint_guard import (
     build_posttool_response,
@@ -42,6 +47,8 @@ from tools.viewer_host_checkpoint_dirty_prompt_guard import (
     build_dirty_prompt_message,
     build_userprompt_response,
     build_validation_receipt_prompt_message,
+    load_carryover_state,
+    write_carryover_state,
 )
 
 
@@ -52,6 +59,19 @@ def _snapshot(*, unstaged: dict[str, str] | None = None, staged: dict[str, str] 
         "untracked": untracked or {},
         "clean": not any((unstaged, staged, untracked)),
     }
+
+
+def _invoke_hook_main(module: Any, payload: dict[str, object]) -> tuple[int, dict[str, object]]:
+    old_stdin = sys.stdin
+    sys.stdin = io.StringIO(json.dumps(payload))
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = module.main()
+        output = json.loads(buf.getvalue())
+    finally:
+        sys.stdin = old_stdin
+    return rc, output
 
 
 def _write_active_contract_with_plan(
@@ -222,13 +242,13 @@ def test_build_pretool_response_blocks_clean_head_without_validation_receipt(tmp
     assert "def456.json" in payload["additionalContext"]
 
 
-def test_main_pretool_blocks_task_complete_via_recipient_name(monkeypatch) -> None:
+def test_completion_hook_blocks_task_complete_via_recipient_name(monkeypatch) -> None:
     baseline = _snapshot()
     current = _snapshot(staged={"HANDOFF_LOG.md": "blob-1"})
 
-    monkeypatch.setattr(checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
-    monkeypatch.setattr(checkpoint_guard, "load_session_baseline", lambda session_id, repo_root=checkpoint_guard.REPO_ROOT: baseline)
-    monkeypatch.setattr(checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "_bootstrap_missing_baseline_if_clean", lambda session_id, current_snapshot, repo_root=checkpoint_guard.REPO_ROOT: baseline)
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
 
     payload = {
         "hookEventName": "PreToolUse",
@@ -238,15 +258,7 @@ def test_main_pretool_blocks_task_complete_via_recipient_name(monkeypatch) -> No
         "parameters": {"summary": "done"},
     }
 
-    old_stdin = sys.stdin
-    sys.stdin = io.StringIO(json.dumps(payload))
-    try:
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            rc = checkpoint_guard.main()
-        output = json.loads(buf.getvalue())
-    finally:
-        sys.stdin = old_stdin
+    rc, output = _invoke_hook_main(completion_hook, payload)
 
     assert rc == 0
     hook = output["hookSpecificOutput"]
@@ -255,15 +267,15 @@ def test_main_pretool_blocks_task_complete_via_recipient_name(monkeypatch) -> No
     assert "HANDOFF_LOG.md" in hook["additionalContext"]
 
 
-def test_main_pretool_blocks_missing_validation_receipt_via_recipient_name(monkeypatch, tmp_path: Path) -> None:
+def test_completion_hook_blocks_missing_validation_receipt_via_recipient_name(monkeypatch, tmp_path: Path) -> None:
     baseline = _snapshot()
     baseline["head"] = "abc123"
     current = _snapshot()
     current["head"] = "def456"
 
-    monkeypatch.setattr(checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
-    monkeypatch.setattr(checkpoint_guard, "load_session_baseline", lambda session_id, repo_root=checkpoint_guard.REPO_ROOT: baseline)
-    monkeypatch.setattr(checkpoint_guard, "discover_repo_root", lambda start_path: tmp_path)
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "_bootstrap_missing_baseline_if_clean", lambda session_id, current_snapshot, repo_root=checkpoint_guard.REPO_ROOT: baseline)
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "discover_repo_root", lambda start_path: tmp_path)
 
     payload = {
         "hookEventName": "PreToolUse",
@@ -273,21 +285,29 @@ def test_main_pretool_blocks_missing_validation_receipt_via_recipient_name(monke
         "parameters": {"summary": "done"},
     }
 
-    old_stdin = sys.stdin
-    sys.stdin = io.StringIO(json.dumps(payload))
-    try:
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            rc = checkpoint_guard.main()
-        output = json.loads(buf.getvalue())
-    finally:
-        sys.stdin = old_stdin
+    rc, output = _invoke_hook_main(completion_hook, payload)
 
     assert rc == 0
     hook = output["hookSpecificOutput"]
     assert hook["permissionDecision"] == "deny"
     assert "validation receipt" in hook["permissionDecisionReason"]
     assert "def456.json" in hook["additionalContext"]
+
+
+def test_completion_hook_allows_non_task_complete(monkeypatch) -> None:
+    monkeypatch.setattr(completion_hook.checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
+
+    payload = {
+        "hookEventName": "PreToolUse",
+        "sessionId": "session-1",
+        "cwd": str(REPO_ROOT),
+        "recipient_name": "functions.read_file",
+    }
+
+    rc, output = _invoke_hook_main(completion_hook, payload)
+
+    assert rc == 0
+    assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
 
 
 def test_main_pretool_denies_raw_apply_patch_for_non_task_complete_tool(monkeypatch) -> None:
@@ -333,6 +353,29 @@ def test_build_posttool_response_reminds_when_head_advanced_without_validation_r
     assert response is not None
     assert "Validation debt after run_in_terminal" in response["systemMessage"]
     assert "def456.json" in response["systemMessage"]
+
+
+def test_stop_hook_blocks_dirty_stop(monkeypatch) -> None:
+    baseline = _snapshot(unstaged={"AGENTS.md": "hash-a"})
+    current = _snapshot(unstaged={"AGENTS.md": "hash-b"}, untracked={"artifacts/report.txt": "hash-r"})
+
+    monkeypatch.setattr(stop_hook.checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(stop_hook.checkpoint_guard, "_bootstrap_missing_baseline_if_clean", lambda session_id, current_snapshot, repo_root=checkpoint_guard.REPO_ROOT: baseline)
+    monkeypatch.setattr(stop_hook.checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
+
+    payload = {
+        "hookEventName": "Stop",
+        "sessionId": "session-1",
+        "cwd": str(REPO_ROOT),
+    }
+
+    rc, output = _invoke_hook_main(stop_hook, payload)
+
+    assert rc == 0
+    hook = output["hookSpecificOutput"]
+    assert hook["decision"] == "block"
+    assert "AGENTS.md" in hook["reason"]
+    assert "artifacts/report.txt" in hook["reason"]
 
 
 def test_evaluate_validation_receipt_guard_allows_matching_receipt(tmp_path: Path) -> None:
@@ -662,6 +705,105 @@ def test_build_userprompt_response_resumes_after_dirty_recovery_adoption() -> No
     assert "Crash recovery resumed" in response["systemMessage"]
     assert "Continue this slice" in response["systemMessage"]
     assert "recovery_20260508T210000Z_deadbeef.json" in response["systemMessage"]
+
+
+def test_dirty_prompt_guard_main_writes_carryover_state_for_dirty_prompt(monkeypatch, tmp_path: Path) -> None:
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+    resolution = checkpoint_guard.SessionBaselineResolution(
+        baseline=_snapshot(),
+        status="existing",
+        changed_paths=["ui_app/src/main.cpp"],
+    )
+
+    monkeypatch.setattr(checkpoint_dirty_prompt_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(checkpoint_dirty_prompt_guard, "resolve_session_baseline", lambda session_id, current_snapshot, repo_root=checkpoint_guard.REPO_ROOT: resolution)
+    monkeypatch.setattr(checkpoint_dirty_prompt_guard, "discover_repo_root", lambda start_path: tmp_path)
+
+    payload = {
+        "hookEventName": "UserPromptSubmit",
+        "sessionId": "session-1",
+        "cwd": str(tmp_path),
+        "prompt": "Start implementation",
+    }
+
+    rc, output = _invoke_hook_main(checkpoint_dirty_prompt_guard, payload)
+
+    assert rc == 0
+    assert output["continue"] is False
+    state = load_carryover_state(tmp_path)
+    assert state["active"] is True
+    assert state["changed_paths"] == ["ui_app/src/main.cpp"]
+    assert "Start implementation" in state["prompt_excerpt"]
+
+
+def test_dirty_prompt_guard_main_clears_carryover_state_when_prompt_is_clean(monkeypatch, tmp_path: Path) -> None:
+    write_carryover_state(["ui_app/src/main.cpp"], "Start implementation", reason="existing", repo_root=tmp_path)
+    current = _snapshot()
+    resolution = checkpoint_guard.SessionBaselineResolution(
+        baseline=current,
+        status="existing",
+        changed_paths=[],
+    )
+
+    monkeypatch.setattr(checkpoint_dirty_prompt_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(checkpoint_dirty_prompt_guard, "resolve_session_baseline", lambda session_id, current_snapshot, repo_root=checkpoint_guard.REPO_ROOT: resolution)
+    monkeypatch.setattr(checkpoint_dirty_prompt_guard, "discover_repo_root", lambda start_path: tmp_path)
+
+    payload = {
+        "hookEventName": "UserPromptSubmit",
+        "sessionId": "session-1",
+        "cwd": str(tmp_path),
+        "prompt": "Fresh prompt",
+    }
+
+    rc, output = _invoke_hook_main(checkpoint_dirty_prompt_guard, payload)
+
+    assert rc == 0
+    assert output["continue"] is True
+    assert load_carryover_state(tmp_path) == {}
+
+
+def test_carryover_hook_blocks_unrelated_tool_when_dirty_state_active(monkeypatch, tmp_path: Path) -> None:
+    write_carryover_state(["ui_app/src/main.cpp"], "Start implementation", reason="existing", repo_root=tmp_path)
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+
+    monkeypatch.setattr(carryover_hook.checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(carryover_hook.checkpoint_guard, "discover_repo_root", lambda start_path: tmp_path)
+
+    payload = {
+        "hookEventName": "PreToolUse",
+        "sessionId": "session-1",
+        "cwd": str(tmp_path),
+        "recipient_name": "functions.apply_patch",
+    }
+
+    rc, output = _invoke_hook_main(carryover_hook, payload)
+
+    assert rc == 2
+    hook = output["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "carryover dirty-worktree guard" in hook["permissionDecisionReason"].lower()
+    assert "ui_app/src/main.cpp" in hook["permissionDecisionReason"]
+
+
+def test_carryover_hook_allows_read_only_tool_when_dirty_state_active(monkeypatch, tmp_path: Path) -> None:
+    write_carryover_state(["ui_app/src/main.cpp"], "Start implementation", reason="existing", repo_root=tmp_path)
+    current = _snapshot(unstaged={"ui_app/src/main.cpp": "hash-main"})
+
+    monkeypatch.setattr(carryover_hook.checkpoint_guard, "capture_repo_snapshot", lambda repo_root=checkpoint_guard.REPO_ROOT: current)
+    monkeypatch.setattr(carryover_hook.checkpoint_guard, "discover_repo_root", lambda start_path: tmp_path)
+
+    payload = {
+        "hookEventName": "PreToolUse",
+        "sessionId": "session-1",
+        "cwd": str(tmp_path),
+        "recipient_name": "functions.read_file",
+    }
+
+    rc, output = _invoke_hook_main(carryover_hook, payload)
+
+    assert rc == 0
+    assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
 
 
 def test_build_pretool_response_denies_task_complete_when_explicit_user_asks_remain_open(tmp_path: Path) -> None:
@@ -994,9 +1136,15 @@ def test_hook_config_wires_checkpoint_guard_events() -> None:
     assert set(payload["hooks"]) == {"UserPromptSubmit", "SessionStart", "PreToolUse", "PostToolUse", "Stop"}
     prompt_command = payload["hooks"]["UserPromptSubmit"][0]["windows"]
     assert prompt_command == "py -3.14 tools\\viewer_host_checkpoint_dirty_prompt_guard.py"
-    for event_name in ("SessionStart", "PreToolUse", "PostToolUse", "Stop"):
-        command = payload["hooks"][event_name][0]["windows"]
-        assert command == "py -3.14 tools\\viewer_host_checkpoint_guard.py"
+    assert payload["hooks"]["SessionStart"][0]["windows"] == "py -3.14 tools\\viewer_host_checkpoint_guard.py"
+    pretool_commands = [entry["windows"] for entry in payload["hooks"]["PreToolUse"]]
+    assert pretool_commands == [
+        "py -3.14 tools\\viewer_host_hook_require_checkpoint_carryover.py",
+        "py -3.14 tools\\viewer_host_checkpoint_guard.py",
+        "py -3.14 tools\\viewer_host_hook_require_checkpoint_before_complete.py",
+    ]
+    assert payload["hooks"]["PostToolUse"][0]["windows"] == "py -3.14 tools\\viewer_host_checkpoint_guard.py"
+    assert payload["hooks"]["Stop"][0]["windows"] == "py -3.14 tools\\viewer_host_hook_stop_if_dirty_worktree.py"
 
 
 def test_discover_repo_root_normalizes_subdirectory_paths() -> None:

@@ -344,10 +344,8 @@ int main() {
         zoomBoundsBinding.kind = "param";
         zoomBoundsBinding.path = "fractal.view.zoom";
         NumericDragWidgetBounds cameraZoomDragBounds = ResolveFloatControlDragWidgetBounds(zoom, zoomBoundsBinding);
-        if (!cameraZoomDragBounds.has_bounds ||
-            !NearlyEqual(cameraZoomDragBounds.min, 1.0e-12, 1.0e-18) ||
-            !NearlyEqual(cameraZoomDragBounds.max, 1.0e30, 1.0e18)) {
-            std::cerr << "Expected the live camera zoom drag widget to use positive finite bounds instead of the generic unbounded one-sided path\n";
+        if (cameraZoomDragBounds.has_bounds) {
+            std::cerr << "Expected dedicated camera zoom drag handling to own widget bounds instead of reusing the generic float-drag clamp path\n";
             return 1;
         }
 
@@ -531,9 +529,33 @@ int main() {
             return 1;
         }
 
+        double zoomDragValue = 0.0;
+        if (!TryGetFloatControlDragValue(zoomBinding, cameraCtx, &zoomDragValue) ||
+            !NearlyEqual(zoomDragValue, TestLog2(32.0), 1.0e-12)) {
+            std::cerr << "Expected live camera zoom drags to operate in log2 zoom space instead of the displayed linear zoom value\n";
+            return 1;
+        }
+
         NumericControlRange cameraZoomRange{};
         cameraZoomRange.has_hard_min = true;
         cameraZoomRange.hard_min = 1.0e-12;
+        cameraCtx.edited_camera_hp_authority = false;
+        if (!ApplyFloatControlDragEdit(zoomBinding, cameraCtx, cameraZoomRange, TestLog2(64.0)) ||
+            !NearlyEqual(view.log2_zoom, TestLog2(64.0), 1.0e-12) ||
+            !NearlyEqual(TestSafeZoomFromLog2(view.log2_zoom), 64.0, 1.0e-9) ||
+            !NearlyEqual(view.zoom, 64.0f, 1.0e-4) ||
+            !cameraCtx.edited_camera_hp_authority) {
+            std::cerr << "Expected live camera zoom drags to write log2_zoom directly and resync the displayed zoom mirror\n";
+            return 1;
+        }
+
+        if (!ApplyFloatControlDragEdit(zoomBinding, cameraCtx, cameraZoomRange, TestLog2(1.0e-20)) ||
+            TestSafeZoomFromLog2(view.log2_zoom) < 1.0e-12 ||
+            view.zoom < 1.0e-12f) {
+            std::cerr << "Expected live camera zoom drags to respect the hard zoom floor while staying on the log2 authority path\n";
+            return 1;
+        }
+
         if (!ApplyFloatControlEdit(zoomBinding, cameraCtx, cameraZoomRange, 1.0e9) ||
             !NearlyEqual(TestSafeZoomFromLog2(view.log2_zoom), 1.0e9, 1.0) ||
             view.zoom <= 0.0f) {

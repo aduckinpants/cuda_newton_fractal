@@ -200,6 +200,22 @@ bool TryGetFloatControlDisplayValue(const UISchemaBinding& binding, const Bindin
     return true;
 }
 
+bool TryGetFloatControlDragValue(const UISchemaBinding& binding, const BindingContext& ctx, double* outValue) {
+    if (!outValue) {
+        return false;
+    }
+
+    if (binding.path == "fractal.view.zoom") {
+        if (!ctx.view) {
+            return false;
+        }
+        *outValue = ClampDouble(ctx.view->log2_zoom, LocalLog2(kMinZoom), kMaxLog2Zoom);
+        return true;
+    }
+
+    return TryGetFloatControlDisplayValue(binding, ctx, outValue);
+}
+
 bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
     double nextValue = value;
     ClampNumericValue(&nextValue, range);
@@ -240,6 +256,23 @@ bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, 
     ClampNumericValue(&nextFloat, range);
     *target = nextFloat;
     return true;
+}
+
+bool ApplyFloatControlDragEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
+    if (binding.path == "fractal.view.zoom") {
+        if (!ctx.view) {
+            return false;
+        }
+
+        const double minLog2Zoom = range.has_hard_min ? LocalLog2((std::fmax)(1.0e-30, range.hard_min)) : LocalLog2(kMinZoom);
+        const double maxLog2Zoom = range.has_hard_max ? LocalLog2((std::fmax)(1.0e-30, range.hard_max)) : kMaxLog2Zoom;
+        ctx.view->log2_zoom = ClampDouble(value, minLog2Zoom, maxLog2Zoom);
+        SyncCameraUiMirrorFromHp(*ctx.view);
+        ctx.edited_camera_hp_authority = true;
+        return true;
+    }
+
+    return ApplyFloatControlEdit(binding, ctx, range, value);
 }
 
 bool ShouldSyncViewHpFromSchemaUiMirrors(const BindingContext& ctx, Float2 uiCenterBefore, float uiZoomBefore) {
@@ -292,14 +325,8 @@ NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& co
 }
 
 NumericDragWidgetBounds ResolveFloatControlDragWidgetBounds(const UISchemaControl& control, const UISchemaBinding& binding) {
-    NumericDragWidgetBounds bounds = ResolveNumericDragWidgetBounds(control);
-    if (binding.path == "fractal.view.zoom") {
-        const NumericControlRange range = ResolveNumericControlRange(control);
-        bounds.min = range.has_hard_min ? range.hard_min : 1.0e-30;
-        bounds.max = 1.0e30;
-        bounds.has_bounds = true;
-    }
-    return bounds;
+    (void)binding;
+    return ResolveNumericDragWidgetBounds(control);
 }
 
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& control, const BindingContext& ctx) {
@@ -1100,12 +1127,58 @@ bool RenderIntControl(
     return changed;
 }
 
+bool RenderCameraZoomControl(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    const NumericControlRange& range,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    double displayedValue = 0.0;
+    double dragValue = 0.0;
+    if (!TryGetFloatControlDisplayValue(binding, ctx, &displayedValue) ||
+        !TryGetFloatControlDragValue(binding, ctx, &dragValue)) {
+        return RenderDiagnosticLabel(control, "bind failed");
+    }
+
+    const double minLog2Zoom = range.has_hard_min ? LocalLog2((std::fmax)(1.0e-30, range.hard_min)) : LocalLog2(kMinZoom);
+    const double maxLog2Zoom = range.has_hard_max ? LocalLog2((std::fmax)(1.0e-30, range.hard_max)) : kMaxLog2Zoom;
+    const float speed = control.has_step ? static_cast<float>(control.step) : 0.01f;
+    const char* inputFormat = FloatControlInputFormat(control, binding);
+
+    bool changed = false;
+    if (control.type == "slider_float") {
+        changed = ImGui::SliderScalar(control.label.c_str(), ImGuiDataType_Double, &dragValue, &minLog2Zoom, &maxLog2Zoom, "2^(%.3f)");
+    } else {
+        changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &dragValue, speed, &minLog2Zoom, &maxLog2Zoom, "2^(%.3f)");
+    }
+    ImGui::SameLine();
+    const std::string inputLabel = "##value_input_" + control.id;
+    const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), &displayedValue, 0.0, 0.0, inputFormat);
+
+    if (changed && !ApplyFloatControlDragEdit(binding, ctx, range, dragValue)) {
+        return RenderDiagnosticLabel(control, "camera edit failed");
+    }
+    if (typedChanged && !ApplyFloatControlEdit(binding, ctx, range, displayedValue)) {
+        return RenderDiagnosticLabel(control, "camera edit failed");
+    }
+
+    changed = changed || typedChanged;
+    MarkDirtyIfChanged(changed, ioDirty);
+    MarkCurrentItemInteraction(changed, ioInteracted);
+    return changed;
+}
+
 bool RenderFloatControl(
     const UISchemaControl& control,
     BindingContext& ctx,
     const UISchemaBinding& binding,
     bool* ioDirty,
     bool* ioInteracted) {
+    if (binding.path == "fractal.view.zoom") {
+        return RenderCameraZoomControl(control, ctx, binding, ResolveNumericControlRange(control), ioDirty, ioInteracted);
+    }
+
     double displayedValue = 0.0;
     if (!TryGetFloatControlDisplayValue(binding, ctx, &displayedValue)) {
         return RenderDiagnosticLabel(control, "bind failed");

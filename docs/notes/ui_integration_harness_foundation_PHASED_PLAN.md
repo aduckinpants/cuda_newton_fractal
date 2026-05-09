@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs; next work should widen that driver to more neighboring workflows and promote it into the mandatory integration rail
+Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs, the neighboring zoom-control seam now has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
 
 ## Phase Checklist
 
@@ -14,15 +14,18 @@ Phase 2 in progress - a checked-in loaded-state scenario driver now powers both 
 
 ## Explicit User Asks
 
-- [open] Build a real actual honest integration test harness with no fake greens and no helper-only lies for user-facing UI behavior changes.
-- [open] Make the harness robust enough to survive merge into the mainline repo and later exercise the IDE, Science Mode, and other UI surfaces built on the same DX11/ImGui framework.
-- [open] Keep the harness deterministic, professional, pure, functional, and generally agent-usable instead of turning it into a one-off advanced-color test hack.
-- [open] Make this harness, alongside normal unit coverage, the required deterministic workflow proof for future user-facing UI behavior changes.
-- [open] Keep the next harness expansion phase-bounded and explicit in the checked-in plan/contract instead of improvising new one-off seams.
+- [deferred] Build a real actual honest integration test harness with no fake greens and no helper-only lies for user-facing UI behavior changes.
+- [deferred] Make the harness robust enough to survive merge into the mainline repo and later exercise the IDE, Science Mode, and other UI surfaces built on the same DX11/ImGui framework.
+- [deferred] Keep the harness deterministic, professional, pure, functional, and generally agent-usable instead of turning it into a one-off advanced-color test hack.
+- [deferred] Make this harness, alongside normal unit coverage, the required deterministic workflow proof for future user-facing UI behavior changes.
+- [done] Keep the next harness expansion phase-bounded and explicit in the checked-in plan/contract instead of improvising new one-off seams.
+- [done] Import the proven mainline checkpoint hooks so dirty completion, dirty stop, and dirty carryover become impossible to treat as normal workflow states.
+- [done] Use the next harness expansion slice to add a truthful zoom-control regression and fix the still-broken zoom slider instead of landing another fake-green camera patch.
 - [done] Hostile review is mandatory closure evidence for this work and must stay machine-enforced instead of being treated as optional prose.
 
 ## Immediate Next Slice
 
+- Extend the new layered checkpoint hook chain with the remaining mainline hardening surfaces, especially any viewer-host-specific post-tool dirty warning or bootstrap-rail gaps that still rely on the old monolithic guard.
 - Widen the loaded-state scenario driver to additional neighboring workflows that already use the same publish/load-state/capture pattern instead of leaving them on hand-built command assembly.
 - Decide the first extracted helper surface outside the monolithic test file once a second consumer beyond `test_fractal_runtime_explaino_escape_variants.py` is ready.
 - Start wiring the driver-backed scenario subset into a named public validation rail so future UI slices can depend on it deterministically.
@@ -61,6 +64,15 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: Phase 2 is now seeded with an explicit `_HeadlessLoadedStateScenario` driver inside the published-runtime test file so advanced-color and sidecar scenarios share one checked-in setup/action/capture flow instead of duplicating CLI assembly by hand.
 - Done: the canonical native-helper build rail reran clean on the recovered worktree, so the earlier `ApplyCliOverrides` compile failure was stale log noise rather than a live source mismatch on current disk state.
 - Done: the full `tests/test_fractal_runtime_explaino_escape_variants.py` file is green again after fixing the paced-loop stop-threshold proof to compare pumped output against the matching loaded-state baseline instead of the raw startup state.
+- Done: the harness contract now explicitly covers the schema-binding zoom seam so the broken zoom slider can be repaired inside the same truthful neighboring-workflow expansion instead of via another out-of-band camera patch.
+- Done: `ui_app/tests/test_schema_binding.cpp` now locks the real zoom-control contract: the generic float drag path no longer owns zoom widget bounds, zoom drags operate in log2 space, and drag edits write `log2_zoom` directly while resynchronizing the displayed zoom mirror.
+- Done: `ui_app/src/schema_binding.cpp` now routes `fractal.view.zoom` through a dedicated camera-zoom render path that uses a log2 drag widget plus linear exact input, preserving HP authority without reintroducing the old bogus zoom UI cap.
+- Done: post-fix proof is green on both relevant rails: `py -3.14 tools/viewer_host_run_logged_command.py --label "native helper tests" --log artifacts/verify_native_helper_tests.log -- cmd /c ui_app\build_tests_vsdevcmd.cmd` and `py -3.14 tools/viewer_host_run_logged_command.py --label "nearby zoom runtime witness" --log artifacts/verify_nearby_zoom_runtime_witness.log -- py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k nearby_zoom_state_round_trips_and_stays_visible_in_published_runtime -q` both passed after rebuilding the runtime.
+- Done: the hook registry now mirrors the first critical mainline workflow split: `UserPromptSubmit` still routes through `viewer_host_checkpoint_dirty_prompt_guard.py`, `PreToolUse` now chains a dedicated carryover gate plus the general mutation/banner guard plus a dedicated completion blocker, and `Stop` now routes through a dedicated dirty-worktree blocker.
+- Done: `tools/viewer_host_hook_require_checkpoint_carryover.py`, `tools/viewer_host_hook_require_checkpoint_before_complete.py`, and `tools/viewer_host_hook_stop_if_dirty_worktree.py` now own the exact invariants that kept failing in practice: stale dirty carryover can only use read-only or closure-repair commands, `task_complete` gets its own hard block, and dirty Stop is checked through a dedicated surface instead of sharing dispatch with unrelated hook work.
+- Done: `tools/viewer_host_checkpoint_dirty_prompt_guard.py` now persists explicit carryover state for dirty prompt-submit blocks, so the next PreToolUse event can deny unrelated work instead of relying on the agent to treat a warning as binding workflow state.
+- Done: focused proof is green on the checkpoint workflow surface: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q` passed with the dedicated hook tests, and the adjacent crash-recovery proof `py -3.14 -m pytest tests/test_viewer_host_recover_crash_state.py -q` remained green after the carryover-state change.
+- Done: hostile closure testing exposed one more real workflow bug in the repo-approved checkpoint wrapper itself: `tools/viewer_host_checkpoint_slice.py commit` treated the implicit no-`--path` case as a scoped commit containing only `HANDOFF_LOG.md`. The wrapper now stages all changes when no paths are provided, and `tests/test_agent_workflow_tools.py -k checkpoint_slice -q` locks that regression down.
 
 ## Hostile Audit
 
@@ -77,6 +89,11 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 6 - challenged the stale-baseline refresh path against malformed receipt metadata so placeholder receipt files cannot silently clear carryover debt.
 - [done] Pass 7 - challenged the first sidecar replay scenario witness against actual rendered-frame proof instead of accepting a state-only mutation as sufficient harness evidence.
 - [done] Pass 8 - challenged the neighboring paced-loop runtime failure against a no-pump control capture so the slice would fix the real baseline defect instead of chasing a nonexistent sidecar mutation bug.
+- [done] Pass 9 - challenged the still-broken zoom slider against the current owning schema-binding path instead of trusting the older recovery prose or the stale giant-bound helper test.
+- [done] Pass 10 - challenged the repaired zoom control on both the native helper build rail and the published-runtime nearby-zoom witness so the slice does not close on helper-only proof.
+- [done] Pass 11 - challenged the workflow fix against the exact repeated failure mode by moving dirty carryover, completion, and Stop ownership into dedicated hooks modeled on the proven mainline examples instead of extending the monolithic viewer-host guard again.
+- [done] Pass 12 - challenged the new hook chain on the focused workflow test surface plus the adjacent crash-recovery tests so the carryover-state write/read path could not silently regress the emergency recovery story.
+- [done] Pass 13 - challenged the actual checkpoint closure path itself and repaired the wrapper bug that silently committed only `HANDOFF_LOG.md` when no explicit `--path` list was provided.
 
 ## Audit Findings
 
@@ -92,6 +109,11 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The first stale-baseline refresh fix still trusted receipt file presence alone; malformed receipt placeholders could have refreshed the baseline anyway, so the refresh path now validates receipt head metadata and the active contract identity before accepting the clean head as a new baseline.
 - [done] The first sidecar replay scenario choice (`ripple_amplitude`) mutated persisted state but did not move the rendered frame on the published-runtime baseline, so it was not a truthful harness witness; the scenario now replays `explaino_seed`, which does produce a user-visible frame change through the same driver.
 - [done] The neighboring paced-loop runtime failure was a false comparison against the raw startup capture: plain `--load-state-json` already changes derived `params.multibrot_power` without any frame change, so the truthful stop-threshold proof must compare pumped output against its matching loaded-state baseline, not the pre-load startup state.
+- [done] The older zoom recovery slice left the live zoom control on the generic float-drag path and then codified a giant `1e-12 .. 1e30` widget-bound contract in the native tests. That stale test masked the real regression instead of catching it.
+- [done] The repaired zoom path now separates drag-domain value from displayed value: the drag widget edits `log2_zoom` directly while the adjacent exact-input field still edits linear zoom, which matches the HP camera authority without restoring the old zoom UI cap.
+- [done] The viewer-host workflow had the same structural bug the user kept calling out: one monolithic checkpoint guard still owned too many unrelated policy decisions, so the agent could behave as if a slice were finished before the completion/Stop boundaries had been made independently hard.
+- [done] Importing the mainline pattern as a layered chain is the right fix, not another ad hoc branch inside `viewer_host_checkpoint_guard.py`. The first critical split is now landed: dirty prompt-submit writes carryover state, dedicated PreToolUse carryover gating blocks unrelated work, dedicated completion gating owns `task_complete`, and dedicated Stop gating owns dirty-session end.
+- [done] The repo-approved checkpoint wrapper still had a closure loophole of its own: omitting `--path` should have meant "commit the whole dirty slice," but the implementation always auto-populated a scoped path list with `HANDOFF_LOG.md` and therefore committed only the handoff entry. That bug is now fixed and covered.
 
 ## Notes
 

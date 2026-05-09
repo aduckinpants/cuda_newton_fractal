@@ -53,6 +53,8 @@ def _run_all(commands: list[list[str]], cwd: Path) -> int:
 
 
 def _scoped_commit_paths(paths: list[str]) -> list[str]:
+    if not paths:
+        return []
     scoped: list[str] = []
     for path in [*paths, "HANDOFF_LOG.md"]:
         candidate = str(path).strip()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 import sys
 from pathlib import Path
@@ -86,6 +87,50 @@ def build_dirty_prompt_message(changed_paths: list[str], prompt_text: str) -> st
     if prompt_excerpt:
         message += " Prompt excerpt: " + prompt_excerpt
     return message
+
+
+def carryover_state_path(repo_root: Path = REPO_ROOT) -> Path:
+    return repo_root / "artifacts" / "hooks" / "viewer_host_checkpoint_guard" / "checkpoint_carryover_state.json"
+
+
+def load_carryover_state(repo_root: Path = REPO_ROOT) -> dict[str, Any]:
+    path = carryover_state_path(repo_root)
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def clear_carryover_state(repo_root: Path = REPO_ROOT) -> None:
+    path = carryover_state_path(repo_root)
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def write_carryover_state(
+    changed_paths: list[str],
+    prompt_text: str,
+    *,
+    reason: str,
+    repo_root: Path = REPO_ROOT,
+) -> Path:
+    path = carryover_state_path(repo_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "active": True,
+        "changed_paths": list(changed_paths),
+        "changed_summary": summarize_changed_paths(changed_paths),
+        "prompt_excerpt": " ".join(prompt_text.split())[:240],
+        "reason": reason,
+        "written_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return path
 
 
 def build_validation_receipt_prompt_message(prompt_text: str, repo_root: Path, head: str) -> str:
@@ -218,14 +263,30 @@ def main() -> int:
         repo_root = _resolve_repo_root(payload if isinstance(payload, dict) else {})
         current = capture_repo_snapshot(repo_root)
         baseline_resolution = resolve_session_baseline(session_id, current, repo_root)
+        prompt_text = _extract_prompt_text(payload)
         response = build_userprompt_response(
             baseline_resolution.baseline,
             current,
-            _extract_prompt_text(payload),
+            prompt_text,
             session_id,
             repo_root,
             baseline_resolution=baseline_resolution,
         )
+        resolution_status = str(getattr(baseline_resolution, "status", "")).strip()
+        if bool(response.get("continue", True)):
+            clear_carryover_state(repo_root)
+        elif not bool(current.get("clean", False)) and resolution_status != "adopted_dirty":
+            changed_paths = list(getattr(baseline_resolution, "changed_paths", []))
+            if not changed_paths:
+                changed_paths = evaluate_checkpoint_guard(baseline_resolution.baseline, current).changed_paths
+            write_carryover_state(
+                changed_paths,
+                prompt_text,
+                reason=resolution_status or "dirty_carryover",
+                repo_root=repo_root,
+            )
+        else:
+            clear_carryover_state(repo_root)
         print(json.dumps(response))
         return 0
     except Exception as exc:

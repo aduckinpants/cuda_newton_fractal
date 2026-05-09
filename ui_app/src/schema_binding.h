@@ -52,6 +52,8 @@ NumericDragWidgetBounds ResolveNumericDragWidgetBounds(const UISchemaControl& c)
 NumericDragWidgetBounds ResolveFloatControlDragWidgetBounds(const UISchemaControl& c, const UISchemaBinding& binding);
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& c, const BindingContext& ctx);
 bool TryGetFloatControlDisplayValue(const UISchemaBinding& binding, const BindingContext& ctx, double* outValue);
+bool TryGetFloatControlDragValue(const UISchemaBinding& binding, const BindingContext& ctx, double* outValue);
 bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value);
+bool ApplyFloatControlDragEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value);
 bool ShouldSyncViewHpFromSchemaUiMirrors(const BindingContext& ctx, Float2 uiCenterBefore, float uiZoomBefore);
 bool RenderControlFromSchema(const UISchemaControl& c, BindingContext& ctx, bool* ioDirty, bool* ioRenderOnce, bool* ioInteracted);
