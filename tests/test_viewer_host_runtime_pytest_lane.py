@@ -67,3 +67,34 @@ def test_main_succeeds_when_runtime_lane_has_passing_tests(monkeypatch) -> None:
     output = buf.getvalue()
     assert rc == 0
     assert "summary=passed=12" in output
+
+
+def test_main_forwards_additional_pytest_args(monkeypatch) -> None:
+    monkeypatch.setattr(runtime_pytest_lane, "active_runtime_exe", lambda: Path("D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe"))
+
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], **kwargs):
+        commands.append(command)
+        return type("_Proc", (), {"returncode": 0, "stdout": ".\n1 passed in 0.10s\n"})()
+
+    monkeypatch.setattr(runtime_pytest_lane.subprocess, "run", fake_run)
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = runtime_pytest_lane.main([
+            "tests/test_fractal_runtime_runtime_walk_viewer.py",
+            "-k",
+            "test_runtime_walk_viewer_replays_and_space_pauses",
+        ])
+
+    assert rc == 0
+    assert commands == [[
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests/test_fractal_runtime_runtime_walk_viewer.py",
+        "-k",
+        "test_runtime_walk_viewer_replays_and_space_pauses",
+        "-q",
+    ]]

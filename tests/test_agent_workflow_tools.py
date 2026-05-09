@@ -340,8 +340,11 @@ def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
     assert '"tests/test_fractal_runtime_explaino_dual.py"' in tasks_json
     assert '"tests/test_fractal_runtime_explaino_escape_variants.py"' in tasks_json
     assert '"tests/test_fractal_runtime_explaino_sidecar_live.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_runtime_walk_viewer.py"' in tasks_json
     assert '"tests/test_fractal_runtime_shutdown.py"' in tasks_json
     assert '"tests/test_fractal_runtime_sweep_pause.py"' in tasks_json
+    assert 'not test_runtime_walk_viewer_tolerates_missing_companion_fits' in tasks_json
+    assert 'not test_runtime_walk_viewer_can_boot_from_fits_only_cli' in tasks_json
 
 
 def test_runtime_profile_includes_runtime_ui_harness_task() -> None:

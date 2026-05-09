@@ -18,6 +18,7 @@
     "tools/viewer_host_hook_require_checkpoint_carryover.py",
     "tools/viewer_host_hook_stop_if_dirty_worktree.py",
     "tools/viewer_host_recover_crash_state.py",
+    "tools/viewer_host_runtime_pytest_lane.py",
     "ui_app/src/cli_args.h",
     "ui_app/src/cli_args.cpp",
     "ui_app/src/main.cpp",
@@ -44,10 +45,12 @@
     "tests/test_fractal_runtime_explaino_escape_variants.py",
     "tests/test_fractal_runtime_explaino_sidecar_live.py",
     "tests/test_fractal_runtime_probe_cli.py",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py",
     "tests/test_fractal_runtime_shutdown.py",
     "tests/test_fractal_runtime_sweep_pause.py",
     "tests/test_agent_workflow_tools.py",
     "tests/test_viewer_host_checkpoint_guard.py",
+    "tests/test_viewer_host_runtime_pytest_lane.py",
     "tests/test_viewer_host_recover_crash_state.py"
   ],
   "required_operator_inputs": [

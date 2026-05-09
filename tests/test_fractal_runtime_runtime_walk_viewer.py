@@ -10,66 +10,25 @@ from pathlib import Path
 
 import pytest
 
+from tests.runtime_harness import (
+    RUNTIME_DIR,
+    WM_CLOSE,
+    active_runtime_exe as _active_runtime_exe,
+    capture_ready_window_pixels as _capture_ready_window_pixels,
+    find_window_for_pid as _find_window_for_pid,
+    focus_window as _focus_window,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
-ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
 REAL_FITS_PATH = Path(
     r"D:\salt-output\results\godel_fits_entropy_campaign\core_round_20260407\core\fits\godel_g1_long\frames_delta_stack.fits"
 )
 
-WM_CLOSE = 0x0010
 WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
 VK_SPACE = 0x20
 VK_RIGHT = 0x27
-SRCCOPY = 0x00CC0020
-DIB_RGB_COLORS = 0
-PW_RENDERFULLCONTENT = 0x00000002
-
-
-class RECT(ctypes.Structure):
-    _fields_ = [
-        ("left", ctypes.c_long),
-        ("top", ctypes.c_long),
-        ("right", ctypes.c_long),
-        ("bottom", ctypes.c_long),
-    ]
-
-
-class BITMAPINFOHEADER(ctypes.Structure):
-    _fields_ = [
-        ("biSize", wintypes.DWORD),
-        ("biWidth", wintypes.LONG),
-        ("biHeight", wintypes.LONG),
-        ("biPlanes", wintypes.WORD),
-        ("biBitCount", wintypes.WORD),
-        ("biCompression", wintypes.DWORD),
-        ("biSizeImage", wintypes.DWORD),
-        ("biXPelsPerMeter", wintypes.LONG),
-        ("biYPelsPerMeter", wintypes.LONG),
-        ("biClrUsed", wintypes.DWORD),
-        ("biClrImportant", wintypes.DWORD),
-    ]
-
-
-class BITMAPINFO(ctypes.Structure):
-    _fields_ = [
-        ("bmiHeader", BITMAPINFOHEADER),
-        ("bmiColors", wintypes.DWORD * 3),
-    ]
-
-
-def _active_runtime_exe() -> Path:
-    if not ACTIVE_RUNTIME_FILE.exists():
-        pytest.skip(f"missing active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    active_name = ACTIVE_RUNTIME_FILE.read_text(encoding="utf-8").strip()
-    if not active_name:
-        pytest.skip(f"empty active runtime metadata: {ACTIVE_RUNTIME_FILE}")
-    exe_path = RUNTIME_DIR / active_name
-    if not exe_path.exists():
-        pytest.skip(f"active runtime missing: {exe_path}")
-    return exe_path
 
 
 def _write_state_json(path: Path) -> None:
@@ -174,91 +133,6 @@ def _write_request_json(
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def _find_window_for_pid(pid: int) -> int | None:
-    user32 = ctypes.windll.user32
-    found: list[int] = []
-
-    enum_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
-
-    @enum_proc
-    def callback(hwnd: int, _lparam: int) -> bool:
-        window_pid = wintypes.DWORD()
-        user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(window_pid))
-        rect = RECT()
-        is_ready = user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect))
-        if (
-            window_pid.value == pid
-            and user32.IsWindow(wintypes.HWND(hwnd))
-            and user32.IsWindowVisible(wintypes.HWND(hwnd))
-            and is_ready
-            and rect.right - rect.left > 0
-            and rect.bottom - rect.top > 0
-        ):
-            found.append(int(hwnd))
-            return False
-        return True
-
-    user32.EnumWindows(callback, 0)
-    return found[0] if found else None
-
-
-def _capture_window_pixels(hwnd: int) -> bytes:
-    user32 = ctypes.windll.user32
-    gdi32 = ctypes.windll.gdi32
-
-    rect = RECT()
-    if not user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect)):
-        raise OSError("GetClientRect failed")
-
-    width = rect.right - rect.left
-    height = rect.bottom - rect.top
-    if width <= 0 or height <= 0:
-        raise OSError(f"window client rect is not ready: width={width} height={height}")
-    hwnd_dc = user32.GetDC(wintypes.HWND(hwnd))
-    mem_dc = gdi32.CreateCompatibleDC(hwnd_dc)
-    bitmap = gdi32.CreateCompatibleBitmap(hwnd_dc, width, height)
-    gdi32.SelectObject(mem_dc, bitmap)
-
-    if not user32.PrintWindow(wintypes.HWND(hwnd), mem_dc, PW_RENDERFULLCONTENT):
-        gdi32.BitBlt(mem_dc, 0, 0, width, height, hwnd_dc, 0, 0, SRCCOPY)
-
-    bitmap_info = BITMAPINFO()
-    bitmap_info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
-    bitmap_info.bmiHeader.biWidth = width
-    bitmap_info.bmiHeader.biHeight = -height
-    bitmap_info.bmiHeader.biPlanes = 1
-    bitmap_info.bmiHeader.biBitCount = 32
-    bitmap_info.bmiHeader.biCompression = 0
-
-    pixels = ctypes.create_string_buffer(width * height * 4)
-    copied_rows = gdi32.GetDIBits(mem_dc, bitmap, 0, height, pixels, ctypes.byref(bitmap_info), DIB_RGB_COLORS)
-    gdi32.DeleteObject(bitmap)
-    gdi32.DeleteDC(mem_dc)
-    user32.ReleaseDC(wintypes.HWND(hwnd), hwnd_dc)
-    if copied_rows != height:
-        raise OSError(f"GetDIBits copied {copied_rows} rows, expected {height}")
-    return pixels.raw
-
-
-def _capture_ready_window_pixels(hwnd: int) -> bytes:
-    deadline = time.monotonic() + 5.0
-    last_error: Exception | None = None
-    while time.monotonic() < deadline:
-        try:
-            pixels = _capture_window_pixels(hwnd)
-        except OSError as exc:
-            last_error = exc
-            time.sleep(0.1)
-            continue
-        if pixels:
-            return pixels
-        time.sleep(0.1)
-
-    if last_error is not None:
-        raise last_error
-    raise AssertionError("window never produced a non-empty captured frame")
-
-
 def _capture_stable_window_pixels(hwnd: int) -> tuple[bytes, bytes]:
     deadline = time.monotonic() + 5.0
     left = _capture_ready_window_pixels(hwnd)
@@ -321,8 +195,7 @@ def test_runtime_walk_viewer_replays_and_space_pauses(tmp_path: Path) -> None:
         assert hwnd is not None, f"viewer never created a top-level window for pid {proc.pid}"
 
         user32 = ctypes.windll.user32
-        user32.ShowWindow(wintypes.HWND(hwnd), 5)
-        user32.SetForegroundWindow(wintypes.HWND(hwnd))
+        _focus_window(hwnd)
 
         time.sleep(0.8)
         running_frame_a, running_frame_b = _capture_stable_window_pixels(hwnd)
@@ -390,9 +263,7 @@ def test_runtime_walk_viewer_tolerates_missing_companion_fits(tmp_path: Path) ->
 
         assert hwnd is not None, f"viewer never created a top-level window for pid {proc.pid}"
 
-        user32 = ctypes.windll.user32
-        user32.ShowWindow(wintypes.HWND(hwnd), 5)
-        user32.SetForegroundWindow(wintypes.HWND(hwnd))
+        _focus_window(hwnd)
 
         time.sleep(0.8)
         running_frame_a, running_frame_b = _capture_stable_window_pixels(hwnd)
@@ -442,9 +313,7 @@ def test_runtime_walk_viewer_can_boot_from_fits_only_cli() -> None:
 
         assert hwnd is not None, f"viewer never created a top-level window for pid {proc.pid}"
 
-        user32 = ctypes.windll.user32
-        user32.ShowWindow(wintypes.HWND(hwnd), 5)
-        user32.SetForegroundWindow(wintypes.HWND(hwnd))
+        _focus_window(hwnd)
 
         time.sleep(0.8)
         running_frame_a, running_frame_b = _capture_stable_window_pixels(hwnd)

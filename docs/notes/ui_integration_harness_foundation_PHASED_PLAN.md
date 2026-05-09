@@ -2,15 +2,15 @@
 
 ## Current Phase
 
-Phase 2 in progress - a checked-in loaded-state scenario driver now powers both advanced-color and sidecar published-runtime proofs, the shared helper surface in `tests/runtime_harness.py` now owns both headless runtime setup and the first reusable live-window capture/focus/close helpers, the runtime/checkpoint public profiles require the named `verify: runtime ui harness` rail, the rail itself now covers dual-seed headless capture plus sidecar-live plus shutdown plus sweep-pause viewer behavior, the neighboring zoom-control seam now has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
+Phase 5 complete - the checked-in loaded-state scenario driver and shared `tests/runtime_harness.py` surface now back a mandatory published-runtime UI harness rail across dual-seed capture, escape variants, sidecar live, shutdown, sweep-pause, and a second mode-family runtime-walk replay/pause witness; the runtime/checkpoint public profiles require that rail, the runtime pytest lane now forwards focused pytest selectors without dropping its active-runtime preflight, the neighboring zoom-control seam has a dedicated schema-binding regression plus runtime witness instead of the stale generic drag contract, and the repo workflow now has dedicated carryover, completion, and Stop hook surfaces instead of routing the whole closure policy through one PreToolUse/Stop monolith
 
 ## Phase Checklist
 
 - [x] Phase 1 - lock the reusable scenario vocabulary and closure bar: typed action surface, direct native helper coverage, published-runtime proof, and workflow-guard behavior that refuses false recovery/carryover paths.
-- [ ] Phase 2 - extract a checked-in scenario driver around runtime publish, load-state/draft hydration, action execution, and deterministic capture so scripted scenarios stop depending on ad hoc CLI seams.
-- [ ] Phase 3 - land truthful RED/GREEN scenarios for advanced-color plus at least one neighboring user-facing workflow through the same driver instead of helper-only seams.
-- [ ] Phase 4 - wire the scenario driver into a mandatory public validation rail and contract proof chain so future UI slices cannot close without published-runtime proof and hostile-audit evidence.
-- [ ] Phase 5 - prove the harness generalizes beyond the current viewer by exercising at least one second host surface or mode family that matters for merge back to mainline.
+- [x] Phase 2 - extract a checked-in scenario driver around runtime publish, load-state/draft hydration, action execution, and deterministic capture so scripted scenarios stop depending on ad hoc CLI seams.
+- [x] Phase 3 - land truthful RED/GREEN scenarios for advanced-color plus at least one neighboring user-facing workflow through the same driver instead of helper-only seams.
+- [x] Phase 4 - wire the scenario driver into a mandatory public validation rail and contract proof chain so future UI slices cannot close without published-runtime proof and hostile-audit evidence.
+- [x] Phase 5 - prove the harness generalizes beyond the current viewer by exercising at least one second host surface or mode family that matters for merge back to mainline.
 
 ## Explicit User Asks
 
@@ -28,7 +28,7 @@ Phase 2 in progress - a checked-in loaded-state scenario driver now powers both 
 - Extend the new layered checkpoint hook chain with the remaining mainline hardening surfaces, especially any viewer-host-specific post-tool dirty warning or bootstrap-rail gaps that still rely on the old monolithic guard.
 - Widen the loaded-state scenario driver to additional neighboring workflows that already use the same publish/load-state/capture pattern instead of leaving them on hand-built command assembly.
 - Keep moving neighboring published-runtime consumers onto `tests/runtime_harness.py` so the harness expansion keeps shrinking ad hoc CLI/state-bundle duplication instead of just documenting it.
-- Promote the first second-mode-family witness into the mandatory rail by deciding whether `tests/test_fractal_runtime_runtime_walk_viewer.py` should join `verify: runtime ui harness` or land as a sibling named rail.
+- Decide whether the remaining runtime-walk witnesses (`missing_companion_fits` and FITS-only boot) belong in a sibling named rail instead of the mandatory gate now that replay/pause already proves the second mode family on `verify: runtime ui harness`.
 - Keep moving the remaining active-runtime-only runtime tests onto `tests/runtime_harness.py` when they only duplicate runtime lookup or live-window boilerplate; stop short when the next step needs a broader runtime-test support module.
 - Keep hostile-audit validation in the proof chain as the driver expands; do not let the new helper become a loophole for helper-only fake greens.
 
@@ -82,6 +82,8 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - Done: `tests/runtime_harness.py` now owns the first shared live-window viewer helpers too: window discovery, wait/focus, frame capture, frame-diffing, and close behavior are shared between `tests/test_fractal_runtime_explaino_sidecar_live.py` and `tests/test_fractal_runtime_sweep_pause.py` instead of being copied locally.
 - Done: the named UI harness rail now covers the sweep-pause viewer witness too, and the logged rail run passed with `27 passed` across dual capture, escape variants, sidecar live, shutdown, and sweep-pause.
 - Done: hostile revalidation of the promoted sweep-pause witness found one real defect in the test contract itself: the extra paused-vs-running relative-diff assertion was flaky even when the absolute freeze witness was green, so the harness now keeps the deterministic `paused_diff < 0.1` pause contract and drops the unstable extra ratio check.
+- Done: `tests/test_fractal_runtime_runtime_walk_viewer.py::test_runtime_walk_viewer_replays_and_space_pauses` now reuses the shared runtime/window helpers and joins the mandatory `verify: runtime ui harness` rail as the first second mode-family witness, while the task keeps the two external-artifact-dependent FITS cases out of the gate via an exclusion-based `-k` expression.
+- Done: hostile audit of that promotion found one real tooling defect in the gate itself: `tools/viewer_host_runtime_pytest_lane.py` accepted override file lists but not extra pytest selectors, so it now forwards passthrough pytest args while preserving active-runtime preflight and zero-pass enforcement.
 
 ## Hostile Audit
 
@@ -107,6 +109,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 15 - challenged whether the named UI harness rail was still optional in practice by forcing it into the runtime/checkpoint public profiles and expanding it to another user-facing viewer behavior before closure.
 - [done] Pass 16 - challenged whether the next live-window viewer witness could share real helper code without regressing behavior by extracting the common window helpers, breaking the sweep-pause witness once through a local import mistake, repairing it, and then re-proving the expanded UI harness rail.
 - [done] Pass 17 - challenged the promoted sweep-pause witness itself on repeated focused reruns, found the extra relative-diff assertion was flaky despite a stable absolute pause witness, repaired the test contract, and re-proved the expanded UI harness rail.
+- [done] Pass 18 - challenged the first second-mode-family promotion against the runtime-lane wrapper itself, found that the lane could not forward a focused `-k` selector without failing argument parsing, repaired the wrapper instead of downgrading the rail to raw pytest, and then re-proved the runtime-walk witness on the mandatory rail.
 
 ## Audit Findings
 
@@ -134,6 +137,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The first shared live-window helper extraction was viable after all: `tests/test_fractal_runtime_sweep_pause.py` and `tests/test_fractal_runtime_explaino_sidecar_live.py` really were using the same window discovery, capture, focus, and close mechanics. The only defect exposed was a local leftover Win32 import omission in `test_fractal_runtime_sweep_pause.py`, not a bad extraction boundary.
 - [done] Once sweep-pause joined the mandatory UI harness rail, the test still carried a second paused-vs-running ratio assertion that could fail even when the real user-facing pause contract was satisfied. The deterministic witness is the absolute freeze bound, not the extra relative ratio, so the flaky ratio check is gone.
 - [done] The next high-value generalization candidate is now explicit instead of hand-wavy: `tests/test_fractal_runtime_runtime_walk_viewer.py::test_runtime_walk_viewer_replays_and_space_pauses` is the first viewer-facing witness for a second mode family that can plausibly join the mandatory harness rail without depending on the external FITS acceptance artifact.
+- [done] The runtime pytest lane already had the right abstraction level for a mandatory public rail, but it was missing one crucial seam: forwarding extra pytest selectors. Without that, the rail could not exclude the two FITS-path runtime-walk cases from a broader file without either bypassing the lane entirely or degrading the mandatory gate. The wrapper now forwards passthrough pytest args and reports them in the log while keeping the active-runtime preflight and zero-pass guard.
 
 ## Notes
 
@@ -157,4 +161,4 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 
 ## Resume Point
 
-Checkpoint the sweep-pause/live-window-helper slice, then test whether the runtime-walk viewer replay/pause witness can become the first second-mode-family proof on the mandatory harness rail without forcing the rail to depend on the external FITS artifact.
+Checkpoint the runtime-walk selector-support slice, then decide whether the remaining runtime-walk FITS-path witnesses deserve a sibling named rail or should stay as opt-in proofs outside the mandatory gate now that replay/pause already closes the second-mode-family requirement.

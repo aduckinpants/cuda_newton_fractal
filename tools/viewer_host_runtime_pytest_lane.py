@@ -60,8 +60,9 @@ def active_runtime_exe(
     return exe_path
 
 
-def build_pytest_command(*, python_executable: str, test_files: list[str]) -> list[str]:
-    return [python_executable, "-m", "pytest", *test_files, "-q"]
+def build_pytest_command(*, python_executable: str, test_files: list[str], pytest_args: list[str] | None = None) -> list[str]:
+    extra_args = list(pytest_args or [])
+    return [python_executable, "-m", "pytest", *test_files, *extra_args, "-q"]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -71,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--python", default=sys.executable, help="Python executable to use for pytest")
     parser.add_argument("test_files", nargs="*", help="Optional override list of pytest files; defaults to the canonical runtime probe/session lane")
-    args = parser.parse_args(argv)
+    args, pytest_args = parser.parse_known_args(argv)
 
     test_files = list(args.test_files) or list(DEFAULT_TEST_FILES)
 
@@ -83,8 +84,10 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"viewer_host_runtime_pytest_lane: active_runtime={exe_path}")
     print("viewer_host_runtime_pytest_lane: tests=" + ", ".join(test_files))
+    if pytest_args:
+        print("viewer_host_runtime_pytest_lane: pytest_args=" + " ".join(pytest_args))
 
-    command = build_pytest_command(python_executable=args.python, test_files=test_files)
+    command = build_pytest_command(python_executable=args.python, test_files=test_files, pytest_args=pytest_args)
     proc = subprocess.run(
         command,
         cwd=str(REPO_ROOT),
