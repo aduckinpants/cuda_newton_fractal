@@ -168,7 +168,8 @@
         "tests/test_fractal_runtime_explaino_dual.py",
         "tests/test_fractal_runtime_explaino_escape_variants.py",
         "tests/test_fractal_runtime_explaino_sidecar_live.py",
-        "tests/test_fractal_runtime_shutdown.py"
+        "tests/test_fractal_runtime_shutdown.py",
+        "tests/test_fractal_runtime_sweep_pause.py"
       ],
       "problemMatcher": [],
       "group": "build"

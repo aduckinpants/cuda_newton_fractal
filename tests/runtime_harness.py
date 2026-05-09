@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import ctypes
+from ctypes import wintypes
 from dataclasses import dataclass
 import hashlib
 import json
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -13,6 +16,43 @@ RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
 ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
 DIAGNOSTICS_STATE_FILE = RUNTIME_DIR / "diagnostics" / "last" / "state.json"
 DIAGNOSTICS_FRAME_FILE = RUNTIME_DIR / "diagnostics" / "last" / "frame.bmp"
+
+WM_CLOSE = 0x0010
+SRCCOPY = 0x00CC0020
+DIB_RGB_COLORS = 0
+PW_RENDERFULLCONTENT = 0x00000002
+
+
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", ctypes.c_long),
+        ("top", ctypes.c_long),
+        ("right", ctypes.c_long),
+        ("bottom", ctypes.c_long),
+    ]
+
+
+class BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [
+        ("biSize", wintypes.DWORD),
+        ("biWidth", wintypes.LONG),
+        ("biHeight", wintypes.LONG),
+        ("biPlanes", wintypes.WORD),
+        ("biBitCount", wintypes.WORD),
+        ("biCompression", wintypes.DWORD),
+        ("biSizeImage", wintypes.DWORD),
+        ("biXPelsPerMeter", wintypes.LONG),
+        ("biYPelsPerMeter", wintypes.LONG),
+        ("biClrUsed", wintypes.DWORD),
+        ("biClrImportant", wintypes.DWORD),
+    ]
+
+
+class BITMAPINFO(ctypes.Structure):
+    _fields_ = [
+        ("bmiHeader", BITMAPINFOHEADER),
+        ("bmiColors", wintypes.DWORD * 3),
+    ]
 
 
 @dataclass(frozen=True)
@@ -109,3 +149,125 @@ def run_headless_loaded_state_scenario(
         baseline_capture=baseline_capture,
         scenario_capture=scenario_capture,
     )
+
+
+def find_window_for_pid(pid: int) -> int | None:
+    user32 = ctypes.windll.user32
+    found: list[int] = []
+
+    enum_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+
+    @enum_proc
+    def callback(hwnd: int, _lparam: int) -> bool:
+        window_pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(window_pid))
+        rect = RECT()
+        is_ready = user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect))
+        if (
+            window_pid.value == pid
+            and user32.IsWindow(wintypes.HWND(hwnd))
+            and user32.IsWindowVisible(wintypes.HWND(hwnd))
+            and is_ready
+            and rect.right - rect.left > 0
+            and rect.bottom - rect.top > 0
+        ):
+            found.append(int(hwnd))
+            return False
+        return True
+
+    user32.EnumWindows(callback, 0)
+    return found[0] if found else None
+
+
+def wait_for_window(proc: subprocess.Popen[object], *, timeout_seconds: float = 10.0) -> int:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        hwnd = find_window_for_pid(proc.pid)
+        if hwnd is not None:
+            return hwnd
+        if proc.poll() is not None:
+            raise AssertionError(f"viewer exited before creating a window; returncode={proc.returncode}")
+        time.sleep(0.1)
+    raise AssertionError(f"viewer never created a top-level window for pid {proc.pid}")
+
+
+def focus_window(hwnd: int) -> None:
+    user32 = ctypes.windll.user32
+    user32.ShowWindow(wintypes.HWND(hwnd), 5)
+    user32.SetForegroundWindow(wintypes.HWND(hwnd))
+
+
+def _capture_window_pixels(hwnd: int) -> bytes:
+    user32 = ctypes.windll.user32
+    gdi32 = ctypes.windll.gdi32
+
+    rect = RECT()
+    if not user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect)):
+        raise OSError("GetClientRect failed")
+
+    width = rect.right - rect.left
+    height = rect.bottom - rect.top
+    if width <= 0 or height <= 0:
+        raise OSError(f"window client rect is not ready: width={width} height={height}")
+    hwnd_dc = user32.GetDC(wintypes.HWND(hwnd))
+    mem_dc = gdi32.CreateCompatibleDC(hwnd_dc)
+    bitmap = gdi32.CreateCompatibleBitmap(hwnd_dc, width, height)
+    gdi32.SelectObject(mem_dc, bitmap)
+
+    if not user32.PrintWindow(wintypes.HWND(hwnd), mem_dc, PW_RENDERFULLCONTENT):
+        gdi32.BitBlt(mem_dc, 0, 0, width, height, hwnd_dc, 0, 0, SRCCOPY)
+
+    bitmap_info = BITMAPINFO()
+    bitmap_info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+    bitmap_info.bmiHeader.biWidth = width
+    bitmap_info.bmiHeader.biHeight = -height
+    bitmap_info.bmiHeader.biPlanes = 1
+    bitmap_info.bmiHeader.biBitCount = 32
+    bitmap_info.bmiHeader.biCompression = 0
+
+    pixels = ctypes.create_string_buffer(width * height * 4)
+    copied_rows = gdi32.GetDIBits(mem_dc, bitmap, 0, height, pixels, ctypes.byref(bitmap_info), DIB_RGB_COLORS)
+    gdi32.DeleteObject(bitmap)
+    gdi32.DeleteDC(mem_dc)
+    user32.ReleaseDC(wintypes.HWND(hwnd), hwnd_dc)
+    if copied_rows != height:
+        raise OSError(f"GetDIBits copied {copied_rows} rows, expected {height}")
+    return pixels.raw
+
+
+def capture_ready_window_pixels(hwnd: int, *, timeout_seconds: float = 5.0) -> bytes:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            pixels = _capture_window_pixels(hwnd)
+        except OSError as exc:
+            last_error = exc
+            time.sleep(0.1)
+            continue
+        if pixels:
+            return pixels
+        time.sleep(0.1)
+
+    if last_error is not None:
+        raise last_error
+    raise AssertionError("window never produced a non-empty captured frame")
+
+
+def mean_abs_diff(left: bytes, right: bytes) -> float:
+    assert len(left) == len(right)
+    total = 0
+    for left_byte, right_byte in zip(left, right):
+        total += abs(left_byte - right_byte)
+    return total / len(left)
+
+
+def close_runtime(hwnd: int | None, proc: subprocess.Popen[object]) -> None:
+    if hwnd is not None:
+        ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+    if proc.poll() is None:
+        try:
+            proc.wait(timeout=5.0)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5.0)

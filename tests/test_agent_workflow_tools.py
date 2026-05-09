@@ -341,6 +341,7 @@ def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
     assert '"tests/test_fractal_runtime_explaino_escape_variants.py"' in tasks_json
     assert '"tests/test_fractal_runtime_explaino_sidecar_live.py"' in tasks_json
     assert '"tests/test_fractal_runtime_shutdown.py"' in tasks_json
+    assert '"tests/test_fractal_runtime_sweep_pause.py"' in tasks_json
 
 
 def test_runtime_profile_includes_runtime_ui_harness_task() -> None:
