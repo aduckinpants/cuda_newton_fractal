@@ -23,26 +23,26 @@
     "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
-    "keep the mapped advanced-color inventory fixed and make the next backend-recovery slice truthful by repairing Source/Palette live-bridge and runtime-state authority",
-    "preserve shipped single-row Source/Palette compatibility while making supported multi-row lanes runtime-real",
-    "follow strict TDD: add the focused RED first, then land the minimal bounded runtime-owner and live-bridge fix",
-    "do not start Grading implementation before the remaining Phase 5 backend seams close honestly"
+    "keep the mapped advanced-color inventory fixed and make the next backend-recovery slice truthful by extracting the shipped Source/Palette tuple and param authority out of color_pipeline_window.h",
+    "preserve shipped single-row Source/Palette compatibility while moving the exact shipped tuple and param seams into reusable core/runtime helpers",
+    "follow strict TDD: add the focused RED first, then land the minimal shipped-seam authority extraction",
+    "do not start Grading implementation or invent unsupported multi-row Source/Palette semantics before the remaining Phase 5 backend seams close honestly"
   ],
   "forbidden_operator_prompts": [
-    "claim Source/Palette stack support while live import/apply still routes through BuildColorPipelineLaneWithSingleRow or FindSingleEnabledColorPipelineRow",
-    "leave new Source/Palette runtime state out of defaults, reset, or diagnostics persistence after claiming the slice landed",
+    "claim concrete multi-row Source/Palette execution support without a checked-in plan that names the first supported recipe family",
+    "leave shipped Source/Palette tuple or param truth in color_pipeline_window.h after claiming the extraction slice landed",
     "redefine the mapped advanced-color inventory or reopen MVP scope",
     "widen Grading, Blend, Mask/Domain, or the common-fractal queue in the same slice"
   ],
   "required_defaults": {
-    "supported_source_palette_lanes_are_runtime_real": "required",
-    "source_palette_live_bridge_is_not_single_row_only": "required",
+    "window_no_longer_owns_shipped_source_palette_tuple_mapping": "required",
+    "window_no_longer_owns_shipped_source_palette_param_import_apply_meaning": "required",
     "legacy_single_row_source_palette_tuples_remain_supported": "required"
   },
   "forbidden_defaults": {
-    "editor_only_source_palette_stacks": "forbidden",
-    "single_row_source_palette_live_bridge_fallback": "forbidden",
-    "persistence_ignores_source_palette_state": "forbidden"
+    "fake_multi_row_source_palette_claim": "forbidden",
+    "window_local_source_palette_tuple_or_param_authority": "forbidden",
+    "inventory_scope_widening": "forbidden"
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_source_palette_runtime_authority_contract.json",

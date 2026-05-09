@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the first bounded backend-recovery slice landed truthful two-row Shape-stack runtime support; the next remaining backend seam is that Source and Palette still import/apply through single-row live-bridge helpers, so continue recovery from that truthful base instead of jumping straight to Grading
+Phase 5 in progress - the truthful Shape-stack slice and the bounded shipped Source/Palette authority extraction are both landed; the next remaining backend seam is naming the first concrete multi-row Source/Palette runtime family and widening runtime owners from that new core seam before any honest Grading continuation
 
 ## Phase Checklist
 
@@ -111,7 +111,10 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 - Checkpointed: the bounded Phase 5 Shape-stack recovery slice closed at commit `e6b55b9` with the linked `ck:1fbf6d4d` handoff entry plus machine-written validation and contract proof receipts.
 - Landed: planning-authority repair now names the next remaining Phase 5 blocker explicitly: `ui_app/src/color_pipeline_window.h` still imports and applies Source/Palette through `BuildColorPipelineLaneWithSingleRow(...)`, `rows.front()`, and `FindSingleEnabledColorPipelineRow(...)`, while `ui_app/src/fractal_types.h` only owns a runtime stack for Shape.
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json` now bound the next executable backend-recovery slice instead of leaving Source/Palette recovery as a chat-only resume point.
-- Next bounded slice: repair Source/Palette live-bridge and runtime-state authority from this truthful Shape-stack base; do not claim Grading is ready until those remaining backend seams and the grading-authority boundary are closed honestly.
+- Landed: `ui_app/src/color_pipeline_core.h` now owns the shipped Source/Palette row/lane model types plus the shipped tuple rebuild, row build/defaults, live import, and row apply/reset helpers, while `ui_app/src/color_pipeline_window.h` now delegates those exact shipped seams instead of defining them inline.
+- Landed: `ui_app/tests/test_schema_binding.cpp` now locks the extracted Source/Palette core through shipped tuple rebuild coverage, `phase_orbit` live-param import coverage, and `explaino_cmap` row apply/reset coverage.
+- Validated: the revised Source/Palette bounded extraction contract and phased-plan sync are green, `artifacts/code_quality_report.json` stayed at the repository baseline, `artifacts/verify_native_helper_tests_red_check.log` is green, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
+- Next bounded slice: define and land the first concrete multi-row Source/Palette runtime family from this extracted core seam; do not claim Grading is ready until that next runtime-owner/live-bridge step closes honestly.
 
 ## Hostile Audit
 
@@ -151,7 +154,7 @@ The controlling product risk is no longer uncertainty about the advanced-color i
 
 ## Resume Point
 
-Start the next bounded Phase 5 slice from `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` by replacing the single-row Source/Palette import/apply path in `ui_app/src/color_pipeline_window.h` and introducing truthful runtime state ownership for those lanes before any Grading implementation resumes.
+Start the next bounded Phase 5 slice from `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` by naming the first concrete multi-row Source/Palette runtime family and the matching runtime-owner/live-bridge strategy that should build on the new extracted core seam before any Grading implementation resumes.
 
 
 

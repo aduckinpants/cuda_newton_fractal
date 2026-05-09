@@ -1028,6 +1028,90 @@ int main() {
             return 1;
         }
 
+        ColorPipelineSelection rebuiltSelection{};
+        ColoringMode rebuiltMode = ColoringMode::root_basin;
+        if (!color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+                "escape_magnitude",
+                "explaino_cmap",
+                &rebuiltSelection,
+                &rebuiltMode) ||
+            rebuiltSelection.signal != ColorSignal::escape_magnitude ||
+            rebuiltSelection.palette != ColorPalette::explaino_cmap ||
+            rebuiltSelection.grading != ColorGradingPreset::escape_default ||
+            rebuiltMode != ColoringMode::smooth_escape) {
+            std::cerr << "Expected the reusable core to rebuild the shipped escape_magnitude + explaino_cmap tuple without window-owned logic\n";
+            return 1;
+        }
+
+        const ColorPipelineLaneCatalog* sourceLaneCatalog = FindColorPipelineLaneCatalog("source");
+        const ColorPipelineLaneCatalog* paletteLaneCatalog = FindColorPipelineLaneCatalog("palette");
+        if (!sourceLaneCatalog || !paletteLaneCatalog) {
+            std::cerr << "Expected Source and Palette lane catalogs to stay discoverable for core-owned authority extraction tests\n";
+            return 1;
+        }
+
+        ColorPipelineRowState phaseOrbitRow;
+        if (!color_pipeline_core::BuildColorPipelineRowFromFunctionId(
+            *sourceLaneCatalog,
+                "phase_orbit",
+                17,
+                &phaseOrbitRow)) {
+            std::cerr << "Expected the reusable core to build a phase_orbit row from catalog metadata\n";
+            return 1;
+        }
+        KernelParams importedSourceParams{};
+        importedSourceParams.color_phase_signal_offset = 0.75f;
+        importedSourceParams.color_phase_wrap_cycles = 2.5f;
+        if (!color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&phaseOrbitRow, importedSourceParams)) {
+            std::cerr << "Expected the reusable core to import phase_orbit live params into a schedule row\n";
+            return 1;
+        }
+        double importedPhaseOffset = 0.0;
+        double importedWrapCycles = 0.0;
+        if (!color_pipeline_core::TryGetColorPipelineParamNumber(phaseOrbitRow, "signal.phase_offset", &importedPhaseOffset) ||
+            !color_pipeline_core::TryGetColorPipelineParamNumber(phaseOrbitRow, "signal.wrap_cycles", &importedWrapCycles) ||
+            std::fabs(importedPhaseOffset - 0.75) > 1.0e-9 ||
+            std::fabs(importedWrapCycles - 2.5) > 1.0e-9) {
+            std::cerr << "Expected phase_orbit row params to round-trip through the reusable core import helper\n";
+            return 1;
+        }
+
+        ColorPipelineRowState explainoPaletteRow;
+        if (!color_pipeline_core::BuildColorPipelineRowFromFunctionId(
+            *paletteLaneCatalog,
+                "explaino_cmap",
+                19,
+                &explainoPaletteRow) ||
+            !color_pipeline_core::SetColorPipelineParamNumber(&explainoPaletteRow, "palette.seed_scale", 1.5) ||
+            !color_pipeline_core::SetColorPipelineParamNumber(&explainoPaletteRow, "palette.seed_phase", 0.25) ||
+            !color_pipeline_core::SetColorPipelineParamNumber(&explainoPaletteRow, "palette.colorfulness", 0.6)) {
+            std::cerr << "Expected the reusable core to build and edit explaino_cmap row params without window-owned helpers\n";
+            return 1;
+        }
+        KernelParams appliedPaletteParams{};
+        appliedPaletteParams.color_heatmap_cycle_scale = 3.0f;
+        appliedPaletteParams.color_heatmap_saturation = 0.2f;
+        appliedPaletteParams.color_phase_palette_offset = 1.0f;
+        appliedPaletteParams.color_iteration_band_emphasis = 0.3f;
+        appliedPaletteParams.color_iteration_band_palette_offset = 0.4f;
+        bool paletteRowChanged = false;
+        if (!color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(
+                explainoPaletteRow,
+                &appliedPaletteParams,
+                &paletteRowChanged) ||
+            !paletteRowChanged ||
+            std::fabs(appliedPaletteParams.color_explaino_palette_seed_scale - 1.5f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_explaino_palette_seed_phase - 0.25f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_explaino_palette_colorfulness - 0.6f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_heatmap_cycle_scale - 1.0f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_heatmap_saturation - 1.0f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_phase_palette_offset - 0.0f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_iteration_band_emphasis - 1.0f) > 1.0e-6f ||
+            std::fabs(appliedPaletteParams.color_iteration_band_palette_offset - 0.0f) > 1.0e-6f) {
+            std::cerr << "Expected the reusable core to own explaino_cmap apply/reset behavior for the shipped palette tuple\n";
+            return 1;
+        }
+
         ViewState view{};
         KernelParams params{};
         ColorPipelineWindowState windowState{};

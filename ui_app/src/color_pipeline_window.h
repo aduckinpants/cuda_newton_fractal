@@ -34,36 +34,6 @@ inline bool EnsureImGuiStackEditorRowId(std::uint64_t* ioRowId, std::uint64_t* i
 }
 #endif
 
-struct ColorPipelineParamState {
-    std::string path;
-    std::string type;
-    double number_value = 0.0;
-    bool bool_value = false;
-    std::string enum_value;
-};
-
-struct ColorPipelineRowState {
-    std::uint64_t ui_row_id = 0;
-    bool enabled = true;
-    std::string function_id;
-    std::vector<ColorPipelineParamState> parameter_values;
-};
-
-struct ColorPipelineLaneState {
-    std::string lane_id;
-    std::string label;
-    std::vector<ColorPipelineRowState> rows;
-};
-
-struct ColorPipelineLiveSnapshot {
-    bool valid = false;
-    bool draft_import_supported = false;
-    FractalType fractal_type = FractalType::explaino;
-    ColoringMode coloring_mode = ColoringMode::root_basin;
-    ColorPipelineSelection pipeline{};
-    std::vector<ColorPipelineLaneState> lanes;
-};
-
 struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
@@ -243,30 +213,15 @@ inline const FunctionDescriptor* FindColorPipelineFunctionDescriptor(
 }
 
 inline double ResolveColorPipelineNumericDefault(const FunctionParamDescriptor& param) {
-    if (param.has_default && param.default_value.is_number()) {
-        return param.default_value.as_number();
-    }
-    if (param.has_min && param.has_max) {
-        return (param.min_value + param.max_value) * 0.5;
-    }
-    return 0.0;
+    return color_pipeline_core::ResolveColorPipelineNumericDefault(param);
 }
 
 inline bool ResolveColorPipelineBoolDefault(const FunctionParamDescriptor& param) {
-    if (param.has_default && param.default_value.is_bool()) {
-        return param.default_value.as_bool();
-    }
-    return false;
+    return color_pipeline_core::ResolveColorPipelineBoolDefault(param);
 }
 
 inline std::string ResolveColorPipelineEnumDefault(const FunctionParamDescriptor& param) {
-    if (param.has_default && param.default_value.is_string()) {
-        return param.default_value.as_string();
-    }
-    if (!param.options.empty()) {
-        return param.options.front().id;
-    }
-    return {};
+    return color_pipeline_core::ResolveColorPipelineEnumDefault(param);
 }
 
 inline bool ImportSupportedColorPipelineParamsFromLive(
@@ -297,27 +252,7 @@ inline bool TryBuildColorPipelineSelectionFromLaneIds(
 inline bool SetColorPipelineRowFunction(
     ColorPipelineRowState* ioRow,
     const FunctionDescriptor& descriptor) {
-    if (!ioRow) {
-        return false;
-    }
-
-    ioRow->function_id = descriptor.id;
-    ioRow->parameter_values.clear();
-    ioRow->parameter_values.reserve(descriptor.parameters.size());
-    for (const FunctionParamDescriptor& param : descriptor.parameters) {
-        ColorPipelineParamState value;
-        value.path = param.path;
-        value.type = param.type;
-        if (param.type == "bool") {
-            value.bool_value = ResolveColorPipelineBoolDefault(param);
-        } else if (param.type == "enum") {
-            value.enum_value = ResolveColorPipelineEnumDefault(param);
-        } else {
-            value.number_value = ResolveColorPipelineNumericDefault(param);
-        }
-        ioRow->parameter_values.push_back(std::move(value));
-    }
-    return true;
+    return color_pipeline_core::SetColorPipelineRowFunction(ioRow, descriptor);
 }
 
 inline bool BuildColorPipelineRowFromFunctionId(
@@ -326,27 +261,12 @@ inline bool BuildColorPipelineRowFromFunctionId(
     std::uint64_t stableRowId,
     ColorPipelineRowState* outRow,
     std::string* outError = nullptr) {
-    if (!outRow || !functionId || functionId[0] == '\0') {
-        if (outError) *outError = "Color pipeline row builder requires a non-empty function id";
-        return false;
-    }
-
-    const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(catalog, functionId);
-    if (!descriptor) {
-        if (outError) {
-            *outError = std::string("Unknown advanced color function '") + functionId + "' for lane " + catalog.label;
-        }
-        return false;
-    }
-
-    ColorPipelineRowState row;
-    row.ui_row_id = stableRowId;
-    if (!SetColorPipelineRowFunction(&row, *descriptor)) {
-        if (outError) *outError = std::string("Failed to initialize advanced color function '") + functionId + "'";
-        return false;
-    }
-    *outRow = std::move(row);
-    return true;
+    return color_pipeline_core::BuildColorPipelineRowFromFunctionId(
+        catalog,
+        functionId,
+        stableRowId,
+        outRow,
+        outError);
 }
 
 inline bool BuildColorPipelineLaneWithSingleRow(
@@ -355,22 +275,12 @@ inline bool BuildColorPipelineLaneWithSingleRow(
     std::uint64_t stableRowId,
     ColorPipelineLaneState* outLane,
     std::string* outError = nullptr) {
-    if (!outLane) {
-        if (outError) *outError = "Color pipeline lane builder requires an output lane";
-        return false;
-    }
-
-    ColorPipelineLaneState lane;
-    lane.lane_id = catalog.lane_id;
-    lane.label = catalog.label;
-
-    ColorPipelineRowState row;
-    if (!BuildColorPipelineRowFromFunctionId(catalog, functionId, stableRowId, &row, outError)) {
-        return false;
-    }
-    lane.rows.push_back(std::move(row));
-    *outLane = std::move(lane);
-    return true;
+    return color_pipeline_core::BuildColorPipelineLaneWithSingleRow(
+        catalog,
+        functionId,
+        stableRowId,
+        outLane,
+        outError);
 }
 
 inline void ApplyColorPipelineRowTemplate(ColorPipelineRowState* ioRow, const ColorPipelineRowState& source) {
@@ -1001,18 +911,7 @@ inline bool TryGetColorPipelineParamNumber(
     const char* path,
     double* outValue,
     std::string* outError = nullptr) {
-    if (!path || !outValue) {
-        if (outError) *outError = "Advanced color parameter lookup requires a path and output storage";
-        return false;
-    }
-    for (const ColorPipelineParamState& param : row.parameter_values) {
-        if (param.path == path) {
-            *outValue = param.number_value;
-            return true;
-        }
-    }
-    if (outError) *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + row.function_id + "'";
-    return false;
+    return color_pipeline_core::TryGetColorPipelineParamNumber(row, path, outValue, outError);
 }
 
 inline bool SetColorPipelineParamNumber(
@@ -1020,98 +919,14 @@ inline bool SetColorPipelineParamNumber(
     const char* path,
     double value,
     std::string* outError = nullptr) {
-    if (!ioRow || !path) {
-        if (outError) *outError = "Advanced color parameter import requires a row and parameter path";
-        return false;
-    }
-    for (ColorPipelineParamState& param : ioRow->parameter_values) {
-        if (param.path == path) {
-            param.number_value = value;
-            return true;
-        }
-    }
-    if (outError) *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + ioRow->function_id + "'";
-    return false;
+    return color_pipeline_core::SetColorPipelineParamNumber(ioRow, path, value, outError);
 }
 
 inline bool ImportSupportedColorPipelineParamsFromLive(
     ColorPipelineRowState* ioRow,
     const KernelParams& liveParams,
     std::string* outError) {
-    if (!ioRow) {
-        if (outError) *outError = "Advanced color parameter import requires a row";
-        return false;
-    }
-    if (ioRow->function_id == "smooth_escape_ramp") {
-        return SetColorPipelineParamNumber(ioRow, "signal.scale", liveParams.color_smooth_escape_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.bias", liveParams.color_smooth_escape_bias, outError);
-    }
-    if (ioRow->function_id == "heatmap") {
-        return SetColorPipelineParamNumber(ioRow, "palette.cycle_scale", liveParams.color_heatmap_cycle_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "palette.saturation", liveParams.color_heatmap_saturation, outError);
-    }
-    if (ioRow->function_id == "contrast_lift") {
-        return SetColorPipelineParamNumber(ioRow, "grade.exposure", liveParams.color_contrast_lift_exposure, outError) &&
-            SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_contrast_lift_saturation, outError);
-    }
-    if (ioRow->function_id == "phase_orbit") {
-        return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
-    }
-    if (ioRow->function_id == "escape_magnitude") {
-        return SetColorPipelineParamNumber(ioRow, "signal.magnitude_scale", liveParams.color_escape_magnitude_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.magnitude_bias", liveParams.color_escape_magnitude_bias, outError);
-    }
-    if (ioRow->function_id == "orbit_stripe") {
-        return SetColorPipelineParamNumber(ioRow, "signal.stripe_frequency", liveParams.color_orbit_stripe_frequency, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_orbit_stripe_phase, outError);
-    }
-    if (ioRow->function_id == "root_proximity") {
-        return SetColorPipelineParamNumber(ioRow, "signal.proximity_scale", liveParams.color_root_proximity_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.proximity_bias", liveParams.color_root_proximity_bias, outError);
-    }
-    if (ioRow->function_id == "phase_wheel_palette") {
-        return SetColorPipelineParamNumber(ioRow, "palette.phase_offset", liveParams.color_phase_palette_offset, outError);
-    }
-    if (ioRow->function_id == "explaino_cmap") {
-        return SetColorPipelineParamNumber(ioRow, "palette.seed_scale", liveParams.color_explaino_palette_seed_scale, outError) &&
-            SetColorPipelineParamNumber(ioRow, "palette.seed_phase", liveParams.color_explaino_palette_seed_phase, outError) &&
-            SetColorPipelineParamNumber(ioRow, "palette.colorfulness", liveParams.color_explaino_palette_colorfulness, outError);
-    }
-    if (ioRow->function_id == "offset_scale") {
-        return SetColorPipelineParamNumber(ioRow, "shape.offset", liveParams.color_shape_offset, outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.scale", liveParams.color_shape_scale, outError);
-    }
-    if (ioRow->function_id == "repeat") {
-        return SetColorPipelineParamNumber(ioRow, "shape.frequency", liveParams.color_shape_repeat_frequency, outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.phase", liveParams.color_shape_repeat_phase, outError);
-    }
-    if (ioRow->function_id == "posterize") {
-        return SetColorPipelineParamNumber(ioRow, "shape.steps", static_cast<double>(liveParams.color_shape_posterize_steps), outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.mix", liveParams.color_shape_posterize_mix, outError);
-    }
-    if (ioRow->function_id == "mirror_repeat") {
-        return SetColorPipelineParamNumber(ioRow, "shape.frequency", liveParams.color_shape_repeat_frequency, outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.phase", liveParams.color_shape_repeat_phase, outError);
-    }
-    if (ioRow->function_id == "bias_gain_curve") {
-        return SetColorPipelineParamNumber(ioRow, "shape.bias", liveParams.color_shape_bias, outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.gain", liveParams.color_shape_gain, outError);
-    }
-    if (ioRow->function_id == "smooth_window") {
-        return SetColorPipelineParamNumber(ioRow, "shape.center", liveParams.color_shape_window_center, outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.width", liveParams.color_shape_window_width, outError) &&
-            SetColorPipelineParamNumber(ioRow, "shape.softness", liveParams.color_shape_window_softness, outError);
-    }
-    if (ioRow->function_id == "banded_signal") {
-        return SetColorPipelineParamNumber(ioRow, "signal.band_count", static_cast<double>(liveParams.color_iteration_band_count), outError) &&
-            SetColorPipelineParamNumber(ioRow, "signal.softness", liveParams.color_iteration_band_softness, outError);
-    }
-    if (ioRow->function_id == "banded_heatmap") {
-        return SetColorPipelineParamNumber(ioRow, "palette.band_emphasis", liveParams.color_iteration_band_emphasis, outError) &&
-            SetColorPipelineParamNumber(ioRow, "palette.phase_offset", liveParams.color_iteration_band_palette_offset, outError);
-    }
-    return true;
+    return color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(ioRow, liveParams, outError);
 }
 
 inline bool ValidateColorPipelineParamRange(
@@ -1553,368 +1368,16 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         if (!row.enabled) {
             continue;
         }
-        if (row.function_id == "smooth_escape_ramp") {
-            double scale = 0.0;
-            double bias = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "signal.scale", &scale, outError) ||
-                !TryGetColorPipelineParamNumber(row, "signal.bias", &bias, outError) ||
-                !ValidateColorPipelineParamRange("signal.scale", scale, 0.25, 4.0, outError) ||
-                !ValidateColorPipelineParamRange("signal.bias", bias, -1.0, 1.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_smooth_escape_scale - static_cast<float>(scale)) > 1.0e-6f) {
-                ioParams->color_smooth_escape_scale = static_cast<float>(scale);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_smooth_escape_bias - static_cast<float>(bias)) > 1.0e-6f) {
-                ioParams->color_smooth_escape_bias = static_cast<float>(bias);
-                changed = true;
-            }
-            continue;
+        bool rowChanged = false;
+        if (!color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(
+                row,
+                ioParams,
+                &rowChanged,
+                outError)) {
+            return false;
         }
-        if (row.function_id == "heatmap") {
-            double cycleScale = 0.0;
-            double saturation = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "palette.cycle_scale", &cycleScale, outError) ||
-                !TryGetColorPipelineParamNumber(row, "palette.saturation", &saturation, outError) ||
-                !ValidateColorPipelineParamRange("palette.cycle_scale", cycleScale, 0.25, 4.0, outError) ||
-                !ValidateColorPipelineParamRange("palette.saturation", saturation, 0.0, 2.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_heatmap_cycle_scale - static_cast<float>(cycleScale)) > 1.0e-6f) {
-                ioParams->color_heatmap_cycle_scale = static_cast<float>(cycleScale);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_heatmap_saturation - static_cast<float>(saturation)) > 1.0e-6f) {
-                ioParams->color_heatmap_saturation = static_cast<float>(saturation);
-                changed = true;
-            }
-            resetPalettePhaseWheel();
-            resetPaletteBandedHeatmap();
-            resetPaletteExplaino();
-            continue;
-        }
-        if (row.function_id == "contrast_lift") {
-            double exposure = 0.0;
-            double saturation = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "grade.exposure", &exposure, outError) ||
-                !TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||
-                !ValidateColorPipelineParamRange("grade.exposure", exposure, 0.1, 3.0, outError) ||
-                !ValidateColorPipelineParamRange("grade.saturation", saturation, 0.0, 2.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_contrast_lift_exposure - static_cast<float>(exposure)) > 1.0e-6f) {
-                ioParams->color_contrast_lift_exposure = static_cast<float>(exposure);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_contrast_lift_saturation - static_cast<float>(saturation)) > 1.0e-6f) {
-                ioParams->color_contrast_lift_saturation = static_cast<float>(saturation);
-                changed = true;
-            }
-            continue;
-        }
-        if (row.function_id == "phase_orbit") {
-            double phaseOffset = 0.0;
-            double wrapCycles = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "signal.phase_offset", &phaseOffset, outError) ||
-                !TryGetColorPipelineParamNumber(row, "signal.wrap_cycles", &wrapCycles, outError) ||
-                !ValidateColorPipelineParamRange("signal.phase_offset", phaseOffset, -3.141592653589793, 3.141592653589793, outError) ||
-                !ValidateColorPipelineParamRange("signal.wrap_cycles", wrapCycles, 0.5, 6.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_phase_signal_offset - static_cast<float>(phaseOffset)) > 1.0e-6f) {
-                ioParams->color_phase_signal_offset = static_cast<float>(phaseOffset);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_phase_wrap_cycles - static_cast<float>(wrapCycles)) > 1.0e-6f) {
-                ioParams->color_phase_wrap_cycles = static_cast<float>(wrapCycles);
-                changed = true;
-            }
-            continue;
-        }
-        if (row.function_id == "escape_magnitude") {
-            double magnitudeScale = 0.0;
-            double magnitudeBias = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "signal.magnitude_scale", &magnitudeScale, outError) ||
-                !TryGetColorPipelineParamNumber(row, "signal.magnitude_bias", &magnitudeBias, outError) ||
-                !ValidateColorPipelineParamRange("signal.magnitude_scale", magnitudeScale, 0.25, 4.0, outError) ||
-                !ValidateColorPipelineParamRange("signal.magnitude_bias", magnitudeBias, -1.0, 1.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_escape_magnitude_scale - static_cast<float>(magnitudeScale)) > 1.0e-6f) {
-                ioParams->color_escape_magnitude_scale = static_cast<float>(magnitudeScale);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_escape_magnitude_bias - static_cast<float>(magnitudeBias)) > 1.0e-6f) {
-                ioParams->color_escape_magnitude_bias = static_cast<float>(magnitudeBias);
-                changed = true;
-            }
-            continue;
-        }
-        if (row.function_id == "orbit_stripe") {
-            double stripeFrequency = 0.0;
-            double stripePhase = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "signal.stripe_frequency", &stripeFrequency, outError) ||
-                !TryGetColorPipelineParamNumber(row, "signal.phase_offset", &stripePhase, outError) ||
-                !ValidateColorPipelineParamRange("signal.stripe_frequency", stripeFrequency, 0.25, 12.0, outError) ||
-                !ValidateColorPipelineParamRange("signal.phase_offset", stripePhase, -3.141592653589793, 3.141592653589793, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_orbit_stripe_frequency - static_cast<float>(stripeFrequency)) > 1.0e-6f) {
-                ioParams->color_orbit_stripe_frequency = static_cast<float>(stripeFrequency);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_orbit_stripe_phase - static_cast<float>(stripePhase)) > 1.0e-6f) {
-                ioParams->color_orbit_stripe_phase = static_cast<float>(stripePhase);
-                changed = true;
-            }
-            continue;
-        }
-        if (row.function_id == "root_proximity") {
-            double proximityScale = 0.0;
-            double proximityBias = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "signal.proximity_scale", &proximityScale, outError) ||
-                !TryGetColorPipelineParamNumber(row, "signal.proximity_bias", &proximityBias, outError) ||
-                !ValidateColorPipelineParamRange("signal.proximity_scale", proximityScale, 0.25, 8.0, outError) ||
-                !ValidateColorPipelineParamRange("signal.proximity_bias", proximityBias, -1.0, 1.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_root_proximity_scale - static_cast<float>(proximityScale)) > 1.0e-6f) {
-                ioParams->color_root_proximity_scale = static_cast<float>(proximityScale);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_root_proximity_bias - static_cast<float>(proximityBias)) > 1.0e-6f) {
-                ioParams->color_root_proximity_bias = static_cast<float>(proximityBias);
-                changed = true;
-            }
-            continue;
-        }
-        if (row.function_id == "phase_wheel_palette") {
-            double paletteOffset = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "palette.phase_offset", &paletteOffset, outError) ||
-                !ValidateColorPipelineParamRange("palette.phase_offset", paletteOffset, -3.141592653589793, 3.141592653589793, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_phase_palette_offset - static_cast<float>(paletteOffset)) > 1.0e-6f) {
-                ioParams->color_phase_palette_offset = static_cast<float>(paletteOffset);
-                changed = true;
-            }
-            resetPaletteHeatmap();
-            resetPaletteBandedHeatmap();
-            resetPaletteExplaino();
-            continue;
-        }
-        if (row.function_id == "explaino_cmap") {
-            double seedScale = 0.0;
-            double seedPhase = 0.0;
-            double colorfulness = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "palette.seed_scale", &seedScale, outError) ||
-                !TryGetColorPipelineParamNumber(row, "palette.seed_phase", &seedPhase, outError) ||
-                !TryGetColorPipelineParamNumber(row, "palette.colorfulness", &colorfulness, outError) ||
-                !ValidateColorPipelineParamRange("palette.seed_scale", seedScale, 0.25, 4.0, outError) ||
-                !ValidateColorPipelineParamRange("palette.seed_phase", seedPhase, -1.0, 1.0, outError) ||
-                !ValidateColorPipelineParamRange("palette.colorfulness", colorfulness, 0.0, 1.0, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_explaino_palette_seed_scale - static_cast<float>(seedScale)) > 1.0e-6f) {
-                ioParams->color_explaino_palette_seed_scale = static_cast<float>(seedScale);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_explaino_palette_seed_phase - static_cast<float>(seedPhase)) > 1.0e-6f) {
-                ioParams->color_explaino_palette_seed_phase = static_cast<float>(seedPhase);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_explaino_palette_colorfulness - static_cast<float>(colorfulness)) > 1.0e-6f) {
-                ioParams->color_explaino_palette_colorfulness = static_cast<float>(colorfulness);
-                changed = true;
-            }
-            resetPaletteHeatmap();
-            resetPalettePhaseWheel();
-            resetPaletteBandedHeatmap();
-            continue;
-        }
-        if (row.function_id == "identity") {
-            if (ioParams->color_shape != ColorPipelineShape::identity) {
-                ioParams->color_shape = ColorPipelineShape::identity;
-                changed = true;
-            }
-            resetShapeOffsetScale();
-            resetShapeRepeat();
-            resetShapePosterize();
-            resetShapeBiasGain();
-            resetShapeSmoothWindow();
-            continue;
-        }
-        if (row.function_id == "offset_scale") {
-            double offset = 0.0;
-            double scale = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "shape.offset", &offset, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.scale", &scale, outError) ||
-                !ValidateColorPipelineParamRange("shape.offset", offset, -2.0, 2.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.scale", scale, 0.1, 8.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_shape != ColorPipelineShape::offset_scale) {
-                ioParams->color_shape = ColorPipelineShape::offset_scale;
-                changed = true;
-            }
-            assignShapeFloat(&ioParams->color_shape_offset, static_cast<float>(offset));
-            assignShapeFloat(&ioParams->color_shape_scale, static_cast<float>(scale));
-            resetShapeRepeat();
-            resetShapePosterize();
-            resetShapeBiasGain();
-            resetShapeSmoothWindow();
-            continue;
-        }
-        if (row.function_id == "repeat") {
-            double frequency = 0.0;
-            double phase = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "shape.frequency", &frequency, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.phase", &phase, outError) ||
-                !ValidateColorPipelineParamRange("shape.frequency", frequency, 0.25, 24.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.phase", phase, -1.0, 1.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_shape != ColorPipelineShape::repeat) {
-                ioParams->color_shape = ColorPipelineShape::repeat;
-                changed = true;
-            }
-            resetShapeOffsetScale();
-            assignShapeFloat(&ioParams->color_shape_repeat_frequency, static_cast<float>(frequency));
-            assignShapeFloat(&ioParams->color_shape_repeat_phase, static_cast<float>(phase));
-            resetShapePosterize();
-            resetShapeBiasGain();
-            resetShapeSmoothWindow();
-            continue;
-        }
-        if (row.function_id == "posterize") {
-            int steps = 0;
-            double mix = 0.0;
-            if (!TryReadColorPipelineIntegerParam(row, "shape.steps", &steps, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.mix", &mix, outError) ||
-                !ValidateColorPipelineParamRange("shape.steps", static_cast<double>(steps), 2.0, 24.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.mix", mix, 0.0, 1.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_shape != ColorPipelineShape::posterize) {
-                ioParams->color_shape = ColorPipelineShape::posterize;
-                changed = true;
-            }
-            resetShapeOffsetScale();
-            resetShapeRepeat();
-            assignShapeInt(&ioParams->color_shape_posterize_steps, steps);
-            assignShapeFloat(&ioParams->color_shape_posterize_mix, static_cast<float>(mix));
-            resetShapeBiasGain();
-            resetShapeSmoothWindow();
-            continue;
-        }
-        if (row.function_id == "mirror_repeat") {
-            double frequency = 0.0;
-            double phase = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "shape.frequency", &frequency, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.phase", &phase, outError) ||
-                !ValidateColorPipelineParamRange("shape.frequency", frequency, 0.25, 24.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.phase", phase, -1.0, 1.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_shape != ColorPipelineShape::mirror_repeat) {
-                ioParams->color_shape = ColorPipelineShape::mirror_repeat;
-                changed = true;
-            }
-            resetShapeOffsetScale();
-            resetShapePosterize();
-            assignShapeFloat(&ioParams->color_shape_repeat_frequency, static_cast<float>(frequency));
-            assignShapeFloat(&ioParams->color_shape_repeat_phase, static_cast<float>(phase));
-            resetShapeBiasGain();
-            resetShapeSmoothWindow();
-            continue;
-        }
-        if (row.function_id == "bias_gain_curve") {
-            double bias = 0.0;
-            double gain = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "shape.bias", &bias, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.gain", &gain, outError) ||
-                !ValidateColorPipelineParamRange("shape.bias", bias, 0.0, 1.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.gain", gain, 0.0, 1.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_shape != ColorPipelineShape::bias_gain_curve) {
-                ioParams->color_shape = ColorPipelineShape::bias_gain_curve;
-                changed = true;
-            }
-            resetShapeOffsetScale();
-            resetShapeRepeat();
-            resetShapePosterize();
-            assignShapeFloat(&ioParams->color_shape_bias, static_cast<float>(bias));
-            assignShapeFloat(&ioParams->color_shape_gain, static_cast<float>(gain));
-            resetShapeSmoothWindow();
-            continue;
-        }
-        if (row.function_id == "smooth_window") {
-            double center = 0.0;
-            double width = 0.0;
-            double softness = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "shape.center", &center, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.width", &width, outError) ||
-                !TryGetColorPipelineParamNumber(row, "shape.softness", &softness, outError) ||
-                !ValidateColorPipelineParamRange("shape.center", center, 0.0, 1.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.width", width, 0.0, 1.0, outError) ||
-                !ValidateColorPipelineParamRange("shape.softness", softness, 0.0, 1.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_shape != ColorPipelineShape::smooth_window) {
-                ioParams->color_shape = ColorPipelineShape::smooth_window;
-                changed = true;
-            }
-            resetShapeOffsetScale();
-            resetShapeRepeat();
-            resetShapePosterize();
-            resetShapeBiasGain();
-            assignShapeFloat(&ioParams->color_shape_window_center, static_cast<float>(center));
-            assignShapeFloat(&ioParams->color_shape_window_width, static_cast<float>(width));
-            assignShapeFloat(&ioParams->color_shape_window_softness, static_cast<float>(softness));
-            continue;
-        }
-        if (row.function_id == "banded_signal") {
-            int bandCount = 0;
-            double softness = 0.0;
-            if (!TryReadColorPipelineIntegerParam(row, "signal.band_count", &bandCount, outError) ||
-                !TryGetColorPipelineParamNumber(row, "signal.softness", &softness, outError) ||
-                !ValidateColorPipelineParamRange("signal.band_count", static_cast<double>(bandCount), 2.0, 24.0, outError) ||
-                !ValidateColorPipelineParamRange("signal.softness", softness, 0.0, 1.0, outError)) {
-                return false;
-            }
-            if (ioParams->color_iteration_band_count != bandCount) {
-                ioParams->color_iteration_band_count = bandCount;
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_iteration_band_softness - static_cast<float>(softness)) > 1.0e-6f) {
-                ioParams->color_iteration_band_softness = static_cast<float>(softness);
-                changed = true;
-            }
-            continue;
-        }
-        if (row.function_id == "banded_heatmap") {
-            double emphasis = 0.0;
-            double paletteOffset = 0.0;
-            if (!TryGetColorPipelineParamNumber(row, "palette.band_emphasis", &emphasis, outError) ||
-                !TryGetColorPipelineParamNumber(row, "palette.phase_offset", &paletteOffset, outError) ||
-                !ValidateColorPipelineParamRange("palette.band_emphasis", emphasis, 0.0, 2.0, outError) ||
-                !ValidateColorPipelineParamRange("palette.phase_offset", paletteOffset, -3.141592653589793, 3.141592653589793, outError)) {
-                return false;
-            }
-            if (std::fabs(ioParams->color_iteration_band_emphasis - static_cast<float>(emphasis)) > 1.0e-6f) {
-                ioParams->color_iteration_band_emphasis = static_cast<float>(emphasis);
-                changed = true;
-            }
-            if (std::fabs(ioParams->color_iteration_band_palette_offset - static_cast<float>(paletteOffset)) > 1.0e-6f) {
-                ioParams->color_iteration_band_palette_offset = static_cast<float>(paletteOffset);
-                changed = true;
-            }
-            resetPaletteHeatmap();
-            resetPalettePhaseWheel();
-            resetPaletteExplaino();
-            continue;
+        if (rowChanged) {
+            changed = true;
         }
         }
     }
@@ -1976,69 +1439,11 @@ inline bool TryBuildColorPipelineSelectionFromLaneIds(
     const char* paletteFunctionId,
     ColorPipelineSelection* outPipeline,
     ColoringMode* outMode) {
-    if (!sourceFunctionId || sourceFunctionId[0] == '\0' ||
-        !paletteFunctionId || paletteFunctionId[0] == '\0' ||
-        !outPipeline || !outMode) {
-        return false;
-    }
-
-    if (std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
-        *outPipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
-        *outMode = ColoringMode::smooth_escape;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "smooth_escape_ramp") == 0 && std::strcmp(paletteFunctionId, "explaino_cmap") == 0) {
-        *outPipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
-        *outMode = ColoringMode::smooth_escape;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "phase_orbit") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
-        *outPipeline = {ColorSignal::phase_angle, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
-        *outMode = ColoringMode::phase;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "banded_signal") == 0 && std::strcmp(paletteFunctionId, "banded_heatmap") == 0) {
-        *outPipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
-        *outMode = ColoringMode::iteration_bands;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "escape_magnitude") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
-        *outPipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
-        *outMode = ColoringMode::smooth_escape;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "escape_magnitude") == 0 && std::strcmp(paletteFunctionId, "explaino_cmap") == 0) {
-        *outPipeline = {ColorSignal::escape_magnitude, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
-        *outMode = ColoringMode::smooth_escape;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "orbit_stripe") == 0 && std::strcmp(paletteFunctionId, "phase_wheel_palette") == 0) {
-        *outPipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
-        *outMode = ColoringMode::phase;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "root_proximity") == 0 && std::strcmp(paletteFunctionId, "heatmap") == 0) {
-        *outPipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
-        *outMode = ColoringMode::smooth_escape;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "root_proximity") == 0 && std::strcmp(paletteFunctionId, "explaino_cmap") == 0) {
-        *outPipeline = {ColorSignal::root_proximity, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
-        *outMode = ColoringMode::smooth_escape;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "root_classic_palette") == 0) {
-        *outPipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
-        *outMode = ColoringMode::root_basin;
-        return true;
-    }
-    if (std::strcmp(sourceFunctionId, "root_index") == 0 && std::strcmp(paletteFunctionId, "joy_root_palette") == 0) {
-        *outPipeline = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
-        *outMode = ColoringMode::joy_basins;
-        return true;
-    }
-
-    return false;
+    return color_pipeline_core::TryBuildColorPipelineSelectionFromLaneIds(
+        sourceFunctionId,
+        paletteFunctionId,
+        outPipeline,
+        outMode);
 }
 
 inline bool TryBuildColorPipelineSelectionFromDraft(

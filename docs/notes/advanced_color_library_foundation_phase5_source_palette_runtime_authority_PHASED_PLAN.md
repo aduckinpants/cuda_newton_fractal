@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 1 in progress - lock the next backend-recovery slice around Source/Palette live-bridge and runtime-state authority so supported multi-row lanes can become runtime-real without reopening Grading or the mapped inventory
+Complete - the first bounded Source/Palette backend-recovery slice moved the exact shipped tuple and row-param authority into the reusable core seam, leaving the first concrete multi-row Source/Palette recipe family as the next remaining Phase 5 runtime step
 
 ## Phase Checklist
 
-- [ ] Phase 1 - add focused REDs that prove supported multi-row Source and Palette drafts cannot currently import/apply or sync through live runtime truth
-- [ ] Phase 2 - replace the single-row Source/Palette live bridge with bounded runtime-state owners while preserving shipped single-row compatibility and family-gated bridge tuples
-- [ ] Phase 3 - validate, hostile-audit, and checkpoint the bounded Source/Palette runtime-authority slice cleanly
+- [x] Phase 1 - add focused REDs that prove the shipped Source/Palette tuple mapping and param import/apply seams are still owned by `color_pipeline_window.h` instead of the reusable core layer
+- [x] Phase 2 - move the exact shipped Source/Palette tuple and param authority into shared core/runtime helpers while preserving shipped single-row compatibility and naming multi-row execution as the next remaining seam
+- [x] Phase 3 - validate, hostile-audit, and checkpoint the bounded Source/Palette authority-extraction slice cleanly
 
 ## Explicit User Asks
 
@@ -21,36 +21,39 @@ Phase 1 in progress - lock the next backend-recovery slice around Source/Palette
 
 ## Presumption Loop
 
-The nearest controlling backend seam is now Source and Palette, not Shape. `ui_app/src/color_pipeline_window.h` still imports and applies those lanes through `BuildColorPipelineLaneWithSingleRow(...)`, `rows.front()`, and `FindSingleEnabledColorPipelineRow(...)`, while `ui_app/src/fractal_types.h` only owns a bounded runtime stack for Shape. The falsifiable hypothesis for this bounded slice is that adding bounded Source/Palette runtime-state authority plus matching live import/apply support can make supported multi-row Source and Palette lanes truthful without widening Grading or redefining the mapped advanced-color inventory. The cheapest disconfirming checks are focused REDs in `ui_app/tests/test_schema_binding.cpp` plus the neighboring runtime/persistence coverage that currently fail because Source and Palette still depend on single-row live-bridge helpers and lack equivalent bounded runtime owners.
+The nearest controlling backend seam is now Source and Palette, not Shape. `ui_app/src/color_pipeline_window.h` still owns the shipped Source/Palette tuple mapping plus the row-param import/apply helpers, while `ui_app/src/color_pipeline_core.h` already owns the reusable catalog and bridge-id descriptors. There is not yet a checked-in first concrete multi-row Source/Palette recipe family, so the falsifiable hypothesis for this bounded slice is narrower: if the exact shipped tuple mapping and Source/Palette row-param import/apply seams move into the reusable core layer first, `color_pipeline_window.h` can stop being the authority for those behaviors without widening Grading, inventing unsupported multi-row semantics, or redefining the mapped advanced-color inventory. The cheapest disconfirming checks are focused REDs in `ui_app/tests/test_schema_binding.cpp` that fail until the core layer owns those exact shipped seams.
 
 ## Presumption Evidence
 
-- `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` now records Source/Palette single-row live-bridge authority as the next remaining Phase 5 blocker after the landed Shape-stack slice.
-- `ui_app/src/color_pipeline_window.h` still imports live Source and Palette through `BuildColorPipelineLaneWithSingleRow(...)`, `rows.front()`, and `FindSingleEnabledColorPipelineRow(...)`, which proves those lanes still collapse to a single enabled row at the live bridge.
-- `ui_app/src/fractal_types.h` now owns `color_shape_stack`, but there is no equivalent bounded runtime-stack owner for Source or Palette yet.
-- `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already records Source / Shape / Palette lane stacks and ordered composition as the shipped direction, so this slice should repair runtime truth instead of reopening the product definition.
+- `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` now records the bounded shipped-seam extraction as landed and points the next Phase 5 work at naming the first concrete multi-row Source/Palette runtime family instead of pretending Grading is next.
+- `ui_app/src/color_pipeline_core.h` now owns `ColorPipelineParamState`, `ColorPipelineRowState`, `ColorPipelineLaneState`, `ColorPipelineLiveSnapshot`, `TryBuildColorPipelineSelectionFromLaneIds(...)`, `BuildColorPipelineRowFromFunctionId(...)`, `ImportSupportedColorPipelineParamsFromLive(...)`, and `ApplySupportedColorPipelineRowParamsToLive(...)` for the shipped Source/Palette rows.
+- `ui_app/src/color_pipeline_window.h` now delegates those shipped tuple and row-param seams to the reusable core layer and limits itself to window orchestration plus the still-open multi-row/runtime-owner work.
+- `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` still records Source / Shape / Palette lane stacks and ordered composition as the shipped direction, but it still does not name a first concrete multi-row Source/Palette recipe family, so that remains the next honest implementation seam.
 
 ## Proof Ledger
 
 - Landed: `docs/notes/advanced_color_library_foundation_phase5_source_palette_runtime_authority_PHASED_PLAN.md` and `docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json` now bound the next executable backend-recovery slice.
-- Planned: start with focused REDs in the nearest bridge/state seams before widening live Source/Palette authority.
-- Pending validation: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase5_source_palette_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase5_source_palette_runtime_authority_contract.json`
-- Pending validation: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
+- Landed: `ui_app/src/color_pipeline_core.h` now owns the shared Source/Palette row and lane model types plus the shipped tuple rebuild, row build/defaults, live import, and row apply/reset helpers.
+- Landed: `ui_app/src/color_pipeline_window.h` now delegates the shipped Source/Palette tuple and row-param seams to `ui_app/src/color_pipeline_core.h` instead of defining those behaviors inline.
+- Landed: `ui_app/tests/test_schema_binding.cpp` now locks the extracted core through shipped tuple rebuild coverage, `phase_orbit` row import coverage, and `explaino_cmap` row apply/reset coverage.
+- Validated: `artifacts/validation/advanced_color_library_foundation_phase5_source_palette_runtime_authority_contract.json` validates the revised bounded extraction contract and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` stays green.
+- Validated: `artifacts/code_quality_report.json` stayed at the repository baseline, `artifacts/verify_native_helper_tests_red_check.log` is green for the fresh native helper rebuild, `artifacts/verify_runtime_publish.log` republished the runtime cleanly, and `artifacts/verify_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
 
 ## Hostile Audit
 
-- Status: in progress
-- Required posture: assume Shape-only recovery left a hidden single-row fallback in Source or Palette until the live bridge, runtime-state owners, and persistence paths prove otherwise.
+- Status: complete
+- Required posture: assume Shape-only recovery left Source/Palette tuple and param truth trapped in `color_pipeline_window.h` until the reusable core owns those exact shipped seams and the window only orchestrates them.
 
 ## Audit Passes
 
-- [open] Pass 1 - inspect the first REDs and ensure they fail because Source/Palette still route through single-row live-bridge helpers instead of bounded runtime truth.
-- [open] Pass 2 - inspect the landed runtime-owner/live-bridge diff for hidden single-row fallbacks in import, apply, reset/defaults, and persistence.
-- [open] Pass 3 - re-read the repaired state after validation and confirm the slice makes supported Source/Palette lanes truthful without drifting into Grading or inventory redefinition.
+- [x] Pass 1 - inspect the first REDs and ensure they fail because the shipped Source/Palette tuple or param helpers still live in `color_pipeline_window.h` instead of the reusable core seam.
+- [x] Pass 2 - inspect the landed authority-extraction diff for hidden window-local fallbacks in tuple mapping, row defaults, and Source/Palette param import/apply.
+- [x] Pass 3 - re-read the repaired state after validation and confirm the slice removes those shipped Source/Palette seams from `color_pipeline_window.h` without drifting into Grading or inventing unsupported multi-row execution.
 
 ## Audit Findings
 
-- [open] Pending the executable backend-recovery slice.
+- [done] Real defect found and fixed during the extraction attempt: the first patch pass accidentally preserved a stale `joy_root_palette -> root_basin` mapping and temporarily clobbered `ApplyColorPipelineDraftToLiveState`; the repaired state restores the original `joy_basins` behavior and the apply path before the validation rails go green.
+- [done] Re-read finding: after the repaired native rebuild and published-runtime rails passed, the bounded shipped tuple/param seams no longer live in `color_pipeline_window.h`; the next honest remaining seam is naming a concrete multi-row Source/Palette runtime family and its matching runtime-owner shape.
 
 ## Notes
 
@@ -74,8 +77,8 @@ The nearest controlling backend seam is now Source and Palette, not Shape. `ui_a
   - do not widen Grading yet
   - do not redefine the mapped advanced-color inventory
   - do not reopen the closed Shape-stack recovery slice as if it were still pending
-  - do not land editor-only Source/Palette stacks without matching live/runtime truth
+  - do not invent or claim a concrete multi-row Source/Palette execution family before it is explicitly named in checked-in plan authority
 
 ## Resume Point
 
-Start with focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest runtime/persistence coverage that prove Source/Palette still collapse to single-row live authority, then land the minimal bounded Source/Palette runtime-owner and live-bridge repair.
+Open the next bounded Phase 5 Source/Palette slice from this landed extraction seam by naming the first concrete multi-row Source/Palette runtime family and the matching runtime-owner/live-bridge strategy; do not reopen Grading until that next runtime truth is defined and proven.
