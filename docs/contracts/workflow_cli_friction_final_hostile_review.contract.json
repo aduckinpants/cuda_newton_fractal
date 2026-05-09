@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "contract_id": "workflow_cli_friction_final_hostile_review",
+  "feature_id": "viewer_host_workflow_cli_friction_final_review",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/workflow_cli_friction_final_hostile_review_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/workflow_cli_friction_final_hostile_review.contract.json",
+    "docs/notes/workflow_cli_friction_final_hostile_review_PHASED_PLAN.md",
+    "docs/notes/workflow_cli_friction_closure_PHASED_PLAN.md",
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "finish the final overall hostile workflow review with live helper/task proof instead of stale chat memory",
+    "keep any newly found mismatch bounded by spinning it out into a dedicated successor repair slice",
+    "preserve strict TDD, hostile review, validation rails, and clean checkpoint closure"
+  ],
+  "forbidden_operator_prompts": [
+    "reopen the paused advanced-color grading implementation in this workflow audit slice",
+    "blend a newly discovered tooling defect directly into this final audit checkpoint",
+    "declare the workflow initiative complete without checking the live helper/task surfaces"
+  ],
+  "required_defaults": {
+    "proof_source": "live_helper_and_task_surfaces",
+    "new_mismatch_handling": "spin_out_successor",
+    "workflow_scope": "repo_local_only"
+  },
+  "forbidden_defaults": {
+    "chat_memory_only_closure": "forbidden",
+    "blended_followup_repair": "forbidden",
+    "product_scope_blend": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/test_agent_workflow_tools.junit.xml",
+    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/workflow_cli_friction_final_hostile_review.contract.json --out-json artifacts/validation/workflow_cli_friction_final_hostile_review_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "workflow_cli_friction_final_review_contract_schema_valid",
+      "description": "The final workflow CLI friction review contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/workflow_cli_friction_final_hostile_review_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "workflow_cli_friction_final_review_plan_sync_ok",
+      "description": "The final workflow CLI friction review phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "bootstrap_surface_advertises_checkpoint_id_handoff_flow",
+      "description": "The workflow bootstrap surface still advertises the explicit checkpoint-id handoff flow",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_agent_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_bootstrap_surface_advertises_checkpoint_id_handoff_flow"
+    },
+    {
+      "assertion_id": "begin_work_slice_dry_run_surfaces_generated_checkpoint_id",
+      "description": "The begin-work-slice dry-run still surfaces the generated checkpoint id and explicit close guidance",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_agent_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_begin_work_slice_dry_run_surfaces_generated_checkpoint_id"
+    },
+    {
+      "assertion_id": "recipient_name_task_complete_still_blocks_dirty_or_unreceipted_closure",
+      "description": "The checkpoint guard still blocks completion when task_complete arrives via recipient_name without the required proof chain",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_completion_hook_blocks_missing_validation_receipt_via_recipient_name"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 pending - the final overall hostile workflow review spun out one bounded CLI failure-observability mismatch into `workflow_cli_failure_observability_stopline`; resume the audit here once that repair is checkpointed
+Complete - the final overall hostile workflow review found no additional mismatch after the bounded CLI failure-observability stop-line repair
 
 ## Phase Checklist
 
@@ -13,7 +13,7 @@ Phase 8 pending - the final overall hostile workflow review spun out one bounded
 - [x] Phase 5 - reduce runtime pytest ambiguity
 - [x] Phase 6 - harden helper defaults and carryover ritual
 - [x] Phase 7 - dedicated hostile documentation review
-- [ ] Phase 8 - final overall hostile workflow review
+- [x] Phase 8 - final overall hostile workflow review
 
 ## Notes
 
@@ -86,6 +86,13 @@ Phase 8 pending - the final overall hostile workflow review spun out one bounded
 - Phase 8 successor repair:
   - successor repair authority: `docs/notes/workflow_cli_failure_observability_stopline_PHASED_PLAN.md`
   - successor repair contract: `docs/contracts/workflow_cli_failure_observability_stopline.contract.json`
+- Phase 8 active final review authority:
+  - active final review plan: `docs/notes/workflow_cli_friction_final_hostile_review_PHASED_PLAN.md`
+  - active final review contract: `docs/contracts/workflow_cli_friction_final_hostile_review.contract.json`
+- Phase 8 completion snapshot:
+  - the dedicated final hostile review rechecked the live bootstrap, begin-work-slice dry-run, append-handoff help, and receipt-help surfaces against the refreshed workflow story and found no new mismatch
+  - the focused workflow-tool and checkpoint-guard rails stayed green on the same story, so no further bounded successor repair was required
+  - this initiative is now complete and no longer blocks returning to product work
 - Validation:
   - `py -3.14 -m pytest tests/test_viewer_host_handoff_append.py tests/test_agent_workflow_tools.py -q`
   - `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`
@@ -93,4 +100,4 @@ Phase 8 pending - the final overall hostile workflow review spun out one bounded
 
 ## Resume Point
 
-Return to the final overall hostile workflow review after the bounded `workflow_cli_failure_observability_stopline` slice closes with focused workflow tests, plan/contract validation, and a clean checkpoint.
+Workflow CLI friction closure is complete. Return to `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` for the next product slice.
