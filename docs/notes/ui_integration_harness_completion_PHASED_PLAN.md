@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the next required work is to replace it with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop, keep product work frozen behind that packeted gate, and make that freeze explicit in the active advanced-color plans before any implementation resumes.
+Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the next required work is to replace it with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop, keep product work frozen behind that packeted gate, and make the mainline action-level hostile review per action requirement explicit in this stop-line authority before any implementation resumes.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 in progress - the original Gate G1 harness stop-line is no longer suffic
 - [x] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
 - [x] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
 - [x] Phase 4 - close the original generic harness thread with an explicit stop-line, named exclusions, and a documented gate that blocked casual product restart
-- [ ] Phase 5 - replace the generic harness stop-line with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop
+- [ ] Phase 5 - replace the generic harness stop-line with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop and require deterministic action-level hostile review before every meaningful action
 - [ ] Phase 6 - wire the packeted coverage gate into the active product plans and workflow closure surfaces before any advanced-color, preset, composition, or new-fractal implementation resumes
 
 ## Explicit User Asks
@@ -19,6 +19,7 @@ Phase 5 in progress - the original Gate G1 harness stop-line is no longer suffic
 - [done] Finish the current testing and harness effort as its own phased set of slices before returning to presets, library completion, composition, or new fractal work.
 - [done] Make the harness useful, reusable, and in the right shape for future real work rather than a half-done temporary measure.
 - [done] It is acceptable to draw a professional stop-line for now as long as the line is explicit and documented.
+- [done] Require deterministic hostile review per action exactly like the mainline repo; the stop-line authority now names the required action scope and the required check fields.
 - [deferred] Replace the local quality gate with deterministic scoped salt_ndepend-style code and harness coverage measures patterned on the noether-pack integration rather than heuristic standalone audits; this slice only pivots the checked-in authority and defers packet implementation to the next integration slices.
 - [deferred] Treat full user-visible behavior changes as blocked until the packeted coverage program, hostile-review proof, and runtime witness families are explicit and fail-closed; this slice records that block in checked-in authority and defers full enforcement implementation to the follow-on coverage-program slices.
 - [done] Keep advanced-color, preset, composition, and new-fractal implementation frozen until the new packeted gate is satisfied, not merely until the older Gate G1 harness closure note exists.
@@ -31,6 +32,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 
 - The noether-pack reference loop already exists in `c:/code/hat-rack-v2/noether_conservation_pack_test/docs/NOETHER_NDEPEND_CHEATSHEET.md` and uses explicit `audit`, `baselines`, `doctor`, `parity`, `family-parity`, and `contracts` packet surfaces rather than heuristic coverage summaries.
 - `c:/code/hat-rack-v2/noether_conservation_pack_test/docs/NOETHER_PRODUCT_READINESS_GAPS.md` already states the same fail-closed rule the user is demanding here: parity/debugging tooling is useful, but it is not honest product authority until the packeted proof program exists.
+- `c:/code/salticid-cuda/AGENTS.md` already requires action-level hostile review before every meaningful action and names the exact required fields: suspected failure mode, correct owner/action, proof surface, and blocked action; it also explicitly applies that rule to exploration, edits, validation, helper closeout, commit/push, worker routing, merge-control, and final response.
 - `.vscode/tasks.json` already exposes the current runtime proof families (`runtime publish`, `runtime probe/session pytest`, `runtime artifact tools`, and `runtime ui harness`), which means the missing layer is not discovery of more ad hoc commands; it is the deterministic coverage program that consumes them.
 - `tools/code_quality_audit.py`, `tools/test_coverage_audit.py`, and `tests/runtime_harness.py` already provide useful metric and witness producers, but `tools/test_coverage_audit.py` is still heuristic and there is no local machine-readable baseline/policy/doctor/parity registry binding those producers together.
 - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` still presented product implementation as the next active thread before this repair, which is the planning-authority drift this stop-line must now correct.
@@ -40,13 +42,14 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed earlier: the dedicated harness-completion plan/contract pair exists, so the restart gate already lives in checked-in repo authority instead of chat.
 - Landed earlier: the public runtime closure surface is explicit in `.vscode/tasks.json`, including the published-runtime UI harness family that the earlier escape had been missing from the required proof story.
 - Named defect: the old Gate G1 closure note was still too weak because it routed next work to generic product-planning repair even though the local code/test coverage story remained heuristic and packetless.
+- Named defect: the active stop-line still lacked the mainline-style action-level hostile review wording, which made it too easy to treat hostile review as a closeout ritual instead of a required deterministic check before every meaningful action.
 - Named defect: the active advanced-color foundation and Phase 6 grading plans still read as executable product continuation even after the user changed the required quality floor to deterministic scoped `salt_ndepend` coverage integration.
-- Landed now: this plan treats the next harness thread as `salt_ndepend` coverage integration rather than a generic restart note, and it explicitly freezes product work behind that packeted gate.
+- Landed now: this plan treats the next harness thread as `salt_ndepend` coverage integration, freezes product work behind that packeted gate, and names the mainline action-level hostile review rule directly in the checked-in stop-line authority.
 
 ## Hostile Audit
 
 - Status: done
-- Required posture: assume the old Gate G1 closure language is still too weak until the repaired stop-line proves that product plans are explicitly frozen behind a deterministic packeted coverage gate.
+- Required posture: assume the old Gate G1 closure language and generic hostile-review wording are still too weak until the repaired stop-line proves that product plans are frozen behind a deterministic packeted coverage gate and that every meaningful action in this thread requires an explicit action-level hostile review check.
 
 ## Audit Passes
 
@@ -58,6 +61,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 
 - [done] Real defect found: this plan still treated Gate G1 as closed and routed next work to generic product-planning repair even though the local coverage authority was still heuristic and therefore could not make the slider-regression class impossible.
 - [done] Real defect found: the existing local surfaces (`tools/code_quality_audit.py`, `tools/test_coverage_audit.py`, and published-runtime harness witnesses) are standalone producers, not a deterministic packeted coverage program with machine-readable policy, baselines, doctor, parity, and family-parity gates.
+- [done] Real defect found: this stop-line still lacked the mainline action-level hostile review wording, which left room to ignore the requirement that every meaningful action must name the suspected failure mode, correct owner/action, proof surface, and blocked action before proceeding.
 - [done] Clean re-read result: the repaired stop-line now blocks advanced-color, preset, composition, and new-fractal implementation until the deterministic `salt_ndepend` coverage gate is real and named in checked-in authority, not inferred from chat.
 
 ## Notes
@@ -77,6 +81,10 @@ The controlling defect is no longer missing a single runtime rail or one more ge
   - the previous generic harness closure is preserved only as predecessor context
   - the current gate is not satisfied until the repo has machine-readable coverage policy, baseline, doctor, parity, and family-parity authority plus explicit product-plan deferral
   - runtime and code-quality producers remain required, but they are inputs to the new packet system rather than standalone authority
+- Action-level hostile review requirement in this thread:
+  - before every meaningful exploration, edit, validation action, helper closeout, commit/push step, worker-routing action, merge-control action, and final response
+  - state the suspected failure mode, correct owner/action, proof surface, and blocked action
+  - missing per-action hostile review invalidates ready/done/green/unblocked/closeout language for this thread
 
 ## Resume Point
 

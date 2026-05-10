@@ -16,13 +16,15 @@
     "replace the ad hoc harness-completion stop-line with a deterministic scoped salt_ndepend-style coverage program",
     "pattern the local quality gate on the noether-pack loop with machine-readable baselines, contracts, doctor, parity, and family-parity surfaces",
     "keep advanced-color, preset, composition, and new-fractal product work frozen until that deterministic coverage gate is explicitly satisfied",
-    "treat existing local audits and runtime harness tests as packet producers for the new coverage program rather than as standalone final authority"
+    "treat existing local audits and runtime harness tests as packet producers for the new coverage program rather than as standalone final authority",
+    "require deterministic action-level hostile review before every meaningful action exactly as the mainline repo does, naming the suspected failure mode, correct owner/action, proof surface, and blocked action"
   ],
   "forbidden_operator_prompts": [
     "resume advanced-color implementation while the salt_ndepend coverage gate is still open",
     "start preset code before the deterministic coverage gate closes",
     "start multi-function composition or new fractal work before the deterministic coverage gate closes",
-    "treat helper-only audits or runtime harness witnesses as sufficient final authority without the packeted coverage program"
+    "treat helper-only audits or runtime harness witnesses as sufficient final authority without the packeted coverage program",
+    "continue exploration, edits, validation, helper closeout, commit/push, worker routing, merge-control, or final response without an action-level hostile review check naming the suspected failure mode, correct owner/action, proof surface, and blocked action"
   ],
   "required_defaults": {
     "salt_ndepend_gate_is_explicit": "required",
