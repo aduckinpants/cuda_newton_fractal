@@ -464,7 +464,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "Apply the default phase grading profile.",
             {
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften phase-wheel intensity.", 0.0, 2.0, 0.01, 1.15),
-                MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch the phase palette mid-tones.", 0.0, 3.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch the phase palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
             }),
         MakeColorPipelineFunction(
             "band_finish",
@@ -509,7 +509,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "joy_root_palette";
     }
     if (std::string(laneId) == "grading") {
-        return functionId == "contrast_lift";
+        return functionId == "contrast_lift" ||
+            functionId == "phase_finish";
     }
     return false;
 }
@@ -720,6 +721,10 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
     if (ioRow->function_id == "contrast_lift") {
         return SetColorPipelineParamNumber(ioRow, "grade.exposure", liveParams.color_contrast_lift_exposure, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_contrast_lift_saturation, outError);
+    }
+    if (ioRow->function_id == "phase_finish") {
+        return SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError);
     }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
@@ -933,6 +938,17 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         }
         assignFloat(&ioParams->color_contrast_lift_exposure, static_cast<float>(exposure));
         assignFloat(&ioParams->color_contrast_lift_saturation, static_cast<float>(saturation));
+    } else if (row.function_id == "phase_finish") {
+        double saturation = 0.0;
+        double contrast = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.contrast", &contrast, outError) ||
+            !ValidateColorPipelineParamRange("grade.saturation", saturation, 0.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.contrast", contrast, 0.0, 3.0, outError)) {
+            return false;
+        }
+        assignFloat(&ioParams->color_saturation, static_cast<float>(saturation));
+        assignFloat(&ioParams->color_contrast, static_cast<float>(contrast));
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;

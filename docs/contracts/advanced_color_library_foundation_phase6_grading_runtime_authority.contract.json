@@ -28,26 +28,27 @@
   "required_operator_inputs": [
     "promote Grading to a first-class advanced-color category only after the Phase 5 backend-recovery chain closed honestly",
     "keep the advanced grading lane and the legacy Color-panel grading controls on one authoritative mirrored runtime surface",
-    "ship only runtime-real grading rows, starting with contrast_lift as the first bounded grading row",
-    "follow strict TDD by proving coherent phase/bands tuples still ride the old source/palette bridge before landing the minimal fail-closed repair for unshipped grading rows"
+    "ship phase_finish as the next runtime-real grading row by reusing the existing generic color_saturation and color_contrast legacy owners",
+    "follow strict TDD by flipping coherent phase tuple coverage from draft-only to live-backed without widening band_finish or basin lane-retention in the same slice"
   ],
   "forbidden_operator_prompts": [
     "claim the full grading inventory ships in one slice",
-    "expose phase_finish, band_finish, neutral_finish, tone_map_finish, or balance_void_grade before their runtime math is proven",
+    "expose band_finish, neutral_finish, tone_map_finish, balance_void_grade, or basin lane-retention as closed in this slice",
     "create a second grading authority outside the legacy Color-panel mirror",
     "couple balance_void grading work to ExplainO-specific geometry in this slice"
   ],
   "required_defaults": {
     "grading_lane_becomes_first_class": "required",
     "contrast_lift_is_first_shipped_grading_row": "required",
+    "phase_finish_is_second_shipped_grading_row": "required",
     "legacy_color_grading_mirror_remains_authoritative": "required",
-    "non_runtime_grade_rows_stay_fail_closed": "required"
+    "band_finish_and_basin_lane_retention_stay_deferred": "required"
   },
   "forbidden_defaults": {
-    "draft_only_grading_rows_visible": "forbidden",
+    "draft_only_phase_finish": "forbidden",
     "stale_advanced_vs_legacy_grading_divergence": "forbidden",
     "balance_void_in_first_grading_slice": "forbidden",
-    "geometry_coupled_grading_surface": "forbidden"
+    "basin_lane_retention_in_this_slice": "forbidden"
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json",

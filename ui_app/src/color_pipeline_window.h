@@ -787,6 +787,43 @@ inline bool SelectColorPipelineRowFunction(
                 }
             }
         }
+
+        ColorPipelineLaneState* editableSourceLane = nullptr;
+        ColorPipelineLaneState* editablePaletteLane = nullptr;
+        ColorPipelineLaneState* gradingLane = nullptr;
+        for (ColorPipelineLaneState& candidateLane : ioState->lanes) {
+            if (candidateLane.lane_id == "source") {
+                editableSourceLane = &candidateLane;
+            } else if (candidateLane.lane_id == "palette") {
+                editablePaletteLane = &candidateLane;
+            } else if (candidateLane.lane_id == "grading") {
+                gradingLane = &candidateLane;
+            }
+        }
+
+        if (editableSourceLane && editablePaletteLane && gradingLane &&
+            editableSourceLane->rows.size() == 1 &&
+            editablePaletteLane->rows.size() == 1 &&
+            gradingLane->rows.size() == 1) {
+            ColorPipelineSelection supportedPipeline{};
+            ColoringMode supportedMode = ColoringMode::root_basin;
+            if (TryBuildColorPipelineSelectionFromLaneIds(
+                    editableSourceLane->rows[0].function_id.c_str(),
+                    editablePaletteLane->rows[0].function_id.c_str(),
+                    &supportedPipeline,
+                    &supportedMode)) {
+                const char* requiredGradingFunctionId = AdvancedColorGradingFunctionId(supportedPipeline.grading);
+                if (requiredGradingFunctionId && requiredGradingFunctionId[0] != '\0') {
+                    const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog(gradingLane->lane_id);
+                    if (gradingCatalog) {
+                        const FunctionDescriptor* gradingDescriptor = FindColorPipelineFunctionDescriptor(*gradingCatalog, requiredGradingFunctionId);
+                        if (gradingDescriptor && gradingLane->rows[0].function_id != requiredGradingFunctionId) {
+                            SetColorPipelineRowFunction(&gradingLane->rows[0], *gradingDescriptor);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return true;
@@ -882,6 +919,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     }
     if (functionId == "contrast_lift") {
         return path == "grade.exposure" || path == "grade.saturation";
+    }
+    if (functionId == "phase_finish") {
+        return path == "grade.saturation" || path == "grade.contrast";
     }
     if (functionId == "phase_orbit") {
         return path == "signal.phase_offset" || path == "signal.wrap_cycles";

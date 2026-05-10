@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 in progress - the non-runtime fail-closed grading slice now lands in the working tree: coherent phase/bands tuples stay observable but draft-only, the shipped escape-default path still applies, and the runtime-profile rails are green; hostile-audit closure and checkpoint bookkeeping remain
+Phase 4 in progress - the `phase_finish` runtime-authority slice now lands in the working tree: coherent phase tuples import/apply/render through the shipped grading lane, `contrast_lift` and `phase_finish` are the current runtime-real grading rows, basin lane-retention stays deferred, the native/runtime/profile rails are green on the repaired state, and checkpoint bookkeeping remains
 
 ## Phase Checklist
 
@@ -15,40 +15,44 @@ Phase 4 in progress - the non-runtime fail-closed grading slice now lands in the
 
 - [done] Phase 5 - keep moving on the defined advanced-color path instead of circling on already-closed work.
 - [done] Phase 5-7 - keep the reusable color pipeline generic and separately owned instead of baking window-local exceptions into the product story.
-- [active] Phase 6 - resumed with the bounded grading-category promotion: `contrast_lift` now lands as the first shipped Grading row through the core/window/persistence/headless seams while wider Grade rows stay deferred.
+- [active] Phase 6 - keep moving forward through truthful grading authority: `contrast_lift` and `phase_finish` now land as the shipped Grading rows through the reusable core/window seams while wider Grade rows stay deferred.
+- [deferred] Phase 6 - defer basin-default grading-lane retention for now; do not blur that UI cleanup into the current runtime-authority slice.
 - [deferred] Phase 6 - deferred beyond the bounded grading-lane truth slice; Balance/Void stays separate from geometry work and will not widen until the simpler grading lane is proven end-to-end.
 
 ## Presumption Loop
 
-The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` closed that path at `b596af6`. The next missing authority is Grading: `ui_app/src/color_pipeline_core.h` already carries descriptor-level grade identities for `contrast_lift`, `phase_finish`, and `band_finish`, `KernelParams` plus `ui_app/src/escape_time_coloring.h` already carry the legacy grading owner surface, and the main Color panel still exposes one live grading authority. But the advanced editor still has no `grading` lane, and only `contrast_lift` currently round-trips through the reusable live import/apply seam. The most falsifiable local hypothesis is that the first truthful Phase 6 slice must promote Grading to a first-class lane while shipping only the first runtime-real grading row, `contrast_lift`, before widening `phase_finish`, `band_finish`, `neutral_finish`, `tone_map_finish`, or `balance_void_grade`. The cheapest disconfirming checks are focused REDs in `ui_app/tests/test_schema_binding.cpp` plus the nearest persistence/reset tests that currently prove the advanced editor still cannot import, apply, or persist a bounded grading lane.
+The controlling blocker is no longer whether Grading exists at all: the bounded `contrast_lift` lane landed at `110cd4c` / `ck:61776381`, the fail-closed follow-up landed at `23b8f55` / `ck:10646574`, and the basin lane-retention cleanup has now been explicitly deferred. The next falsifiable missing authority for this slice was `phase_finish`: `ui_app/src/color_pipeline_core.h` already carried the descriptor, `KernelParams` plus `ui_app/src/escape_time_coloring.h` already carried the generic `color_saturation` / `color_contrast` grading owners, and the main Color panel already exposed that one live grading mirror, but the reusable core/window seams still classified `phase_finish` as unshipped and kept coherent phase tuples draft-only. The cheapest disconfirming checks were focused REDs in `ui_app/tests/test_schema_binding.cpp` that flipped the phase catalog, live snapshot, auto-complete, apply, and render expectations from fail-closed to live-backed while leaving `band_finish` and basin lane-retention deferred.
 
 ## Presumption Evidence
 
 - `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` already locks the Grade inventory at `neutral_finish`, `contrast_lift`, `phase_finish`, `band_finish`, `tone_map_finish`, and `balance_void_grade`, so the remaining gap is runtime authority, not naming.
-- `ui_app/src/color_pipeline_core.h` already defines `BuildColorPipelineGradeFunctions()` for `contrast_lift`, `phase_finish`, and `band_finish`, which proves Grade identity has started moving into the reusable core.
-- `ui_app/src/color_pipeline_core.h` still returns only `source`, `shape`, and `palette` from `GetColorPipelineLaneCatalogs()`, which hard-proves the advanced editor still cannot surface Grading as a first-class lane.
-- `ui_app/src/color_pipeline_core.h` only wires `contrast_lift` through `ImportSupportedColorPipelineParamsFromLive(...)` and `ApplySupportedColorPipelineRowParamsToLive(...)`, while `phase_finish` and `band_finish` descriptors exist without equivalent live owner/apply support.
-- `ui_app/src/escape_time_coloring.h` only applies extra preset-specific grading behavior for `ColorGradingPreset::escape_default`, which makes `contrast_lift` the first truthful shipped grading row and keeps the wider Grade library explicitly deferred.
+- `ui_app/src/color_pipeline_core.h` already defined `BuildColorPipelineGradeFunctions()` for `contrast_lift`, `phase_finish`, and `band_finish`, which made `phase_finish` the smallest truthful next widening step once the first grading lane existed.
+- `ui_app/src/fractal_types.h` plus `ui_app/src/escape_time_coloring.h` already carried the live generic phase grading owners through `color_saturation` and `color_contrast`, so `phase_finish` could widen honestly without inventing a second grading authority.
+- `ui_app/src/color_pipeline_core.h` now ships `phase_finish` through `GetColorPipelineLaneCatalogs()`, `ImportSupportedColorPipelineParamsFromLive(...)`, and `ApplySupportedColorPipelineRowParamsToLive(...)`, while `band_finish` still lacks an equivalent proof for its `grade.glow` surface.
+- `ui_app/src/color_pipeline_core.h` still has no grading mapping for `ColorGradingPreset::basin_default`, which is why basin lane-retention remains a separate deferred cleanup instead of being smuggled into this slice.
 
 ## Proof Ledger
 
 - Landed predecessor: `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` closed at `b596af6` / `ck:6460d382`, so Phase 5 no longer blocks Grading promotion.
 - Checkpointed: `110cd4c` / `ck:61776381` landed the bounded `contrast_lift` grading lane through the reusable catalog, live snapshot, apply, persistence, render, and headless seams while preserving the legacy grading mirror as the only runtime authority.
-- Checkpointed: the shipped grading catalog still starts with `contrast_lift` only; `phase_finish`, `band_finish`, `neutral_finish`, `tone_map_finish`, and `balance_void_grade` remain deferred because no wider live import/apply/runtime proof exists yet.
-- Landed in working tree: `ui_app/src/color_pipeline_window.h` now fail-closes coherent phase/bands tuples at both the live-snapshot and draft-selection/apply gates when their grading row is not shipped, while still allowing escape-default tuples to use the shipped `contrast_lift` default from older three-lane draft states.
-- Landed in working tree: `ui_app/src/diagnostics_state_io.cpp` now restores coherent draft-only tuples against valid-but-not-import-supported live snapshots instead of rejecting saved drafts outright.
-- Validated in working tree: `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-failclosed-bands-proof --log artifacts/phase6_grading_failclosed_bands_proof.log -- ui_app/build_tests_vsdevcmd.cmd`, `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`, `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-failclosed-runtime-publish --log artifacts/phase6_grading_failclosed_runtime_publish.log -- cmd /c ui_app\build_vsdevcmd.cmd`, and `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-failclosed-runtime-pytest --log artifacts/phase6_grading_failclosed_runtime_pytest.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py` are green for this slice.
+- Checkpointed: `23b8f55` / `ck:10646574` kept coherent `phase_default` and `bands_default` tuples observable-but-draft-only while the matching grading rows were still unshipped.
+- Landed in working tree: `ui_app/src/color_pipeline_core.h` now ships `phase_finish` as the second runtime-real Grading row, mirrors it through the existing `color_saturation` / `color_contrast` legacy owners, and aligns the row defaults with the current phase runtime defaults.
+- Landed in working tree: `ui_app/src/color_pipeline_window.h` now auto-completes supported phase source/palette selections onto `phase_finish`, treats its grading params as live-backed controls, and leaves `band_finish` plus basin lane-retention deferred.
+- Landed in working tree: `ui_app/tests/test_schema_binding.cpp` now locks phase catalog visibility, live snapshot import, tuple auto-complete, draft apply, render behavior, and direct-control sync in the four-lane world while preserving fail-closed coverage for `band_finish` and the deferred basin cleanup.
+- Validated in working tree: `artifacts/verify_native_helper_tests_phase_finish_auditfix.log` is green for `ui_app/build_tests_vsdevcmd.cmd`, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/phase6_phase_finish_runtime_publish_auditfix.log` republished the active runtime cleanly, and `artifacts/phase6_phase_finish_runtime_pytest_auditfix.log` reports `64 passed` against the repaired published runtime.
 
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume the eventual grading-lane implementation will either expose draft-only Grade rows or create a second grading authority until the resumed runtime-backed slice proves otherwise.
+- Required posture: the repaired `phase_finish` widening cleared the hostile-audit bar only after finding and fixing a real grading-row reset regression, then rerunning the native and runtime/profile rails on that repaired state.
 
 ## Audit Passes
 
 - [done] Pass 1 - added focused schema-binding REDs proving coherent phase/bands tuples still imported through the old source/palette bridge even though the grading row was not shipped, then repaired the live-snapshot and draft-selection gates.
 - [done] Pass 2 - inspected the fail-closed repair for hidden second-authority behavior and found one omission: the first hostile pass had removed direct banded coverage when repointing old supported-non-basin tests, so an explicit iteration-bands fail-closed regression was added before wider validation.
 - [done] Pass 3 - reran the native helper rail plus the runtime-profile validation steps, then re-read the touched seams before checkpoint closure.
+- [done] Pass 4 - flipped the phase tuple schema-binding coverage from fail-closed to live-backed, widened the core/window seams for `phase_finish`, and kept iterating on adjacent stale expectations until the focused native helper rail returned green.
+- [done] Pass 5 - reread the landed diff distrust-first, found the grading-row reset regression in the new auto-switch helper, added the preserving-contrast_lift regression first, repaired the helper, and reran the native plus runtime/profile rails on the repaired state.
 
 ## Audit Findings
 
@@ -56,6 +60,8 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 - [done] Current slice repair: the hostile reread caught contract-scope drift after the bounded grading slice touched `ui_app/tests/test_finding_state_actions.cpp` and `ui_app/tests/test_headless_modes.cpp`; the checked-in contract now includes those paths and has been re-locked.
 - [done] Current slice repair: the hostile reread found that the first fail-closed pass had no direct iteration-bands regression after the old supported-banded coverage was repointed to smooth-escape; the missing regression was added and validated.
 - [done] Current slice repair: the active contract wording was still describing the earlier lane-promotion slice, so the checked-in contract was refreshed to the current fail-closed grading work before checkpoint closure.
+- [done] Current slice repair: the first `phase_finish` REDs surfaced stale schema-binding assumptions that were carrying old Shape-stack and shared live-tuple state across adjacent blocks; the harness now resets that state explicitly so the phase tuple assertions measure the real runtime-backed behavior.
+- [done] Current slice repair: the first `phase_finish` auto-switch helper reset the active grading row even when the required Grading function had not changed, which would have wiped user-tuned `contrast_lift` values on ordinary escape tuple switches; the helper now preserves the row when the function id already matches, and schema-binding coverage locks that regression.
 
 ## Notes
 
@@ -85,4 +91,4 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 
 ## Resume Point
 
-After checkpointing this fail-closed slice, resume Phase 6 by deciding whether the grading lane should remain visibly first-class even across basin-default imports or whether that broader lane-retention cleanup belongs to a later bounded slice.
+After checkpointing this `phase_finish` slice, keep basin lane-retention deferred and resume Phase 6 with the next bounded grading-authority decision: either prove `band_finish` through a real `grade.glow` owner surface or switch deliberately to the separately planned Balance/Void operator track.

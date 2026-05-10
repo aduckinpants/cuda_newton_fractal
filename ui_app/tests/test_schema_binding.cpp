@@ -973,9 +973,10 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 1 ||
-            coreGradingCatalog->functions[0].id != "contrast_lift") {
-            std::cerr << "Expected the extracted advanced color core to ship a bounded Grading catalog with contrast_lift as the first runtime-real row\n";
+            coreGradingCatalog->functions.size() != 2 ||
+            coreGradingCatalog->functions[0].id != "contrast_lift" ||
+            coreGradingCatalog->functions[1].id != "phase_finish") {
+            std::cerr << "Expected the extracted advanced color core to ship contrast_lift and phase_finish as the current runtime-real Grading rows\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -984,6 +985,14 @@ int main() {
             coreContrastLiftDescriptor->parameters[0].path != "grade.exposure" ||
             coreContrastLiftDescriptor->parameters[1].path != "grade.saturation") {
             std::cerr << "Expected contrast_lift to expose stable exposure and saturation grading parameter paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* corePhaseFinishDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "phase_finish");
+        if (!corePhaseFinishDescriptor ||
+            corePhaseFinishDescriptor->parameters.size() != 2 ||
+            corePhaseFinishDescriptor->parameters[0].path != "grade.saturation" ||
+            corePhaseFinishDescriptor->parameters[1].path != "grade.contrast") {
+            std::cerr << "Expected phase_finish to expose stable saturation and contrast grading parameter paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;
@@ -1737,24 +1746,31 @@ int main() {
             return 1;
         }
 
-        ColorPipelineWindowState unsupportedPhaseSyncWindowState{};
+        ColorPipelineWindowState phaseSyncWindowState{};
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
         params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_stack_count = 0;
         params.color_shape_offset = 0.25f;
         params.color_shape_scale = 1.5f;
-        if (!SyncColorPipelineWindowFromLiveState(&unsupportedPhaseSyncWindowState, view.fractal_type, &params)) {
-            std::cerr << "Expected coherent phase tuples to remain observable even when their grading row is not yet shipped\n";
+        if (!SyncColorPipelineWindowFromLiveState(&phaseSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected coherent phase tuples to import once phase_finish is shipped as a runtime-real grading row\n";
             return 1;
         }
-        if (!unsupportedPhaseSyncWindowState.live_snapshot.valid ||
-            unsupportedPhaseSyncWindowState.live_snapshot.draft_import_supported ||
-            !unsupportedPhaseSyncWindowState.live_snapshot.lanes.empty() ||
-            unsupportedPhaseSyncWindowState.lanes.size() != 4 ||
-            unsupportedPhaseSyncWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
-            unsupportedPhaseSyncWindowState.lanes[2].rows[0].function_id != "heatmap" ||
-            unsupportedPhaseSyncWindowState.lanes[3].rows[0].function_id != "contrast_lift") {
-            std::cerr << "Expected phase tuples to stay fail-closed in the advanced editor until the matching grading row is shipped\n";
+        if (!phaseSyncWindowState.live_snapshot.valid ||
+            !phaseSyncWindowState.live_snapshot.draft_import_supported ||
+            phaseSyncWindowState.live_snapshot.lanes.size() != 4 ||
+            phaseSyncWindowState.live_snapshot.lanes[0].rows[0].function_id != "phase_orbit" ||
+            phaseSyncWindowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
+            phaseSyncWindowState.live_snapshot.lanes[2].rows[0].function_id != "phase_wheel_palette" ||
+            phaseSyncWindowState.live_snapshot.lanes[3].rows.size() != 1 ||
+            phaseSyncWindowState.live_snapshot.lanes[3].rows[0].function_id != "phase_finish" ||
+            phaseSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values.size() != 2 ||
+            phaseSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[0].path != "grade.saturation" ||
+            std::fabs(phaseSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[0].number_value - 1.15) > 1.0e-6 ||
+            phaseSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[1].path != "grade.contrast" ||
+            std::fabs(phaseSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[1].number_value - 1.10) > 1.0e-6) {
+            std::cerr << "Expected phase tuples to import the live phase_finish grading row and its mirrored owner values\n";
             return 1;
         }
 
@@ -1866,6 +1882,7 @@ int main() {
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
         params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_stack_count = 0;
         params.color_shape_offset = 0.25f;
         params.color_shape_scale = 1.5f;
         if (!EnsureColorPipelineWindowInitialized(&windowState)) {
@@ -1903,20 +1920,23 @@ int main() {
             std::cerr << "Expected offset_scale to expose only its real runtime-backed Shape controls\n";
             return 1;
         }
-        const ColorPipelineDraftApplyState unsupportedPhaseApplyState = DescribeColorPipelineDraftApplyState(
+        const ColorPipelineDraftApplyState phaseApplyState = DescribeColorPipelineDraftApplyState(
             windowState,
             view.fractal_type,
             &params);
-        if (unsupportedPhaseApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
-            std::cerr << "Expected phase tuples to read as draft-only until the matching grading row is shipped\n";
+        if (windowState.lanes[3].rows[0].function_id != "phase_finish" ||
+            phaseApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected phase tuple auto-complete to promote the shipped phase_finish grading row into an applyable draft\n";
             return 1;
         }
-        if (ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params) ||
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params) ||
             params.coloring_mode != ColoringMode::phase ||
             params.color_pipeline.signal != ColorSignal::phase_angle ||
             params.color_pipeline.palette != ColorPalette::phase_wheel ||
-            params.color_pipeline.grading != ColorGradingPreset::phase_default) {
-            std::cerr << "Expected the advanced editor to refuse applying a phase tuple until the matching grading row is shipped\n";
+            params.color_pipeline.grading != ColorGradingPreset::phase_default ||
+            std::fabs(params.color_saturation - 1.15f) > 1.0e-6f ||
+            std::fabs(params.color_contrast - 1.10f) > 1.0e-6f) {
+            std::cerr << "Expected the advanced editor to apply the shipped phase_finish tuple through the mirrored legacy grading owners\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
@@ -2139,18 +2159,33 @@ int main() {
             std::cerr << "Expected live programmable apply to write the explaino_cmap owner fields, reset other Palette owners, and resync the live snapshot\n";
             return 1;
         }
+        if (!setParam(windowState.lanes[3].rows[0], "grade.exposure", 1.6) ||
+            !setParam(windowState.lanes[3].rows[0], "grade.saturation", 0.85) ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "heatmap")) {
+            std::cerr << "Expected the live programmable editor to support same-grading escape tuple switches during grading-preservation coverage\n";
+            return 1;
+        }
+        if (windowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            windowState.lanes[2].rows[0].function_id != "heatmap" ||
+            windowState.lanes[3].rows[0].function_id != "contrast_lift" ||
+            std::fabs(windowState.lanes[3].rows[0].parameter_values[0].number_value - 1.6) > 1.0e-6 ||
+            std::fabs(windowState.lanes[3].rows[0].parameter_values[1].number_value - 0.85) > 1.0e-6) {
+            std::cerr << "Expected escape tuple switches that keep contrast_lift selected to preserve the current grading row values\n";
+            return 1;
+        }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
             std::cerr << "Expected the rebuilt programmable editor to accept phase_wheel_palette during tuple auto-complete coverage\n";
             return 1;
         }
         if (windowState.lanes[0].rows[0].function_id != "phase_orbit" ||
-            windowState.lanes[2].rows[0].function_id != "phase_wheel_palette") {
-            std::cerr << "Expected selecting phase_wheel_palette to co-switch the matching phase_orbit row instead of leaving a dead preview-only tuple\n";
+            windowState.lanes[2].rows[0].function_id != "phase_wheel_palette" ||
+            windowState.lanes[3].rows[0].function_id != "phase_finish") {
+            std::cerr << "Expected selecting phase_wheel_palette to co-switch the matching phase_orbit and phase_finish rows instead of leaving a dead preview-only tuple\n";
             return 1;
         }
         const ColorPipelineDraftApplyState phaseWheelApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
-        if (phaseWheelApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
-            std::cerr << "Expected phase auto-complete selections to stay draft-only until the matching grading row is shipped\n";
+        if (phaseWheelApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected phase auto-complete selections to stay live-applicable once the matching grading row is shipped\n";
             return 1;
         }
         if (!AddColorPipelineLaneRow(&windowState, 1, "identity")) {
@@ -2158,8 +2193,8 @@ int main() {
             return 1;
         }
         const ColorPipelineDraftApplyState stackedShapeState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
-        if (stackedShapeState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
-            std::cerr << "Expected stacked phase tuples to remain draft-only while their grading row is still unshipped\n";
+        if (stackedShapeState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected stacked phase tuples to stay live-applicable once the matching grading row is shipped\n";
             return 1;
         }
         if (!RemoveColorPipelineLaneRow(&windowState, 1, 1)) {
@@ -2214,6 +2249,7 @@ int main() {
         params.coloring_mode = ColoringMode::phase;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
         params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_stack_count = 0;
         params.color_shape_offset = 0.25f;
         params.color_shape_scale = 1.5f;
 
@@ -2238,18 +2274,18 @@ int main() {
         }
         if (!openWindowState.initialized ||
             !openWindowState.live_snapshot.valid ||
-            openWindowState.live_snapshot.draft_import_supported ||
-            !openWindowState.live_snapshot.lanes.empty() ||
+            !openWindowState.live_snapshot.draft_import_supported ||
+            openWindowState.live_snapshot.lanes.size() != 4 ||
             openWindowState.lanes.size() != 4 ||
             openWindowState.lanes[0].rows.size() != 1 ||
-            openWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            openWindowState.lanes[0].rows[0].function_id != "phase_orbit" ||
             openWindowState.lanes[1].rows.size() != 1 ||
-            openWindowState.lanes[1].rows[0].function_id != "identity" ||
+            openWindowState.lanes[1].rows[0].function_id != "offset_scale" ||
             openWindowState.lanes[2].rows.size() != 1 ||
-            openWindowState.lanes[2].rows[0].function_id != "heatmap" ||
+            openWindowState.lanes[2].rows[0].function_id != "phase_wheel_palette" ||
             openWindowState.lanes[3].rows.size() != 1 ||
-            openWindowState.lanes[3].rows[0].function_id != "contrast_lift") {
-            std::cerr << "Expected the advanced color pipeline window to keep coherent phase tuples fail-closed instead of importing an unshipped grading row during render\n";
+            openWindowState.lanes[3].rows[0].function_id != "phase_finish") {
+            std::cerr << "Expected the advanced color pipeline window to import the shipped phase tuple instead of preserving the starter draft during render\n";
             return 1;
         }
         if (params.color_pipeline.signal != ColorSignal::phase_angle ||
@@ -2258,8 +2294,8 @@ int main() {
             std::cerr << "Expected rendering the live programmable window to preserve the current runtime tuple\n";
             return 1;
         }
-        if (!HasColorPipelineDraftEdits(openWindowState)) {
-            std::cerr << "Expected the advanced color pipeline window to keep the preserved shipped draft distinct from a fail-closed phase tuple\n";
+        if (HasColorPipelineDraftEdits(openWindowState)) {
+            std::cerr << "Expected the advanced color pipeline window to keep the imported phase tuple aligned with the live runtime state\n";
             return 1;
         }
         EndFrame();
@@ -2365,16 +2401,16 @@ int main() {
             }
             return false;
         };
-        if (!SelectColorPipelineLaneFunction(&openWindowState, 1, "offset_scale") ||
-            !setParam(openWindowState.lanes[0].rows[0], "signal.scale", 0.625) ||
-            !setParam(openWindowState.lanes[1].rows[0], "shape.scale", 2.0)) {
+        if (!SelectColorPipelineLaneFunction(&explainoRenderWindowState, 1, "offset_scale") ||
+            !setParam(explainoRenderWindowState.lanes[0].rows[0], "signal.scale", 0.625) ||
+            !setParam(explainoRenderWindowState.lanes[1].rows[0], "shape.scale", 2.0)) {
             std::cerr << "Expected the advanced color pipeline window render test to find the supported live-backed controls before auto-apply coverage\n";
             return 1;
         }
         bool directControlDirty = false;
         ColorPipelineRenderInteractionState directControlInteraction{};
         if (!TryApplySupportedColorPipelineDraftFromControl(
-                &openWindowState,
+                &explainoRenderWindowState,
                 view.fractal_type,
                 &params,
                 &directControlDirty,
@@ -2385,11 +2421,11 @@ int main() {
         if (!NearlyEqual(params.color_smooth_escape_scale, 0.625) ||
             !NearlyEqual(params.color_shape_scale, 2.0) ||
             params.color_pipeline.signal != ColorSignal::smooth_escape ||
-            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.palette != ColorPalette::explaino_cmap ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !directControlDirty ||
             !directControlInteraction.interacted ||
-            HasColorPipelineDraftEdits(openWindowState)) {
+            HasColorPipelineDraftEdits(explainoRenderWindowState)) {
             std::cerr << "Expected supported edits to keep live-backed params synced without a separate apply toggle\n";
             return 1;
         }
@@ -2404,11 +2440,14 @@ int main() {
             return 1;
         }
         if (!HasColorPipelineDraftEdits(openWindowState) ||
+            openWindowState.lanes[0].rows[0].function_id != "banded_signal" ||
             openWindowState.lanes[2].rows[0].function_id != "banded_heatmap" ||
             openWindowState.lanes[2].rows[0].parameter_values.size() != 2 ||
             openWindowState.lanes[2].rows[0].parameter_values[0].path != "palette.band_emphasis" ||
-            params.color_pipeline.palette != ColorPalette::cyclic_escape) {
-            std::cerr << "Expected advanced color pipeline renders to honor switched live-backed descriptors without mutating the current runtime palette\n";
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::explaino_cmap ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default) {
+            std::cerr << "Expected advanced color pipeline renders to honor switched draft descriptors without mutating the current live explaino tuple\n";
             return 1;
         }
         EndFrame();
