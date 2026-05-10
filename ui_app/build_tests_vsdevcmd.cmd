@@ -80,6 +80,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_runtime_walk_viewer_import.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\runtime_walk.cpp .\src\runtime_walk_viewer.cpp .\src\runtime_walk_viewer_session.cpp .\src\runtime_walk_bootstrap.cpp .\src\runtime_walk_viewer_import.cpp .\src\schema_binding.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_runtime_walk_viewer_session.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_walk_viewer_session.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\cli_args.cpp .\src\viewer_cli.cpp .\src\json_min.cpp .\src\viewer_state_init.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_viewer_state_init.cpp ^
   /Fe:"%TESTROOT%\test_viewer_state_init.exe"
@@ -444,6 +449,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk_viewer_import.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_runtime_walk_viewer_session.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_viewer_shutdown.exe"
