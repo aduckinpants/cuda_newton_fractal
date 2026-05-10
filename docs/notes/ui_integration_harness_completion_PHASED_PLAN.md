@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface skeleton now exists, and the next required work is to bind the current audits and runtime rails into real packet outputs while keeping product work frozen behind that packeted gate and requiring mainline action-level hostile review before every meaningful action.
+Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, and the next required work is to land the first critical family packet while keeping product work frozen behind that packeted gate and requiring mainline action-level hostile review before every meaningful action.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 in progress - the original Gate G1 harness stop-line is no longer suffic
 - [x] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
 - [x] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
 - [x] Phase 4 - close the original generic harness thread with an explicit stop-line, named exclusions, and a documented gate that blocked casual product restart
-- [ ] Phase 5 - seed the machine-readable policy, baseline, contract, and freeze-gate authority, add the local packet command surfaces, then replace the generic harness stop-line with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop and require deterministic action-level hostile review before every meaningful action
+- [ ] Phase 5 - seed the machine-readable policy, baseline, contract, and freeze-gate authority, add the local packet command surfaces, bind the current producers into packet outputs, then replace the generic harness stop-line with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop and require deterministic action-level hostile review before every meaningful action
 - [ ] Phase 6 - wire the packeted coverage gate into the active product plans and workflow closure surfaces before any advanced-color, preset, composition, or new-fractal implementation resumes
 
 ## Explicit User Asks
@@ -37,6 +37,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - `tools/code_quality_audit.py`, `tools/test_coverage_audit.py`, and `tests/runtime_harness.py` already provide useful metric and witness producers, but `tools/test_coverage_audit.py` is still heuristic and there is no local machine-readable baseline/policy/doctor/parity registry binding those producers together.
 - `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`, and `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` now seed that missing machine-readable authority explicitly, which means the next honest gap is command-surface implementation rather than another planning-only stop-line rewrite.
 - `tools/viewer_host_salt_ndepend.py` plus `tests/test_viewer_host_salt_ndepend.py` now seed the local command family itself, so the next honest gap is producer binding and packet emission rather than whether the repo has a callable command surface at all.
+- `tools/viewer_host_salt_ndepend.py` now binds `audit` and `doctor` to the real producer artifacts named in `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`, which means the next honest gap is not packet existence but missing critical-family parity coverage.
 - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` still presented product implementation as the next active thread before this repair, which is the planning-authority drift this stop-line must now correct.
 
 ## Proof Ledger
@@ -49,6 +50,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: this plan treats the next harness thread as `salt_ndepend` coverage integration, freezes product work behind that packeted gate, and names the mainline action-level hostile review rule directly in the checked-in stop-line authority.
 - Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`, and `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` seed the local machine-readable coverage authority; the gate remains open until command surfaces, producer binding, critical family packets, and workflow hard denial land against those docs.
 - Landed now: `tools/viewer_host_salt_ndepend.py` and `tests/test_viewer_host_salt_ndepend.py` seed the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command family with honest `surface_seed_only` outputs, so the stop-line now has callable command surfaces without pretending that producer binding or real parity math is complete.
+- Landed now: `tools/viewer_host_salt_ndepend.py` binds the seeded `audit` and `doctor` surfaces to real producer artifact existence and lightweight summaries, and the focused CLI tests now prove missing-producer findings instead of only placeholder packet emission.
 
 ## Hostile Audit
 
@@ -99,4 +101,4 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 
 ## Resume Point
 
-Open the producer-binding slice next: teach the new local command surfaces to consume the current code-quality, test-coverage, native-helper, runtime-publish, runtime probe/session, runtime artifact-tool, and runtime UI harness producers into real packet outputs under `artifacts/salt_ndepend`; keep the advanced-color product plans frozen behind that work; and only then move on to the first critical family packet.
+Open the first critical family packet slice next: use the seeded contract registry and baseline manifest to make `advanced_color_slider_contract.v1` the first real family-parity target, keep the advanced-color product plans frozen behind that work, and only then move on to broader family backfill and workflow hard denial.

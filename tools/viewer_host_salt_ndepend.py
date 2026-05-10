@@ -32,6 +32,12 @@ def _load_json(path_text: str) -> tuple[Path, dict[str, object]]:
     return path, payload
 
 
+def _load_optional_json(path: Path) -> dict[str, object] | None:
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -57,6 +63,57 @@ def _planned_command(policy: dict[str, object], command_id: str) -> dict[str, ob
         if item.get("command_id") == command_id:
             return item
     raise KeyError(f"missing planned command surface: {command_id}")
+
+
+def _summarize_json_artifact(payload: dict[str, object]) -> dict[str, object]:
+    summary: dict[str, object] = {}
+    if "score" in payload:
+        summary["score"] = payload["score"]
+    if "checks" in payload and isinstance(payload["checks"], dict):
+        summary["checks"] = payload["checks"]
+    if "severity_counts" in payload and isinstance(payload["severity_counts"], dict):
+        summary["severity_counts"] = payload["severity_counts"]
+    if "case_count" in payload:
+        summary["case_count"] = payload["case_count"]
+    if "contract_count" in payload:
+        summary["contract_count"] = payload["contract_count"]
+    if "ok" in payload:
+        summary["ok"] = payload["ok"]
+    if not summary:
+        summary["keys"] = sorted(payload.keys())[:8]
+    return summary
+
+
+def _summarize_text_artifact(path: Path) -> dict[str, object]:
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    tail = next((line.strip() for line in reversed(lines) if line.strip()), "")
+    return {
+        "line_count": len(lines),
+        "tail": tail,
+    }
+
+
+def _bind_producer_surface(producer: dict[str, object]) -> dict[str, object]:
+    artifact_text = producer.get("artifact_path")
+    artifact_path = _resolve_path(str(artifact_text)) if artifact_text else None
+    bound = dict(producer)
+    bound["artifact_exists"] = bool(artifact_path and artifact_path.exists())
+    if artifact_path is not None:
+        bound["artifact_path"] = _repo_rel(artifact_path)
+    if artifact_path is None or not artifact_path.exists():
+        bound["status"] = "missing"
+        bound["summary"] = {"reason": "artifact_missing"}
+        return bound
+
+    if artifact_path.suffix.lower() == ".json":
+        payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+        summary = _summarize_json_artifact(payload if isinstance(payload, dict) else {"value_type": type(payload).__name__})
+    else:
+        summary = _summarize_text_artifact(artifact_path)
+
+    bound["status"] = "bound"
+    bound["summary"] = summary
+    return bound
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -102,6 +159,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = subparsers.add_parser("doctor", help="Emit the seeded doctor packet surface.")
     doctor.add_argument("--packet-dir", required=True)
+    doctor.add_argument("--suite-index")
+    doctor.add_argument("--producer-index")
     doctor.add_argument("--contract-registry", default=str(DEFAULT_CONTRACTS))
     doctor.add_argument("--freeze-gate", default=str(DEFAULT_FREEZE_GATE))
     doctor.add_argument("--baseline-manifest", default=str(DEFAULT_BASELINES))
@@ -119,13 +178,22 @@ def _run_audit(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     suite_index_path = out_dir / "suite_index.json"
     producer_index_path = out_dir / "producer_index.json"
+    bound_producers = [
+        _bind_producer_surface(producer)
+        for producer in policy.get("producer_surfaces", [])
+        if isinstance(producer, dict)
+    ]
+    bound_count = sum(1 for producer in bound_producers if producer.get("status") == "bound")
+    missing_count = sum(1 for producer in bound_producers if producer.get("status") != "bound")
 
     suite_payload = {
         "schema_version": "viewer_host_salt_ndepend.audit_suite_index.v1",
-        "status": "surface_seed_only",
+        "status": "producer_bound_seed",
         "command": "audit",
         "policy_path": _repo_rel(policy_path),
-        "producer_count": len(policy.get("producer_surfaces", [])),
+        "producer_count": len(bound_producers),
+        "bound_producer_count": bound_count,
+        "missing_producer_count": missing_count,
         "planned_command_ids": [item.get("command_id") for item in policy.get("planned_command_surfaces", [])],
         "gated_product_threads": policy.get("gated_product_threads", []),
         "suite_index_json": _repo_rel(suite_index_path),
@@ -134,12 +202,14 @@ def _run_audit(args: argparse.Namespace) -> int:
     }
     producer_payload = {
         "schema_version": "viewer_host_salt_ndepend.producer_index.v1",
-        "status": "surface_seed_only",
+        "status": "producer_bound_seed",
         "command": "audit",
         "policy_path": _repo_rel(policy_path),
-        "producer_count": len(policy.get("producer_surfaces", [])),
+        "producer_count": len(bound_producers),
+        "bound_producer_count": bound_count,
+        "missing_producer_count": missing_count,
         "planned_command_count": len(policy.get("planned_command_surfaces", [])),
-        "producers": policy.get("producer_surfaces", []),
+        "producers": bound_producers,
         "packet_meta": _packet_meta("audit", {"policy": _repo_rel(policy_path), "out_dir": _repo_rel(out_dir)}),
     }
     _write_json(suite_index_path, suite_payload)
@@ -351,6 +421,8 @@ def _run_family_parity(args: argparse.Namespace) -> int:
 
 def _run_doctor(args: argparse.Namespace) -> int:
     packet_dir = _resolve_path(args.packet_dir)
+    suite_index_path = None if args.suite_index is None else _resolve_path(args.suite_index)
+    producer_index_path = None if args.producer_index is None else _resolve_path(args.producer_index)
     registry_path, registry = _load_json(args.contract_registry)
     freeze_gate_path, freeze_gate = _load_json(args.freeze_gate)
     manifest_path, manifest = _load_json(args.baseline_manifest)
@@ -362,24 +434,54 @@ def _run_doctor(args: argparse.Namespace) -> int:
     findings: list[dict[str, object]] = []
     if not packet_dir.exists():
         findings.append({"code": "packet_dir_missing", "reason": f"packet_dir does not exist: {_repo_rel(packet_dir)}"})
+    if suite_index_path is not None and not suite_index_path.exists():
+        findings.append({"code": "suite_index_missing", "reason": f"suite_index does not exist: {_repo_rel(suite_index_path)}"})
+    if producer_index_path is not None and not producer_index_path.exists():
+        findings.append({"code": "producer_index_missing", "reason": f"producer_index does not exist: {_repo_rel(producer_index_path)}"})
     if baseline_index_path is not None and not baseline_index_path.exists():
         findings.append({"code": "baseline_index_missing", "reason": f"baseline_index does not exist: {_repo_rel(baseline_index_path)}"})
     if family_parity_path is not None and not family_parity_path.exists():
         findings.append({"code": "family_parity_missing", "reason": f"family_parity does not exist: {_repo_rel(family_parity_path)}"})
+
+    suite_payload = None if suite_index_path is None else _load_optional_json(suite_index_path)
+    producer_payload = None if producer_index_path is None else _load_optional_json(producer_index_path)
+    if isinstance(suite_payload, dict):
+        if suite_payload.get("missing_producer_count", 0):
+            findings.append(
+                {
+                    "code": "audit_missing_producers",
+                    "reason": f"audit packet reports {suite_payload.get('missing_producer_count', 0)} missing producer artifacts",
+                }
+            )
+    if isinstance(producer_payload, dict):
+        for producer in producer_payload.get("producers", []):
+            if not isinstance(producer, dict):
+                continue
+            if producer.get("status") != "bound":
+                findings.append(
+                    {
+                        "code": f"producer_missing:{producer.get('producer_id', 'unknown')}",
+                        "reason": f"producer artifact missing for {producer.get('producer_id', 'unknown')}",
+                    }
+                )
     for blocker in freeze_gate.get("intentional_open_blockers", []):
         findings.append({"code": blocker.get("blocker_id"), "reason": blocker.get("reason")})
 
     payload = {
         "schema_version": "viewer_host_salt_ndepend.doctor.v1",
-        "status": "surface_seed_only",
+        "status": "producer_bound_seed",
         "command": "doctor",
         "freeze_ready": False,
         "packet_dir": _repo_rel(packet_dir),
+        "suite_index_path": None if suite_index_path is None else _repo_rel(suite_index_path),
+        "producer_index_path": None if producer_index_path is None else _repo_rel(producer_index_path),
         "contract_registry_path": _repo_rel(registry_path),
         "freeze_gate_path": _repo_rel(freeze_gate_path),
         "baseline_manifest_path": _repo_rel(manifest_path),
         "contract_count": len(registry.get("contracts", [])),
         "baseline_case_count": len(manifest.get("cases", [])),
+        "bound_producer_count": 0 if not isinstance(producer_payload, dict) else producer_payload.get("bound_producer_count", 0),
+        "missing_producer_count": 0 if not isinstance(producer_payload, dict) else producer_payload.get("missing_producer_count", 0),
         "required_packet_commands": freeze_gate.get("required_packet_commands", []),
         "required_blocker_contracts": freeze_gate.get("required_blocker_contracts", []),
         "findings": findings,
@@ -387,6 +489,8 @@ def _run_doctor(args: argparse.Namespace) -> int:
             "doctor",
             {
                 "packet_dir": _repo_rel(packet_dir),
+                "suite_index": None if suite_index_path is None else _repo_rel(suite_index_path),
+                "producer_index": None if producer_index_path is None else _repo_rel(producer_index_path),
                 "contract_registry": _repo_rel(registry_path),
                 "freeze_gate": _repo_rel(freeze_gate_path),
                 "baseline_manifest": _repo_rel(manifest_path),
