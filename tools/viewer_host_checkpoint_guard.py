@@ -1039,8 +1039,13 @@ def evaluate_contract_proof_receipt_guard(
 
     receipt = load_contract_proof_receipt(current_head, repo_root)
     if receipt is None:
+        if head_advanced:
+            return True, (
+                "Current HEAD differs from the session baseline and lacks a contract proof receipt for the committed state. "
+                "Run the required validators and record proof with tools/viewer_host_checkpoint_slice.py write-receipts before completion."
+            )
         return True, (
-            "Current HEAD differs from the session baseline and lacks a contract proof receipt for the committed state. "
+            "Current clean validation-receipted HEAD lacks a contract proof receipt for the committed state. "
             "Run the required validators and record proof with tools/viewer_host_checkpoint_slice.py write-receipts before completion."
         )
     if str(receipt.get("head", "")).strip() != current_head:

@@ -347,7 +347,8 @@ def test_build_pretool_response_blocks_validation_receipted_head_without_contrac
     hook = response["hookSpecificOutput"]
     assert hook["permissionDecision"] == "deny"
     assert "contract proof receipt" in hook["permissionDecisionReason"]
-    assert "def456.json" in hook["additionalContext"]
+    assert "Current clean validation-receipted HEAD lacks" in hook["permissionDecisionReason"]
+    assert "session baseline" not in hook["permissionDecisionReason"]
 
 
 def test_completion_hook_allows_non_task_complete(monkeypatch) -> None:
