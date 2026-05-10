@@ -22,7 +22,9 @@
     "tests/test_viewer_host_salt_ndepend.py",
     "tests/test_viewer_host_contract_proof.py",
     "docs/handoffs/archive/HANDOFF_LOG_20260509_135329.md",
-    "HANDOFF_LOG.md"
+    "HANDOFF_LOG.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/tests/test_explaino_seed_curve.cpp"
   ],
   "required_operator_inputs": [
     "replace the ad hoc harness-completion stop-line with a deterministic scoped salt_ndepend-style coverage program",
