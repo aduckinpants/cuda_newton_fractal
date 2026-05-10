@@ -92,6 +92,40 @@ def test_audit_surface_emits_suite_and_producer_index(tmp_path: Path) -> None:
     assert summaries["missing_ui"]["reason"] == "artifact_missing"
 
 
+def test_audit_surface_marks_interrupted_text_producer_unusable(tmp_path: Path) -> None:
+    interrupted_log = tmp_path / "artifacts" / "native.log"
+    interrupted_log.parent.mkdir(parents=True, exist_ok=True)
+    interrupted_log.write_text("compile started\n^C\n", encoding="utf-8")
+    policy_path = tmp_path / "policy.json"
+    _write_json(
+        policy_path,
+        {
+            "producer_surfaces": [
+                {
+                    "producer_id": "native_helper_tests",
+                    "artifact_path": str(interrupted_log),
+                },
+            ],
+            "planned_command_surfaces": [{"command_id": "audit"}],
+            "gated_product_threads": ["advanced_color"],
+        },
+    )
+
+    out_dir = tmp_path / "audit"
+    rc = main(["audit", "--policy", str(policy_path), "--out-dir", str(out_dir)])
+
+    assert rc == 0
+    suite_index = json.loads((out_dir / "suite_index.json").read_text(encoding="utf-8"))
+    producer_index = json.loads((out_dir / "producer_index.json").read_text(encoding="utf-8"))
+    producer = producer_index["producers"][0]
+    assert suite_index["bound_producer_count"] == 0
+    assert suite_index["missing_producer_count"] == 1
+    assert producer["status"] == "interrupted"
+    assert producer["summary"]["tail"] == "^C"
+    assert producer["summary"]["interrupted"] is True
+    assert producer["summary"]["interruption_reason"] == "tail_ctrl_c"
+
+
 def test_baselines_surface_emits_seeded_index(tmp_path: Path) -> None:
     out_dir = tmp_path / "baselines"
     out_json = out_dir / "baseline_index.json"
@@ -193,6 +227,56 @@ def test_doctor_surface_reports_open_blockers(tmp_path: Path) -> None:
     assert payload["bound_producer_count"] == 1
     assert payload["missing_producer_count"] == 1
     assert out_md.exists()
+
+
+def test_doctor_surface_reports_interrupted_producers_as_unusable(tmp_path: Path) -> None:
+    policy_path = tmp_path / "policy.json"
+    interrupted_log = tmp_path / "artifacts" / "native.log"
+    interrupted_log.parent.mkdir(parents=True, exist_ok=True)
+    interrupted_log.write_text("compile started\n^C\n", encoding="utf-8")
+    _write_json(
+        policy_path,
+        {
+            "producer_surfaces": [
+                {
+                    "producer_id": "native_helper_tests",
+                    "artifact_path": str(interrupted_log),
+                },
+            ],
+            "planned_command_surfaces": [
+                {"command_id": "audit"},
+                {"command_id": "doctor"},
+            ],
+            "gated_product_threads": ["advanced_color"],
+        },
+    )
+    packet_dir = tmp_path / "packet"
+    packet_dir.mkdir()
+    assert main(["audit", "--policy", str(policy_path), "--out-dir", str(packet_dir)]) == 0
+
+    out_json = tmp_path / "doctor.json"
+    out_md = tmp_path / "doctor.md"
+
+    rc = main([
+        "doctor",
+        "--packet-dir",
+        str(packet_dir),
+        "--suite-index",
+        str(packet_dir / "suite_index.json"),
+        "--producer-index",
+        str(packet_dir / "producer_index.json"),
+        "--out",
+        str(out_json),
+        "--out-md",
+        str(out_md),
+    ])
+
+    assert rc == 0
+    payload = json.loads(out_json.read_text(encoding="utf-8"))
+    finding_codes = {item["code"] for item in payload["findings"]}
+    assert payload["freeze_ready"] is False
+    assert "audit_missing_producers" in finding_codes
+    assert "producer_unusable:native_helper_tests" in finding_codes
 
 
 def test_doctor_surface_reports_required_blocker_contracts_that_are_not_green(tmp_path: Path) -> None:

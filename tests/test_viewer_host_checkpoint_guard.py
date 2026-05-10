@@ -334,6 +334,51 @@ def test_completion_hook_allows_non_task_complete(monkeypatch) -> None:
     assert rc == 0
     assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
 
+def test_build_pretool_response_denies_task_complete_status_vocabulary_without_proof(tmp_path: Path) -> None:
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {
+            "recipient_name": "functions.task_complete",
+            "parameters": {"summary": "done"},
+        },
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "Restricted status vocabulary" in hook["permissionDecisionReason"]
+    assert "fresh command" in hook["additionalContext"]
+    assert "exit code" in hook["additionalContext"]
+
+
+def test_build_pretool_response_allows_task_complete_status_vocabulary_with_same_summary_proof(tmp_path: Path) -> None:
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {
+            "recipient_name": "functions.task_complete",
+            "parameters": {
+                "summary": (
+                    "Done. Fresh command: py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q. "
+                    "Command label: checkpoint guard pytest. Exit code: 0. "
+                    "Artifact path: artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml. "
+                    "Checked result: junit tests=1 failures=0."
+                )
+            },
+        },
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
+
 
 def test_main_pretool_denies_raw_apply_patch_for_non_task_complete_tool(monkeypatch) -> None:
     baseline = _snapshot()
@@ -440,6 +485,10 @@ def test_write_validation_receipt_records_current_clean_head(tmp_path: Path) -> 
     assert receipt["head"] == path.stem
     assert receipt["clean"] is True
     assert receipt["commands"] == ["ui_app/build_tests_vsdevcmd.cmd", "ui_app/build_vsdevcmd.cmd"]
+    assert receipt["git"]["head"] == path.stem
+    assert receipt["git"]["branch"]
+    assert receipt["git"]["status_short"][0].startswith("## ")
+    assert all(not line.startswith("?? ") for line in receipt["git"]["status_short"])
 
 
 def test_write_validation_receipt_rejects_viewer_first_missing_published_runtime_proof(tmp_path: Path) -> None:
@@ -1551,6 +1600,35 @@ def test_build_general_pretool_response_denies_mutation_wrapper_without_action_h
     assert hook["permissionDecision"] == "deny"
     assert "Action hostile review is missing" in hook["permissionDecisionReason"]
 
+def test_build_general_pretool_response_denies_legacy_owner_seam_action_hostile_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_active_contract_with_plan(
+        repo_root,
+        plan_text=(
+            TEST_PLAN_TEXT
+            + "\n## Action Hostile Review\n\n"
+            + "- Action ID: action-legacy\n"
+            + "- Suspected Failure Mode: legacy hostile review fields can pass without the incident-required blocked action\n"
+            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+        ),
+    )
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_run_repo_mutation.py --session-id session-1 -- cmd /c echo mutate",
+        },
+        repo_root,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "correct owner/action" in hook["permissionDecisionReason"].lower()
+
 
 def test_build_general_pretool_response_allows_mutation_wrapper_with_ready_action_hostile_review(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
@@ -1561,10 +1639,10 @@ def test_build_general_pretool_response_allows_mutation_wrapper_with_ready_actio
             TEST_PLAN_TEXT
             + "\n## Action Hostile Review\n\n"
             + "- Action ID: action-1\n"
-            + "- Status: ready\n"
             + "- Suspected Failure Mode: per-action hostile review is not enforced before mutation\n"
-            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Correct Owner/Action: repair the checkpoint guard before mutation proceeds\n"
             + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+            + "- Blocked Action: wrapper mutation without exact per-action hostile review fields\n"
         ),
     )
 
@@ -1591,10 +1669,10 @@ def test_build_general_pretool_response_denies_reused_action_hostile_review_afte
             TEST_PLAN_TEXT
             + "\n## Action Hostile Review\n\n"
             + "- Action ID: action-1\n"
-            + "- Status: ready\n"
             + "- Suspected Failure Mode: stale hostile review can be reused across multiple mutations\n"
-            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Correct Owner/Action: require a fresh action review token for each mutation\n"
             + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+            + "- Blocked Action: reusing one action review across multiple mutations\n"
         ),
     )
     checkpoint_guard.write_consumed_action_hostile_review(
@@ -1659,10 +1737,10 @@ def test_maybe_consume_action_hostile_review_skips_plan_only_bootstrap_patch(tmp
             TEST_PLAN_TEXT
             + "\n## Action Hostile Review\n\n"
             + "- Action ID: action-1\n"
-            + "- Status: ready\n"
             + "- Suspected Failure Mode: plan bootstrap patches consume the action review token immediately\n"
-            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Correct Owner/Action: skip consuming action review tokens for plan-only bootstrap patches\n"
             + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+            + "- Blocked Action: consuming a review token before the first non-plan mutation\n"
         ),
     )
     patch_path = repo_root / "artifacts" / "plan_only.patch"

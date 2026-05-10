@@ -36,9 +36,42 @@ def test_logged_command_success_summary(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert log_path.read_text(encoding="utf-8") == "alpha\nomega\n"
     assert "viewer_host_run_logged_command: label=success-smoke" in result.stdout
+    assert "viewer_host_run_logged_command: result=started" in result.stdout
+    assert result.stdout.index("viewer_host_run_logged_command: result=started") < result.stdout.index("viewer_host_run_logged_command: exit=0")
     assert "viewer_host_run_logged_command: exit=0" in result.stdout
     assert "viewer_host_run_logged_command: tail: alpha" in result.stdout
     assert "viewer_host_run_logged_command: tail: omega" in result.stdout
+
+
+def test_logged_command_emits_running_heartbeat_for_long_child(tmp_path: Path) -> None:
+    log_path = tmp_path / "heartbeat.log"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL),
+            "--label",
+            "heartbeat-smoke",
+            "--log",
+            str(log_path),
+            "--tail",
+            "1",
+            "--heartbeat-seconds",
+            "0.05",
+            "--",
+            sys.executable,
+            "-c",
+            "import time; print('begin'); time.sleep(0.2); print('end')",
+        ],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "viewer_host_run_logged_command: result=started" in result.stdout
+    assert "viewer_host_run_logged_command: running elapsed_seconds=" in result.stdout
+    assert "viewer_host_run_logged_command: tail: end" in result.stdout
 
 
 def test_logged_command_failure_preserves_exit_and_tail(tmp_path: Path) -> None:

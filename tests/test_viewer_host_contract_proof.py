@@ -11,7 +11,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.viewer_host_contract_proof import evaluate_assertion, load_artifact_evidence, validation_evidence_spec_for_command
+from tools.viewer_host_contract_proof import (
+    build_validation_evidence_entries,
+    evaluate_assertion,
+    load_artifact_evidence,
+    validation_evidence_spec_for_command,
+)
 
 
 def test_load_artifact_evidence_reads_junit_case_results(tmp_path: Path) -> None:
@@ -103,6 +108,42 @@ def test_evaluate_assertion_rejects_validation_artifact_hash_drift(tmp_path: Pat
     assert "hash mismatch" in result["failure_detail"]
 
 
+def test_evaluate_assertion_rejects_validation_artifact_metadata_drift(tmp_path: Path) -> None:
+    artifact = tmp_path / "validator.json"
+    artifact.write_text(
+        json.dumps({"ok": True}, indent=2),
+        encoding="utf-8",
+    )
+    artifact_path = str(artifact.relative_to(tmp_path)).replace("\\", "/")
+    artifact_hash = hashlib.sha256(artifact.read_bytes()).hexdigest()
+
+    result = evaluate_assertion(
+        {
+            "assertion_id": "validator_ok",
+            "description": "validator ok",
+            "evidence_kind": "validator_json",
+            "artifact_path": artifact_path,
+            "json_path": "ok",
+            "equals": True,
+        },
+        tmp_path,
+        {
+            "evidence": [
+                {
+                    "evidence_id": "validator_json_artifacts_validation_contract_json",
+                    "artifact_kind": "validator_json",
+                    "artifact_path": artifact_path,
+                    "artifact_size_bytes": artifact.stat().st_size + 1,
+                    "artifact_sha256": artifact_hash,
+                }
+            ]
+        },
+    )
+
+    assert result["ok"] is False
+    assert "size mismatch" in result["failure_detail"]
+
+
 def test_validation_evidence_spec_for_command_recognizes_hostile_audit_validator() -> None:
     command = (
         "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan "
@@ -148,6 +189,23 @@ def test_validation_evidence_spec_for_command_recognizes_salt_ndepend_freeze_gat
     assert spec is not None
     assert spec.artifact_kind == "validator_json"
     assert spec.artifact_path == "artifacts/salt_ndepend/latest/doctor.json"
+
+
+def test_build_validation_evidence_entries_records_artifact_metadata(tmp_path: Path) -> None:
+    artifact = tmp_path / "artifacts" / "validation" / "contract.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(json.dumps({"ok": True}, indent=2), encoding="utf-8")
+    command = (
+        "py -3.14 tools/viewer_host_validate_slice_contract.py --contract "
+        "docs/contracts/slice.contract.json --out-json artifacts/validation/contract.json"
+    )
+
+    entries = build_validation_evidence_entries([command], tmp_path)
+
+    assert len(entries) == 1
+    assert entries[0]["artifact_size_bytes"] == artifact.stat().st_size
+    assert entries[0]["artifact_mtime_utc"].endswith("+00:00")
+    assert entries[0]["artifact_sha256"] == hashlib.sha256(artifact.read_bytes()).hexdigest()
 
 
 def test_contract_proof_writer_fails_when_required_assertion_evidence_is_missing(tmp_path: Path) -> None:

@@ -48,12 +48,20 @@ DELETED_MARKER = "__DELETED__"
 EXPLICIT_USER_ASK_RE = re.compile(r"^- \[([^\]]+)\]\s*(.+?)\s*$")
 ACTION_HOSTILE_REVIEW_HEADING = "## Action Hostile Review"
 ACTION_HOSTILE_REVIEW_FIELD_RE = re.compile(r"^- ([^:]+):\s*(.+?)\s*$", re.IGNORECASE)
-ACTION_HOSTILE_REVIEW_READY_STATUSES = {"ready"}
 ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS = (
     "action id",
     "suspected failure mode",
-    "owner seam",
+    "correct owner/action",
     "proof surface",
+    "blocked action",
+)
+STATUS_CLAIM_RE = re.compile(r"\b(green|done|ready|complete|closed|unblocked|good)\b", re.IGNORECASE)
+STATUS_CLAIM_REQUIRED_MARKERS = (
+    "fresh command",
+    "command label",
+    "exit code",
+    "artifact path",
+    "checked result",
 )
 PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
 SALT_NDEPEND_REQUIRED_DEFAULT_KEYS = (
@@ -143,6 +151,10 @@ def _current_branch(repo_root: Path) -> str:
     return _git_output(repo_root, "rev-parse", "--abbrev-ref", "HEAD").strip()
 
 
+def _git_status_short_lines(repo_root: Path) -> list[str]:
+    return [line.rstrip() for line in _git_output(repo_root, "status", "--short", "--branch").splitlines() if line.strip()]
+
+
 def _find_values(obj: Any, key: str) -> list[Any]:
     out: list[Any] = []
     if isinstance(obj, dict):
@@ -187,6 +199,35 @@ def _extract_payload_command_text(payload: Any) -> str:
 def _payload_requests_task_complete(payload: Any) -> bool:
     haystack = " ".join(_payload_tool_candidates(payload)).lower()
     return "task_complete" in haystack or "taskcomplete" in haystack
+
+
+def _payload_status_claim_text(payload: Any) -> str:
+    texts: list[str] = []
+    for key in ("summary", "message", "text"):
+        for value in _find_values(payload, key):
+            if isinstance(value, (str, int, float)):
+                text = str(value).strip()
+                if text:
+                    texts.append(text)
+    return "\n".join(texts)
+
+
+def evaluate_status_vocabulary_guard(payload: dict[str, Any] | None) -> tuple[bool, str, dict[str, Any]]:
+    text = _payload_status_claim_text(payload or {})
+    if not text:
+        return False, "", {}
+    matches = sorted({match.group(1).lower() for match in STATUS_CLAIM_RE.finditer(text)})
+    if not matches:
+        return False, "", {}
+    lower = text.lower()
+    missing = [marker for marker in STATUS_CLAIM_REQUIRED_MARKERS if marker not in lower]
+    if not missing:
+        return False, "", {"restricted_words": matches, "missing_markers": []}
+    return (
+        True,
+        "Restricted status vocabulary requires proof markers in the same task_complete summary.",
+        {"restricted_words": matches, "missing_markers": missing},
+    )
 
 
 def _normalize_text(text: str) -> str:
@@ -555,6 +596,11 @@ def write_validation_receipt(
     payload = {
         "repo_root": repo_root.as_posix(),
         "head": head,
+        "git": {
+            "branch": _current_branch(repo_root),
+            "head": head,
+            "status_short": _git_status_short_lines(repo_root),
+        },
         "summary": summary,
         "commands": commands_list,
         "evidence": build_validation_evidence_entries(commands_list, repo_root),
@@ -628,21 +674,31 @@ def _load_action_hostile_review(plan_path: Path) -> tuple[dict[str, str], str]:
         match = ACTION_HOSTILE_REVIEW_FIELD_RE.match(line)
         if match is None:
             continue
-        fields[match.group(1).strip().lower()] = match.group(2).strip()
+        field_name = match.group(1).strip().lower()
+        if field_name == "action id" and fields:
+            fields = {}
+        fields[field_name] = match.group(2).strip()
 
     missing = [field for field in ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS if not fields.get(field, "").strip()]
     if missing:
         return {}, "Action hostile review is incomplete: missing " + ", ".join(missing) + "."
 
-    status = fields.get("status", "").strip().lower()
-    if status not in ACTION_HOSTILE_REVIEW_READY_STATUSES:
-        return {}, f"Action hostile review status is {status or 'missing'}; mark it ready before mutation."
+    extra = sorted(set(fields) - set(ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS))
+    if extra:
+        return {}, (
+            "Action hostile review has unexpected fields: "
+            + ", ".join(extra)
+            + ". Required fields are exactly: "
+            + ", ".join(ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS)
+            + "."
+        )
 
     return {
         "action_id": fields["action id"],
         "suspected_failure_mode": fields["suspected failure mode"],
-        "owner_seam": fields["owner seam"],
+        "correct_owner_action": fields["correct owner/action"],
         "proof_surface": fields["proof surface"],
+        "blocked_action": fields["blocked action"],
     }, ""
 
 
@@ -1198,6 +1254,10 @@ def build_pretool_response(
         else:
             salt_ndepend_payload = {}
         if not should_block:
+            should_block, reason, status_claim_payload = evaluate_status_vocabulary_guard(payload)
+        else:
+            status_claim_payload = {}
+        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -1215,6 +1275,12 @@ def build_pretool_response(
                         "Open explicit user asks: " + summarize_open_user_asks(open_asks)
                     )
                     if open_asks
+                    else (
+                        "Restricted status words: " + ", ".join(status_claim_payload.get("restricted_words", []))
+                        + " | missing proof markers: "
+                        + ", ".join(status_claim_payload.get("missing_markers", []))
+                    )
+                    if status_claim_payload
                     else (
                         "salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
                         + " | freeze_ready: "

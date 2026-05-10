@@ -100,13 +100,29 @@ def _summarize_json_artifact(payload: dict[str, object]) -> dict[str, object]:
     return summary
 
 
+def _text_artifact_interruption_reason(lines: list[str]) -> str:
+    tail = next((line.strip() for line in reversed(lines) if line.strip()), "")
+    if tail == "^C":
+        return "tail_ctrl_c"
+    lowered = "\n".join(lines).lower()
+    for marker in ("keyboardinterrupt", "user cancelled", "operation canceled", "operation cancelled"):
+        if marker in lowered:
+            return marker.replace(" ", "_")
+    return ""
+
+
 def _summarize_text_artifact(path: Path) -> dict[str, object]:
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     tail = next((line.strip() for line in reversed(lines) if line.strip()), "")
-    return {
+    interruption_reason = _text_artifact_interruption_reason(lines)
+    summary: dict[str, object] = {
         "line_count": len(lines),
         "tail": tail,
     }
+    if interruption_reason:
+        summary["interrupted"] = True
+        summary["interruption_reason"] = interruption_reason
+    return summary
 
 
 def _bind_producer_surface(producer: dict[str, object]) -> dict[str, object]:
@@ -126,6 +142,11 @@ def _bind_producer_surface(producer: dict[str, object]) -> dict[str, object]:
         summary = _summarize_json_artifact(payload if isinstance(payload, dict) else {"value_type": type(payload).__name__})
     else:
         summary = _summarize_text_artifact(artifact_path)
+
+    if bool(summary.get("interrupted", False)):
+        bound["status"] = "interrupted"
+        bound["summary"] = summary
+        return bound
 
     bound["status"] = "bound"
     bound["summary"] = summary
@@ -762,11 +783,19 @@ def _run_doctor(args: argparse.Namespace) -> int:
         for producer in producer_payload.get("producers", []):
             if not isinstance(producer, dict):
                 continue
-            if producer.get("status") != "bound":
+            producer_status = str(producer.get("status", "missing")).strip() or "missing"
+            if producer_status != "bound":
+                producer_id = producer.get("producer_id", "unknown")
+                code_prefix = "producer_missing" if producer_status == "missing" else "producer_unusable"
+                reason = (
+                    f"producer artifact missing for {producer_id}"
+                    if producer_status == "missing"
+                    else f"producer artifact unusable for {producer_id}: status={producer_status}"
+                )
                 findings.append(
                     {
-                        "code": f"producer_missing:{producer.get('producer_id', 'unknown')}",
-                        "reason": f"producer artifact missing for {producer.get('producer_id', 'unknown')}",
+                        "code": f"{code_prefix}:{producer_id}",
+                        "reason": reason,
                     }
                 )
 

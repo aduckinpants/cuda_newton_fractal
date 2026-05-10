@@ -6,6 +6,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -30,6 +31,26 @@ def _tail_lines(path: Path, line_count: int) -> list[str]:
 
 def _format_command(command: list[str]) -> str:
     return shlex.join(command)
+
+
+def _emit_summary_line(message: str) -> None:
+    print(f"viewer_host_run_logged_command: {message}", flush=True)
+
+
+def _terminate_process_tree(proc: subprocess.Popen[str]) -> None:
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    else:
+        proc.kill()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
 
 
 def _normalize_command_for_launch(command: list[str], cwd: Path) -> list[str]:
@@ -62,6 +83,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--log", required=True, help="Path to the combined stdout/stderr log file")
     parser.add_argument("--cwd", default=str(REPO_ROOT), help="Working directory for the child command")
     parser.add_argument("--tail", type=int, default=12, help="Number of log tail lines to print in the summary")
+    parser.add_argument("--heartbeat-seconds", type=float, default=30.0, help="Print a short running marker at this interval; use 0 to suppress")
+    parser.add_argument("--timeout-seconds", type=float, default=0.0, help="Terminate the child process tree after this many seconds; use 0 for no timeout")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Command to run, prefixed with --")
     args = parser.parse_args(argv)
 
@@ -81,19 +104,46 @@ def main(argv: list[str] | None = None) -> int:
         log_path = (REPO_ROOT / log_path).resolve()
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
+    _emit_summary_line(f"label={args.label}")
+    _emit_summary_line(f"cwd={_relative_to_repo(cwd)}")
+    _emit_summary_line(f"command={_format_command(command)}")
+    _emit_summary_line(f"log={_relative_to_repo(log_path)}")
+    _emit_summary_line("result=started")
+
     return_code = 0
     launch_failed = False
+    timed_out = False
+    started_at = time.monotonic()
+    heartbeat_seconds = max(0.0, float(args.heartbeat_seconds))
+    timeout_seconds = max(0.0, float(args.timeout_seconds))
     with log_path.open("w", encoding="utf-8", errors="replace") as handle:
         try:
-            proc = subprocess.run(
+            proc = subprocess.Popen(
                 command,
                 cwd=str(cwd),
                 stdout=handle,
                 stderr=subprocess.STDOUT,
                 text=True,
-                check=False,
             )
-            return_code = int(proc.returncode)
+            while True:
+                elapsed = time.monotonic() - started_at
+                if timeout_seconds and elapsed >= timeout_seconds:
+                    timed_out = True
+                    handle.write(f"viewer_host_run_logged_command: timeout after {timeout_seconds:.1f} seconds\n")
+                    handle.flush()
+                    _terminate_process_tree(proc)
+                    return_code = 124
+                    break
+                wait_timeout = heartbeat_seconds if heartbeat_seconds else None
+                if timeout_seconds:
+                    remaining = max(0.0, timeout_seconds - elapsed)
+                    wait_timeout = remaining if wait_timeout is None else min(wait_timeout, remaining)
+                try:
+                    return_code = int(proc.wait(timeout=wait_timeout))
+                    break
+                except subprocess.TimeoutExpired:
+                    elapsed_seconds = int(time.monotonic() - started_at)
+                    _emit_summary_line(f"running elapsed_seconds={elapsed_seconds} log={_relative_to_repo(log_path)}")
         except OSError as exc:
             handle.write(f"viewer_host_run_logged_command: failed to launch command: {exc}\n")
             return_code = 127
@@ -101,20 +151,18 @@ def main(argv: list[str] | None = None) -> int:
 
     if launch_failed:
         result_label = "launch-failure"
+    elif timed_out:
+        result_label = "timeout"
     elif return_code == 0:
         result_label = "success"
     else:
         result_label = "failure"
 
-    print(f"viewer_host_run_logged_command: label={args.label}")
-    print(f"viewer_host_run_logged_command: cwd={_relative_to_repo(cwd)}")
-    print(f"viewer_host_run_logged_command: command={_format_command(command)}")
-    print(f"viewer_host_run_logged_command: log={_relative_to_repo(log_path)}")
-    print(f"viewer_host_run_logged_command: result={result_label}")
-    print(f"viewer_host_run_logged_command: exit={return_code}")
+    _emit_summary_line(f"result={result_label}")
+    _emit_summary_line(f"exit={return_code}")
 
     for line in _tail_lines(log_path, args.tail):
-        print(f"viewer_host_run_logged_command: tail: {line}")
+        _emit_summary_line(f"tail: {line}")
 
     return return_code
 

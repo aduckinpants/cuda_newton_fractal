@@ -4,6 +4,7 @@ import json
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -146,8 +147,8 @@ def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec
     return _dynamic_validator_json_spec(command)
 
 
-def build_validation_evidence_entries(commands: list[str], repo_root: Path) -> list[dict[str, str]]:
-    entries: list[dict[str, str]] = []
+def build_validation_evidence_entries(commands: list[str], repo_root: Path) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     for command in commands:
         spec = validation_evidence_spec_for_command(command)
@@ -161,12 +162,18 @@ def build_validation_evidence_entries(commands: list[str], repo_root: Path) -> l
                 + " | expected "
                 + spec.artifact_path
             )
+        artifact_stat = artifact_path.stat()
         entries.append(
             {
                 "evidence_id": spec.evidence_id,
                 "command": spec.command,
                 "artifact_kind": spec.artifact_kind,
                 "artifact_path": spec.artifact_path,
+                "artifact_mtime_utc": datetime.fromtimestamp(
+                    artifact_stat.st_mtime,
+                    timezone.utc,
+                ).isoformat(),
+                "artifact_size_bytes": artifact_stat.st_size,
                 "artifact_sha256": hash_file(artifact_path),
             }
         )
@@ -284,6 +291,25 @@ def evaluate_assertion(
         result["failure_detail"] = "artifact missing"
         return result
     if validation_receipt is not None and evidence_entry is not None:
+        artifact_stat = artifact_path.stat()
+        recorded_size = evidence_entry.get("artifact_size_bytes")
+        if recorded_size is not None:
+            try:
+                expected_size = int(recorded_size)
+            except (TypeError, ValueError):
+                result["failure_detail"] = "validation evidence artifact size is invalid"
+                return result
+            if artifact_stat.st_size != expected_size:
+                result["failure_detail"] = "validation evidence artifact size mismatch"
+                return result
+
+        recorded_mtime = str(evidence_entry.get("artifact_mtime_utc", "")).strip()
+        if recorded_mtime:
+            current_mtime = datetime.fromtimestamp(artifact_stat.st_mtime, timezone.utc).isoformat()
+            if recorded_mtime != current_mtime:
+                result["failure_detail"] = "validation evidence artifact mtime mismatch"
+                return result
+
         recorded_hash = str(evidence_entry.get("artifact_sha256", "")).strip()
         if recorded_hash and recorded_hash != hash_file(artifact_path):
             result["failure_detail"] = "validation evidence artifact hash mismatch"
