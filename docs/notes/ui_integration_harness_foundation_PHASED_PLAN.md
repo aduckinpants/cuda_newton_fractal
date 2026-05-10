@@ -113,6 +113,7 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] Pass 18 - challenged the first second-mode-family promotion against the runtime-lane wrapper itself, found that the lane could not forward a focused `-k` selector without failing argument parsing, repaired the wrapper instead of downgrading the rail to raw pytest, and then re-proved the runtime-walk witness on the mandatory rail.
 - [done] Pass 19 - challenged whether the remaining runtime-walk FITS-path proofs should stay invisible after replay/pause joined the mandatory rail, proved they already pass together in this environment, and surfaced them as a sibling named rail while explicitly keeping them out of the mandatory runtime/checkpoint profiles.
 - [done] Pass 20 - challenged whether the runtime profile was still burying materially different published-runtime proof families behind one generic `probe/session` label, found that the headless artifact generators and `batch_cli` had no explicit public rail ownership, split the generators into a named mandatory artifact-tools rail, promoted `batch_cli` onto the explicit probe/session rail, and re-proved both rails separately.
+- [done] Pass 21 - clean re-read of the repaired per-action hostile-review guard found no additional real defect in wrapper gating, single-use action-id consumption, or the plan-only bootstrap path.
 
 ## Audit Findings
 
@@ -143,6 +144,15 @@ The local hypothesis is that this repo already contains enough real app/runtime 
 - [done] The runtime pytest lane already had the right abstraction level for a mandatory public rail, but it was missing one crucial seam: forwarding extra pytest selectors. Without that, the rail could not exclude the two FITS-path runtime-walk cases from a broader file without either bypassing the lane entirely or degrading the mandatory gate. The wrapper now forwards passthrough pytest args and reports them in the log while keeping the active-runtime preflight and zero-pass guard.
 - [done] Once replay/pause moved onto the mandatory rail, the two remaining FITS-path runtime-walk proofs were still real published-runtime witnesses but had no checked-in public task surface. Leaving them as ad hoc direct tests would have hidden them from bootstrap/profile discovery, so they now live on a named sibling rail that stays outside the mandatory closure profiles.
 - [done] The generic `verify: runtime probe/session pytest` label had become too vague for the actual proof it carried: it hid flashlight/runtime-walk artifact generation and omitted `batch_cli` from any public runtime rail. The professional fix is to give the artifact generators their own mandatory task/profile step and make the surviving probe/session rail explicit about the API-style tests it owns.
+- [done] The earlier hostile-review enforcement still failed the user's demanded per-action bar: it blocked closure, but approved mutation wrappers could still run without a fresh hostile-review token. `tools/viewer_host_checkpoint_guard.py` now requires a ready `## Action Hostile Review` entry before mutation wrappers proceed, treats the action id as single-use after real repo mutation, and keeps plan-only or contract-only bootstrap patches from consuming that token.
+
+## Action Hostile Review
+
+- Action ID: action-20260510-per-action-hostile-review-enforcement
+- Status: done
+- Suspected Failure Mode: hostile review is only enforced at closure, or the bootstrap path for adding a fresh action review consumes the token and deadlocks further contract-scoped mutation.
+- Owner Seam: tools/viewer_host_checkpoint_guard.py
+- Proof Surface: tests/test_viewer_host_checkpoint_guard.py
 
 ## Notes
 

@@ -1386,6 +1386,165 @@ def test_build_pretool_response_denies_mutation_when_locked_contract_hash_drifte
     assert "Active slice contract changed after it was locked" in hook["permissionDecisionReason"]
 
 
+def test_build_general_pretool_response_denies_mutation_wrapper_without_action_hostile_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_active_contract_with_plan(repo_root, plan_text=TEST_PLAN_TEXT)
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_run_repo_mutation.py --session-id session-1 -- cmd /c echo mutate",
+        },
+        repo_root,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "Action hostile review is missing" in hook["permissionDecisionReason"]
+
+
+def test_build_general_pretool_response_allows_mutation_wrapper_with_ready_action_hostile_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_active_contract_with_plan(
+        repo_root,
+        plan_text=(
+            TEST_PLAN_TEXT
+            + "\n## Action Hostile Review\n\n"
+            + "- Action ID: action-1\n"
+            + "- Status: ready\n"
+            + "- Suspected Failure Mode: per-action hostile review is not enforced before mutation\n"
+            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+        ),
+    )
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_run_repo_mutation.py --session-id session-1 -- cmd /c echo mutate",
+        },
+        repo_root,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
+
+
+def test_build_general_pretool_response_denies_reused_action_hostile_review_after_consumption(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_active_contract_with_plan(
+        repo_root,
+        plan_text=(
+            TEST_PLAN_TEXT
+            + "\n## Action Hostile Review\n\n"
+            + "- Action ID: action-1\n"
+            + "- Status: ready\n"
+            + "- Suspected Failure Mode: stale hostile review can be reused across multiple mutations\n"
+            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+        ),
+    )
+    checkpoint_guard.write_consumed_action_hostile_review(
+        "session-1",
+        action_id="action-1",
+        plan_path="docs/notes/slice_PHASED_PLAN.md",
+        command_text="py -3.14 tools\\viewer_host_run_repo_mutation.py --session-id session-1 -- cmd /c echo mutate",
+        repo_root=repo_root,
+    )
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_run_repo_mutation.py --session-id session-1 -- cmd /c echo mutate",
+        },
+        repo_root,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "already been consumed" in hook["permissionDecisionReason"]
+
+
+def test_build_general_pretool_response_allows_plan_only_patch_wrapper_to_bootstrap_action_hostile_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_active_contract_with_plan(repo_root, plan_text=TEST_PLAN_TEXT)
+    patch_path = repo_root / "artifacts" / "plan_only.patch"
+    patch_path.parent.mkdir(parents=True, exist_ok=True)
+    patch_path.write_text(
+        "diff --git a/docs/notes/slice_PHASED_PLAN.md b/docs/notes/slice_PHASED_PLAN.md\n"
+        "--- a/docs/notes/slice_PHASED_PLAN.md\n"
+        "+++ b/docs/notes/slice_PHASED_PLAN.md\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-# Plan\n"
+        "+# Plan\n",
+        encoding="utf-8",
+    )
+
+    response = checkpoint_guard.build_general_pretool_response(
+        "session-1",
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_apply_repo_patch.py --session-id session-1 --patch-file artifacts\\plan_only.patch",
+        },
+        repo_root,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
+
+
+def test_maybe_consume_action_hostile_review_skips_plan_only_bootstrap_patch(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_active_contract_with_plan(
+        repo_root,
+        plan_text=(
+            TEST_PLAN_TEXT
+            + "\n## Action Hostile Review\n\n"
+            + "- Action ID: action-1\n"
+            + "- Status: ready\n"
+            + "- Suspected Failure Mode: plan bootstrap patches consume the action review token immediately\n"
+            + "- Owner Seam: tools/viewer_host_checkpoint_guard.py\n"
+            + "- Proof Surface: tests/test_viewer_host_checkpoint_guard.py\n"
+        ),
+    )
+    patch_path = repo_root / "artifacts" / "plan_only.patch"
+    patch_path.parent.mkdir(parents=True, exist_ok=True)
+    patch_path.write_text(
+        "diff --git a/docs/notes/slice_PHASED_PLAN.md b/docs/notes/slice_PHASED_PLAN.md\n"
+        "--- a/docs/notes/slice_PHASED_PLAN.md\n"
+        "+++ b/docs/notes/slice_PHASED_PLAN.md\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-# Plan\n"
+        "+# Plan\n",
+        encoding="utf-8",
+    )
+
+    checkpoint_guard.maybe_consume_action_hostile_review(
+        {
+            "recipient_name": "functions.shell_command",
+            "command": "py -3.14 tools\\viewer_host_apply_repo_patch.py --session-id session-1 --patch-file artifacts\\plan_only.patch",
+        },
+        "session-1",
+        _snapshot(),
+        _snapshot(unstaged={"docs/notes/slice_PHASED_PLAN.md": "hash-a"}),
+        repo_root,
+    )
+
+    assert checkpoint_guard.load_consumed_action_hostile_review("session-1", repo_root) is None
+
+
 def test_evaluate_contract_proof_receipt_guard_blocks_failed_assertion_results(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()

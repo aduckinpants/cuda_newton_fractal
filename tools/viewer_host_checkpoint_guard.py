@@ -46,6 +46,16 @@ ACTIVE_RECOVERY_ADOPTION_FILENAME = "active_recovery_adoption.json"
 TASK_COMPLETE_TOOL = "task_complete"
 DELETED_MARKER = "__DELETED__"
 EXPLICIT_USER_ASK_RE = re.compile(r"^- \[([^\]]+)\]\s*(.+?)\s*$")
+ACTION_HOSTILE_REVIEW_HEADING = "## Action Hostile Review"
+ACTION_HOSTILE_REVIEW_FIELD_RE = re.compile(r"^- ([^:]+):\s*(.+?)\s*$", re.IGNORECASE)
+ACTION_HOSTILE_REVIEW_READY_STATUSES = {"ready"}
+ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS = (
+    "action id",
+    "suspected failure mode",
+    "owner seam",
+    "proof surface",
+)
+PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -569,6 +579,21 @@ def summarize_open_user_asks(asks: list[str], *, limit: int = 3) -> str:
     return f"{visible} | ... (+{len(asks) - limit} more)"
 
 
+def _section_lines(text: str, heading: str) -> list[str]:
+    lines: list[str] = []
+    in_section = False
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if stripped.startswith("## "):
+            if in_section:
+                break
+            in_section = stripped == heading
+            continue
+        if in_section and stripped:
+            lines.append(stripped)
+    return lines
+
+
 def _load_explicit_user_asks(plan_path: Path) -> list[tuple[str, str]]:
     asks: list[tuple[str, str]] = []
     in_section = False
@@ -586,6 +611,34 @@ def _load_explicit_user_asks(plan_path: Path) -> list[tuple[str, str]]:
             continue
         asks.append((match.group(1).strip().lower(), match.group(2).strip()))
     return asks
+
+
+def _load_action_hostile_review(plan_path: Path) -> tuple[dict[str, str], str]:
+    lines = _section_lines(plan_path.read_text(encoding="utf-8"), ACTION_HOSTILE_REVIEW_HEADING)
+    if not lines:
+        return {}, "Action hostile review is missing from the active phased plan."
+
+    fields: dict[str, str] = {}
+    for line in lines:
+        match = ACTION_HOSTILE_REVIEW_FIELD_RE.match(line)
+        if match is None:
+            continue
+        fields[match.group(1).strip().lower()] = match.group(2).strip()
+
+    missing = [field for field in ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS if not fields.get(field, "").strip()]
+    if missing:
+        return {}, "Action hostile review is incomplete: missing " + ", ".join(missing) + "."
+
+    status = fields.get("status", "").strip().lower()
+    if status not in ACTION_HOSTILE_REVIEW_READY_STATUSES:
+        return {}, f"Action hostile review status is {status or 'missing'}; mark it ready before mutation."
+
+    return {
+        "action_id": fields["action id"],
+        "suspected_failure_mode": fields["suspected failure mode"],
+        "owner_seam": fields["owner seam"],
+        "proof_surface": fields["proof surface"],
+    }, ""
 
 
 def evaluate_open_explicit_user_asks_guard(
@@ -652,6 +705,100 @@ def evaluate_hostile_audit_guard(
 
     reason = str(payload.get("blocked_reason", "")).strip() or "Hostile review is incomplete."
     return True, "Hostile review is incomplete: " + reason, payload
+
+
+def _command_requires_action_hostile_review(command_text: str) -> bool:
+    normalized = _normalize_text(command_text)
+    if "tools\\viewer_host_apply_repo_patch.py" in normalized:
+        return "--help" not in normalized
+    if "tools\\viewer_host_run_repo_mutation.py" in normalized:
+        return "--help" not in normalized and " -- " in normalized
+    return False
+
+
+def _extract_patch_file_path(command_text: str, repo_root: Path) -> Path | None:
+    match = PATCH_FILE_RE.search(command_text)
+    if match is None:
+        return None
+    raw_path = next((group for group in match.groups() if group), "").strip()
+    if not raw_path:
+        return None
+    patch_path = Path(raw_path)
+    if not patch_path.is_absolute():
+        patch_path = repo_root / patch_path
+    return patch_path
+
+
+def _patch_targets_only_plan_or_contract(command_text: str, session_id: str, repo_root: Path) -> bool:
+    normalized = _normalize_text(command_text)
+    if "tools\\viewer_host_apply_repo_patch.py" not in normalized:
+        return False
+
+    patch_path = _extract_patch_file_path(command_text, repo_root)
+    if patch_path is None or not patch_path.exists():
+        return False
+
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return False
+
+    allowed_targets = {
+        str(contract_state.get("plan_path", "")).strip(),
+        str(contract_state.get("contract_path", "")).strip(),
+    }
+    allowed_targets.discard("")
+    if not allowed_targets:
+        return False
+
+    targets: set[str] = set()
+    for raw_line in patch_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line.startswith("+++ b/"):
+            continue
+        target = line[len("+++ b/"):].strip()
+        if target and target != "/dev/null":
+            targets.add(Path(target).as_posix())
+
+    return bool(targets) and targets.issubset(allowed_targets)
+
+
+def evaluate_action_hostile_review_guard(
+    payload: dict[str, Any] | None,
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str, dict[str, Any]]:
+    command_text = _extract_payload_command_text(payload or {})
+    if not _command_requires_action_hostile_review(command_text):
+        return False, "", {}
+    if _patch_targets_only_plan_or_contract(command_text, session_id, repo_root):
+        return False, "", {"bootstrap": True}
+
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return True, "No active slice contract is locked. Record a slice contract before mutation.", {}
+
+    plan_path_text = str(contract_state.get("plan_path", "")).strip()
+    if not plan_path_text:
+        return True, "Active phased plan is missing from the locked contract state.", {}
+
+    plan_path = repo_root / plan_path_text
+    if not plan_path.exists():
+        return True, f"Active phased plan is missing: {plan_path_text}", {}
+
+    review, error = _load_action_hostile_review(plan_path)
+    if error:
+        return True, error, {}
+
+    consumed = load_consumed_action_hostile_review(session_id, repo_root)
+    if isinstance(consumed, dict) and str(consumed.get("action_id", "")).strip() == review["action_id"]:
+        return True, (
+            "Current action hostile review has already been consumed by a prior mutation. "
+            "Record a new Action ID and refreshed per-action hostile review before further mutation."
+        ), review
+
+    review["plan_path"] = plan_path_text
+    review["command_text"] = command_text
+    return False, "", review
 
 
 def evaluate_validation_receipt_guard(
@@ -761,6 +908,91 @@ def _contract_drift_reason(session_id: str, repo_root: Path) -> str:
             "Run viewer_host_revise_contract.py before any further mutation or closure."
         )
     return ""
+
+
+def action_hostile_review_state_path(session_id: str, repo_root: Path = REPO_ROOT) -> Path:
+    return repo_root / "artifacts" / "hooks" / "viewer_host_checkpoint_guard" / f"{_sanitize_session_id(session_id)}_action_hostile_review.json"
+
+
+def load_consumed_action_hostile_review(session_id: str, repo_root: Path = REPO_ROOT) -> dict[str, Any] | None:
+    path = action_hostile_review_state_path(session_id, repo_root)
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_consumed_action_hostile_review(
+    session_id: str,
+    *,
+    action_id: str,
+    plan_path: str,
+    command_text: str,
+    repo_root: Path = REPO_ROOT,
+) -> Path:
+    path = action_hostile_review_state_path(session_id, repo_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "action_id": action_id,
+                "plan_path": plan_path,
+                "command_text": command_text,
+                "consumed_at_utc": datetime.now(timezone.utc).isoformat(),
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def maybe_consume_action_hostile_review(
+    payload: dict[str, Any] | None,
+    session_id: str,
+    baseline: dict[str, Any] | None,
+    current: dict[str, Any],
+    repo_root: Path = REPO_ROOT,
+) -> None:
+    command_text = _extract_payload_command_text(payload or {})
+    if not _command_requires_action_hostile_review(command_text):
+        return
+    if _patch_targets_only_plan_or_contract(command_text, session_id, repo_root):
+        return
+
+    if baseline is None:
+        changed = not snapshot_is_clean(current)
+    else:
+        changed = bool(compare_snapshots(baseline, current))
+        if not changed:
+            baseline_head = str(baseline.get("head", "")).strip()
+            current_head = str(current.get("head", "")).strip()
+            changed = bool(baseline_head and current_head and baseline_head != current_head)
+    if not changed:
+        return
+
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return
+    plan_path_text = str(contract_state.get("plan_path", "")).strip()
+    if not plan_path_text:
+        return
+
+    plan_path = repo_root / plan_path_text
+    if not plan_path.exists():
+        return
+
+    review, error = _load_action_hostile_review(plan_path)
+    if error or not review.get("action_id"):
+        return
+
+    write_consumed_action_hostile_review(
+        session_id,
+        action_id=review["action_id"],
+        plan_path=plan_path_text,
+        command_text=command_text,
+        repo_root=repo_root,
+    )
 
 
 def _evaluate_mutation_guard(payload: dict[str, Any], session_id: str, repo_root: Path) -> tuple[bool, str]:
@@ -906,6 +1138,15 @@ def build_general_pretool_response(
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
                 "permissionDecisionReason": banner + " " + mutation_reason,
+            }
+        }
+    action_block, action_reason, _ = evaluate_action_hostile_review_guard(payload, session_id, repo_root)
+    if action_block:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": banner + " " + action_reason,
             }
         }
     return {
@@ -1234,6 +1475,7 @@ def main(argv: list[str] | None = None) -> int:
             current = capture_repo_snapshot(repo_root)
             baseline = _bootstrap_missing_baseline_if_clean(session_id, current, repo_root)
             if event_name == "PostToolUse":
+                maybe_consume_action_hostile_review(payload, session_id, baseline, current, repo_root)
                 response = build_posttool_response(_extract_payload_tool_name(payload, default="unknown_tool"), baseline, current, session_id, repo_root)
             else:
                 response = build_stop_response(baseline, current, session_id, repo_root)
