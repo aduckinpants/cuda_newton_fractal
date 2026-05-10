@@ -139,6 +139,39 @@
         "The existing loaded-state override regression already proves that invalid advanced-color drafts resynchronize away from disallowed root_proximity state.",
         "This behavior now needs its own explicit blocker packet instead of hiding behind the slider-only contract."
       ]
+    },
+    {
+      "case_id": "runtime_walk_playback_controls_contract",
+      "family": "runtime_walk_viewer_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "runtime_walk_playback_controls_contract.v1",
+      "notes": [
+        "The existing viewer regression already proves that runtime-walk playback animates, pauses on Space, and steps on Right-arrow.",
+        "This behavior now needs its own explicit blocker packet instead of hiding behind the generic runtime_ui_harness baseline."
+      ]
+    },
+    {
+      "case_id": "runtime_walk_missing_companion_fits_contract",
+      "family": "runtime_walk_viewer_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "runtime_walk_missing_companion_fits_contract.v1",
+      "notes": [
+        "The existing viewer regression already proves that runtime-walk playback stays alive when the companion FITS path is missing.",
+        "This behavior now needs its own explicit blocker packet instead of staying implicit behind the generic runtime_ui_harness baseline."
+      ]
+    },
+    {
+      "case_id": "runtime_walk_fits_only_boot_contract",
+      "family": "runtime_walk_viewer_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "runtime_walk_fits_only_boot_contract.v1",
+      "notes": [
+        "The existing viewer regression already proves that the published runtime can boot from a FITS path alone and emit the expected orientation, mapping, and CSV artifacts.",
+        "This behavior now needs its own explicit blocker packet instead of remaining a chat-only acceptance story."
+      ]
     }
   ]
 }

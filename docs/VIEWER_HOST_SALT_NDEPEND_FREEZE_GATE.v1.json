@@ -28,7 +28,10 @@
     "advanced_color_slider_contract.v1",
     "advanced_color_function_switch_contract.v1",
     "advanced_color_shape_stack_contract.v1",
-    "advanced_color_draft_resync_contract.v1"
+    "advanced_color_draft_resync_contract.v1",
+    "runtime_walk_playback_controls_contract.v1",
+    "runtime_walk_missing_companion_fits_contract.v1",
+    "runtime_walk_fits_only_boot_contract.v1"
   ],
   "required_frozen_plans": [
     "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",

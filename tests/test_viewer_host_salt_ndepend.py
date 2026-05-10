@@ -110,12 +110,15 @@ def test_baselines_surface_emits_seeded_index(tmp_path: Path) -> None:
     assert rc == 0
     payload = json.loads(out_json.read_text(encoding="utf-8"))
     assert payload["status"] == "surface_seed_only"
-    assert payload["case_count"] == 11
+    assert payload["case_count"] == 14
     assert payload["planned_blocker_cases"] == [
         "advanced_color_slider_contract",
         "advanced_color_function_switch_contract",
         "advanced_color_shape_stack_contract",
         "advanced_color_draft_resync_contract",
+        "runtime_walk_playback_controls_contract",
+        "runtime_walk_missing_companion_fits_contract",
+        "runtime_walk_fits_only_boot_contract",
     ]
     assert all(case.get("required_contract") for case in payload["cases"])
     blocker_case = next(case for case in payload["cases"] if case["case_id"] == "advanced_color_slider_contract")
@@ -185,8 +188,8 @@ def test_doctor_surface_reports_open_blockers(tmp_path: Path) -> None:
     assert "packet_command_surfaces_missing" not in finding_codes
     assert "critical_family_backfill_incomplete" not in finding_codes
     assert "workflow_hard_denial_missing" not in finding_codes
-    assert payload["contract_count"] == 12
-    assert payload["baseline_case_count"] == 11
+    assert payload["contract_count"] == 15
+    assert payload["baseline_case_count"] == 14
     assert payload["bound_producer_count"] == 1
     assert payload["missing_producer_count"] == 1
     assert out_md.exists()

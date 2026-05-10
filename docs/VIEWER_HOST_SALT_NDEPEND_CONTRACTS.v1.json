@@ -270,6 +270,88 @@
       ]
     },
     {
+      "contract_id": "runtime_walk_playback_controls_contract.v1",
+      "family": "runtime_walk_viewer_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish",
+        "runtime_ui_harness"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Runtime-walk playback controls must remain explicit packeted proof for user-visible viewer behavior claims, not a hidden runtime_ui_harness side effect.",
+      "notes": [
+        "Anchors the existing replay, pause, and step viewer witness as a first-class blocker contract."
+      ]
+    },
+    {
+      "contract_id": "runtime_walk_missing_companion_fits_contract.v1",
+      "family": "runtime_walk_viewer_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish",
+        "runtime_ui_harness"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Runtime-walk viewer tolerance of missing companion FITS inputs must remain explicit packeted proof for user-visible viewer behavior claims.",
+      "notes": [
+        "Anchors the existing missing-companion-FITS viewer witness as a first-class blocker contract."
+      ]
+    },
+    {
+      "contract_id": "runtime_walk_fits_only_boot_contract.v1",
+      "family": "runtime_walk_viewer_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish",
+        "runtime_ui_harness",
+        "runtime_artifact_tools"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "FITS-only runtime-walk boot and export behavior must remain explicit packeted proof for user-visible viewer behavior claims.",
+      "notes": [
+        "Anchors the existing FITS-only viewer boot witness as a first-class blocker contract instead of leaving it implicit."
+      ]
+    },
+    {
       "contract_id": "runtime_ui_harness_contract.v1",
       "family": "runtime_ui_behavior",
       "status": "seeded",
