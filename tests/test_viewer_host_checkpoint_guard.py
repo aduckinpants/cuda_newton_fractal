@@ -319,6 +319,37 @@ def test_completion_hook_blocks_missing_validation_receipt_via_recipient_name(mo
     assert "def456.json" in hook["additionalContext"]
 
 
+def test_build_pretool_response_blocks_validation_receipted_head_without_contract_proof(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        session_id="session-1",
+        plan_text=TEST_PLAN_TEXT,
+    )
+    (tmp_path / "tools").mkdir()
+    baseline = _snapshot()
+    baseline["head"] = "def456"
+    current = _snapshot()
+    current["head"] = "def456"
+    receipt_path = validation_receipt_path("def456", tmp_path)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps({"head": "def456"}, indent=2) + "\n", encoding="utf-8")
+
+    response = build_pretool_response(
+        "task_complete",
+        baseline,
+        current,
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "contract proof receipt" in hook["permissionDecisionReason"]
+    assert "def456.json" in hook["additionalContext"]
+
+
 def test_completion_hook_allows_non_task_complete(monkeypatch) -> None:
     monkeypatch.setattr(completion_hook.checkpoint_guard, "discover_repo_root", lambda start_path: REPO_ROOT)
 
@@ -1319,6 +1350,40 @@ def test_resolve_session_baseline_refreshes_stale_clean_baseline_when_current_he
     resolution = checkpoint_guard.resolve_session_baseline("unknown_session", current_snapshot, repo_root)
 
     assert resolution.status == "refreshed_clean"
+    assert resolution.baseline == current_snapshot
+    assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == current_snapshot
+
+
+def test_resolve_session_baseline_refreshes_stale_clean_baseline_when_current_head_has_validation_receipt(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "ignore artifacts"], cwd=repo_root, check=True, capture_output=True, text=True)
+    _write_active_contract_with_plan(
+        repo_root,
+        session_id=contract_state.GLOBAL_CONTRACT_SESSION_ID,
+        plan_text=TEST_PLAN_TEXT,
+    )
+    subprocess.run(["git", "add", "docs"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock slice contract"], cwd=repo_root, check=True, capture_output=True, text=True)
+    first_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    checkpoint_guard.write_session_baseline("unknown_session", first_snapshot, repo_root)
+
+    readme = repo_root / "README.md"
+    readme.write_text("validation receipt only\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "validation receipt only"], cwd=repo_root, check=True, capture_output=True, text=True)
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    current_head = str(current_snapshot["head"])
+
+    validation_path = validation_receipt_path(current_head, repo_root)
+    validation_path.parent.mkdir(parents=True, exist_ok=True)
+    validation_path.write_text(json.dumps({"head": current_head}, indent=2) + "\n", encoding="utf-8")
+
+    resolution = checkpoint_guard.resolve_session_baseline("unknown_session", current_snapshot, repo_root)
+
+    assert resolution.status == "refreshed_clean_validation_receipted"
     assert resolution.baseline == current_snapshot
     assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == current_snapshot
 

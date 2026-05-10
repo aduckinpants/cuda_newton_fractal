@@ -469,7 +469,7 @@ def load_validation_receipt(head: str, repo_root: Path = REPO_ROOT) -> dict[str,
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def clean_head_has_closure_receipts(snapshot: dict[str, Any], repo_root: Path = REPO_ROOT) -> bool:
+def clean_head_has_validation_receipt(snapshot: dict[str, Any], repo_root: Path = REPO_ROOT) -> bool:
     if not snapshot_is_clean(snapshot):
         return False
     head = str(snapshot.get("head", "")).strip()
@@ -480,6 +480,14 @@ def clean_head_has_closure_receipts(snapshot: dict[str, Any], repo_root: Path = 
         return False
     if str(validation_receipt.get("head", "")).strip() != head:
         return False
+    return True
+
+
+def clean_head_has_closure_receipts(snapshot: dict[str, Any], repo_root: Path = REPO_ROOT) -> bool:
+    if not clean_head_has_validation_receipt(snapshot, repo_root):
+        return False
+
+    head = str(snapshot.get("head", "")).strip()
 
     contract_receipt = load_contract_proof_receipt(head, repo_root)
     if contract_receipt is None:
@@ -1003,12 +1011,13 @@ def evaluate_contract_proof_receipt_guard(
     session_id: str,
     repo_root: Path = REPO_ROOT,
 ) -> tuple[bool, str]:
-    if baseline is None:
+    baseline_head = "" if baseline is None else str(baseline.get("head", "")).strip()
+    current_head = str(current.get("head", "")).strip()
+    if not current_head:
         return False, ""
 
-    baseline_head = str(baseline.get("head", "")).strip()
-    current_head = str(current.get("head", "")).strip()
-    if not baseline_head or not current_head or baseline_head == current_head:
+    head_advanced = bool(baseline_head and baseline_head != current_head)
+    if not head_advanced and not clean_head_has_validation_receipt(current, repo_root):
         return False, ""
 
     contract_state, contract_error = validate_locked_contract_state(session_id, repo_root)
@@ -1547,6 +1556,18 @@ def resolve_session_baseline(
                 recovery_report_path=report_path_text,
                 recovery_adoption_path=adoption_path_text,
             )
+        if (
+            snapshot_is_clean(current)
+            and snapshot_digest(baseline) != snapshot_digest(current)
+            and clean_head_has_validation_receipt(current, repo_root)
+        ):
+            path = write_session_baseline(session_id, current, repo_root)
+            return SessionBaselineResolution(
+                baseline=current,
+                status="refreshed_clean_validation_receipted",
+                changed_paths=[],
+                baseline_path=path.relative_to(repo_root).as_posix(),
+            )
         return SessionBaselineResolution(
             baseline=baseline,
             status="existing",
@@ -1603,7 +1624,13 @@ def _session_start_response(session_id: str, repo_root: Path) -> dict[str, Any]:
     snapshot = capture_repo_snapshot(repo_root)
     active_contract = load_active_contract_state(GLOBAL_CONTRACT_SESSION_ID, repo_root)
     resolution = resolve_session_baseline(session_id, snapshot, repo_root)
-    if resolution.status in {"existing", "bootstrapped_clean", "adopted_dirty", "refreshed_clean"}:
+    if resolution.status in {
+        "existing",
+        "bootstrapped_clean",
+        "adopted_dirty",
+        "refreshed_clean",
+        "refreshed_clean_validation_receipted",
+    }:
         detail = (
             build_strict_banner(active_contract)
             + " viewer_host_checkpoint_guard baseline captured at "
@@ -1621,6 +1648,8 @@ def _session_start_response(session_id: str, repo_root: Path) -> dict[str, Any]:
             )
         elif resolution.status == "refreshed_clean":
             detail += " | refreshed a stale baseline to the current clean receipted head"
+        elif resolution.status == "refreshed_clean_validation_receipted":
+            detail += " | refreshed a stale baseline to the current clean validation-receipted head; closure proof remains required"
         return {
             "hookSpecificOutput": {
                 "hookEventName": "SessionStart",

@@ -322,6 +322,11 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Correct Owner/Action: widen contract scope, then update the logged-command wrapper and focused tests so it prints an immediate start marker and periodic running marker while still writing full output to the log.
 - Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py -q --junitxml artifacts/pytest/test_viewer_host_run_logged_command.junit.xml`
 - Blocked Action: any long verification lane through `viewer_host_run_logged_command.py` that provides no visible start/progress marker before child process exit.
+- Action ID: action-20260510-clean-baseline-proof-blocker-reporting
+- Suspected Failure Mode: a clean committed head with validation evidence but failing contract proof can keep replaying a stale dirty baseline, hiding the true proof blocker behind old path debt.
+- Correct Owner/Action: update the checkpoint guard baseline resolver and receipt guard so stale clean baselines can refresh to a validation-receipted head while task_complete and Stop still require contract proof and the salt_ndepend doctor before closure.
+- Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/test_viewer_host_checkpoint_guard_clean_baseline.junit.xml` plus hook SessionStart/Stop payloads against the current clean head.
+- Blocked Action: any completion attempt that reports old dirty paths instead of the current missing contract proof or open packet-gate blocker for a clean committed head.
 
 ## Notes
 
