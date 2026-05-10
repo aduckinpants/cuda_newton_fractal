@@ -42,6 +42,8 @@
     "chat_only_restart_plan": "forbidden"
   },
   "required_validation_commands": [
+    "py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json",
+    "py -3.14 tools/viewer_host_salt_ndepend.py freeze-gate --out-dir artifacts/salt_ndepend/latest",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json"
@@ -69,6 +71,14 @@
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/ui_integration_harness_completion_hostile_audit.json",
       "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "ui_integration_harness_completion_salt_ndepend_freeze_ready",
+      "description": "The deterministically regenerated salt_ndepend doctor packet reports freeze_ready=true",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/salt_ndepend/latest/doctor.json",
+      "json_path": "freeze_ready",
       "equals": true
     }
   ]

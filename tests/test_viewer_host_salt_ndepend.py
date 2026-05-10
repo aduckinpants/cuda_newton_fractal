@@ -30,6 +30,7 @@ def test_parser_exposes_expected_command_set() -> None:
         "doctor",
         "parity",
         "family-parity",
+        "freeze-gate",
     }
 
 
@@ -171,9 +172,10 @@ def test_doctor_surface_reports_open_blockers(tmp_path: Path) -> None:
     assert payload["freeze_ready"] is False
     finding_codes = {item["code"] for item in payload["findings"]}
     assert "audit_missing_producers" in finding_codes
-    assert "packet_command_surfaces_missing" in finding_codes
-    assert "critical_family_backfill_incomplete" in finding_codes
     assert "producer_missing:missing_ui" in finding_codes
+    assert "packet_command_surfaces_missing" not in finding_codes
+    assert "critical_family_backfill_incomplete" not in finding_codes
+    assert "workflow_hard_denial_missing" not in finding_codes
     assert payload["contract_count"] == 9
     assert payload["baseline_case_count"] == 8
     assert payload["bound_producer_count"] == 1
@@ -316,6 +318,162 @@ def test_doctor_surface_reports_required_blocker_contracts_that_are_not_green(tm
     assert "required_blocker_contract_not_green:runtime_ui_harness_contract.v1" in finding_codes
 
 
+def test_doctor_surface_sets_freeze_ready_when_findings_are_empty(tmp_path: Path) -> None:
+    policy_path = tmp_path / "policy.json"
+    code_quality_path = tmp_path / "artifacts" / "code_quality.json"
+    code_quality_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(code_quality_path, {"score": 99, "checks": {"baseline": True}})
+
+    coverage_report = tmp_path / "artifacts" / "test_coverage_report.json"
+    _write_json(coverage_report, {"status": "ok", "matrix": []})
+
+    runtime_publish_log = tmp_path / "artifacts" / "runtime_publish.log"
+    runtime_publish_log.write_text("published runtime available\n", encoding="utf-8")
+
+    runtime_probe_log = tmp_path / "artifacts" / "runtime_probe.log"
+    runtime_probe_log.write_text("viewer_host_runtime_pytest_lane: summary=passed=5 failed=0\n", encoding="utf-8")
+
+    runtime_ui_log = tmp_path / "artifacts" / "runtime_ui.log"
+    runtime_ui_log.write_text("viewer_host_runtime_pytest_lane: summary=passed=3 failed=0\n", encoding="utf-8")
+
+    runtime_artifact_log = tmp_path / "artifacts" / "runtime_artifact.log"
+    runtime_artifact_log.write_text("viewer_host_runtime_pytest_lane: summary=passed=2 failed=0\n", encoding="utf-8")
+
+    native_helper_log = tmp_path / "artifacts" / "native_helper.log"
+    native_helper_log.write_text("All helper tests passed.\n", encoding="utf-8")
+
+    _write_json(
+        policy_path,
+        {
+            "producer_surfaces": [
+                {"producer_id": "code_quality_audit", "artifact_path": str(code_quality_path)},
+                {"producer_id": "test_coverage_audit", "artifact_path": str(coverage_report)},
+                {"producer_id": "native_helper_tests", "artifact_path": str(native_helper_log)},
+                {"producer_id": "runtime_publish", "artifact_path": str(runtime_publish_log)},
+                {"producer_id": "runtime_probe_session", "artifact_path": str(runtime_probe_log)},
+                {"producer_id": "runtime_artifact_tools", "artifact_path": str(runtime_artifact_log)},
+                {"producer_id": "runtime_ui_harness", "artifact_path": str(runtime_ui_log)},
+            ],
+            "planned_command_surfaces": [
+                {"command_id": "audit"},
+                {"command_id": "doctor"},
+                {"command_id": "family-parity"},
+            ],
+            "gated_product_threads": ["advanced_color"],
+        },
+    )
+
+    packet_dir = tmp_path / "packet"
+    packet_dir.mkdir()
+    assert main(["audit", "--policy", str(policy_path), "--out-dir", str(packet_dir)]) == 0
+
+    manifest_path = tmp_path / "baselines.json"
+    _write_json(
+        manifest_path,
+        {
+            "cases": [
+                {
+                    "case_id": "advanced_color_slider_contract",
+                    "family": "critical_ui_behavior",
+                    "status": "seeded",
+                    "required_contract": "advanced_color_slider_contract.v1",
+                }
+            ]
+        },
+    )
+    baseline_json = packet_dir / "baseline_index.json"
+    baseline_md = packet_dir / "baseline_index.md"
+    assert main([
+        "baselines",
+        "--manifest",
+        str(manifest_path),
+        "--out-dir",
+        str(packet_dir),
+        "--out",
+        str(baseline_json),
+        "--out-md",
+        str(baseline_md),
+    ]) == 0
+
+    registry_path = tmp_path / "contracts.json"
+    _write_json(
+        registry_path,
+        {
+            "contracts": [
+                {
+                    "contract_id": "advanced_color_slider_contract.v1",
+                    "blocked_product_threads": ["advanced_color"],
+                    "required_producers": [
+                        "code_quality_audit",
+                        "test_coverage_audit",
+                        "native_helper_tests",
+                        "runtime_publish",
+                        "runtime_probe_session",
+                        "runtime_ui_harness",
+                    ],
+                }
+            ]
+        },
+    )
+
+    family_parity_json = packet_dir / "family_parity.json"
+    family_parity_md = packet_dir / "family_parity.md"
+    assert main([
+        "family-parity",
+        "--baseline-index",
+        str(baseline_json),
+        "--candidate-suite",
+        str(packet_dir / "suite_index.json"),
+        "--contract-registry",
+        str(registry_path),
+        "--out",
+        str(family_parity_json),
+        "--out-md",
+        str(family_parity_md),
+    ]) == 0
+
+    freeze_gate_path = tmp_path / "freeze_gate.json"
+    _write_json(
+        freeze_gate_path,
+        {
+            "required_packet_commands": ["audit", "doctor", "family-parity"],
+            "required_blocker_contracts": ["advanced_color_slider_contract.v1"],
+            "intentional_open_blockers": [],
+        },
+    )
+
+    out_json = tmp_path / "doctor.json"
+    out_md = tmp_path / "doctor.md"
+    rc = main([
+        "doctor",
+        "--packet-dir",
+        str(packet_dir),
+        "--suite-index",
+        str(packet_dir / "suite_index.json"),
+        "--producer-index",
+        str(packet_dir / "producer_index.json"),
+        "--contract-registry",
+        str(registry_path),
+        "--freeze-gate",
+        str(freeze_gate_path),
+        "--baseline-manifest",
+        str(manifest_path),
+        "--baseline-index",
+        str(baseline_json),
+        "--family-parity",
+        str(family_parity_json),
+        "--out",
+        str(out_json),
+        "--out-md",
+        str(out_md),
+    ])
+
+    assert rc == 0
+    payload = json.loads(out_json.read_text(encoding="utf-8"))
+    assert payload["findings"] == []
+    assert payload["freeze_ready"] is True
+
+
 def test_family_parity_emits_advanced_color_slider_packet(tmp_path: Path) -> None:
     policy_path = tmp_path / "policy.json"
     native_helper_log = tmp_path / "artifacts" / "native_helper.log"
@@ -418,3 +576,125 @@ def test_family_parity_emits_advanced_color_slider_packet(tmp_path: Path) -> Non
     assert packet["status"] == "missing_required_producers"
     assert packet["missing_producers"] == ["runtime_ui_harness"]
     assert out_md.exists()
+
+
+def test_freeze_gate_surface_materializes_current_packet_set(tmp_path: Path) -> None:
+    code_quality_path = tmp_path / "artifacts" / "code_quality.json"
+    code_quality_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(code_quality_path, {"score": 97, "checks": {"baseline": True}})
+
+    runtime_publish_log = tmp_path / "artifacts" / "runtime_publish.log"
+    runtime_publish_log.write_text("published runtime available\n", encoding="utf-8")
+
+    policy_path = tmp_path / "policy.json"
+    _write_json(
+        policy_path,
+        {
+            "packet_root": "artifacts/salt_ndepend",
+            "producer_surfaces": [
+                {
+                    "producer_id": "code_quality_audit",
+                    "artifact_path": str(code_quality_path),
+                },
+                {
+                    "producer_id": "runtime_publish",
+                    "artifact_path": str(runtime_publish_log),
+                },
+                {
+                    "producer_id": "runtime_ui_harness",
+                    "artifact_path": str(tmp_path / "artifacts" / "missing_ui.log"),
+                },
+            ],
+            "planned_command_surfaces": [
+                {"command_id": "audit"},
+                {"command_id": "structural"},
+                {"command_id": "review"},
+                {"command_id": "baselines"},
+                {"command_id": "contracts"},
+                {"command_id": "parity"},
+                {"command_id": "family-parity"},
+                {"command_id": "doctor"},
+            ],
+            "gated_product_threads": ["advanced_color"],
+        },
+    )
+
+    manifest_path = tmp_path / "baselines.json"
+    _write_json(
+        manifest_path,
+        {
+            "cases": [
+                {
+                    "case_id": "runtime_ui_harness_baseline",
+                    "family": "runtime_ui_behavior",
+                    "status": "seeded",
+                    "required_contract": "runtime_ui_harness_contract.v1",
+                }
+            ]
+        },
+    )
+
+    registry_path = tmp_path / "contracts.json"
+    _write_json(
+        registry_path,
+        {
+            "contracts": [
+                {
+                    "contract_id": "runtime_ui_harness_contract.v1",
+                    "blocked_product_threads": ["advanced_color"],
+                    "required_producers": [
+                        "runtime_publish",
+                        "runtime_ui_harness",
+                    ],
+                }
+            ]
+        },
+    )
+
+    freeze_gate_path = tmp_path / "freeze_gate.json"
+    _write_json(
+        freeze_gate_path,
+        {
+            "required_packet_commands": [
+                "audit",
+                "structural",
+                "review",
+                "baselines",
+                "contracts",
+                "parity",
+                "family-parity",
+                "doctor",
+            ],
+            "required_blocker_contracts": ["runtime_ui_harness_contract.v1"],
+            "intentional_open_blockers": [],
+        },
+    )
+
+    out_dir = tmp_path / "packet"
+    rc = main([
+        "freeze-gate",
+        "--policy",
+        str(policy_path),
+        "--manifest",
+        str(manifest_path),
+        "--contract-registry",
+        str(registry_path),
+        "--freeze-gate",
+        str(freeze_gate_path),
+        "--out-dir",
+        str(out_dir),
+    ])
+
+    assert rc == 0
+    assert (out_dir / "suite_index.json").exists()
+    assert (out_dir / "producer_index.json").exists()
+    assert (out_dir / "structural_index.json").exists()
+    assert (out_dir / "review.json").exists()
+    assert (out_dir / "baseline_index.json").exists()
+    assert (out_dir / "contracts.json").exists()
+    assert (out_dir / "parity.json").exists()
+    assert (out_dir / "family_parity.json").exists()
+    doctor_payload = json.loads((out_dir / "doctor.json").read_text(encoding="utf-8"))
+    assert doctor_payload["freeze_ready"] is False
+    finding_codes = {item["code"] for item in doctor_payload["findings"]}
+    assert "required_blocker_contract_not_green:runtime_ui_harness_contract.v1" in finding_codes

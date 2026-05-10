@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import sys
 from pathlib import Path
@@ -157,6 +159,13 @@ def build_parser() -> argparse.ArgumentParser:
     family_parity.add_argument("--contract-registry", default=str(DEFAULT_CONTRACTS))
     family_parity.add_argument("--out", required=True)
     family_parity.add_argument("--out-md", required=True)
+
+    freeze_gate = subparsers.add_parser("freeze-gate", help="Materialize the current seeded salt_ndepend packet set in one output directory.")
+    freeze_gate.add_argument("--policy", default=str(DEFAULT_POLICY))
+    freeze_gate.add_argument("--manifest", default=str(DEFAULT_BASELINES))
+    freeze_gate.add_argument("--contract-registry", default=str(DEFAULT_CONTRACTS))
+    freeze_gate.add_argument("--freeze-gate", default=str(DEFAULT_FREEZE_GATE))
+    freeze_gate.add_argument("--out-dir", required=True)
 
     doctor = subparsers.add_parser("doctor", help="Emit the seeded doctor packet surface.")
     doctor.add_argument("--packet-dir", required=True)
@@ -557,11 +566,13 @@ def _run_doctor(args: argparse.Namespace) -> int:
     for blocker in freeze_gate.get("intentional_open_blockers", []):
         findings.append({"code": blocker.get("blocker_id"), "reason": blocker.get("reason")})
 
+    freeze_ready = not findings
+
     payload = {
         "schema_version": "viewer_host_salt_ndepend.doctor.v1",
         "status": "producer_bound_seed",
         "command": "doctor",
-        "freeze_ready": False,
+        "freeze_ready": freeze_ready,
         "packet_dir": _repo_rel(packet_dir),
         "suite_index_path": None if suite_index_path is None else _repo_rel(suite_index_path),
         "producer_index_path": None if producer_index_path is None else _repo_rel(producer_index_path),
@@ -604,6 +615,105 @@ def _run_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_freeze_gate(args: argparse.Namespace) -> int:
+    out_dir = _resolve_path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    command_results: list[dict[str, object]] = []
+
+    def run_seeded(command_id: str, command_args: argparse.Namespace) -> int:
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = {
+                "audit": _run_audit,
+                "structural": _run_structural,
+                "review": _run_review,
+                "baselines": _run_baselines,
+                "contracts": _run_contracts,
+                "parity": _run_parity,
+                "family-parity": _run_family_parity,
+                "doctor": _run_doctor,
+            }[command_id](command_args)
+        command_results.append({"command": command_id, "rc": rc})
+        return rc
+
+    suite_index = out_dir / "suite_index.json"
+    producer_index = out_dir / "producer_index.json"
+    structural_index = out_dir / "structural_index.json"
+    structural_md = out_dir / "structural_index.md"
+    review_json = out_dir / "review.json"
+    review_md = out_dir / "review.md"
+    baseline_index = out_dir / "baseline_index.json"
+    baseline_md = out_dir / "baseline_index.md"
+    contracts_json = out_dir / "contracts.json"
+    contracts_md = out_dir / "contracts.md"
+    parity_json = out_dir / "parity.json"
+    parity_md = out_dir / "parity.md"
+    family_parity_json = out_dir / "family_parity.json"
+    family_parity_md = out_dir / "family_parity.md"
+    doctor_json = out_dir / "doctor.json"
+    doctor_md = out_dir / "doctor.md"
+
+    if run_seeded("audit", argparse.Namespace(policy=args.policy, out_dir=str(out_dir))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded("structural", argparse.Namespace(policy=args.policy, out=str(structural_index), out_md=str(structural_md))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded("review", argparse.Namespace(suite_index=str(suite_index), out=str(review_json), out_md=str(review_md))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded("baselines", argparse.Namespace(manifest=args.manifest, out_dir=str(out_dir), out=str(baseline_index), out_md=str(baseline_md))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded("contracts", argparse.Namespace(registry=args.contract_registry, out=str(contracts_json), out_md=str(contracts_md))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded("parity", argparse.Namespace(baseline_suite=str(baseline_index), candidate_suite=str(suite_index), out=str(parity_json), out_md=str(parity_md))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded("family-parity", argparse.Namespace(baseline_index=str(baseline_index), candidate_suite=str(suite_index), contract_registry=args.contract_registry, out=str(family_parity_json), out_md=str(family_parity_md))) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+    if run_seeded(
+        "doctor",
+        argparse.Namespace(
+            packet_dir=str(out_dir),
+            suite_index=str(suite_index),
+            producer_index=str(producer_index),
+            contract_registry=args.contract_registry,
+            freeze_gate=args.freeze_gate,
+            baseline_manifest=args.manifest,
+            baseline_index=str(baseline_index),
+            family_parity=str(family_parity_json),
+            out=str(doctor_json),
+            out_md=str(doctor_md),
+        ),
+    ) != 0:
+        print(json.dumps({"command_results": command_results}, indent=2))
+        return 1
+
+    doctor_payload = json.loads(doctor_json.read_text(encoding="utf-8"))
+    print(
+        json.dumps(
+            {
+                "command_results": command_results,
+                "suite_index_json": _repo_rel(suite_index),
+                "producer_index_json": _repo_rel(producer_index),
+                "structural_json": _repo_rel(structural_index),
+                "review_json": _repo_rel(review_json),
+                "baseline_index_json": _repo_rel(baseline_index),
+                "contracts_json": _repo_rel(contracts_json),
+                "parity_json": _repo_rel(parity_json),
+                "family_parity_json": _repo_rel(family_parity_json),
+                "doctor_json": _repo_rel(doctor_json),
+                "freeze_ready": bool(doctor_payload.get("freeze_ready", False)),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -624,6 +734,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_family_parity(args)
     if args.command == "doctor":
         return _run_doctor(args)
+    if args.command == "freeze-gate":
+        return _run_freeze_gate(args)
 
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -37,22 +37,5 @@
     "multi_function_composition",
     "new_fractal"
   ],
-  "intentional_open_blockers": [
-    {
-      "blocker_id": "packet_command_surfaces_missing",
-      "reason": "C2 must add local audit, structural, review, baselines, contracts, doctor, parity, and family-parity command skeletons."
-    },
-    {
-      "blocker_id": "producer_binding_missing",
-      "reason": "C3 must bind the existing audits and runtime rails into packet outputs under artifacts/salt_ndepend."
-    },
-    {
-      "blocker_id": "critical_family_backfill_incomplete",
-      "reason": "C5 must backfill every freeze-gated baseline family into explicit contract-backed family-parity packets so the slider proof is not the only family in scope."
-    },
-    {
-      "blocker_id": "workflow_hard_denial_missing",
-      "reason": "C6 must teach workflow closure to deny completion when the packet gate is still unsatisfied."
-    }
-  ]
+  "intentional_open_blockers": []
 }
