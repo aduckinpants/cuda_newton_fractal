@@ -493,6 +493,20 @@ inline bool TryBuildColorPipelineLiveSnapshot(
     snapshot.coloring_mode = liveParams.coloring_mode;
     snapshot.pipeline = liveParams.color_pipeline;
 
+    const char* gradingFunctionId = AdvancedColorGradingFunctionId(liveParams.color_pipeline.grading);
+    const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog("grading");
+    if (gradingFunctionId && gradingFunctionId[0] != '\0') {
+        if (!gradingCatalog) {
+            if (outError) *outError = "Missing advanced color Grading lane catalog";
+            return false;
+        }
+        if (!FindColorPipelineFunctionDescriptor(*gradingCatalog, gradingFunctionId)) {
+            snapshot.draft_import_supported = false;
+            *outSnapshot = std::move(snapshot);
+            return true;
+        }
+    }
+
     const ColorPipelineLaneCatalog* sourceCatalog = FindColorPipelineLaneCatalog("source");
     const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
     if (!sourceCatalog || !paletteCatalog) {
@@ -541,20 +555,12 @@ inline bool TryBuildColorPipelineLiveSnapshot(
 
     ColorPipelineLaneState gradingLane;
     bool hasGradingLane = false;
-    const char* gradingFunctionId = AdvancedColorGradingFunctionId(liveParams.color_pipeline.grading);
     if (gradingFunctionId && gradingFunctionId[0] != '\0') {
-        const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog("grading");
-        if (!gradingCatalog) {
-            if (outError) *outError = "Missing advanced color Grading lane catalog";
+        if (!BuildColorPipelineLaneWithSingleRow(*gradingCatalog, gradingFunctionId, 0, &gradingLane, outError) ||
+            !ImportSupportedColorPipelineParamsFromLive(&gradingLane.rows.front(), liveParams, outError)) {
             return false;
         }
-        if (FindColorPipelineFunctionDescriptor(*gradingCatalog, gradingFunctionId)) {
-            if (!BuildColorPipelineLaneWithSingleRow(*gradingCatalog, gradingFunctionId, 0, &gradingLane, outError) ||
-                !ImportSupportedColorPipelineParamsFromLive(&gradingLane.rows.front(), liveParams, outError)) {
-                return false;
-            }
-            hasGradingLane = true;
-        }
+        hasGradingLane = true;
     }
 
     snapshot.draft_import_supported = sourcePaletteDraftImportSupported && shapeDraftImportSupported;
@@ -1712,6 +1718,35 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
             *outError = "Selected Source / Shape / Palette recipe is draft-only until custom pipeline runtime integration lands or you choose a matching supported Source / Palette pair.";
         }
         return false;
+    }
+
+    const char* gradingFunctionId = AdvancedColorGradingFunctionId(pipeline.grading);
+    if (gradingFunctionId && gradingFunctionId[0] != '\0') {
+        const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog("grading");
+        if (!gradingCatalog || !FindColorPipelineFunctionDescriptor(*gradingCatalog, gradingFunctionId)) {
+            if (outError) {
+                *outError = "Selected Source / Shape / Palette recipe still depends on an unshipped Grading row and stays draft-only until that grading runtime integration lands.";
+            }
+            return false;
+        }
+        const ColorPipelineLaneState* gradingLane = FindColorPipelineLaneState(state, "grading");
+        if (gradingLane) {
+            const ColorPipelineRowState* gradingRow = FindSingleEnabledColorPipelineRow(state, "grading", outError);
+            if (!gradingRow) {
+                return false;
+            }
+            if (gradingRow->function_id != gradingFunctionId) {
+                if (outError) {
+                    *outError = "Selected Source / Shape / Palette recipe requires a different shipped Grading row, so the tuple stays draft-only for now.";
+                }
+                return false;
+            }
+        } else if (gradingCatalog->default_function_id != std::string(gradingFunctionId)) {
+            if (outError) {
+                *outError = "Selected Source / Shape / Palette recipe requires a shipped Grading row that is not available in the current draft state.";
+            }
+            return false;
+        }
     }
 
     *outPipeline = pipeline;

@@ -1022,7 +1022,7 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
         if (outError) *outError = "Saved color_pipeline_draft cannot be restored: " + snapshotError;
         return false;
     }
-    if (!parsedState.live_snapshot.valid || !parsedState.live_snapshot.draft_import_supported) {
+    if (!parsedState.live_snapshot.valid) {
         if (outError) *outError = "Saved color_pipeline_draft is not supported for the saved fractal/color tuple";
         return false;
     }

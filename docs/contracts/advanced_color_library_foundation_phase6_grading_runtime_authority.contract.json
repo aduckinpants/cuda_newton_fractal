@@ -29,7 +29,7 @@
     "promote Grading to a first-class advanced-color category only after the Phase 5 backend-recovery chain closed honestly",
     "keep the advanced grading lane and the legacy Color-panel grading controls on one authoritative mirrored runtime surface",
     "ship only runtime-real grading rows, starting with contrast_lift as the first bounded grading row",
-    "follow strict TDD by proving the grading lane is still missing before landing the minimal bounded runtime-authority repair"
+    "follow strict TDD by proving coherent phase/bands tuples still ride the old source/palette bridge before landing the minimal fail-closed repair for unshipped grading rows"
   ],
   "forbidden_operator_prompts": [
     "claim the full grading inventory ships in one slice",

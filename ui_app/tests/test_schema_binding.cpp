@@ -1499,14 +1499,14 @@ int main() {
             std::cerr << "Expected the Shape lane to keep accepting lane-local function changes after reorder/remove coverage\n";
             return 1;
         }
-        params.coloring_mode = ColoringMode::iteration_bands;
-        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
         if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params) ||
             !windowState.live_snapshot.valid ||
             !windowState.live_snapshot.draft_import_supported ||
-            windowState.lanes[0].rows[0].function_id != "banded_signal" ||
-            windowState.lanes[2].rows[0].function_id != "banded_heatmap") {
-            std::cerr << "Expected syncing from a supported non-basin live tuple to import the banded draft before root tuple-switch coverage\n";
+            windowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            windowState.lanes[2].rows[0].function_id != "heatmap") {
+            std::cerr << "Expected syncing from a supported non-basin live tuple to import the smooth-escape draft before root tuple-switch coverage\n";
             return 1;
         }
         const ColorPipelineDraftApplyState rootIndexCandidateState = DescribeColorPipelineCandidateApplyState(
@@ -1549,9 +1549,9 @@ int main() {
             std::cerr << "Expected the matching root_classic_palette candidate to stop reading as draft-only once the tuple is aligned\n";
             return 1;
         }
-        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap") ||
-            windowState.lanes[2].rows[0].function_id != "banded_heatmap") {
-            std::cerr << "Expected the Palette lane to switch back to banded_heatmap after root_classic tuple coverage\n";
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "heatmap") ||
+            windowState.lanes[2].rows[0].function_id != "heatmap") {
+            std::cerr << "Expected the Palette lane to switch back to heatmap after root_classic tuple coverage\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "root_classic_palette") ||
@@ -1560,17 +1560,17 @@ int main() {
             std::cerr << "Expected selecting root_classic_palette to co-switch the matching root_index row\n";
             return 1;
         }
-        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap") ||
-            !SelectColorPipelineLaneFunction(&windowState, 0, "banded_signal")) {
-            std::cerr << "Expected the test to restore the banded tuple after root_classic co-switch coverage\n";
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "heatmap") ||
+            !SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp")) {
+            std::cerr << "Expected the test to restore the smooth-escape tuple after root_classic co-switch coverage\n";
             return 1;
         }
-        params.coloring_mode = ColoringMode::iteration_bands;
-        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
         if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params) ||
-            windowState.lanes[0].rows[0].function_id != "banded_signal" ||
-            windowState.lanes[2].rows[0].function_id != "banded_heatmap") {
-            std::cerr << "Expected syncing from a supported non-basin live tuple to restore the banded draft before joy_root coverage\n";
+            windowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            windowState.lanes[2].rows[0].function_id != "heatmap") {
+            std::cerr << "Expected syncing from a supported non-basin live tuple to restore the smooth-escape draft before joy_root coverage\n";
             return 1;
         }
         const ColorPipelineDraftApplyState joyRootCandidateState = DescribeColorPipelineCandidateApplyState(
@@ -1609,16 +1609,16 @@ int main() {
             std::cerr << "Expected the matching joy_root_palette candidate to stop reading as draft-only once the joy tuple is aligned\n";
             return 1;
         }
-        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap") ||
-            !SelectColorPipelineLaneFunction(&windowState, 0, "banded_signal")) {
-            std::cerr << "Expected the test to restore the banded tuple after joy_root co-switch coverage\n";
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "heatmap") ||
+            !SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp")) {
+            std::cerr << "Expected the test to restore the smooth-escape tuple after joy_root co-switch coverage\n";
             return 1;
         }
         if (SelectColorPipelineLaneFunction(&windowState, 0, "not_real")) {
             std::cerr << "Unknown advanced color lane functions should fail instead of silently falling back\n";
             return 1;
         }
-        if (windowState.lanes[0].rows[0].function_id != "banded_signal") {
+        if (windowState.lanes[0].rows[0].function_id != "smooth_escape_ramp") {
             std::cerr << "Failed advanced color lane selections should preserve the current function choice\n";
             return 1;
         }
@@ -1662,18 +1662,19 @@ int main() {
             return 1;
         }
 
-        params.coloring_mode = ColoringMode::iteration_bands;
-        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
         if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
             std::cerr << "Expected supported live tuples to resync the snapshot without clobbering an already-diverged draft\n";
             return 1;
         }
         if (!windowState.live_snapshot.valid ||
             !windowState.live_snapshot.draft_import_supported ||
-            windowState.live_snapshot.lanes.size() != 3 ||
-            windowState.live_snapshot.lanes[0].rows[0].function_id != "banded_signal" ||
+            windowState.live_snapshot.lanes.size() != 4 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
             windowState.live_snapshot.lanes[1].rows[0].function_id != "identity" ||
-            windowState.live_snapshot.lanes[2].rows[0].function_id != "banded_heatmap") {
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "heatmap" ||
+            windowState.live_snapshot.lanes[3].rows[0].function_id != "contrast_lift") {
             std::cerr << "Expected the live snapshot to refresh to the newly supported runtime tuple\n";
             return 1;
         }
@@ -1733,6 +1734,48 @@ int main() {
             explainoSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[0].path != "grade.exposure" ||
             explainoSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[1].path != "grade.saturation") {
             std::cerr << "Expected explaino_cmap live sync to import the dedicated Palette owner fields plus the bounded contrast_lift grading lane\n";
+            return 1;
+        }
+
+        ColorPipelineWindowState unsupportedPhaseSyncWindowState{};
+        params.coloring_mode = ColoringMode::phase;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+        params.color_shape = ColorPipelineShape::offset_scale;
+        params.color_shape_offset = 0.25f;
+        params.color_shape_scale = 1.5f;
+        if (!SyncColorPipelineWindowFromLiveState(&unsupportedPhaseSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected coherent phase tuples to remain observable even when their grading row is not yet shipped\n";
+            return 1;
+        }
+        if (!unsupportedPhaseSyncWindowState.live_snapshot.valid ||
+            unsupportedPhaseSyncWindowState.live_snapshot.draft_import_supported ||
+            !unsupportedPhaseSyncWindowState.live_snapshot.lanes.empty() ||
+            unsupportedPhaseSyncWindowState.lanes.size() != 4 ||
+            unsupportedPhaseSyncWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            unsupportedPhaseSyncWindowState.lanes[2].rows[0].function_id != "heatmap" ||
+            unsupportedPhaseSyncWindowState.lanes[3].rows[0].function_id != "contrast_lift") {
+            std::cerr << "Expected phase tuples to stay fail-closed in the advanced editor until the matching grading row is shipped\n";
+            return 1;
+        }
+
+        ColorPipelineWindowState unsupportedBandsSyncWindowState{};
+        params.coloring_mode = ColoringMode::iteration_bands;
+        params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        if (!SyncColorPipelineWindowFromLiveState(&unsupportedBandsSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected coherent iteration-bands tuples to remain observable even when their grading row is not yet shipped\n";
+            return 1;
+        }
+        if (!unsupportedBandsSyncWindowState.live_snapshot.valid ||
+            unsupportedBandsSyncWindowState.live_snapshot.draft_import_supported ||
+            !unsupportedBandsSyncWindowState.live_snapshot.lanes.empty() ||
+            unsupportedBandsSyncWindowState.lanes.size() != 4 ||
+            unsupportedBandsSyncWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            unsupportedBandsSyncWindowState.lanes[2].rows[0].function_id != "heatmap" ||
+            unsupportedBandsSyncWindowState.lanes[3].rows[0].function_id != "contrast_lift") {
+            std::cerr << "Expected iteration-bands tuples to stay fail-closed in the advanced editor until the matching grading row is shipped\n";
             return 1;
         }
 
@@ -1860,22 +1903,25 @@ int main() {
             std::cerr << "Expected offset_scale to expose only its real runtime-backed Shape controls\n";
             return 1;
         }
-        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
-            std::cerr << "Expected the live programmable editor RED to apply the current phase tuple\n";
+        const ColorPipelineDraftApplyState unsupportedPhaseApplyState = DescribeColorPipelineDraftApplyState(
+            windowState,
+            view.fractal_type,
+            &params);
+        if (unsupportedPhaseApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
+            std::cerr << "Expected phase tuples to read as draft-only until the matching grading row is shipped\n";
             return 1;
         }
-        if (!NearlyEqual(params.color_phase_signal_offset, 1.25) ||
-            !NearlyEqual(params.color_phase_wrap_cycles, 2.5) ||
-            params.color_shape != ColorPipelineShape::repeat ||
-            !NearlyEqual(params.color_shape_repeat_frequency, 6.0) ||
-            !NearlyEqual(params.color_shape_repeat_phase, 0.2) ||
-            !NearlyEqual(params.color_shape_offset, 0.0) ||
-            !NearlyEqual(params.color_shape_scale, 1.0) ||
-            !NearlyEqual(params.color_phase_palette_offset, -0.75) ||
-            !windowState.live_snapshot.valid ||
-            windowState.live_snapshot.lanes[1].rows[0].function_id != "repeat" ||
-            HasColorPipelineDraftEdits(windowState)) {
-            std::cerr << "Expected live programmable apply to write the phase plus Shape owner fields and resync the live snapshot\n";
+        if (ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params) ||
+            params.coloring_mode != ColoringMode::phase ||
+            params.color_pipeline.signal != ColorSignal::phase_angle ||
+            params.color_pipeline.palette != ColorPalette::phase_wheel ||
+            params.color_pipeline.grading != ColorGradingPreset::phase_default) {
+            std::cerr << "Expected the advanced editor to refuse applying a phase tuple until the matching grading row is shipped\n";
+            return 1;
+        }
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "heatmap")) {
+            std::cerr << "Expected the test to restore a shipped smooth-escape tuple before continuing shape-owner apply coverage\n";
             return 1;
         }
 
@@ -2103,8 +2149,8 @@ int main() {
             return 1;
         }
         const ColorPipelineDraftApplyState phaseWheelApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
-        if (phaseWheelApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
-            std::cerr << "Expected shipped Source / Palette selections to auto-complete into a supported live-applicable tuple before apply\n";
+        if (phaseWheelApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
+            std::cerr << "Expected phase auto-complete selections to stay draft-only until the matching grading row is shipped\n";
             return 1;
         }
         if (!AddColorPipelineLaneRow(&windowState, 1, "identity")) {
@@ -2112,8 +2158,8 @@ int main() {
             return 1;
         }
         const ColorPipelineDraftApplyState stackedShapeState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
-        if (stackedShapeState.status != ColorPipelineDraftApplyStatus::can_apply) {
-            std::cerr << "Expected supported stacked Shape lanes to classify as live-applicable once the backend-recovery slice lands\n";
+        if (stackedShapeState.status != ColorPipelineDraftApplyStatus::unsupported_tuple) {
+            std::cerr << "Expected stacked phase tuples to remain draft-only while their grading row is still unshipped\n";
             return 1;
         }
         if (!RemoveColorPipelineLaneRow(&windowState, 1, 1)) {
@@ -2121,20 +2167,20 @@ int main() {
             return 1;
         }
 
-        if (!SelectColorPipelineLaneFunction(&windowState, 0, "phase_orbit") ||
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
             !SelectColorPipelineLaneFunction(&windowState, 1, "offset_scale") ||
-            !SelectColorPipelineLaneFunction(&windowState, 2, "phase_wheel_palette")) {
-            std::cerr << "Expected the live programmable editor to reconstruct a legal phase tuple after the preview-only check\n";
+            !SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap")) {
+            std::cerr << "Expected the live programmable editor to restore a shipped explaino tuple after the preview-only phase check\n";
             return 1;
         }
-        if (!setParam(windowState.lanes[0].rows[0], "signal.phase_offset", 0.5) ||
+        if (!setParam(windowState.lanes[0].rows[0], "signal.scale", 0.5) ||
             !setParam(windowState.lanes[1].rows[0], "shape.scale", 2.0)) {
-            std::cerr << "Expected the live programmable editor to expose phase and Shape controls for apply-state coverage\n";
+            std::cerr << "Expected the live programmable editor to expose shipped explaino and Shape controls for apply-state coverage\n";
             return 1;
         }
         const ColorPipelineDraftApplyState validApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
         if (validApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
-            std::cerr << "Expected valid phase drafts to classify as live-applicable\n";
+            std::cerr << "Expected valid shipped explaino drafts to classify as live-applicable\n";
             return 1;
         }
 
@@ -2190,21 +2236,20 @@ int main() {
             std::cerr << "Expected the advanced color pipeline window helper to preserve the open state without user dismissal\n";
             return 1;
         }
-        if (!openWindowState.initialized || !openWindowState.live_snapshot.valid || openWindowState.lanes.size() != 3 ||
+        if (!openWindowState.initialized ||
+            !openWindowState.live_snapshot.valid ||
+            openWindowState.live_snapshot.draft_import_supported ||
+            !openWindowState.live_snapshot.lanes.empty() ||
+            openWindowState.lanes.size() != 4 ||
             openWindowState.lanes[0].rows.size() != 1 ||
-            openWindowState.lanes[0].rows[0].function_id != "phase_orbit" ||
+            openWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
             openWindowState.lanes[1].rows.size() != 1 ||
-            openWindowState.lanes[1].rows[0].function_id != "offset_scale" ||
+            openWindowState.lanes[1].rows[0].function_id != "identity" ||
             openWindowState.lanes[2].rows.size() != 1 ||
-            openWindowState.lanes[2].rows[0].function_id != "phase_wheel_palette") {
-            std::cerr << "Expected the advanced color pipeline window to import the live programmable tuple during render\n";
-            return 1;
-        }
-        if (openWindowState.live_snapshot.lanes.size() != 3 ||
-            openWindowState.live_snapshot.lanes[0].rows[0].function_id != "phase_orbit" ||
-            openWindowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
-            openWindowState.live_snapshot.lanes[2].rows[0].function_id != "phase_wheel_palette") {
-            std::cerr << "Expected the advanced color pipeline window to keep the live snapshot aligned with the visible programmable tuple\n";
+            openWindowState.lanes[2].rows[0].function_id != "heatmap" ||
+            openWindowState.lanes[3].rows.size() != 1 ||
+            openWindowState.lanes[3].rows[0].function_id != "contrast_lift") {
+            std::cerr << "Expected the advanced color pipeline window to keep coherent phase tuples fail-closed instead of importing an unshipped grading row during render\n";
             return 1;
         }
         if (params.color_pipeline.signal != ColorSignal::phase_angle ||
@@ -2213,8 +2258,8 @@ int main() {
             std::cerr << "Expected rendering the live programmable window to preserve the current runtime tuple\n";
             return 1;
         }
-        if (HasColorPipelineDraftEdits(openWindowState)) {
-            std::cerr << "Expected the advanced color pipeline window to stay synchronized with the live programmable tuple until the user edits it\n";
+        if (!HasColorPipelineDraftEdits(openWindowState)) {
+            std::cerr << "Expected the advanced color pipeline window to keep the preserved shipped draft distinct from a fail-closed phase tuple\n";
             return 1;
         }
         EndFrame();
@@ -2320,7 +2365,8 @@ int main() {
             }
             return false;
         };
-        if (!setParam(openWindowState.lanes[0].rows[0], "signal.phase_offset", 0.625) ||
+        if (!SelectColorPipelineLaneFunction(&openWindowState, 1, "offset_scale") ||
+            !setParam(openWindowState.lanes[0].rows[0], "signal.scale", 0.625) ||
             !setParam(openWindowState.lanes[1].rows[0], "shape.scale", 2.0)) {
             std::cerr << "Expected the advanced color pipeline window render test to find the supported live-backed controls before auto-apply coverage\n";
             return 1;
@@ -2336,8 +2382,11 @@ int main() {
             std::cerr << "Expected the advanced color pipeline control helper to keep supported live-backed edits synced without a separate apply toggle\n";
             return 1;
         }
-        if (!NearlyEqual(params.color_phase_signal_offset, 0.625) ||
+        if (!NearlyEqual(params.color_smooth_escape_scale, 0.625) ||
             !NearlyEqual(params.color_shape_scale, 2.0) ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !directControlDirty ||
             !directControlInteraction.interacted ||
             HasColorPipelineDraftEdits(openWindowState)) {
@@ -2358,7 +2407,7 @@ int main() {
             openWindowState.lanes[2].rows[0].function_id != "banded_heatmap" ||
             openWindowState.lanes[2].rows[0].parameter_values.size() != 2 ||
             openWindowState.lanes[2].rows[0].parameter_values[0].path != "palette.band_emphasis" ||
-            params.color_pipeline.palette != ColorPalette::phase_wheel) {
+            params.color_pipeline.palette != ColorPalette::cyclic_escape) {
             std::cerr << "Expected advanced color pipeline renders to honor switched live-backed descriptors without mutating the current runtime palette\n";
             return 1;
         }

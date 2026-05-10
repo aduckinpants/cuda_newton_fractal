@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 in progress - the bounded runtime-backed grading lane now lands `contrast_lift` through the reusable catalog, live snapshot, apply, persistence, render, and headless seams, and the runtime profile is green; final hostile-audit closure and checkpointing are the remaining exit criteria
+Phase 4 in progress - the non-runtime fail-closed grading slice now lands in the working tree: coherent phase/bands tuples stay observable but draft-only, the shipped escape-default path still applies, and the runtime-profile rails are green; hostile-audit closure and checkpoint bookkeeping remain
 
 ## Phase Checklist
 
@@ -33,10 +33,11 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 ## Proof Ledger
 
 - Landed predecessor: `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` closed at `b596af6` / `ck:6460d382`, so Phase 5 no longer blocks Grading promotion.
-- Landed in working tree: `ui_app/src/color_pipeline_core.h` and `ui_app/src/color_pipeline_window.h` now expose the bounded Grading lane through the reusable catalog, live snapshot, and explicit apply-reset seam while preserving the legacy grading mirror as the only runtime authority.
-- Landed in working tree: the shipped grading catalog still starts with `contrast_lift` only; `phase_finish`, `band_finish`, `neutral_finish`, `tone_map_finish`, and `balance_void_grade` remain deferred because no wider live import/apply/runtime proof exists yet.
-- Landed in working tree: `ui_app/src/diagnostics_state_io.cpp` plus the nearest schema/headless/finding tests now keep legacy three-lane drafts truthful by upgrading them with the bounded `contrast_lift` grading row instead of treating grading as a window-only presentation layer.
-- Validated in working tree: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`, `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-runtime-publish --log artifacts/phase6_grading_runtime_publish.log -- cmd /c ui_app\build_vsdevcmd.cmd`, and `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-runtime-probe-pytest --log artifacts/phase6_grading_runtime_probe_pytest.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py` are green for this slice.
+- Checkpointed: `110cd4c` / `ck:61776381` landed the bounded `contrast_lift` grading lane through the reusable catalog, live snapshot, apply, persistence, render, and headless seams while preserving the legacy grading mirror as the only runtime authority.
+- Checkpointed: the shipped grading catalog still starts with `contrast_lift` only; `phase_finish`, `band_finish`, `neutral_finish`, `tone_map_finish`, and `balance_void_grade` remain deferred because no wider live import/apply/runtime proof exists yet.
+- Landed in working tree: `ui_app/src/color_pipeline_window.h` now fail-closes coherent phase/bands tuples at both the live-snapshot and draft-selection/apply gates when their grading row is not shipped, while still allowing escape-default tuples to use the shipped `contrast_lift` default from older three-lane draft states.
+- Landed in working tree: `ui_app/src/diagnostics_state_io.cpp` now restores coherent draft-only tuples against valid-but-not-import-supported live snapshots instead of rejecting saved drafts outright.
+- Validated in working tree: `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-failclosed-bands-proof --log artifacts/phase6_grading_failclosed_bands_proof.log -- ui_app/build_tests_vsdevcmd.cmd`, `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`, `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-failclosed-runtime-publish --log artifacts/phase6_grading_failclosed_runtime_publish.log -- cmd /c ui_app\build_vsdevcmd.cmd`, and `py -3.14 tools/viewer_host_run_logged_command.py --label phase6-grading-failclosed-runtime-pytest --log artifacts/phase6_grading_failclosed_runtime_pytest.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py` are green for this slice.
 
 ## Hostile Audit
 
@@ -45,15 +46,16 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 
 ## Audit Passes
 
-- [done] Pass 1 - reran the focused grading REDs in `ui_app/tests/test_schema_binding.cpp` plus the nearest diagnostics/finding/headless seams until the bounded `contrast_lift` grading lane landed in the reusable catalog, live snapshot, apply, and persistence paths.
-- [done] Pass 2 - inspected the landed grading-lane diff for hidden second-authority behavior while iterating on the live apply-reset seam; no additional defect survived the focused hostile reread.
-- [done] Pass 3 - closure-facing hostile reread found one workflow defect: the active contract mutation scope had not been widened to include the adjacent `test_finding_state_actions.cpp` and `test_headless_modes.cpp` repairs, so the checked-in contract was updated and re-locked before checkpoint closure.
+- [done] Pass 1 - added focused schema-binding REDs proving coherent phase/bands tuples still imported through the old source/palette bridge even though the grading row was not shipped, then repaired the live-snapshot and draft-selection gates.
+- [done] Pass 2 - inspected the fail-closed repair for hidden second-authority behavior and found one omission: the first hostile pass had removed direct banded coverage when repointing old supported-non-basin tests, so an explicit iteration-bands fail-closed regression was added before wider validation.
+- [done] Pass 3 - reran the native helper rail plus the runtime-profile validation steps, then re-read the touched seams before checkpoint closure.
 
 ## Audit Findings
 
 - [done] Plan-only repair: the exploratory grading probe was restored instead of checkpointed, so this checkpoint closes only the active-plan deferral/pause repair and leaves the executable grading hostile review deferred until implementation resumes.
 - [done] Current slice repair: the hostile reread caught contract-scope drift after the bounded grading slice touched `ui_app/tests/test_finding_state_actions.cpp` and `ui_app/tests/test_headless_modes.cpp`; the checked-in contract now includes those paths and has been re-locked.
-- [active] Current slice: no remaining defect survived the focused native-helper hostile pass, the runtime-profile rerun, or the closure-facing reread; checkpoint/handoff/receipt bookkeeping remain required before closure.
+- [done] Current slice repair: the hostile reread found that the first fail-closed pass had no direct iteration-bands regression after the old supported-banded coverage was repointed to smooth-escape; the missing regression was added and validated.
+- [done] Current slice repair: the active contract wording was still describing the earlier lane-promotion slice, so the checked-in contract was refreshed to the current fail-closed grading work before checkpoint closure.
 
 ## Notes
 
@@ -83,4 +85,4 @@ The controlling blocker is no longer the Phase 5 backend-recovery seam; `docs/no
 
 ## Resume Point
 
-After the workflow-hardening stop-line closes, resume by rerunning the preserved focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest grading owner tests that prove the advanced editor still lacks a grading lane and cannot yet round-trip the bounded `contrast_lift` grading surface through live import, apply, reset, and diagnostics/archive persistence.
+After checkpointing this fail-closed slice, resume Phase 6 by deciding whether the grading lane should remain visibly first-class even across basin-default imports or whether that broader lane-retention cleanup belongs to a later bounded slice.
