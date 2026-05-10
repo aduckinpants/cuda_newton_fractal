@@ -12,6 +12,8 @@ DEFAULT_POLICY = REPO_ROOT / "docs" / "VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json"
 DEFAULT_BASELINES = REPO_ROOT / "docs" / "VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json"
 DEFAULT_CONTRACTS = REPO_ROOT / "docs" / "VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json"
 DEFAULT_FREEZE_GATE = REPO_ROOT / "docs" / "VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json"
+GREEN_PARITY_CASE_STATUSES = {"expected_result_matched", "contract_case_matched"}
+GREEN_FAMILY_PARITY_STATUSES = {"critical_family_seed", "critical_family_parity_match"}
 
 
 def _resolve_path(path_text: str) -> Path:
@@ -26,6 +28,14 @@ def _repo_rel(path: Path) -> str:
         return path.resolve().relative_to(REPO_ROOT).as_posix()
     except ValueError:
         return str(path.resolve())
+
+
+def _normalize_path_text(path_text: str) -> str:
+    return path_text.replace("\\", "/").strip()
+
+
+def _string_or_empty(value: object) -> str:
+    return "" if value is None else str(value).strip()
 
 
 def _load_json(path_text: str) -> tuple[Path, dict[str, object]]:
@@ -48,6 +58,10 @@ def _write_json(path: Path, payload: dict[str, object]) -> None:
 def _write_markdown(path: Path, lines: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _load_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace")
 
 
 def _packet_meta(command_id: str, inputs: dict[str, object]) -> dict[str, object]:
@@ -118,6 +132,144 @@ def _bind_producer_surface(producer: dict[str, object]) -> dict[str, object]:
     return bound
 
 
+def _producer_maps(producer_payload: dict[str, object]) -> tuple[dict[str, dict[str, object]], dict[str, dict[str, object]]]:
+    by_id: dict[str, dict[str, object]] = {}
+    by_artifact: dict[str, dict[str, object]] = {}
+    for producer in producer_payload.get("producers", []):
+        if not isinstance(producer, dict):
+            continue
+        producer_id = str(producer.get("producer_id", "")).strip()
+        artifact_path = str(producer.get("artifact_path", "")).strip()
+        if producer_id:
+            by_id[producer_id] = producer
+        if artifact_path:
+            by_artifact[_normalize_path_text(artifact_path)] = producer
+    return by_id, by_artifact
+
+
+def _evaluate_expected_result(expected_result: str, artifact_path: Path) -> tuple[bool, str]:
+    if expected_result == "baseline_check_passes":
+        payload = _load_optional_json(artifact_path)
+        severity_counts = {} if not isinstance(payload, dict) else payload.get("severity_counts", {})
+        critical = 0 if not isinstance(severity_counts, dict) else int(severity_counts.get("CRITICAL", 0))
+        errors = 0 if not isinstance(severity_counts, dict) else int(severity_counts.get("ERROR", 0))
+        ok = critical == 0 and errors == 0
+        return ok, f"critical={critical} errors={errors}"
+    if expected_result == "no_direct_coverage_regression":
+        payload = _load_optional_json(artifact_path)
+        coverage = [] if not isinstance(payload, dict) else payload.get("coverage", [])
+        covered_count = sum(1 for item in coverage if isinstance(item, dict) and str(item.get("status", "")).strip() == "COVERED")
+        ok = covered_count > 0
+        return ok, f"covered_count={covered_count}"
+    if expected_result == "all_helper_tests_pass":
+        text = _load_text(artifact_path)
+        ok = "All helper tests passed." in text
+        return ok, "tail_contains=All helper tests passed."
+    if expected_result == "published_runtime_available":
+        text = _load_text(artifact_path)
+        ok = "Active runtime:" in text
+        return ok, "tail_contains=Active runtime:"
+    if expected_result == "green_published_runtime_lane":
+        text = _load_text(artifact_path)
+        summary_lines = [line.strip() for line in text.splitlines() if "viewer_host_runtime_pytest_lane: summary=" in line]
+        summary_line = summary_lines[-1] if summary_lines else ""
+        ok = bool(summary_line) and "failed=0" in summary_line and "errors=0" in summary_line
+        return ok, summary_line or "summary_line_missing"
+    return False, f"unsupported_expected_result:{expected_result}"
+
+
+def _evaluate_seeded_parity_case(case: dict[str, object], producer_by_artifact: dict[str, dict[str, object]]) -> dict[str, object]:
+    source_artifact = _string_or_empty(case.get("source_artifact"))
+    expected_result = _string_or_empty(case.get("expected_result"))
+    packet = {
+        "case_id": case.get("case_id"),
+        "family": case.get("family"),
+        "contract_id": case.get("required_contract"),
+        "expected_result": expected_result,
+        "matched_producers": [],
+    }
+    if not source_artifact or not expected_result:
+        packet["status"] = "case_definition_incomplete"
+        packet["detail"] = "source_artifact or expected_result missing"
+        return packet
+    producer = producer_by_artifact.get(_normalize_path_text(source_artifact))
+    if producer is None or str(producer.get("status", "")).strip() != "bound":
+        packet["status"] = "missing_candidate_producer"
+        packet["detail"] = f"candidate producer missing for {source_artifact}"
+        return packet
+    producer_id = str(producer.get("producer_id", "")).strip()
+    artifact_path = _resolve_path(str(producer.get("artifact_path", "")))
+    ok, detail = _evaluate_expected_result(expected_result, artifact_path)
+    packet["matched_producers"] = [producer_id] if producer_id else []
+    packet["detail"] = detail
+    packet["status"] = "expected_result_matched" if ok else "expected_result_mismatch"
+    return packet
+
+
+def _evaluate_contract_parity_case(
+    case: dict[str, object],
+    contract_lookup: dict[str, dict[str, object]],
+    producer_by_id: dict[str, dict[str, object]],
+    seeded_case_by_artifact: dict[str, dict[str, object]],
+) -> dict[str, object]:
+    contract_id = _string_or_empty(case.get("required_contract"))
+    packet = {
+        "case_id": case.get("case_id"),
+        "family": case.get("family"),
+        "contract_id": contract_id,
+        "matched_producers": [],
+        "supporting_case_ids": [],
+        "missing_required_producers": [],
+        "missing_producer_baselines": [],
+        "failed_required_producers": [],
+    }
+    contract = contract_lookup.get(contract_id)
+    if not isinstance(contract, dict):
+        packet["status"] = "missing_contract_entry"
+        packet["detail"] = f"contract registry missing {contract_id}"
+        return packet
+
+    required_producers = [str(item).strip() for item in contract.get("required_producers", []) if str(item).strip()]
+    packet["required_producers"] = required_producers
+    for producer_id in required_producers:
+        producer = producer_by_id.get(producer_id)
+        if producer is None or str(producer.get("status", "")).strip() != "bound":
+            packet["missing_required_producers"].append(producer_id)
+            continue
+        packet["matched_producers"].append(producer_id)
+        artifact_key = _normalize_path_text(str(producer.get("artifact_path", "")))
+        supporting_case = seeded_case_by_artifact.get(artifact_key)
+        if not isinstance(supporting_case, dict):
+            packet["missing_producer_baselines"].append(producer_id)
+            continue
+        packet["supporting_case_ids"].append(_string_or_empty(supporting_case.get("case_id")))
+        expected_result = _string_or_empty(supporting_case.get("expected_result"))
+        artifact_path = _resolve_path(str(producer.get("artifact_path", "")))
+        ok, detail = _evaluate_expected_result(expected_result, artifact_path)
+        if not ok:
+            packet["failed_required_producers"].append(
+                {
+                    "producer_id": producer_id,
+                    "supporting_case_id": supporting_case.get("case_id"),
+                    "detail": detail,
+                }
+            )
+
+    if packet["missing_required_producers"]:
+        packet["status"] = "missing_required_producers"
+        packet["detail"] = "required producer artifacts are not all bound"
+    elif packet["missing_producer_baselines"]:
+        packet["status"] = "missing_required_producer_baselines"
+        packet["detail"] = "no seeded baseline case maps to every required producer"
+    elif packet["failed_required_producers"]:
+        packet["status"] = "required_producer_parity_mismatch"
+        packet["detail"] = "one or more required producers failed their supporting parity checks"
+    else:
+        packet["status"] = "contract_case_matched"
+        packet["detail"] = "all required producers satisfied their supporting parity checks"
+    return packet
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Seed local viewer-host salt_ndepend packet surfaces.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -150,6 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     parity = subparsers.add_parser("parity", help="Emit the seeded parity packet surface.")
     parity.add_argument("--baseline-suite", required=True)
     parity.add_argument("--candidate-suite", required=True)
+    parity.add_argument("--contract-registry", default=str(DEFAULT_CONTRACTS))
     parity.add_argument("--out", required=True)
     parity.add_argument("--out-md", required=True)
 
@@ -157,6 +310,7 @@ def build_parser() -> argparse.ArgumentParser:
     family_parity.add_argument("--baseline-index", required=True)
     family_parity.add_argument("--candidate-suite", required=True)
     family_parity.add_argument("--contract-registry", default=str(DEFAULT_CONTRACTS))
+    family_parity.add_argument("--parity")
     family_parity.add_argument("--out", required=True)
     family_parity.add_argument("--out-md", required=True)
 
@@ -310,6 +464,11 @@ def _run_baselines(args: argparse.Namespace) -> int:
                 "family": case.get("family"),
                 "status": case.get("status"),
                 "required_contract": case.get("required_contract"),
+                "source_artifact": case.get("source_artifact"),
+                "source_command": case.get("source_command"),
+                "source_task": case.get("source_task"),
+                "expected_result": case.get("expected_result"),
+                "required_by_freeze_gate": case.get("required_by_freeze_gate"),
             }
             for case in cases
         ],
@@ -365,19 +524,59 @@ def _run_contracts(args: argparse.Namespace) -> int:
 def _run_parity(args: argparse.Namespace) -> int:
     baseline_path, baseline_payload = _load_json(args.baseline_suite)
     candidate_path, candidate_payload = _load_json(args.candidate_suite)
+    contract_registry_path, contract_registry = _load_json(args.contract_registry)
     out_path = _resolve_path(args.out)
     out_md = _resolve_path(args.out_md)
+    producer_by_id, producer_by_artifact = _producer_maps(candidate_payload)
+    contract_lookup = {}
+    for contract in contract_registry.get("contracts", []):
+        if isinstance(contract, dict):
+            contract_lookup[str(contract.get("contract_id"))] = contract
+
+    seeded_case_by_artifact = {}
+    for case in baseline_payload.get("cases", []):
+        if not isinstance(case, dict):
+            continue
+        source_artifact = _string_or_empty(case.get("source_artifact"))
+        expected_result = _string_or_empty(case.get("expected_result"))
+        if source_artifact and expected_result:
+            seeded_case_by_artifact[_normalize_path_text(source_artifact)] = case
+
+    case_packets = []
+    for case in baseline_payload.get("cases", []):
+        if not isinstance(case, dict):
+            continue
+        source_artifact = _string_or_empty(case.get("source_artifact"))
+        expected_result = _string_or_empty(case.get("expected_result"))
+        if source_artifact or expected_result:
+            case_packets.append(_evaluate_seeded_parity_case(case, producer_by_artifact))
+            continue
+        case_packets.append(_evaluate_contract_parity_case(case, contract_lookup, producer_by_id, seeded_case_by_artifact))
+
+    matched_case_count = sum(1 for packet in case_packets if str(packet.get("status", "")).strip() in GREEN_PARITY_CASE_STATUSES)
+    failing_case_count = len(case_packets) - matched_case_count
     payload = {
         "schema_version": "viewer_host_salt_ndepend.parity.v1",
-        "status": "surface_seed_only",
+        "status": "case_result_parity",
         "command": "parity",
-        "comparison_ready": False,
+        "comparison_ready": bool(case_packets) and failing_case_count == 0,
         "baseline_suite_path": _repo_rel(baseline_path),
         "candidate_suite_path": _repo_rel(candidate_path),
+        "contract_registry_path": _repo_rel(contract_registry_path),
         "baseline_status": baseline_payload.get("status", "unknown"),
         "candidate_status": candidate_payload.get("status", "unknown"),
-        "reason": "C2 seeds the local parity command surface only; real drift analysis lands in a later slice.",
-        "packet_meta": _packet_meta("parity", {"baseline_suite": _repo_rel(baseline_path), "candidate_suite": _repo_rel(candidate_path)}),
+        "matched_case_count": matched_case_count,
+        "failing_case_count": failing_case_count,
+        "case_packets": case_packets,
+        "reason": "Parity now evaluates seeded baseline expectations and contract-backed required-producer cases against the current producer packet, instead of emitting a placeholder surface.",
+        "packet_meta": _packet_meta(
+            "parity",
+            {
+                "baseline_suite": _repo_rel(baseline_path),
+                "candidate_suite": _repo_rel(candidate_path),
+                "contract_registry": _repo_rel(contract_registry_path),
+            },
+        ),
     }
     _write_json(out_path, payload)
     _write_markdown(
@@ -385,11 +584,17 @@ def _run_parity(args: argparse.Namespace) -> int:
         [
             "# Viewer Host salt_ndepend Parity",
             "",
-            "Status: surface_seed_only",
+            "Status: case_result_parity",
             f"Baseline suite: {_repo_rel(baseline_path)}",
             f"Candidate suite: {_repo_rel(candidate_path)}",
+            f"Matched cases: {matched_case_count}",
+            f"Failing cases: {failing_case_count}",
             "",
-            "Real drift analysis lands in a later slice.",
+            "Case packets:",
+            *[
+                f"- {item['case_id']}: status={item['status']} detail={item.get('detail', 'n/a')}"
+                for item in case_packets
+            ],
         ],
     )
     print(json.dumps({"parity_json": _repo_rel(out_path), "parity_md": _repo_rel(out_md)}, indent=2))
@@ -400,6 +605,7 @@ def _run_family_parity(args: argparse.Namespace) -> int:
     baseline_index_path, baseline_index = _load_json(args.baseline_index)
     candidate_path, candidate_payload = _load_json(args.candidate_suite)
     contract_registry_path, contract_registry = _load_json(args.contract_registry)
+    parity_path = None if args.parity is None else _resolve_path(args.parity)
     out_path = _resolve_path(args.out)
     out_md = _resolve_path(args.out_md)
     producer_index_path = candidate_payload.get("producer_index_json")
@@ -411,6 +617,20 @@ def _run_family_parity(args: argparse.Namespace) -> int:
         for producer in producer_payload.get("producers", []):
             if isinstance(producer, dict):
                 producer_status[str(producer.get("producer_id"))] = str(producer.get("status"))
+    candidate_planned_commands = {
+        str(command_id).strip()
+        for command_id in candidate_payload.get("planned_command_ids", [])
+        if str(command_id).strip()
+    }
+    parity_payload = None if parity_path is None else _load_optional_json(parity_path)
+    parity_cases_by_id = {}
+    if isinstance(parity_payload, dict):
+        for packet in parity_payload.get("case_packets", []):
+            if not isinstance(packet, dict):
+                continue
+            case_id = str(packet.get("case_id", "")).strip()
+            if case_id:
+                parity_cases_by_id[case_id] = packet
 
     contract_lookup = {}
     for contract in contract_registry.get("contracts", []):
@@ -426,37 +646,58 @@ def _run_family_parity(args: argparse.Namespace) -> int:
             continue
         contract = contract_lookup.get(str(contract_id))
         required_producers = [] if not isinstance(contract, dict) else [str(item) for item in contract.get("required_producers", [])]
+        required_packet_surfaces = [] if not isinstance(contract, dict) else [str(item) for item in contract.get("required_packet_surfaces", []) if str(item).strip()]
         missing_producers = [producer_id for producer_id in required_producers if producer_status.get(producer_id) != "bound"]
+        missing_required_surfaces = [surface for surface in required_packet_surfaces if surface != "parity" and surface not in candidate_planned_commands]
+        parity_case_status = None
+        if "parity" in required_packet_surfaces:
+            parity_case = parity_cases_by_id.get(str(case.get("case_id", "")).strip())
+            if parity_case is None:
+                missing_required_surfaces.append("parity")
+            else:
+                parity_case_status = str(parity_case.get("status", "")).strip()
+                if parity_case_status not in GREEN_PARITY_CASE_STATUSES:
+                    missing_required_surfaces.append("parity")
+        packet_status = "critical_family_parity_match"
+        if missing_producers:
+            packet_status = "missing_required_producers"
+        elif missing_required_surfaces:
+            packet_status = "missing_required_surfaces"
         family_packets.append(
             {
                 "case_id": case.get("case_id"),
                 "family": case.get("family"),
                 "contract_id": contract_id,
-                "status": "critical_family_seed" if not missing_producers else "missing_required_producers",
+                "status": packet_status,
                 "required_producers": required_producers,
                 "missing_producers": missing_producers,
+                "required_packet_surfaces": required_packet_surfaces,
+                "missing_required_surfaces": missing_required_surfaces,
+                "parity_case_status": parity_case_status,
                 "blocked_product_threads": [] if not isinstance(contract, dict) else contract.get("blocked_product_threads", []),
             }
         )
 
     payload = {
         "schema_version": "viewer_host_salt_ndepend.family_parity.v1",
-        "status": "critical_family_seed",
+        "status": "family_case_parity",
         "command": "family-parity",
         "comparison_ready": bool(family_packets),
         "baseline_index_path": _repo_rel(baseline_index_path),
         "candidate_suite_path": _repo_rel(candidate_path),
         "contract_registry_path": _repo_rel(contract_registry_path),
+        "parity_path": None if parity_path is None else _repo_rel(parity_path),
         "baseline_case_count": baseline_index.get("case_count", 0),
         "candidate_status": candidate_payload.get("status", "unknown"),
         "critical_family_packets": family_packets,
-        "reason": "This first family packet seeds contract-aware critical-family status from the baseline manifest, contract registry, and candidate producer binding; real parity math still lands in a later slice.",
+        "reason": "Family parity now combines contract-required producers, required packet surfaces, and optional parity case results to decide whether a contract-backed family is actually green.",
         "packet_meta": _packet_meta(
             "family-parity",
             {
                 "baseline_index": _repo_rel(baseline_index_path),
                 "candidate_suite": _repo_rel(candidate_path),
                 "contract_registry": _repo_rel(contract_registry_path),
+                "parity": None if parity_path is None else _repo_rel(parity_path),
             },
         ),
     }
@@ -466,14 +707,14 @@ def _run_family_parity(args: argparse.Namespace) -> int:
         [
             "# Viewer Host salt_ndepend Family Parity",
             "",
-            "Status: critical_family_seed",
+            "Status: family_case_parity",
             f"Baseline index: {_repo_rel(baseline_index_path)}",
             f"Candidate suite: {_repo_rel(candidate_path)}",
             f"Contract registry: {_repo_rel(contract_registry_path)}",
             "",
             "Critical family packets:",
             *[
-                f"- {item['case_id']} ({item['contract_id']}): status={item['status']} missing={', '.join(item['missing_producers']) if item['missing_producers'] else 'none'}"
+                f"- {item['case_id']} ({item['contract_id']}): status={item['status']} missing_producers={', '.join(item['missing_producers']) if item['missing_producers'] else 'none'} missing_surfaces={', '.join(item['missing_required_surfaces']) if item['missing_required_surfaces'] else 'none'}"
                 for item in family_packets
             ],
         ],
@@ -552,11 +793,14 @@ def _run_doctor(args: argparse.Namespace) -> int:
             )
             continue
         packet_status = str(packet.get("status", "unknown")).strip() or "unknown"
-        if packet_status != "critical_family_seed":
+        if packet_status not in GREEN_FAMILY_PARITY_STATUSES:
             missing_producers = [str(item) for item in packet.get("missing_producers", []) if str(item).strip()]
+            missing_surfaces = [str(item) for item in packet.get("missing_required_surfaces", []) if str(item).strip()]
             missing_suffix = ""
             if missing_producers:
                 missing_suffix = " missing_producers=" + ", ".join(missing_producers)
+            if missing_surfaces:
+                missing_suffix += " missing_required_surfaces=" + ", ".join(missing_surfaces)
             findings.append(
                 {
                     "code": f"required_blocker_contract_not_green:{contract_text}",
@@ -668,10 +912,29 @@ def _run_freeze_gate(args: argparse.Namespace) -> int:
     if run_seeded("contracts", argparse.Namespace(registry=args.contract_registry, out=str(contracts_json), out_md=str(contracts_md))) != 0:
         print(json.dumps({"command_results": command_results}, indent=2))
         return 1
-    if run_seeded("parity", argparse.Namespace(baseline_suite=str(baseline_index), candidate_suite=str(suite_index), out=str(parity_json), out_md=str(parity_md))) != 0:
+    if run_seeded(
+        "parity",
+        argparse.Namespace(
+            baseline_suite=str(baseline_index),
+            candidate_suite=str(producer_index),
+            contract_registry=args.contract_registry,
+            out=str(parity_json),
+            out_md=str(parity_md),
+        ),
+    ) != 0:
         print(json.dumps({"command_results": command_results}, indent=2))
         return 1
-    if run_seeded("family-parity", argparse.Namespace(baseline_index=str(baseline_index), candidate_suite=str(suite_index), contract_registry=args.contract_registry, out=str(family_parity_json), out_md=str(family_parity_md))) != 0:
+    if run_seeded(
+        "family-parity",
+        argparse.Namespace(
+            baseline_index=str(baseline_index),
+            candidate_suite=str(suite_index),
+            contract_registry=args.contract_registry,
+            parity=str(parity_json),
+            out=str(family_parity_json),
+            out_md=str(family_parity_md),
+        ),
+    ) != 0:
         print(json.dumps({"command_results": command_results}, indent=2))
         return 1
     if run_seeded(
