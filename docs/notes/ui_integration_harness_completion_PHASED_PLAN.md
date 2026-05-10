@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, the first critical family packet now exists for `advanced_color_slider_contract.v1`, and the broader family backfill now binds every freeze-gated baseline case to an explicit contract while doctor fails visible when required blocker contracts are missing or not green in family-parity. The next required work is workflow hard denial while product work stays frozen behind the packeted gate and mainline action-level hostile review remains mandatory before every meaningful action.
+Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, the first critical family packet now exists for `advanced_color_slider_contract.v1`, the broader family backfill now binds every freeze-gated baseline case to an explicit contract while doctor fails visible when required blocker contracts are missing or not green in family-parity, and workflow closure now fails closed when an active contract explicitly requires the salt_ndepend gate and the doctor packet still reports `freeze_ready=false`. The next required work is to make the packet proof less stale-able by binding deterministic packet generation/evidence more tightly into closure, while product work stays frozen behind the packeted gate and mainline action-level hostile review remains mandatory before every meaningful action.
 
 ## Phase Checklist
 
@@ -58,6 +58,8 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` no longer lies about slider-family absence; it now names the broader critical-family backfill blocker and requires the full freeze-gated contract set rather than only the first slider contract.
 - Landed now: `tools/viewer_host_salt_ndepend.py` doctor now inspects family-parity packets against `required_blocker_contracts` and emits explicit findings when required blocker contracts are missing or not green, so the gate underreports less of the remaining coverage debt.
 - Landed now: focused proof is green for the broader family-backfill slice: `py -3.14 -m pytest tests/test_viewer_host_salt_ndepend.py -q`, `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json`, `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`, and `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json` all passed after the repair.
+- Landed now: `tools/viewer_host_checkpoint_guard.py` now blocks `task_complete` and `Stop` when the active contract explicitly requires the salt_ndepend gate and `artifacts/salt_ndepend/latest/doctor.json` still reports `freeze_ready=false`, surfacing the doctor packet path plus finding codes in the denial context instead of allowing clean-repo closure on an open packet gate.
+- Landed now: focused workflow-hard-denial proof is green: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -k salt_ndepend_gate -q` and the full guard regression `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q` both passed after the closure-guard repair.
 
 ## Hostile Audit
 
@@ -70,6 +72,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Pass 2 - compare the local harness/audit surfaces against the noether-pack `salt_ndepend` pattern and record the missing packet layers instead of pretending the existing heuristic audits were enough.
 - [done] Pass 3 - re-read the repaired harness and product plans together and confirm that product implementation is now explicitly blocked until the new coverage gate is satisfied.
 - [done] Pass 4 - challenge whether the family-parity gate still silently omitted most freeze-gated baseline families and whether doctor could still underreport open blocker contracts even after the first slider packet existed.
+- [done] Pass 5 - challenge whether closure could still succeed on a clean repo while the salt_ndepend packet gate remained open, and wire the checkpoint guard to fail closed on that doctor state.
 
 ## Audit Findings
 
@@ -79,15 +82,16 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Clean re-read result: the repaired stop-line now blocks advanced-color, preset, composition, and new-fractal implementation until the deterministic `salt_ndepend` coverage gate is real and named in checked-in authority, not inferred from chat.
 - [done] Real defect found: the baseline manifest still left most freeze-gated seeded cases uncontracted, which let family-parity and doctor imply a much narrower coverage gate than the repo actually needs.
 - [done] Real defect found: the freeze gate still named `advanced_color_slider_family_missing` even after the first slider packet existed, and doctor did not inspect family-parity against `required_blocker_contracts`, so the packet gate could still underreport open coverage debt.
+- [done] Real defect found: even after the broader contract backfill, workflow closure could still succeed whenever the repo was clean because the checkpoint guard never inspected the salt_ndepend doctor packet. That meant the packet gate was advisory instead of fail-closed.
 
 ## Action Hostile Review
 
-- Action ID: action-20260510-salt-ndepend-family-backfill
+- Action ID: action-20260510-salt-ndepend-workflow-hard-denial
 - Status: done
-- Suspected Failure Mode: the packet gate still silently omits seeded freeze-gated families and continues to report stale slider-only blocker state, which lets agents overstate broad UI or UX coverage.
-- Correct Owner/Action: backfill explicit baseline contracts in the salt_ndepend docs and teach `tools/viewer_host_salt_ndepend.py` doctor to compare family-parity packets against required blocker contracts.
-- Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_salt_ndepend.py -q`
-- Blocked Action: any claim that the packet gate represents broad coverage authority while most freeze-gated baseline families remain unbound or unchecked.
+- Suspected Failure Mode: closure can still succeed on a clean repo while the salt_ndepend doctor packet reports `freeze_ready=false`, which leaves the packet gate advisory and keeps broad-coverage overstatement possible.
+- Correct Owner/Action: teach `tools/viewer_host_checkpoint_guard.py` to deny `task_complete` and `Stop` when the active contract requires the salt_ndepend gate and the doctor packet is missing, unreadable, or not freeze-ready.
+- Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -k salt_ndepend_gate -q` plus `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q`
+- Blocked Action: any clean-repo closure claim for the harness-completion gate while the doctor packet still reports open blocker contracts.
 
 ## Notes
 

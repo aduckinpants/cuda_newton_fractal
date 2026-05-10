@@ -56,6 +56,11 @@ ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS = (
     "proof surface",
 )
 PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
+SALT_NDEPEND_REQUIRED_DEFAULT_KEYS = (
+    "salt_ndepend_gate_is_explicit",
+    "deterministic_scoped_coverage_is_required",
+)
+SALT_NDEPEND_DEFAULT_DOCTOR_PATH = Path("artifacts") / "salt_ndepend" / "latest" / "doctor.json"
 
 
 @dataclass(frozen=True)
@@ -707,6 +712,115 @@ def evaluate_hostile_audit_guard(
     return True, "Hostile review is incomplete: " + reason, payload
 
 
+def _contract_requires_salt_ndepend_gate(contract_payload: dict[str, Any] | None) -> bool:
+    if not isinstance(contract_payload, dict):
+        return False
+    required_defaults = contract_payload.get("required_defaults", {})
+    if not isinstance(required_defaults, dict):
+        return False
+    return any(
+        str(required_defaults.get(key, "")).strip() == "required"
+        for key in SALT_NDEPEND_REQUIRED_DEFAULT_KEYS
+    )
+
+
+def _salt_ndepend_doctor_path(repo_root: Path = REPO_ROOT) -> Path:
+    policy_path = repo_root / "docs" / "VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json"
+    if policy_path.exists():
+        try:
+            payload = json.loads(policy_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            payload = None
+        if isinstance(payload, dict):
+            packet_root = str(payload.get("packet_root", "")).strip()
+            if packet_root:
+                return repo_root / Path(packet_root) / "latest" / "doctor.json"
+    return repo_root / SALT_NDEPEND_DEFAULT_DOCTOR_PATH
+
+
+def _summarize_salt_ndepend_finding_codes(finding_codes: list[str], *, limit: int = 4) -> str:
+    if not finding_codes:
+        return "none"
+    if len(finding_codes) <= limit:
+        return ", ".join(finding_codes)
+    visible = ", ".join(finding_codes[:limit])
+    return f"{visible}, ... (+{len(finding_codes) - limit} more)"
+
+
+def evaluate_salt_ndepend_gate_guard(
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str, dict[str, Any]]:
+    contract_state = load_active_contract_state(session_id, repo_root)
+    if contract_state is None:
+        return False, "", {}
+
+    contract_path_text = str(contract_state.get("contract_path", "")).strip()
+    if not contract_path_text:
+        return False, "", {}
+
+    contract_path = repo_root / contract_path_text
+    if not contract_path.exists():
+        return False, "", {}
+    try:
+        contract_payload = json.loads(contract_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False, "", {}
+    if not _contract_requires_salt_ndepend_gate(contract_payload):
+        return False, "", {}
+
+    doctor_path = _salt_ndepend_doctor_path(repo_root)
+    if not doctor_path.exists():
+        return True, (
+            "salt_ndepend packet gate is required for this slice, but the doctor packet is missing. "
+            "Run the packet program and produce the doctor packet before closure."
+        ), {
+            "doctor_path": doctor_path.relative_to(repo_root).as_posix(),
+            "freeze_ready": None,
+            "finding_codes": [],
+        }
+
+    try:
+        doctor_payload = json.loads(doctor_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return True, (
+            "salt_ndepend packet gate is required for this slice, but the doctor packet is unreadable. "
+            "Regenerate the packet program outputs before closure."
+        ), {
+            "doctor_path": doctor_path.relative_to(repo_root).as_posix(),
+            "freeze_ready": None,
+            "finding_codes": [],
+        }
+
+    finding_codes: list[str] = []
+    if isinstance(doctor_payload, dict):
+        for item in doctor_payload.get("findings", []):
+            if not isinstance(item, dict):
+                continue
+            code = str(item.get("code", "")).strip()
+            if code:
+                finding_codes.append(code)
+        freeze_ready = bool(doctor_payload.get("freeze_ready", False))
+    else:
+        freeze_ready = False
+
+    if not freeze_ready:
+        return True, (
+            "salt_ndepend packet gate is still open for this slice; doctor reports freeze_ready=false. "
+            "Do not close until the required packet blockers are green."
+        ), {
+            "doctor_path": doctor_path.relative_to(repo_root).as_posix(),
+            "freeze_ready": False,
+            "finding_codes": finding_codes,
+        }
+
+    return False, "", {
+        "doctor_path": doctor_path.relative_to(repo_root).as_posix(),
+        "freeze_ready": True,
+        "finding_codes": finding_codes,
+    }
+
+
 def _command_requires_action_hostile_review(command_text: str) -> bool:
     normalized = _normalize_text(command_text)
     if "tools\\viewer_host_apply_repo_patch.py" in normalized:
@@ -1080,6 +1194,10 @@ def build_pretool_response(
         else:
             hostile_audit_payload = {}
         if not should_block:
+            should_block, reason, salt_ndepend_payload = evaluate_salt_ndepend_gate_guard(session_id, repo_root)
+        else:
+            salt_ndepend_payload = {}
+        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -1097,6 +1215,14 @@ def build_pretool_response(
                         "Open explicit user asks: " + summarize_open_user_asks(open_asks)
                     )
                     if open_asks
+                    else (
+                        "salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
+                        + " | freeze_ready: "
+                        + str(salt_ndepend_payload.get("freeze_ready", "unknown"))
+                        + " | findings: "
+                        + _summarize_salt_ndepend_finding_codes(list(salt_ndepend_payload.get("finding_codes", [])))
+                    )
+                    if salt_ndepend_payload
                     else (
                         "Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
                         + " | blocked_reason: "
@@ -1236,6 +1362,10 @@ def build_stop_response(
         else:
             hostile_audit_payload = {}
         if not should_block:
+            should_block, reason, salt_ndepend_payload = evaluate_salt_ndepend_gate_guard(session_id, repo_root)
+        else:
+            salt_ndepend_payload = {}
+        if not should_block:
             return None
         return {
             "hookSpecificOutput": {
@@ -1244,6 +1374,10 @@ def build_stop_response(
                 "reason": banner + " " + reason + (
                     " Open explicit user asks: " + summarize_open_user_asks(open_asks)
                     if open_asks
+                    else " salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
+                    + " | freeze_ready: " + str(salt_ndepend_payload.get("freeze_ready", "unknown"))
+                    + " | findings: " + _summarize_salt_ndepend_finding_codes(list(salt_ndepend_payload.get("finding_codes", [])))
+                    if salt_ndepend_payload
                     else " Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
                     if hostile_audit_payload
                     else ""

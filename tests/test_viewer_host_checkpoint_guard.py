@@ -82,6 +82,7 @@ def _write_active_contract_with_plan(
     contract_id: str = "slice",
     workflow_type: str = "workflow_only",
     plan_text: str,
+    required_defaults: dict[str, str] | None = None,
 ) -> tuple[Path, Path]:
     contract_path = repo_root / "docs" / "contracts" / f"{contract_id}.contract.json"
     plan_path = repo_root / "docs" / "notes" / f"{contract_id}_PHASED_PLAN.md"
@@ -101,7 +102,10 @@ def _write_active_contract_with_plan(
         ],
         "required_operator_inputs": ["respect explicit user asks"],
         "forbidden_operator_prompts": ["ignore explicit user asks"],
-        "required_defaults": {"explicit_user_asks_enforced": "required"},
+        "required_defaults": {
+            "explicit_user_asks_enforced": "required",
+            **(required_defaults or {}),
+        },
         "forbidden_defaults": {"closure_while_open_asks": "forbidden"},
         "required_validation_commands": ["pytest"],
         "required_acceptance_assertions": [
@@ -136,6 +140,26 @@ def _write_active_contract_with_plan(
         encoding="utf-8",
     )
     return contract_path, plan_path
+
+
+SALT_NDEPEND_READY_PLAN_TEXT = (
+    "# Plan\n\n"
+    "## Current Phase\n\n"
+    "Phase 1 in progress\n\n"
+    "## Phase Checklist\n\n"
+    "- [ ] Phase 1 - X\n\n"
+    "## Explicit User Asks\n\n"
+    "- [done] Start implementation\n\n"
+    "## Hostile Audit\n\n"
+    "- Status: done\n\n"
+    "## Audit Passes\n\n"
+    "- [done] Pass 1 - found a regression in the guard behavior and repaired it\n"
+    "- [done] Pass 2 - reran the focused validations after the repair and re-read the repaired state\n"
+    "- [done] Pass 3 - re-read the repaired state again and confirmed no additional real defect was found\n\n"
+    "## Audit Findings\n\n"
+    "- [done] Real defect found and repaired: the first hostile-audit implementation still allowed false closure after a finding.\n"
+    "- [done] No additional real defect found in the repaired state after the focused re-audit.\n"
+)
 
 
 def _init_git_repo(repo_root: Path) -> None:
@@ -1002,6 +1026,128 @@ def test_build_pretool_response_denies_task_complete_when_repaired_state_is_not_
     assert hook["permissionDecision"] == "deny"
     assert "hostile review is incomplete" in hook["permissionDecisionReason"].lower()
     assert "prove the repaired state" in hook["permissionDecisionReason"].lower()
+
+
+def test_build_pretool_response_denies_task_complete_when_salt_ndepend_gate_is_open(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        contract_id="ui_integration_harness_completion",
+        workflow_type="workflow_only",
+        plan_text=SALT_NDEPEND_READY_PLAN_TEXT,
+        required_defaults={
+            "salt_ndepend_gate_is_explicit": "required",
+            "deterministic_scoped_coverage_is_required": "required",
+        },
+    )
+    doctor_path = tmp_path / "artifacts" / "salt_ndepend" / "latest" / "doctor.json"
+    doctor_path.parent.mkdir(parents=True, exist_ok=True)
+    doctor_path.write_text(
+        json.dumps(
+            {
+                "freeze_ready": False,
+                "findings": [
+                    {
+                        "code": "required_blocker_contract_not_green:runtime_ui_harness_contract.v1",
+                        "reason": "family-parity reports runtime_ui_harness_contract.v1 status=missing_required_producers.",
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "salt_ndepend" in hook["permissionDecisionReason"].lower()
+    assert "packet gate" in hook["permissionDecisionReason"].lower()
+    assert "runtime_ui_harness_contract.v1" in hook["additionalContext"]
+
+
+def test_build_stop_response_blocks_when_salt_ndepend_gate_is_open(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        contract_id="ui_integration_harness_completion",
+        workflow_type="workflow_only",
+        plan_text=SALT_NDEPEND_READY_PLAN_TEXT,
+        required_defaults={
+            "salt_ndepend_gate_is_explicit": "required",
+            "deterministic_scoped_coverage_is_required": "required",
+        },
+    )
+    doctor_path = tmp_path / "artifacts" / "salt_ndepend" / "latest" / "doctor.json"
+    doctor_path.parent.mkdir(parents=True, exist_ok=True)
+    doctor_path.write_text(
+        json.dumps(
+            {
+                "freeze_ready": False,
+                "findings": [
+                    {
+                        "code": "required_blocker_contract_not_green:runtime_ui_harness_contract.v1",
+                        "reason": "family-parity reports runtime_ui_harness_contract.v1 status=missing_required_producers.",
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    response = build_stop_response(_snapshot(), _snapshot(), "session-1", tmp_path)
+
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "salt_ndepend" in payload["reason"].lower()
+    assert "packet gate" in payload["reason"].lower()
+
+
+def test_build_pretool_response_allows_task_complete_when_salt_ndepend_gate_is_ready(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        contract_id="ui_integration_harness_completion",
+        workflow_type="workflow_only",
+        plan_text=SALT_NDEPEND_READY_PLAN_TEXT,
+        required_defaults={
+            "salt_ndepend_gate_is_explicit": "required",
+            "deterministic_scoped_coverage_is_required": "required",
+        },
+    )
+    doctor_path = tmp_path / "artifacts" / "salt_ndepend" / "latest" / "doctor.json"
+    doctor_path.parent.mkdir(parents=True, exist_ok=True)
+    doctor_path.write_text(
+        json.dumps(
+            {
+                "freeze_ready": True,
+                "findings": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
 
 
 def test_build_dirty_prompt_message_mentions_closure_flow() -> None:
