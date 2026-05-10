@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - hostile-review enforcement is validated, documented, and ready to checkpoint
+Complete - hostile-review enforcement is validated, documented, and now requires repaired-state proof instead of treating any recorded finding as closure-ready
 
 ## Phase Checklist
 
@@ -34,6 +34,7 @@ The local hypothesis is that the current repo already mirrors the mainline carry
 - Green: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py tests/test_viewer_host_contract_proof.py tests/test_agent_workflow_tools.py -q`
 - Green: phased-plan sync now rejects meaningful plans that carry `## Explicit User Asks` without `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings`.
 - Green: checkpoint wrapper now refuses both `commit` and `write-receipts` when the active plan's hostile audit is still pending.
+- Green: `tools/viewer_host_validate_hostile_audit.py` now blocks closure when a real audit finding is recorded without a clean repaired-state re-audit, and focused checkpoint-guard regressions lock both the deny and allow boundaries for that proof rule.
 
 ## Hostile Audit
 
@@ -45,11 +46,15 @@ The local hypothesis is that the current repo already mirrors the mainline carry
 - [done] Pass 1 - inspected the current workflow seams, added focused RED tests for task_complete, Stop, hostile-audit validator evidence recognition, and checkpoint commit denial, then drove them green.
 - [done] Pass 2 - hostile review of the first implementation found a real proof-chain gap: `viewer_host_checkpoint_slice.py write-receipts` still bypassed pending hostile audit. Added the regression first, blocked receipt writing on the same validator, and reran the full workflow suites.
 - [done] Pass 3 - audited the phase-start and closure docs, then aligned `viewer_host_assert_phased_plan_sync.py`, `AGENTS.md`, and `AGENT_WORKING_PROTOCOL.md` so meaningful plans now carry explicit hostile-audit sections and the written protocol matches the enforced behavior.
+- [done] Pass 4 - reread the hostile-audit validator semantics, found that a recorded real finding still counted as closure-ready without any explicit repaired-state proof, added focused REDs first, tightened the validator, and reran the targeted workflow rails on the repaired policy.
+- [done] Pass 5 - attempted the scoped checkpoint, found that the active workflow contract still omitted `HANDOFF_LOG.md` even though the checkpoint wrapper stages it by default, refreshed the contract scope, and reran the contract validators before retrying closure.
 
 ## Audit Findings
 
 - [done] Real defect found and repaired: `viewer_host_checkpoint_slice.py` initially blocked `commit` but still allowed `write-receipts` while hostile audit was pending, which weakened the machine-proof layer. Added a focused regression and blocked both wrapper modes on the hostile-audit validator.
 - [done] No additional real defect found in the second repaired audit pass across the touched workflow suites after rerunning the full targeted validations.
+- [done] Real defect found and repaired: `tools/viewer_host_validate_hostile_audit.py` still treated the existence of a real finding as sufficient hostile-review proof even when the phased plan never recorded a clean re-audit of the repaired state. Focused checkpoint-guard REDs now lock that policy hole, and the validator blocks closure until the repaired state is explicitly proven.
+- [done] Real defect found and repaired: `docs/contracts/workflow_guard_hostile_review_enforcement.contract.json` still omitted `HANDOFF_LOG.md` from scope even though `viewer_host_checkpoint_slice.py commit` stages the handoff entry automatically. The contract now authorizes that required closure path instead of failing late at checkpoint time.
 
 ## Notes
 

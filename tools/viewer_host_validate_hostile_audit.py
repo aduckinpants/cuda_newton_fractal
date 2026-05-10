@@ -11,6 +11,22 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CHECKLIST_ITEM_RE = re.compile(r"^- \[([^\]]+)\]\s*(.+?)\s*$")
 STATUS_RE = re.compile(r"^- Status:\s*(.+?)\s*$", re.IGNORECASE)
 COMPLETE_STATUSES = {"done", "complete", "clean", "closed"}
+COMPLETE_CHECKLIST_STATUSES = COMPLETE_STATUSES | {"x"}
+
+
+def _is_clean_reaudit_text(text: str) -> bool:
+    lower = text.lower()
+    markers = (
+        "clean re-read",
+        "no additional real defect found",
+        "no additional real issue found",
+        "no additional workflow mistake found",
+        "re-read the repaired state",
+        "proved cleanly",
+        "did not expose another",
+        "confirmed the repaired state",
+    )
+    return any(marker in lower for marker in markers)
 
 
 def plan_declares_hostile_audit(plan_path: Path) -> bool:
@@ -59,13 +75,16 @@ def validate_hostile_audit_plan(plan_path: Path) -> dict[str, object]:
     audit_passes = _checklist_items(audit_pass_lines)
     audit_findings = _checklist_items(audit_finding_lines)
     open_passes = [text for pass_status, text in audit_passes if pass_status == "open"]
-    done_passes = [text for pass_status, text in audit_passes if pass_status == "done"]
-    clean_passes = [text for text in done_passes if "clean" in text.lower()]
-    real_findings = [
+    completed_passes = [text for pass_status, text in audit_passes if pass_status in COMPLETE_CHECKLIST_STATUSES]
+    clean_reaudit_passes = [text for text in completed_passes if _is_clean_reaudit_text(text)]
+    completed_findings = [
         text
         for finding_status, text in audit_findings
-        if finding_status == "done" and "placeholder" not in text.lower()
+        if finding_status in COMPLETE_CHECKLIST_STATUSES and "placeholder" not in text.lower()
     ]
+    clean_reaudit_findings = [text for text in completed_findings if _is_clean_reaudit_text(text)]
+    real_findings = [text for text in completed_findings if not _is_clean_reaudit_text(text)]
+    clean_reaudit_evidence = clean_reaudit_passes + clean_reaudit_findings
 
     blocked_reason = ""
     if not hostile_audit_lines:
@@ -76,16 +95,21 @@ def validate_hostile_audit_plan(plan_path: Path) -> dict[str, object]:
         blocked_reason = f"hostile audit status is {status}"
     elif open_passes:
         blocked_reason = "hostile audit still has open audit passes"
-    elif not real_findings and len(done_passes) < 3 and len(clean_passes) < 3:
-        blocked_reason = "hostile audit has not recorded a real finding or three completed passes"
+    elif len(completed_passes) < 3:
+        blocked_reason = "hostile audit needs at least three completed passes before closure"
+    elif real_findings and not clean_reaudit_evidence:
+        blocked_reason = "hostile audit found a real issue but does not yet prove the repaired state with a clean re-audit"
+    elif not real_findings and len(clean_reaudit_evidence) < 2:
+        blocked_reason = "hostile audit does not yet prove closure with second and third clean audit passes"
 
     return {
         "ok": not blocked_reason,
         "plan_path": str(plan_path),
         "status": status,
-        "audit_passes_completed": len(done_passes),
+        "audit_passes_completed": len(completed_passes),
         "real_finding_recorded": bool(real_findings),
-        "clean_passes_completed": len(clean_passes),
+        "clean_passes_completed": len(clean_reaudit_passes),
+        "clean_reaudit_evidence_count": len(clean_reaudit_evidence),
         "findings": real_findings,
         "open_audit_passes": open_passes,
         "blocked_reason": blocked_reason,

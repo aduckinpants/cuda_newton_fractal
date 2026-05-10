@@ -17,7 +17,8 @@
     "tests/test_viewer_host_contract_proof.py",
     "tests/test_agent_workflow_tools.py",
     "AGENTS.md",
-    "AGENT_WORKING_PROTOCOL.md"
+    "AGENT_WORKING_PROTOCOL.md",
+    "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
     "reuse useful workflow patterns from the mainline salticid-cuda repo instead of inventing a new workflow stack",

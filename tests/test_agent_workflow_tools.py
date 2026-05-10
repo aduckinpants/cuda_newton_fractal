@@ -538,7 +538,9 @@ def test_workflow_cli_friction_plan_tracks_remaining_review_turns() -> None:
 
     assert "Phase 7 - dedicated hostile documentation review" in text
     assert "Phase 8 - final overall hostile workflow review" in text
-    assert "## Current Phase\n\nComplete" not in text
+    assert "## Current Phase\n\nComplete" in text
+    assert "Phase 8 completion snapshot:" in text
+    assert "this initiative is now complete" in text.lower()
 
 
 def test_build_validation_profiles_uses_explicit_repo_root(tmp_path: Path) -> None:

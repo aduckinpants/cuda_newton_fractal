@@ -28,6 +28,7 @@ import tools.viewer_host_contract_state as contract_state
 import tools.viewer_host_hook_require_checkpoint_before_complete as completion_hook
 import tools.viewer_host_hook_require_checkpoint_carryover as carryover_hook
 import tools.viewer_host_hook_stop_if_dirty_worktree as stop_hook
+from tools.viewer_host_validate_hostile_audit import validate_hostile_audit_plan
 
 from tools.viewer_host_checkpoint_guard import (
     build_posttool_response,
@@ -917,6 +918,90 @@ def test_build_stop_response_blocks_when_hostile_audit_is_pending(tmp_path: Path
     payload = response["hookSpecificOutput"]
     assert payload["decision"] == "block"
     assert "hostile" in payload["reason"].lower()
+
+
+def test_validate_hostile_audit_plan_blocks_when_repaired_state_is_not_proven(tmp_path: Path) -> None:
+    plan_path = tmp_path / "plan_PHASED_PLAN.md"
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Hostile Audit\n\n"
+        "- Status: done\n\n"
+        "## Audit Passes\n\n"
+        "- [done] Pass 1 - found a regression in the guard behavior and repaired it\n"
+        "- [done] Pass 2 - reran the focused validations after the repair\n"
+        "- [done] Pass 3 - reread the touched seams after validation\n\n"
+        "## Audit Findings\n\n"
+        "- [done] Real defect found and repaired: the first hostile-audit implementation still allowed false closure after a finding.\n",
+        encoding="utf-8",
+    )
+
+    payload = validate_hostile_audit_plan(plan_path)
+
+    assert payload["ok"] is False
+    assert payload["audit_passes_completed"] == 3
+    assert payload["real_finding_recorded"] is True
+    assert "prove the repaired state" in str(payload["blocked_reason"])
+
+
+def test_validate_hostile_audit_plan_allows_repaired_state_once_clean_reaudit_is_recorded(tmp_path: Path) -> None:
+    plan_path = tmp_path / "plan_PHASED_PLAN.md"
+    plan_path.write_text(
+        "# Plan\n\n"
+        "## Hostile Audit\n\n"
+        "- Status: done\n\n"
+        "## Audit Passes\n\n"
+        "- [done] Pass 1 - found a regression in the guard behavior and repaired it\n"
+        "- [done] Pass 2 - reran the focused validations after the repair and re-read the repaired state\n"
+        "- [done] Pass 3 - re-read the repaired state again and confirmed no additional real defect was found\n\n"
+        "## Audit Findings\n\n"
+        "- [done] Real defect found and repaired: the first hostile-audit implementation still allowed false closure after a finding.\n"
+        "- [done] No additional real defect found in the repaired state after the focused re-audit.\n",
+        encoding="utf-8",
+    )
+
+    payload = validate_hostile_audit_plan(plan_path)
+
+    assert payload["ok"] is True
+    assert payload["audit_passes_completed"] == 3
+    assert payload["real_finding_recorded"] is True
+
+
+def test_build_pretool_response_denies_task_complete_when_repaired_state_is_not_proven(tmp_path: Path) -> None:
+    _write_active_contract_with_plan(
+        tmp_path,
+        plan_text=(
+            "# Plan\n\n"
+            "## Current Phase\n\n"
+            "Phase 1 in progress\n\n"
+            "## Phase Checklist\n\n"
+            "- [ ] Phase 1 - X\n\n"
+            "## Explicit User Asks\n\n"
+            "- [done] Start implementation\n\n"
+            "## Hostile Audit\n\n"
+            "- Status: done\n\n"
+            "## Audit Passes\n\n"
+            "- [done] Pass 1 - found a regression in the guard behavior and repaired it\n"
+            "- [done] Pass 2 - reran the focused validations after the repair\n"
+            "- [done] Pass 3 - reread the touched seams after validation\n\n"
+            "## Audit Findings\n\n"
+            "- [done] Real defect found and repaired: the first hostile-audit implementation still allowed false closure after a finding.\n"
+        ),
+    )
+
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {"recipient_name": "functions.task_complete"},
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "hostile review is incomplete" in hook["permissionDecisionReason"].lower()
+    assert "prove the repaired state" in hook["permissionDecisionReason"].lower()
 
 
 def test_build_dirty_prompt_message_mentions_closure_flow() -> None:
