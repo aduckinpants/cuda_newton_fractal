@@ -1,0 +1,51 @@
+{
+  "schema_version": "viewer_host_salt_ndepend_freeze_gate.v1",
+  "notes": [
+    "This gate defines the minimum packet authority that must be green before advanced-color, preset, composition, or new-fractal implementation can resume.",
+    "Seeding these files does not close the gate; it only makes the required surfaces explicit and machine-readable."
+  ],
+  "required_policy": "docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json",
+  "required_baseline_manifest": "docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json",
+  "required_contract_registry": "docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json",
+  "required_packet_commands": [
+    "audit",
+    "structural",
+    "review",
+    "baselines",
+    "contracts",
+    "doctor",
+    "parity",
+    "family-parity"
+  ],
+  "required_blocker_contracts": [
+    "advanced_color_slider_contract.v1"
+  ],
+  "required_frozen_plans": [
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md"
+  ],
+  "forbidden_restarts": [
+    "advanced_color",
+    "presets",
+    "multi_function_composition",
+    "new_fractal"
+  ],
+  "intentional_open_blockers": [
+    {
+      "blocker_id": "packet_command_surfaces_missing",
+      "reason": "C2 must add local audit, structural, review, baselines, contracts, doctor, parity, and family-parity command skeletons."
+    },
+    {
+      "blocker_id": "producer_binding_missing",
+      "reason": "C3 must bind the existing audits and runtime rails into packet outputs under artifacts/salt_ndepend."
+    },
+    {
+      "blocker_id": "advanced_color_slider_family_missing",
+      "reason": "C4 must land the first critical family packet for the slider and direct-input regression class."
+    },
+    {
+      "blocker_id": "workflow_hard_denial_missing",
+      "reason": "C6 must teach workflow closure to deny completion when the packet gate is still unsatisfied."
+    }
+  ]
+}

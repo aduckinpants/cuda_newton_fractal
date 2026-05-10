@@ -1,0 +1,104 @@
+{
+  "schema_version": "viewer_host_salt_ndepend_baselines.v1",
+  "notes": [
+    "This manifest seeds the minimum family baselines that the local salt_ndepend gate must materialize before product work can resume.",
+    "The first critical blocker family is the advanced color slider and direct-input contract because that regression escaped the earlier heuristic gate."
+  ],
+  "cases": [
+    {
+      "case_id": "code_quality_baseline",
+      "family": "structural_quality",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_command": "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json",
+      "source_artifact": "artifacts/code_quality_report.json",
+      "expected_result": "baseline_check_passes",
+      "notes": [
+        "Repository-wide code quality stays an explicit packet input rather than an optional side report."
+      ]
+    },
+    {
+      "case_id": "test_coverage_matrix_baseline",
+      "family": "structural_quality",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_command": "py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json",
+      "source_artifact": "artifacts/test_coverage_report.json",
+      "expected_result": "no_direct_coverage_regression",
+      "notes": [
+        "The current heuristic coverage audit is still required as an input even though it is not final authority by itself."
+      ]
+    },
+    {
+      "case_id": "native_helper_regression_baseline",
+      "family": "native_helper_surface",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_task": "verify: native helper tests",
+      "source_artifact": "artifacts/verify_native_helper_tests.log",
+      "expected_result": "all_helper_tests_pass",
+      "notes": [
+        "Native helper coverage remains mandatory for user-visible behavior changes."
+      ]
+    },
+    {
+      "case_id": "runtime_publish_baseline",
+      "family": "runtime_publish_surface",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_task": "verify: runtime publish",
+      "source_artifact": "artifacts/verify_runtime_publish.log",
+      "expected_result": "published_runtime_available",
+      "notes": [
+        "Published-runtime proof cannot exist if the runtime is not republished cleanly first."
+      ]
+    },
+    {
+      "case_id": "runtime_probe_session_baseline",
+      "family": "runtime_probe_session",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_task": "verify: runtime probe/session pytest",
+      "source_artifact": "artifacts/verify_runtime_probe_session_pytest.log",
+      "expected_result": "green_published_runtime_lane",
+      "notes": [
+        "This is the headless published-runtime packet family for probes, sessions, descriptors, and generic sampling."
+      ]
+    },
+    {
+      "case_id": "runtime_artifact_tools_baseline",
+      "family": "runtime_artifact_tools",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_task": "verify: runtime artifact tools",
+      "source_artifact": "artifacts/verify_runtime_artifact_tools.log",
+      "expected_result": "green_published_runtime_lane",
+      "notes": [
+        "Artifact-producing runtime tools remain explicit packet inputs instead of hidden side tasks."
+      ]
+    },
+    {
+      "case_id": "runtime_ui_harness_baseline",
+      "family": "runtime_ui_behavior",
+      "status": "seeded",
+      "required_by_freeze_gate": true,
+      "source_task": "verify: runtime ui harness",
+      "source_artifact": "artifacts/verify_runtime_ui_harness.log",
+      "expected_result": "green_published_runtime_lane",
+      "notes": [
+        "Viewer-backed runtime witnesses are mandatory packet inputs for user-visible behavior claims."
+      ]
+    },
+    {
+      "case_id": "advanced_color_slider_contract",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "advanced_color_slider_contract.v1",
+      "notes": [
+        "This is the first critical family because the color-pipeline slider regression escaped the earlier gate.",
+        "It must become the first family-parity packet before advanced-color work can resume."
+      ]
+    }
+  ]
+}

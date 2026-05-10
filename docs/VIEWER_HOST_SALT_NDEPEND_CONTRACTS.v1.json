@@ -1,0 +1,85 @@
+{
+  "schema_version": "viewer_host_salt_ndepend_contract_registry.v1",
+  "notes": [
+    "This registry names the first bounded coverage contracts that the local salt_ndepend gate must satisfy.",
+    "Seeded contracts keep the restart gate honest even before the command surfaces exist."
+  ],
+  "contracts": [
+    {
+      "contract_id": "advanced_color_slider_contract.v1",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color"
+      ],
+      "required_producers": [
+        "code_quality_audit",
+        "test_coverage_audit",
+        "native_helper_tests",
+        "runtime_publish",
+        "runtime_probe_session",
+        "runtime_ui_harness"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Any user-visible slider or direct numeric color-pipeline edit must carry deterministic native coverage, published-runtime UI witness coverage, and packeted parity or family-parity proof before closeout.",
+      "notes": [
+        "Seed contract only. The actual family packet is still missing and therefore keeps the freeze gate open."
+      ]
+    },
+    {
+      "contract_id": "runtime_ui_harness_contract.v1",
+      "family": "runtime_ui_behavior",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish",
+        "runtime_ui_harness",
+        "runtime_artifact_tools"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "review",
+        "doctor"
+      ],
+      "proof_obligation": "Viewer-backed runtime witness families remain mandatory packet inputs for any user-visible behavior claim.",
+      "notes": [
+        "Reflects the existing named public rails in .vscode/tasks.json."
+      ]
+    },
+    {
+      "contract_id": "workflow_closeout_contract.v1",
+      "family": "workflow_guard",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "code_quality_audit",
+        "test_coverage_audit"
+      ],
+      "required_packet_surfaces": [
+        "contracts",
+        "doctor"
+      ],
+      "proof_obligation": "The gate cannot close while hostile review, receipts, and packet authority remain optional or chat-only.",
+      "notes": [
+        "Keeps workflow closeout bound to the same packet authority story instead of a separate informal checklist."
+      ]
+    }
+  ]
+}

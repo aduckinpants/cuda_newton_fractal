@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the next required work is to replace it with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop, keep product work frozen behind that packeted gate, and make the mainline action-level hostile review per action requirement explicit in this stop-line authority before any implementation resumes.
+Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, and the next required work is to turn them into a deterministic scoped salt_ndepend-style coverage program with local audit, structural, review, baselines, contracts, doctor, parity, and family-parity command surfaces while keeping product work frozen behind that packeted gate and requiring mainline action-level hostile review before every meaningful action.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 in progress - the original Gate G1 harness stop-line is no longer suffic
 - [x] Phase 2 - harvest the remaining low-risk shared-harness seams and close or explicitly defer them
 - [x] Phase 3 - audit the public runtime rails and residual workflow-hardening items so the harness closure surface is explicit instead of implicit
 - [x] Phase 4 - close the original generic harness thread with an explicit stop-line, named exclusions, and a documented gate that blocked casual product restart
-- [ ] Phase 5 - replace the generic harness stop-line with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop and require deterministic action-level hostile review before every meaningful action
+- [ ] Phase 5 - seed the machine-readable policy, baseline, contract, and freeze-gate authority, then replace the generic harness stop-line with a deterministic scoped salt_ndepend-style coverage program patterned on the noether-pack loop and require deterministic action-level hostile review before every meaningful action
 - [ ] Phase 6 - wire the packeted coverage gate into the active product plans and workflow closure surfaces before any advanced-color, preset, composition, or new-fractal implementation resumes
 
 ## Explicit User Asks
@@ -35,6 +35,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - `c:/code/salticid-cuda/AGENTS.md` already requires action-level hostile review before every meaningful action and names the exact required fields: suspected failure mode, correct owner/action, proof surface, and blocked action; it also explicitly applies that rule to exploration, edits, validation, helper closeout, commit/push, worker routing, merge-control, and final response.
 - `.vscode/tasks.json` already exposes the current runtime proof families (`runtime publish`, `runtime probe/session pytest`, `runtime artifact tools`, and `runtime ui harness`), which means the missing layer is not discovery of more ad hoc commands; it is the deterministic coverage program that consumes them.
 - `tools/code_quality_audit.py`, `tools/test_coverage_audit.py`, and `tests/runtime_harness.py` already provide useful metric and witness producers, but `tools/test_coverage_audit.py` is still heuristic and there is no local machine-readable baseline/policy/doctor/parity registry binding those producers together.
+- `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`, and `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` now seed that missing machine-readable authority explicitly, which means the next honest gap is command-surface implementation rather than another planning-only stop-line rewrite.
 - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` still presented product implementation as the next active thread before this repair, which is the planning-authority drift this stop-line must now correct.
 
 ## Proof Ledger
@@ -45,6 +46,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Named defect: the active stop-line still lacked the mainline-style action-level hostile review wording, which made it too easy to treat hostile review as a closeout ritual instead of a required deterministic check before every meaningful action.
 - Named defect: the active advanced-color foundation and Phase 6 grading plans still read as executable product continuation even after the user changed the required quality floor to deterministic scoped `salt_ndepend` coverage integration.
 - Landed now: this plan treats the next harness thread as `salt_ndepend` coverage integration, freezes product work behind that packeted gate, and names the mainline action-level hostile review rule directly in the checked-in stop-line authority.
+- Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`, and `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` seed the local machine-readable coverage authority; the gate remains open until command surfaces, producer binding, critical family packets, and workflow hard denial land against those docs.
 
 ## Hostile Audit
 
@@ -69,6 +71,10 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Expected owner files for Phase 5:
   - `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md`
   - `docs/contracts/ui_integration_harness_completion.contract.json`
+  - `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`
+  - `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`
+  - `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`
+  - `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json`
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
   - `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md`
 - Non-goals for Phase 5:
@@ -79,7 +85,8 @@ The controlling defect is no longer missing a single runtime rail or one more ge
   - do not claim helper-only audits or standalone runtime witnesses are sufficient without the packeted coverage program
 - Phase 5 stop-line:
   - the previous generic harness closure is preserved only as predecessor context
-  - the current gate is not satisfied until the repo has machine-readable coverage policy, baseline, doctor, parity, and family-parity authority plus explicit product-plan deferral
+  - the current gate is not satisfied until the repo has machine-readable coverage policy, baseline, contract registry, freeze gate, doctor, parity, and family-parity authority plus explicit product-plan deferral
+  - the seeded authority files are `docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`, and `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json`
   - runtime and code-quality producers remain required, but they are inputs to the new packet system rather than standalone authority
 - Action-level hostile review requirement in this thread:
   - before every meaningful exploration, edit, validation action, helper closeout, commit/push step, worker-routing action, merge-control action, and final response
@@ -88,4 +95,4 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 
 ## Resume Point
 
-Open the salt_ndepend coverage integration slice next: define the local packet, policy, baseline, doctor, parity, and family-parity surfaces; keep the advanced-color product plans frozen behind that work; and only then revisit executable product slices.
+Open the local packet command-surface slice next: add audit, structural, review, baselines, contracts, doctor, parity, and family-parity skeletons that consume the seeded authority docs; keep the advanced-color product plans frozen behind that work; and only then move on to producer binding and the first critical family packet.

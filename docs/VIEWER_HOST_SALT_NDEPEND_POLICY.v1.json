@@ -1,0 +1,188 @@
+{
+  "schema_version": "viewer_host_salt_ndepend_policy.v1",
+  "packet_root": "artifacts/salt_ndepend",
+  "notes": [
+    "This policy replaces helper-only harness closure with a deterministic packet program for user-visible behavior changes.",
+    "Existing audits and runtime witnesses remain required producer inputs, but they are not final authority until the planned packet surfaces consume them.",
+    "The gate stays open until the freeze gate, contract registry, command surfaces, and critical family packets all agree."
+  ],
+  "producer_surfaces": [
+    {
+      "producer_id": "code_quality_audit",
+      "kind": "quality_metric",
+      "command": "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json",
+      "artifact_path": "artifacts/code_quality_report.json",
+      "authority_role": "structural_input"
+    },
+    {
+      "producer_id": "test_coverage_audit",
+      "kind": "coverage_metric",
+      "command": "py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json",
+      "artifact_path": "artifacts/test_coverage_report.json",
+      "authority_role": "structural_input"
+    },
+    {
+      "producer_id": "native_helper_tests",
+      "kind": "native_regression_lane",
+      "task": "verify: native helper tests",
+      "artifact_path": "artifacts/verify_native_helper_tests.log",
+      "authority_role": "native_behavior_input"
+    },
+    {
+      "producer_id": "runtime_publish",
+      "kind": "published_runtime_lane",
+      "task": "verify: runtime publish",
+      "artifact_path": "artifacts/verify_runtime_publish.log",
+      "authority_role": "runtime_precondition"
+    },
+    {
+      "producer_id": "runtime_probe_session",
+      "kind": "published_runtime_pytest_lane",
+      "task": "verify: runtime probe/session pytest",
+      "artifact_path": "artifacts/verify_runtime_probe_session_pytest.log",
+      "authority_role": "runtime_behavior_input"
+    },
+    {
+      "producer_id": "runtime_artifact_tools",
+      "kind": "published_runtime_pytest_lane",
+      "task": "verify: runtime artifact tools",
+      "artifact_path": "artifacts/verify_runtime_artifact_tools.log",
+      "authority_role": "artifact_tool_input"
+    },
+    {
+      "producer_id": "runtime_ui_harness",
+      "kind": "published_runtime_pytest_lane",
+      "task": "verify: runtime ui harness",
+      "artifact_path": "artifacts/verify_runtime_ui_harness.log",
+      "authority_role": "ui_behavior_input"
+    }
+  ],
+  "planned_command_surfaces": [
+    {
+      "command_id": "audit",
+      "status": "planned",
+      "consumes": [
+        "code_quality_audit",
+        "test_coverage_audit",
+        "native_helper_tests",
+        "runtime_publish",
+        "runtime_probe_session",
+        "runtime_artifact_tools",
+        "runtime_ui_harness"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/latest/suite_index.json",
+        "artifacts/salt_ndepend/latest/producer_index.json"
+      ]
+    },
+    {
+      "command_id": "structural",
+      "status": "planned",
+      "consumes": [
+        "code_quality_audit",
+        "test_coverage_audit"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/latest/structural_index.json",
+        "artifacts/salt_ndepend/latest/structural_index.md"
+      ]
+    },
+    {
+      "command_id": "review",
+      "status": "planned",
+      "consumes": [
+        "audit"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/latest/review.json",
+        "artifacts/salt_ndepend/latest/review.md"
+      ]
+    },
+    {
+      "command_id": "baselines",
+      "status": "planned",
+      "consumes": [
+        "docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/baselines/latest/baseline_index.json",
+        "artifacts/salt_ndepend/baselines/latest/baseline_index.md"
+      ]
+    },
+    {
+      "command_id": "contracts",
+      "status": "planned",
+      "consumes": [
+        "docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/latest/contracts.json",
+        "artifacts/salt_ndepend/latest/contracts.md"
+      ]
+    },
+    {
+      "command_id": "parity",
+      "status": "planned",
+      "consumes": [
+        "candidate_suite",
+        "baseline_suite"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/parity_cases/<case>/parity.json",
+        "artifacts/salt_ndepend/parity_cases/<case>/parity.md"
+      ]
+    },
+    {
+      "command_id": "family-parity",
+      "status": "planned",
+      "consumes": [
+        "baseline_index",
+        "candidate_suite"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/latest/family_parity.json",
+        "artifacts/salt_ndepend/latest/family_parity.md"
+      ]
+    },
+    {
+      "command_id": "doctor",
+      "status": "planned",
+      "consumes": [
+        "audit",
+        "structural",
+        "baselines",
+        "contracts",
+        "family-parity",
+        "docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json"
+      ],
+      "produces": [
+        "artifacts/salt_ndepend/latest/doctor.json",
+        "artifacts/salt_ndepend/latest/doctor.md"
+      ]
+    }
+  ],
+  "required_action_level_hostile_review": {
+    "scope": [
+      "exploration",
+      "edit",
+      "validation",
+      "helper_closeout",
+      "commit_push",
+      "worker_routing",
+      "merge_control",
+      "final_response"
+    ],
+    "required_fields": [
+      "suspected_failure_mode",
+      "correct_owner_action",
+      "proof_surface",
+      "blocked_action"
+    ]
+  },
+  "gated_product_threads": [
+    "advanced_color",
+    "presets",
+    "multi_function_composition",
+    "new_fractal"
+  ]
+}

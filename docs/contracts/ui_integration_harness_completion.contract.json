@@ -9,6 +9,10 @@
     "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
     "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
     "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
+    "docs/VIEWER_HOST_SALT_NDEPEND_POLICY.v1.json",
+    "docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json",
+    "docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json",
+    "docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json",
     "docs/handoffs/archive/HANDOFF_LOG_20260509_135329.md",
     "HANDOFF_LOG.md"
   ],
