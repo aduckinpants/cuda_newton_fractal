@@ -13,6 +13,8 @@
     "docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json",
     "docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json",
     "docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json",
+    "tools/viewer_host_salt_ndepend.py",
+    "tests/test_viewer_host_salt_ndepend.py",
     "docs/handoffs/archive/HANDOFF_LOG_20260509_135329.md",
     "HANDOFF_LOG.md"
   ],
