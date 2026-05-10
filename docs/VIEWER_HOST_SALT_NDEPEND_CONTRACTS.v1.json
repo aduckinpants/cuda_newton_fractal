@@ -6,6 +6,158 @@
   ],
   "contracts": [
     {
+      "contract_id": "code_quality_baseline_contract.v1",
+      "family": "structural_quality",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "code_quality_audit"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Repo-wide code-quality baseline must remain an explicit packeted prerequisite for user-visible behavior claims.",
+      "notes": [
+        "Backfills the seeded code-quality baseline into the contract-backed family-parity gate."
+      ]
+    },
+    {
+      "contract_id": "test_coverage_matrix_contract.v1",
+      "family": "structural_quality",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "test_coverage_audit"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Heuristic coverage can remain only as an input, but it must still be explicitly packeted and fail visible before product work resumes.",
+      "notes": [
+        "Backfills the seeded coverage-audit baseline into the contract-backed family-parity gate."
+      ]
+    },
+    {
+      "contract_id": "native_helper_regression_contract.v1",
+      "family": "native_helper_surface",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "native_helper_tests"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Native helper regression proof remains mandatory packet authority for user-visible behavior changes.",
+      "notes": [
+        "Backfills the seeded native helper baseline into the contract-backed family-parity gate."
+      ]
+    },
+    {
+      "contract_id": "runtime_publish_contract.v1",
+      "family": "runtime_publish_surface",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Published-runtime availability must remain an explicit contract-backed prerequisite rather than an assumed setup detail.",
+      "notes": [
+        "Backfills the seeded runtime publish baseline into the contract-backed family-parity gate."
+      ]
+    },
+    {
+      "contract_id": "runtime_probe_session_contract.v1",
+      "family": "runtime_probe_session",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish",
+        "runtime_probe_session"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Headless published-runtime probe and session lanes must stay contract-visible packet inputs before any user-visible behavior closeout.",
+      "notes": [
+        "Backfills the seeded runtime probe/session baseline into the contract-backed family-parity gate."
+      ]
+    },
+    {
+      "contract_id": "runtime_artifact_tools_contract.v1",
+      "family": "runtime_artifact_tools",
+      "status": "seeded",
+      "blocked_product_threads": [
+        "advanced_color",
+        "presets",
+        "multi_function_composition",
+        "new_fractal"
+      ],
+      "required_producers": [
+        "runtime_publish",
+        "runtime_artifact_tools"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Artifact-producing runtime tool lanes remain explicit contract-backed packet inputs instead of hidden side tasks.",
+      "notes": [
+        "Backfills the seeded runtime artifact-tools baseline into the contract-backed family-parity gate."
+      ]
+    },
+    {
       "contract_id": "advanced_color_slider_contract.v1",
       "family": "critical_ui_behavior",
       "status": "planned_blocker",
@@ -50,6 +202,8 @@
       ],
       "required_packet_surfaces": [
         "audit",
+        "baselines",
+        "family-parity",
         "review",
         "doctor"
       ],

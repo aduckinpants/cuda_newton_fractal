@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, the first critical family packet now exists for `advanced_color_slider_contract.v1`, and the next required work is broader family backfill plus workflow hard denial while product work stays frozen behind the packeted gate and mainline action-level hostile review remains mandatory before every meaningful action.
+Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, the first critical family packet now exists for `advanced_color_slider_contract.v1`, and the broader family backfill now binds every freeze-gated baseline case to an explicit contract while doctor fails visible when required blocker contracts are missing or not green in family-parity. The next required work is workflow hard denial while product work stays frozen behind the packeted gate and mainline action-level hostile review remains mandatory before every meaningful action.
 
 ## Phase Checklist
 
@@ -53,6 +53,11 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: `tools/viewer_host_salt_ndepend.py` and `tests/test_viewer_host_salt_ndepend.py` seed the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command family with honest `surface_seed_only` outputs, so the stop-line now has callable command surfaces without pretending that producer binding or real parity math is complete.
 - Landed now: `tools/viewer_host_salt_ndepend.py` binds the seeded `audit` and `doctor` surfaces to real producer artifact existence and lightweight summaries, and the focused CLI tests now prove missing-producer findings instead of only placeholder packet emission.
 - Landed now: `tools/viewer_host_salt_ndepend.py` binds `family-parity` to the seeded baseline manifest and contract registry so `advanced_color_slider_contract.v1` emits a real critical-family packet with explicit missing-producer state instead of remaining a docs-only blocker.
+- Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json` binds every freeze-gated baseline case to an explicit coverage contract instead of leaving the seeded runtime and structural families outside family-parity authority.
+- Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json` now carries the broader baseline contract registry for code quality, coverage matrix, native helper, runtime publish, runtime probe/session, runtime artifact tools, runtime UI harness, the advanced-color slider, and workflow closeout.
+- Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` no longer lies about slider-family absence; it now names the broader critical-family backfill blocker and requires the full freeze-gated contract set rather than only the first slider contract.
+- Landed now: `tools/viewer_host_salt_ndepend.py` doctor now inspects family-parity packets against `required_blocker_contracts` and emits explicit findings when required blocker contracts are missing or not green, so the gate underreports less of the remaining coverage debt.
+- Landed now: focused proof is green for the broader family-backfill slice: `py -3.14 -m pytest tests/test_viewer_host_salt_ndepend.py -q`, `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/ui_integration_harness_completion.contract.json --out-json artifacts/validation/ui_integration_harness_completion_contract.json`, `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`, and `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/ui_integration_harness_completion_PHASED_PLAN.md --out-json artifacts/validation/ui_integration_harness_completion_hostile_audit.json` all passed after the repair.
 
 ## Hostile Audit
 
@@ -64,6 +69,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Pass 1 - challenge whether the old Gate G1 stop-line remained sufficient after the advanced-color slider regression and the user's demand for deterministic scoped coverage.
 - [done] Pass 2 - compare the local harness/audit surfaces against the noether-pack `salt_ndepend` pattern and record the missing packet layers instead of pretending the existing heuristic audits were enough.
 - [done] Pass 3 - re-read the repaired harness and product plans together and confirm that product implementation is now explicitly blocked until the new coverage gate is satisfied.
+- [done] Pass 4 - challenge whether the family-parity gate still silently omitted most freeze-gated baseline families and whether doctor could still underreport open blocker contracts even after the first slider packet existed.
 
 ## Audit Findings
 
@@ -71,6 +77,17 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Real defect found: the existing local surfaces (`tools/code_quality_audit.py`, `tools/test_coverage_audit.py`, and published-runtime harness witnesses) are standalone producers, not a deterministic packeted coverage program with machine-readable policy, baselines, doctor, parity, and family-parity gates.
 - [done] Real defect found: this stop-line still lacked the mainline action-level hostile review wording, which left room to ignore the requirement that every meaningful action must name the suspected failure mode, correct owner/action, proof surface, and blocked action before proceeding.
 - [done] Clean re-read result: the repaired stop-line now blocks advanced-color, preset, composition, and new-fractal implementation until the deterministic `salt_ndepend` coverage gate is real and named in checked-in authority, not inferred from chat.
+- [done] Real defect found: the baseline manifest still left most freeze-gated seeded cases uncontracted, which let family-parity and doctor imply a much narrower coverage gate than the repo actually needs.
+- [done] Real defect found: the freeze gate still named `advanced_color_slider_family_missing` even after the first slider packet existed, and doctor did not inspect family-parity against `required_blocker_contracts`, so the packet gate could still underreport open coverage debt.
+
+## Action Hostile Review
+
+- Action ID: action-20260510-salt-ndepend-family-backfill
+- Status: done
+- Suspected Failure Mode: the packet gate still silently omits seeded freeze-gated families and continues to report stale slider-only blocker state, which lets agents overstate broad UI or UX coverage.
+- Correct Owner/Action: backfill explicit baseline contracts in the salt_ndepend docs and teach `tools/viewer_host_salt_ndepend.py` doctor to compare family-parity packets against required blocker contracts.
+- Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_salt_ndepend.py -q`
+- Blocked Action: any claim that the packet gate represents broad coverage authority while most freeze-gated baseline families remain unbound or unchecked.
 
 ## Notes
 

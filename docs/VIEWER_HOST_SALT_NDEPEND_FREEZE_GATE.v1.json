@@ -18,6 +18,13 @@
     "family-parity"
   ],
   "required_blocker_contracts": [
+    "code_quality_baseline_contract.v1",
+    "test_coverage_matrix_contract.v1",
+    "native_helper_regression_contract.v1",
+    "runtime_publish_contract.v1",
+    "runtime_probe_session_contract.v1",
+    "runtime_artifact_tools_contract.v1",
+    "runtime_ui_harness_contract.v1",
     "advanced_color_slider_contract.v1"
   ],
   "required_frozen_plans": [
@@ -40,8 +47,8 @@
       "reason": "C3 must bind the existing audits and runtime rails into packet outputs under artifacts/salt_ndepend."
     },
     {
-      "blocker_id": "advanced_color_slider_family_missing",
-      "reason": "C4 must land the first critical family packet for the slider and direct-input regression class."
+      "blocker_id": "critical_family_backfill_incomplete",
+      "reason": "C5 must backfill every freeze-gated baseline family into explicit contract-backed family-parity packets so the slider proof is not the only family in scope."
     },
     {
       "blocker_id": "workflow_hard_denial_missing",

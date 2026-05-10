@@ -499,6 +499,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
 
     suite_payload = None if suite_index_path is None else _load_optional_json(suite_index_path)
     producer_payload = None if producer_index_path is None else _load_optional_json(producer_index_path)
+    family_parity_payload = None if family_parity_path is None else _load_optional_json(family_parity_path)
     if isinstance(suite_payload, dict):
         if suite_payload.get("missing_producer_count", 0):
             findings.append(
@@ -518,6 +519,41 @@ def _run_doctor(args: argparse.Namespace) -> int:
                         "reason": f"producer artifact missing for {producer.get('producer_id', 'unknown')}",
                     }
                 )
+
+    family_packets_by_contract: dict[str, dict[str, object]] = {}
+    if isinstance(family_parity_payload, dict):
+        for packet in family_parity_payload.get("critical_family_packets", []):
+            if not isinstance(packet, dict):
+                continue
+            contract_id = str(packet.get("contract_id", "")).strip()
+            if contract_id:
+                family_packets_by_contract[contract_id] = packet
+
+    for contract_id in freeze_gate.get("required_blocker_contracts", []):
+        contract_text = str(contract_id).strip()
+        if not contract_text:
+            continue
+        packet = family_packets_by_contract.get(contract_text)
+        if packet is None:
+            findings.append(
+                {
+                    "code": f"required_blocker_contract_packet_missing:{contract_text}",
+                    "reason": f"family-parity does not report required blocker contract {contract_text}",
+                }
+            )
+            continue
+        packet_status = str(packet.get("status", "unknown")).strip() or "unknown"
+        if packet_status != "critical_family_seed":
+            missing_producers = [str(item) for item in packet.get("missing_producers", []) if str(item).strip()]
+            missing_suffix = ""
+            if missing_producers:
+                missing_suffix = " missing_producers=" + ", ".join(missing_producers)
+            findings.append(
+                {
+                    "code": f"required_blocker_contract_not_green:{contract_text}",
+                    "reason": f"family-parity reports {contract_text} status={packet_status}.{missing_suffix}".rstrip(),
+                }
+            )
     for blocker in freeze_gate.get("intentional_open_blockers", []):
         findings.append({"code": blocker.get("blocker_id"), "reason": blocker.get("reason")})
 
