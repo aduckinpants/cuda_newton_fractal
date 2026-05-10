@@ -93,6 +93,38 @@ def _dynamic_validator_json_spec(command: str) -> ValidationEvidenceSpec | None:
     )
 
 
+def _dynamic_test_coverage_audit_spec(command: str) -> ValidationEvidenceSpec | None:
+    normalized = command.replace("\\", "/").strip()
+    if "tools/test_coverage_audit.py" not in normalized:
+        return None
+    match = re.search(r"--out\s+(?P<artifact>\S+)", normalized)
+    if match is None:
+        return None
+    artifact_path = match.group("artifact")
+    return ValidationEvidenceSpec(
+        evidence_id="validator_test_coverage_audit",
+        command=command,
+        artifact_kind="validator_json",
+        artifact_path=artifact_path,
+    )
+
+
+def _dynamic_salt_ndepend_freeze_gate_spec(command: str) -> ValidationEvidenceSpec | None:
+    normalized = command.replace("\\", "/").strip()
+    if "tools/viewer_host_salt_ndepend.py freeze-gate" not in normalized:
+        return None
+    match = re.search(r"--out-dir\s+(?P<artifact_dir>\S+)", normalized)
+    if match is None:
+        return None
+    artifact_dir = match.group("artifact_dir").rstrip("/")
+    return ValidationEvidenceSpec(
+        evidence_id="validator_salt_ndepend_freeze_gate",
+        command=command,
+        artifact_kind="validator_json",
+        artifact_path=f"{artifact_dir}/doctor.json",
+    )
+
+
 def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec | None:
     spec = KNOWN_VALIDATION_EVIDENCE_BY_COMMAND.get(command)
     if spec is not None:
@@ -105,6 +137,12 @@ def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec
             artifact_kind="validator_json",
             artifact_path="artifacts/validation/viewer_host_assert_phased_plan_sync.json",
         )
+    spec = _dynamic_test_coverage_audit_spec(command)
+    if spec is not None:
+        return spec
+    spec = _dynamic_salt_ndepend_freeze_gate_spec(command)
+    if spec is not None:
+        return spec
     return _dynamic_validator_json_spec(command)
 
 

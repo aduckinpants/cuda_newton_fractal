@@ -130,6 +130,26 @@ def test_validation_evidence_spec_for_command_recognizes_logged_command_pytest()
     assert spec.artifact_path == "artifacts/pytest/test_viewer_host_run_logged_command.junit.xml"
 
 
+def test_validation_evidence_spec_for_command_recognizes_test_coverage_audit() -> None:
+    command = "py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json"
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/test_coverage_report.json"
+
+
+def test_validation_evidence_spec_for_command_recognizes_salt_ndepend_freeze_gate() -> None:
+    command = "py -3.14 tools/viewer_host_salt_ndepend.py freeze-gate --out-dir artifacts/salt_ndepend/latest"
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/salt_ndepend/latest/doctor.json"
+
+
 def test_contract_proof_writer_fails_when_required_assertion_evidence_is_missing(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()

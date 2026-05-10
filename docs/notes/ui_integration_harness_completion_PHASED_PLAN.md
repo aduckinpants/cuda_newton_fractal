@@ -65,6 +65,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: the live remaining blocker set collapsed to a single missing producer artifact, `artifacts/test_coverage_report.json`; after regenerating it with `py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json`, the fresh packet gate reached an empty-finding doctor result.
 - Landed now: `tools/viewer_host_salt_ndepend.py` doctor now derives `freeze_ready` from the actual finding set instead of hard-coding `false`, and the real repo packet now reports `freeze_ready=true` after a deterministic `freeze-gate` refresh.
 - Landed now: `docs/contracts/ui_integration_harness_completion.contract.json` now requires both the fresh `test_coverage_audit` producer run and the deterministic `freeze-gate` regeneration command, plus an explicit acceptance assertion that `artifacts/salt_ndepend/latest/doctor.json` reports `freeze_ready=true`.
+- Landed now: `tools/viewer_host_contract_proof.py` now recognizes the required `test_coverage_audit` and `freeze-gate` validation commands as parseable validator-json evidence, so machine contract-proof receipts can hash the fresh coverage report and regenerated doctor packet instead of rejecting the new freshness commands.
 
 ## Hostile Audit
 
@@ -79,6 +80,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Pass 4 - challenge whether the family-parity gate still silently omitted most freeze-gated baseline families and whether doctor could still underreport open blocker contracts even after the first slider packet existed.
 - [done] Pass 5 - challenge whether closure could still succeed on a clean repo while the salt_ndepend packet gate remained open, and wire the checkpoint guard to fail closed on that doctor state.
 - [done] Pass 6 - challenge whether the packet gate still depended on stale leftover artifacts or stale blocker text, and repair deterministic regeneration plus doctor readiness so the green state is based on current evidence.
+- [done] Pass 7 - challenge whether the stricter harness-completion contract could actually be machine-proved after adding the freshness commands, and repair the contract-proof evidence mapper when the receipt writer rejected them.
 
 ## Audit Findings
 
@@ -93,15 +95,16 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Real defect found: the checked-in freeze gate still hard-coded already-landed blockers, so the doctor packet kept misreporting stale coverage debt after the underlying work was complete.
 - [done] Real defect found: doctor still hard-coded `freeze_ready=false`, so the packet gate could not report green even after every live finding disappeared.
 - [done] Clean re-read result: the packet gate now refreshes from current producer evidence, the stale blocker text is gone, and the real repo reaches `freeze_ready=true` once the missing coverage producer is regenerated. The remaining gap is parity depth, not freshness or stale authority.
+- [done] Real defect found: once the harness-completion contract started requiring `test_coverage_audit` and `freeze-gate`, the contract-proof receipt writer could not parse evidence for those commands because `tools/viewer_host_contract_proof.py` had no mapping for either artifact path.
 
 ## Action Hostile Review
 
-- Action ID: action-20260510-salt-ndepend-freeze-gate-freshness
+- Action ID: action-20260510-salt-ndepend-proof-mapper
 - Status: done
-- Suspected Failure Mode: the packet gate can still lie through stale leftover artifacts or stale blocker authority even after the workflow hard-denial repair, which means closure proof is not yet tied to freshly regenerated packet evidence.
-- Correct Owner/Action: add a deterministic `freeze-gate` packet regeneration command, remove stale intentional blockers from the checked-in freeze gate, derive doctor `freeze_ready` from live findings, and bind fresh coverage-audit plus freeze-gate generation into the active harness-completion contract.
-- Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_salt_ndepend.py -q`, `py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json`, and `py -3.14 tools/viewer_host_salt_ndepend.py freeze-gate --out-dir artifacts/salt_ndepend/latest`
-- Blocked Action: any closure or coverage-readiness claim that does not regenerate the current packet set and prove `artifacts/salt_ndepend/latest/doctor.json` is freshly `freeze_ready=true`.
+- Suspected Failure Mode: the stricter freshness contract can still fail at receipt time because the contract-proof layer cannot hash the new required commands, which leaves the machine-proof closure path broken even when the packet gate is truly green.
+- Correct Owner/Action: extend `tools/viewer_host_contract_proof.py` so the required `test_coverage_audit` and `freeze-gate` commands resolve to parseable validator-json artifacts, and prove that mapping in `tests/test_viewer_host_contract_proof.py`.
+- Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q`
+- Blocked Action: any claim that the freshness contract is fully enforced while the machine receipt writer still cannot parse evidence for the new required commands.
 
 ## Notes
 
