@@ -154,6 +154,7 @@ def build_parser() -> argparse.ArgumentParser:
     family_parity = subparsers.add_parser("family-parity", help="Emit the seeded family-parity packet surface.")
     family_parity.add_argument("--baseline-index", required=True)
     family_parity.add_argument("--candidate-suite", required=True)
+    family_parity.add_argument("--contract-registry", default=str(DEFAULT_CONTRACTS))
     family_parity.add_argument("--out", required=True)
     family_parity.add_argument("--out-md", required=True)
 
@@ -299,6 +300,7 @@ def _run_baselines(args: argparse.Namespace) -> int:
                 "case_id": case.get("case_id"),
                 "family": case.get("family"),
                 "status": case.get("status"),
+                "required_contract": case.get("required_contract"),
             }
             for case in cases
         ],
@@ -388,19 +390,66 @@ def _run_parity(args: argparse.Namespace) -> int:
 def _run_family_parity(args: argparse.Namespace) -> int:
     baseline_index_path, baseline_index = _load_json(args.baseline_index)
     candidate_path, candidate_payload = _load_json(args.candidate_suite)
+    contract_registry_path, contract_registry = _load_json(args.contract_registry)
     out_path = _resolve_path(args.out)
     out_md = _resolve_path(args.out_md)
+    producer_index_path = candidate_payload.get("producer_index_json")
+    producer_payload = None
+    if isinstance(producer_index_path, str):
+        producer_payload = _load_optional_json(_resolve_path(producer_index_path))
+    producer_status = {}
+    if isinstance(producer_payload, dict):
+        for producer in producer_payload.get("producers", []):
+            if isinstance(producer, dict):
+                producer_status[str(producer.get("producer_id"))] = str(producer.get("status"))
+
+    contract_lookup = {}
+    for contract in contract_registry.get("contracts", []):
+        if isinstance(contract, dict):
+            contract_lookup[str(contract.get("contract_id"))] = contract
+
+    family_packets = []
+    for case in baseline_index.get("cases", []):
+        if not isinstance(case, dict):
+            continue
+        contract_id = case.get("required_contract")
+        if not contract_id:
+            continue
+        contract = contract_lookup.get(str(contract_id))
+        required_producers = [] if not isinstance(contract, dict) else [str(item) for item in contract.get("required_producers", [])]
+        missing_producers = [producer_id for producer_id in required_producers if producer_status.get(producer_id) != "bound"]
+        family_packets.append(
+            {
+                "case_id": case.get("case_id"),
+                "family": case.get("family"),
+                "contract_id": contract_id,
+                "status": "critical_family_seed" if not missing_producers else "missing_required_producers",
+                "required_producers": required_producers,
+                "missing_producers": missing_producers,
+                "blocked_product_threads": [] if not isinstance(contract, dict) else contract.get("blocked_product_threads", []),
+            }
+        )
+
     payload = {
         "schema_version": "viewer_host_salt_ndepend.family_parity.v1",
-        "status": "surface_seed_only",
+        "status": "critical_family_seed",
         "command": "family-parity",
-        "comparison_ready": False,
+        "comparison_ready": bool(family_packets),
         "baseline_index_path": _repo_rel(baseline_index_path),
         "candidate_suite_path": _repo_rel(candidate_path),
+        "contract_registry_path": _repo_rel(contract_registry_path),
         "baseline_case_count": baseline_index.get("case_count", 0),
         "candidate_status": candidate_payload.get("status", "unknown"),
-        "reason": "C2 seeds the family-parity surface only; representative family comparison lands in a later slice.",
-        "packet_meta": _packet_meta("family-parity", {"baseline_index": _repo_rel(baseline_index_path), "candidate_suite": _repo_rel(candidate_path)}),
+        "critical_family_packets": family_packets,
+        "reason": "This first family packet seeds contract-aware critical-family status from the baseline manifest, contract registry, and candidate producer binding; real parity math still lands in a later slice.",
+        "packet_meta": _packet_meta(
+            "family-parity",
+            {
+                "baseline_index": _repo_rel(baseline_index_path),
+                "candidate_suite": _repo_rel(candidate_path),
+                "contract_registry": _repo_rel(contract_registry_path),
+            },
+        ),
     }
     _write_json(out_path, payload)
     _write_markdown(
@@ -408,11 +457,16 @@ def _run_family_parity(args: argparse.Namespace) -> int:
         [
             "# Viewer Host salt_ndepend Family Parity",
             "",
-            "Status: surface_seed_only",
+            "Status: critical_family_seed",
             f"Baseline index: {_repo_rel(baseline_index_path)}",
             f"Candidate suite: {_repo_rel(candidate_path)}",
+            f"Contract registry: {_repo_rel(contract_registry_path)}",
             "",
-            "Real family comparison lands in a later slice.",
+            "Critical family packets:",
+            *[
+                f"- {item['case_id']} ({item['contract_id']}): status={item['status']} missing={', '.join(item['missing_producers']) if item['missing_producers'] else 'none'}"
+                for item in family_packets
+            ],
         ],
     )
     print(json.dumps({"family_parity_json": _repo_rel(out_path), "family_parity_md": _repo_rel(out_md)}, indent=2))

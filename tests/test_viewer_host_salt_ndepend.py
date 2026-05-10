@@ -111,6 +111,8 @@ def test_baselines_surface_emits_seeded_index(tmp_path: Path) -> None:
     assert payload["status"] == "surface_seed_only"
     assert payload["case_count"] == 8
     assert payload["planned_blocker_cases"] == ["advanced_color_slider_contract"]
+    blocker_case = next(case for case in payload["cases"] if case["case_id"] == "advanced_color_slider_contract")
+    assert blocker_case["required_contract"] == "advanced_color_slider_contract.v1"
     assert out_md.exists()
 
 
@@ -173,4 +175,108 @@ def test_doctor_surface_reports_open_blockers(tmp_path: Path) -> None:
     assert payload["baseline_case_count"] == 8
     assert payload["bound_producer_count"] == 1
     assert payload["missing_producer_count"] == 1
+    assert out_md.exists()
+
+
+def test_family_parity_emits_advanced_color_slider_packet(tmp_path: Path) -> None:
+    policy_path = tmp_path / "policy.json"
+    native_helper_log = tmp_path / "artifacts" / "native_helper.log"
+    native_helper_log.parent.mkdir(parents=True, exist_ok=True)
+    native_helper_log.write_text("All helper tests passed\n", encoding="utf-8")
+    _write_json(
+        policy_path,
+        {
+            "producer_surfaces": [
+                {
+                    "producer_id": "native_helper_tests",
+                    "artifact_path": str(native_helper_log),
+                },
+                {
+                    "producer_id": "runtime_ui_harness",
+                    "artifact_path": str(tmp_path / "artifacts" / "missing_ui.log"),
+                },
+            ],
+            "planned_command_surfaces": [
+                {"command_id": "audit"},
+                {"command_id": "family-parity"},
+            ],
+            "gated_product_threads": ["advanced_color"],
+        },
+    )
+
+    packet_dir = tmp_path / "packet"
+    packet_dir.mkdir()
+    assert main(["audit", "--policy", str(policy_path), "--out-dir", str(packet_dir)]) == 0
+
+    manifest_path = tmp_path / "baselines.json"
+    _write_json(
+        manifest_path,
+        {
+            "cases": [
+                {
+                    "case_id": "advanced_color_slider_contract",
+                    "family": "critical_ui_behavior",
+                    "status": "planned_blocker",
+                    "required_contract": "advanced_color_slider_contract.v1",
+                }
+            ]
+        },
+    )
+    baseline_dir = tmp_path / "baseline"
+    baseline_json = baseline_dir / "baseline_index.json"
+    baseline_md = baseline_dir / "baseline_index.md"
+    assert main([
+        "baselines",
+        "--manifest",
+        str(manifest_path),
+        "--out-dir",
+        str(baseline_dir),
+        "--out",
+        str(baseline_json),
+        "--out-md",
+        str(baseline_md),
+    ]) == 0
+
+    registry_path = tmp_path / "contracts.json"
+    _write_json(
+        registry_path,
+        {
+            "contracts": [
+                {
+                    "contract_id": "advanced_color_slider_contract.v1",
+                    "blocked_product_threads": ["advanced_color"],
+                    "required_producers": [
+                        "native_helper_tests",
+                        "runtime_ui_harness",
+                    ],
+                }
+            ]
+        },
+    )
+
+    out_json = tmp_path / "family_parity.json"
+    out_md = tmp_path / "family_parity.md"
+    rc = main([
+        "family-parity",
+        "--baseline-index",
+        str(baseline_json),
+        "--candidate-suite",
+        str(packet_dir / "suite_index.json"),
+        "--contract-registry",
+        str(registry_path),
+        "--out",
+        str(out_json),
+        "--out-md",
+        str(out_md),
+    ])
+
+    assert rc == 0
+    payload = json.loads(out_json.read_text(encoding="utf-8"))
+    assert payload["status"] == "critical_family_seed"
+    assert payload["comparison_ready"] is True
+    packet = payload["critical_family_packets"][0]
+    assert packet["case_id"] == "advanced_color_slider_contract"
+    assert packet["contract_id"] == "advanced_color_slider_contract.v1"
+    assert packet["status"] == "missing_required_producers"
+    assert packet["missing_producers"] == ["runtime_ui_harness"]
     assert out_md.exists()
