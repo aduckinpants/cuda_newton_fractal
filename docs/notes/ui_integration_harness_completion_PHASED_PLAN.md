@@ -19,9 +19,9 @@ Phase 5 in progress - the original Gate G1 harness stop-line is no longer suffic
 - [done] Finish the current testing and harness effort as its own phased set of slices before returning to presets, library completion, composition, or new fractal work.
 - [done] Make the harness useful, reusable, and in the right shape for future real work rather than a half-done temporary measure.
 - [done] It is acceptable to draw a professional stop-line for now as long as the line is explicit and documented.
-- [open] Replace the local quality gate with deterministic scoped salt_ndepend-style code and harness coverage measures patterned on the noether-pack integration rather than heuristic standalone audits.
-- [open] Treat full user-visible behavior changes as blocked until the packeted coverage program, hostile-review proof, and runtime witness families are explicit and fail-closed.
-- [open] Keep advanced-color, preset, composition, and new-fractal implementation frozen until the new packeted gate is satisfied, not merely until the older Gate G1 harness closure note exists.
+- [deferred] Replace the local quality gate with deterministic scoped salt_ndepend-style code and harness coverage measures patterned on the noether-pack integration rather than heuristic standalone audits; this slice only pivots the checked-in authority and defers packet implementation to the next integration slices.
+- [deferred] Treat full user-visible behavior changes as blocked until the packeted coverage program, hostile-review proof, and runtime witness families are explicit and fail-closed; this slice records that block in checked-in authority and defers full enforcement implementation to the follow-on coverage-program slices.
+- [done] Keep advanced-color, preset, composition, and new-fractal implementation frozen until the new packeted gate is satisfied, not merely until the older Gate G1 harness closure note exists.
 
 ## Presumption Loop
 
