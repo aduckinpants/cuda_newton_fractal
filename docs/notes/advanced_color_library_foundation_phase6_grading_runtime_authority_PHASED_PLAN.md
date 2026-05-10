@@ -95,4 +95,4 @@ The controlling blocker is no longer whether Grading exists at all or which row 
 
 ## Resume Point
 
-After checkpointing this `phase_finish` slice, keep basin lane-retention deferred and resume Phase 6 with the next bounded grading-authority decision: either prove `band_finish` through a real `grade.glow` owner surface or switch deliberately to the separately planned Balance/Void operator track.
+Do not resume this Phase 6 subplan yet. Resume only after `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` closes the deterministic scoped `salt_ndepend` coverage gate; then keep basin lane-retention deferred and re-evaluate the next truthful bounded grading-authority choice (`band_finish` owner proof versus the separate Balance/Void track).
