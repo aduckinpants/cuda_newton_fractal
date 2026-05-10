@@ -785,7 +785,7 @@ def test_explaino_headless_color_pipeline_scenario_actions_change_draft_state_an
 
     switched_draft = switched_capture["state"].get("color_pipeline_draft")
     assert isinstance(switched_draft, dict)
-    assert switched_draft["next_row_id"] == 14
+    assert switched_draft["next_row_id"] == 15
 
     switched_source_row = _color_pipeline_first_row(switched_capture["state"], "source")
     assert switched_source_row["ui_row_id"] == 11
@@ -802,6 +802,10 @@ def test_explaino_headless_color_pipeline_scenario_actions_change_draft_state_an
     assert switched_palette_row["function_id"] == "heatmap"
     assert _color_pipeline_number_param(switched_palette_row, "palette.cycle_scale") == pytest.approx(0.5, abs=1e-6)
     assert _color_pipeline_number_param(switched_palette_row, "palette.saturation") == pytest.approx(1.25, abs=1e-6)
+
+    switched_grading_row = _color_pipeline_first_row(switched_capture["state"], "grading")
+    assert switched_grading_row["ui_row_id"] == 14
+    assert switched_grading_row["function_id"] == "contrast_lift"
 
     assert switched_capture["frame_hash"] != scenario_result.baseline_capture["frame_hash"], (
         "expected a headless advanced-color function switch to change the published runtime frame while preserving the loaded repeat/heatmap draft rows"

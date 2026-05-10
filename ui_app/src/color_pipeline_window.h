@@ -37,10 +37,20 @@ inline bool EnsureImGuiStackEditorRowId(std::uint64_t* ioRowId, std::uint64_t* i
 struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
+    bool force_open_for_automation = false;
     std::uint64_t next_row_id = 1;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
     std::vector<std::string> validation_messages;
+    std::vector<struct ColorPipelineUiAutomationRect> ui_automation_rects;
+};
+
+struct ColorPipelineUiAutomationRect {
+    std::string control_id;
+    int client_left = 0;
+    int client_top = 0;
+    int client_right = 0;
+    int client_bottom = 0;
 };
 
 enum class ColorPipelineDraftApplyStatus {
@@ -61,6 +71,54 @@ struct ColorPipelineRenderInteractionState {
     bool has_active_item = false;
     bool interacted = false;
 };
+
+inline ColorPipelineDraftApplyState DescribeColorPipelineDraftApplyState(
+    const ColorPipelineWindowState& state,
+    FractalType liveFractalType,
+    const KernelParams* liveParams);
+
+inline void ClearColorPipelineUiAutomationRects(ColorPipelineWindowState* ioState) {
+    if (!ioState) {
+        return;
+    }
+    ioState->ui_automation_rects.clear();
+}
+
+inline std::string BuildColorPipelinePrimaryControlId(
+    const std::string& laneId,
+    const std::string& functionId,
+    const FunctionParamDescriptor& param) {
+    return std::string("color_pipeline.") + laneId + "." + functionId + "." + param.path + ".primary";
+}
+
+#ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
+inline void NoteColorPipelineUiAutomationRect(
+    ColorPipelineWindowState* ioState,
+    const char* controlId) {
+    if (!ioState || !controlId || controlId[0] == '\0') {
+        return;
+    }
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    if (max.x <= min.x || max.y <= min.y) {
+        return;
+    }
+    ColorPipelineUiAutomationRect rect;
+    rect.control_id = controlId;
+    rect.client_left = static_cast<int>(std::lround(min.x));
+    rect.client_top = static_cast<int>(std::lround(min.y));
+    rect.client_right = static_cast<int>(std::lround(max.x));
+    rect.client_bottom = static_cast<int>(std::lround(max.y));
+    ioState->ui_automation_rects.push_back(std::move(rect));
+}
+#else
+inline void NoteColorPipelineUiAutomationRect(
+    ColorPipelineWindowState* ioState,
+    const char* controlId) {
+    (void)ioState;
+    (void)controlId;
+}
+#endif
 
 inline bool IsLegacyColorPanelControlBindingPath(const std::string& bindingPath) {
     return bindingPath == "fractal.params.coloring_mode" ||
@@ -429,11 +487,25 @@ inline bool ResetColorPipelineDraftFromLiveState(ColorPipelineWindowState* ioSta
             "Current live runtime tuple is outside the shipped advanced catalog; keep editing the programmable draft or switch the simple Color panel first.");
         return false;
     }
+    const std::vector<ColorPipelineLaneState> previousLanes = ioState->lanes;
     if (ioState->lanes.size() != ioState->live_snapshot.lanes.size()) {
         ioState->lanes = ioState->live_snapshot.lanes;
     } else {
         for (std::size_t index = 0; index < ioState->lanes.size(); ++index) {
             ioState->lanes[index] = ioState->live_snapshot.lanes[index];
+        }
+    }
+
+    const std::size_t sharedLaneCount = (std::min)(ioState->lanes.size(), previousLanes.size());
+    for (std::size_t laneIndex = 0; laneIndex < sharedLaneCount; ++laneIndex) {
+        ColorPipelineLaneState& lane = ioState->lanes[laneIndex];
+        const ColorPipelineLaneState& previousLane = previousLanes[laneIndex];
+        if (lane.lane_id != previousLane.lane_id) {
+            continue;
+        }
+        const std::size_t sharedRowCount = (std::min)(lane.rows.size(), previousLane.rows.size());
+        for (std::size_t rowIndex = 0; rowIndex < sharedRowCount; ++rowIndex) {
+            lane.rows[rowIndex].ui_row_id = previousLane.rows[rowIndex].ui_row_id;
         }
     }
     for (ColorPipelineLaneState& lane : ioState->lanes) {
@@ -650,12 +722,16 @@ inline bool SyncColorPipelineWindowFromLiveState(
     const bool liveSnapshotChanged =
         !liveSnapshotWasValid ||
         !ColorPipelineLiveSnapshotsEqual(ioState->live_snapshot, nextSnapshot);
+    ioState->live_snapshot = std::move(nextSnapshot);
+
+    const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
+    const bool draftDisallowedForFamily =
+        applyState.status == ColorPipelineDraftApplyStatus::disallowed_for_family;
     const bool adoptIntoDraft =
         !liveSnapshotWasValid ||
         (liveSnapshotChanged && !draftHasEdits) ||
-        (liveSnapshotChanged && !liveSnapshotWasImportSupported && draftMatchesStarter);
-
-    ioState->live_snapshot = std::move(nextSnapshot);
+        (liveSnapshotChanged && !liveSnapshotWasImportSupported && draftMatchesStarter) ||
+        draftDisallowedForFamily;
     if (adoptIntoDraft && ioState->live_snapshot.draft_import_supported) {
         return ResetColorPipelineDraftFromLiveState(ioState);
     }
@@ -2057,7 +2133,8 @@ inline bool RenderColorPipelineParamControl(
     const FunctionParamDescriptor& param,
     ColorPipelineParamState* ioValue,
     bool* ioDirty = nullptr,
-    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr,
+    const char* primaryControlId = nullptr) {
     if (!ioValue) {
         return false;
     }
@@ -2079,6 +2156,7 @@ inline bool RenderColorPipelineParamControl(
             const float dragMax = dragBounds.has_bounds ? static_cast<float>(dragBounds.max) : 0.0f;
             sliderChanged = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, "%.3f");
         }
+        NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
         NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputFloat("##value_input", &value, 0.0f, 0.0f, "%.5f");
@@ -2104,6 +2182,7 @@ inline bool RenderColorPipelineParamControl(
             const double step = param.has_step ? param.step_value : 0.001;
             sliderChanged = ImGui::DragScalar(param.label.c_str(), ImGuiDataType_Double, &value, static_cast<float>(step), dragMin, dragMax, "%.6f");
         }
+        NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
         NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputDouble("##value_input", &value, 0.0, 0.0, "%.6f");
@@ -2129,6 +2208,7 @@ inline bool RenderColorPipelineParamControl(
             const int dragMax = dragBounds.has_bounds ? static_cast<int>(dragBounds.max) : 0;
             sliderChanged = ImGui::DragInt(param.label.c_str(), &value, step, dragMin, dragMax);
         }
+        NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
         NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputInt("##value_input", &value, 0, 0);
@@ -2142,6 +2222,7 @@ inline bool RenderColorPipelineParamControl(
     } else if (param.type == "bool") {
         bool value = ioValue->bool_value;
         changed = ImGui::Checkbox(param.label.c_str(), &value);
+        NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
         NoteColorPipelineCurrentItemInteraction(changed, ioInteraction);
         if (changed) {
             ioValue->bool_value = value;
@@ -2149,7 +2230,9 @@ inline bool RenderColorPipelineParamControl(
         }
     } else if (param.type == "enum") {
         const char* preview = ioValue->enum_value.empty() ? "(select)" : ioValue->enum_value.c_str();
-        if (ImGui::BeginCombo(param.label.c_str(), preview)) {
+        const bool comboOpen = ImGui::BeginCombo(param.label.c_str(), preview);
+        NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
+        if (comboOpen) {
             for (const UISchemaOption& option : param.options) {
                 const bool isSelected = (option.id == ioValue->enum_value);
                 if (ImGui::Selectable(option.label.c_str(), isSelected)) {
@@ -2298,6 +2381,9 @@ inline void RenderColorPipelineWindowLane(
         rowSpec.allow_remove = lane.rows.size() > 1;
         rowSpec.allow_move_up = rowIndex > 0;
         rowSpec.allow_move_down = rowIndex + 1 < lane.rows.size();
+        if (ioState->force_open_for_automation) {
+            ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+        }
 
         const ImGuiStackEditorRowChromeResult rowResult = RenderImGuiStackEditorRowChrome(rowSpec, [&]() {
             const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
@@ -2349,7 +2435,16 @@ inline void RenderColorPipelineWindowLane(
                 if (paramIndex >= currentDescriptor->parameters.size() || paramIndex >= row.parameter_values.size()) {
                     continue;
                 }
-                RenderColorPipelineParamControl(ioState, liveFractalType, liveParams, currentDescriptor->parameters[paramIndex], &row.parameter_values[paramIndex], ioDirty, ioInteraction);
+                const std::string primaryControlId = BuildColorPipelinePrimaryControlId(lane.lane_id, row.function_id, currentDescriptor->parameters[paramIndex]);
+                RenderColorPipelineParamControl(
+                    ioState,
+                    liveFractalType,
+                    liveParams,
+                    currentDescriptor->parameters[paramIndex],
+                    &row.parameter_values[paramIndex],
+                    ioDirty,
+                    ioInteraction,
+                    primaryControlId.c_str());
             }
             if (currentDescriptor->parameters.empty() &&
                 (lane.lane_id == "source" || lane.lane_id == "palette")) {
@@ -2395,7 +2490,12 @@ inline bool RenderColorPipelineWindow(
     KernelParams* liveParams,
     bool* ioDirty = nullptr,
     bool* ioInteracted = nullptr) {
-    if (!ioState || !ioState->open) {
+    if (!ioState) {
+        return false;
+    }
+
+    ClearColorPipelineUiAutomationRects(ioState);
+    if (!ioState->open) {
         return false;
     }
     if (!EnsureColorPipelineWindowInitialized(ioState)) {
@@ -2408,6 +2508,9 @@ inline bool RenderColorPipelineWindow(
     }
 
     bool open = ioState->open;
+    if (ioState->force_open_for_automation) {
+        ImGui::SetNextWindowCollapsed(false, ImGuiCond_Always);
+    }
     ImGui::SetNextWindowSize(ImVec2(720.0f, 520.0f), ImGuiCond_FirstUseEver);
     const bool began = ImGui::Begin("Color Pipeline", &open);
     if (began) {

@@ -151,6 +151,13 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         if (outHasLoadedMutationHistory) *outHasLoadedMutationHistory = false;
     }
 
+    if (cli.open_color_pipeline_window_on_startup && ioColorPipelineWindow) {
+        ioColorPipelineWindow->open = true;
+    }
+    if (cli.have_ui_automation_report_json && ioColorPipelineWindow) {
+        ioColorPipelineWindow->force_open_for_automation = true;
+    }
+
     return 0;
 }
 

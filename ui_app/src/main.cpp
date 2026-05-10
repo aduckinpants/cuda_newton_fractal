@@ -1290,6 +1290,90 @@ static void PresentFrame() {
     g_pSwapChain->Present(1, 0);
 }
 
+static void WriteColorPipelineUiAutomationReport(
+    const std::string& reportPath,
+    HWND hwnd,
+    const ColorPipelineWindowState& colorPipelineWindow) {
+    if (reportPath.empty() || !hwnd) {
+        return;
+    }
+
+    std::error_code ignoredError;
+    const std::filesystem::path finalPath(reportPath);
+    if (finalPath.has_parent_path()) {
+        std::filesystem::create_directories(finalPath.parent_path(), ignoredError);
+    }
+
+    POINT clientOrigin{0, 0};
+    if (!ClientToScreen(hwnd, &clientOrigin)) {
+        return;
+    }
+
+    std::filesystem::path tempPath = finalPath;
+    tempPath += ".tmp";
+    std::ofstream out(tempPath, std::ios::binary | std::ios::trunc);
+    if (!out) {
+        return;
+    }
+
+    out << "{\n";
+    out << "  \"window_open\": " << (colorPipelineWindow.open ? "true" : "false") << ",\n";
+    out << "  \"initialized\": " << (colorPipelineWindow.initialized ? "true" : "false") << ",\n";
+    out << "  \"force_open_for_automation\": " << (colorPipelineWindow.force_open_for_automation ? "true" : "false") << ",\n";
+    out << "  \"lane_rows\": [";
+    bool firstLaneRow = true;
+    for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
+        for (const ColorPipelineRowState& row : lane.rows) {
+            if (!firstLaneRow) {
+                out << ',';
+            }
+            firstLaneRow = false;
+            out << "\n    \"" << lane.lane_id << ':' << row.function_id << "\"";
+        }
+    }
+    if (!firstLaneRow) {
+        out << '\n';
+    }
+    out << "  ],\n";
+    out << "  \"validation_messages\": [";
+    for (std::size_t index = 0; index < colorPipelineWindow.validation_messages.size(); ++index) {
+        if (index > 0) {
+            out << ',';
+        }
+        out << "\n    \"" << colorPipelineWindow.validation_messages[index] << "\"";
+    }
+    if (!colorPipelineWindow.validation_messages.empty()) {
+        out << '\n';
+    }
+    out << "  ],\n";
+    out << "  \"controls\": [";
+    for (std::size_t index = 0; index < colorPipelineWindow.ui_automation_rects.size(); ++index) {
+        const ColorPipelineUiAutomationRect& rect = colorPipelineWindow.ui_automation_rects[index];
+        if (index > 0) {
+            out << ',';
+        }
+        out << "\n    {\"control_id\": \"" << rect.control_id << "\", \"screen_rect\": ["
+            << (clientOrigin.x + rect.client_left) << ", "
+            << (clientOrigin.y + rect.client_top) << ", "
+            << (clientOrigin.x + rect.client_right) << ", "
+            << (clientOrigin.y + rect.client_bottom) << "]}";
+    }
+    out << "\n  ]\n}\n";
+    out.close();
+    if (!out) {
+        std::filesystem::remove(tempPath, ignoredError);
+        return;
+    }
+
+    std::filesystem::remove(finalPath, ignoredError);
+    std::filesystem::rename(tempPath, finalPath, ignoredError);
+    if (ignoredError) {
+        ignoredError.clear();
+        std::filesystem::copy_file(tempPath, finalPath, std::filesystem::copy_options::overwrite_existing, ignoredError);
+        std::filesystem::remove(tempPath, ignoredError);
+    }
+}
+
 static SampleModeArgs BuildSampleModeArgs(const ViewerCliArgs& cli) {
     SampleModeArgs sma;
     sma.request_stdin = cli.sample_request_stdin;
@@ -2342,6 +2426,9 @@ static void RunViewerFrame(
         actions.interactionChanged = true;
     }
     RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
+    if (cli.have_ui_automation_report_json) {
+        WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, colorPipelineWindow);
+    }
     if (!ProcessRuntimeWalkViewerImportPerFrame(
             hwnd,
             exeDir,

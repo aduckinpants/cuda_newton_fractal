@@ -21,6 +21,8 @@ WM_CLOSE = 0x0010
 SRCCOPY = 0x00CC0020
 DIB_RGB_COLORS = 0
 PW_RENDERFULLCONTENT = 0x00000002
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
 
 
 class RECT(ctypes.Structure):
@@ -29,6 +31,13 @@ class RECT(ctypes.Structure):
         ("top", ctypes.c_long),
         ("right", ctypes.c_long),
         ("bottom", ctypes.c_long),
+    ]
+
+
+class POINT(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_long),
+        ("y", ctypes.c_long),
     ]
 
 
@@ -67,6 +76,23 @@ class HeadlessLoadedStateScenarioResult:
     state_path: Path
     baseline_capture: dict[str, object]
     scenario_capture: dict[str, object]
+
+
+@dataclass(frozen=True)
+class UiAutomationRect:
+    control_id: str
+    screen_left: int
+    screen_top: int
+    screen_right: int
+    screen_bottom: int
+
+    @property
+    def width(self) -> int:
+        return self.screen_right - self.screen_left
+
+    @property
+    def height(self) -> int:
+        return self.screen_bottom - self.screen_top
 
 
 def active_runtime_exe() -> Path:
@@ -271,3 +297,73 @@ def close_runtime(hwnd: int | None, proc: subprocess.Popen[object]) -> None:
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait(timeout=5.0)
+
+
+def wait_for_ui_automation_rect(
+    report_path: Path,
+    control_id: str,
+    *,
+    timeout_seconds: float = 10.0,
+) -> UiAutomationRect:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: object | None = None
+    while time.monotonic() < deadline:
+        if report_path.exists():
+            try:
+                payload = json.loads(report_path.read_text(encoding="utf-8"))
+            except (FileNotFoundError, json.JSONDecodeError, OSError):
+                time.sleep(0.05)
+                continue
+            last_payload = payload
+            controls = payload.get("controls", []) if isinstance(payload, dict) else []
+            for control in controls:
+                if not isinstance(control, dict):
+                    continue
+                if str(control.get("control_id", "")).strip() != control_id:
+                    continue
+                rect = control.get("screen_rect")
+                if not isinstance(rect, list) or len(rect) != 4:
+                    continue
+                left, top, right, bottom = [int(value) for value in rect]
+                ui_rect = UiAutomationRect(control_id, left, top, right, bottom)
+                if ui_rect.width > 0 and ui_rect.height > 0:
+                    return ui_rect
+        time.sleep(0.1)
+
+    raise AssertionError(
+        f"UI automation report never exposed control '{control_id}' in {report_path}; last_payload={last_payload!r}"
+    )
+
+
+def drag_screen_rect(
+    control_rect: UiAutomationRect,
+    *,
+    start_fraction: float = 0.35,
+    end_fraction: float = 0.82,
+    y_fraction: float = 0.5,
+    step_count: int = 8,
+    settle_seconds: float = 0.3,
+) -> None:
+    user32 = ctypes.windll.user32
+    original_cursor = POINT()
+    user32.GetCursorPos(ctypes.byref(original_cursor))
+
+    clamped_y_fraction = min(max(y_fraction, 0.0), 1.0)
+    start_x = round(control_rect.screen_left + control_rect.width * start_fraction)
+    end_x = round(control_rect.screen_left + control_rect.width * end_fraction)
+    y = round(control_rect.screen_top + control_rect.height * clamped_y_fraction)
+
+    try:
+        user32.SetCursorPos(start_x, y)
+        time.sleep(0.05)
+        user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        time.sleep(0.05)
+        for step in range(1, max(step_count, 1) + 1):
+            t = step / max(step_count, 1)
+            next_x = round(start_x + (end_x - start_x) * t)
+            user32.SetCursorPos(next_x, y)
+            time.sleep(0.02)
+        user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        time.sleep(settle_seconds)
+    finally:
+        user32.SetCursorPos(original_cursor.x, original_cursor.y)

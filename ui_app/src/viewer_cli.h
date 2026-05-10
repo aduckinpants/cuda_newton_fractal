@@ -63,6 +63,9 @@ struct ViewerCliArgs {
     std::string runtime_walk_viewer_request_json_path;
     bool have_runtime_walk_viewer_fits_path = false;
     std::string runtime_walk_viewer_fits_path;
+    bool open_color_pipeline_window_on_startup = false;
+    bool have_ui_automation_report_json = false;
+    std::string ui_automation_report_json_path;
 
     // Fractal type
     bool have_fractal_type = false;

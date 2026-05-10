@@ -15,8 +15,11 @@ from tests.runtime_harness import (
     WM_CLOSE,
     active_runtime_exe as _active_runtime_exe,
     capture_ready_window_pixels as _capture_ready_window_pixels,
+    drag_screen_rect,
     find_window_for_pid as _find_window_for_pid,
     focus_window as _focus_window,
+    wait_for_ui_automation_rect,
+    wait_for_window as _wait_for_window,
 )
 
 
@@ -29,12 +32,13 @@ WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
 VK_SPACE = 0x20
 VK_RIGHT = 0x27
+COLOR_PIPELINE_SCALE_CONTROL_ID = "color_pipeline.source.smooth_escape_ramp.signal.scale.primary"
 
 
 def _write_state_json(path: Path) -> None:
     payload = {
         "state_version": 3,
-        "fractal_type": "explaino_fp",
+        "fractal_type": "explaino",
         "view": {
             "center_x": 0.0,
             "center_y": 0.0,
@@ -71,6 +75,16 @@ def _write_state_json(path: Path) -> None:
             "explaino_root_spread": 0.0,
             "explaino_root_count": 0,
             "poly_coeffs": [-1, 0, 0, 1, 0],
+            "color_signal": "smooth_escape",
+            "color_shape": "identity",
+            "color_palette": "cyclic_escape",
+            "color_grading": "escape_default",
+            "color_smooth_escape_scale": 1.0,
+            "color_smooth_escape_bias": 0.0,
+            "color_heatmap_cycle_scale": 1.0,
+            "color_heatmap_saturation": 1.0,
+            "color_contrast_lift_exposure": 1.0,
+            "color_contrast_lift_saturation": 1.0,
             "color_saturation": 1.0,
             "color_contrast": 1.0,
             "color_tint_r": 1.0,
@@ -216,6 +230,72 @@ def test_runtime_walk_viewer_replays_and_space_pauses(tmp_path: Path) -> None:
         stepped_frame, _ = _capture_stable_window_pixels(hwnd)
         stepped_diff = _mean_abs_diff(paused_frame_b, stepped_frame)
         assert stepped_diff > 0.06, f"Right-arrow step did not visibly advance runtime-walk playback; diff={stepped_diff:.3f}"
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_walk_viewer_physical_color_pipeline_drag_changes_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    state_path = tmp_path / "state.json"
+    bundle_path = tmp_path / "bundle.json"
+    request_path = tmp_path / "runtime_walk_viewer_request.json"
+    automation_report_path = tmp_path / "ui_automation_report.json"
+    out_dir = tmp_path / "out"
+    _write_state_json(state_path)
+    _write_bundle_json(bundle_path)
+    _write_request_json(request_path, state_path, bundle_path, out_dir)
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-runtime-walk-request-json",
+            str(request_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(automation_report_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        control_rect = wait_for_ui_automation_rect(automation_report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
+
+        user32 = ctypes.windll.user32
+        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
+        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
+
+        time.sleep(0.5)
+        paused_frame_a, paused_frame_b = _capture_stable_window_pixels(hwnd)
+        paused_diff = _mean_abs_diff(paused_frame_a, paused_frame_b)
+        assert paused_diff < 0.1, f"Space pause did not freeze runtime-walk playback before the color-pipeline drag; diff={paused_diff:.3f}"
+
+        drag_screen_rect(control_rect)
+
+        changed_frame_a, changed_frame_b = _capture_stable_window_pixels(hwnd)
+        changed_diff = _mean_abs_diff(paused_frame_b, changed_frame_a)
+        assert changed_diff > 0.06, (
+            "Physical drag of the Color Pipeline Source Scale control did not visibly change the published-runtime frame; "
+            f"diff={changed_diff:.3f}"
+        )
+
+        steady_after_drag = _mean_abs_diff(changed_frame_a, changed_frame_b)
+        assert steady_after_drag < 0.1, (
+            "The viewer did not settle after the Color Pipeline drag while runtime-walk playback was paused; "
+            f"diff={steady_after_drag:.3f}"
+        )
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)

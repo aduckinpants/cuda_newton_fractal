@@ -359,6 +359,24 @@ static void TestLoadStateJson() {
     Check(cli.load_state_json == "state.json", "TestLoadStateJson_Path");
 }
 
+static void TestUiAutomationReportFlags() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--open-color-pipeline-window",
+        "--ui-automation-report-json", "ui_automation.json"
+    }), &cli);
+    Check(rc == 0, "TestUiAutomationReportFlags_ReturnCode");
+    Check(cli.open_color_pipeline_window_on_startup, "TestUiAutomationReportFlags_OpenColorPipelineWindow");
+    Check(cli.have_ui_automation_report_json, "TestUiAutomationReportFlags_HaveUiAutomationReport");
+    Check(cli.ui_automation_report_json_path == "ui_automation.json", "TestUiAutomationReportFlags_Path");
+}
+
+static void TestUiAutomationReportJsonMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--ui-automation-report-json"}), &cli);
+    Check(rc != 0, "TestUiAutomationReportJsonMissingValue_Fails");
+}
+
 static void TestColorPipelineActionsParseTypedSequence() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -570,6 +588,8 @@ int main() {
     TestDescribeFunctionsJson();
     TestDescribeFunctionsJsonMissingValue();
     TestLoadStateJson();
+    TestUiAutomationReportFlags();
+    TestUiAutomationReportJsonMissingValue();
     TestColorPipelineActionsParseTypedSequence();
     TestColorPipelineActionsRejectInvalidSpec();
     TestSidecarApplyArmedStepCount();
