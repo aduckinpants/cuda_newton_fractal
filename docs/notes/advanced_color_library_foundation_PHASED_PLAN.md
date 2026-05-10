@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 in progress - the bounded Phase 5 backend-recovery chain closed at `b596af6`, `contrast_lift` and `phase_finish` are now the runtime-real Grading rows in the working tree, basin lane-retention is explicitly deferred, and the next remaining Phase 6 decision is whether to prove `band_finish` next or move deliberately onto the separate Balance/Void track
+Phase 6 blocked - the `phase_finish` runtime-authority slice closed, but further advanced-color implementation is now explicitly frozen behind the deterministic scoped `salt_ndepend` coverage gate tracked in `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md`; do not resume `band_finish`, Balance/Void, presets, composition, or new-fractal work until that gate closes.
 
 ## Phase Checklist
 
@@ -12,7 +12,7 @@ Phase 6 in progress - the bounded Phase 5 backend-recovery chain closed at `b596
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
 - [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
-- [ ] Phase 6 - promote Grading to a first-class category and land the initial Grade library, including the bounded generic Balance/Void operator, only after the backend recovery slice closes honestly
+- [ ] Phase 6 - blocked behind the deterministic scoped `salt_ndepend` coverage gate; do not promote more Grading rows or start the separate Balance/Void track until the harness-completion plan closes honestly
 - [ ] Phase 7 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
 - [ ] Phase 8 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
@@ -27,10 +27,11 @@ Phase 6 in progress - the bounded Phase 5 backend-recovery chain closed at `b596
 - [open] Phase 6 - Add a bounded generic filmic Balance/Void grading operator, but keep that separate from fractal-family geometry work.
 - [done] Phase 0 - Plan one experimental ExplainO-BalanceVoid deformation-pack family with three neutral-default axes instead of a branch explosion of separate fractals.
 - [open] Phase 6-7 - Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
+- [open] Repo gate - keep further advanced-color implementation blocked until the deterministic scoped `salt_ndepend` coverage program is explicit enough to replace the earlier generic harness stop-line.
 
 ## Presumption Loop
 
-The controlling product risk is no longer the Phase 5 backend seam; the bounded root-basin pair runtime slice closed that blocker at `b596af6`, the first Phase 6 grading lane shipped at `110cd4c`, and the fail-closed follow-up closed at `23b8f55`. The mapped Grade inventory already exists in `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md`, but the checked-in runtime/editor authority is still only partial: `ui_app/src/color_pipeline_core.h` now round-trips `contrast_lift` and `phase_finish` through the reusable live import/apply seam by reusing the existing legacy grading owners, while `band_finish`, `neutral_finish`, `tone_map_finish`, `balance_void_grade`, and the deferred basin lane-retention cleanup still lack equivalent proof. The most falsifiable current hypothesis is that the next honest Phase 6 slice should stay bounded: either prove `band_finish` through a real owner surface or pivot deliberately to the separately planned Balance/Void operator, but not both at once. The cheapest disconfirming checks remain deterministic planning rails plus focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest runtime-owner tests.
+The controlling product risk is no longer choosing between `band_finish` and Balance/Void in isolation. The bounded root-basin pair runtime slice closed at `b596af6`, the first Phase 6 grading lane shipped at `110cd4c`, the fail-closed follow-up closed at `23b8f55`, and the `phase_finish` widening closed at `07f332a4`; however, the user has now raised a stronger cross-cutting gate. Product implementation is paused until the separate `ui_integration_harness_completion` plan replaces the old generic harness stop-line with deterministic scoped `salt_ndepend` coverage authority. The next falsifiable repair for this plan is therefore explicit deferral: it must stop presenting `band_finish` or Balance/Void as immediately executable until that coverage gate closes. The cheapest disconfirming checks remain deterministic plan/contract rails plus the sibling stop-line plan that now owns the coverage pivot.
 
 ## Presumption Evidence
 
@@ -43,6 +44,7 @@ The controlling product risk is no longer the Phase 5 backend seam; the bounded 
 
 ## Proof Ledger
 
+- Planning gate: this foundation plan is now explicitly blocked by `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` until the deterministic scoped `salt_ndepend` coverage program exists; do not treat the old Phase 6 resume point as executable product authority.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` explicitly distinguishes legacy ExplainO CMap, Root Classic Palette, Joy Root Palette, and the generic viewport colormap surface as separate authorities.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` records the stronger architecture rule that `color_pipeline_window.h` must become a consumer and not remain the authority for ids, semantics, adapters, or serialization truth.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` records the initial balanced library inventory for Source / Shape / Palette / Grading, including the bounded Balance/Void-inspired grading operator and a separate ExplainO-BalanceVoid family track.
@@ -164,6 +166,7 @@ The controlling product risk is no longer the Phase 5 backend seam; the bounded 
   - `ui_app/tests/test_finding_archive_actions.cpp`
   - `ui_app/tests/test_runtime_reset.cpp`
 - Non-goals for Phase 6:
+  - do not resume grading implementation until the deterministic scoped `salt_ndepend` coverage gate closes
   - do not redefine the mapped Source / Shape / Palette / Grading inventory
   - do not ship non-runtime grading rows just because they are named in the inventory
   - do not implement `balance_void_grade` in the first grading-authority slice
@@ -172,13 +175,4 @@ The controlling product risk is no longer the Phase 5 backend seam; the bounded 
 
 ## Resume Point
 
-Start the next bounded Phase 6 slice from `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` under `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json` by adding focused REDs in `ui_app/tests/test_schema_binding.cpp` and the nearest grading owner tests that prove the advanced editor still lacks a grading lane and cannot yet round-trip the bounded `contrast_lift` grading surface.
-
-
-
-
-
-
-
-
-
+Do not resume this foundation plan yet. Resume only after `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` closes the deterministic scoped `salt_ndepend` coverage gate; then re-evaluate the next truthful Phase 6 choice (`band_finish` owner proof versus the separate Balance/Void track).

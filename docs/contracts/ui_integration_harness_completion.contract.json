@@ -6,34 +6,31 @@
   "plan_path": "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts/ui_integration_harness_completion.contract.json",
-    "docs/contracts/ui_integration_harness_foundation.contract.json",
     "docs/notes/ui_integration_harness_completion_PHASED_PLAN.md",
-    "docs/notes/ui_integration_harness_foundation_PHASED_PLAN.md",
-    "tests/runtime_harness.py",
-    "tests/test_function_descriptor_cli.py",
-    "tests/test_generic_probe_cli.py",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
     "docs/handoffs/archive/HANDOFF_LOG_20260509_135329.md",
     "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
-    "separate the reusable testing/harness completion thread from the advanced-color, preset, composition, and new-fractal product thread",
-    "finish the current testing and harness effort as its own phased set of slices before resuming product work",
-    "draw a professional documented stop-line for the harness for now rather than pretending every future harness feature must land immediately",
-    "treat presets, function-library continuation, composition, and new fractal work as blocked until the harness gate closes"
+    "replace the ad hoc harness-completion stop-line with a deterministic scoped salt_ndepend-style coverage program",
+    "pattern the local quality gate on the noether-pack loop with machine-readable baselines, contracts, doctor, parity, and family-parity surfaces",
+    "keep advanced-color, preset, composition, and new-fractal product work frozen until that deterministic coverage gate is explicitly satisfied",
+    "treat existing local audits and runtime harness tests as packet producers for the new coverage program rather than as standalone final authority"
   ],
   "forbidden_operator_prompts": [
-    "resume advanced-color implementation while the harness-completion gate is still open",
-    "start preset code before the harness-completion gate closes",
-    "start multi-function composition or new fractal work before the harness-completion gate closes",
-    "leave the harness-versus-product split as chat-only intent without checked-in planning authority"
+    "resume advanced-color implementation while the salt_ndepend coverage gate is still open",
+    "start preset code before the deterministic coverage gate closes",
+    "start multi-function composition or new fractal work before the deterministic coverage gate closes",
+    "treat helper-only audits or runtime harness witnesses as sufficient final authority without the packeted coverage program"
   ],
   "required_defaults": {
-    "harness_first_gate_is_explicit": "required",
+    "salt_ndepend_gate_is_explicit": "required",
     "product_work_is_gated": "required",
-    "stop_line_is_documented": "required"
+    "deterministic_scoped_coverage_is_required": "required"
   },
   "forbidden_defaults": {
-    "harness_product_conflation": "forbidden",
+    "helper_only_closure": "forbidden",
     "chat_only_restart_plan": "forbidden"
   },
   "required_validation_commands": [

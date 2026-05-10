@@ -2,26 +2,28 @@
 
 ## Current Phase
 
-Phase 4 in progress - the `phase_finish` runtime-authority slice now lands in the working tree: coherent phase tuples import/apply/render through the shipped grading lane, `contrast_lift` and `phase_finish` are the current runtime-real grading rows, basin lane-retention stays deferred, the native/runtime/profile rails are green on the repaired state, and checkpoint bookkeeping remains
+Phase 5 pending - the `phase_finish` runtime-authority slice is closed, and the next grading-authority decision is now explicitly blocked behind the deterministic scoped `salt_ndepend` coverage gate tracked in `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md`.
 
 ## Phase Checklist
 
 - [x] Phase 1 - add focused REDs that prove Grading is absent from the advanced lane catalogs/live snapshots and that bounded `contrast_lift` grading cannot yet round-trip as a first-class advanced lane
 - [x] Phase 2 - promote a bounded grading lane into the reusable catalog/window live bridge while keeping legacy main-panel grading as the one authoritative mirror
 - [x] Phase 3 - ship only runtime-real grading rows through that lane, starting with `contrast_lift` and leaving wider Grade inventory rows fail-closed until their runtime math exists
-- [ ] Phase 4 - keep reset/defaults plus diagnostics/archive persistence truthful for the bounded grading surface, then validate, hostile-audit, and checkpoint the slice cleanly
+- [x] Phase 4 - keep reset/defaults plus diagnostics/archive persistence truthful for the bounded grading surface, then validate, hostile-audit, and checkpoint the slice cleanly
+- [ ] Phase 5 - after the deterministic scoped `salt_ndepend` coverage gate closes, choose the next honest grading-authority thread: `band_finish` owner proof or the separate Balance/Void track
 
 ## Explicit User Asks
 
 - [done] Phase 5 - keep moving on the defined advanced-color path instead of circling on already-closed work.
 - [done] Phase 5-7 - keep the reusable color pipeline generic and separately owned instead of baking window-local exceptions into the product story.
-- [active] Phase 6 - keep moving forward through truthful grading authority: `contrast_lift` and `phase_finish` now land as the shipped Grading rows through the reusable core/window seams while wider Grade rows stay deferred.
+- [done] Phase 6 - `contrast_lift` and `phase_finish` now land as the shipped Grading rows through the reusable core/window seams while wider Grade rows stay deferred.
 - [deferred] Phase 6 - defer basin-default grading-lane retention for now; do not blur that UI cleanup into the current runtime-authority slice.
 - [deferred] Phase 6 - deferred beyond the bounded grading-lane truth slice; Balance/Void stays separate from geometry work and will not widen until the simpler grading lane is proven end-to-end.
+- [open] Repo gate - keep further grading expansion blocked until the deterministic scoped `salt_ndepend` coverage program is explicit enough to replace the earlier generic harness stop-line.
 
 ## Presumption Loop
 
-The controlling blocker is no longer whether Grading exists at all: the bounded `contrast_lift` lane landed at `110cd4c` / `ck:61776381`, the fail-closed follow-up landed at `23b8f55` / `ck:10646574`, and the basin lane-retention cleanup has now been explicitly deferred. The next falsifiable missing authority for this slice was `phase_finish`: `ui_app/src/color_pipeline_core.h` already carried the descriptor, `KernelParams` plus `ui_app/src/escape_time_coloring.h` already carried the generic `color_saturation` / `color_contrast` grading owners, and the main Color panel already exposed that one live grading mirror, but the reusable core/window seams still classified `phase_finish` as unshipped and kept coherent phase tuples draft-only. The cheapest disconfirming checks were focused REDs in `ui_app/tests/test_schema_binding.cpp` that flipped the phase catalog, live snapshot, auto-complete, apply, and render expectations from fail-closed to live-backed while leaving `band_finish` and basin lane-retention deferred.
+The controlling blocker is no longer whether Grading exists at all or which row should widen next in isolation. The bounded `contrast_lift` lane closed at `110cd4c`, the fail-closed follow-up closed at `23b8f55`, and the `phase_finish` widening closed at `07f332a4`; however, the user has now raised a stronger cross-cutting quality gate. The next falsifiable repair for this subplan is therefore explicit pause, not immediate row selection: it must stop presenting `band_finish` or Balance/Void as executable until `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` closes the deterministic scoped `salt_ndepend` coverage gate. The cheapest disconfirming checks are the same deterministic planning rails plus the sibling stop-line plan that now owns the coverage-program pivot.
 
 ## Presumption Evidence
 
@@ -33,6 +35,8 @@ The controlling blocker is no longer whether Grading exists at all: the bounded 
 
 ## Proof Ledger
 
+- Checkpointed: `07f332a4` closed the `phase_finish` runtime-authority slice; it is no longer a live working-tree-only follow-up.
+- Planning gate: further grading-authority work is now explicitly blocked by `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` until the deterministic scoped `salt_ndepend` coverage program exists.
 - Landed predecessor: `docs/notes/advanced_color_library_foundation_phase5_root_basin_pair_runtime_PHASED_PLAN.md` closed at `b596af6` / `ck:6460d382`, so Phase 5 no longer blocks Grading promotion.
 - Checkpointed: `110cd4c` / `ck:61776381` landed the bounded `contrast_lift` grading lane through the reusable catalog, live snapshot, apply, persistence, render, and headless seams while preserving the legacy grading mirror as the only runtime authority.
 - Checkpointed: `23b8f55` / `ck:10646574` kept coherent `phase_default` and `bands_default` tuples observable-but-draft-only while the matching grading rows were still unshipped.
@@ -65,7 +69,7 @@ The controlling blocker is no longer whether Grading exists at all: the bounded 
 
 ## Notes
 
-- Expected owner files:
+- Expected owner files for the next bounded slice after the coverage gate closes:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
   - `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md`
   - `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json`
@@ -82,10 +86,10 @@ The controlling blocker is no longer whether Grading exists at all: the bounded 
   - `ui_app/tests/test_finding_archive_actions.cpp`
   - `ui_app/tests/test_runtime_reset.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
-- Non-goals for this slice:
+- Non-goals for the next bounded slice:
   - do not redefine the mapped Source / Shape / Palette / Grading inventory
   - do not ship non-runtime Grade rows just because they are named in the inventory
-  - do not implement `balance_void_grade` in the first grading-authority slice
+  - do not implement `balance_void_grade` before the deterministic scoped `salt_ndepend` coverage gate closes
   - do not reopen the closed Phase 5 backend-recovery thread
   - do not create a second grading authority outside the legacy Color-panel mirror
 
