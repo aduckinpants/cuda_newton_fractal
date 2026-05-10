@@ -186,6 +186,90 @@
       ]
     },
     {
+      "contract_id": "advanced_color_function_switch_contract.v1",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color"
+      ],
+      "required_producers": [
+        "code_quality_audit",
+        "test_coverage_audit",
+        "native_helper_tests",
+        "runtime_publish",
+        "runtime_probe_session",
+        "runtime_ui_harness"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Any user-visible advanced-color function switch must carry deterministic native coverage, published-runtime witnesses, and a green packeted parity case before closeout.",
+      "notes": [
+        "Anchors the existing headless source-function switch runtime witness as a first-class blocker contract instead of a chat-only detail."
+      ]
+    },
+    {
+      "contract_id": "advanced_color_shape_stack_contract.v1",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color"
+      ],
+      "required_producers": [
+        "code_quality_audit",
+        "test_coverage_audit",
+        "native_helper_tests",
+        "runtime_publish",
+        "runtime_probe_session",
+        "runtime_ui_harness"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Any user-visible advanced-color shape-stack edit must carry deterministic native coverage, published-runtime witnesses, and a green packeted parity case before closeout.",
+      "notes": [
+        "Anchors the existing headless add-row runtime witness as a first-class blocker contract instead of a chat-only side detail."
+      ]
+    },
+    {
+      "contract_id": "advanced_color_draft_resync_contract.v1",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "blocked_product_threads": [
+        "advanced_color"
+      ],
+      "required_producers": [
+        "code_quality_audit",
+        "test_coverage_audit",
+        "native_helper_tests",
+        "runtime_publish",
+        "runtime_probe_session",
+        "runtime_ui_harness"
+      ],
+      "required_packet_surfaces": [
+        "audit",
+        "baselines",
+        "parity",
+        "family-parity",
+        "doctor",
+        "review"
+      ],
+      "proof_obligation": "Any user-visible advanced-color draft invalidation or resynchronization path must carry deterministic native coverage, published-runtime witnesses, and a green packeted parity case before closeout.",
+      "notes": [
+        "Anchors the existing loaded-state override invalidation witness as a first-class blocker contract instead of leaving it implicit."
+      ]
+    },
+    {
       "contract_id": "runtime_ui_harness_contract.v1",
       "family": "runtime_ui_behavior",
       "status": "seeded",

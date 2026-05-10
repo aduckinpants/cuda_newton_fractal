@@ -106,6 +106,39 @@
         "This is the first critical family because the color-pipeline slider regression escaped the earlier gate.",
         "It must become the first family-parity packet before advanced-color work can resume."
       ]
+    },
+    {
+      "case_id": "advanced_color_function_switch_contract",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "advanced_color_function_switch_contract.v1",
+      "notes": [
+        "The existing headless loaded-state scenario already proves that switching the Source lane function to root_proximity changes the published-runtime frame while preserving the loaded draft rows.",
+        "This behavior now needs its own explicit blocker packet instead of staying buried inside the generic advanced-color aggregate."
+      ]
+    },
+    {
+      "case_id": "advanced_color_shape_stack_contract",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "advanced_color_shape_stack_contract.v1",
+      "notes": [
+        "The existing headless loaded-state scenario already proves that adding a second Shape row changes the published-runtime frame while persisting the new row stack.",
+        "This behavior now needs its own explicit blocker packet instead of remaining folded into the generic advanced-color aggregate."
+      ]
+    },
+    {
+      "case_id": "advanced_color_draft_resync_contract",
+      "family": "critical_ui_behavior",
+      "status": "planned_blocker",
+      "required_by_freeze_gate": true,
+      "required_contract": "advanced_color_draft_resync_contract.v1",
+      "notes": [
+        "The existing loaded-state override regression already proves that invalid advanced-color drafts resynchronize away from disallowed root_proximity state.",
+        "This behavior now needs its own explicit blocker packet instead of hiding behind the slider-only contract."
+      ]
     }
   ]
 }

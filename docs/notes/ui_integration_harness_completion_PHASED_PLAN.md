@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, the first critical family packet now exists for `advanced_color_slider_contract.v1`, the broader family backfill now binds every freeze-gated baseline case to an explicit contract while doctor fails visible when required blocker contracts are missing or not green in family-parity, workflow closure now fails closed when an active contract explicitly requires the salt_ndepend gate and the doctor packet still reports `freeze_ready=false`, the repo now has one deterministic `freeze-gate` command that regenerates the packet set, surfaces only live blocker findings, and can prove `freeze_ready=true` against the current producer artifacts, and `parity` plus `family-parity` now evaluate the actual baseline expectations and contract-backed advanced-color producer set instead of emitting placeholder seed packets. The next required work is to widen that parity depth from the current freeze-gate baseline families into more granular user-visible behavior contracts, so the green packet gate approaches the demanded UI and UX coverage bar instead of only proving the minimum seeded blocker set, while mainline action-level hostile review remains mandatory before every meaningful action.
+Phase 5 in progress - the original Gate G1 harness stop-line is no longer sufficient; the machine-readable policy, baseline, contract-registry, and freeze-gate seed docs now exist, the local audit/structural/review/baselines/contracts/doctor/parity/family-parity command surface now exists, audit plus doctor now bind the current producer artifacts into real packet summaries, the broader family backfill now binds every freeze-gated baseline case to an explicit contract while doctor fails visible when required blocker contracts are missing or not green in family-parity, workflow closure now fails closed when an active contract explicitly requires the salt_ndepend gate and the doctor packet still reports `freeze_ready=false`, the repo now has one deterministic `freeze-gate` command that regenerates the packet set, surfaces only live blocker findings, and can prove `freeze_ready=true` against the current producer artifacts, `parity` plus `family-parity` now evaluate the actual baseline expectations and contract-backed advanced-color producer set instead of emitting placeholder seed packets, and the critical advanced-color family has widened from a single slider blocker into explicit slider, function-switch, shape-stack, and draft-resynchronization blocker contracts. The next required work is to keep widening that parity breadth toward the remaining user-visible advanced-color and adjacent UI behavior families, so the green packet gate approaches the demanded UI and UX coverage bar instead of only proving the current seeded blocker set, while mainline action-level hostile review remains mandatory before every meaningful action.
 
 ## Phase Checklist
 
@@ -69,6 +69,8 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: `tools/viewer_host_salt_ndepend.py` parity no longer emits `surface_seed_only`; it now preserves `source_artifact` plus `expected_result` in the baseline index, evaluates each seeded baseline case against the current producer artifacts, and computes a real contract-backed parity case for `advanced_color_slider_contract.v1` from its required producer set.
 - Landed now: `tools/viewer_host_salt_ndepend.py` family-parity now checks required packet surfaces in addition to required producers, consumes the real parity packet, and marks `advanced_color_slider_contract.v1` green only when its parity case is also green rather than assuming producer presence alone is enough.
 - Landed now: the real repo packet proves the stronger parity semantics instead of just the temp tests: `artifacts/salt_ndepend/latest/parity.json` now reports `matched_case_count=8` with `advanced_color_slider_contract` status `contract_case_matched`, `artifacts/salt_ndepend/latest/family_parity.json` now reports `advanced_color_slider_contract` status `critical_family_parity_match` with `parity_case_status=contract_case_matched`, and `artifacts/salt_ndepend/latest/doctor.json` remains `freeze_ready=true` after a fresh `freeze-gate` regeneration.
+- Landed now: `docs/VIEWER_HOST_SALT_NDEPEND_BASELINES.v1.json`, `docs/VIEWER_HOST_SALT_NDEPEND_CONTRACTS.v1.json`, and `docs/VIEWER_HOST_SALT_NDEPEND_FREEZE_GATE.v1.json` now widen the critical advanced-color family into explicit `advanced_color_function_switch_contract.v1`, `advanced_color_shape_stack_contract.v1`, and `advanced_color_draft_resync_contract.v1` blocker contracts rather than treating everything beyond the slider as unnamed aggregate debt.
+- Landed now: the widened real repo packet stays green on the broader authority set: a fresh `freeze-gate` regeneration now materializes explicit parity/family-parity entries for the function-switch, shape-stack, and draft-resync advanced-color contracts while `artifacts/salt_ndepend/latest/doctor.json` still reports `freeze_ready=true`.
 
 ## Hostile Audit
 
@@ -85,6 +87,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Pass 6 - challenge whether the packet gate still depended on stale leftover artifacts or stale blocker text, and repair deterministic regeneration plus doctor readiness so the green state is based on current evidence.
 - [done] Pass 7 - challenge whether the stricter harness-completion contract could actually be machine-proved after adding the freshness commands, and repair the contract-proof evidence mapper when the receipt writer rejected them.
 - [done] Pass 8 - challenge whether `parity` and `family-parity` were still fake even after the freshness repairs, and replace the placeholder packet semantics with actual baseline-case and contract-backed parity evaluation.
+- [done] Pass 9 - challenge whether the green advanced-color gate still collapsed several already-covered behaviors into one slider-only blocker contract, and widen the critical family to explicit function-switch, shape-stack, and draft-resync contracts.
 
 ## Audit Findings
 
@@ -102,15 +105,17 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Real defect found: once the harness-completion contract started requiring `test_coverage_audit` and `freeze-gate`, the contract-proof receipt writer could not parse evidence for those commands because `tools/viewer_host_contract_proof.py` had no mapping for either artifact path.
 - [done] Real defect found: even after the freshness and receipt repairs, `parity` still emitted a constant `surface_seed_only` placeholder while `family-parity` ignored `required_packet_surfaces`, so the advanced-color blocker contract could go green without any actual parity case behind it.
 - [done] Clean re-read result: the current gate is no longer green by placeholder. It now evaluates the seeded baseline expectations, derives a real contract-backed parity case for `advanced_color_slider_contract.v1`, and requires that parity case before family-parity can mark the contract green. The remaining gap is breadth, not placeholder semantics.
+- [done] Real defect found: even after the parity-depth repair, the advanced-color family still collapsed multiple already-covered behaviors into one slider-only blocker contract, which left function-switch, shape-stack, and draft-resync behavior outside explicit packet authority.
+- [done] Clean re-read result: the critical advanced-color family now names four explicit blocker contracts, and the real repo packet materializes each of them green from current evidence. The remaining gap is broader UI-family coverage beyond these seeded advanced-color behaviors.
 
 ## Action Hostile Review
 
-- Action ID: action-20260510-salt-ndepend-parity-depth
+- Action ID: action-20260510-salt-ndepend-parity-breadth
 - Status: done
-- Suspected Failure Mode: the packet gate can still lie even after freshness repairs because `parity` remains a placeholder and `family-parity` ignores contract-required packet surfaces, which lets blocker contracts go green on producer presence alone.
-- Correct Owner/Action: preserve `source_artifact` and `expected_result` in the baseline index, teach `tools/viewer_host_salt_ndepend.py` parity to evaluate seeded and contract-backed cases against the current producer packet, and require a green parity case inside family-parity whenever the contract names `parity` in `required_packet_surfaces`.
+- Suspected Failure Mode: the packet gate can still understate advanced-color coverage debt if only the slider behavior is named explicitly while other already-covered behaviors remain merged into the same aggregate blocker contract.
+- Correct Owner/Action: widen the checked-in baseline, contract registry, and freeze gate so the existing function-switch, shape-stack, and draft-resync witnesses each become their own explicit advanced-color blocker contract instead of remaining implicit.
 - Proof Surface: `py -3.14 -m pytest tests/test_viewer_host_salt_ndepend.py -q` plus `py -3.14 tools/viewer_host_salt_ndepend.py freeze-gate --out-dir artifacts/salt_ndepend/latest`
-- Blocked Action: any claim that the advanced-color blocker contract has packeted parity proof while `parity` is still a placeholder or `family-parity` is still ignoring the parity surface.
+- Blocked Action: any claim that advanced-color packet breadth is explicit while only the slider regression is named in checked-in blocker authority.
 
 ## Notes
 
@@ -143,4 +148,4 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 
 ## Resume Point
 
-Open the parity-breadth slice next: widen the new case-evaluated parity semantics beyond the seeded freeze-gate baseline families into more granular user-visible behavior contracts, and do not confuse the now-honest green blocker packet with full UI or UX coverage closure.
+Open the next parity-breadth slice on the remaining uncovered UI families: keep widening explicit packet authority beyond the current four advanced-color blockers, and do not confuse the now-honest green advanced-color packet breadth with full UI or UX coverage closure.

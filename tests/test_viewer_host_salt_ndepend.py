@@ -110,11 +110,20 @@ def test_baselines_surface_emits_seeded_index(tmp_path: Path) -> None:
     assert rc == 0
     payload = json.loads(out_json.read_text(encoding="utf-8"))
     assert payload["status"] == "surface_seed_only"
-    assert payload["case_count"] == 8
-    assert payload["planned_blocker_cases"] == ["advanced_color_slider_contract"]
+    assert payload["case_count"] == 11
+    assert payload["planned_blocker_cases"] == [
+        "advanced_color_slider_contract",
+        "advanced_color_function_switch_contract",
+        "advanced_color_shape_stack_contract",
+        "advanced_color_draft_resync_contract",
+    ]
     assert all(case.get("required_contract") for case in payload["cases"])
     blocker_case = next(case for case in payload["cases"] if case["case_id"] == "advanced_color_slider_contract")
     assert blocker_case["required_contract"] == "advanced_color_slider_contract.v1"
+    function_switch_case = next(case for case in payload["cases"] if case["case_id"] == "advanced_color_function_switch_contract")
+    assert function_switch_case["required_contract"] == "advanced_color_function_switch_contract.v1"
+    shape_stack_case = next(case for case in payload["cases"] if case["case_id"] == "advanced_color_shape_stack_contract")
+    assert shape_stack_case["required_contract"] == "advanced_color_shape_stack_contract.v1"
     runtime_ui_case = next(case for case in payload["cases"] if case["case_id"] == "runtime_ui_harness_baseline")
     assert runtime_ui_case["required_contract"] == "runtime_ui_harness_contract.v1"
     assert out_md.exists()
@@ -176,8 +185,8 @@ def test_doctor_surface_reports_open_blockers(tmp_path: Path) -> None:
     assert "packet_command_surfaces_missing" not in finding_codes
     assert "critical_family_backfill_incomplete" not in finding_codes
     assert "workflow_hard_denial_missing" not in finding_codes
-    assert payload["contract_count"] == 9
-    assert payload["baseline_case_count"] == 8
+    assert payload["contract_count"] == 12
+    assert payload["baseline_case_count"] == 11
     assert payload["bound_producer_count"] == 1
     assert payload["missing_producer_count"] == 1
     assert out_md.exists()
