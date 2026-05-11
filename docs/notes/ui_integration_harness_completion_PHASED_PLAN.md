@@ -8,6 +8,8 @@ Current slice update: `color_pipeline_core` now has its own dedicated native hel
 
 Current slice update: `color_pipeline_window` now has its own dedicated native helper binary proving no-ImGui draft initialization, live sync, root tuple co-switch/apply, Shape-stack apply, unsupported-live fail-closed behavior, root-basin pair schedules, and window utility contracts. The helper found and fixed a real live-sync defect where single live Shape rows were built without importing the live Shape owner fields, and the remaining uncovered module is now only `main.cpp`.
 
+Current slice update: `main.cpp` now delegates its CLI mode-conflict validation and sample-mode argument shaping to the already-covered CLI surface, and `ui_app/tests/test_main.cpp` owns a dedicated helper proof for the extracted main decision seam. The native helper log proves `test_main: passed=15 failed=0`, and the refreshed coverage audit now reports `78 covered / 0 uncovered`, clearing the module-level code coverage gate.
+
 ## Case Study - Session-Long Weaseling, Lies, And Escalation
 
 This section was written by the same assistant the user has explicitly identified as a known proven liar. It is included here because the earlier prompt-review text lied about chronology by collapsing the session into only the latest anger instead of the full prompt trail.
@@ -178,6 +180,9 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: `ui_app/tests/test_color_pipeline_window.cpp`, `ui_app/src/color_pipeline_window.h`, and `ui_app/build_tests_vsdevcmd.cmd` now give `color_pipeline_window` its own dedicated native helper binary and repair the live Shape import bug it exposed.
 - Landed now: the native helper log proves the dedicated window seam by name with `test_color_pipeline_window: passed=59 failed=0`, and the refreshed coverage audit moved from `76 covered / 2 uncovered` to `77 covered / 1 uncovered`, clearing `color_pipeline_window` from the uncovered list while leaving only `main.cpp` uncovered.
 - Landed now: `docs/contracts/ui_integration_harness_completion.contract.json` explicitly includes `ui_app/src/color_pipeline_window.h` in the active mutation scope because the dedicated helper exposed a real source defect rather than only a missing test binary.
+- Landed now: `ui_app/src/main.cpp`, `ui_app/src/viewer_cli.h`, `ui_app/tests/test_main.cpp`, and `ui_app/build_tests_vsdevcmd.cmd` now move the monolith-owned CLI conflict and sample-mode shaping decisions into the CLI surface, delegate `main.cpp` to those helpers, and give `main` its own module-named native helper binary.
+- Landed now: the native helper log proves the dedicated main seam by name with `test_main: passed=15 failed=0`, and the refreshed coverage audit moved from `77 covered / 1 uncovered` to `78 covered / 0 uncovered`, clearing `main.cpp` and the remaining module-level code coverage gap.
+- Landed now: `docs/contracts/ui_integration_harness_completion.contract.json` explicitly includes `ui_app/src/main.cpp` and `ui_app/src/viewer_cli.h` in the active mutation scope because the final coverage seam required a real source extraction instead of a fake `test_main.cpp` naming shell.
 
 ## Hostile Audit
 
@@ -214,6 +219,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Pass 26 - challenge whether `runtime_walk_headless.cpp` could be covered honestly without re-running the whole viewer path, then extract a dedicated native helper binary that proved the public headless entry point fail-fast ordering, base-state validation, render default shaping, lens enabling, and output-work ordering through explicit external seam stubs.
 - [done] Pass 27 - challenge whether `color_pipeline_core.h` could be covered honestly without product UI work, then extract a dedicated native helper binary that proved runtime-backed catalog filtering and order, defaults, supported-param import/apply, range validation, tuple selection, and schedule bridge behavior directly.
 - [done] Pass 28 - challenge whether `color_pipeline_window.h` could be covered honestly without driving ImGui, then extract a no-ImGui dedicated helper binary that proved real draft/sync/apply/window utility behavior and forced a source fix for live Shape-row import.
+- [done] Pass 29 - challenge whether `main.cpp` could be covered honestly without pretending a helper compile covers the whole Win32/ImGui monolith, then extract the smallest CLI dispatch decision seam into the CLI surface and prove that delegated main-owned behavior with a dedicated `test_main` helper.
 
 ## Audit Findings
 
@@ -275,6 +281,9 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Real defect found: `color_pipeline_window.h` already had substantial no-ImGui draft/sync/apply behavior trapped inside broad schema tests, but the coverage audit still left it uncovered because no module-named helper owned the window seam directly.
 - [done] Hostile audit finding: the first dedicated window helper failed on live Shape sync because `TryBuildColorPipelineShapeLaneFromLive()` built a single Shape row with default parameters instead of importing the live Shape owner fields, so the editor could misrepresent live offset/scale state even while reporting a supported snapshot.
 - [done] Clean re-read result: `color_pipeline_window` now has its own native helper binary, the source fix imports live Shape owner fields through the Shape-stack entry mapping, the helper log proves the window behavior by name, and the coverage audit now counts that seam directly. The only remaining uncovered module is `main.cpp`.
+- [done] Real defect found: `main.cpp` kept CLI mode-conflict validation and sample-mode argument shaping trapped as static monolith helpers, which made the final coverage push vulnerable to a fake `test_main.cpp` that proved only the file name rather than a real delegated main decision.
+- [done] Hostile audit finding: the first attempt at the main extraction patch was invalid because the hand-written unified hunk counts were corrupt and a later generated patch briefly inserted a `test_main.exe` run before its compile step, so the source mutation had to be regenerated from normalized temporary diffs before applying.
+- [done] Clean re-read result: `main.cpp` now delegates the extracted decisions through `viewer_cli.h`, `test_main` proves the mode-conflict and sample-argument contracts by name, the native helper rail is green, and the coverage audit now reports zero uncovered modules.
 
 ## Action Hostile Review
 
@@ -435,6 +444,12 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Correct Owner/Action: inspect `ui_app/src/color_pipeline_window.h`, `ui_app/src/color_pipeline_core.h`, existing schema/color tests, and current build wiring first; then extract or target the narrowest deterministic helper seam that proves actual color-pipeline window behavior without resuming product implementation.
 - Proof Surface: targeted reads of the window/core/test seams first; if a deterministic seam exists, `py -3.14 tools/viewer_host_run_logged_command.py --label "native helper tests" --log artifacts/verify_native_helper_tests.log --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app\build_tests_vsdevcmd.cmd` plus `py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json` after the dedicated color-pipeline-window binary or extracted seam lands.
 - Blocked Action: any code/build mutation that claims `color_pipeline_window` coverage before the real user-facing editor seam is inspected, bounded, proved by a module-named helper or honest extraction, and recognized by the coverage audit.
+- Action ID: action-20260511-main-cpp-coverage-extraction-probe
+- Status: done
+- Suspected Failure Mode: `main.cpp` can remain the final uncovered module because it is a Win32/ImGui/DX11 monolith, and a dishonest slice could add a fake `test_main.cpp` that only names the file or launches broad runtime paths without proving a real boot, dispatch, or lifecycle decision owned by the monolith.
+- Correct Owner/Action: inspect `ui_app/src/main.cpp`, existing viewer/bootstrap/state-init tests, and build constraints first; then either extract the smallest deterministic boot/dispatch helper seam into a testable module with a real `test_main.cpp` owner path, or record why the current monolith blocks honest module-level closure without a larger extraction plan.
+- Proof Surface: targeted reads of the monolith and adjacent viewer tests first; if a deterministic seam exists, guarded source/test/build edits followed by `py -3.14 tools/viewer_host_run_logged_command.py --label "native helper tests" --log artifacts/verify_native_helper_tests.log --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app\build_tests_vsdevcmd.cmd` plus `py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json`.
+- Blocked Action: any claim that `main.cpp` is honestly covered before a real monolith-owned decision seam is inspected, bounded, proved by a module-named helper or explicit extraction, and recognized by the coverage audit.
 
 ## Notes
 

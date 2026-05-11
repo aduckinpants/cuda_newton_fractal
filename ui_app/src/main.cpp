@@ -1104,22 +1104,6 @@ static void ApplySweepPlaybackPerFrame(const SweepPlayerConfig& config, float de
     sweepSingleStep = false;
 }
 
-static bool ValidateCliConflicts(const ViewerCliArgs& cli) {
-    const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
-    const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
-    const bool runtimeWalk = cli.have_runtime_walk_request_json;
-    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
-    const bool colorPipelineHeadlessProof = HasColorPipelineHeadlessProofActions(cli.color_pipeline_headless_proof);
-    if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
-    if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
-    if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
-    if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
-    if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
-    if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend)) return false;
-    if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || flashlightProbe || runtimeWalkViewer)) return false;
-    return true;
-}
-
 static int TryDispatchHeadlessMode(const ViewerCliArgs& cli, const std::string& exeDir,
                                     ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens, bool& dirty,
                                     ColorPipelineWindowState& colorPipelineWindow,
@@ -1373,19 +1357,6 @@ static void WriteColorPipelineUiAutomationReport(
         std::filesystem::remove(tempPath, ignoredError);
     }
 }
-
-static SampleModeArgs BuildSampleModeArgs(const ViewerCliArgs& cli) {
-    SampleModeArgs sma;
-    sma.request_stdin = cli.sample_request_stdin;
-    sma.response_stdout = cli.sample_response_stdout;
-    sma.request_json_path = cli.have_sample_request_json ? cli.sample_request_json_path : std::string();
-    sma.response_json_path = cli.have_sample_response_json ? cli.sample_response_json_path : std::string();
-    sma.conflict_validate_ui = cli.validate_ui_only;
-    sma.conflict_capture_diagnostic = cli.capture_diagnostic_only;
-    sma.conflict_capture_finding = cli.capture_finding_only;
-    return sma;
-}
-
 static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exePath) {
     if (cli.have_sample_session_pipe) {
         return RunNamedPipeSessionMode(cli.sample_session_pipe_name, exePath);
@@ -1413,7 +1384,7 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
             std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
             return 1;
         }
-        return RunSampleMode(BuildSampleModeArgs(cli), exePath);
+        return RunSampleMode(BuildViewerCliSampleModeArgs(cli), exePath);
     }
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
@@ -2554,7 +2525,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::string exeDir = GetExeDir();
     { int headlessRc = TryDispatchCommandLineModes(cli, exePath, exeDir); if (headlessRc >= 0) return headlessRc; }
 
-    if (!ValidateCliConflicts(cli)) return 1;
+    if (!ValidateViewerCliModeConflicts(cli)) return 1;
 
     ViewState view{};
     KernelParams params{};

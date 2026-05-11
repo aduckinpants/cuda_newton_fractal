@@ -135,6 +135,38 @@ struct ViewerCliArgs {
     bool any_sample_mode_arg = false;
 };
 
+inline bool ValidateViewerCliModeConflicts(const ViewerCliArgs& cli) {
+    const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
+    const bool flashlightProbe = cli.flashlight_probe || cli.have_flashlight_probe_path;
+    const bool runtimeWalk = cli.have_runtime_walk_request_json;
+    const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
+    const bool colorPipelineHeadlessProof = !cli.color_pipeline_headless_proof.actions.empty();
+    if (cli.have_runtime_walk_viewer_request_json && cli.have_runtime_walk_viewer_fits_path) return false;
+    if (cli.capture_diagnostic_only && cli.capture_finding_only) return false;
+    if (colorPipelineHeadlessProof && !(cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    if (cli.validate_ui_only && (cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    if (exploreRecommend && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only)) return false;
+    if (flashlightProbe && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend)) return false;
+    if (runtimeWalk && (cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || exploreRecommend || flashlightProbe || runtimeWalkViewer)) return false;
+    return true;
+}
+
+inline SampleModeArgs BuildViewerCliSampleModeArgs(const ViewerCliArgs& cli) {
+    SampleModeArgs args;
+    args.request_stdin = cli.sample_request_stdin;
+    args.response_stdout = cli.sample_response_stdout;
+    if (cli.have_sample_request_json) {
+        args.request_json_path = cli.sample_request_json_path;
+    }
+    if (cli.have_sample_response_json) {
+        args.response_json_path = cli.sample_response_json_path;
+    }
+    args.conflict_validate_ui = cli.validate_ui_only;
+    args.conflict_capture_diagnostic = cli.capture_diagnostic_only;
+    args.conflict_capture_finding = cli.capture_finding_only;
+    return args;
+}
+
 // Parse command-line args into a ViewerCliArgs struct.
 // Returns 0 on success.  Returns a nonzero exit code on fatal parse error
 // (e.g. --explaino-seed present but value missing/invalid).

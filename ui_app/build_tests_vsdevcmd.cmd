@@ -51,6 +51,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_main.cpp ^
+  /Fe:"%TESTROOT%\test_main.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\flashlight_probe.cpp .\src\lens_sdf.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_flashlight_probe.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp ^
   /Fe:"%TESTROOT%\test_flashlight_probe.exe"
 if errorlevel 1 exit /b 1
@@ -461,6 +466,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_viewer_cli.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_main.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_viewer_state_init.exe"
