@@ -60,6 +60,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_runtime_walk.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\runtime_walk_headless.cpp .\tests\test_runtime_walk_headless.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_walk_headless.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\runtime_walk_bootstrap.cpp .\src\schema_binding.cpp .\src\json_min.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_runtime_walk_bootstrap.cpp ^
   /Fe:"%TESTROOT%\test_runtime_walk_bootstrap.exe"
@@ -506,6 +511,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_runtime_walk_headless.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_runtime_walk_bootstrap.exe"
