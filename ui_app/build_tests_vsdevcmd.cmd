@@ -195,6 +195,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_capture.cpp ^
+  /Fe:"%TESTROOT%\test_diagnostics_capture.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\render_capture_guard.cpp .\tests\test_render_capture_guard.cpp ^
   /Fe:"%TESTROOT%\test_render_capture_guard.exe"
 if errorlevel 1 exit /b 1
@@ -539,6 +544,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_diagnostics_capture.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_render_capture_guard.exe"
