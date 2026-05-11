@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 complete - the deterministic scoped `salt_ndepend` coverage gate closed at `ck:29fa6c71`, the bounded `band_finish` owner proof is implemented, and repaired-state validation proves the published runtime plus physical slider path after the rebuild. `band_finish` now ships only through real legacy grading owner fields; `grade.glow`, Balance/Void, and basin lane-retention remain deferred.
+Composition authority in progress - the deterministic scoped `salt_ndepend` coverage gate closed at `ck:29fa6c71`, the bounded `band_finish` owner proof is implemented, and repaired-state validation proves the published runtime plus physical slider path after the rebuild. The next executable work is Grading stack composition using existing shipped rows only; further single-row grading polish waits until the composition spine exists.
 
 ## Phase Checklist
 
@@ -11,6 +11,7 @@ Phase 5 complete - the deterministic scoped `salt_ndepend` coverage gate closed 
 - [x] Phase 3 - ship only runtime-real grading rows through that lane, starting with `contrast_lift` and leaving wider Grade inventory rows fail-closed until their runtime math exists
 - [x] Phase 4 - keep reset/defaults plus diagnostics/archive persistence truthful for the bounded grading surface, then validate, hostile-audit, and checkpoint the slice cleanly
 - [x] Phase 5 - ship the next honest grading-authority row: `band_finish` owner proof using only real runtime-backed controls while Balance/Void, `grade.glow`, and basin lane-retention remain deferred
+- [ ] Phase 6 - add REDs and implementation for ordered Grading stack composition using only shipped rows, with stack ownership, live import/apply, persistence, reset, capture/archive, and published-runtime proof
 
 ## Explicit User Asks
 
@@ -21,10 +22,12 @@ Phase 5 complete - the deterministic scoped `salt_ndepend` coverage gate closed 
 - [deferred] Phase 6 - defer Balance/Void beyond this bounded `band_finish` row; it stays separate from geometry work and will not widen until the simpler grading lane is proven end-to-end.
 - [done] Repo gate - the deterministic scoped `salt_ndepend` coverage program closed at `ck:29fa6c71` with `78 covered / 0 uncovered` and `freeze_ready=true`, so grading expansion may resume only under hostile-reviewed bounded slices.
 - [done] Phase 6 - finish the next visible advanced-color feature gap by making the iteration-bands tuple live-backed in the advanced editor with `band_finish`, without exposing `grade.glow` or any other fake control.
+- [open] Composition - start the critical multi-function composition spine before continuing with single-row grading polish.
+- [open] Composition - keep Grading stack composition runtime-backed through existing shipped rows only, with no new Grade inventory rows or fake controls.
 
 ## Presumption Loop
 
-The controlling blocker is now the first remaining visible-but-unshipped grading row, not the coverage gate. The bounded `contrast_lift` lane closed at `110cd4c`, the fail-closed follow-up closed at `23b8f55`, the `phase_finish` widening closed at `07f332a4`, the Phase 5 root-basin pair runtime slice closed at `b596af6`, and the deterministic coverage gate closed at `ck:29fa6c71`. The remaining falsifiable risk is that `band_finish` could be shipped by simply allowing its old raw descriptor through the catalog even though `grade.glow` has no runtime owner. The bounded hypothesis for this slice is narrower: if `band_finish` uses the same legacy grading mirror fields that already drive the shipped phase/default grading path, the iteration-bands tuple can become live-backed without inventing `glow`, without creating a second grading authority, and without reopening Balance/Void. The cheapest disconfirming checks are focused REDs in `ui_app/tests/test_color_pipeline_core.cpp`, `ui_app/tests/test_color_pipeline_window.cpp`, and `ui_app/tests/test_schema_binding.cpp`, followed by runtime publish and physical Color Pipeline slider proof against the active `D:` executable.
+The controlling blocker is now composition authority, not the next unshipped grading row. The bounded `contrast_lift` lane closed at `110cd4c`, `phase_finish` closed at `07f332a4`, `band_finish` closed at `80cc000`, Shape stack composition closed at `e6b55b9`, the Phase 5 root-basin pair runtime slice closed at `b596af6`, and the deterministic coverage gate closed at `ck:29fa6c71`. The remaining falsifiable risk is that the editor can still present multi-row lanes while Grading has no stack owner, so multiple enabled Grading rows may reject, collapse to one legacy field pack, or appear runtime-backed without ordered evaluation. The bounded hypothesis for this slice is narrower: if Grading stack composition uses only existing shipped rows, it can prove the composition spine without exposing `grade.glow`, `neutral_finish`, `tone_map_finish`, Balance/Void, or generic Source/Palette composition.
 
 ## Presumption Evidence
 
@@ -34,6 +37,7 @@ The controlling blocker is now the first remaining visible-but-unshipped grading
 - `ui_app/src/color_pipeline_core.h` maps `ColorGradingPreset::bands_default` to `band_finish`; before this slice it still filtered that row out of `GetColorPipelineLaneCatalogs()` because `IsColorPipelineFunctionRuntimeBacked("grading", "band_finish")` returned false.
 - `ui_app/tests/test_schema_binding.cpp` locked coherent iteration-bands tuples as observable-but-draft-only until the matching grading row shipped, so that test surface is the correct RED/GREEN owner for this slice.
 - `ui_app/src/color_pipeline_core.h` still has no grading mapping for `ColorGradingPreset::basin_default`, which is why basin lane-retention remains a separate deferred cleanup instead of being smuggled into this slice.
+- `ui_app/src/fractal_types.h` has stack owners for Shape and bounded root-basin pairs, but no `color_grading_stack`, so the first REDs must prove Grading currently lacks truthful multi-row ownership.
 
 ## Proof Ledger
 
@@ -87,21 +91,21 @@ The controlling blocker is now the first remaining visible-but-unshipped grading
 
 ## Resume Point
 
-Resume after the `band_finish` checkpoint by keeping basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void deferred until one of those surfaces gets a separate owner-proof contract.
+Resume after the `band_finish` checkpoint by keeping basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void deferred until the composition spine exists.
 
 ## Next Known Sliced Work
 
-1. Basin-default grading lane-retention cleanup: prove whether `ColorGradingPreset::basin_default` deserves a real Grading row/import path or should remain intentionally absent; do not widen basin math in that slice.
-2. `neutral_finish` or `tone_map_finish` owner proof: choose one visible Grade inventory row and prove real runtime owner fields before exposing it in the shipped catalog.
-3. Balance/Void grading owner proof: implement the bounded generic filmic operator only under its own contract, separate from ExplainO-specific geometry/deformation work.
-4. Descriptor-owned backend precision policy: carry the `smooth_escape` and `root_proximity` precision lesson into metadata consumed by `ResolveSampleEvalModeForRender`, instead of growing per-signal predicates.
-5. Phase 7 foundation closure: once remaining Phase 6 owner-proof decisions are shipped or explicitly deferred, build the proof matrix, D: gallery/runtime captures, and extension rules.
+1. Grading stack composition with existing shipped rows (`contrast_lift`, `phase_finish`, `band_finish`) under this retargeted Phase 6 contract; this is composition work, not a new grading inventory row.
+2. Palette blend stack with explicit RGB blend math, weights/modes, persistence, and viewer proof.
+3. Source signal composition with explicit scalar mixer semantics and descriptor-owned backend precision metadata.
+4. Basin-default grading lane-retention cleanup, `neutral_finish` / `tone_map_finish`, `grade.glow`, and Balance/Void owner proofs after the composition spine is truthful.
+5. Foundation closure: once composition and remaining owner-proof decisions are shipped or explicitly deferred, build the proof matrix, D: gallery/runtime captures, and extension rules.
 
 ## Action Hostile Review
 
-- Action ID: action-20260511-foundation-continuity-validation
-- Suspected Failure Mode: this plan-only continuity repair may name next slices but fail to prove the checked-in plan/contract state is synchronized, leaving another stale authority surface.
-- Correct Owner/Action: run the active Phase 6 contract validator and phased-plan sync after updating the umbrella foundation proof ledger and next-slice index.
-- Proof Surface: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` plus `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
-- Blocked Action: checkpointing this continuity slice before both validators are green and `HANDOFF_LOG.md` records the next known sliced work.
+- Action ID: action-20260511-grading-stack-reds
+- Suspected Failure Mode: the first implementation mutation may add permissive multi-row Grading UI tests that only prove row counts while the runtime still collapses all Grading params into one legacy field pack.
+- Correct Owner/Action: add focused REDs that require a bounded Grading stack owner and fail on current code before adding implementation state.
+- Proof Surface: focused native helper failures in `ui_app/tests/test_color_pipeline_window.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` before implementation; later green proof through `ui_app/build_tests_vsdevcmd.cmd`.
+- Blocked Action: adding `color_grading_stack` implementation fields or renderer evaluation before a failing test proves the current collapse/rejection behavior.
 

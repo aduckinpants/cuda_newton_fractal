@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 post-`band_finish` continuity - `band_finish` is checkpointed at `80cc000`, the smooth/root precision detours are closed through `6170dc4`, and the foundation now needs the next grading work to stay sliced by owner proof. `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void, presets, composition, and new-fractal work remain deferred until separate contracts make one of those surfaces executable.
+Composition authority in progress - `band_finish` is checkpointed at `80cc000`, the smooth/root precision detours are closed through `6170dc4`, and the next critical foundation work is now the multi-function composition spine under the retargeted Phase 6 contract. Remaining single-row grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void), presets, and new-fractal work stay deferred until composition has runtime-owner truth.
 
 ## Phase Checklist
 
@@ -12,9 +12,10 @@ Phase 6 post-`band_finish` continuity - `band_finish` is checkpointed at `80cc00
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
 - [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
-- [ ] Phase 6 - continue bounded Grading runtime authority only through separate owner-proof contracts after `band_finish`; `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, and Balance/Void remain individually sliced
-- [ ] Phase 7 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
-- [ ] Phase 8 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
+- [ ] Phase 6 - build the multi-function composition spine before more single-row grading polish; first executable slice is Grading stack composition with existing shipped rows, followed by Palette blend and Source signal composition contracts
+- [ ] Phase 7 - continue bounded Grading runtime authority only through separate owner-proof contracts after the composition spine exists; `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, and Balance/Void remain individually sliced
+- [ ] Phase 8 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
+- [ ] Phase 9 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
 ## Explicit User Asks
 
@@ -32,7 +33,7 @@ Phase 6 post-`band_finish` continuity - `band_finish` is checkpointed at `80cc00
 
 ## Presumption Loop
 
-The controlling product risk is now stale continuity after the `band_finish` and precision-policy detours. The bounded root-basin pair runtime slice closed at `b596af6`, the first Phase 6 grading lane shipped at `110cd4c`, the fail-closed follow-up closed at `23b8f55`, `phase_finish` closed at `07f332a4`, the coverage gate closed at `ck:29fa6c71`, and `band_finish` closed at `80cc000`. The next falsifiable repair is not another opportunistic grading row; it is keeping each remaining grading surface behind a separate owner-proof contract so no fake `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, or Balance/Void control ships by implication.
+The controlling product risk is now composition drift after the `band_finish` and precision-policy detours. The bounded root-basin pair runtime slice closed at `b596af6`, Shape stack composition closed at `e6b55b9`, `phase_finish` closed at `07f332a4`, the coverage gate closed at `ck:29fa6c71`, and `band_finish` closed at `80cc000`. The next falsifiable repair is not another opportunistic grading row; it is proving an ordered multi-function composition spine that can execute, persist, reset, capture, and publish before the remaining grading inventory rows are widened.
 
 ## Presumption Evidence
 
@@ -40,7 +41,8 @@ The controlling product risk is now stale continuity after the `band_finish` and
 - `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already maps the lane-stack requirement: Source / Shape / Palette lane stacks, plus-button row insertion, ordered composition, and runtime-real-only shipping.
 - `ui_app/src/color_pipeline_core.h` already defines `BuildColorPipelineGradeFunctions()` for `contrast_lift`, `phase_finish`, and `band_finish`; all three now ship only through runtime-backed grading owners.
 - `ui_app/src/fractal_types.h` plus `ui_app/src/escape_time_coloring.h` carry the generic `color_saturation` / `color_contrast` grading owners that made `phase_finish` and `band_finish` honest without adding a second grading authority.
-- `ui_app/src/color_pipeline_core.h` still has no equivalent proven owner for `grade.glow`, `neutral_finish`, `tone_map_finish`, or `balance_void_grade`, and `ColorGradingPreset::basin_default` still has no grading mapping, which keeps those surfaces explicitly deferred until separate owner-proof slices exist.
+- `ui_app/src/fractal_types.h` proves the current composition boundary directly: Shape has `color_shape_stack`, root-basin has bounded `color_root_basin_pairs`, and Grading/Source/Palette do not yet have generic stack owners.
+- `ui_app/src/color_pipeline_core.h` still has no equivalent proven owner for `grade.glow`, `neutral_finish`, `tone_map_finish`, or `balance_void_grade`, and `ColorGradingPreset::basin_default` still has no grading mapping, which keeps those surfaces explicitly deferred until separate owner-proof slices exist after composition.
 - The verified references still split the ExplainO surfaces cleanly: the legacy LUT lineage lives in `c:\code\salticid-cuda\carl-ca-python\ca_viewer.py`, while the current basin/root palettes live in `c:\code\salticid-cuda\content\packs\explaino\cuda\explaino_cuda_helpers.inl` and `c:\code\salticid-cuda\cuda_core\src\ops_special.cu`, and the generic viewport colormap surface in `c:\code\salticid-cuda\ide_ui_dx11\ui_app\src\viewport_colormap.cpp` / `.h` does not contain an ExplainO colormap.
 
 ## Proof Ledger
@@ -129,7 +131,7 @@ The controlling product risk is now stale continuity after the `band_finish` and
 - Checkpointed: `80cc000` / `ck:9a48c0a8` closed `band_finish` as the third runtime-real Grading row using only `grade.saturation` and `grade.contrast` owner-backed controls; `grade.glow`, Balance/Void, and basin lane-retention stayed deferred.
 - Validated repaired `band_finish` slice: `artifacts/band_finish_native_green.log` is green for `ui_app/build_tests_vsdevcmd.cmd`; `artifacts/code_quality_report.json` stayed on the `97/100` baseline; `artifacts/verify_runtime_publish.log` published the active `D:` runtime; `artifacts/verify_color_pipeline_physical_drag.log` reports `1 passed, 3 deselected`; `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` has `checks.contract_schema_valid=true`; and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` was regenerated after plan repair.
 - Closed detour: `153f5e8` plus `970edef` closed `smooth_escape` backend signal classification; `6170dc4` closed `root_proximity` backend precision policy. The follow-up precision-policy lesson is descriptor-owned backend sensitivity, not more one-off hidden defaults.
-- Next known sliced work after this continuity checkpoint: basin-default grading lane-retention cleanup, `neutral_finish` or `tone_map_finish` owner proof, Balance/Void grading owner proof, descriptor-owned backend precision policy, and Phase 7 proof matrix/gallery/runtime captures.
+- Corrected priority: the retargeted Phase 6 contract now binds the next critical implementation thread to composition first: Grading stack with shipped rows, then Palette blend stack, then Source signal composition, before remaining single-row grading owner proofs.
 
 ## Hostile Audit
 
@@ -144,6 +146,7 @@ The controlling product risk is now stale continuity after the `band_finish` and
 - [done] Pass 4 - name the next remaining Phase 5 backend-recovery seam after the bounded Shape-stack slice and keep the foundation plan from drifting back into a false direct-to-Grading continuation.
 - [done] Pass 5 - after the coverage gate closed, re-open Phase 6 only through the bounded `band_finish` subplan and block any `grade.glow`, Balance/Void, or basin lane-retention widening from hitching a ride.
 - [done] Pass 6 - after `band_finish`, `smooth_escape`, and `root_proximity` checkpointed, re-read the continuity state and repaired the stale foundation resume point so the next work is a named set of owner-proof slices instead of an implicit "do the next thing" prompt.
+- [done] Pass 7 - after the user's composition-priority challenge, re-read the runtime model and corrected the next-work order so the composition spine precedes remaining grading-row owner proofs.
 
 ## Audit Findings
 
@@ -155,6 +158,7 @@ The controlling product risk is now stale continuity after the `band_finish` and
 - [done] Real defect found after coverage closure: this main foundation plan still claimed Phase 6 was blocked by the deterministic `salt_ndepend` coverage gate after `ck:29fa6c71` closed it, so the plan now points at the active bounded `band_finish` owner-proof slice instead.
 - [done] Real product defect carried into the active subplan: the raw `band_finish` row exposed unowned `grade.glow`, so the shipped row is constrained to the existing saturation/contrast grading mirror until `glow` gets a real runtime owner.
 - [done] Real continuity defect found after the `band_finish` checkpoint: the umbrella foundation plan still described `band_finish` as the active slice and did not hand future agents a concrete next-slice index; this continuity slice repairs that handoff surface.
+- [done] Real priority defect found after the user's challenge: the repaired next-slice index still underweighted multi-function composition by listing grading-row polish first, so this composition authority slice moves composition ahead of those owner-proof leftovers.
 
 ## Notes
 
@@ -184,10 +188,10 @@ The controlling product risk is now stale continuity after the `band_finish` and
 
 ## Resume Point
 
-After this continuity checkpoint, the next known sliced work is:
-1. Basin-default grading lane-retention cleanup: prove whether `ColorGradingPreset::basin_default` should import as a real Grading row or remain intentionally absent, without changing basin math.
-2. `neutral_finish` / `tone_map_finish` owner proof: pick one row, identify real runtime owner fields first, and fail closed on any fake descriptor-only control.
-3. Balance/Void grading owner proof: add the bounded generic filmic operator under a separate contract, decoupled from any ExplainO geometry/deformation family.
-4. Descriptor-owned backend precision policy: replace the current smooth/root signal-specific auto-tier predicates with programmatic metadata consumed by `ResolveSampleEvalModeForRender`.
-5. Phase 7 foundation closure: proof matrix, D: gallery/runtime captures, and explicit extension rules after the remaining Phase 6 owner-proof decisions are shipped or deliberately deferred.
+After this composition-authority checkpoint, the next known sliced work is:
+1. Grading stack composition with existing shipped rows (`contrast_lift`, `phase_finish`, `band_finish`), including runtime owner state, ordered evaluation, persistence, reset, capture/archive, and published-runtime proof.
+2. Palette blend stack with explicit RGB blend math, per-row weights/modes, persistence, and viewer proof.
+3. Source signal composition with explicit scalar mixer semantics and descriptor-owned backend precision metadata.
+4. Deferred grading owner proofs (`basin_default` lane-retention, `neutral_finish`, `tone_map_finish`, `grade.glow`, Balance/Void) only after the composition spine is truthful.
+5. Phase 8 foundation closure: proof matrix, D: gallery/runtime captures, and explicit extension rules after composition plus remaining owner-proof decisions are shipped or deliberately deferred.
 

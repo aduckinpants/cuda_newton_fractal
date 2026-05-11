@@ -2,7 +2,7 @@
   "version": 1,
   "contract_id": "advanced_color_library_foundation_phase6_grading_runtime_authority",
   "feature_id": "advanced_color_library_foundation",
-  "workflow_type": "viewer_first",
+  "workflow_type": "workflow_only",
   "plan_path": "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json",
@@ -28,32 +28,34 @@
     "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
-    "resume Grading only after the Phase 5 backend-recovery chain and deterministic scoped salt_ndepend coverage gate closed honestly",
-    "keep the advanced grading lane and the legacy Color-panel grading controls on one authoritative mirrored runtime surface",
-    "ship band_finish as the next runtime-real grading row by reusing existing legacy color_saturation and color_contrast owner fields instead of exposing unowned grade.glow",
-    "follow strict TDD by flipping coherent iteration-bands tuple coverage from draft-only to live-backed without widening Balance/Void or basin lane-retention in the same slice"
+    "treat multi-function composition as the next critical advanced-color implementation thread before remaining single-row grading polish",
+    "start composition with Grading stack runtime authority using only already shipped rows: contrast_lift, phase_finish, and band_finish",
+    "preserve Shape stack and bounded root-basin pair behavior as predecessors, not proof of generic Source/Palette composition",
+    "follow strict TDD by adding REDs for stack ownership, live snapshot import, persistence, reset, capture/archive, and runtime evaluation before implementation"
   ],
   "forbidden_operator_prompts": [
-    "claim the full grading inventory ships in one slice",
-    "expose neutral_finish, tone_map_finish, balance_void_grade, basin lane-retention, or grade.glow as closed in this slice",
-    "create a second grading authority outside the legacy Color-panel mirror",
-    "couple balance_void grading work to ExplainO-specific geometry in this slice"
+    "ship arbitrary Source signal composition without explicit mixer math",
+    "ship arbitrary Palette chaining or blending without explicit RGB blend math and owner fields",
+    "expose grade.glow, neutral_finish, tone_map_finish, balance_void_grade, or new grading inventory rows in this stack-composition slice",
+    "create a second grading authority outside the reusable color pipeline core and legacy mirror compatibility",
+    "claim the composition foundation is closed after only Grading stack work"
   ],
   "required_defaults": {
-    "grading_lane_becomes_first_class": "required",
-    "contrast_lift_is_first_shipped_grading_row": "required",
-    "phase_finish_is_second_shipped_grading_row": "required",
-    "band_finish_is_third_shipped_grading_row": "required",
-    "band_finish_uses_existing_legacy_saturation_contrast_owners": "required",
-    "legacy_color_grading_mirror_remains_authoritative": "required",
-    "grade_glow_and_basin_lane_retention_stay_deferred": "required"
+    "composition_priority_before_grading_polish": "required",
+    "first_executable_slice_is_grading_stack": "required",
+    "grading_stack_uses_shipped_rows_only": "required",
+    "shape_stack_preserved": "required",
+    "root_basin_pair_schedule_preserved": "required",
+    "source_palette_generic_composition_deferred": "required",
+    "visible_rows_runtime_real_only": "required"
   },
   "forbidden_defaults": {
-    "draft_only_band_finish": "forbidden",
-    "unowned_grade_glow_control": "forbidden",
-    "stale_advanced_vs_legacy_grading_divergence": "forbidden",
-    "balance_void_in_band_finish_slice": "forbidden",
-    "basin_lane_retention_in_this_slice": "forbidden"
+    "descriptor_only_grading_stack": "forbidden",
+    "last_row_wins_silent_collapse": "forbidden",
+    "new_grade_inventory_rows": "forbidden",
+    "grade_glow_control": "forbidden",
+    "balance_void_in_first_composition_slice": "forbidden",
+    "generic_source_palette_claims": "forbidden"
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json",
@@ -62,7 +64,7 @@
   "required_acceptance_assertions": [
     {
       "assertion_id": "advanced_color_library_foundation_phase6_grading_runtime_authority_contract_schema_valid",
-      "description": "The advanced color library foundation Phase 6 grading runtime authority contract validates successfully",
+      "description": "The advanced color composition retargeted Phase 6 contract validates successfully",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json",
       "json_path": "checks.contract_schema_valid",
@@ -70,7 +72,7 @@
     },
     {
       "assertion_id": "advanced_color_library_foundation_phase6_grading_runtime_authority_plan_sync_ok",
-      "description": "The advanced color foundation and grading runtime phased plans stay synchronized during the grading-authority slice",
+      "description": "The advanced color foundation and retargeted Phase 6 composition plans stay synchronized during the composition-authority slice",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
       "json_path": "ok",
