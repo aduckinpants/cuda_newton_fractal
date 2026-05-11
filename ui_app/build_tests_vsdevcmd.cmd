@@ -323,6 +323,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_generic_function_cpu_eval.cpp ^
+  /Fe:"%TESTROOT%\test_generic_function_cpu_eval.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_explaino_seed_curve.cpp ^
   /Fe:"%TESTROOT%\test_explaino_seed_curve.exe"
 if errorlevel 1 exit /b 1
@@ -591,6 +596,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_generic_function_types.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_generic_function_cpu_eval.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_seed_curve.exe"
