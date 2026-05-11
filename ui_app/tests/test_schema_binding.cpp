@@ -973,10 +973,11 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 2 ||
+            coreGradingCatalog->functions.size() != 3 ||
             coreGradingCatalog->functions[0].id != "contrast_lift" ||
-            coreGradingCatalog->functions[1].id != "phase_finish") {
-            std::cerr << "Expected the extracted advanced color core to ship contrast_lift and phase_finish as the current runtime-real Grading rows\n";
+            coreGradingCatalog->functions[1].id != "phase_finish" ||
+            coreGradingCatalog->functions[2].id != "band_finish") {
+            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, and band_finish as runtime-real Grading rows\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -993,6 +994,14 @@ int main() {
             corePhaseFinishDescriptor->parameters[0].path != "grade.saturation" ||
             corePhaseFinishDescriptor->parameters[1].path != "grade.contrast") {
             std::cerr << "Expected phase_finish to expose stable saturation and contrast grading parameter paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreBandFinishDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "band_finish");
+        if (!coreBandFinishDescriptor ||
+            coreBandFinishDescriptor->parameters.size() != 2 ||
+            coreBandFinishDescriptor->parameters[0].path != "grade.saturation" ||
+            coreBandFinishDescriptor->parameters[1].path != "grade.contrast") {
+            std::cerr << "Expected band_finish to expose only real saturation and contrast grading owner paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;
@@ -1774,24 +1783,31 @@ int main() {
             return 1;
         }
 
-        ColorPipelineWindowState unsupportedBandsSyncWindowState{};
+        ColorPipelineWindowState bandsSyncWindowState{};
         params.coloring_mode = ColoringMode::iteration_bands;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
         params.color_shape = ColorPipelineShape::identity;
         params.color_shape_offset = 0.0f;
         params.color_shape_scale = 1.0f;
-        if (!SyncColorPipelineWindowFromLiveState(&unsupportedBandsSyncWindowState, view.fractal_type, &params)) {
-            std::cerr << "Expected coherent iteration-bands tuples to remain observable even when their grading row is not yet shipped\n";
+        params.color_saturation = 0.75f;
+        params.color_contrast = 1.8f;
+        if (!SyncColorPipelineWindowFromLiveState(&bandsSyncWindowState, view.fractal_type, &params)) {
+            std::cerr << "Expected coherent iteration-bands tuples to import once band_finish is shipped as a runtime-real grading row\n";
             return 1;
         }
-        if (!unsupportedBandsSyncWindowState.live_snapshot.valid ||
-            unsupportedBandsSyncWindowState.live_snapshot.draft_import_supported ||
-            !unsupportedBandsSyncWindowState.live_snapshot.lanes.empty() ||
-            unsupportedBandsSyncWindowState.lanes.size() != 4 ||
-            unsupportedBandsSyncWindowState.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
-            unsupportedBandsSyncWindowState.lanes[2].rows[0].function_id != "heatmap" ||
-            unsupportedBandsSyncWindowState.lanes[3].rows[0].function_id != "contrast_lift") {
-            std::cerr << "Expected iteration-bands tuples to stay fail-closed in the advanced editor until the matching grading row is shipped\n";
+        if (!bandsSyncWindowState.live_snapshot.valid ||
+            !bandsSyncWindowState.live_snapshot.draft_import_supported ||
+            bandsSyncWindowState.live_snapshot.lanes.size() != 4 ||
+            bandsSyncWindowState.live_snapshot.lanes[0].rows[0].function_id != "banded_signal" ||
+            bandsSyncWindowState.live_snapshot.lanes[2].rows[0].function_id != "banded_heatmap" ||
+            bandsSyncWindowState.live_snapshot.lanes[3].rows.size() != 1 ||
+            bandsSyncWindowState.live_snapshot.lanes[3].rows[0].function_id != "band_finish" ||
+            bandsSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values.size() != 2 ||
+            bandsSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[0].path != "grade.saturation" ||
+            std::fabs(bandsSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[0].number_value - 0.75) > 1.0e-6 ||
+            bandsSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[1].path != "grade.contrast" ||
+            std::fabs(bandsSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values[1].number_value - 1.8) > 1.0e-6) {
+            std::cerr << "Expected iteration-bands tuples to import the live band_finish grading row and its mirrored owner values\n";
             return 1;
         }
 
@@ -2199,6 +2215,40 @@ int main() {
         }
         if (!RemoveColorPipelineLaneRow(&windowState, 1, 1)) {
             std::cerr << "Expected the schedule editor RED to restore the single-row Shape bridge after validation coverage\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 2, "banded_heatmap")) {
+            std::cerr << "Expected the rebuilt programmable editor to accept banded_heatmap during banded tuple auto-complete coverage\n";
+            return 1;
+        }
+        if (windowState.lanes[0].rows[0].function_id != "banded_signal" ||
+            windowState.lanes[2].rows[0].function_id != "banded_heatmap" ||
+            windowState.lanes[3].rows[0].function_id != "band_finish") {
+            std::cerr << "Expected selecting banded_heatmap to co-switch the matching banded_signal and band_finish rows instead of leaving a draft-only tuple\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState bandedApplyState = DescribeColorPipelineDraftApplyState(windowState, view.fractal_type, &params);
+        if (bandedApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected banded auto-complete selections to stay live-applicable once the matching grading row is shipped\n";
+            return 1;
+        }
+        if (!setParam(windowState.lanes[3].rows[0], "grade.saturation", 0.75) ||
+            !setParam(windowState.lanes[3].rows[0], "grade.contrast", 1.8) ||
+            !ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
+            std::cerr << "Expected the live programmable editor to apply the banded_heatmap tuple through band_finish\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::iteration_bands ||
+            params.color_pipeline.signal != ColorSignal::iteration_bands ||
+            params.color_pipeline.palette != ColorPalette::banded_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::bands_default ||
+            !NearlyEqual(params.color_saturation, 0.75) ||
+            !NearlyEqual(params.color_contrast, 1.8) ||
+            !windowState.live_snapshot.valid ||
+            windowState.live_snapshot.lanes[3].rows[0].function_id != "band_finish" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to write the iteration-bands tuple and resync band_finish without draft residue\n";
             return 1;
         }
 

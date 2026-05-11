@@ -194,33 +194,42 @@ void TestShapeStackApplyAndValidation() {
         "TestShapeStackApplyAndValidation_InvalidScaleFailsBeforeMutation");
 }
 
-void TestUnsupportedLiveImportStaysFailClosed() {
+void TestIterationBandsLiveImportShipsBandFinish() {
     ColorPipelineWindowState state{};
     KernelParams params{};
     params.coloring_mode = ColoringMode::iteration_bands;
     params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::iteration_bands);
     params.color_shape = ColorPipelineShape::identity;
+    params.color_saturation = 0.75f;
+    params.color_contrast = 1.8f;
 
     Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
-        "TestUnsupportedLiveImportStaysFailClosed_SyncObservesUnsupportedLiveTuple");
-    Check(state.live_snapshot.valid && !state.live_snapshot.draft_import_supported && state.live_snapshot.lanes.empty(),
-        "TestUnsupportedLiveImportStaysFailClosed_SnapshotMarkedDraftUnsupported");
-    Check(state.lanes.size() == 4 && state.lanes[0].rows[0].function_id == "smooth_escape_ramp" &&
-            state.lanes[2].rows[0].function_id == "heatmap",
-        "TestUnsupportedLiveImportStaysFailClosed_DraftKeepsStarterRows");
-    Check(!ResetColorPipelineDraftFromLiveState(&state) && !state.validation_messages.empty(),
-        "TestUnsupportedLiveImportStaysFailClosed_ResetFromUnsupportedLiveFailsClosed");
+        "TestIterationBandsLiveImportShipsBandFinish_SyncObservesLiveTuple");
+    Check(state.live_snapshot.valid && state.live_snapshot.draft_import_supported && state.live_snapshot.lanes.size() == 4,
+        "TestIterationBandsLiveImportShipsBandFinish_SnapshotMarkedDraftSupported");
+    Check(state.lanes.size() == 4 &&
+            state.lanes[0].rows[0].function_id == "banded_signal" &&
+            state.lanes[2].rows[0].function_id == "banded_heatmap" &&
+            state.lanes[3].rows[0].function_id == "band_finish" &&
+            state.lanes[3].rows[0].parameter_values.size() == 2 &&
+            state.lanes[3].rows[0].parameter_values[0].path == "grade.saturation" &&
+            Near(state.lanes[3].rows[0].parameter_values[0].number_value, 0.75) &&
+            state.lanes[3].rows[0].parameter_values[1].path == "grade.contrast" &&
+            Near(state.lanes[3].rows[0].parameter_values[1].number_value, 1.8),
+        "TestIterationBandsLiveImportShipsBandFinish_DraftImportsBandRows");
+    Check(ResetColorPipelineDraftFromLiveState(&state) && state.validation_messages.empty(),
+        "TestIterationBandsLiveImportShipsBandFinish_ResetFromLiveImportsBandRows");
 
     ColorPipelineLiveSnapshot missingOutput;
     std::string error;
     Check(!TryBuildColorPipelineLiveSnapshot(FractalType::newton, params, nullptr, &error) &&
             error.find("requires an output") != std::string::npos,
-        "TestUnsupportedLiveImportStaysFailClosed_LiveSnapshotRequiresOutput");
+        "TestIterationBandsLiveImportShipsBandFinish_LiveSnapshotRequiresOutput");
     params.coloring_mode = ColoringMode::phase;
     params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
     Check(!TryBuildColorPipelineLiveSnapshot(FractalType::newton, params, &missingOutput, &error) &&
             error.find("out of sync") != std::string::npos,
-        "TestUnsupportedLiveImportStaysFailClosed_OutOfSyncLiveFailsClosed");
+        "TestIterationBandsLiveImportShipsBandFinish_OutOfSyncLiveFailsClosed");
 }
 
 void TestRootBasinPairScheduleBridge() {
@@ -311,7 +320,7 @@ int main() {
     TestInitializationAndLiveSync();
     TestRootSelectionCoSwitchesAndApplies();
     TestShapeStackApplyAndValidation();
-    TestUnsupportedLiveImportStaysFailClosed();
+    TestIterationBandsLiveImportShipsBandFinish();
     TestRootBasinPairScheduleBridge();
     TestWindowUtilityContracts();
 

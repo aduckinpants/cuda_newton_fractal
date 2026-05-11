@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 blocked - the `phase_finish` runtime-authority slice closed, but further advanced-color implementation is now explicitly frozen behind the deterministic scoped `salt_ndepend` coverage gate tracked in `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md`; do not resume `band_finish`, Balance/Void, presets, composition, or new-fractal work until that gate closes.
+Phase 6 in progress - the deterministic scoped `salt_ndepend` coverage gate closed at `ck:29fa6c71` with `78 covered / 0 uncovered` and `freeze_ready=true`, so bounded Grading work has resumed under `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md`. The active slice ships only the `band_finish` owner proof through real legacy grading mirror fields while `grade.glow`, Balance/Void, basin lane-retention, presets, composition, and new-fractal work stay deferred.
 
 ## Phase Checklist
 
@@ -12,7 +12,7 @@ Phase 6 blocked - the `phase_finish` runtime-authority slice closed, but further
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
 - [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
-- [ ] Phase 6 - blocked behind the deterministic scoped `salt_ndepend` coverage gate; do not promote more Grading rows or start the separate Balance/Void track until the harness-completion plan closes honestly
+- [ ] Phase 6 - resume bounded Grading runtime authority now that the deterministic scoped `salt_ndepend` coverage gate closed; the current sub-slice is `band_finish` owner proof, with `grade.glow`, Balance/Void, and basin lane-retention still deferred
 - [ ] Phase 7 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
 - [ ] Phase 8 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
@@ -27,24 +27,25 @@ Phase 6 blocked - the `phase_finish` runtime-authority slice closed, but further
 - [open] Phase 6 - Add a bounded generic filmic Balance/Void grading operator, but keep that separate from fractal-family geometry work.
 - [done] Phase 0 - Plan one experimental ExplainO-BalanceVoid deformation-pack family with three neutral-default axes instead of a branch explosion of separate fractals.
 - [open] Phase 6-7 - Keep the reusable color pipeline generic and separately owned even if fractal families later emit fields/signals that the pipeline can consume.
-- [open] Repo gate - keep further advanced-color implementation blocked until the deterministic scoped `salt_ndepend` coverage program is explicit enough to replace the earlier generic harness stop-line.
+- [done] Repo gate - the deterministic scoped `salt_ndepend` coverage program closed at `ck:29fa6c71` with `78 covered / 0 uncovered` and `freeze_ready=true`; bounded advanced-color work may resume only through checked-in subplans and runtime-real controls.
+- [done] Phase 6 - ship the next visible Grading gap by making the iteration-bands tuple live-backed through `band_finish`, without exposing `grade.glow` or widening Balance/Void/basin lane-retention in the same slice.
 
 ## Presumption Loop
 
-The controlling product risk is no longer choosing between `band_finish` and Balance/Void in isolation. The bounded root-basin pair runtime slice closed at `b596af6`, the first Phase 6 grading lane shipped at `110cd4c`, the fail-closed follow-up closed at `23b8f55`, and the `phase_finish` widening closed at `07f332a4`; however, the user has now raised a stronger cross-cutting gate. Product implementation is paused until the separate `ui_integration_harness_completion` plan replaces the old generic harness stop-line with deterministic scoped `salt_ndepend` coverage authority. The next falsifiable repair for this plan is therefore explicit deferral: it must stop presenting `band_finish` or Balance/Void as immediately executable until that coverage gate closes. The cheapest disconfirming checks remain deterministic plan/contract rails plus the sibling stop-line plan that now owns the coverage pivot.
+The controlling product risk is now shipping only runtime-real Grading controls after the coverage gate reopened bounded Phase 6 work. The bounded root-basin pair runtime slice closed at `b596af6`, the first Phase 6 grading lane shipped at `110cd4c`, the fail-closed follow-up closed at `23b8f55`, the `phase_finish` widening closed at `07f332a4`, and the coverage gate closed at `ck:29fa6c71`. The next falsifiable repair is the `band_finish` owner proof in the Phase 6 subplan: it must make the coherent iteration-bands tuple live-backed without exposing the old unowned `grade.glow` control, without creating a second grading authority, and without reopening Balance/Void or basin lane-retention. The cheapest disconfirming checks are the active subplan, focused native helper RED/GREEN coverage, runtime publish, and physical Color Pipeline slider proof against the active `D:` executable.
 
 ## Presumption Evidence
 
 - `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` already locks the four-category foundation and the initial Source / Shape / Palette / Grading inventory, including the bounded generic Balance/Void operator and the separate ExplainO-BalanceVoid family track.
 - `docs/notes/advanced_color_pipeline_slice7_catalog_runtime_binding_PHASED_PLAN.md` already maps the lane-stack requirement: Source / Shape / Palette lane stacks, plus-button row insertion, ordered composition, and runtime-real-only shipping.
 - `ui_app/src/color_pipeline_core.h` already defines `BuildColorPipelineGradeFunctions()` for `contrast_lift`, `phase_finish`, and `band_finish`, and now ships `contrast_lift` plus `phase_finish` through the reusable Grading lane catalogs.
-- `ui_app/src/fractal_types.h` plus `ui_app/src/escape_time_coloring.h` already carry the generic `color_saturation` / `color_contrast` grading owners that made `phase_finish` the smallest honest Phase 6 widening step.
-- `ui_app/src/color_pipeline_core.h` still has no equivalent proven owner for `band_finish`'s `grade.glow`, and `ColorGradingPreset::basin_default` still has no grading mapping, which keeps those paths explicitly deferred.
+- `ui_app/src/fractal_types.h` plus `ui_app/src/escape_time_coloring.h` already carry the generic `color_saturation` / `color_contrast` grading owners that made `phase_finish` honest and can also make `band_finish` honest if the shipped descriptor uses only those owner-backed controls.
+- `ui_app/src/color_pipeline_core.h` still has no equivalent proven owner for the old `band_finish` `grade.glow` surface, and `ColorGradingPreset::basin_default` still has no grading mapping, which keeps `grade.glow` and basin lane-retention explicitly deferred while `band_finish` ships through saturation/contrast.
 - The verified references still split the ExplainO surfaces cleanly: the legacy LUT lineage lives in `c:\code\salticid-cuda\carl-ca-python\ca_viewer.py`, while the current basin/root palettes live in `c:\code\salticid-cuda\content\packs\explaino\cuda\explaino_cuda_helpers.inl` and `c:\code\salticid-cuda\cuda_core\src\ops_special.cu`, and the generic viewport colormap surface in `c:\code\salticid-cuda\ide_ui_dx11\ui_app\src\viewport_colormap.cpp` / `.h` does not contain an ExplainO colormap.
 
 ## Proof Ledger
 
-- Planning gate: this foundation plan is now explicitly blocked by `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` until the deterministic scoped `salt_ndepend` coverage program exists; do not treat the old Phase 6 resume point as executable product authority.
+- Planning gate resolved: `ck:29fa6c71` closed the deterministic scoped `salt_ndepend` coverage program with `78 covered / 0 uncovered` and `freeze_ready=true`, so bounded Phase 6 work now resumes only through checked-in subplans and runtime-real controls.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` explicitly distinguishes legacy ExplainO CMap, Root Classic Palette, Joy Root Palette, and the generic viewport colormap surface as separate authorities.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` records the stronger architecture rule that `color_pipeline_window.h` must become a consumer and not remain the authority for ids, semantics, adapters, or serialization truth.
 - Landed: `docs/notes/advanced_color_library_foundation_oracle_and_inventory.md` records the initial balanced library inventory for Source / Shape / Palette / Grading, including the bounded Balance/Void-inspired grading operator and a separate ExplainO-BalanceVoid family track.
@@ -123,14 +124,17 @@ The controlling product risk is no longer choosing between `band_finish` and Bal
 - Checkpointed: the bounded Phase 5 root-basin pair runtime slice closed at commit `b596af6` with the linked `ck:6460d382` handoff entry plus machine-written validation and contract proof receipts.
 - Phase boundary advanced: Phase 5 backend recovery is now complete; the live multi-row backend requirement is proven through the bounded root-basin pair family, so the next blocker is no longer backend honesty but missing Grading authority.
 - Landed: `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json` now track the shipped grading lane, the live-backed `phase_finish` widening, the deferred basin lane-retention decision, and the remaining bounded Phase 6 follow-up choices.
-- Landed in working tree: `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, and `ui_app/tests/test_schema_binding.cpp` now ship `phase_finish` as the second runtime-real Grading row, import/apply it through the existing generic grading owners, and keep `band_finish` plus basin lane-retention deferred.
-- Validated in working tree: `artifacts/verify_native_helper_tests_phase_finish_auditfix.log` is green for `ui_app/build_tests_vsdevcmd.cmd`, `artifacts/code_quality_report.json` stayed at the `97/100` baseline, `artifacts/phase6_phase_finish_runtime_publish_auditfix.log` republished the active runtime cleanly, and `artifacts/phase6_phase_finish_runtime_pytest_auditfix.log` reports `64 passed` against the repaired published runtime.
-- Next bounded slice: after checkpointing the current `phase_finish` slice, keep basin lane-retention deferred and choose between a bounded `band_finish` owner proof and the separate Balance/Void operator track.
+- Checkpointed: `07f332a4` closed `phase_finish` as the second runtime-real Grading row, importing/applying it through the existing generic grading owners while keeping `band_finish` and basin lane-retention deferred at that time.
+- Checkpointed: `ck:29fa6c71` closed the deterministic scoped `salt_ndepend` coverage gate with `78 covered / 0 uncovered` and `freeze_ready=true`, so the old coverage stop-line no longer blocks bounded advanced-color work.
+- Active in working tree: the Phase 6 grading runtime authority subplan and contract now bind the next visible gap to `band_finish` owner proof, not Balance/Void, basin lane-retention, or any fake `grade.glow` surface.
+- Landed in working tree: `ui_app/src/color_pipeline_core.h`, `ui_app/tests/test_color_pipeline_core.cpp`, `ui_app/tests/test_color_pipeline_window.cpp`, and `ui_app/tests/test_schema_binding.cpp` now ship `band_finish` as the third runtime-real Grading row using only `grade.saturation` and `grade.contrast` owner-backed controls.
+- Validated repaired `band_finish` slice: `artifacts/band_finish_native_green.log` is green for `ui_app/build_tests_vsdevcmd.cmd`; `artifacts/code_quality_report.json` stayed on the `97/100` baseline; `artifacts/verify_runtime_publish.log` published the active `D:` runtime; `artifacts/verify_color_pipeline_physical_drag.log` reports `1 passed, 3 deselected`; `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` has `checks.contract_schema_valid=true`; and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` was regenerated after plan repair.
+- Next bounded slice after checkpoint: keep basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void deferred until they each get a separate owner proof or contract.
 
 ## Hostile Audit
 
 - Status: in progress
-- Required posture: treat the mapped inventory as settled and keep auditing the backend/planning seams until the live multi-row stack requirement and the grading authority boundary are both proven instead of inferred.
+- Required posture: treat the mapped inventory as settled, but keep auditing every resumed Grading row for fake controls, stale plan gates, and second-authority drift before claiming the feature is repaired.
 
 ## Audit Passes
 
@@ -138,6 +142,7 @@ The controlling product risk is no longer choosing between `band_finish` and Bal
 - [done] Pass 2 - re-read the live backend seams and record the concrete technical blockers: `ui_app/src/color_pipeline_window.h` still enforces one enabled row per lane and `ui_app/src/fractal_types.h` still stores Shape state as one flat parameter set.
 - [done] Pass 3 - audit the repaired planning surfaces after the bounded Phase 5 recovery slice lands and confirm the next executable implementation slice is backend recovery rather than an underspecified Grading continuation.
 - [done] Pass 4 - name the next remaining Phase 5 backend-recovery seam after the bounded Shape-stack slice and keep the foundation plan from drifting back into a false direct-to-Grading continuation.
+- [done] Pass 5 - after the coverage gate closed, re-open Phase 6 only through the bounded `band_finish` subplan and block any `grade.glow`, Balance/Void, or basin lane-retention widening from hitching a ride.
 
 ## Audit Findings
 
@@ -146,6 +151,8 @@ The controlling product risk is no longer choosing between `band_finish` and Bal
 - [done] Real defect found during the first executable Phase 5 slice: supported Shape stacks became runtime-real in apply/math, but the first pass still dropped them on diagnostics save/load and archive capture until explicit `color_shape_stack` persistence landed.
 - [done] Real defect named after the bounded Shape-stack slice: Source and Palette still routed live import/apply through single-row builders and `FindSingleEnabledColorPipelineRow(...)`, and `KernelParams` still had no equivalent runtime stack authority for those lanes, so the next truthful backend slice had to repair those state/bridge seams before Grading.
 - [done] Real defect found after the root-basin pair checkpoint: this main foundation plan still said Phase 5 was in progress and still pointed at the now-closed root-basin runtime subplan, leaving Phase 6 Grading without checked-in successor authority.
+- [done] Real defect found after coverage closure: this main foundation plan still claimed Phase 6 was blocked by the deterministic `salt_ndepend` coverage gate after `ck:29fa6c71` closed it, so the plan now points at the active bounded `band_finish` owner-proof slice instead.
+- [done] Real product defect carried into the active subplan: the raw `band_finish` row exposed unowned `grade.glow`, so the shipped row is constrained to the existing saturation/contrast grading mirror until `glow` gets a real runtime owner.
 
 ## Notes
 
@@ -166,13 +173,14 @@ The controlling product risk is no longer choosing between `band_finish` and Bal
   - `ui_app/tests/test_finding_archive_actions.cpp`
   - `ui_app/tests/test_runtime_reset.cpp`
 - Non-goals for Phase 6:
-  - do not resume grading implementation until the deterministic scoped `salt_ndepend` coverage gate closes
   - do not redefine the mapped Source / Shape / Palette / Grading inventory
   - do not ship non-runtime grading rows just because they are named in the inventory
-  - do not implement `balance_void_grade` in the first grading-authority slice
+  - do not expose `grade.glow` until a runtime owner exists
+  - do not implement `balance_void_grade` in the `band_finish` owner-proof slice
   - do not reopen the common-fractal wave or the CUDA catalog refactor as the active thread yet
   - do not create a second grading authority outside the legacy Color-panel mirror
 
 ## Resume Point
 
-Do not resume this foundation plan yet. Resume only after `docs/notes/ui_integration_harness_completion_PHASED_PLAN.md` closes the deterministic scoped `salt_ndepend` coverage gate; then re-evaluate the next truthful Phase 6 choice (`band_finish` owner proof versus the separate Balance/Void track).
+After the `band_finish` checkpoint, keep `grade.glow`, basin lane-retention, and Balance/Void deferred until each has a separate owner-proof contract.
+

@@ -23,17 +23,19 @@
     "ui_app/tests/test_headless_modes.cpp",
     "ui_app/tests/test_runtime_reset.cpp",
     "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
     "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
-    "promote Grading to a first-class advanced-color category only after the Phase 5 backend-recovery chain closed honestly",
+    "resume Grading only after the Phase 5 backend-recovery chain and deterministic scoped salt_ndepend coverage gate closed honestly",
     "keep the advanced grading lane and the legacy Color-panel grading controls on one authoritative mirrored runtime surface",
-    "ship phase_finish as the next runtime-real grading row by reusing the existing generic color_saturation and color_contrast legacy owners",
-    "follow strict TDD by flipping coherent phase tuple coverage from draft-only to live-backed without widening band_finish or basin lane-retention in the same slice"
+    "ship band_finish as the next runtime-real grading row by reusing existing legacy color_saturation and color_contrast owner fields instead of exposing unowned grade.glow",
+    "follow strict TDD by flipping coherent iteration-bands tuple coverage from draft-only to live-backed without widening Balance/Void or basin lane-retention in the same slice"
   ],
   "forbidden_operator_prompts": [
     "claim the full grading inventory ships in one slice",
-    "expose band_finish, neutral_finish, tone_map_finish, balance_void_grade, or basin lane-retention as closed in this slice",
+    "expose neutral_finish, tone_map_finish, balance_void_grade, basin lane-retention, or grade.glow as closed in this slice",
     "create a second grading authority outside the legacy Color-panel mirror",
     "couple balance_void grading work to ExplainO-specific geometry in this slice"
   ],
@@ -41,13 +43,16 @@
     "grading_lane_becomes_first_class": "required",
     "contrast_lift_is_first_shipped_grading_row": "required",
     "phase_finish_is_second_shipped_grading_row": "required",
+    "band_finish_is_third_shipped_grading_row": "required",
+    "band_finish_uses_existing_legacy_saturation_contrast_owners": "required",
     "legacy_color_grading_mirror_remains_authoritative": "required",
-    "band_finish_and_basin_lane_retention_stay_deferred": "required"
+    "grade_glow_and_basin_lane_retention_stay_deferred": "required"
   },
   "forbidden_defaults": {
-    "draft_only_phase_finish": "forbidden",
+    "draft_only_band_finish": "forbidden",
+    "unowned_grade_glow_control": "forbidden",
     "stale_advanced_vs_legacy_grading_divergence": "forbidden",
-    "balance_void_in_first_grading_slice": "forbidden",
+    "balance_void_in_band_finish_slice": "forbidden",
     "basin_lane_retention_in_this_slice": "forbidden"
   },
   "required_validation_commands": [

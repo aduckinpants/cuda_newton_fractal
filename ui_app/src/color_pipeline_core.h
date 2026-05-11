@@ -469,10 +469,10 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
         MakeColorPipelineFunction(
             "band_finish",
             "Band Finish",
-            "Apply the default banded grading profile.",
+            "Apply the default banded grading profile through the legacy grading mirror.",
             {
-                MakeColorPipelineFloatParam("grade.band_emphasis", "Band Emphasis", "Increase or relax final band contrast.", 0.0, 2.0, 0.01, 1.0),
-                MakeColorPipelineFloatParam("grade.glow", "Glow", "Add controlled highlight bloom to the final output.", 0.0, 2.0, 0.01, 0.25),
+                MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften banded palette intensity.", 0.0, 2.0, 0.01, 1.15),
+                MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch the banded palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
             }),
     };
 }
@@ -510,7 +510,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
     }
     if (std::string(laneId) == "grading") {
         return functionId == "contrast_lift" ||
-            functionId == "phase_finish";
+            functionId == "phase_finish" ||
+            functionId == "band_finish";
     }
     return false;
 }
@@ -722,7 +723,7 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
         return SetColorPipelineParamNumber(ioRow, "grade.exposure", liveParams.color_contrast_lift_exposure, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_contrast_lift_saturation, outError);
     }
-    if (ioRow->function_id == "phase_finish") {
+    if (ioRow->function_id == "phase_finish" || ioRow->function_id == "band_finish") {
         return SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError);
     }
@@ -938,7 +939,7 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         }
         assignFloat(&ioParams->color_contrast_lift_exposure, static_cast<float>(exposure));
         assignFloat(&ioParams->color_contrast_lift_saturation, static_cast<float>(saturation));
-    } else if (row.function_id == "phase_finish") {
+    } else if (row.function_id == "phase_finish" || row.function_id == "band_finish") {
         double saturation = 0.0;
         double contrast = 0.0;
         if (!TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||

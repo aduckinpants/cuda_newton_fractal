@@ -103,16 +103,16 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
             HasFunction(*palette, "joy_root_palette"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
-    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 2 &&
-            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && !HasFunction(*grading, "band_finish"),
-        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsOnlyRuntimeBackedRows");
+    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 3 &&
+            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsRuntimeBackedBandFinish");
     Check(CatalogIdsEqual(*source, {"smooth_escape_ramp", "phase_orbit", "banded_signal", "escape_magnitude", "orbit_stripe", "root_proximity", "root_index"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
     Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
-    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish"}),
+    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
 
     const std::vector<FunctionDescriptor> allGradeFunctions = color_pipeline_core::BuildColorPipelineGradeFunctions();
@@ -121,8 +121,8 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
         rawGradeIncludesBandFinish = rawGradeIncludesBandFinish || descriptor.id == "band_finish";
     }
     Check(rawGradeIncludesBandFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesDraftBandFinish");
-    Check(!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "band_finish"),
-        "TestLaneCatalogFiltersRuntimeBackedRows_BandFinishNotRuntimeBacked");
+    Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "band_finish"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_BandFinishRuntimeBacked");
     Check(!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked(nullptr, "heatmap") &&
             !color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("unknown_lane", "heatmap"),
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownLaneFailsClosed");
@@ -161,10 +161,15 @@ void TestRowBuildersAndDefaults() {
     Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "not_a_function", 1, &unknownRow, &error) &&
             error.find("Unknown advanced color function") != std::string::npos,
         "TestRowBuildersAndDefaults_UnknownFunctionFailsClosed");
+    ColorPipelineRowState bandFinishDefaultRow;
     error.clear();
-    Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "band_finish", 1, &unknownRow, &error) &&
-            error.find("band_finish") != std::string::npos,
-        "TestRowBuildersAndDefaults_DraftBandFinishCannotBuildFromRuntimeCatalog");
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "band_finish", 35, &bandFinishDefaultRow, &error) &&
+            bandFinishDefaultRow.ui_row_id == 35 &&
+            bandFinishDefaultRow.function_id == "band_finish" &&
+            bandFinishDefaultRow.parameter_values.size() == 2 &&
+            RowNumber(bandFinishDefaultRow, "grade.saturation", 1.15) &&
+            RowNumber(bandFinishDefaultRow, "grade.contrast", 1.10),
+        "TestRowBuildersAndDefaults_BandFinishBuildsFromRuntimeCatalog");
     Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "", 1, &unknownRow, &error),
         "TestRowBuildersAndDefaults_EmptyFunctionFailsClosed");
     Check(!color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 1, nullptr, &error),
@@ -224,6 +229,18 @@ void TestImportAndApplySupportedParams() {
         "TestImportAndApplySupportedParams_PhaseFinishApplies");
     Check(Near(gradeParams.color_saturation, 1.6f, 1.0e-6) && Near(gradeParams.color_contrast, 2.1f, 1.0e-6),
         "TestImportAndApplySupportedParams_PhaseFinishUsesLegacyRuntimeOwners");
+
+    ColorPipelineRowState bandFinishRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "band_finish", 35, &bandFinishRow) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&bandFinishRow, "grade.saturation", 0.75) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&bandFinishRow, "grade.contrast", 1.8),
+        "TestImportAndApplySupportedParams_BandFinishBuildsAndEdits");
+    KernelParams bandGradeParams;
+    changed = false;
+    Check(color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(bandFinishRow, &bandGradeParams, &changed) && changed,
+        "TestImportAndApplySupportedParams_BandFinishApplies");
+    Check(Near(bandGradeParams.color_saturation, 0.75f, 1.0e-6) && Near(bandGradeParams.color_contrast, 1.8f, 1.0e-6),
+        "TestImportAndApplySupportedParams_BandFinishUsesLegacyRuntimeOwners");
 
     ColorPipelineRowState bandedRow;
     std::string error;
