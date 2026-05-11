@@ -6,6 +6,8 @@ Phase 5 in progress - the original Gate G1 harness stop-line is no longer suffic
 
 Current slice update: `color_pipeline_core` now has its own dedicated native helper binary proving runtime-backed catalog filtering and order, row defaults, param import/apply, range validation, selection tuple behavior, and schedule bridge ids instead of leaving those inline contracts buried inside broader color-window consumers. The remaining uncovered modules are `main.cpp` and `color_pipeline_window.h`, with `color_pipeline_window.h` the next smaller user-facing seam to inspect before the monolithic `main.cpp` extraction problem.
 
+Current slice update: `color_pipeline_window` now has its own dedicated native helper binary proving no-ImGui draft initialization, live sync, root tuple co-switch/apply, Shape-stack apply, unsupported-live fail-closed behavior, root-basin pair schedules, and window utility contracts. The helper found and fixed a real live-sync defect where single live Shape rows were built without importing the live Shape owner fields, and the remaining uncovered module is now only `main.cpp`.
+
 ## Case Study - Session-Long Weaseling, Lies, And Escalation
 
 This section was written by the same assistant the user has explicitly identified as a known proven liar. It is included here because the earlier prompt-review text lied about chronology by collapsing the session into only the latest anger instead of the full prompt trail.
@@ -173,6 +175,9 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Landed now: the native helper log proves the dedicated headless seam by name with `test_runtime_walk_headless: passed=36 failed=0`, and the refreshed coverage audit moved from `74 covered / 4 uncovered` to `75 covered / 3 uncovered`, clearing `runtime_walk_headless` from the uncovered list.
 - Landed now: `ui_app/tests/test_color_pipeline_core.cpp` plus `ui_app/build_tests_vsdevcmd.cmd` now give `color_pipeline_core` its own dedicated native helper binary instead of leaving runtime-backed catalog filtering, function order, row/default construction, supported-param import/apply, validation, and tuple bridge behavior buried inside broader color-window/runtime consumers.
 - Landed now: the native helper log proves the dedicated color core seam by name with `test_color_pipeline_core: passed=61 failed=0`, and the refreshed coverage audit moved from `75 covered / 3 uncovered` to `76 covered / 2 uncovered`, clearing `color_pipeline_core` from the uncovered list while leaving `main.cpp` and `color_pipeline_window.h` as the two uncovered modules.
+- Landed now: `ui_app/tests/test_color_pipeline_window.cpp`, `ui_app/src/color_pipeline_window.h`, and `ui_app/build_tests_vsdevcmd.cmd` now give `color_pipeline_window` its own dedicated native helper binary and repair the live Shape import bug it exposed.
+- Landed now: the native helper log proves the dedicated window seam by name with `test_color_pipeline_window: passed=59 failed=0`, and the refreshed coverage audit moved from `76 covered / 2 uncovered` to `77 covered / 1 uncovered`, clearing `color_pipeline_window` from the uncovered list while leaving only `main.cpp` uncovered.
+- Landed now: `docs/contracts/ui_integration_harness_completion.contract.json` explicitly includes `ui_app/src/color_pipeline_window.h` in the active mutation scope because the dedicated helper exposed a real source defect rather than only a missing test binary.
 
 ## Hostile Audit
 
@@ -208,6 +213,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Pass 25 - challenge whether `fractal_renderer.cu` could be covered honestly without pretending a helper compile covers visual rendering, then extract a dedicated CUDA helper binary that proved entry-point validation, invalid-resolution fail-fast behavior, tiny render pixel/mask/stat transport, and cleanup idempotence directly.
 - [done] Pass 26 - challenge whether `runtime_walk_headless.cpp` could be covered honestly without re-running the whole viewer path, then extract a dedicated native helper binary that proved the public headless entry point fail-fast ordering, base-state validation, render default shaping, lens enabling, and output-work ordering through explicit external seam stubs.
 - [done] Pass 27 - challenge whether `color_pipeline_core.h` could be covered honestly without product UI work, then extract a dedicated native helper binary that proved runtime-backed catalog filtering and order, defaults, supported-param import/apply, range validation, tuple selection, and schedule bridge behavior directly.
+- [done] Pass 28 - challenge whether `color_pipeline_window.h` could be covered honestly without driving ImGui, then extract a no-ImGui dedicated helper binary that proved real draft/sync/apply/window utility behavior and forced a source fix for live Shape-row import.
 
 ## Audit Findings
 
@@ -266,6 +272,9 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - [done] Real defect found: `color_pipeline_core.h` already carried real color-pipeline catalog and runtime-state authority through larger color-window/runtime consumers, but the coverage audit still left it uncovered because those inline paths had no dedicated module-named helper binary.
 - [done] Hostile audit finding: the first dedicated color-core helper proved catalog membership but not exact function order, so a UI-visible row-order regression could pass while still claiming the catalog behavior was covered.
 - [done] Clean re-read result: `color_pipeline_core` now has its own native helper binary, the helper log proves the catalog order/default/import/apply/validation/tuple contract by name, and the coverage audit now counts that seam directly. The remaining gaps are `color_pipeline_window.h` and `main.cpp`, not this core color-pipeline surface.
+- [done] Real defect found: `color_pipeline_window.h` already had substantial no-ImGui draft/sync/apply behavior trapped inside broad schema tests, but the coverage audit still left it uncovered because no module-named helper owned the window seam directly.
+- [done] Hostile audit finding: the first dedicated window helper failed on live Shape sync because `TryBuildColorPipelineShapeLaneFromLive()` built a single Shape row with default parameters instead of importing the live Shape owner fields, so the editor could misrepresent live offset/scale state even while reporting a supported snapshot.
+- [done] Clean re-read result: `color_pipeline_window` now has its own native helper binary, the source fix imports live Shape owner fields through the Shape-stack entry mapping, the helper log proves the window behavior by name, and the coverage audit now counts that seam directly. The only remaining uncovered module is `main.cpp`.
 
 ## Action Hostile Review
 
@@ -420,6 +429,12 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 - Correct Owner/Action: inspect `ui_app/src/color_pipeline_core.h`, existing color-pipeline tests, and build wiring first, then add the narrowest module-named helper binary that proves real core defaults, tuple validity, row/palette/shape/grading behavior, and fail-closed validation without touching product UI work.
 - Proof Surface: targeted reads of the core header plus existing color-pipeline tests first; if a real seam exists, `py -3.14 tools/viewer_host_run_logged_command.py --label "native helper tests" --log artifacts/verify_native_helper_tests.log --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app\build_tests_vsdevcmd.cmd` plus `py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json` after the dedicated color-pipeline-core binary lands.
 - Blocked Action: any code/build mutation that claims `color_pipeline_core` coverage before the core color-pipeline authority is inspected and proved by a dedicated module-named helper binary plus coverage refresh.
+- Action ID: action-20260511-color-pipeline-window-dedicated-coverage
+- Status: done
+- Suspected Failure Mode: `color_pipeline_window.h` can remain falsely uncovered because the editor is large, ImGui-heavy, and user-facing, so a sloppy slice could either assert only `ColorPipelineDraftState` construction or try to drive UI rendering directly without proving the real fail-closed draft/import/apply behavior.
+- Correct Owner/Action: inspect `ui_app/src/color_pipeline_window.h`, `ui_app/src/color_pipeline_core.h`, existing schema/color tests, and current build wiring first; then extract or target the narrowest deterministic helper seam that proves actual color-pipeline window behavior without resuming product implementation.
+- Proof Surface: targeted reads of the window/core/test seams first; if a deterministic seam exists, `py -3.14 tools/viewer_host_run_logged_command.py --label "native helper tests" --log artifacts/verify_native_helper_tests.log --heartbeat-seconds 30 --timeout-seconds 1800 -- ui_app\build_tests_vsdevcmd.cmd` plus `py -3.14 tools/test_coverage_audit.py --check-baseline --matrix --out artifacts/test_coverage_report.json` after the dedicated color-pipeline-window binary or extracted seam lands.
+- Blocked Action: any code/build mutation that claims `color_pipeline_window` coverage before the real user-facing editor seam is inspected, bounded, proved by a module-named helper or honest extraction, and recognized by the coverage audit.
 
 ## Notes
 
@@ -452,7 +467,7 @@ The controlling defect is no longer missing a single runtime rail or one more ge
 
 ## Resume Point
 
-Open the next smallest real uncovered seam after `color_pipeline_core`, currently `color_pipeline_window.h`: keep rejecting fake line-count wins, and prioritize the window seam before the monolithic `main.cpp` extraction problem unless inspection proves the opposite owner order.
+Open the only remaining uncovered seam, `main.cpp`: keep rejecting fake line-count wins, and treat the first acceptable move as extracting or targeting a small boot/dispatch decision seam rather than claiming the monolith is covered by broad runtime launches.
 
 ## Untrusted Direct Test Backlog Draft
 
@@ -469,7 +484,7 @@ Treat every line below as untrusted draft planning text until it is independentl
 - `runtime_walk_headless` - covered in the dedicated helper slice for request-load ordering, bundle-load ordering, base-state rejection, Explaino-family validation, render-default shaping, lens enabling, and output-directory non-creation behavior; revisit only if the runtime-walk contract grows beyond those proved seams.
 - `color_pipeline_core` - covered in the dedicated helper slice for runtime-backed catalog filtering and order, row/default construction, supported-param import/apply, range validation, tuple selection, and schedule bridge ids; revisit only if the core runtime authority grows beyond those proved seams.
 - `main` - carve out only the smallest honest boot/dispatch seam that can be proved directly; if the current monolith blocks direct testing, the first acceptable move is extraction of a headless decision seam, not a fake claim that `main.cpp` is covered because the app launches somewhere else.
-- `color_pipeline_window` - add a viewer-side witness or extracted helper seam for user-visible color-pipeline editor behavior, because this is too large to wave away as a single unit and too user-facing to leave hidden behind generic runtime smokes.
+- `color_pipeline_window` - covered in the dedicated helper slice for no-ImGui draft initialization, live sync, Shape import, tuple co-switch/apply, Shape-stack apply, unsupported-live fail-closed behavior, root-basin pair schedules, and utility contracts; revisit only if the user-visible editor bridge grows beyond those proved seams.
 - `fractal_renderer` - split out the narrowest deterministic host-visible contracts first, such as parameter shaping, fail-fast validation, or CPU-side request composition, and only then add runtime witness coverage for the truly renderer-owned UI/UX behavior that cannot be reduced to a helper seam.
 
 ## Second Timeline - Superseded By The Case Study Above

@@ -24,6 +24,7 @@
     "docs/handoffs/archive/HANDOFF_LOG_20260509_135329.md",
     "HANDOFF_LOG.md",
     "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/color_pipeline_window.h",
     "ui_app/tests/test_explaino_seed_curve.cpp",
     "ui_app/tests"
   ],

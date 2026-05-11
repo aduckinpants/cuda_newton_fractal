@@ -1531,8 +1531,21 @@ inline bool TryBuildColorPipelineShapeLaneFromLive(
         return true;
     }
     ColorPipelineRowState row;
+    ColorPipelineShapeStackEntry liveShapeEntry;
+    liveShapeEntry.shape = liveParams.color_shape;
+    liveShapeEntry.params.offset = liveParams.color_shape_offset;
+    liveShapeEntry.params.scale = liveParams.color_shape_scale;
+    liveShapeEntry.params.repeat_frequency = liveParams.color_shape_repeat_frequency;
+    liveShapeEntry.params.repeat_phase = liveParams.color_shape_repeat_phase;
+    liveShapeEntry.params.posterize_steps = liveParams.color_shape_posterize_steps;
+    liveShapeEntry.params.posterize_mix = liveParams.color_shape_posterize_mix;
+    liveShapeEntry.params.bias = liveParams.color_shape_bias;
+    liveShapeEntry.params.gain = liveParams.color_shape_gain;
+    liveShapeEntry.params.window_center = liveParams.color_shape_window_center;
+    liveShapeEntry.params.window_width = liveParams.color_shape_window_width;
+    liveShapeEntry.params.window_softness = liveParams.color_shape_window_softness;
     if (!BuildColorPipelineRowFromFunctionId(*catalog, functionId, 0, &row, outError) ||
-        !ImportSupportedColorPipelineParamsFromLive(&row, liveParams, outError)) {
+        !ImportSupportedColorPipelineParamsFromShapeStackEntry(&row, liveShapeEntry, outError)) {
         return false;
     }
     lane.rows.push_back(std::move(row));
