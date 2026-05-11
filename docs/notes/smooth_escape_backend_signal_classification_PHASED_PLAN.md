@@ -9,14 +9,14 @@ Phase 4 - hostile-audit the repaired state, write receipts, and checkpoint clean
 - [x] Phase 1 - classify the smooth_escape visual failure with a focused RED witness
 - [x] Phase 2 - repair the proven owner with the smallest runtime-authoritative change
 - [x] Phase 3 - prove the repaired behavior through native and published-runtime rails
-- [ ] Phase 4 - hostile-audit the repaired state, write receipts, and checkpoint cleanly
+- [x] Phase 4 - hostile-audit the repaired state, write receipts, and checkpoint cleanly
 
 ## Explicit User Asks
 
 - [done] Start implementation without blending this slice into the closed advanced-color band_finish work.
 - [done] Prove the smooth_escape f32/f64 visual failure before choosing a fix owner.
 - [done] Preserve mandatory forward TDD and integration TDD; native RED/GREEN and published-runtime proof are recorded before closure.
-- [open] Keep the slice bounded, hostile-reviewed, checkpointed, and honest.
+- [done] Keep the slice bounded, hostile-reviewed, checkpointed, and honest.
 
 ## Presumption Loop
 
@@ -47,7 +47,7 @@ The local hypothesis is deliberately unsettled: the reported smooth_escape failu
 - Contract validation: done. `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/smooth_escape_backend_signal_classification.contract.json --out-json artifacts/validation/smooth_escape_backend_signal_classification_contract.json` exits 0.
 - Plan sync: done. `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` exits 0 after hostile-audit updates.
 - Hostile audit validator: done. `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/smooth_escape_backend_signal_classification_PHASED_PLAN.md --out-json artifacts/validation/smooth_escape_backend_signal_classification_hostile_audit.json` exits 0.
-- Checkpoint: pending.
+- Checkpoint: done. The scoped slice was checkpointed through `tools/viewer_host_checkpoint_slice.py commit`; validation and contract-proof receipts are written for the committed state.
 
 ## Hostile Audit
 
