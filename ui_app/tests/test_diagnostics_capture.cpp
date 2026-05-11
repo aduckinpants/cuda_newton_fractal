@@ -63,11 +63,13 @@ void PopulateState(ViewState* view, KernelParams* params, RenderSettings* render
     render->interaction_debounce_ms = 123;
     render->preview_target_fps = 24.0f;
     render->preview_min_scale = 0.25f;
+    render->sample_tier = SampleTier::standard;
 
     *stats = RenderStats{};
     stats->last_render_ms = 4.5f;
     stats->last_iters_avg = 17;
     stats->last_device_id = 3;
+    stats->resolved_eval = {NumericBackend::float64, IterationStrategy::direct};
 }
 
 void TestBundleWritesFrameAndState() {
@@ -95,6 +97,9 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"height\": 2") != std::string::npos, "state persists render height");
     Check(json.find("\"interaction_debounce_ms\": 123") != std::string::npos, "state persists render debounce");
     Check(json.find("\"last_render_ms\": 4.5") != std::string::npos, "state persists render stats");
+    Check(json.find("\"sample_tier\": \"standard\"") != std::string::npos, "state persists requested sample tier");
+    Check(json.find("\"resolved_backend\": \"float64\"") != std::string::npos, "state persists resolved numeric backend");
+    Check(json.find("\"resolved_strategy\": \"direct\"") != std::string::npos, "state persists resolved iteration strategy");
     Check(json.find("\"color_palette\": \"joy\"") != std::string::npos, "state persists widened color palette id");
     Check(json.find("\"coloring_mode\": \"joy_basins\"") != std::string::npos, "state derives legacy coloring mirror from coherent root-basin pair");
 }

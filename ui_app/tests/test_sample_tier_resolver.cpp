@@ -42,6 +42,34 @@ static void test_auto_shallow_stays_float32() {
     CHECK(r.backend == NumericBackend::float32, "auto at shallow zoom should stay float32");
 }
 
+static KernelParams SmoothEscapeParams() {
+    KernelParams params{};
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    return params;
+}
+
+static void test_render_auto_promotes_basin_smooth_escape() {
+    KernelParams params = SmoothEscapeParams();
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::tier_auto, 10.0);
+    CHECK(r.backend == NumericBackend::float64, "render auto should promote basin smooth_escape to float64");
+    CHECK(r.strategy == IterationStrategy::direct, "render auto smooth_escape promotion should stay direct");
+}
+
+static void test_render_auto_does_not_promote_basin_root_index() {
+    KernelParams params{};
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::tier_auto, 10.0);
+    CHECK(r.backend == NumericBackend::float32, "render auto should not promote unrelated basin root_index coloring");
+}
+
+static void test_render_context_preserves_explicit_fast() {
+    KernelParams params = SmoothEscapeParams();
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::fast, 10.0);
+    CHECK(r.backend == NumericBackend::float32, "render context must preserve explicit fast tier");
+}
+
 static void test_auto_deep_upgrades_to_float64() {
     auto r = ResolveSampleEvalMode(FractalType::newton, SampleTier::tier_auto, 25.0);
     CHECK(r.backend == NumericBackend::float64, "auto at deep zoom should upgrade to float64");
@@ -74,6 +102,9 @@ int main() {
     test_resolve_fast_always_float32();
     test_resolve_standard_gives_float64();
     test_auto_shallow_stays_float32();
+    test_render_auto_promotes_basin_smooth_escape();
+    test_render_auto_does_not_promote_basin_root_index();
+    test_render_context_preserves_explicit_fast();
     test_auto_deep_upgrades_to_float64();
     test_auto_boundary_exactly_20();
     test_mandelbrot_auto_upgrades_before_20();

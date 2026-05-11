@@ -121,6 +121,30 @@ const char* CaptureColorPipelineShapeId(ColorPipelineShape shape) {
     return "unknown";
 }
 
+const char* CaptureSampleTierId(SampleTier tier) {
+    switch (tier) {
+    case SampleTier::tier_auto: return "tier_auto";
+    case SampleTier::fast: return "fast";
+    case SampleTier::standard: return "standard";
+    }
+    return "unknown";
+}
+
+const char* CaptureNumericBackendId(NumericBackend backend) {
+    switch (backend) {
+    case NumericBackend::float32: return "float32";
+    case NumericBackend::float64: return "float64";
+    }
+    return "unknown";
+}
+
+const char* CaptureIterationStrategyId(IterationStrategy strategy) {
+    switch (strategy) {
+    case IterationStrategy::direct: return "direct";
+    }
+    return "unknown";
+}
+
 bool IsPersistableRootBasinPairSelection(const ColorPipelineSelection& selection) {
     const char* sourceFunctionId = nullptr;
     const char* paletteFunctionId = nullptr;
@@ -534,12 +558,15 @@ std::string BuildStateJson(
     js << "    \"preview_target_fps\": " << static_cast<double>(render.preview_target_fps) << ",\n";
     js << "    \"preview_min_scale\": " << static_cast<double>(render.preview_min_scale) << ",\n";
     js << "    \"block_size\": " << render.block_size << ",\n";
-    js << "    \"device_id\": " << render.device_id << "\n";
+    js << "    \"device_id\": " << render.device_id << ",\n";
+    js << "    \"sample_tier\": \"" << CaptureSampleTierId(render.sample_tier) << "\"\n";
     js << "  },\n";
     js << "  \"stats\": {\n";
     js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
     js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
-    js << "    \"last_device_id\": " << stats.last_device_id << "\n";
+    js << "    \"last_device_id\": " << stats.last_device_id << ",\n";
+    js << "    \"resolved_backend\": \"" << CaptureNumericBackendId(stats.resolved_eval.backend) << "\",\n";
+    js << "    \"resolved_strategy\": \"" << CaptureIterationStrategyId(stats.resolved_eval.strategy) << "\"\n";
     js << "  }";
     if (sidecarOrientation) {
         js << ",\n";

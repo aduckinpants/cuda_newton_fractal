@@ -962,6 +962,51 @@ def test_explaino_nearby_zoom_state_round_trips_and_stays_visible_in_published_r
     )
 
 
+def test_explaino_smooth_escape_auto_records_float64_backend_in_published_runtime(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino smooth_escape backend runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "16",
+        "--height",
+        "16",
+    )
+
+    camera_state = _with_view_camera(
+        baseline_capture["state"],
+        center_x=1.0,
+        center_y=0.0,
+        zoom=2048.0,
+    )
+    smooth_state = _with_explaino_programmable_color_state(
+        camera_state,
+        palette="cyclic_escape",
+        color_smooth_escape_scale=1.0,
+        color_heatmap_cycle_scale=0.25,
+        max_iter=64,
+    )
+
+    smooth_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "smooth_escape_auto_backend", smooth_state)),
+        "--capture-diagnostic",
+    )
+
+    state = smooth_capture["state"]
+    assert state["params"]["coloring_mode"] == "smooth_escape"
+    assert state["params"]["color_signal"] == "smooth_escape"
+    assert state["render"]["sample_tier"] == "tier_auto"
+    assert state["stats"]["resolved_backend"] == "float64"
+    assert state["stats"]["resolved_strategy"] == "direct"
+
+
 def test_explaino_escape_magnitude_ignores_residual_exit_threshold_in_published_runtime(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino escape_magnitude runtime regression is Windows-only")

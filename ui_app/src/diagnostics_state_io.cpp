@@ -244,6 +244,10 @@ bool ParseColorPipelineShape(const std::string& text, ColorPipelineShape* outSha
     return TryParseColorPipelineShapeId(text, outShape);
 }
 
+bool ParseSampleTier(const std::string& text, SampleTier* outTier) {
+    return TryParseSampleTierId(text, outTier);
+}
+
 void ResetLegacyColorShapeMirror(KernelParams* ioParams) {
     if (!ioParams) {
         return;
@@ -1651,6 +1655,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double interactionDebounceMs = static_cast<double>(nextRender.interaction_debounce_ms);
     double previewTargetFps = nextRender.preview_target_fps;
     double previewMinScale = nextRender.preview_min_scale;
+    std::string sampleTierId;
+    const bool hasSampleTierId = TryGetOptionalString(*renderObject, "sample_tier", &sampleTierId);
     if (!ParseIntField(*renderObject, "width", &width, outError)) return false;
     if (!ParseIntField(*renderObject, "height", &height, outError)) return false;
     if (!ParseIntField(*renderObject, "block_size", &blockSize, outError)) return false;
@@ -1658,6 +1664,14 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*renderObject, "interaction_debounce_ms", &interactionDebounceMs, nullptr, outError)) return false;
     if (!GetOptionalNumber(*renderObject, "preview_target_fps", &previewTargetFps, nullptr, outError)) return false;
     if (!GetOptionalNumber(*renderObject, "preview_min_scale", &previewMinScale, nullptr, outError)) return false;
+    if (hasSampleTierId) {
+        SampleTier sampleTier{};
+        if (!ParseSampleTier(sampleTierId, &sampleTier)) {
+            if (outError) *outError = "Unknown sample_tier: " + sampleTierId;
+            return false;
+        }
+        nextRender.sample_tier = sampleTier;
+    }
     if (!RequirePositiveIntField(width, "width", outError)) return false;
     if (!RequirePositiveIntField(height, "height", outError)) return false;
     nextRender.resolution.x = width;

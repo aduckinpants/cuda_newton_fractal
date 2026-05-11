@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "smooth_escape_backend_signal_classification",
+  "feature_id": "smooth_escape_backend_signal_classification",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/smooth_escape_backend_signal_classification_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/smooth_escape_backend_signal_classification_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/sample_tier_resolver.cpp",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/tests/test_escape_time_sample_tier.cu",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "ui_app/src/sample_tier_resolver.h",
+    "ui_app/src/fractal_sample_core.cu",
+    "ui_app/tests/test_sample_tier_resolver.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp"
+  ],
+  "required_operator_inputs": [
+    "start the next implementation slice after the advanced-color band_finish recovery without blending scopes",
+    "classify the smooth_escape visual failure before choosing precision, backend routing, signal semantics, tuning, or family perturbation as the owner",
+    "follow forward TDD and integration TDD with no helper-only closure",
+    "record hostile review layers and close only with validation receipts, contract proof, checkpoint commit, and clean worktree"
+  ],
+  "forbidden_operator_prompts": [
+    "assume the bug is precision before a RED witness proves the owner",
+    "close on helper-only proof that never exercises the published runtime",
+    "hide the failure by silently forcing an unrelated fallback",
+    "reopen advanced-color catalog completeness, Capture/Export, Fractal Lab, Reality Toolkit, or generic.sample work in this slice"
+  ],
+  "required_defaults": {
+    "classification_before_fix": "required",
+    "forward_tdd_red_first": "required",
+    "published_runtime_proof_exists": "required",
+    "silent_fallbacks_fail_closed": "required"
+  },
+  "forbidden_defaults": {
+    "prebiased_precision_fix": "forbidden",
+    "helper_only_closure": "forbidden",
+    "unscoped_feature_bundling": "forbidden",
+    "silent_backend_fallback": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/smooth_escape_backend_signal_classification.contract.json --out-json artifacts/validation/smooth_escape_backend_signal_classification_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/smooth_escape_backend_signal_classification_PHASED_PLAN.md --out-json artifacts/validation/smooth_escape_backend_signal_classification_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "smooth_escape_backend_signal_classification_contract_schema_valid",
+      "description": "The smooth_escape backend/signal classification contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/smooth_escape_backend_signal_classification_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "smooth_escape_backend_signal_classification_plan_sync_ok",
+      "description": "The smooth_escape backend/signal classification phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "smooth_escape_backend_signal_classification_hostile_audit_ok",
+      "description": "The smooth_escape backend/signal classification hostile audit is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/smooth_escape_backend_signal_classification_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

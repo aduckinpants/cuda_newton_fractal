@@ -322,8 +322,8 @@ bool RenderFractalCUDA(
 
     // Resolve the sample tier into a concrete (backend, strategy) pair.
     RenderSettings resolvedRender = render;
-    resolvedRender.resolved_eval = ResolveSampleEvalMode(
-        view.fractal_type, render.sample_tier, view.log2_zoom);
+    resolvedRender.resolved_eval = ResolveSampleEvalModeForRender(
+        view.fractal_type, params, render.sample_tier, view.log2_zoom);
 
     const PerturbationReferenceOrbitRequest perturbRequest = ResolvePerturbationReferenceOrbitRequest(view, params);
     const bool wantPerturb = perturbRequest.enabled;

@@ -3,6 +3,12 @@
 
 namespace {
 
+bool BasinSmoothEscapeNeedsStandard(FractalType fractalType, const KernelParams& params) {
+    return SupportsBasinColoring(fractalType) &&
+        params.coloring_mode == ColoringMode::smooth_escape &&
+        params.color_pipeline.signal == ColorSignal::smooth_escape;
+}
+
 double AutoStandardThresholdLog2(FractalType fractalType) {
     switch (fractalType) {
     case FractalType::julia:
@@ -83,4 +89,19 @@ ResolvedEvalMode ResolveSampleEvalMode(
 
     // Unknown tier: degrade to fast.
     return {NumericBackend::float32, IterationStrategy::direct};
+}
+
+ResolvedEvalMode ResolveSampleEvalModeForRender(
+    FractalType fractalType,
+    const KernelParams& params,
+    SampleTier requestedTier,
+    double log2Zoom)
+{
+    const uint32_t support = GetSampleTierSupport(fractalType);
+    if (requestedTier == SampleTier::tier_auto &&
+        (support & kSupport_Standard) &&
+        BasinSmoothEscapeNeedsStandard(fractalType, params)) {
+        return {NumericBackend::float64, IterationStrategy::direct};
+    }
+    return ResolveSampleEvalMode(fractalType, requestedTier, log2Zoom);
 }

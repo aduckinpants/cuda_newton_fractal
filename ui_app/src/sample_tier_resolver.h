@@ -12,3 +12,11 @@ ResolvedEvalMode ResolveSampleEvalMode(
     FractalType fractalType,
     SampleTier requestedTier,
     double log2Zoom);
+
+// Render-context resolver: preserves explicit tier semantics, but lets auto
+// account for color signals that are known to be backend-sensitive.
+ResolvedEvalMode ResolveSampleEvalModeForRender(
+    FractalType fractalType,
+    const KernelParams& params,
+    SampleTier requestedTier,
+    double log2Zoom);

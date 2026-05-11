@@ -51,7 +51,10 @@ static bool DraftRowHasNumberParam(const ColorPipelineRowState& row, const char*
   return false;
 }
 
-static void WriteMinimalStateWithExtraParams(const std::filesystem::path& statePath, const std::string& extraParamsJson) {
+static void WriteMinimalStateWithExtraParams(
+  const std::filesystem::path& statePath,
+  const std::string& extraParamsJson,
+  const std::string& extraRenderJson = "") {
   std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
   file << "{\n"
       "  \"state_version\": 3,\n"
@@ -93,7 +96,11 @@ static void WriteMinimalStateWithExtraParams(const std::filesystem::path& stateP
       "    \"width\": 1024,\n"
       "    \"height\": 768,\n"
       "    \"block_size\": 256,\n"
-      "    \"device_id\": 0\n"
+      "    \"device_id\": 0";
+  if (!extraRenderJson.empty()) {
+    file << ",\n" << extraRenderJson;
+  }
+  file << "\n"
       "  }\n"
       "}";
 }
@@ -163,6 +170,7 @@ int main() {
     "height": 900,
     "block_size": 512,
     "device_id": 1,
+    "sample_tier": "standard",
     "interaction_debounce_ms": 420,
     "preview_target_fps": 24.0,
     "preview_min_scale": 0.4
@@ -277,8 +285,22 @@ int main() {
             std::cerr << "render mismatch\n";
             return 1;
         }
+        if (render.sample_tier != SampleTier::standard) {
+          std::cerr << "render sample_tier should load from saved diagnostics state\n";
+          return 1;
+        }
         if (render.interaction_debounce_ms != 420 || !NearlyEqual(render.preview_target_fps, 24.0f, 1.0e-6) || !NearlyEqual(render.preview_min_scale, 0.4f, 1.0e-6)) {
           std::cerr << "render adaptive preview pacing mismatch\n";
+          return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "bad_sample_tier_state.json";
+        WriteMinimalStateWithExtraParams(statePath, "", "    \"sample_tier\": \"warp_speed\"");
+        std::string error;
+        if (!ExpectLoadDiagnosticsStateFailure(statePath, "sample_tier", &error)) {
+          std::cerr << "Expected unknown sample_tier to fail: " << error << "\n";
           return 1;
         }
     }
