@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Composition authority in progress - the deterministic scoped `salt_ndepend` coverage gate closed at `ck:29fa6c71`, the bounded `band_finish` owner proof is implemented, and repaired-state validation proves the published runtime plus physical slider path after the rebuild. The next executable work is Grading stack composition using existing shipped rows only; further single-row grading polish waits until the composition spine exists.
+Grading stack composition implemented under the retargeted Phase 6 contract. The runtime now has a bounded Grading stack owner for the shipped rows `contrast_lift`, `phase_finish`, and `band_finish`, with live import/apply, ordered evaluation, diagnostics persistence, capture/archive serialization, reset clearing, native helper proof, runtime publish, and published-runtime probe/session proof. The next composition slice is Palette blend math; Source signal composition and the remaining single-row Grading owner proofs stay deferred.
 
 ## Phase Checklist
 
@@ -11,7 +11,7 @@ Composition authority in progress - the deterministic scoped `salt_ndepend` cove
 - [x] Phase 3 - ship only runtime-real grading rows through that lane, starting with `contrast_lift` and leaving wider Grade inventory rows fail-closed until their runtime math exists
 - [x] Phase 4 - keep reset/defaults plus diagnostics/archive persistence truthful for the bounded grading surface, then validate, hostile-audit, and checkpoint the slice cleanly
 - [x] Phase 5 - ship the next honest grading-authority row: `band_finish` owner proof using only real runtime-backed controls while Balance/Void, `grade.glow`, and basin lane-retention remain deferred
-- [ ] Phase 6 - add REDs and implementation for ordered Grading stack composition using only shipped rows, with stack ownership, live import/apply, persistence, reset, capture/archive, and published-runtime proof
+- [x] Phase 6 - add REDs and implementation for ordered Grading stack composition using only shipped rows, with stack ownership, live import/apply, persistence, reset, capture/archive, and published-runtime proof
 
 ## Explicit User Asks
 
@@ -22,8 +22,8 @@ Composition authority in progress - the deterministic scoped `salt_ndepend` cove
 - [deferred] Phase 6 - defer Balance/Void beyond this bounded `band_finish` row; it stays separate from geometry work and will not widen until the simpler grading lane is proven end-to-end.
 - [done] Repo gate - the deterministic scoped `salt_ndepend` coverage program closed at `ck:29fa6c71` with `78 covered / 0 uncovered` and `freeze_ready=true`, so grading expansion may resume only under hostile-reviewed bounded slices.
 - [done] Phase 6 - finish the next visible advanced-color feature gap by making the iteration-bands tuple live-backed in the advanced editor with `band_finish`, without exposing `grade.glow` or any other fake control.
-- [open] Composition - start the critical multi-function composition spine before continuing with single-row grading polish.
-- [open] Composition - keep Grading stack composition runtime-backed through existing shipped rows only, with no new Grade inventory rows or fake controls.
+- [done] Composition - start the critical multi-function composition spine before continuing with single-row grading polish.
+- [done] Composition - keep Grading stack composition runtime-backed through existing shipped rows only, with no new Grade inventory rows or fake controls.
 
 ## Presumption Loop
 
@@ -52,24 +52,35 @@ The controlling blocker is now composition authority, not the next unshipped gra
 - Validated so far: `artifacts/band_finish_native_green.log` captured `ui_app/build_tests_vsdevcmd.cmd` exiting 0 with all helper tests passing after the `band_finish` repair.
 - Repaired-state validation: `artifacts/code_quality_report.json` stayed on the `97/100` baseline; `artifacts/verify_runtime_publish.log` exited 0 and staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`; `artifacts/verify_color_pipeline_physical_drag.log` reports `1 passed, 3 deselected`; `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` has `checks.contract_schema_valid=true`; `artifacts/validation/viewer_host_assert_phased_plan_sync.json` was regenerated after plan repair; and `artifacts/band_finish_native_green.log` ends with `All helper tests passed`.
 
+
+- RED proved: `artifacts/grading_stack_red_native.log` failed before implementation because `KernelParams` had no `color_grading_stack` owner for a two-row Grading draft.
+- Landed: `ui_app/src/fractal_types.h` now owns `ColorPipelineGradingRuntimeParams`, `ColorPipelineGradingStackEntry`, `kColorPipelineMaxGradingStackCount`, and `KernelParams::color_grading_stack` / `color_grading_stack_count`.
+- Landed: `ui_app/src/color_pipeline_window.h` now applies and imports ordered Grading stacks for the shipped rows `contrast_lift`, `phase_finish`, and `band_finish`, while three-lane basin snapshots can still re-enter default Grading tuples without reading as draft-only.
+- Landed: `ui_app/src/escape_time_coloring.h` evaluates the bounded Grading stack in order and falls back to the legacy single-row behavior when no stack exists.
+- Landed: `ui_app/src/diagnostics_state_io.cpp`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/runtime_reset.cpp`, and `ui_app/src/fractal_derived_fields.cpp` now load/save/capture/default/clear the Grading stack while mirroring the final row back into the legacy numeric grading fields.
+- Landed: `ui_app/tests/test_color_pipeline_window.cpp`, `ui_app/tests/test_escape_time_coloring.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` lock the live bridge, ordered evaluation, persistence, capture/archive, and reset behavior.
+- Repaired-state validation: `artifacts/code_quality_report.json` is back on the 97/100 baseline; `artifacts/grading_stack_final_native_archive_assert.log` ends with `All helper tests passed`; `artifacts/grading_stack_runtime_publish.log` published `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`; and `artifacts/grading_stack_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
+
 ## Hostile Audit
 
 - Status: complete
-- Required posture: the repaired `band_finish` implementation cleared hostile review only after finding the fake `grade.glow` risk, repairing the stale dedicated-window expectation, repairing the plan/hook process defect, then rerunning the native, code-quality, runtime publish, physical slider, contract, and plan-sync proof surfaces on the repaired state.
+- Required posture: the Grading stack implementation cleared hostile review only after the RED confirmed the missing runtime owner, the first green attempt exposed two real root-basin/programmatic tuple regressions, the persistence pass exposed a code-quality regression in capture serialization, and the repaired state reran code quality, native helper tests, runtime publish, and published-runtime probe/session proof.
 
 ## Audit Passes
 
-- [done] Pass 1 - found the real product defect: the raw `band_finish` catalog row still carried unowned `grade.glow`, so simply unfiltering it would have shipped a fake control. The repair narrows `band_finish` to the real `color_saturation` / `color_contrast` mirror.
-- [done] Pass 2 - found the stale dedicated-window expectation: `test_color_pipeline_window` still expected coherent iteration-bands tuples to fail closed after `band_finish` shipped. The repaired test now proves live import, reset-from-live, and out-of-sync failure behavior.
-- [done] Pass 3 - found the workflow/process defect after the hook trip: the plan had stale coverage-gate language, literal `` `n`` text, and no current Action Hostile Review. This patch repairs the plan before more validation or closure.
-- [done] Pass 4 - after plan repair, reran code quality, runtime publish, physical slider proof, contract validation, and phased-plan sync on the repaired state; re-read the repaired state and found no additional real defect, no additional real issue, and no additional workflow mistake beyond the recorded repairs.
+- [done] Pass 1 - RED proved the real missing owner: `ui_app/tests/test_color_pipeline_window.cpp` failed before implementation because `KernelParams` had no `color_grading_stack` for a two-row shipped Grading draft.
+- [done] Pass 2 - found the first repaired-state regression: collecting Grading rows before the root-basin early return made three-lane root-basin snapshots read as draft-only. The repaired bridge only validates Grading stacks for tuples that have a Grading lane.
+- [done] Pass 3 - found the second repaired-state regression: applying a programmable tuple from a three-lane basin snapshot required a visible Grading lane instead of synthesizing the default shipped Grading row. The repaired apply path tolerates missing Grading lanes for default tuple re-entry.
+- [done] Pass 4 - found the code-quality regression: adding Grading stack capture serialization pushed `WriteColorParamsJson()` over the baseline line-count gate. The repaired state extracts `WriteColorPipelineStacksJson()` and code quality returns to 97/100.
+- [done] Pass 5 - reran the repaired state through code quality, full native helper tests including the tightened archive assertion, runtime publish, and published-runtime probe/session pytest; no additional real defect found in the touched seams.
 
 ## Audit Findings
 
-- [done] Real defect found: shipping the old raw `band_finish` descriptor would expose `grade.glow` without runtime ownership. The working tree removes that fake control from the shipped row and maps `band_finish` to existing owner-backed saturation/contrast controls.
-- [done] Real defect found: the dedicated `color_pipeline_window` test still encoded the previous fail-closed behavior for coherent iteration-bands tuples. The working tree now locks the new live-backed behavior through the module-named window helper.
-- [done] Real defect found: the slice plan was stale/corrupted after the hook recovery, including literal `` `n`` artifacts and a coverage-gate stop line that was already closed at `ck:29fa6c71`. The active plan is being repaired before validation receipts and checkpoint closure.
-- [done] Clean re-audit evidence: repaired-state proof is recorded in `artifacts/code_quality_report.json`, `artifacts/verify_runtime_publish.log`, `artifacts/verify_color_pipeline_physical_drag.log`, `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json`, `artifacts/validation/viewer_host_assert_phased_plan_sync.json`, and `artifacts/band_finish_native_green.log`; the re-read the repaired state pass did not expose another defect.
+- [done] Real defect found: Grading composition had no bounded runtime owner, so multi-row Grading either rejected or collapsed through the legacy field pack. The runtime now owns and evaluates a bounded Grading stack.
+- [done] Real defect found: the first implementation made root-basin snapshots with no Grading lane read as draft-only. The row selection path now returns root-basin pairs before requiring Grading stack rows.
+- [done] Real defect found: the first implementation blocked basin-to-programmable tuple re-entry because apply required a visible Grading lane. The apply path now synthesizes default Grading when the target tuple supports it and the draft has no Grading lane.
+- [done] Real defect found: capture serialization grew `WriteColorParamsJson()` past the quality baseline. The stack serialization moved into `WriteColorPipelineStacksJson()` and the audit baseline is green again.
+- [done] Clean re-audit evidence: repaired-state proof is recorded in `artifacts/code_quality_report.json`, `artifacts/grading_stack_final_native_archive_assert.log`, `artifacts/grading_stack_runtime_publish.log`, `artifacts/grading_stack_runtime_probe_session_pytest.log`, `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json`, and `artifacts/validation/viewer_host_assert_phased_plan_sync.json`.
 
 ## Notes
 
@@ -91,15 +102,14 @@ The controlling blocker is now composition authority, not the next unshipped gra
 
 ## Resume Point
 
-Resume after the `band_finish` checkpoint by keeping basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void deferred until the composition spine exists.
+Resume after the Grading stack checkpoint by starting the Palette blend-stack slice with explicit RGB blend math and owner fields. Generic Source signal composition, basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void remain deferred.
 
 ## Next Known Sliced Work
 
-1. Grading stack composition with existing shipped rows (`contrast_lift`, `phase_finish`, `band_finish`) under this retargeted Phase 6 contract; this is composition work, not a new grading inventory row.
-2. Palette blend stack with explicit RGB blend math, weights/modes, persistence, and viewer proof.
-3. Source signal composition with explicit scalar mixer semantics and descriptor-owned backend precision metadata.
-4. Basin-default grading lane-retention cleanup, `neutral_finish` / `tone_map_finish`, `grade.glow`, and Balance/Void owner proofs after the composition spine is truthful.
-5. Foundation closure: once composition and remaining owner-proof decisions are shipped or explicitly deferred, build the proof matrix, D: gallery/runtime captures, and extension rules.
+1. Palette blend stack with explicit RGB blend math, weights/modes, persistence, and viewer proof.
+2. Source signal composition with explicit scalar mixer semantics and descriptor-owned backend precision metadata.
+3. Basin-default grading lane-retention cleanup, `neutral_finish` / `tone_map_finish`, `grade.glow`, and Balance/Void owner proofs after the composition spine is truthful.
+4. Foundation closure: once composition and remaining owner-proof decisions are shipped or explicitly deferred, build the proof matrix, D: gallery/runtime captures, and extension rules.
 
 ## Action Hostile Review
 
@@ -107,5 +117,6 @@ Resume after the `band_finish` checkpoint by keeping basin lane-retention, `grad
 - Suspected Failure Mode: the first implementation mutation may add permissive multi-row Grading UI tests that only prove row counts while the runtime still collapses all Grading params into one legacy field pack.
 - Correct Owner/Action: add focused REDs that require a bounded Grading stack owner and fail on current code before adding implementation state.
 - Proof Surface: focused native helper failures in `ui_app/tests/test_color_pipeline_window.cpp`, `ui_app/tests/test_diagnostics_state_io.cpp`, `ui_app/tests/test_finding_archive_actions.cpp`, and `ui_app/tests/test_runtime_reset.cpp` before implementation; later green proof through `ui_app/build_tests_vsdevcmd.cmd`.
-- Blocked Action: adding `color_grading_stack` implementation fields or renderer evaluation before a failing test proves the current collapse/rejection behavior.
+- Outcome: complete - the RED failed on the missing owner first, then implementation, persistence, runtime evaluation, and repaired-state validation landed.
+- Blocked Action: none for this completed Grading stack slice; the next slice must open a fresh Action Hostile Review for Palette blend semantics.
 

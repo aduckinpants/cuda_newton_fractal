@@ -192,6 +192,13 @@ int main() {
         params.color_root_basin_pair_count = 2;
         params.color_root_basin_pairs[0] = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
         params.color_root_basin_pairs[1] = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
+        params.color_grading_stack_count = 2;
+        params.color_grading_stack[0].grading = ColorGradingPreset::escape_default;
+        params.color_grading_stack[0].params.exposure = 1.4f;
+        params.color_grading_stack[0].params.saturation = 1.2f;
+        params.color_grading_stack[1].grading = ColorGradingPreset::phase_default;
+        params.color_grading_stack[1].params.saturation = 0.8f;
+        params.color_grading_stack[1].params.contrast = 1.6f;
         params.color_shape_posterize_steps = 5;
         params.color_shape_posterize_mix = 0.65f;
         params.color_iteration_band_count = 5;
@@ -243,6 +250,9 @@ int main() {
             stateJson.find("\"color_shape_posterize_steps\": 5") == std::string::npos ||
             stateJson.find("\"color_shape_posterize_mix\": 0.65") == std::string::npos ||
             stateJson.find("\"color_shape_stack\"") == std::string::npos ||
+            stateJson.find("\"color_grading_stack\"") == std::string::npos ||
+            stateJson.find("\"grading\": \"escape_default\"") == std::string::npos ||
+            stateJson.find("\"grading\": \"phase_default\"") == std::string::npos ||
             stateJson.find("\"color_root_basin_pairs\"") == std::string::npos ||
             stateJson.find("\"palette\": \"root_classic\"") == std::string::npos ||
             stateJson.find("\"palette\": \"joy\"") == std::string::npos ||

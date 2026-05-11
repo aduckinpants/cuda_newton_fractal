@@ -267,26 +267,7 @@ void WriteExplainoVariantParamsJson(std::ostringstream& js, const KernelParams& 
     js << "    \"tension_strength\": " << static_cast<double>(params.tension_strength) << ",\n";
 }
 
-void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
-    js << "    \"color_saturation\": " << static_cast<double>(params.color_saturation) << ",\n";
-    js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
-    js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
-    js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
-    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << ",\n";
-    js << "    \"color_phase_signal_offset\": " << static_cast<double>(params.color_phase_signal_offset) << ",\n";
-    js << "    \"color_phase_wrap_cycles\": " << static_cast<double>(params.color_phase_wrap_cycles) << ",\n";
-    js << "    \"color_phase_palette_offset\": " << static_cast<double>(params.color_phase_palette_offset) << ",\n";
-    js << "    \"color_shape_offset\": " << static_cast<double>(params.color_shape_offset) << ",\n";
-    js << "    \"color_shape_scale\": " << static_cast<double>(params.color_shape_scale) << ",\n";
-    js << "    \"color_shape_repeat_frequency\": " << static_cast<double>(params.color_shape_repeat_frequency) << ",\n";
-    js << "    \"color_shape_repeat_phase\": " << static_cast<double>(params.color_shape_repeat_phase) << ",\n";
-    js << "    \"color_shape_posterize_steps\": " << params.color_shape_posterize_steps << ",\n";
-    js << "    \"color_shape_posterize_mix\": " << static_cast<double>(params.color_shape_posterize_mix) << ",\n";
-    js << "    \"color_shape_bias\": " << static_cast<double>(params.color_shape_bias) << ",\n";
-    js << "    \"color_shape_gain\": " << static_cast<double>(params.color_shape_gain) << ",\n";
-    js << "    \"color_shape_window_center\": " << static_cast<double>(params.color_shape_window_center) << ",\n";
-    js << "    \"color_shape_window_width\": " << static_cast<double>(params.color_shape_window_width) << ",\n";
-    js << "    \"color_shape_window_softness\": " << static_cast<double>(params.color_shape_window_softness) << ",\n";
+void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& params) {
     if (params.color_shape_stack_count > 0) {
         int shapeStackCount = params.color_shape_stack_count;
         if (shapeStackCount > kColorPipelineMaxShapeStackCount) {
@@ -312,6 +293,46 @@ void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
         }
         js << "    ],\n";
     }
+    if (params.color_grading_stack_count > 0) {
+        int gradingStackCount = params.color_grading_stack_count;
+        if (gradingStackCount > kColorPipelineMaxGradingStackCount) {
+            gradingStackCount = kColorPipelineMaxGradingStackCount;
+        }
+        js << "    \"color_grading_stack\": [\n";
+        for (int index = 0; index < gradingStackCount; ++index) {
+            const ColorPipelineGradingStackEntry& gradingEntry = params.color_grading_stack[index];
+            js << "      {\n";
+            js << "        \"grading\": \"" << CaptureColorGradingPresetId(gradingEntry.grading) << "\",\n";
+            js << "        \"exposure\": " << static_cast<double>(gradingEntry.params.exposure) << ",\n";
+            js << "        \"saturation\": " << static_cast<double>(gradingEntry.params.saturation) << ",\n";
+            js << "        \"contrast\": " << static_cast<double>(gradingEntry.params.contrast) << "\n";
+            js << "      }" << (index + 1 < gradingStackCount ? "," : "") << "\n";
+        }
+        js << "    ],\n";
+    }
+}
+
+void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
+    js << "    \"color_saturation\": " << static_cast<double>(params.color_saturation) << ",\n";
+    js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
+    js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
+    js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
+    js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << ",\n";
+    js << "    \"color_phase_signal_offset\": " << static_cast<double>(params.color_phase_signal_offset) << ",\n";
+    js << "    \"color_phase_wrap_cycles\": " << static_cast<double>(params.color_phase_wrap_cycles) << ",\n";
+    js << "    \"color_phase_palette_offset\": " << static_cast<double>(params.color_phase_palette_offset) << ",\n";
+    js << "    \"color_shape_offset\": " << static_cast<double>(params.color_shape_offset) << ",\n";
+    js << "    \"color_shape_scale\": " << static_cast<double>(params.color_shape_scale) << ",\n";
+    js << "    \"color_shape_repeat_frequency\": " << static_cast<double>(params.color_shape_repeat_frequency) << ",\n";
+    js << "    \"color_shape_repeat_phase\": " << static_cast<double>(params.color_shape_repeat_phase) << ",\n";
+    js << "    \"color_shape_posterize_steps\": " << params.color_shape_posterize_steps << ",\n";
+    js << "    \"color_shape_posterize_mix\": " << static_cast<double>(params.color_shape_posterize_mix) << ",\n";
+    js << "    \"color_shape_bias\": " << static_cast<double>(params.color_shape_bias) << ",\n";
+    js << "    \"color_shape_gain\": " << static_cast<double>(params.color_shape_gain) << ",\n";
+    js << "    \"color_shape_window_center\": " << static_cast<double>(params.color_shape_window_center) << ",\n";
+    js << "    \"color_shape_window_width\": " << static_cast<double>(params.color_shape_window_width) << ",\n";
+    js << "    \"color_shape_window_softness\": " << static_cast<double>(params.color_shape_window_softness) << ",\n";
+    WriteColorPipelineStacksJson(js, params);
     js << "    \"color_iteration_band_count\": " << params.color_iteration_band_count << ",\n";
     js << "    \"color_iteration_band_softness\": " << static_cast<double>(params.color_iteration_band_softness) << ",\n";
     js << "    \"color_iteration_band_emphasis\": " << static_cast<double>(params.color_iteration_band_emphasis) << ",\n";

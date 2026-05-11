@@ -102,9 +102,12 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorContrast(Color color, float c
 }
 
 template <typename Color>
-ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const KernelParams& params) {
-    const float exposure = ResolveFractalGradeExposure(params);
-    const float saturation = ResolveFractalGradeSaturation(params);
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingPass(
+    Color color,
+    const KernelParams& params,
+    float exposure,
+    float saturation,
+    float contrast) {
     color = EscapeTimeColorMake<Color>(
         EscapeTimeColorToneMap(color.x, exposure),
         EscapeTimeColorToneMap(color.y, exposure),
@@ -114,6 +117,48 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const Ke
         ApplyFractalColorSaturation(
             ApplyFractalColorTint(color, params),
             saturation),
+        contrast);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
+    Color color,
+    const KernelParams& params,
+    const ColorPipelineGradingStackEntry& gradingEntry) {
+    float exposure = params.exposure < 0.0f ? 0.0f : params.exposure;
+    float saturation = params.color_saturation;
+    float contrast = params.color_contrast;
+    if (gradingEntry.grading == ColorGradingPreset::escape_default) {
+        exposure *= EscapeTimeColorClamp(gradingEntry.params.exposure, 0.1f, 3.0f);
+        saturation *= EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
+        contrast *= EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
+    } else if (gradingEntry.grading == ColorGradingPreset::phase_default ||
+               gradingEntry.grading == ColorGradingPreset::bands_default) {
+        exposure *= EscapeTimeColorClamp(gradingEntry.params.exposure, 0.1f, 3.0f);
+        saturation = EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
+        contrast = EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
+    }
+    return ApplyFractalColorGradingPass(color, params, exposure, saturation, contrast);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const KernelParams& params) {
+    int gradingStackCount = params.color_grading_stack_count;
+    if (gradingStackCount > kColorPipelineMaxGradingStackCount) {
+        gradingStackCount = kColorPipelineMaxGradingStackCount;
+    }
+    if (gradingStackCount > 0) {
+        for (int index = 0; index < gradingStackCount; ++index) {
+            color = ApplyFractalColorGradingStackRow(color, params, params.color_grading_stack[index]);
+        }
+        return color;
+    }
+
+    return ApplyFractalColorGradingPass(
+        color,
+        params,
+        ResolveFractalGradeExposure(params),
+        ResolveFractalGradeSaturation(params),
         params.color_contrast);
 }
 

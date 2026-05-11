@@ -2668,6 +2668,64 @@ int main() {
         }
     }
 
+
+
+    {
+        const fs::path statePath = tempRoot / "v3_grading_stack_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0],
+    "color_grading_stack": [
+      { "grading": "escape_default", "exposure": 1.4, "saturation": 1.2 },
+      { "grading": "phase_default", "saturation": 0.8, "contrast": 1.6 }
+    ]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V3 grading-stack parameter load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_grading_stack_count != 2 ||
+            p.color_grading_stack[0].grading != ColorGradingPreset::escape_default ||
+            !NearlyEqual(p.color_grading_stack[0].params.exposure, 1.4, 0.001) ||
+            !NearlyEqual(p.color_grading_stack[0].params.saturation, 1.2, 0.001) ||
+            p.color_grading_stack[1].grading != ColorGradingPreset::phase_default ||
+            !NearlyEqual(p.color_grading_stack[1].params.saturation, 0.8, 0.001) ||
+            !NearlyEqual(p.color_grading_stack[1].params.contrast, 1.6, 0.001) ||
+            !NearlyEqual(p.color_saturation, 0.8, 0.001) ||
+            !NearlyEqual(p.color_contrast, 1.6, 0.001)) {
+            std::cerr << "Expected supported Grading stacks to round-trip through diagnostics state load with a legacy mirror of the final row\n";
+            return 1;
+        }
+    }
+
     {
         const fs::path statePath = tempRoot / "v3_root_basin_pair_schedule.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);

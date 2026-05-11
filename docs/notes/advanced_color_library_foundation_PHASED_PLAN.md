@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Composition authority in progress - `band_finish` is checkpointed at `80cc000`, the smooth/root precision detours are closed through `6170dc4`, and the next critical foundation work is now the multi-function composition spine under the retargeted Phase 6 contract. Remaining single-row grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void), presets, and new-fractal work stay deferred until composition has runtime-owner truth.
+Composition authority in progress - the Grading stack sub-slice is implemented and validated under the retargeted Phase 6 contract, using only shipped rows (`contrast_lift`, `phase_finish`, `band_finish`). The next critical foundation work is Palette blend composition with explicit RGB blend math. Generic Source composition and remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) stay deferred.
 
 ## Phase Checklist
 
@@ -12,7 +12,7 @@ Composition authority in progress - `band_finish` is checkpointed at `80cc000`, 
 - [x] Phase 3 - land the full initial Shape library through the extracted descriptor/registry core
 - [x] Phase 4 - land the full initial Palette library while preserving the ExplainO CMap versus basin/root palette split
 - [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
-- [ ] Phase 6 - build the multi-function composition spine before more single-row grading polish; first executable slice is Grading stack composition with existing shipped rows, followed by Palette blend and Source signal composition contracts
+- [ ] Phase 6 - build the multi-function composition spine before more single-row grading polish; Grading stack composition with existing shipped rows is complete, followed by Palette blend and Source signal composition contracts
 - [ ] Phase 7 - continue bounded Grading runtime authority only through separate owner-proof contracts after the composition spine exists; `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, and Balance/Void remain individually sliced
 - [ ] Phase 8 - close the four-category foundation with proof matrix, D: gallery/runtime captures, and explicit extension rules
 - [ ] Phase 9 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
@@ -132,6 +132,10 @@ The controlling product risk is now composition drift after the `band_finish` an
 - Validated repaired `band_finish` slice: `artifacts/band_finish_native_green.log` is green for `ui_app/build_tests_vsdevcmd.cmd`; `artifacts/code_quality_report.json` stayed on the `97/100` baseline; `artifacts/verify_runtime_publish.log` published the active `D:` runtime; `artifacts/verify_color_pipeline_physical_drag.log` reports `1 passed, 3 deselected`; `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` has `checks.contract_schema_valid=true`; and `artifacts/validation/viewer_host_assert_phased_plan_sync.json` was regenerated after plan repair.
 - Closed detour: `153f5e8` plus `970edef` closed `smooth_escape` backend signal classification; `6170dc4` closed `root_proximity` backend precision policy. The follow-up precision-policy lesson is descriptor-owned backend sensitivity, not more one-off hidden defaults.
 - Corrected priority: the retargeted Phase 6 contract now binds the next critical implementation thread to composition first: Grading stack with shipped rows, then Palette blend stack, then Source signal composition, before remaining single-row grading owner proofs.
+
+
+- Checkpoint-ready in working tree: the Grading stack composition sub-slice adds bounded runtime ownership, live import/apply, ordered evaluation, diagnostics persistence, capture/archive serialization, reset clearing, and tests for `contrast_lift`, `phase_finish`, and `band_finish` stacks without exposing new Grade inventory rows.
+- Validated Grading stack sub-slice: `artifacts/code_quality_report.json` is back on the 97/100 baseline; `artifacts/grading_stack_final_native_archive_assert.log` ends with `All helper tests passed`; `artifacts/grading_stack_runtime_publish.log` published the active runtime; and `artifacts/grading_stack_runtime_probe_session_pytest.log` reports `64 passed` against the published runtime.
 
 ## Hostile Audit
 

@@ -411,6 +411,34 @@ int main() {
             std::cerr << "contrast_lift should react to its live exposure and saturation owner fields\n";
             return 1;
         }
+
+        params.color_grading_stack_count = 2;
+        params.color_grading_stack[0].grading = ColorGradingPreset::escape_default;
+        params.color_grading_stack[0].params.exposure = 1.4f;
+        params.color_grading_stack[0].params.saturation = 1.2f;
+        params.color_grading_stack[0].params.contrast = 1.0f;
+        params.color_grading_stack[1].grading = ColorGradingPreset::phase_default;
+        params.color_grading_stack[1].params.exposure = 1.0f;
+        params.color_grading_stack[1].params.saturation = 0.8f;
+        params.color_grading_stack[1].params.contrast = 1.6f;
+        const TestColor stackedGrade = ApplyFractalColorGrading(programmableBase, params);
+        const TestColor manualStackedGrade = ApplyFractalColorGradingStackRow(
+            ApplyFractalColorGradingStackRow(programmableBase, params, params.color_grading_stack[0]),
+            params,
+            params.color_grading_stack[1]);
+        KernelParams finalGradeOnlyParams = params;
+        finalGradeOnlyParams.color_grading_stack_count = 1;
+        finalGradeOnlyParams.color_grading_stack[0] = params.color_grading_stack[1];
+        const TestColor finalGradeOnly = ApplyFractalColorGrading(programmableBase, finalGradeOnlyParams);
+        if (Equals(stackedGrade, finalGradeOnly)) {
+            std::cerr << "A two-row Grading stack should not collapse to the final Grading row only\n";
+            return 1;
+        }
+        if (!Equals(stackedGrade, manualStackedGrade)) {
+            std::cerr << "A two-row Grading stack should execute supported Grading rows in order\n";
+            return 1;
+        }
+        params.color_grading_stack_count = 0;
     }
 
     {

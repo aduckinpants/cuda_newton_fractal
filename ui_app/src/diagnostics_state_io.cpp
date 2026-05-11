@@ -532,6 +532,107 @@ bool ParseOptionalColorShapeStack(const json_min::Value& paramsObject, KernelPar
     return true;
 }
 
+
+void ResetLegacyColorGradingMirror(KernelParams* ioParams) {
+    if (!ioParams) return;
+    ioParams->color_contrast_lift_exposure = 1.0f;
+    ioParams->color_contrast_lift_saturation = 1.0f;
+}
+
+void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry& gradingEntry, KernelParams* ioParams) {
+    if (!ioParams) return;
+    ResetLegacyColorGradingMirror(ioParams);
+    if (gradingEntry.grading == ColorGradingPreset::escape_default) {
+        ioParams->color_contrast_lift_exposure = gradingEntry.params.exposure;
+        ioParams->color_contrast_lift_saturation = gradingEntry.params.saturation;
+    } else if (gradingEntry.grading == ColorGradingPreset::phase_default ||
+               gradingEntry.grading == ColorGradingPreset::bands_default) {
+        ioParams->color_saturation = gradingEntry.params.saturation;
+        ioParams->color_contrast = gradingEntry.params.contrast;
+    }
+}
+
+void ClearColorGradingStack(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    ioParams->color_grading_stack_count = 0;
+    for (ColorPipelineGradingStackEntry& gradingEntry : ioParams->color_grading_stack) {
+        gradingEntry = {};
+    }
+}
+
+bool ParseColorGradingStackEntry(const json_min::Value& entryValue,
+                                 ColorPipelineGradingStackEntry* outEntry,
+                                 std::string* outError) {
+    if (!entryValue.is_object()) {
+        if (outError) *outError = "color_grading_stack entries must be objects";
+        return false;
+    }
+    std::string gradingId;
+    if (!GetRequiredString(entryValue, "grading", &gradingId, outError)) {
+        return false;
+    }
+    ColorPipelineGradingStackEntry entry;
+    if (!ParseColorGradingPreset(gradingId, &entry.grading)) {
+        if (outError) *outError = std::string("Unknown color_grading_stack grading id: ") + gradingId;
+        return false;
+    }
+    const char* functionId = AdvancedColorGradingFunctionId(entry.grading);
+    if (!functionId ||
+        (std::strcmp(functionId, "contrast_lift") != 0 &&
+         std::strcmp(functionId, "phase_finish") != 0 &&
+         std::strcmp(functionId, "band_finish") != 0)) {
+        if (outError) *outError = "color_grading_stack only supports shipped Grading rows";
+        return false;
+    }
+    double exposure = entry.params.exposure;
+    double saturation = entry.params.saturation;
+    double contrast = entry.params.contrast;
+    if (!GetOptionalNumber(entryValue, "exposure", &exposure, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "contrast", &contrast, nullptr, outError)) {
+        return false;
+    }
+    entry.params.exposure = static_cast<float>(exposure);
+    entry.params.saturation = static_cast<float>(saturation);
+    entry.params.contrast = static_cast<float>(contrast);
+    *outEntry = entry;
+    return true;
+}
+
+bool ParseOptionalColorGradingStack(const json_min::Value& paramsObject, KernelParams* ioParams, std::string* outError) {
+    if (!ioParams) {
+        return false;
+    }
+    ClearColorGradingStack(ioParams);
+    const json_min::Value* stackValue = paramsObject.get("color_grading_stack");
+    if (!stackValue) {
+        return true;
+    }
+    if (!stackValue->is_array()) {
+        if (outError) *outError = "Field color_grading_stack must be an array";
+        return false;
+    }
+
+    const auto& stackArray = stackValue->as_array();
+    if (stackArray.size() > static_cast<std::size_t>(kColorPipelineMaxGradingStackCount)) {
+        if (outError) *outError = "color_grading_stack exceeds the supported maximum row count";
+        return false;
+    }
+
+    ioParams->color_grading_stack_count = static_cast<int>(stackArray.size());
+    for (std::size_t index = 0; index < stackArray.size(); ++index) {
+        if (!ParseColorGradingStackEntry(stackArray[index], &ioParams->color_grading_stack[index], outError)) {
+            return false;
+        }
+    }
+    if (!stackArray.empty()) {
+        MirrorLegacyColorGradingFromStackEntry(ioParams->color_grading_stack[stackArray.size() - 1], ioParams);
+    }
+    return true;
+}
+
 bool ParseIntField(const json_min::Value& object, const char* key, int* outValue, std::string* outError) {
     double rawValue = 0.0;
     if (!GetRequiredNumber(object, key, &rawValue, outError)) return false;
@@ -1582,6 +1683,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);
     nextParams.color_contrast_lift_saturation = static_cast<float>(colorContrastLiftSaturation);
     if (!ParseOptionalColorShapeStack(*paramsObject, &nextParams, outError)) return false;
+    if (!ParseOptionalColorGradingStack(*paramsObject, &nextParams, outError)) return false;
 
     // explaino_cluster_radius (optional for backward compat)
     double explainoClusterRadius = nextParams.explaino_cluster_radius;

@@ -36,6 +36,10 @@ void ResetRuntimeStateForCurrentFractal(
     for (ColorPipelineSelection& pairSelection : params.color_root_basin_pairs) {
         pairSelection = {};
     }
+    params.color_grading_stack_count = 0;
+    for (ColorPipelineGradingStackEntry& gradingEntry : params.color_grading_stack) {
+        gradingEntry = {};
+    }
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
     }

@@ -232,6 +232,48 @@ void TestIterationBandsLiveImportShipsBandFinish() {
         "TestIterationBandsLiveImportShipsBandFinish_OutOfSyncLiveFailsClosed");
 }
 
+
+void TestGradingStackApplyAndLiveImport() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(EnsureColorPipelineWindowInitialized(&state), "TestGradingStackApplyAndLiveImport_Initializes");
+    Check(SelectColorPipelineLaneFunction(&state, 3, "contrast_lift") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.exposure", 1.4) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.saturation", 1.2),
+        "TestGradingStackApplyAndLiveImport_ConfiguresContrastLift");
+    Check(AddColorPipelineLaneRow(&state, 3, "phase_finish") && state.lanes[3].rows.size() == 2,
+        "TestGradingStackApplyAndLiveImport_AddsPhaseFinishRow");
+    Check(SetRowNumber(state.lanes[3].rows[1], "grade.saturation", 0.8) &&
+            SetRowNumber(state.lanes[3].rows[1], "grade.contrast", 1.6),
+        "TestGradingStackApplyAndLiveImport_ConfiguresPhaseFinish");
+
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestGradingStackApplyAndLiveImport_ApplyStackSucceeds");
+    Check(params.color_grading_stack_count == 2 &&
+            params.color_grading_stack[0].grading == ColorGradingPreset::escape_default &&
+            Near(params.color_grading_stack[0].params.exposure, 1.4) &&
+            Near(params.color_grading_stack[0].params.saturation, 1.2) &&
+            params.color_grading_stack[1].grading == ColorGradingPreset::phase_default &&
+            Near(params.color_grading_stack[1].params.saturation, 0.8) &&
+            Near(params.color_grading_stack[1].params.contrast, 1.6),
+        "TestGradingStackApplyAndLiveImport_RuntimeGradingStackWritten");
+    Check(params.color_pipeline.grading == ColorGradingPreset::escape_default,
+        "TestGradingStackApplyAndLiveImport_PipelineTupleKeepsPrimaryGradingBridge");
+    Check(Near(params.color_saturation, 0.8) && Near(params.color_contrast, 1.6),
+        "TestGradingStackApplyAndLiveImport_LegacyMirrorUsesLastGradingRow");
+    Check(state.live_snapshot.valid && state.live_snapshot.lanes[3].rows.size() == 2 &&
+            state.live_snapshot.lanes[3].rows[0].function_id == "contrast_lift" &&
+            state.live_snapshot.lanes[3].rows[1].function_id == "phase_finish" &&
+            !HasColorPipelineDraftEdits(state),
+        "TestGradingStackApplyAndLiveImport_ApplyResyncsGradingStackDraft");
+
+    Check(RemoveColorPipelineLaneRow(&state, 3, 1) && state.lanes[3].rows.size() == 1,
+        "TestGradingStackApplyAndLiveImport_RemoveSecondGradingRow");
+    Check(!RemoveColorPipelineLaneRow(&state, 3, 0),
+        "TestGradingStackApplyAndLiveImport_CannotRemoveLastGradingRow");
+}
+
 void TestRootBasinPairScheduleBridge() {
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
@@ -321,6 +363,7 @@ int main() {
     TestRootSelectionCoSwitchesAndApplies();
     TestShapeStackApplyAndValidation();
     TestIterationBandsLiveImportShipsBandFinish();
+    TestGradingStackApplyAndLiveImport();
     TestRootBasinPairScheduleBridge();
     TestWindowUtilityContracts();
 

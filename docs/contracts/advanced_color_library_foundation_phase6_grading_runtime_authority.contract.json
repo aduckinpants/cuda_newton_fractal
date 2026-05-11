@@ -2,7 +2,7 @@
   "version": 1,
   "contract_id": "advanced_color_library_foundation_phase6_grading_runtime_authority",
   "feature_id": "advanced_color_library_foundation",
-  "workflow_type": "workflow_only",
+  "workflow_type": "viewer_first",
   "plan_path": "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json",

@@ -91,6 +91,7 @@ enum class ColorPipelineShape : int {
 
 constexpr int kColorPipelineMaxShapeStackCount = 8;
 constexpr int kColorPipelineMaxRootBasinPairCount = 8;
+constexpr int kColorPipelineMaxGradingStackCount = 8;
 
 struct ColorPipelineShapeRuntimeParams {
     float offset{0.0f};
@@ -109,6 +110,17 @@ struct ColorPipelineShapeRuntimeParams {
 struct ColorPipelineShapeStackEntry {
     ColorPipelineShape shape{ColorPipelineShape::identity};
     ColorPipelineShapeRuntimeParams params{};
+};
+
+struct ColorPipelineGradingRuntimeParams {
+    float exposure{1.0f};
+    float saturation{1.0f};
+    float contrast{1.0f};
+};
+
+struct ColorPipelineGradingStackEntry {
+    ColorGradingPreset grading{ColorGradingPreset::escape_default};
+    ColorPipelineGradingRuntimeParams params{};
 };
 
 struct ColorPipelineSelection {
@@ -295,6 +307,8 @@ struct KernelParams {
     ColorPipelineShapeStackEntry color_shape_stack[kColorPipelineMaxShapeStackCount]{};
     int color_root_basin_pair_count{0};
     ColorPipelineSelection color_root_basin_pairs[kColorPipelineMaxRootBasinPairCount]{};
+    int color_grading_stack_count{0};
+    ColorPipelineGradingStackEntry color_grading_stack[kColorPipelineMaxGradingStackCount]{};
     float color_shape_offset{0.0f};
     float color_shape_scale{1.0f};
     float color_shape_repeat_frequency{8.0f};

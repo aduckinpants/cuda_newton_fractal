@@ -52,6 +52,13 @@ int main() {
     params.color_root_basin_pair_count = 2;
     params.color_root_basin_pairs[0] = {ColorSignal::root_index, ColorPalette::root_classic, ColorGradingPreset::basin_default};
     params.color_root_basin_pairs[1] = {ColorSignal::root_index, ColorPalette::joy, ColorGradingPreset::basin_default};
+    params.color_grading_stack_count = 2;
+    params.color_grading_stack[0].grading = ColorGradingPreset::escape_default;
+    params.color_grading_stack[0].params.exposure = 1.4f;
+    params.color_grading_stack[0].params.saturation = 1.2f;
+    params.color_grading_stack[1].grading = ColorGradingPreset::phase_default;
+    params.color_grading_stack[1].params.saturation = 0.8f;
+    params.color_grading_stack[1].params.contrast = 1.6f;
     params.color_shape_offset = 0.35f;
     params.color_shape_scale = 1.8f;
     params.color_shape_repeat_frequency = 6.0f;
@@ -117,6 +124,7 @@ int main() {
         params.color_root_basin_pair_count != 0 ||
         params.color_shape != ColorPipelineShape::identity ||
         params.color_shape_stack_count != 0 ||
+        params.color_grading_stack_count != 0 ||
         !NearlyEqual(params.color_shape_offset, 0.0f) ||
         !NearlyEqual(params.color_shape_scale, 1.0f) ||
         !NearlyEqual(params.color_shape_repeat_frequency, 8.0f) ||
