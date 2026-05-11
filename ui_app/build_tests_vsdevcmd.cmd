@@ -313,6 +313,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_types.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_types.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\explaino_sidecar_refresh.cpp .\tests\test_explaino_sidecar_refresh.cpp ^
   /Fe:"%TESTROOT%\test_explaino_sidecar_refresh.exe"
 if errorlevel 1 exit /b 1
@@ -600,6 +605,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_sample_result.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_fractal_types.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_explaino_sidecar_refresh.exe"
