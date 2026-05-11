@@ -344,6 +344,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\fractal_probe_contract.cpp .\tests\test_fractal_probe_contract.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_probe_contract.exe"
+if errorlevel 1 exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
@@ -613,6 +618,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_fractal_probe_runner.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_fractal_probe_contract.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_safe_mode_schema.exe"
