@@ -89,11 +89,19 @@ The controlling blocker is now the first remaining visible-but-unshipped grading
 
 Resume after the `band_finish` checkpoint by keeping basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void deferred until one of those surfaces gets a separate owner-proof contract.
 
+## Next Known Sliced Work
+
+1. Basin-default grading lane-retention cleanup: prove whether `ColorGradingPreset::basin_default` deserves a real Grading row/import path or should remain intentionally absent; do not widen basin math in that slice.
+2. `neutral_finish` or `tone_map_finish` owner proof: choose one visible Grade inventory row and prove real runtime owner fields before exposing it in the shipped catalog.
+3. Balance/Void grading owner proof: implement the bounded generic filmic operator only under its own contract, separate from ExplainO-specific geometry/deformation work.
+4. Descriptor-owned backend precision policy: carry the `smooth_escape` and `root_proximity` precision lesson into metadata consumed by `ResolveSampleEvalModeForRender`, instead of growing per-signal predicates.
+5. Phase 7 foundation closure: once remaining Phase 6 owner-proof decisions are shipped or explicitly deferred, build the proof matrix, D: gallery/runtime captures, and extension rules.
+
 ## Action Hostile Review
 
-- Action ID: action-20260511-foundation-final-proof-ledger-sync
-- Suspected Failure Mode: the main foundation proof ledger can still say final closure is pending after the repaired-state validation rails have passed, leaving stale proof language in the checked-in plan.
-- Correct Owner/Action: update the umbrella foundation proof ledger to record the repaired-state `band_finish` validation artifacts while preserving fake-row deferrals and the active Phase 6 ownership boundary.
-- Proof Surface: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` plus the active Phase 6 contract validator artifact.
-- Blocked Action: any checkpoint, receipt, or final claim that the advanced-color feature is repaired while the foundation proof ledger still says final validation is pending.
+- Action ID: action-20260511-foundation-continuity-validation
+- Suspected Failure Mode: this plan-only continuity repair may name next slices but fail to prove the checked-in plan/contract state is synchronized, leaving another stale authority surface.
+- Correct Owner/Action: run the active Phase 6 contract validator and phased-plan sync after updating the umbrella foundation proof ledger and next-slice index.
+- Proof Surface: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` plus `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
+- Blocked Action: checkpointing this continuity slice before both validators are green and `HANDOFF_LOG.md` records the next known sliced work.
 
