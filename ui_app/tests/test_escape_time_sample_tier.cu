@@ -89,6 +89,62 @@ bool RenderExplainoSmoothEscape(SampleTier tier, std::vector<uint32_t>* outPixel
     return true;
 }
 
+void SeedExplainoRootProximityPolynomial(KernelParams& params) {
+    params.poly_kind = PolyKind::custom;
+    params.explaino_root_count = 4;
+    params.explaino_roots[0] = {-0.377730466f, 0.808940309f};
+    params.explaino_roots[1] = {-0.377730466f, -0.808940309f};
+    params.explaino_roots[2] = {-0.756559130f, 0.828689252f};
+    params.explaino_roots[3] = {-0.756559130f, -0.828689252f};
+
+    params.poly_coeffs[0] = 1.003590253f;
+    params.poly_coeffs[1] = 2.157259794f;
+    params.poly_coeffs[2] = 3.199274055f;
+    params.poly_coeffs[3] = 2.268579193f;
+    params.poly_coeffs[4] = 1.000000000f;
+}
+
+bool RenderExplainoRootProximity(SampleTier tier, std::vector<uint32_t>* outPixels, RenderStats* outStats) {
+    if (!outPixels) return false;
+
+    ViewState view{};
+    view.fractal_type = FractalType::explaino;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    view.center.x = 0.0f;
+    view.center.y = 0.0f;
+    view.zoom = 1.0f;
+
+    KernelParams params{};
+    params.max_iter = 500;
+    params.epsilon = 1.0e-6f;
+    SeedExplainoRootProximityPolynomial(params);
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    params.color_root_proximity_scale = 1.0f;
+    params.color_root_proximity_bias = 0.0f;
+    params.color_heatmap_cycle_scale = 1.0f;
+    params.color_heatmap_saturation = 1.0f;
+    params.exposure = 1.0f;
+
+    RenderSettings render{};
+    render.resolution = {96, 96};
+    render.block_size = 256;
+    render.device_id = 0;
+    render.sample_tier = tier;
+
+    outPixels->assign(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0u);
+    const char* error = nullptr;
+    RenderStats stats{};
+    if (!RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, &stats, &error)) {
+        std::cerr << "RenderFractalCUDA failed for ExplainO root_proximity tier test: " << (error ? error : "unknown") << "\n";
+        return false;
+    }
+    if (outStats) *outStats = stats;
+    return true;
+}
+
 int CountPixelDiffs(const std::vector<uint32_t>& left, const std::vector<uint32_t>& right) {
     if (left.size() != right.size()) return -1;
     int diffs = 0;
@@ -160,6 +216,57 @@ int main() {
         std::cerr << "Expected tier_auto to classify the material ExplainO smooth_escape fast/standard delta as requiring float64; "
                   << "auto backend=" << BackendName(explainoAutoStats.resolved_eval.backend)
                   << ", fast_standard_diffs=" << explainoPixelDiffs
+                  << ", auto_fast_diffs=" << autoFastDiffs
+                  << ", auto_standard_diffs=" << autoStandardDiffs << "\n";
+        CleanupFractalCUDA();
+        return 1;
+    }
+
+    std::vector<uint32_t> rootProximityFastPixels;
+    std::vector<uint32_t> rootProximityStandardPixels;
+    std::vector<uint32_t> rootProximityAutoPixels;
+    RenderStats rootProximityFastStats{};
+    RenderStats rootProximityStandardStats{};
+    RenderStats rootProximityAutoStats{};
+
+    if (!RenderExplainoRootProximity(SampleTier::fast, &rootProximityFastPixels, &rootProximityFastStats)) {
+        CleanupFractalCUDA();
+        return 1;
+    }
+    if (!RenderExplainoRootProximity(SampleTier::standard, &rootProximityStandardPixels, &rootProximityStandardStats)) {
+        CleanupFractalCUDA();
+        return 1;
+    }
+    if (!RenderExplainoRootProximity(SampleTier::tier_auto, &rootProximityAutoPixels, &rootProximityAutoStats)) {
+        CleanupFractalCUDA();
+        return 1;
+    }
+
+    const int rootProximityPixelDiffs = CountPixelDiffs(rootProximityFastPixels, rootProximityStandardPixels);
+    constexpr int kMaterialRootProximityDiffPixels = 64;
+    if (rootProximityPixelDiffs < kMaterialRootProximityDiffPixels) {
+        std::cerr << "Root_proximity classification witness is inconclusive: fast vs standard differ by "
+                  << rootProximityPixelDiffs << " pixels, below material threshold "
+                  << kMaterialRootProximityDiffPixels << "\n";
+        CleanupFractalCUDA();
+        return 1;
+    }
+
+    if (rootProximityFastStats.resolved_eval.backend != NumericBackend::float32 ||
+        rootProximityStandardStats.resolved_eval.backend != NumericBackend::float64) {
+        std::cerr << "Root_proximity classification witness expected explicit fast=float32 and standard=float64, got fast="
+                  << BackendName(rootProximityFastStats.resolved_eval.backend)
+                  << ", standard=" << BackendName(rootProximityStandardStats.resolved_eval.backend) << "\n";
+        CleanupFractalCUDA();
+        return 1;
+    }
+
+    if (rootProximityAutoStats.resolved_eval.backend != NumericBackend::float64) {
+        const int autoFastDiffs = CountPixelDiffs(rootProximityAutoPixels, rootProximityFastPixels);
+        const int autoStandardDiffs = CountPixelDiffs(rootProximityAutoPixels, rootProximityStandardPixels);
+        std::cerr << "Expected tier_auto to classify the material ExplainO root_proximity fast/standard delta as requiring float64; "
+                  << "auto backend=" << BackendName(rootProximityAutoStats.resolved_eval.backend)
+                  << ", fast_standard_diffs=" << rootProximityPixelDiffs
                   << ", auto_fast_diffs=" << autoFastDiffs
                   << ", auto_standard_diffs=" << autoStandardDiffs << "\n";
         CleanupFractalCUDA();

@@ -3,10 +3,20 @@
 
 namespace {
 
-bool BasinSmoothEscapeNeedsStandard(FractalType fractalType, const KernelParams& params) {
+bool BasinColorSignalNeedsStandard(ColorSignal signal) {
+    switch (signal) {
+    case ColorSignal::smooth_escape:
+    case ColorSignal::root_proximity:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool BasinColoringNeedsStandard(FractalType fractalType, const KernelParams& params) {
     return SupportsBasinColoring(fractalType) &&
         params.coloring_mode == ColoringMode::smooth_escape &&
-        params.color_pipeline.signal == ColorSignal::smooth_escape;
+        BasinColorSignalNeedsStandard(params.color_pipeline.signal);
 }
 
 double AutoStandardThresholdLog2(FractalType fractalType) {
@@ -100,7 +110,7 @@ ResolvedEvalMode ResolveSampleEvalModeForRender(
     const uint32_t support = GetSampleTierSupport(fractalType);
     if (requestedTier == SampleTier::tier_auto &&
         (support & kSupport_Standard) &&
-        BasinSmoothEscapeNeedsStandard(fractalType, params)) {
+        BasinColoringNeedsStandard(fractalType, params)) {
         return {NumericBackend::float64, IterationStrategy::direct};
     }
     return ResolveSampleEvalMode(fractalType, requestedTier, log2Zoom);

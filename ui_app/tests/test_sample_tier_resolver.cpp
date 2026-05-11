@@ -49,11 +49,25 @@ static KernelParams SmoothEscapeParams() {
     return params;
 }
 
+static KernelParams RootProximityParams() {
+    KernelParams params{};
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = {ColorSignal::root_proximity, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+    return params;
+}
+
 static void test_render_auto_promotes_basin_smooth_escape() {
     KernelParams params = SmoothEscapeParams();
     auto r = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::tier_auto, 10.0);
     CHECK(r.backend == NumericBackend::float64, "render auto should promote basin smooth_escape to float64");
     CHECK(r.strategy == IterationStrategy::direct, "render auto smooth_escape promotion should stay direct");
+}
+
+static void test_render_auto_promotes_basin_root_proximity() {
+    KernelParams params = RootProximityParams();
+    auto result = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::tier_auto, 10.0);
+    CHECK(result.backend == NumericBackend::float64, "render auto should promote basin root_proximity to float64");
+    CHECK(result.strategy == IterationStrategy::direct, "render auto root_proximity promotion should stay direct");
 }
 
 static void test_render_auto_does_not_promote_basin_root_index() {
@@ -65,7 +79,7 @@ static void test_render_auto_does_not_promote_basin_root_index() {
 }
 
 static void test_render_context_preserves_explicit_fast() {
-    KernelParams params = SmoothEscapeParams();
+    KernelParams params = RootProximityParams();
     auto r = ResolveSampleEvalModeForRender(FractalType::explaino, params, SampleTier::fast, 10.0);
     CHECK(r.backend == NumericBackend::float32, "render context must preserve explicit fast tier");
 }
@@ -103,6 +117,7 @@ int main() {
     test_resolve_standard_gives_float64();
     test_auto_shallow_stays_float32();
     test_render_auto_promotes_basin_smooth_escape();
+    test_render_auto_promotes_basin_root_proximity();
     test_render_auto_does_not_promote_basin_root_index();
     test_render_context_preserves_explicit_fast();
     test_auto_deep_upgrades_to_float64();

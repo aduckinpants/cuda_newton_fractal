@@ -1007,6 +1007,44 @@ def test_explaino_smooth_escape_auto_records_float64_backend_in_published_runtim
     assert state["stats"]["resolved_strategy"] == "direct"
 
 
+def test_explaino_root_proximity_auto_records_float64_backend_in_published_runtime(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino root_proximity backend runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "16",
+        "--height",
+        "16",
+    )
+
+    proximity_state = _with_explaino_root_proximity_color_state(
+        baseline_capture["state"],
+        palette="cyclic_escape",
+        color_root_proximity_scale=1.0,
+        max_iter=500,
+    )
+
+    proximity_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "root_proximity_auto_backend", proximity_state)),
+        "--capture-diagnostic",
+    )
+
+    state = proximity_capture["state"]
+    assert state["params"]["coloring_mode"] == "smooth_escape"
+    assert state["params"]["color_signal"] == "root_proximity"
+    assert state["render"]["sample_tier"] == "tier_auto"
+    assert state["stats"]["resolved_backend"] == "float64"
+    assert state["stats"]["resolved_strategy"] == "direct"
+
+
 def test_explaino_escape_magnitude_ignores_residual_exit_threshold_in_published_runtime(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino escape_magnitude runtime regression is Windows-only")
