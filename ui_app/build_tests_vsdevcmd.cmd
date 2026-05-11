@@ -190,6 +190,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\finding_capture_state.cpp .\tests\test_finding_capture_state.cpp ^
   /Fe:"%TESTROOT%\test_finding_capture_state.exe"
 if errorlevel 1 exit /b 1
@@ -556,6 +561,9 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+
+"%TESTROOT%\test_color_pipeline_core.exe"
 if errorlevel 1 exit /b 1
 
 "%TESTROOT%\test_finding_capture_state.exe"
