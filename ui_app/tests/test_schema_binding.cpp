@@ -898,11 +898,13 @@ int main() {
         }
         const FunctionDescriptor* coreExplainoCmapDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "explaino_cmap");
         if (!coreExplainoCmapDescriptor ||
-            coreExplainoCmapDescriptor->parameters.size() != 3 ||
+            coreExplainoCmapDescriptor->parameters.size() != 5 ||
             coreExplainoCmapDescriptor->parameters[0].path != "palette.seed_scale" ||
             coreExplainoCmapDescriptor->parameters[1].path != "palette.seed_phase" ||
-            coreExplainoCmapDescriptor->parameters[2].path != "palette.colorfulness") {
-            std::cerr << "Expected explaino_cmap to expose stable seed-scale, seed-phase, and colorfulness parameter paths\n";
+            coreExplainoCmapDescriptor->parameters[2].path != "palette.colorfulness" ||
+            coreExplainoCmapDescriptor->parameters[3].path != "palette.blend_weight" ||
+            coreExplainoCmapDescriptor->parameters[4].path != "palette.blend_mode") {
+            std::cerr << "Expected explaino_cmap to expose stable seed-scale, seed-phase, colorfulness, and Palette blend parameter paths\n";
             return 1;
         }
         const FunctionDescriptor* coreRootClassicDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*corePaletteCatalog, "root_classic_palette");
@@ -1272,10 +1274,12 @@ int main() {
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
-            visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes.size() != 4 ||
             visibleParamIndexes[0] != 0 ||
-            visibleParamIndexes[1] != 1) {
-            std::cerr << "Expected the shipped heatmap palette to expose its runtime-backed parameter controls\n";
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2 ||
+            visibleParamIndexes[3] != 3) {
+            std::cerr << "Expected the shipped heatmap palette to expose its runtime-backed parameter and blend controls\n";
             return 1;
         }
         const ColorPipelineLaneCatalog* paletteCatalog = FindColorPipelineLaneCatalog("palette");
@@ -1291,19 +1295,23 @@ int main() {
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
-            windowState.lanes[2].rows[0].parameter_values.size() != 3 ||
+            windowState.lanes[2].rows[0].parameter_values.size() != 5 ||
             windowState.lanes[2].rows[0].parameter_values[0].path != "palette.seed_scale" ||
             windowState.lanes[2].rows[0].parameter_values[1].path != "palette.seed_phase" ||
-            windowState.lanes[2].rows[0].parameter_values[2].path != "palette.colorfulness") {
-            std::cerr << "Expected the shipped Palette lane to accept explaino_cmap once its runtime backend exists\n";
+            windowState.lanes[2].rows[0].parameter_values[2].path != "palette.colorfulness" ||
+            windowState.lanes[2].rows[0].parameter_values[3].path != "palette.blend_weight" ||
+            windowState.lanes[2].rows[0].parameter_values[4].path != "palette.blend_mode") {
+            std::cerr << "Expected the shipped Palette lane to accept explaino_cmap with runtime blend controls once its backend exists\n";
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
-            visibleParamIndexes.size() != 3 ||
+            visibleParamIndexes.size() != 5 ||
             visibleParamIndexes[0] != 0 ||
             visibleParamIndexes[1] != 1 ||
-            visibleParamIndexes[2] != 2) {
-            std::cerr << "Expected explaino_cmap to expose its three live Palette controls\n";
+            visibleParamIndexes[2] != 2 ||
+            visibleParamIndexes[3] != 3 ||
+            visibleParamIndexes[4] != 4) {
+            std::cerr << "Expected explaino_cmap to expose its live Palette and blend controls\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 2, "root_classic_palette") ||
@@ -1744,7 +1752,7 @@ int main() {
             !explainoSyncWindowState.live_snapshot.draft_import_supported ||
             explainoSyncWindowState.live_snapshot.lanes.size() != 4 ||
             explainoSyncWindowState.live_snapshot.lanes[2].rows[0].function_id != "explaino_cmap" ||
-            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values.size() != 3 ||
+            explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values.size() != 5 ||
             explainoSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[0].path != "palette.seed_scale" ||
             explainoSyncWindowState.live_snapshot.lanes[3].rows.size() != 1 ||
             explainoSyncWindowState.live_snapshot.lanes[3].rows[0].function_id != "contrast_lift" ||
@@ -1772,6 +1780,11 @@ int main() {
             phaseSyncWindowState.live_snapshot.lanes[0].rows[0].function_id != "phase_orbit" ||
             phaseSyncWindowState.live_snapshot.lanes[1].rows[0].function_id != "offset_scale" ||
             phaseSyncWindowState.live_snapshot.lanes[2].rows[0].function_id != "phase_wheel_palette" ||
+            phaseSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values.size() != 4 ||
+            phaseSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[0].path != "palette.phase_offset" ||
+            phaseSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[1].path != "palette.saturation" ||
+            phaseSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[2].path != "palette.blend_weight" ||
+            phaseSyncWindowState.live_snapshot.lanes[2].rows[0].parameter_values[3].path != "palette.blend_mode" ||
             phaseSyncWindowState.live_snapshot.lanes[3].rows.size() != 1 ||
             phaseSyncWindowState.live_snapshot.lanes[3].rows[0].function_id != "phase_finish" ||
             phaseSyncWindowState.live_snapshot.lanes[3].rows[0].parameter_values.size() != 2 ||
@@ -2138,6 +2151,48 @@ int main() {
 
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
             !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "heatmap") ||
+            !setParam(windowState.lanes[2].rows[0], "palette.cycle_scale", 1.0) ||
+            !setParam(windowState.lanes[2].rows[0], "palette.saturation", 1.0) ||
+            !AddColorPipelineLaneRow(&windowState, 2, "explaino_cmap") ||
+            windowState.lanes[2].rows.size() != 2 ||
+            !setParam(windowState.lanes[2].rows[1], "palette.seed_scale", 1.5) ||
+            !setParam(windowState.lanes[2].rows[1], "palette.seed_phase", 0.25) ||
+            !setParam(windowState.lanes[2].rows[1], "palette.colorfulness", 0.8) ||
+            !setParam(windowState.lanes[2].rows[1], "palette.blend_weight", 0.35)) {
+            std::cerr << "Expected the Palette blend stack RED to construct a two-row runtime-backed Palette lane\n";
+            return 1;
+        }
+        bool paletteStackChanged = false;
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params, &paletteStackChanged)) {
+            std::cerr << "Expected a supported two-row Palette blend stack to apply instead of failing at the single-row Palette bridge\n";
+            return 1;
+        }
+        if (!paletteStackChanged ||
+            params.coloring_mode != ColoringMode::smooth_escape ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::explaino_cmap ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
+            params.color_palette_stack_count != 2 ||
+            !NearlyEqual(params.color_palette_stack[1].params.blend_weight, 0.35) ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() < 3 ||
+            windowState.live_snapshot.lanes[2].rows.size() != 2 ||
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "heatmap" ||
+            windowState.live_snapshot.lanes[2].rows[1].function_id != "explaino_cmap" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to persist and resync a two-row Palette blend stack while mirroring the final Palette row into the legacy runtime tuple\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 2, 1) ||
+            windowState.lanes[2].rows.size() != 1) {
+            std::cerr << "Expected Palette blend stack coverage to restore the draft editor to one Palette row before later single-row tuple tests\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
             !SelectColorPipelineLaneFunction(&windowState, 2, "explaino_cmap") ||
             !setParam(windowState.lanes[2].rows[0], "palette.seed_scale", 1.5) ||
             !setParam(windowState.lanes[2].rows[0], "palette.seed_phase", 0.25) ||
@@ -2146,11 +2201,13 @@ int main() {
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[2].rows[0], &visibleParamIndexes) ||
-            visibleParamIndexes.size() != 3 ||
+            visibleParamIndexes.size() != 5 ||
             visibleParamIndexes[0] != 0 ||
             visibleParamIndexes[1] != 1 ||
-            visibleParamIndexes[2] != 2) {
-            std::cerr << "Expected explaino_cmap to expose only its dedicated live Palette controls\n";
+            visibleParamIndexes[2] != 2 ||
+            visibleParamIndexes[3] != 3 ||
+            visibleParamIndexes[4] != 4) {
+            std::cerr << "Expected explaino_cmap to expose its dedicated live Palette and blend controls\n";
             return 1;
         }
         if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params)) {
@@ -2371,7 +2428,7 @@ int main() {
             explainoRenderWindowState.lanes.size() != 4 ||
             explainoRenderWindowState.lanes[2].rows.size() != 1 ||
             explainoRenderWindowState.lanes[2].rows[0].function_id != "explaino_cmap" ||
-            explainoRenderWindowState.lanes[2].rows[0].parameter_values.size() != 3 ||
+            explainoRenderWindowState.lanes[2].rows[0].parameter_values.size() != 5 ||
             explainoRenderWindowState.lanes[3].rows.size() != 1 ||
             explainoRenderWindowState.lanes[3].rows[0].function_id != "contrast_lift" ||
             explainoRenderWindowState.lanes[3].rows[0].parameter_values.size() != 2 ||
@@ -2492,8 +2549,10 @@ int main() {
         if (!HasColorPipelineDraftEdits(openWindowState) ||
             openWindowState.lanes[0].rows[0].function_id != "banded_signal" ||
             openWindowState.lanes[2].rows[0].function_id != "banded_heatmap" ||
-            openWindowState.lanes[2].rows[0].parameter_values.size() != 2 ||
+            openWindowState.lanes[2].rows[0].parameter_values.size() != 4 ||
             openWindowState.lanes[2].rows[0].parameter_values[0].path != "palette.band_emphasis" ||
+            openWindowState.lanes[2].rows[0].parameter_values[2].path != "palette.blend_weight" ||
+            openWindowState.lanes[2].rows[0].parameter_values[3].path != "palette.blend_mode" ||
             params.color_pipeline.signal != ColorSignal::smooth_escape ||
             params.color_pipeline.palette != ColorPalette::explaino_cmap ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default) {

@@ -153,6 +153,10 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     for (ColorPipelineShapeStackEntry& shapeEntry : params.color_shape_stack) {
         shapeEntry = {};
     }
+    params.color_palette_stack_count = 0;
+    for (ColorPipelinePaletteStackEntry& paletteEntry : params.color_palette_stack) {
+        paletteEntry = {};
+    }
     params.color_grading_stack_count = 0;
     for (ColorPipelineGradingStackEntry& gradingEntry : params.color_grading_stack) {
         gradingEntry = {};

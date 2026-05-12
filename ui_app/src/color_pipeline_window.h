@@ -244,6 +244,14 @@ inline bool TryParseAdvancedColorPaletteFunctionId(const std::string& functionId
     return color_pipeline_core::TryParseAdvancedColorPaletteFunctionId(functionId, outValue);
 }
 
+inline const char* ColorPaletteBlendModeId(ColorPaletteBlendMode value) {
+    return color_pipeline_core::ColorPaletteBlendModeId(value);
+}
+
+inline bool TryParseColorPaletteBlendModeId(const std::string& id, ColorPaletteBlendMode* outValue) {
+    return color_pipeline_core::TryParseColorPaletteBlendModeId(id, outValue);
+}
+
 inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
     return color_pipeline_core::AdvancedColorGradingFunctionId(value);
 }
@@ -556,6 +564,12 @@ inline bool TryBuildRootBasinPairLanesFromLive(
 
 inline bool HasCoherentRootBasinPairSchedule(const KernelParams& liveParams);
 
+inline bool TryBuildColorPipelinePaletteLaneFromLive(
+    const KernelParams& liveParams,
+    ColorPipelineLaneState* outLane,
+    bool* outDraftImportSupported,
+    std::string* outError = nullptr);
+
 inline bool TryBuildColorPipelineLiveSnapshot(
     FractalType liveFractalType,
     const KernelParams& liveParams,
@@ -634,8 +648,11 @@ inline bool TryBuildColorPipelineLiveSnapshot(
             !ImportSupportedColorPipelineParamsFromLive(&sourceLane.rows.front(), liveParams, outError)) {
             return false;
         }
-        if (!BuildColorPipelineLaneWithSingleRow(*paletteCatalog, paletteFunctionId, 0, &paletteLane, outError) ||
-            !ImportSupportedColorPipelineParamsFromLive(&paletteLane.rows.front(), liveParams, outError)) {
+        if (!TryBuildColorPipelinePaletteLaneFromLive(
+                liveParams,
+                &paletteLane,
+                &sourcePaletteDraftImportSupported,
+                outError)) {
             return false;
         }
     }
@@ -1012,7 +1029,8 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
         return path == "signal.scale" || path == "signal.bias";
     }
     if (functionId == "heatmap") {
-        return path == "palette.cycle_scale" || path == "palette.saturation";
+        return path == "palette.cycle_scale" || path == "palette.saturation" ||
+            path == "palette.blend_weight" || path == "palette.blend_mode";
     }
     if (functionId == "contrast_lift") {
         return path == "grade.exposure" || path == "grade.saturation";
@@ -1033,10 +1051,12 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
         return path == "signal.proximity_scale" || path == "signal.proximity_bias";
     }
     if (functionId == "phase_wheel_palette") {
-        return path == "palette.phase_offset";
+        return path == "palette.phase_offset" || path == "palette.saturation" ||
+            path == "palette.blend_weight" || path == "palette.blend_mode";
     }
     if (functionId == "explaino_cmap") {
-        return path == "palette.seed_scale" || path == "palette.seed_phase" || path == "palette.colorfulness";
+        return path == "palette.seed_scale" || path == "palette.seed_phase" || path == "palette.colorfulness" ||
+            path == "palette.blend_weight" || path == "palette.blend_mode";
     }
     if (functionId == "offset_scale") {
         return path == "shape.offset" || path == "shape.scale";
@@ -1060,7 +1080,8 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
         return path == "signal.band_count" || path == "signal.softness";
     }
     if (functionId == "banded_heatmap") {
-        return path == "palette.band_emphasis" || path == "palette.phase_offset";
+        return path == "palette.band_emphasis" || path == "palette.phase_offset" ||
+            path == "palette.blend_weight" || path == "palette.blend_mode";
     }
     return false;
 }
@@ -1104,6 +1125,14 @@ inline bool SetColorPipelineParamNumber(
     double value,
     std::string* outError = nullptr) {
     return color_pipeline_core::SetColorPipelineParamNumber(ioRow, path, value, outError);
+}
+
+inline bool TryGetColorPipelineParamEnum(
+    const ColorPipelineRowState& row,
+    const char* path,
+    std::string* outValue,
+    std::string* outError = nullptr) {
+    return color_pipeline_core::TryGetColorPipelineParamEnum(row, path, outValue, outError);
 }
 
 inline bool ImportSupportedColorPipelineParamsFromLive(
@@ -1271,6 +1300,165 @@ inline bool ColorPipelineGradingStackEntriesEqual(
         ColorPipelineGradingRuntimeParamsEqual(left.params, right.params);
 }
 
+
+inline bool IsSupportedColorPipelinePaletteStackFunctionId(const std::string& functionId) {
+    return functionId == "heatmap" ||
+        functionId == "phase_wheel_palette" ||
+        functionId == "banded_heatmap" ||
+        functionId == "explaino_cmap";
+}
+
+inline bool ColorPipelinePaletteRuntimeParamsEqual(
+    const ColorPipelinePaletteRuntimeParams& left,
+    const ColorPipelinePaletteRuntimeParams& right) {
+    return std::fabs(left.cycle_scale - right.cycle_scale) <= 1.0e-6f &&
+        std::fabs(left.saturation - right.saturation) <= 1.0e-6f &&
+        std::fabs(left.phase_offset - right.phase_offset) <= 1.0e-6f &&
+        std::fabs(left.band_emphasis - right.band_emphasis) <= 1.0e-6f &&
+        std::fabs(left.seed_scale - right.seed_scale) <= 1.0e-6f &&
+        std::fabs(left.seed_phase - right.seed_phase) <= 1.0e-6f &&
+        std::fabs(left.colorfulness - right.colorfulness) <= 1.0e-6f &&
+        std::fabs(left.blend_weight - right.blend_weight) <= 1.0e-6f &&
+        left.blend_mode == right.blend_mode;
+}
+
+inline bool ColorPipelinePaletteStackEntriesEqual(
+    const ColorPipelinePaletteStackEntry& left,
+    const ColorPipelinePaletteStackEntry& right) {
+    return left.palette == right.palette &&
+        ColorPipelinePaletteRuntimeParamsEqual(left.params, right.params);
+}
+
+inline bool TryBuildColorPipelinePaletteStackEntryFromRow(
+    const ColorPipelineRowState& row,
+    ColorPipelinePaletteStackEntry* outEntry,
+    std::string* outError) {
+    if (!outEntry) {
+        if (outError) *outError = "Advanced color Palette-stack apply requires output storage";
+        return false;
+    }
+    if (!IsSupportedColorPipelinePaletteStackFunctionId(row.function_id)) {
+        if (outError) {
+            *outError = "Current live bridge only supports Heatmap, Phase Wheel, Banded Heatmap, and ExplainO CMap in the Palette stack.";
+        }
+        return false;
+    }
+
+    ColorPalette palette = ColorPalette::cyclic_escape;
+    if (!TryParseAdvancedColorPaletteFunctionId(row.function_id.c_str(), &palette)) {
+        if (outError) {
+            *outError = std::string("Unknown advanced color Palette row id: ") + row.function_id;
+        }
+        return false;
+    }
+
+    ColorPipelinePaletteStackEntry entry;
+    entry.palette = palette;
+    double blendWeight = entry.params.blend_weight;
+    std::string blendModeId;
+    if (!TryGetColorPipelineParamNumber(row, "palette.blend_weight", &blendWeight, outError) ||
+        !TryGetColorPipelineParamEnum(row, "palette.blend_mode", &blendModeId, outError) ||
+        !ValidateColorPipelineParamRange("palette.blend_weight", blendWeight, 0.0, 1.0, outError) ||
+        !TryParseColorPaletteBlendModeId(blendModeId, &entry.params.blend_mode)) {
+        if (outError && outError->empty()) {
+            *outError = std::string("Unknown advanced color Palette blend mode: ") + blendModeId;
+        }
+        return false;
+    }
+    entry.params.blend_weight = static_cast<float>(blendWeight);
+    if (row.function_id == "heatmap") {
+        double cycleScale = 0.0;
+        double saturation = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.cycle_scale", &cycleScale, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.saturation", &saturation, outError) ||
+            !ValidateColorPipelineParamRange("palette.cycle_scale", cycleScale, 0.25, 4.0, outError) ||
+            !ValidateColorPipelineParamRange("palette.saturation", saturation, 0.0, 2.0, outError)) {
+            return false;
+        }
+        entry.params.cycle_scale = static_cast<float>(cycleScale);
+        entry.params.saturation = static_cast<float>(saturation);
+    } else if (row.function_id == "phase_wheel_palette") {
+        double phaseOffset = 0.0;
+        double saturation = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.phase_offset", &phaseOffset, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.saturation", &saturation, outError) ||
+            !ValidateColorPipelineParamRange("palette.phase_offset", phaseOffset, -3.141592653589793, 3.141592653589793, outError) ||
+            !ValidateColorPipelineParamRange("palette.saturation", saturation, 0.0, 2.0, outError)) {
+            return false;
+        }
+        entry.params.phase_offset = static_cast<float>(phaseOffset);
+        entry.params.saturation = static_cast<float>(saturation);
+    } else if (row.function_id == "banded_heatmap") {
+        double emphasis = 0.0;
+        double phaseOffset = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.band_emphasis", &emphasis, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.phase_offset", &phaseOffset, outError) ||
+            !ValidateColorPipelineParamRange("palette.band_emphasis", emphasis, 0.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("palette.phase_offset", phaseOffset, -3.141592653589793, 3.141592653589793, outError)) {
+            return false;
+        }
+        entry.params.band_emphasis = static_cast<float>(emphasis);
+        entry.params.phase_offset = static_cast<float>(phaseOffset);
+    } else if (row.function_id == "explaino_cmap") {
+        double seedScale = 0.0;
+        double seedPhase = 0.0;
+        double colorfulness = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "palette.seed_scale", &seedScale, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.seed_phase", &seedPhase, outError) ||
+            !TryGetColorPipelineParamNumber(row, "palette.colorfulness", &colorfulness, outError) ||
+            !ValidateColorPipelineParamRange("palette.seed_scale", seedScale, 0.25, 4.0, outError) ||
+            !ValidateColorPipelineParamRange("palette.seed_phase", seedPhase, -1.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("palette.colorfulness", colorfulness, 0.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.seed_scale = static_cast<float>(seedScale);
+        entry.params.seed_phase = static_cast<float>(seedPhase);
+        entry.params.colorfulness = static_cast<float>(colorfulness);
+    }
+
+    *outEntry = entry;
+    return true;
+}
+
+inline bool ImportSupportedColorPipelineParamsFromPaletteStackEntry(
+    ColorPipelineRowState* ioRow,
+    const ColorPipelinePaletteStackEntry& paletteEntry,
+    std::string* outError) {
+    if (!ioRow) {
+        if (outError) *outError = "Advanced color Palette-stack import requires a row";
+        return false;
+    }
+    const char* functionId = AdvancedColorPaletteFunctionId(paletteEntry.palette);
+    if (!functionId || ioRow->function_id != functionId) {
+        if (outError) *outError = "Advanced color Palette-stack import row does not match the saved palette entry";
+        return false;
+    }
+    const char* blendModeId = ColorPaletteBlendModeId(paletteEntry.params.blend_mode);
+    if (!blendModeId ||
+        !color_pipeline_core::SetColorPipelineParamNumber(ioRow, "palette.blend_weight", paletteEntry.params.blend_weight, outError) ||
+        !color_pipeline_core::SetColorPipelineParamEnum(ioRow, "palette.blend_mode", blendModeId, outError)) {
+        return false;
+    }
+    if (ioRow->function_id == "heatmap") {
+        return SetColorPipelineParamNumber(ioRow, "palette.cycle_scale", paletteEntry.params.cycle_scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.saturation", paletteEntry.params.saturation, outError);
+    }
+    if (ioRow->function_id == "phase_wheel_palette") {
+        return SetColorPipelineParamNumber(ioRow, "palette.phase_offset", paletteEntry.params.phase_offset, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.saturation", paletteEntry.params.saturation, outError);
+    }
+    if (ioRow->function_id == "banded_heatmap") {
+        return SetColorPipelineParamNumber(ioRow, "palette.band_emphasis", paletteEntry.params.band_emphasis, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.phase_offset", paletteEntry.params.phase_offset, outError);
+    }
+    if (ioRow->function_id == "explaino_cmap") {
+        return SetColorPipelineParamNumber(ioRow, "palette.seed_scale", paletteEntry.params.seed_scale, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.seed_phase", paletteEntry.params.seed_phase, outError) &&
+            SetColorPipelineParamNumber(ioRow, "palette.colorfulness", paletteEntry.params.colorfulness, outError);
+    }
+    return true;
+}
+
 inline bool IsSupportedRootBasinPaletteFunctionId(const std::string& functionId) {
     return functionId == "root_classic_palette" ||
         functionId == "joy_root_palette";
@@ -1426,6 +1614,92 @@ inline bool TryBuildRootBasinPairLanesFromLive(
 
     *outSourceLane = std::move(sourceLane);
     *outPaletteLane = std::move(paletteLane);
+    return true;
+}
+
+
+inline bool TryBuildColorPipelinePaletteLaneFromLive(
+    const KernelParams& liveParams,
+    ColorPipelineLaneState* outLane,
+    bool* outDraftImportSupported,
+    std::string* outError) {
+    if (!outLane || !outDraftImportSupported) {
+        if (outError) *outError = "Advanced color Palette lane snapshot requires output storage";
+        return false;
+    }
+    const ColorPipelineLaneCatalog* catalog = FindColorPipelineLaneCatalog("palette");
+    if (!catalog) {
+        if (outError) *outError = "Missing advanced color Palette lane catalog";
+        return false;
+    }
+
+    ColorPipelineLaneState lane;
+    lane.lane_id = catalog->lane_id;
+    lane.label = catalog->label;
+    *outDraftImportSupported = true;
+
+    int paletteStackCount = liveParams.color_palette_stack_count;
+    if (paletteStackCount > kColorPipelineMaxPaletteStackCount) {
+        paletteStackCount = kColorPipelineMaxPaletteStackCount;
+    }
+    if (paletteStackCount > 0) {
+        for (int index = 0; index < paletteStackCount; ++index) {
+            const ColorPipelinePaletteStackEntry& paletteEntry = liveParams.color_palette_stack[index];
+            const char* functionId = AdvancedColorPaletteFunctionId(paletteEntry.palette);
+            if (!functionId || !IsSupportedColorPipelinePaletteStackFunctionId(functionId)) {
+                *outDraftImportSupported = false;
+                *outLane = std::move(lane);
+                return true;
+            }
+            ColorPipelineRowState row;
+            if (!BuildColorPipelineRowFromFunctionId(*catalog, functionId, index, &row, outError) ||
+                !ImportSupportedColorPipelineParamsFromPaletteStackEntry(&row, paletteEntry, outError)) {
+                return false;
+            }
+            lane.rows.push_back(std::move(row));
+        }
+        if (lane.rows.empty()) {
+            *outDraftImportSupported = false;
+        }
+        *outLane = std::move(lane);
+        return true;
+    }
+
+    const char* functionId = AdvancedColorPaletteFunctionId(liveParams.color_pipeline.palette);
+    if (!functionId) {
+        *outDraftImportSupported = false;
+        *outLane = std::move(lane);
+        return true;
+    }
+    if (IsSupportedRootBasinPaletteFunctionId(functionId)) {
+        ColorPipelineRowState row;
+        if (!BuildColorPipelineRowFromFunctionId(*catalog, functionId, 0, &row, outError) ||
+            !ImportSupportedColorPipelineParamsFromLive(&row, liveParams, outError)) {
+            return false;
+        }
+        lane.rows.push_back(std::move(row));
+        *outLane = std::move(lane);
+        return true;
+    }
+    ColorPipelinePaletteStackEntry livePaletteEntry;
+    livePaletteEntry.palette = liveParams.color_pipeline.palette;
+    livePaletteEntry.params.cycle_scale = liveParams.color_heatmap_cycle_scale;
+    livePaletteEntry.params.saturation = liveParams.color_heatmap_saturation;
+    livePaletteEntry.params.phase_offset = liveParams.color_phase_palette_offset;
+    livePaletteEntry.params.band_emphasis = liveParams.color_iteration_band_emphasis;
+    if (livePaletteEntry.palette == ColorPalette::banded_escape) {
+        livePaletteEntry.params.phase_offset = liveParams.color_iteration_band_palette_offset;
+    }
+    livePaletteEntry.params.seed_scale = liveParams.color_explaino_palette_seed_scale;
+    livePaletteEntry.params.seed_phase = liveParams.color_explaino_palette_seed_phase;
+    livePaletteEntry.params.colorfulness = liveParams.color_explaino_palette_colorfulness;
+    ColorPipelineRowState row;
+    if (!BuildColorPipelineRowFromFunctionId(*catalog, functionId, 0, &row, outError) ||
+        !ImportSupportedColorPipelineParamsFromPaletteStackEntry(&row, livePaletteEntry, outError)) {
+        return false;
+    }
+    lane.rows.push_back(std::move(row));
+    *outLane = std::move(lane);
     return true;
 }
 
@@ -1813,6 +2087,16 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         assignShapeFloat(&ioParams->color_explaino_palette_colorfulness, 1.0f);
     };
 
+    std::vector<const ColorPipelineRowState*> sourceRowsForStacks;
+    if (!CollectEnabledColorPipelineRows(state, "source", &sourceRowsForStacks, outError)) {
+        return false;
+    }
+    std::vector<const ColorPipelineRowState*> paletteRows;
+    if (!CollectEnabledColorPipelineRows(state, "palette", &paletteRows, outError)) {
+        return false;
+    }
+    const bool rootBasinPairSchedule = IsRootBasinPairCandidateRows(sourceRowsForStacks, paletteRows);
+
     std::vector<const ColorPipelineRowState*> shapeRows;
     if (!CollectEnabledColorPipelineRows(state, "shape", &shapeRows, outError)) {
         return false;
@@ -1859,6 +2143,38 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         }
         if (!ColorPipelineShapeStackEntriesEqual(ioParams->color_shape_stack[index], nextEntry)) {
             ioParams->color_shape_stack[index] = nextEntry;
+            changed = true;
+        }
+    }
+
+    std::vector<ColorPipelinePaletteStackEntry> nextPaletteStack;
+    if (!rootBasinPairSchedule) {
+        if (paletteRows.size() > static_cast<std::size_t>(kColorPipelineMaxPaletteStackCount)) {
+            if (outError) {
+                *outError = "Current live bridge only supports a bounded number of enabled Palette rows in the schedule lane.";
+            }
+            return false;
+        }
+        nextPaletteStack.reserve(paletteRows.size());
+        for (const ColorPipelineRowState* paletteRow : paletteRows) {
+            ColorPipelinePaletteStackEntry paletteEntry;
+            if (!paletteRow || !TryBuildColorPipelinePaletteStackEntryFromRow(*paletteRow, &paletteEntry, outError)) {
+                return false;
+            }
+            nextPaletteStack.push_back(paletteEntry);
+        }
+    }
+    if (ioParams->color_palette_stack_count != static_cast<int>(nextPaletteStack.size())) {
+        ioParams->color_palette_stack_count = static_cast<int>(nextPaletteStack.size());
+        changed = true;
+    }
+    for (int index = 0; index < kColorPipelineMaxPaletteStackCount; ++index) {
+        ColorPipelinePaletteStackEntry nextEntry;
+        if (index < static_cast<int>(nextPaletteStack.size())) {
+            nextEntry = nextPaletteStack[static_cast<std::size_t>(index)];
+        }
+        if (!ColorPipelinePaletteStackEntriesEqual(ioParams->color_palette_stack[index], nextEntry)) {
+            ioParams->color_palette_stack[index] = nextEntry;
             changed = true;
         }
     }
@@ -1928,6 +2244,27 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         break;
     }
 
+    if (!nextPaletteStack.empty()) {
+        const ColorPipelinePaletteStackEntry& paletteMirrorEntry = nextPaletteStack.back();
+        resetPaletteHeatmap();
+        resetPalettePhaseWheel();
+        resetPaletteBandedHeatmap();
+        resetPaletteExplaino();
+        if (paletteMirrorEntry.palette == ColorPalette::cyclic_escape) {
+            assignShapeFloat(&ioParams->color_heatmap_cycle_scale, paletteMirrorEntry.params.cycle_scale);
+            assignShapeFloat(&ioParams->color_heatmap_saturation, paletteMirrorEntry.params.saturation);
+        } else if (paletteMirrorEntry.palette == ColorPalette::phase_wheel) {
+            assignShapeFloat(&ioParams->color_phase_palette_offset, paletteMirrorEntry.params.phase_offset);
+        } else if (paletteMirrorEntry.palette == ColorPalette::banded_escape) {
+            assignShapeFloat(&ioParams->color_iteration_band_emphasis, paletteMirrorEntry.params.band_emphasis);
+            assignShapeFloat(&ioParams->color_iteration_band_palette_offset, paletteMirrorEntry.params.phase_offset);
+        } else if (paletteMirrorEntry.palette == ColorPalette::explaino_cmap) {
+            assignShapeFloat(&ioParams->color_explaino_palette_seed_scale, paletteMirrorEntry.params.seed_scale);
+            assignShapeFloat(&ioParams->color_explaino_palette_seed_phase, paletteMirrorEntry.params.seed_phase);
+            assignShapeFloat(&ioParams->color_explaino_palette_colorfulness, paletteMirrorEntry.params.colorfulness);
+        }
+    }
+
     if (!nextGradingStack.empty()) {
         const ColorPipelineGradingStackEntry& gradingMirrorEntry = nextGradingStack.back();
         if (gradingMirrorEntry.grading == ColorGradingPreset::escape_default) {
@@ -1941,7 +2278,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     }
 
     for (const ColorPipelineLaneState& lane : state.lanes) {
-        if (lane.lane_id == "shape" || lane.lane_id == "grading") {
+        if (lane.lane_id == "shape" || lane.lane_id == "palette" || lane.lane_id == "grading") {
             continue;
         }
         for (const ColorPipelineRowState& row : lane.rows) {
@@ -2048,6 +2385,14 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     if (!CollectEnabledColorPipelineRows(state, "palette", &paletteRows, outError)) {
         return false;
     }
+    if (sourceRows.size() == 1 &&
+        !IsRootBasinPairCandidateRows(sourceRows, paletteRows) &&
+        paletteRows.size() > static_cast<std::size_t>(kColorPipelineMaxPaletteStackCount)) {
+        if (outError) {
+            *outError = "Current live bridge only supports a bounded number of enabled Palette rows in the schedule lane.";
+        }
+        return false;
+    }
     if (shapeRows.size() > static_cast<std::size_t>(kColorPipelineMaxShapeStackCount)) {
         if (outError) {
             *outError = "Current live bridge only supports a bounded number of enabled Shape rows in the schedule lane.";
@@ -2074,24 +2419,52 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         return true;
     }
 
-    if (sourceRows.size() != 1 || paletteRows.size() != 1) {
+    bool hasPartialRootBasinPairFamily = false;
+    for (const ColorPipelineRowState* sourceRow : sourceRows) {
+        hasPartialRootBasinPairFamily = hasPartialRootBasinPairFamily || (sourceRow && sourceRow->function_id == "root_index");
+    }
+    for (const ColorPipelineRowState* paletteRow : paletteRows) {
+        hasPartialRootBasinPairFamily = hasPartialRootBasinPairFamily || (paletteRow && IsSupportedRootBasinPaletteFunctionId(paletteRow->function_id));
+    }
+    if (hasPartialRootBasinPairFamily) {
         if (outError) {
             *outError = "Current live bridge only supports one enabled Source row and one enabled Palette row unless every enabled Source / Palette row participates in the bounded row-indexed root-basin pair family.";
         }
         return false;
     }
 
-    ColorPipelineSelection pipeline{};
-    ColoringMode mode = ColoringMode::root_basin;
-    if (!TryBuildColorPipelineSelectionFromLaneIds(
-            sourceRows.front()->function_id.c_str(),
-            paletteRows.front()->function_id.c_str(),
-            &pipeline,
-            &mode)) {
+    if (sourceRows.size() != 1) {
         if (outError) {
-            *outError = "Selected Source / Shape / Palette recipe is draft-only until custom pipeline runtime integration lands or you choose a matching supported Source / Palette pair.";
+            *outError = "Current live bridge only supports one enabled Source row unless every enabled Source / Palette row participates in the bounded row-indexed root-basin pair family.";
         }
         return false;
+    }
+    for (const ColorPipelineRowState* paletteRow : paletteRows) {
+        if (!paletteRow || !IsSupportedColorPipelinePaletteStackFunctionId(paletteRow->function_id)) {
+            if (outError) {
+                *outError = "Current live bridge only supports Heatmap, Phase Wheel, Banded Heatmap, and ExplainO CMap in the Palette stack.";
+            }
+            return false;
+        }
+    }
+
+    ColorPipelineSelection pipeline{};
+    ColoringMode mode = ColoringMode::root_basin;
+    for (const ColorPipelineRowState* paletteRow : paletteRows) {
+        ColorPipelineSelection rowPipeline{};
+        ColoringMode rowMode = ColoringMode::root_basin;
+        if (!TryBuildColorPipelineSelectionFromLaneIds(
+                sourceRows.front()->function_id.c_str(),
+                paletteRow->function_id.c_str(),
+                &rowPipeline,
+                &rowMode)) {
+            if (outError) {
+                *outError = "Selected Source / Shape / Palette recipe is draft-only until custom pipeline runtime integration lands or you choose a matching supported Source / Palette pair.";
+            }
+            return false;
+        }
+        pipeline = rowPipeline;
+        mode = rowMode;
     }
 
     const char* gradingFunctionId = AdvancedColorGradingFunctionId(pipeline.grading);

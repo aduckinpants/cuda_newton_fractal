@@ -439,6 +439,55 @@ int main() {
             return 1;
         }
         params.color_grading_stack_count = 0;
+
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
+        params.color_palette_stack_count = 2;
+        params.color_palette_stack[0].palette = ColorPalette::cyclic_escape;
+        params.color_palette_stack[0].params.cycle_scale = 1.0f;
+        params.color_palette_stack[0].params.saturation = 1.0f;
+        params.color_palette_stack[1].palette = ColorPalette::explaino_cmap;
+        params.color_palette_stack[1].params.seed_scale = 1.0f;
+        params.color_palette_stack[1].params.seed_phase = 0.25f;
+        params.color_palette_stack[1].params.colorfulness = 0.8f;
+        params.color_palette_stack[1].params.blend_weight = 0.35f;
+        params.color_explaino_palette_seed_scale = 1.0f;
+        params.color_explaino_palette_seed_phase = 0.25f;
+        params.color_explaino_palette_colorfulness = 0.8f;
+
+        const TestColor stackedPalette = SampleProgrammableEscapeTimePalette<TestColor>(0.37f, true, params);
+        KernelParams finalPaletteOnlyParams = params;
+        finalPaletteOnlyParams.color_palette_stack_count = 0;
+        const TestColor finalPaletteOnly = SampleProgrammableEscapeTimePalette<TestColor>(0.37f, true, finalPaletteOnlyParams);
+        const EscapeTimeColorRgb heatmapRgb = SampleEscapeHeatmap(0.37f, 1.0f);
+        const EscapeTimeColorRgb explainoRgb = ApplyExplainoColorfulness(
+            SampleExplainoSeedChannels(0.37f + 0.25f),
+            0.8f);
+        const TestColor manualStackedPalette = EscapeTimeColorFromRgb<TestColor>({
+            EscapeTimeColorLerp(heatmapRgb.r, explainoRgb.r, 0.35f),
+            EscapeTimeColorLerp(heatmapRgb.g, explainoRgb.g, 0.35f),
+            EscapeTimeColorLerp(heatmapRgb.b, explainoRgb.b, 0.35f),
+        });
+        if (Equals(stackedPalette, finalPaletteOnly)) {
+            std::cerr << "A two-row Palette stack should not collapse to the final Palette row only\n";
+            return 1;
+        }
+        if (!Equals(stackedPalette, manualStackedPalette)) {
+            std::cerr << "A two-row Palette stack should execute supported Palette rows with explicit RGB blend math\n";
+            return 1;
+        }
+        params.color_palette_stack_count = 1;
+        params.color_palette_stack[0] = {};
+        params.color_palette_stack[0].palette = ColorPalette::phase_wheel;
+        params.color_palette_stack[0].params.phase_offset = 0.0f;
+        params.color_palette_stack[0].params.saturation = 0.0f;
+        const TestColor phaseWheelDesaturated = SampleProgrammableEscapeTimePalette<TestColor>(0.37f, true, params);
+        params.color_palette_stack[0].params.saturation = 2.0f;
+        const TestColor phaseWheelSaturated = SampleProgrammableEscapeTimePalette<TestColor>(0.37f, true, params);
+        if (Equals(phaseWheelDesaturated, phaseWheelSaturated)) {
+            std::cerr << "A phase_wheel_palette stack row should render its persisted saturation parameter\n";
+            return 1;
+        }
+        params.color_palette_stack_count = 0;
     }
 
     {

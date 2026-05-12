@@ -91,6 +91,7 @@ enum class ColorPipelineShape : int {
 
 constexpr int kColorPipelineMaxShapeStackCount = 8;
 constexpr int kColorPipelineMaxRootBasinPairCount = 8;
+constexpr int kColorPipelineMaxPaletteStackCount = 8;
 constexpr int kColorPipelineMaxGradingStackCount = 8;
 
 struct ColorPipelineShapeRuntimeParams {
@@ -110,6 +111,27 @@ struct ColorPipelineShapeRuntimeParams {
 struct ColorPipelineShapeStackEntry {
     ColorPipelineShape shape{ColorPipelineShape::identity};
     ColorPipelineShapeRuntimeParams params{};
+};
+
+enum class ColorPaletteBlendMode : int {
+    normal = 0,
+};
+
+struct ColorPipelinePaletteRuntimeParams {
+    float cycle_scale{1.0f};
+    float saturation{1.0f};
+    float phase_offset{0.0f};
+    float band_emphasis{1.0f};
+    float seed_scale{1.0f};
+    float seed_phase{0.0f};
+    float colorfulness{1.0f};
+    float blend_weight{1.0f};
+    ColorPaletteBlendMode blend_mode{ColorPaletteBlendMode::normal};
+};
+
+struct ColorPipelinePaletteStackEntry {
+    ColorPalette palette{ColorPalette::cyclic_escape};
+    ColorPipelinePaletteRuntimeParams params{};
 };
 
 struct ColorPipelineGradingRuntimeParams {
@@ -307,6 +329,8 @@ struct KernelParams {
     ColorPipelineShapeStackEntry color_shape_stack[kColorPipelineMaxShapeStackCount]{};
     int color_root_basin_pair_count{0};
     ColorPipelineSelection color_root_basin_pairs[kColorPipelineMaxRootBasinPairCount]{};
+    int color_palette_stack_count{0};
+    ColorPipelinePaletteStackEntry color_palette_stack[kColorPipelineMaxPaletteStackCount]{};
     int color_grading_stack_count{0};
     ColorPipelineGradingStackEntry color_grading_stack[kColorPipelineMaxGradingStackCount]{};
     float color_shape_offset{0.0f};

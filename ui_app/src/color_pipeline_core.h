@@ -61,6 +61,12 @@ inline json_min::Value MakeColorPipelineBoolValue(bool value) {
     return out;
 }
 
+inline json_min::Value MakeColorPipelineStringValue(const char* value) {
+    json_min::Value out;
+    out.v = std::string(value ? value : "");
+    return out;
+}
+
 inline FunctionParamDescriptor MakeColorPipelineFloatParam(
     const char* path,
     const char* label,
@@ -122,6 +128,63 @@ inline FunctionParamDescriptor MakeColorPipelineBoolParam(
     param.has_default = true;
     param.default_value = MakeColorPipelineBoolValue(defaultValue);
     return param;
+}
+
+inline FunctionParamDescriptor MakeColorPipelineEnumParam(
+    const char* path,
+    const char* label,
+    const char* help,
+    std::vector<UISchemaOption> options,
+    const char* defaultValue) {
+    FunctionParamDescriptor param;
+    param.path = path ? path : "";
+    param.type = "enum";
+    param.label = label ? label : "";
+    param.help = help ? help : "";
+    param.options = std::move(options);
+    param.has_default = true;
+    param.default_value = MakeColorPipelineStringValue(defaultValue);
+    return param;
+}
+
+inline const char* ColorPaletteBlendModeId(ColorPaletteBlendMode value) {
+    switch (value) {
+    case ColorPaletteBlendMode::normal:
+        return "normal";
+    }
+    return nullptr;
+}
+
+inline bool TryParseColorPaletteBlendModeId(const std::string& id, ColorPaletteBlendMode* outValue) {
+    if (id == "normal") {
+        if (outValue) *outValue = ColorPaletteBlendMode::normal;
+        return true;
+    }
+    return false;
+}
+
+inline std::vector<UISchemaOption> ColorPipelinePaletteBlendModeOptions() {
+    return {{"normal", "Normal", ""}};
+}
+
+inline FunctionParamDescriptor MakeColorPipelinePaletteBlendWeightParam() {
+    return MakeColorPipelineFloatParam(
+        "palette.blend_weight",
+        "Blend Weight",
+        "Blend this Palette row into the accumulated Palette stack RGB.",
+        0.0,
+        1.0,
+        0.01,
+        1.0);
+}
+
+inline FunctionParamDescriptor MakeColorPipelinePaletteBlendModeParam() {
+    return MakeColorPipelineEnumParam(
+        "palette.blend_mode",
+        "Blend Mode",
+        "Choose how this Palette row combines with the accumulated Palette stack RGB.",
+        ColorPipelinePaletteBlendModeOptions(),
+        "normal");
 }
 
 inline FunctionDescriptor MakeColorPipelineFunction(
@@ -350,6 +413,8 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             {
                 MakeColorPipelineFloatParam("palette.cycle_scale", "Cycle Scale", "Control how quickly the palette repeats across the signal.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.saturation", "Saturation", "Push or soften color separation in the cyclic palette.", 0.0, 2.0, 0.01, 1.0),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
             }),
         MakeColorPipelineFunction(
             "phase_wheel_palette",
@@ -358,6 +423,8 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             {
                 MakeColorPipelineFloatParam("palette.phase_offset", "Phase Offset", "Rotate the wheel before it is applied to the incoming signal.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
                 MakeColorPipelineFloatParam("palette.saturation", "Saturation", "Push or soften color separation in the wheel.", 0.0, 2.0, 0.01, 1.15),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
             }),
         MakeColorPipelineFunction(
             "banded_heatmap",
@@ -366,6 +433,8 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
             {
                 MakeColorPipelineFloatParam("palette.band_emphasis", "Band Emphasis", "Increase or relax the contrast between neighboring bands.", 0.0, 2.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.phase_offset", "Phase Offset", "Offset the band palette without changing the source signal.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
             }),
         MakeColorPipelineFunction(
             "explaino_cmap",
@@ -375,6 +444,8 @@ inline std::vector<FunctionDescriptor> BuildColorPipelinePaletteFunctions() {
                 MakeColorPipelineFloatParam("palette.seed_scale", "Seed Scale", "Control how quickly the ExplainO seed palette cycles across the incoming signal.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("palette.seed_phase", "Seed Phase", "Rotate the ExplainO seed palette without changing the upstream signal.", -1.0, 1.0, 0.01, 0.0),
                 MakeColorPipelineFloatParam("palette.colorfulness", "Colorfulness", "Blend between the raw ExplainO seed channels and the full nonlinear legacy color transform.", 0.0, 1.0, 0.01, 1.0),
+                MakeColorPipelinePaletteBlendWeightParam(),
+                MakeColorPipelinePaletteBlendModeParam(),
             }),
         MakeColorPipelineFunction(
             "root_classic_palette",
@@ -696,6 +767,44 @@ inline bool SetColorPipelineParamNumber(
     for (ColorPipelineParamState& param : ioRow->parameter_values) {
         if (param.path == path) {
             param.number_value = value;
+            return true;
+        }
+    }
+    if (outError) *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + ioRow->function_id + "'";
+    return false;
+}
+
+inline bool TryGetColorPipelineParamEnum(
+    const ColorPipelineRowState& row,
+    const char* path,
+    std::string* outValue,
+    std::string* outError = nullptr) {
+    if (!path || !outValue) {
+        if (outError) *outError = "Advanced color enum parameter lookup requires a path and output storage";
+        return false;
+    }
+    for (const ColorPipelineParamState& param : row.parameter_values) {
+        if (param.path == path) {
+            *outValue = param.enum_value;
+            return true;
+        }
+    }
+    if (outError) *outError = std::string("Missing advanced color parameter path '") + path + "' for function '" + row.function_id + "'";
+    return false;
+}
+
+inline bool SetColorPipelineParamEnum(
+    ColorPipelineRowState* ioRow,
+    const char* path,
+    const std::string& value,
+    std::string* outError = nullptr) {
+    if (!ioRow || !path) {
+        if (outError) *outError = "Advanced color enum parameter import requires a row and parameter path";
+        return false;
+    }
+    for (ColorPipelineParamState& param : ioRow->parameter_values) {
+        if (param.path == path) {
+            param.enum_value = value;
             return true;
         }
     }

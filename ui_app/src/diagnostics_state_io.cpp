@@ -552,6 +552,130 @@ void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry
     }
 }
 
+void ResetLegacyColorPaletteMirror(KernelParams* ioParams) {
+    if (!ioParams) return;
+    ioParams->color_heatmap_cycle_scale = 1.0f;
+    ioParams->color_heatmap_saturation = 1.0f;
+    ioParams->color_phase_palette_offset = 0.0f;
+    ioParams->color_iteration_band_emphasis = 1.0f;
+    ioParams->color_iteration_band_palette_offset = 0.0f;
+    ioParams->color_explaino_palette_seed_scale = 1.0f;
+    ioParams->color_explaino_palette_seed_phase = 0.0f;
+    ioParams->color_explaino_palette_colorfulness = 1.0f;
+}
+
+void MirrorLegacyColorPaletteFromStackEntry(const ColorPipelinePaletteStackEntry& paletteEntry, KernelParams* ioParams) {
+    if (!ioParams) return;
+    ResetLegacyColorPaletteMirror(ioParams);
+    ioParams->color_pipeline.palette = paletteEntry.palette;
+    if (paletteEntry.palette == ColorPalette::cyclic_escape) {
+        ioParams->color_heatmap_cycle_scale = paletteEntry.params.cycle_scale;
+        ioParams->color_heatmap_saturation = paletteEntry.params.saturation;
+    } else if (paletteEntry.palette == ColorPalette::phase_wheel) {
+        ioParams->color_phase_palette_offset = paletteEntry.params.phase_offset;
+    } else if (paletteEntry.palette == ColorPalette::banded_escape) {
+        ioParams->color_iteration_band_emphasis = paletteEntry.params.band_emphasis;
+        ioParams->color_iteration_band_palette_offset = paletteEntry.params.phase_offset;
+    } else if (paletteEntry.palette == ColorPalette::explaino_cmap) {
+        ioParams->color_explaino_palette_seed_scale = paletteEntry.params.seed_scale;
+        ioParams->color_explaino_palette_seed_phase = paletteEntry.params.seed_phase;
+        ioParams->color_explaino_palette_colorfulness = paletteEntry.params.colorfulness;
+    }
+}
+
+void ClearColorPaletteStack(KernelParams* ioParams) {
+    if (!ioParams) return;
+    ioParams->color_palette_stack_count = 0;
+    for (ColorPipelinePaletteStackEntry& paletteEntry : ioParams->color_palette_stack) {
+        paletteEntry = {};
+    }
+}
+
+bool ParseColorPaletteStackEntry(const json_min::Value& entryValue,
+                                 ColorPipelinePaletteStackEntry* outEntry,
+                                 std::string* outError) {
+    if (!entryValue.is_object()) {
+        if (outError) *outError = "color_palette_stack entries must be objects";
+        return false;
+    }
+    std::string paletteId;
+    if (!GetRequiredString(entryValue, "palette", &paletteId, outError)) return false;
+    ColorPipelinePaletteStackEntry entry;
+    if (!ParseColorPalette(paletteId, &entry.palette)) {
+        if (outError) *outError = std::string("Unknown color_palette_stack palette id: ") + paletteId;
+        return false;
+    }
+    const char* functionId = AdvancedColorPaletteFunctionId(entry.palette);
+    if (!functionId || !IsSupportedColorPipelinePaletteStackFunctionId(functionId)) {
+        if (outError) *outError = "color_palette_stack only supports shipped non-basin Palette rows";
+        return false;
+    }
+    double cycleScale = entry.params.cycle_scale;
+    double saturation = entry.params.saturation;
+    double phaseOffset = entry.params.phase_offset;
+    double bandEmphasis = entry.params.band_emphasis;
+    double seedScale = entry.params.seed_scale;
+    double seedPhase = entry.params.seed_phase;
+    double colorfulness = entry.params.colorfulness;
+    double blendWeight = entry.params.blend_weight;
+    if (!GetOptionalNumber(entryValue, "cycle_scale", &cycleScale, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "phase_offset", &phaseOffset, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "band_emphasis", &bandEmphasis, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "seed_scale", &seedScale, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "seed_phase", &seedPhase, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "colorfulness", &colorfulness, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
+        return false;
+    }
+    std::string blendModeId = "normal";
+    TryGetOptionalString(entryValue, "blend_mode", &blendModeId);
+    if (!TryParseColorPaletteBlendModeId(blendModeId, &entry.params.blend_mode)) {
+        if (outError) *outError = std::string("Unknown color_palette_stack blend_mode: ") + blendModeId;
+        return false;
+    }
+    entry.params.cycle_scale = static_cast<float>(cycleScale);
+    entry.params.saturation = static_cast<float>(saturation);
+    entry.params.phase_offset = static_cast<float>(phaseOffset);
+    entry.params.band_emphasis = static_cast<float>(bandEmphasis);
+    entry.params.seed_scale = static_cast<float>(seedScale);
+    entry.params.seed_phase = static_cast<float>(seedPhase);
+    entry.params.colorfulness = static_cast<float>(colorfulness);
+    entry.params.blend_weight = static_cast<float>(blendWeight);
+    *outEntry = entry;
+    return true;
+}
+
+bool ParseOptionalColorPaletteStack(const json_min::Value& paramsObject, KernelParams* ioParams, std::string* outError) {
+    if (!ioParams) return false;
+    ClearColorPaletteStack(ioParams);
+    const json_min::Value* stackValue = paramsObject.get("color_palette_stack");
+    if (!stackValue) return true;
+    if (ioParams->color_root_basin_pair_count > 0) {
+        if (outError) *outError = "color_palette_stack cannot be combined with color_root_basin_pairs";
+        return false;
+    }
+    if (!stackValue->is_array()) {
+        if (outError) *outError = "Field color_palette_stack must be an array";
+        return false;
+    }
+    const auto& stackArray = stackValue->as_array();
+    if (stackArray.size() > static_cast<std::size_t>(kColorPipelineMaxPaletteStackCount)) {
+        if (outError) *outError = "color_palette_stack exceeds the supported maximum row count";
+        return false;
+    }
+    ioParams->color_palette_stack_count = static_cast<int>(stackArray.size());
+    for (std::size_t index = 0; index < stackArray.size(); ++index) {
+        if (!ParseColorPaletteStackEntry(stackArray[index], &ioParams->color_palette_stack[index], outError)) {
+            return false;
+        }
+    }
+    if (!stackArray.empty()) {
+        MirrorLegacyColorPaletteFromStackEntry(ioParams->color_palette_stack[stackArray.size() - 1], ioParams);
+    }
+    return true;
+}
+
 void ClearColorGradingStack(KernelParams* ioParams) {
     if (!ioParams) {
         return;
@@ -909,8 +1033,8 @@ bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
     }
     row.enabled = enabled;
 
-    if (parameterValues->as_array().size() != descriptor->parameters.size()) {
-        if (outError) *outError = "color_pipeline_draft parameter count mismatch for function '" + functionId + "'";
+    if (parameterValues->as_array().size() > descriptor->parameters.size()) {
+        if (outError) *outError = "color_pipeline_draft parameter count exceeds descriptor for function '" + functionId + "'";
         return false;
     }
 
@@ -940,6 +1064,10 @@ bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
 
     for (std::size_t index = 0; index < seenParams.size(); ++index) {
         if (!seenParams[index]) {
+            const std::string& missingPath = descriptor->parameters[index].path;
+            if (missingPath == "palette.blend_weight" || missingPath == "palette.blend_mode") {
+                continue;
+            }
             if (outError) *outError = "Missing color_pipeline_draft parameter path '" + descriptor->parameters[index].path + "' for function '" + functionId + "'";
             return false;
         }
@@ -1683,6 +1811,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);
     nextParams.color_contrast_lift_saturation = static_cast<float>(colorContrastLiftSaturation);
     if (!ParseOptionalColorShapeStack(*paramsObject, &nextParams, outError)) return false;
+    if (!ParseOptionalColorPaletteStack(*paramsObject, &nextParams, outError)) return false;
     if (!ParseOptionalColorGradingStack(*paramsObject, &nextParams, outError)) return false;
 
     // explaino_cluster_radius (optional for backward compat)

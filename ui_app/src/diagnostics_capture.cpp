@@ -295,6 +295,29 @@ void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& pa
         }
         js << "    ],\n";
     }
+    if (params.color_palette_stack_count > 0) {
+        int paletteStackCount = params.color_palette_stack_count;
+        if (paletteStackCount > kColorPipelineMaxPaletteStackCount) {
+            paletteStackCount = kColorPipelineMaxPaletteStackCount;
+        }
+        js << "    \"color_palette_stack\": [\n";
+        for (int index = 0; index < paletteStackCount; ++index) {
+            const ColorPipelinePaletteStackEntry& paletteEntry = params.color_palette_stack[index];
+            js << "      {\n";
+            js << "        \"palette\": \"" << CaptureColorPaletteId(paletteEntry.palette) << "\",\n";
+            js << "        \"cycle_scale\": " << static_cast<double>(paletteEntry.params.cycle_scale) << ",\n";
+            js << "        \"saturation\": " << static_cast<double>(paletteEntry.params.saturation) << ",\n";
+            js << "        \"phase_offset\": " << static_cast<double>(paletteEntry.params.phase_offset) << ",\n";
+            js << "        \"band_emphasis\": " << static_cast<double>(paletteEntry.params.band_emphasis) << ",\n";
+            js << "        \"seed_scale\": " << static_cast<double>(paletteEntry.params.seed_scale) << ",\n";
+            js << "        \"seed_phase\": " << static_cast<double>(paletteEntry.params.seed_phase) << ",\n";
+            js << "        \"colorfulness\": " << static_cast<double>(paletteEntry.params.colorfulness) << ",\n";
+            js << "        \"blend_weight\": " << static_cast<double>(paletteEntry.params.blend_weight) << ",\n";
+            js << "        \"blend_mode\": \"" << ColorPaletteBlendModeId(paletteEntry.params.blend_mode) << "\"\n";
+            js << "      }" << (index + 1 < paletteStackCount ? "," : "") << "\n";
+        }
+        js << "    ],\n";
+    }
     if (params.color_grading_stack_count > 0) {
         int gradingStackCount = params.color_grading_stack_count;
         if (gradingStackCount > kColorPipelineMaxGradingStackCount) {

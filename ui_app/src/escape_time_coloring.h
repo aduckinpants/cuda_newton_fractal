@@ -504,7 +504,7 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeHeatmapBand(float nu, const
     return band;
 }
 
-ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleEscapeHeatmap(float band, const KernelParams& params) {
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleEscapeHeatmap(float band, float saturation) {
     const float frac = band - floorf(band);
     const float stops[6][3] = {
         {0.00f, 0.03f, 0.20f}, {0.05f, 0.35f, 0.65f}, {0.10f, 0.75f, 0.85f},
@@ -519,10 +519,15 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleEscapeHeatmap(float band, c
         stops[segment][1] + (stops[segment + 1][1] - stops[segment][1]) * segT,
         stops[segment][2] + (stops[segment + 1][2] - stops[segment][2]) * segT,
     };
-    if (params.color_pipeline.palette == ColorPalette::cyclic_escape) {
-        rgb = EscapeTimeColorApplySaturation(rgb, EscapeTimeColorClamp(params.color_heatmap_saturation, 0.0f, 2.0f));
-    }
+    rgb = EscapeTimeColorApplySaturation(rgb, EscapeTimeColorClamp(saturation, 0.0f, 2.0f));
     return rgb;
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleEscapeHeatmap(float band, const KernelParams& params) {
+    const float saturation = params.color_pipeline.palette == ColorPalette::cyclic_escape
+        ? params.color_heatmap_saturation
+        : 1.0f;
+    return SampleEscapeHeatmap(band, saturation);
 }
 
 template <typename Color>
@@ -738,37 +743,135 @@ ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb ApplyExplainoColorfulness(EscapeT
     };
 }
 
-ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleExplainoCmap(float signalValue, const KernelParams& params) {
-    const float basePhase = signalValue * EscapeTimeColorClamp(params.color_explaino_palette_seed_scale, 0.25f, 4.0f) +
-        EscapeTimeColorClamp(params.color_explaino_palette_seed_phase, -1.0f, 1.0f);
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleExplainoCmap(
+    float signalValue,
+    const ColorPipelinePaletteRuntimeParams& paletteParams) {
+    const float basePhase = signalValue * EscapeTimeColorClamp(paletteParams.seed_scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(paletteParams.seed_phase, -1.0f, 1.0f);
     return ApplyExplainoColorfulness(
         SampleExplainoSeedChannels(basePhase),
-        params.color_explaino_palette_colorfulness);
+        paletteParams.colorfulness);
+}
+
+ESCAPE_TIME_COLOR_HD inline ColorPipelinePaletteRuntimeParams LegacyColorPipelinePaletteRuntimeParams(const KernelParams& params) {
+    ColorPipelinePaletteRuntimeParams paletteParams;
+    paletteParams.cycle_scale = params.color_heatmap_cycle_scale;
+    paletteParams.saturation = params.color_pipeline.palette == ColorPalette::cyclic_escape
+        ? params.color_heatmap_saturation
+        : 1.0f;
+    paletteParams.phase_offset = params.color_phase_palette_offset;
+    paletteParams.band_emphasis = params.color_iteration_band_emphasis;
+    if (params.color_pipeline.palette == ColorPalette::banded_escape) {
+        paletteParams.phase_offset = params.color_iteration_band_palette_offset;
+    }
+    paletteParams.seed_scale = params.color_explaino_palette_seed_scale;
+    paletteParams.seed_phase = params.color_explaino_palette_seed_phase;
+    paletteParams.colorfulness = params.color_explaino_palette_colorfulness;
+    return paletteParams;
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleExplainoCmap(float signalValue, const KernelParams& params) {
+    return SampleExplainoCmap(signalValue, LegacyColorPipelinePaletteRuntimeParams(params));
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleColorPipelinePaletteRowRgb(
+    float signalValue,
+    bool escaped,
+    const KernelParams& params,
+    ColorPalette palette,
+    const ColorPipelinePaletteRuntimeParams& paletteParams) {
+    const float twoPi = 6.28318530717958647692f;
+    if (palette == ColorPalette::explaino_cmap) {
+        return SampleExplainoCmap(signalValue, paletteParams);
+    }
+    if (palette == ColorPalette::phase_wheel) {
+        const float hue = signalValue + (EscapeTimeColorClamp(paletteParams.phase_offset, -3.14159265358979323846f, 3.14159265358979323846f) / twoPi);
+        const float wrapped = hue - floorf(hue);
+        const float c = (escaped ? 0.85f : 0.25f) * 0.9f;
+        const float x = c * (1.0f - fabsf(fmodf(wrapped * 6.0f, 2.0f) - 1.0f));
+        const float m = (escaped ? 0.85f : 0.25f) - c;
+        float r = 0.0f;
+        float g = 0.0f;
+        float b = 0.0f;
+        const int sector = static_cast<int>(wrapped * 6.0f) % 6;
+        if (sector == 0) { r = c; g = x; }
+        else if (sector == 1) { r = x; g = c; }
+        else if (sector == 2) { g = c; b = x; }
+        else if (sector == 3) { g = x; b = c; }
+        else if (sector == 4) { r = x; b = c; }
+        else { r = c; b = x; }
+        return EscapeTimeColorApplySaturation(
+            {r + m, g + m, b + m},
+            EscapeTimeColorClamp(paletteParams.saturation, 0.0f, 2.0f));
+    }
+    if (palette == ColorPalette::banded_escape) {
+        const int bandCount = params.color_iteration_band_count < 2 ? 2 : params.color_iteration_band_count;
+        const float softness = EscapeTimeColorClamp(params.color_iteration_band_softness, 0.0f, 1.0f);
+        const float paletteOffset = (EscapeTimeColorClamp(paletteParams.phase_offset, -3.14159265358979323846f, 3.14159265358979323846f) / twoPi) * static_cast<float>(bandCount);
+        EscapeTimeColorRgb rgb = SampleIterationBandPalette(signalValue * static_cast<float>(bandCount) + paletteOffset, bandCount, softness);
+        return ApplyIterationBandEmphasis(rgb, EscapeTimeColorClamp(paletteParams.band_emphasis, 0.0f, 2.0f));
+    }
+    const float heatmapBand = palette == ColorPalette::cyclic_escape
+        ? signalValue * EscapeTimeColorClamp(paletteParams.cycle_scale, 0.25f, 4.0f)
+        : signalValue;
+    const float saturation = palette == ColorPalette::cyclic_escape ? paletteParams.saturation : 1.0f;
+    return SampleEscapeHeatmap(heatmapBand, saturation);
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb BlendColorPipelinePaletteRgb(
+    EscapeTimeColorRgb baseRgb,
+    EscapeTimeColorRgb nextRgb,
+    const ColorPipelinePaletteStackEntry& nextEntry) {
+    const float weight = EscapeTimeColorClamp(nextEntry.params.blend_weight, 0.0f, 1.0f);
+    return {
+        EscapeTimeColorLerp(baseRgb.r, nextRgb.r, weight),
+        EscapeTimeColorLerp(baseRgb.g, nextRgb.g, weight),
+        EscapeTimeColorLerp(baseRgb.b, nextRgb.b, weight),
+    };
+}
+
+ESCAPE_TIME_COLOR_HD inline int ClampColorPipelinePaletteStackCount(int count) {
+    if (count < 0) {
+        return 0;
+    }
+    return count > kColorPipelineMaxPaletteStackCount ? kColorPipelineMaxPaletteStackCount : count;
+}
+
+ESCAPE_TIME_COLOR_HD inline EscapeTimeColorRgb SampleColorPipelinePaletteStackRgb(
+    float signalValue,
+    bool escaped,
+    const KernelParams& params) {
+    const int paletteStackCount = ClampColorPipelinePaletteStackCount(params.color_palette_stack_count);
+    EscapeTimeColorRgb rgb = SampleColorPipelinePaletteRowRgb(
+        signalValue,
+        escaped,
+        params,
+        params.color_palette_stack[0].palette,
+        params.color_palette_stack[0].params);
+    for (int index = 1; index < paletteStackCount; ++index) {
+        const ColorPipelinePaletteStackEntry& nextEntry = params.color_palette_stack[index];
+        const EscapeTimeColorRgb nextRgb = SampleColorPipelinePaletteRowRgb(
+            signalValue,
+            escaped,
+            params,
+            nextEntry.palette,
+            nextEntry.params);
+        rgb = BlendColorPipelinePaletteRgb(rgb, nextRgb, nextEntry);
+    }
+    return rgb;
 }
 
 template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color SampleProgrammableEscapeTimePalette(float signalValue, bool escaped, const KernelParams& params) {
-    const float twoPi = 6.28318530717958647692f;
-    if (params.color_pipeline.palette == ColorPalette::explaino_cmap) {
-        return EscapeTimeColorFromRgb<Color>(SampleExplainoCmap(signalValue, params));
+    if (ClampColorPipelinePaletteStackCount(params.color_palette_stack_count) > 0) {
+        return EscapeTimeColorFromRgb<Color>(SampleColorPipelinePaletteStackRgb(signalValue, escaped, params));
     }
-    if (params.color_pipeline.palette == ColorPalette::phase_wheel) {
-        const float hue = signalValue + (params.color_phase_palette_offset / twoPi);
-        return HsvToRgb<Color>(hue, 0.9f, escaped ? 0.85f : 0.25f);
-    }
-    if (params.color_pipeline.palette == ColorPalette::banded_escape) {
-        const int bandCount = params.color_iteration_band_count < 2 ? 2 : params.color_iteration_band_count;
-        const float softness = EscapeTimeColorClamp(params.color_iteration_band_softness, 0.0f, 1.0f);
-        const float emphasis = EscapeTimeColorClamp(params.color_iteration_band_emphasis, 0.0f, 2.0f);
-        const float paletteOffset = (params.color_iteration_band_palette_offset / twoPi) * static_cast<float>(bandCount);
-        EscapeTimeColorRgb rgb = SampleIterationBandPalette(signalValue * static_cast<float>(bandCount) + paletteOffset, bandCount, softness);
-        rgb = ApplyIterationBandEmphasis(rgb, emphasis);
-        return EscapeTimeColorFromRgb<Color>(rgb);
-    }
-    const float heatmapBand = params.color_pipeline.palette == ColorPalette::cyclic_escape
-        ? signalValue * EscapeTimeColorClamp(params.color_heatmap_cycle_scale, 0.25f, 4.0f)
-        : signalValue;
-    return EscapeTimeColorFromRgb<Color>(SampleEscapeHeatmap(heatmapBand, params));
+    return EscapeTimeColorFromRgb<Color>(SampleColorPipelinePaletteRowRgb(
+        signalValue,
+        escaped,
+        params,
+        params.color_pipeline.palette,
+        LegacyColorPipelinePaletteRuntimeParams(params)));
 }
 
 // Cyclic iteration-band palette (8 distinct hues).

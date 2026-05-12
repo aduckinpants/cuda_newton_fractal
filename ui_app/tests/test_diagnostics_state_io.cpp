@@ -89,7 +89,9 @@ static bool ExpectManualExplainoJoyCaptureState(
   double expectedCenterHpX = -1.84013,
   double expectedLog2Zoom = 1.37504,
   double expectedSmoothScale = 1.01033,
-  double expectedGradeExposure = 1.19035) {
+  double expectedGradeExposure = 1.19035,
+  double expectedPaletteSeedScale = 1.45029,
+  double expectedPaletteColorfulness = 0.74803) {
   if (view.fractal_type != FractalType::explaino_joy ||
       !NearlyEqual(view.center_hp_x, expectedCenterHpX, 1.0e-12) ||
       !NearlyEqual(view.center_hp_y, 0.00927063, 1.0e-6) ||
@@ -113,8 +115,8 @@ static bool ExpectManualExplainoJoyCaptureState(
   }
   if (!NearlyEqual(params.color_smooth_escape_scale, expectedSmoothScale, 1.0e-7) ||
       !NearlyEqual(params.color_smooth_escape_bias, -0.05512f, 1.0e-5) ||
-      !NearlyEqual(params.color_explaino_palette_seed_scale, 1.45029f, 1.0e-5) ||
-      !NearlyEqual(params.color_explaino_palette_colorfulness, 0.74803f, 1.0e-5)) {
+      !NearlyEqual(params.color_explaino_palette_seed_scale, expectedPaletteSeedScale, 1.0e-5) ||
+      !NearlyEqual(params.color_explaino_palette_colorfulness, expectedPaletteColorfulness, 1.0e-5)) {
     std::cerr << label << ": expected Source/Palette owner fields from the manual capture to survive diagnostics state load\n";
     return false;
   }
@@ -3106,6 +3108,67 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "v3_palette_stack_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "identity",
+    "color_palette": "explaino_cmap",
+    "color_grading": "escape_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0],
+    "color_palette_stack": [
+      { "palette": "cyclic_escape", "cycle_scale": 1.25, "saturation": 0.9, "blend_weight": 1.0, "blend_mode": "normal" },
+      { "palette": "explaino_cmap", "seed_scale": 1.5, "seed_phase": 0.25, "colorfulness": 0.8, "blend_weight": 0.35, "blend_mode": "normal" }
+    ]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "V3 palette-stack parameter load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_palette_stack_count != 2 ||
+            p.color_palette_stack[0].palette != ColorPalette::cyclic_escape ||
+            !NearlyEqual(p.color_palette_stack[0].params.cycle_scale, 1.25, 0.001) ||
+            !NearlyEqual(p.color_palette_stack[0].params.saturation, 0.9, 0.001) ||
+            p.color_palette_stack[1].palette != ColorPalette::explaino_cmap ||
+            !NearlyEqual(p.color_palette_stack[1].params.seed_scale, 1.5, 0.001) ||
+            !NearlyEqual(p.color_palette_stack[1].params.seed_phase, 0.25, 0.001) ||
+            !NearlyEqual(p.color_palette_stack[1].params.colorfulness, 0.8, 0.001) ||
+            !NearlyEqual(p.color_palette_stack[1].params.blend_weight, 0.35, 0.001) ||
+            p.color_palette_stack[1].params.blend_mode != ColorPaletteBlendMode::normal ||
+            p.color_pipeline.palette != ColorPalette::explaino_cmap ||
+            !NearlyEqual(p.color_explaino_palette_seed_scale, 1.5, 0.001) ||
+            !NearlyEqual(p.color_explaino_palette_seed_phase, 0.25, 0.001) ||
+            !NearlyEqual(p.color_explaino_palette_colorfulness, 0.8, 0.001)) {
+            std::cerr << "Expected supported Palette stacks to round-trip through diagnostics state load with blend params and a legacy mirror of the final row\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_root_basin_pair_schedule.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({
@@ -3323,6 +3386,19 @@ int main() {
         params.color_smooth_escape_scale = static_cast<float>(preciseSmoothScale);
         params.color_grading_stack[0].params.exposure = static_cast<float>(preciseGradeExposure);
         params.color_contrast_lift_exposure = static_cast<float>(preciseGradeExposure);
+        params.color_palette_stack_count = 2;
+        params.color_palette_stack[0].palette = ColorPalette::cyclic_escape;
+        params.color_palette_stack[0].params.cycle_scale = 1.25f;
+        params.color_palette_stack[0].params.saturation = 0.9f;
+        params.color_palette_stack[1].palette = ColorPalette::explaino_cmap;
+        params.color_palette_stack[1].params.seed_scale = 1.5f;
+        params.color_palette_stack[1].params.seed_phase = 0.25f;
+        params.color_palette_stack[1].params.colorfulness = 0.8f;
+        params.color_palette_stack[1].params.blend_weight = 0.35f;
+        params.color_pipeline.palette = ColorPalette::explaino_cmap;
+        params.color_explaino_palette_seed_scale = 1.5f;
+        params.color_explaino_palette_seed_phase = 0.25f;
+        params.color_explaino_palette_colorfulness = 0.8f;
         if (!SetDraftRowNumberParam(&draft.lanes[0].rows[0], "signal.scale", preciseSmoothScale) ||
             !SetDraftRowNumberParam(&draft.lanes[3].rows[0], "grade.exposure", preciseGradeExposure)) {
             std::cerr << "Expected manual capture draft precision sentinels to be editable before save\n";
@@ -3366,6 +3442,9 @@ int main() {
         if (serializedState.find("\"width\": 64") == std::string::npos ||
             serializedState.find("\"height\": 64") == std::string::npos ||
             serializedState.find("\"color_pipeline_draft\"") == std::string::npos ||
+            serializedState.find("\"color_palette_stack\"") == std::string::npos ||
+            serializedState.find("\"blend_weight\": 0.34999999403953552") == std::string::npos ||
+            serializedState.find("\"blend_mode\": \"normal\"") == std::string::npos ||
             serializedState.find("\"color_grading_stack\"") == std::string::npos ||
             serializedState.find("\"import_signature\": \"9475387712945145731\"") == std::string::npos) {
             std::cerr << "Expected capture-backed serialization regression to emit low-resolution render settings, draft state, grading stack, and 64-bit sidecar hashes\n";
@@ -3412,7 +3491,17 @@ int main() {
                 preciseCenterHpX,
                 preciseLog2Zoom,
                 preciseSmoothScale,
-                preciseGradeExposure)) {
+                preciseGradeExposure,
+                1.5,
+                0.8)) {
+            return 1;
+        }
+        if (roundTripParams.color_palette_stack_count != 2 ||
+            roundTripParams.color_palette_stack[0].palette != ColorPalette::cyclic_escape ||
+            roundTripParams.color_palette_stack[1].palette != ColorPalette::explaino_cmap ||
+            !NearlyEqual(roundTripParams.color_palette_stack[1].params.blend_weight, 0.35f, 1.0e-6) ||
+            roundTripParams.color_palette_stack[1].params.blend_mode != ColorPaletteBlendMode::normal) {
+            std::cerr << "Expected capture-backed serialization regression to reload Palette stack blend params from emitted state.json\n";
             return 1;
         }
     }

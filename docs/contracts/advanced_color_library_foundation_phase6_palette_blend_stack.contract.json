@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase6_palette_blend_stack",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase6_palette_blend_stack_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase6_palette_blend_stack.contract.json",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase6_palette_blend_stack_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "start the next advanced-color composition slice as Palette blend stack after the checkpointed Grading stack and serialization repair",
+    "use explicit RGB blend math with persisted per-row palette id, palette params, blend weight, and blend mode",
+    "follow strict TDD with focused REDs for live bridge, runtime RGB evaluation, diagnostics/archive persistence, reset clearing, and published-runtime proof",
+    "keep the legacy flat palette tuple as a compatibility mirror while the Palette stack becomes the runtime authority when present"
+  ],
+  "forbidden_operator_prompts": [
+    "claim generic Source signal composition in this Palette slice",
+    "ship descriptor-only or UI-only Palette stack behavior",
+    "silently collapse multiple Palette rows to last-row-wins without explicit RGB blend math",
+    "add new Palette inventory rows, root_proximity pairing, Grading owner proofs, or Balance/Void work in this slice",
+    "accept unknown Palette ids, blend modes, or invalid row params through fallback"
+  ],
+  "required_defaults": {
+    "palette_stack_runtime_owner_exists": "required",
+    "rgb_blend_math_explicit": "required",
+    "per_row_weight_and_mode_persisted": "required",
+    "legacy_palette_tuple_mirrors_final_valid_row": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "descriptor_only_palette_stack": "forbidden",
+    "last_row_wins_silent_collapse": "forbidden",
+    "generic_source_composition_claim": "forbidden",
+    "unknown_palette_or_blend_fallback": "forbidden",
+    "high_level_ui_only_proof": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_palette_blend_stack.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_palette_blend_stack_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase6_palette_blend_stack_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase6_palette_blend_stack_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase6_palette_blend_stack_contract_schema_valid",
+      "description": "The advanced color Palette blend stack contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase6_palette_blend_stack_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase6_palette_blend_stack_plan_sync_ok",
+      "description": "The Palette blend stack phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase6_palette_blend_stack_hostile_audit_ok",
+      "description": "The Palette blend stack hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase6_palette_blend_stack_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

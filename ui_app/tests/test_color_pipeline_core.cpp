@@ -273,9 +273,15 @@ void TestImportAndApplySupportedParams() {
             Near(invalidParams.color_heatmap_cycle_scale, 0.75f, 1.0e-6) && Near(invalidParams.color_heatmap_saturation, 0.8f, 1.0e-6),
         "TestImportAndApplySupportedParams_OutOfRangeHeatmapFailsBeforeMutation");
 
-    invalidHeatmapRow.parameter_values.pop_back();
+    ColorPipelineRowState missingHeatmapRow = heatmapRow;
+    for (auto it = missingHeatmapRow.parameter_values.begin(); it != missingHeatmapRow.parameter_values.end(); ++it) {
+        if (it->path == "palette.saturation") {
+            missingHeatmapRow.parameter_values.erase(it);
+            break;
+        }
+    }
     error.clear();
-    Check(!color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(invalidHeatmapRow, &invalidParams, &changed, &error) &&
+    Check(!color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(missingHeatmapRow, &invalidParams, &changed, &error) &&
             error.find("Missing advanced color parameter path") != std::string::npos,
         "TestImportAndApplySupportedParams_MissingParameterFailsClosed");
     Check(!color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(heatmapRow, nullptr, &changed, &error),
