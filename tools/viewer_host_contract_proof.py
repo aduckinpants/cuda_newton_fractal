@@ -133,6 +133,22 @@ def _dynamic_test_coverage_audit_spec(command: str) -> ValidationEvidenceSpec | 
     )
 
 
+def _dynamic_code_quality_audit_spec(command: str) -> ValidationEvidenceSpec | None:
+    normalized = command.replace("\\", "/").strip()
+    if "tools/code_quality_audit.py" not in normalized:
+        return None
+    match = re.search(r"--out\s+(?P<artifact>\S+)", normalized)
+    if match is None:
+        return None
+    artifact_path = match.group("artifact")
+    return ValidationEvidenceSpec(
+        evidence_id="validator_code_quality_audit",
+        command=command,
+        artifact_kind="validator_json",
+        artifact_path=artifact_path,
+    )
+
+
 def _dynamic_salt_ndepend_freeze_gate_spec(command: str) -> ValidationEvidenceSpec | None:
     normalized = command.replace("\\", "/").strip()
     if "tools/viewer_host_salt_ndepend.py freeze-gate" not in normalized:
@@ -165,6 +181,9 @@ def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec
     if spec is not None:
         return spec
     spec = _dynamic_test_coverage_audit_spec(command)
+    if spec is not None:
+        return spec
+    spec = _dynamic_code_quality_audit_spec(command)
     if spec is not None:
         return spec
     spec = _dynamic_salt_ndepend_freeze_gate_spec(command)

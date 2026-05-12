@@ -214,6 +214,16 @@ def test_validation_evidence_spec_for_command_recognizes_test_coverage_audit() -
     assert spec.artifact_path == "artifacts/test_coverage_report.json"
 
 
+def test_validation_evidence_spec_for_command_recognizes_code_quality_audit() -> None:
+    command = "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json"
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/code_quality_report.json"
+
+
 def test_validation_evidence_spec_for_command_recognizes_salt_ndepend_freeze_gate() -> None:
     command = "py -3.14 tools/viewer_host_salt_ndepend.py freeze-gate --out-dir artifacts/salt_ndepend/latest"
 

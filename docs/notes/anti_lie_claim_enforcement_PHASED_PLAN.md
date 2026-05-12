@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - final validation and checkpoint. The forensic dossier, RED tests, truth-report surface, claim ledger, status-vocabulary hardening, receipt-evidence revalidation, and forensic category mining are implemented. This slice remains workflow-only and does not advance Color Pipeline, capture, the new fractal, UI polish, or product roadmap work.
+Phase 5 - final validation and checkpoint-ready proof. The forensic dossier, RED tests, truth-report surface, claim ledger, status-vocabulary hardening, receipt-evidence revalidation, forensic category mining, and code-quality receipt evidence mapping are implemented. This slice remains workflow-only and does not advance Color Pipeline, capture, the new fractal, UI polish, or product roadmap work.
 
 ## Phase Checklist
 
@@ -10,7 +10,7 @@ Phase 5 - final validation and checkpoint. The forensic dossier, RED tests, trut
 - [x] Phase 2 - add the truth-report and claim-ledger validator surfaces that generate status from live evidence
 - [x] Phase 3 - tighten the checkpoint guard so restricted status claims require current validated evidence, not marker words
 - [x] Phase 4 - revalidate receipt evidence and live git status during closure
-- [ ] Phase 5 - run focused workflow tests, validators, hostile audit, receipts, checkpoint, and final empty `git status --short`
+- [x] Phase 5 - run focused workflow tests, validators, hostile audit, checkpoint-ready proof, and receipt evidence mapping; post-commit receipts are written by the checkpoint wrapper
 
 ## Explicit User Asks
 
@@ -62,21 +62,23 @@ The dossier records the finite evidence set `E`, extracted timeline `T = extract
 - Suspected Failure Mode: the agent could stop after a tool-shaped implementation while fake marker text, stale receipt evidence, dirty worktree state, or incomplete forensic categories still pass.
 - Correct Owner/Action: keep the slice workflow-only, require RED tests for marker text and stale evidence, generate the forensic dossier, require truth-report artifacts for restricted status claims, and run workflow pytest plus contract/plan/hostile-audit validators before checkpoint.
 - Proof Surface: `artifacts/validation/anti_lie_forensic_timeline.json`, `artifacts/pytest/anti_lie_workflow_tools.junit.xml`, `artifacts/validation/anti_lie_claim_enforcement_contract.json`, `artifacts/validation/viewer_host_assert_phased_plan_sync.json`, `artifacts/validation/anti_lie_claim_enforcement_hostile_audit.json`, `artifacts/validation/viewer_host_truth_report.json`, and final empty `git status --short`.
-- Outcome: in progress: repaired-state workflow pytest and forensic/contract/plan validators have passed; final code quality, clean-head truth report, receipts, checkpoint, and final status check remain.
+- Outcome: repaired-state workflow pytest, forensic/contract/plan validators, hostile-audit validation, code quality, truth report, and code-quality receipt evidence mapping have passed; final checkpoint and post-commit receipt wrapper remain.
 - Blocked Action: product work, Color Pipeline work, capture work, new fractal work, or final closure language before final validation and checkpoint.
 
 ## Audit Passes
 
 - [done] Pass 1 - forensic review found concrete system/tooling failures: marker-word status proof was accepted as if words were evidence, and contract-proof closure trusted stale assertion results without revalidating validation artifact metadata.
 - [done] Pass 2 - RED review proved the current guard accepted false claim patterns: `test_status_vocabulary_rejects_fake_proof_marker_text_without_claim_evidence` and `test_evaluate_contract_proof_receipt_guard_revalidates_validation_evidence_artifact_drift` both failed before the repair.
-- [done] Pass 3 - clean re-read of the repaired state proved the new guard blocks the repaired failure patterns: the focused workflow subset now reports `126 passed`, the forensic dossier reports 474 events across 12 categories with `quantifier_check.ok=true`, and no additional real defect found in the touched workflow seams.
+- [done] Pass 3 - clean re-read of the repaired state proved the new guard blocks the repaired failure patterns: the focused workflow subset reported `126 passed`, the forensic dossier reported 474 events across 12 categories with `quantifier_check.ok=true`, and no additional real defect found in the touched workflow seams.
+- [done] Pass 4 - receipt-proof hostile review found another real defect: the contract-proof mapper lacked parseable evidence for the exact code-quality command; the repaired state now maps `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json` to `artifacts/code_quality_report.json`, focused contract-proof tests pass, the full workflow subset reports `127 passed`, and no additional workflow mistake found in the repaired proof path.
 
 ## Audit Findings
 
 - [done] Real defect found: restricted status vocabulary accepted marker words such as `fresh command`, `exit code`, and `artifact path` without validating a current machine evidence artifact. The guard now requires a current valid truth-report artifact or claim id.
 - [done] Real defect found: contract-proof closure accepted stale assertion results even when validation-receipt evidence artifacts drifted after receipt writing. The guard now recomputes artifact size, mtime, and hash before accepting closure proof.
 - [done] Real defect found: the first forensic implementation only surfaced recovery/receipt categories and missed the extracted user-message audit. The parser now ingests the audit and emits 12 recurrence categories from 474 events.
-- [done] Clean re-audit evidence: re-read the repaired state with `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py tests/test_viewer_host_contract_proof.py tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/anti_lie_workflow_tools.junit.xml` reporting 126 passed; `py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json` reporting ok=true and 474 events; contract validation and plan sync reporting ok=true; no additional real issue found.
+- [done] Real defect found: the receipt writer could record the exact code-quality command, but contract-proof receipt writing could not parse evidence for `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`. The proof mapper now records `artifacts/code_quality_report.json` as validator JSON, and `tests/test_viewer_host_contract_proof.py` covers that mapping.
+- [done] Clean re-audit evidence: re-read the repaired state with `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py tests/test_viewer_host_contract_proof.py tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/anti_lie_workflow_tools.junit.xml` reporting 127 passed; `py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json` reporting ok=true and 473 events; contract validation, hostile-audit validation, code quality, and plan sync reporting ok=true; no additional real issue found.
 
 ## Proof Ledger
 
@@ -85,7 +87,10 @@ The dossier records the finite evidence set `E`, extracted timeline `T = extract
 - RED proof: the first focused pytest run showed both new anti-lie tests failing: fake marker text was accepted (`should_block` false) and stale validation evidence after receipt writing was accepted (`should_block` false).
 - Implementation landed: `tools/viewer_host_checkpoint_guard.py` now requires machine evidence for status vocabulary and revalidates validation-receipt artifact freshness; `tools/viewer_host_contract_proof.py` recognizes dynamic pytest JUnit, truth-report, forensic-timeline, and claim-ledger artifacts.
 - Tooling landed: `tools/viewer_host_truth_report.py`, `tools/viewer_host_forensic_timeline.py`, and `tools/viewer_host_claim_ledger.py` provide current truth-report, forensic dossier, and claim-ledger surfaces.
-- Repaired-state proof so far: workflow pytest reports 126 passed, forensic dossier reports 474 events/12 categories/ok=true, contract validation reports `checks.contract_schema_valid=true`, and phased plan sync reports ok=true.
+- Repaired-state proof before the first checkpoint: workflow pytest reported 126 passed, forensic dossier reported 474 events/12 categories/ok=true, contract validation reported `checks.contract_schema_valid=true`, and phased plan sync reported ok=true.
+- Receipt-proof blocker found after commit `719ade5`: `viewer_host_write_contract_proof_receipt.py` rejected the validation receipt because the exact code-quality command lacked parseable evidence.
+- Receipt-proof repair: `tools/viewer_host_contract_proof.py` now recognizes `tools/code_quality_audit.py --out <artifact>` as validator JSON evidence, and `tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_code_quality_audit` covers the exact required command.
+- Repaired-state proof after the receipt-mapping repair: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml` reports 16 passed; the full workflow subset reports 127 passed; code quality baseline passes; contract validation reports ok=true.
 
 ## Notes
 
