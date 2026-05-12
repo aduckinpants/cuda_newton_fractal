@@ -172,3 +172,5 @@
 - `ck:2f9efd8f` 2026-05-12 00:57 UTC | score 92 — Repair diagnostics save precision with capture-backed explaino_joy regression; native/code-quality/contract/plan/hostile rails green.
 - `ck:44faf037` 2026-05-12 01:08 UTC — session-start | branch=feature/advanced-color-pipeline-draft-editor-reframe | head=9a0009b | status=dirty | profile=runtime | intent=advanced color palette blend stack REDs
 - `ck:44faf037` 2026-05-12 04:31 UTC | score 94 — Palette blend stack landed with bounded runtime ownership, explicit RGB blend math, diagnostics/reset persistence, phase-wheel saturation repair, native/code-quality/runtime proof, and hostile-audit repairs.
+- `ck:1fd17821` 2026-05-12 04:45 UTC — session-start | branch=feature/advanced-color-pipeline-draft-editor-reframe | head=f9d26f3 | status=dirty | intent=advanced color closure-control proof matrix
+- `ck:1fd17821` 2026-05-12 05:17 UTC | score 90 — Closure-control matrix checkpointed as blocked: manual 234919_563__explaino_inertial state reload exits 0 but re-renders solid orange instead of the archived fractal, so foundation closure now requires a dedicated capture-reproduction repair slice.

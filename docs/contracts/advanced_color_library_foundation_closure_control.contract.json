@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_closure_control",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "start implementation from the advanced-color closure regroup plan",
+    "repair stale checked-in advanced-color continuity before more runtime work",
+    "add a proof/defer matrix so closure cannot be claimed from chat memory",
+    "classify Source composition and remaining Grading inventory as blockers or explicit deferrals"
+  ],
+  "forbidden_operator_prompts": [
+    "implement runtime Source composition in this docs-only closure-control slice",
+    "promote remaining Grading inventory rows in this slice",
+    "claim Palette blend stack is still the next feature slice after ck:44faf037",
+    "claim foundation closure without a checked-in matrix and hostile-audit validation",
+    "leave visible fake controls or fuzzy deferrals unclassified"
+  ],
+  "required_defaults": {
+    "closure_matrix_required": "required",
+    "stale_plan_repair_required": "required",
+    "source_composition_boundary_required": "required",
+    "grading_inventory_boundary_required": "required",
+    "runtime_code_changes": "forbidden"
+  },
+  "forbidden_defaults": {
+    "chat_only_closure_status": "forbidden",
+    "palette_next_after_checkpoint": "forbidden",
+    "unclassified_visible_controls": "forbidden",
+    "generic_source_composition_claim": "forbidden",
+    "new_runtime_owner_code": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_closure_control.contract.json --out-json artifacts/validation/advanced_color_library_foundation_closure_control_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_closure_control_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_closure_control_contract_schema_valid",
+      "description": "The advanced color closure-control contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_closure_control_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_closure_control_plan_sync_ok",
+      "description": "The closure-control phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_closure_control_hostile_audit_ok",
+      "description": "The closure-control hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_closure_control_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

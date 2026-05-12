@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 7 - capture-backed diagnostics save-path repair. Grading stack composition is checkpointed; this slice uses a low-resolution manual `explaino_joy` capture state regression plus high-precision save sentinels to prove diagnostics state load, capture serialization, and reload preserve the real advanced-color Source/Shape/Palette/Grading draft, shape stack, grading stack, sidecar orientation, controller policy, and numeric view/parameter fidelity without committing the 4096x4096 frame. Palette blend math remains the next feature slice after this serialization repair.
+Phase 7 - complete and superseded by closure control. Grading stack composition and the capture-backed diagnostics save-path repair are checkpointed, and Palette blend stack later closed under `ck:44faf037`. Do not resume from this plan to Palette work; use `docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md` and the closure matrix for the next fork. The closure matrix now records the manual `234919_563__explaino_inertial` capture reproduction failure as the current blocker.
 
 ## Phase Checklist
 
@@ -30,9 +30,7 @@ Phase 7 - capture-backed diagnostics save-path repair. Grading stack composition
 
 ## Presumption Loop
 
-The controlling blocker is now composition authority, not the next unshipped grading row. The bounded `contrast_lift` lane closed at `110cd4c`, `phase_finish` closed at `07f332a4`, `band_finish` closed at `80cc000`, Shape stack composition closed at `e6b55b9`, the Phase 5 root-basin pair runtime slice closed at `b596af6`, and the deterministic coverage gate closed at `ck:29fa6c71`. The remaining falsifiable risk is that the editor can still present multi-row lanes while Grading has no stack owner, so multiple enabled Grading rows may reject, collapse to one legacy field pack, or appear runtime-backed without ordered evaluation. The bounded hypothesis for this slice is narrower: if Grading stack composition uses only existing shipped rows, it can prove the composition spine without exposing `grade.glow`, `neutral_finish`, `tone_map_finish`, Balance/Void, or generic Source/Palette composition.
-
-The new follow-up risk is not missing runtime math; it is that synthetic serialization assertions can miss real capture payload drift as the state surface grows, and that the save path can flatten numeric fidelity before load has a chance to reproduce the image. The bounded hypothesis is that a real manual `explaino_joy` state copied into a low-resolution unit fixture, then saved with high-precision sentinels, can prove load -> capture serialization -> load for advanced-color draft rows, Shape/Grading stacks, sidecar orientation, sidecar policy, and numeric precision without claiming UI/UX proof or adding a high-resolution frame fixture.
+Historical note: this plan is closed and superseded by closure control. At the time of the Grading stack sub-slice, the falsifiable risk was that multiple enabled Grading rows could reject, collapse to one legacy field pack, or appear runtime-backed without ordered evaluation. That risk was repaired by the checkpointed `color_grading_stack` owner. The follow-up serialization risk was that synthetic assertions could miss real capture payload drift and save-path numeric truncation; that risk was repaired by the low-resolution manual `explaino_joy` fixture and high-precision save-path regression. Current closure decisions live in `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`.
 
 ## Presumption Evidence
 
@@ -42,7 +40,7 @@ The new follow-up risk is not missing runtime math; it is that synthetic seriali
 - `ui_app/src/color_pipeline_core.h` maps `ColorGradingPreset::bands_default` to `band_finish`; before this slice it still filtered that row out of `GetColorPipelineLaneCatalogs()` because `IsColorPipelineFunctionRuntimeBacked("grading", "band_finish")` returned false.
 - `ui_app/tests/test_schema_binding.cpp` locked coherent iteration-bands tuples as observable-but-draft-only until the matching grading row shipped, so that test surface is the correct RED/GREEN owner for this slice.
 - `ui_app/src/color_pipeline_core.h` still has no grading mapping for `ColorGradingPreset::basin_default`, which is why basin lane-retention remains a separate deferred cleanup instead of being smuggled into this slice.
-- `ui_app/src/fractal_types.h` has stack owners for Shape and bounded root-basin pairs, but no `color_grading_stack`, so the first REDs must prove Grading currently lacks truthful multi-row ownership.
+- `ui_app/src/fractal_types.h` now has `color_grading_stack`; the original RED for this closed plan proved its absence before the Grading stack implementation landed.
 - The manual capture `183932_396__explaino_joy/state.json` carries a real four-lane advanced-color draft (`smooth_escape_ramp`, `mirror_repeat`, `explaino_cmap`, `contrast_lift`), `color_shape_stack`, `color_grading_stack`, sidecar orientation hashes, and sidecar controller policy.
 - The current tests included synthetic diagnostics/capture assertions, but no fixture-driven round trip from a real manual capture state before this slice.
 - The failing repaired test proved `BuildStateJson()` was still using default stream precision, truncating high-precision view and advanced-color numeric state on save.
@@ -74,6 +72,8 @@ The new follow-up risk is not missing runtime math; it is that synthetic seriali
 - Landed: `ui_app/build_tests_vsdevcmd.cmd` links `diagnostics_capture.cpp` and `render_capture_guard.cpp` into the diagnostics state IO test target so that the regression exercises the real save serializer.
 - Landed: `ui_app/tests/test_finding_archive_actions.cpp` now expects the widened precise float spellings that the diagnostics serializer intentionally emits after the precision repair.
 - Repaired-state validation: `artifacts/capture_backed_serialization_native.log` ends with `All helper tests passed`; `artifacts/code_quality_report.json` stays on the `97/100` baseline; `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` has `checks.contract_schema_valid=true`; `artifacts/validation/viewer_host_assert_phased_plan_sync.json` has `ok=true`; and `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_hostile_audit.json` has `ok=true`.
+- Follow-up checkpoint: `ck:44faf037` later closed Palette blend stack with runtime ownership, explicit RGB blend math, persistence/reset coverage, phase-wheel saturation repair, runtime publish, and published-runtime proof.
+- Superseding closure surface: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` now owns the closure/defer boundary instead of this older plan's Palette-next resume text, and it blocks foundation closure on the manual `234919_563__explaino_inertial` reproduction failure until a dedicated repair slice closes it.
 
 ## Hostile Audit
 
@@ -123,14 +123,14 @@ The new follow-up risk is not missing runtime math; it is that synthetic seriali
 
 ## Resume Point
 
-Resume from the completed capture-backed diagnostics save-path repair by running any requested closure validators/receipts, then returning the plan to Palette blend-stack as the next feature slice. Generic Source signal composition, basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void remain deferred.
+Resume from the closure-control matrix, not from this older Palette-next handoff. This plan remains useful as proof for Grading stack composition and diagnostics serialization repair only. Generic Source signal composition, basin lane-retention, `grade.glow`, `neutral_finish`, `tone_map_finish`, and Balance/Void remain deferred unless a later contract promotes them to blockers.
 
 ## Next Known Sliced Work
 
-1. Palette blend stack with explicit RGB blend math, weights/modes, persistence, and viewer proof.
-2. Source signal composition with explicit scalar mixer semantics and descriptor-owned backend precision metadata.
-3. Basin-default grading lane-retention cleanup, `neutral_finish` / `tone_map_finish`, `grade.glow`, and Balance/Void owner proofs after the composition spine is truthful.
-4. Foundation closure: once composition and remaining owner-proof decisions are shipped or explicitly deferred, build the proof matrix, D: gallery/runtime captures, and extension rules.
+1. Closure-control matrix and stale-plan repair under `docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md`.
+2. Source signal composition with explicit scalar mixer semantics and descriptor-owned backend precision metadata, only if Adam classifies it as a pre-closure blocker.
+3. Basin-default grading lane-retention cleanup, `neutral_finish` / `tone_map_finish`, `grade.glow`, and Balance/Void owner proofs, only if Adam classifies them as pre-closure blockers.
+4. Foundation closure with explicit deferrals if the matrix boundary is accepted.
 
 ## Action Hostile Review
 
