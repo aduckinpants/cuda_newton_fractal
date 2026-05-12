@@ -657,13 +657,50 @@ inline std::string ResolveColorPipelineEnumDefault(const FunctionParamDescriptor
     return {};
 }
 
+inline bool TryCopyColorPipelineParamValue(
+    const std::vector<ColorPipelineParamState>& previousValues,
+    const FunctionParamDescriptor& param,
+    ColorPipelineParamState* ioValue) {
+    if (!ioValue) {
+        return false;
+    }
+    for (const ColorPipelineParamState& previousValue : previousValues) {
+        if (previousValue.path != param.path || previousValue.type != param.type) {
+            continue;
+        }
+        if (param.type == "bool") {
+            ioValue->bool_value = previousValue.bool_value;
+        } else if (param.type == "enum") {
+            bool foundOption = false;
+            for (const UISchemaOption& option : param.options) {
+                if (option.id == previousValue.enum_value) {
+                    foundOption = true;
+                    break;
+                }
+            }
+            if (!foundOption) {
+                return false;
+            }
+            ioValue->enum_value = previousValue.enum_value;
+        } else {
+            ioValue->number_value = previousValue.number_value;
+        }
+        return true;
+    }
+    return false;
+}
+
 inline bool SetColorPipelineRowFunction(
     ColorPipelineRowState* ioRow,
-    const FunctionDescriptor& descriptor) {
+    const FunctionDescriptor& descriptor,
+    bool preserveExistingValues = true) {
     if (!ioRow) {
         return false;
     }
 
+    const std::vector<ColorPipelineParamState> previousValues = preserveExistingValues ?
+        ioRow->parameter_values :
+        std::vector<ColorPipelineParamState>{};
     ioRow->function_id = descriptor.id;
     ioRow->parameter_values.clear();
     ioRow->parameter_values.reserve(descriptor.parameters.size());
@@ -678,6 +715,7 @@ inline bool SetColorPipelineRowFunction(
         } else {
             value.number_value = ResolveColorPipelineNumericDefault(param);
         }
+        TryCopyColorPipelineParamValue(previousValues, param, &value);
         ioRow->parameter_values.push_back(std::move(value));
     }
     return true;

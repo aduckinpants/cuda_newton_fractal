@@ -317,8 +317,9 @@ inline bool TryBuildColorPipelineSelectionFromLaneIds(
 
 inline bool SetColorPipelineRowFunction(
     ColorPipelineRowState* ioRow,
-    const FunctionDescriptor& descriptor) {
-    return color_pipeline_core::SetColorPipelineRowFunction(ioRow, descriptor);
+    const FunctionDescriptor& descriptor,
+    bool preserveExistingValues = true) {
+    return color_pipeline_core::SetColorPipelineRowFunction(ioRow, descriptor, preserveExistingValues);
 }
 
 inline bool BuildColorPipelineRowFromFunctionId(
@@ -932,7 +933,7 @@ inline bool SelectColorPipelineRowFunction(
                     if (gradingCatalog) {
                         const FunctionDescriptor* gradingDescriptor = FindColorPipelineFunctionDescriptor(*gradingCatalog, requiredGradingFunctionId);
                         if (gradingDescriptor && gradingLane->rows[0].function_id != requiredGradingFunctionId) {
-                            SetColorPipelineRowFunction(&gradingLane->rows[0], *gradingDescriptor);
+                            SetColorPipelineRowFunction(&gradingLane->rows[0], *gradingDescriptor, false);
                         }
                     }
                 }

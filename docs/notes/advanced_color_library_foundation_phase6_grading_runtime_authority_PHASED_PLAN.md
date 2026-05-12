@@ -74,6 +74,10 @@ Historical note: this plan is closed and superseded by closure control. At the t
 - Repaired-state validation: `artifacts/capture_backed_serialization_native.log` ends with `All helper tests passed`; `artifacts/code_quality_report.json` stays on the `97/100` baseline; `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json` has `checks.contract_schema_valid=true`; `artifacts/validation/viewer_host_assert_phased_plan_sync.json` has `ok=true`; and `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_hostile_audit.json` has `ok=true`.
 - Follow-up checkpoint: `ck:44faf037` later closed Palette blend stack with runtime ownership, explicit RGB blend math, persistence/reset coverage, phase-wheel saturation repair, runtime publish, and published-runtime proof.
 - Superseding closure surface: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` now owns the closure/defer boundary instead of this older plan's Palette-next resume text, and it blocks foundation closure on the manual `234919_563__explaino_inertial` reproduction failure until a dedicated repair slice closes it.
+- RED proved: `artifacts/color_pipeline_preset_preservation_red.log` failed because `SetColorPipelineRowFunction()` reset shared Shape, Palette, and Grading parameter values when switching between supported functions.
+- Landed: `ui_app/src/color_pipeline_core.h` now preserves existing row parameter values only when the new descriptor has the same parameter path and type, validates preserved enum ids against the new descriptor options, and defaults newly introduced or incompatible controls.
+- Landed: `ui_app/src/color_pipeline_window.h` keeps automatic tuple grading promotion on descriptor defaults, so phase tuple auto-complete still writes the shipped `phase_finish` saturation/contrast defaults instead of inheriting unrelated `contrast_lift` values.
+- Repaired-state validation: `artifacts/color_pipeline_preset_preservation_final_native.log` ends with `All helper tests passed`; `artifacts/code_quality_report.json` stays on the `97/100` baseline; `artifacts/color_pipeline_preset_preservation_final_runtime_publish.log` staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`; and `artifacts/color_pipeline_preset_preservation_final_runtime_ui_smoke.log` reports `1 passed, 3 deselected` against the published runtime.
 
 ## Hostile Audit
 
@@ -90,6 +94,10 @@ Historical note: this plan is closed and superseded by closure control. At the t
 - [done] Pass 6 - added the capture-backed diagnostics serialization regression and found the real save-path defect: default `std::ostringstream` precision truncated high-precision view and advanced-color numeric state before reload.
 - [done] Pass 7 - repaired the serializer precision, reran the focused native helper path, and found one collateral test assumption that still expected short decimal strings; updated that archive assertion to match the intentionally widened precise float output.
 - [done] Pass 8 - reran code quality and contract validation on the repaired state; no additional real defect found in the touched serializer, fixture, archive assertion, or harness-link seams.
+- [done] Pass 9 - added the preset preservation RED and confirmed the destructive function-switch behavior in `artifacts/color_pipeline_preset_preservation_red.log` before implementation.
+- [done] Pass 10 - found a real repaired-state regression: preserving shared Grading params during automatic phase tuple promotion broke the shipped `phase_finish` defaults. The window auto-complete path now opts out of preservation while manual row switches preserve compatible authored values.
+- [done] Pass 11 - found a real hardening gap: enum-valued shared params could preserve stale enum ids by path/type alone. The repaired core now preserves enum ids only when the new descriptor offers the same option and the regression covers invalid blend mode fallback.
+- [done] Pass 12 - reran final native helpers, code quality, runtime publish, and published-runtime Color Pipeline UI smoke on the repaired state; no additional real defect found in the touched core/window seams.
 
 ## Audit Findings
 
@@ -102,6 +110,10 @@ Historical note: this plan is closed and superseded by closure control. At the t
 - [done] Real defect found: the diagnostics state IO regression initially called the real save path without linking the save module into the test binary. The native harness now links `diagnostics_capture.cpp` and `render_capture_guard.cpp` into that focused target.
 - [done] Real defect found: an existing archive capture assertion encoded the old short-decimal formatting. The assertion now expects the high-precision float representations required by the repaired save path.
 - [done] Clean re-audit evidence: repaired-state proof is recorded in `artifacts/capture_backed_serialization_native.log`, `artifacts/code_quality_report.json`, `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json`, `artifacts/validation/viewer_host_assert_phased_plan_sync.json`, and `artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_hostile_audit.json`.
+- [done] Real defect found: supported row function switches destroyed shared authored controls, so changing `repeat` to `mirror_repeat`, `heatmap` to `explaino_cmap`, or `phase_finish` to `band_finish` reset compatible sliders instead of preserving them.
+- [done] Real defect found: the first preservation repair accidentally changed automatic phase tuple promotion by carrying `contrast_lift` values into `phase_finish`; the grading auto-complete path now deliberately uses descriptor defaults.
+- [done] Real defect found: shared enum preservation needed option validation, otherwise a stale enum id could cross into a new function descriptor. The repair defaults invalid shared enum values.
+- [done] Clean re-audit evidence: repaired-state proof is recorded in `artifacts/color_pipeline_preset_preservation_final_native.log`, `artifacts/code_quality_report.json`, `artifacts/color_pipeline_preset_preservation_final_runtime_publish.log`, and `artifacts/color_pipeline_preset_preservation_final_runtime_ui_smoke.log`.
 
 ## Notes
 
@@ -134,10 +146,10 @@ Resume from the closure-control matrix, not from this older Palette-next handoff
 
 ## Action Hostile Review
 
-- Action ID: action-20260511-capture-backed-state-roundtrip
-- Suspected Failure Mode: the test may copy a real capture but only assert superficial JSON substrings, miss numeric truncation on save, miss the actual load -> capture serialize -> reload path, or bloat the repo with the original high-resolution frame.
-- Correct Owner/Action: add a low-resolution diagnostics-state regression in `ui_app/tests/test_diagnostics_state_io.cpp` that reloads the emitted capture state and checks the real advanced-color draft, Shape stack, Grading stack, sidecar orientation, controller policy fields, and high-precision save sentinels.
-- Proof Surface: focused native helper proof through `ui_app/build_tests_vsdevcmd.cmd`, plus code-quality, contract, plan-sync, and hostile-audit validators.
-- Outcome: completed: the regression failed before the serializer repair, the save path now emits round-trip precision, and native/code-quality/contract validation are green.
-- Blocked Action: editing the diagnostics serialization regression before this Action ID is recorded and consumed.
+- Action ID: action-20260512-color-preset-shared-param-preservation
+- Suspected Failure Mode: preserving shared controls by name alone could either keep destroying authored slider values, carry stale enum ids into incompatible descriptors, or accidentally alter automatic tuple promotion defaults.
+- Correct Owner/Action: add focused core regression coverage for shared Shape/Palette/Grading row switches, preserve same path/type values in `ui_app/src/color_pipeline_core.h`, validate enum options before preserving them, and keep window tuple auto-complete on descriptor defaults.
+- Proof Surface: RED/GREEN native helper proof through `ui_app/build_tests_vsdevcmd.cmd`, code quality, runtime publish, published-runtime Color Pipeline UI smoke, contract validation, phased-plan sync, and hostile-audit validation.
+- Outcome: completed: destructive function switching failed before the repair, manual row switches now preserve compatible authored values, invalid enum ids default cleanly, phase tuple auto-complete keeps shipped defaults, and native/code-quality/runtime proof is green.
+- Blocked Action: editing the preset preservation helper before this Action ID is recorded and consumed.
 

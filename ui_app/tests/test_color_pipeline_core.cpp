@@ -46,6 +46,15 @@ bool RowNumber(const ColorPipelineRowState& row, const char* path, double expect
     return color_pipeline_core::TryGetColorPipelineParamNumber(row, path, &actual) && Near(actual, expected);
 }
 
+bool RowEnum(const ColorPipelineRowState& row, const char* path, const char* expected) {
+    std::string actual;
+    return color_pipeline_core::TryGetColorPipelineParamEnum(row, path, &actual) && actual == expected;
+}
+
+const FunctionDescriptor* FindFunction(const ColorPipelineLaneCatalog& catalog, const char* id) {
+    return color_pipeline_core::FindColorPipelineFunctionDescriptor(catalog, id ? id : "");
+}
+
 void TestFunctionIdMappingsRoundTrip() {
     ColorSignal signal = ColorSignal::smooth_escape;
     Check(std::string(color_pipeline_core::AdvancedColorSignalFunctionId(ColorSignal::root_index)) == "root_index",
@@ -174,6 +183,61 @@ void TestRowBuildersAndDefaults() {
         "TestRowBuildersAndDefaults_EmptyFunctionFailsClosed");
     Check(!color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 1, nullptr, &error),
         "TestRowBuildersAndDefaults_NullLaneOutputFailsClosed");
+}
+
+void TestRowFunctionSwitchPreservesSharedParams() {
+    const ColorPipelineLaneCatalog* shape = color_pipeline_core::FindColorPipelineLaneCatalog("shape");
+    const ColorPipelineLaneCatalog* palette = color_pipeline_core::FindColorPipelineLaneCatalog("palette");
+    const ColorPipelineLaneCatalog* grading = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
+    Check(shape && palette && grading, "TestRowFunctionSwitchPreservesSharedParams_CatalogsPresent");
+    if (!shape || !palette || !grading) return;
+
+    ColorPipelineRowState repeatRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*shape, "repeat", 41, &repeatRow) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&repeatRow, "shape.frequency", 6.0) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&repeatRow, "shape.phase", 0.25),
+        "TestRowFunctionSwitchPreservesSharedParams_RepeatRowConfigured");
+    const FunctionDescriptor* mirrorRepeat = FindFunction(*shape, "mirror_repeat");
+    Check(mirrorRepeat && color_pipeline_core::SetColorPipelineRowFunction(&repeatRow, *mirrorRepeat),
+        "TestRowFunctionSwitchPreservesSharedParams_SwitchesToMirrorRepeat");
+    Check(repeatRow.ui_row_id == 41 && repeatRow.function_id == "mirror_repeat" &&
+            RowNumber(repeatRow, "shape.frequency", 6.0) &&
+            RowNumber(repeatRow, "shape.phase", 0.25),
+        "TestRowFunctionSwitchPreservesSharedParams_ShapeSharedParamsSurvive");
+
+    ColorPipelineRowState heatmapRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*palette, "heatmap", 42, &heatmapRow) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&heatmapRow, "palette.blend_weight", 0.37),
+        "TestRowFunctionSwitchPreservesSharedParams_HeatmapBlendConfigured");
+    const FunctionDescriptor* explainoCmap = FindFunction(*palette, "explaino_cmap");
+    Check(explainoCmap && color_pipeline_core::SetColorPipelineRowFunction(&heatmapRow, *explainoCmap),
+        "TestRowFunctionSwitchPreservesSharedParams_SwitchesToExplainoCmap");
+    Check(heatmapRow.ui_row_id == 42 && heatmapRow.function_id == "explaino_cmap" &&
+            RowNumber(heatmapRow, "palette.blend_weight", 0.37) &&
+            RowNumber(heatmapRow, "palette.seed_scale", 1.0),
+        "TestRowFunctionSwitchPreservesSharedParams_PaletteSharedParamsSurviveAndNewParamsDefault");
+
+    ColorPipelineRowState invalidBlendModeRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*palette, "heatmap", 44, &invalidBlendModeRow) &&
+            color_pipeline_core::SetColorPipelineParamEnum(&invalidBlendModeRow, "palette.blend_mode", "unsupported"),
+        "TestRowFunctionSwitchPreservesSharedParams_InvalidBlendModeConfigured");
+    Check(explainoCmap && color_pipeline_core::SetColorPipelineRowFunction(&invalidBlendModeRow, *explainoCmap),
+        "TestRowFunctionSwitchPreservesSharedParams_SwitchesInvalidBlendModeRow");
+    Check(RowEnum(invalidBlendModeRow, "palette.blend_mode", "normal"),
+        "TestRowFunctionSwitchPreservesSharedParams_InvalidSharedEnumFallsBackToDefault");
+
+    ColorPipelineRowState phaseFinishRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "phase_finish", 43, &phaseFinishRow) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&phaseFinishRow, "grade.saturation", 0.82) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&phaseFinishRow, "grade.contrast", 1.7),
+        "TestRowFunctionSwitchPreservesSharedParams_PhaseFinishConfigured");
+    const FunctionDescriptor* bandFinish = FindFunction(*grading, "band_finish");
+    Check(bandFinish && color_pipeline_core::SetColorPipelineRowFunction(&phaseFinishRow, *bandFinish),
+        "TestRowFunctionSwitchPreservesSharedParams_SwitchesToBandFinish");
+    Check(phaseFinishRow.ui_row_id == 43 && phaseFinishRow.function_id == "band_finish" &&
+            RowNumber(phaseFinishRow, "grade.saturation", 0.82) &&
+            RowNumber(phaseFinishRow, "grade.contrast", 1.7),
+        "TestRowFunctionSwitchPreservesSharedParams_GradingSharedParamsSurvive");
 }
 
 void TestImportAndApplySupportedParams() {
@@ -330,6 +394,7 @@ int main() {
     TestFunctionIdMappingsRoundTrip();
     TestLaneCatalogFiltersRuntimeBackedRows();
     TestRowBuildersAndDefaults();
+    TestRowFunctionSwitchPreservesSharedParams();
     TestImportAndApplySupportedParams();
     TestSelectionAndScheduleBridgeIds();
 
