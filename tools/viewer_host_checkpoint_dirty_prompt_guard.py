@@ -12,6 +12,7 @@ try:
         REPO_ROOT,
         build_strict_banner,
         capture_repo_snapshot,
+        contract_proof_receipt_path,
         discover_repo_root,
         evaluate_checkpoint_guard,
         evaluate_contract_proof_receipt_guard,
@@ -28,6 +29,7 @@ except ModuleNotFoundError:
         REPO_ROOT,
         build_strict_banner,
         capture_repo_snapshot,
+        contract_proof_receipt_path,
         discover_repo_root,
         evaluate_checkpoint_guard,
         evaluate_contract_proof_receipt_guard,
@@ -149,6 +151,20 @@ def build_validation_receipt_prompt_message(prompt_text: str, repo_root: Path, h
     return message
 
 
+def build_contract_proof_prompt_message(prompt_text: str, repo_root: Path, head: str, reason: str) -> str:
+    prompt_excerpt = " ".join(prompt_text.split())[:240]
+    message = (
+        "Repo workflow carryover block: this prompt arrived after the session advanced HEAD, but the current committed state still fails the contract-proof closure guard. "
+        + reason.strip()
+        + " Expected contract proof receipt path: "
+        + contract_proof_receipt_path(head, repo_root).relative_to(repo_root).as_posix()
+        + "."
+    )
+    if prompt_excerpt:
+        message += " Prompt excerpt: " + prompt_excerpt
+    return message
+
+
 def build_recovery_required_prompt_message(changed_paths: list[str], prompt_text: str) -> str:
     prompt_excerpt = " ".join(prompt_text.split())[:240]
     message = (
@@ -238,13 +254,23 @@ def build_userprompt_response(
             "systemMessage": banner + " " + build_dirty_prompt_message(status.changed_paths, prompt_text),
         }
 
-    should_block, _reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
-    if not should_block:
-        should_block, _reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
+    baseline_head = "" if baseline is None else str(baseline.get("head", "")).strip()
+    current_head = str(current.get("head", "")).strip()
+    head_advanced = bool(baseline_head and current_head and baseline_head != current_head)
+
+    should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+    if not should_block and head_advanced:
+        should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
     if should_block:
+        head = current_head
+        if "contract proof" in reason.lower() or "contract_id" in reason.lower() or "contract_hash" in reason.lower():
+            return {
+                "continue": False,
+                "systemMessage": banner + " " + build_contract_proof_prompt_message(prompt_text, repo_root, head, reason),
+            }
         return {
             "continue": False,
-            "systemMessage": banner + " " + build_validation_receipt_prompt_message(prompt_text, repo_root, str(current.get("head", "")).strip()),
+            "systemMessage": banner + " " + build_validation_receipt_prompt_message(prompt_text, repo_root, head),
         }
     return {"continue": True, "systemMessage": banner}
 
