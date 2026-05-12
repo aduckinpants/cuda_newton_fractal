@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "contract_id": "manual_explaino_inertial_reload_repair",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "HANDOFF_LOG.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "treat the manual 234919_563 explaino_inertial capture as a real reload reproduction blocker",
+    "add a focused RED before implementation that fails on the current saved-state reload mismatch",
+    "repair the real serialization/load/render owner seam instead of relying on process exit success",
+    "publish and prove the active D: runtime after the repair"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the exact repro exits 0 as proof of visual reproduction",
+    "patch color appearance without a capture-backed RED",
+    "commit the full 4096x4096 frame as a fixture when a smaller deterministic witness is sufficient",
+    "resume Source composition or deferred Grading inventory in this repair slice",
+    "clear the closure blocker without published-runtime proof"
+  ],
+  "required_defaults": {
+    "red_before_fix": "required",
+    "manual_capture_reproduction_proof": "required",
+    "published_runtime_proof": "required",
+    "closure_matrix_stays_blocked_until_green": "required"
+  },
+  "forbidden_defaults": {
+    "process_exit_only_proof": "forbidden",
+    "chat_only_visual_claim": "forbidden",
+    "unbounded_feature_widening": "forbidden",
+    "full_resolution_fixture_by_default": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/manual_explaino_inertial_reload_repair.contract.json --out-json artifacts/validation/manual_explaino_inertial_reload_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md --out-json artifacts/validation/manual_explaino_inertial_reload_repair_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label manual explaino inertial native helper tests --log artifacts/manual_explaino_inertial_native.log -- ui_app\\build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label manual explaino inertial runtime publish --log artifacts/manual_explaino_inertial_runtime_publish.log -- ui_app\\build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label manual explaino inertial runtime proof --log artifacts/manual_explaino_inertial_runtime_proof.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "manual_explaino_inertial_reload_repair_contract_schema_valid",
+      "description": "The manual explaino_inertial reload repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/manual_explaino_inertial_reload_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "manual_explaino_inertial_reload_repair_plan_sync_ok",
+      "description": "The manual explaino_inertial reload repair phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "manual_explaino_inertial_reload_repair_hostile_audit_ok",
+      "description": "The hostile audit for the manual explaino_inertial reload repair is complete before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/manual_explaino_inertial_reload_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

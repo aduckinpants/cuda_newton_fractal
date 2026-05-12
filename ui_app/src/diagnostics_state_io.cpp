@@ -1505,6 +1505,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double explainoMix = nextParams.explaino_mix;
     double explainoWarpStrength = 0.0;
     double explainoRootSpread = nextParams.explaino_root_spread;
+    double explainoDamping = nextParams.explaino_damping;
     int explainoRootCount = 0;
     double joyCoupling = nextParams.joy_coupling;
     double foldCoupling = nextParams.fold_coupling;
@@ -1546,6 +1547,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "explaino_mix", &explainoMix, nullptr, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "explaino_warp_strength", &explainoWarpStrength, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "explaino_root_spread", &explainoRootSpread, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "explaino_damping", &explainoDamping, nullptr, outError)) return false;
     if (!ParseIntField(*paramsObject, "explaino_root_count", &explainoRootCount, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "joy_coupling", &joyCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "fold_coupling", &foldCoupling, nullptr, outError)) return false;
@@ -1568,11 +1570,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "poly_kind must be custom for fractal_type " + fractalTypeId;
         return false;
     }
-    if (stateVersion >= 2 && !hasAnyExplicitColorPipeline) {
-        if (!ParseColoringMode(coloringModeId, &nextParams.coloring_mode)) {
-            if (outError) *outError = "Unknown coloring_mode: " + coloringModeId;
-            return false;
-        }
+    if (stateVersion >= 2) {
         nextParams.nova_alpha = static_cast<float>(novaAlpha);
         nextParams.phoenix_p_real = static_cast<float>(phoenixPReal);
         nextParams.phoenix_p_imag = static_cast<float>(phoenixPImag);
@@ -1580,6 +1578,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
         nextParams.lambda_real = static_cast<float>(lambdaReal);
         nextParams.lambda_imag = static_cast<float>(lambdaImag);
+    }
+    if (stateVersion >= 2 && !hasAnyExplicitColorPipeline) {
+        if (!ParseColoringMode(coloringModeId, &nextParams.coloring_mode)) {
+            if (outError) *outError = "Unknown coloring_mode: " + coloringModeId;
+            return false;
+        }
     } else {
         nextParams.coloring_mode = DefaultColoringModeForFractal(nextView.fractal_type);
     }
@@ -1655,6 +1659,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_mix = static_cast<float>(explainoMix);
     nextParams.explaino_warp_strength = static_cast<float>(explainoWarpStrength);
     nextParams.explaino_root_spread = static_cast<float>(explainoRootSpread);
+    nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;
     nextParams.joy_coupling = static_cast<float>(joyCoupling);
     nextParams.fold_coupling = static_cast<float>(foldCoupling);

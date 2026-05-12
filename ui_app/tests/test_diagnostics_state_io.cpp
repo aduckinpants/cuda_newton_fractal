@@ -1538,6 +1538,95 @@ int main() {
     }
 
     {
+        const char* stateText = R"({
+  "state_version": 3,
+  "fractal_type": "explaino_inertial",
+  "view": {
+    "center_x": -0.30367326736450195,
+    "center_y": 0.20949007570743561,
+    "zoom": 251.63772583007812,
+    "rotation_degrees": 0,
+    "center_hp_x": -0.30367326545671292,
+    "center_hp_y": 0.20949006969551054,
+    "log2_zoom": 7.9752043774962251,
+    "explaino_phase": -3.1405699253082275,
+    "explaino_seed_drift": 0.76309001445770264,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.0010000000474974513,
+    "explaino_phase_strength": 2.0722899436950684
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1,
+    "poly_kind": 2,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "mirror_repeat",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "nova_alpha": 0.75,
+    "phoenix_p_real": 0.25,
+    "phoenix_p_imag": -0.125,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3,
+    "lambda_real": 1.25,
+    "lambda_imag": -0.5,
+    "explaino_seed": -1,
+    "explaino_seed_b": 1,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0,
+    "explaino_root_spread": 0,
+    "explaino_damping": 0.42,
+    "explaino_root_count": 4,
+    "poly_coeffs": [0.58701878786087036, 1.0171422958374023, 1.9830961227416992, 1.3209570646286011, 1]
+  },
+  "render": {
+    "width": 256,
+    "height": 256,
+    "block_size": 256,
+    "device_id": 0,
+    "sample_tier": "tier_auto"
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+
+        ViewState view{};
+        KernelParams params{};
+        params.nova_alpha = 0.1f;
+        params.phoenix_p_real = -0.2f;
+        params.phoenix_p_imag = 0.3f;
+        params.multibrot_power = 2;
+        params.multibrot_power_float = 2.0f;
+        params.explaino_damping = 1.25f;
+        params.lambda_real = -9.0f;
+        params.lambda_imag = 9.0f;
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateJson(stateText, &view, &params, &render, &error)) {
+            std::cerr << "Expected split-color Explaino-Inertial state to load: " << error << "\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.nova_alpha, 0.75f, 1.0e-6) ||
+            !NearlyEqual(params.phoenix_p_real, 0.25f, 1.0e-6) ||
+            !NearlyEqual(params.phoenix_p_imag, -0.125f, 1.0e-6) ||
+            params.multibrot_power != 3 ||
+            !NearlyEqual(params.multibrot_power_float, 3.0f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_damping, 0.42f, 1.0e-6) ||
+            !NearlyEqual(params.lambda_real, 1.25f, 1.0e-6) ||
+            !NearlyEqual(params.lambda_imag, -0.5f, 1.0e-6)) {
+            std::cerr << "Expected split-color diagnostics state to preserve common fractal params\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "lambda_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({
@@ -3396,6 +3485,7 @@ int main() {
         params.color_palette_stack[1].params.colorfulness = 0.8f;
         params.color_palette_stack[1].params.blend_weight = 0.35f;
         params.color_pipeline.palette = ColorPalette::explaino_cmap;
+        params.explaino_damping = 0.73f;
         params.color_explaino_palette_seed_scale = 1.5f;
         params.color_explaino_palette_seed_phase = 0.25f;
         params.color_explaino_palette_colorfulness = 0.8f;
@@ -3443,11 +3533,12 @@ int main() {
             serializedState.find("\"height\": 64") == std::string::npos ||
             serializedState.find("\"color_pipeline_draft\"") == std::string::npos ||
             serializedState.find("\"color_palette_stack\"") == std::string::npos ||
+            serializedState.find("\"explaino_damping\": 0.73000001907348633") == std::string::npos ||
             serializedState.find("\"blend_weight\": 0.34999999403953552") == std::string::npos ||
             serializedState.find("\"blend_mode\": \"normal\"") == std::string::npos ||
             serializedState.find("\"color_grading_stack\"") == std::string::npos ||
             serializedState.find("\"import_signature\": \"9475387712945145731\"") == std::string::npos) {
-            std::cerr << "Expected capture-backed serialization regression to emit low-resolution render settings, draft state, grading stack, and 64-bit sidecar hashes\n";
+            std::cerr << "Expected capture-backed serialization regression to emit low-resolution render settings, ExplainO damping, draft state, grading stack, and 64-bit sidecar hashes\n";
             return 1;
         }
 
@@ -3494,6 +3585,10 @@ int main() {
                 preciseGradeExposure,
                 1.5,
                 0.8)) {
+            return 1;
+        }
+        if (!NearlyEqual(roundTripParams.explaino_damping, 0.73f, 1.0e-6)) {
+            std::cerr << "Expected capture-backed serialization regression to reload ExplainO damping from emitted state.json\n";
             return 1;
         }
         if (roundTripParams.color_palette_stack_count != 2 ||
