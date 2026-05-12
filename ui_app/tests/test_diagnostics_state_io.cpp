@@ -2,10 +2,14 @@
 #include "../src/color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "../src/diagnostics_state_io.h"
+#include "../src/diagnostics_capture.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <vector>
 
 static bool NearlyEqual(double a, double b, double eps = 1.0e-9) {
     return std::fabs(a - b) <= eps;
@@ -49,6 +53,381 @@ static bool DraftRowHasNumberParam(const ColorPipelineRowState& row, const char*
     }
   }
   return false;
+}
+
+static bool SetDraftRowNumberParam(ColorPipelineRowState* row, const char* path, double value) {
+  if (!row) return false;
+  for (ColorPipelineParamState& param : row->parameter_values) {
+    if (param.path == path) {
+      param.number_value = value;
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool ReadTextFile(const std::filesystem::path& path, std::string* outText) {
+  std::ifstream file(path, std::ios::in | std::ios::binary);
+  if (!file) return false;
+  std::ostringstream text;
+  text << file.rdbuf();
+  *outText = text.str();
+  return true;
+}
+
+static bool ExpectManualExplainoJoyCaptureState(
+  const ViewState& view,
+  const KernelParams& params,
+  const RenderSettings& render,
+  const SidecarOrientationVector& orientation,
+  bool hasOrientation,
+  const SidecarAutoDemoControllerPolicy& controllerPolicy,
+  bool hasControllerPolicy,
+  bool hasMutationHistory,
+  const ColorPipelineWindowState& draft,
+  const char* label,
+  double expectedCenterHpX = -1.84013,
+  double expectedLog2Zoom = 1.37504,
+  double expectedSmoothScale = 1.01033,
+  double expectedGradeExposure = 1.19035) {
+  if (view.fractal_type != FractalType::explaino_joy ||
+      !NearlyEqual(view.center_hp_x, expectedCenterHpX, 1.0e-12) ||
+      !NearlyEqual(view.center_hp_y, 0.00927063, 1.0e-6) ||
+      !NearlyEqual(view.log2_zoom, expectedLog2Zoom, 1.0e-12) ||
+      !NearlyEqual(view.explaino_phase_strength, 0.14458f, 1.0e-5)) {
+    std::cerr << label << ": expected manual explaino_joy view fields to survive diagnostics state load\n";
+    return false;
+  }
+  if (render.resolution.x != 64 || render.resolution.y != 64 ||
+      render.block_size != 256 || render.device_id != 0 || render.sample_tier != SampleTier::fast) {
+    std::cerr << label << ": expected the low-resolution manual capture render settings to survive diagnostics state load\n";
+    return false;
+  }
+  if (params.max_iter != 376 || params.coloring_mode != ColoringMode::smooth_escape ||
+      params.color_pipeline.signal != ColorSignal::smooth_escape ||
+      params.color_shape != ColorPipelineShape::mirror_repeat ||
+      params.color_pipeline.palette != ColorPalette::explaino_cmap ||
+      params.color_pipeline.grading != ColorGradingPreset::escape_default) {
+    std::cerr << label << ": expected split advanced-color runtime tuple to survive diagnostics state load\n";
+    return false;
+  }
+  if (!NearlyEqual(params.color_smooth_escape_scale, expectedSmoothScale, 1.0e-7) ||
+      !NearlyEqual(params.color_smooth_escape_bias, -0.05512f, 1.0e-5) ||
+      !NearlyEqual(params.color_explaino_palette_seed_scale, 1.45029f, 1.0e-5) ||
+      !NearlyEqual(params.color_explaino_palette_colorfulness, 0.74803f, 1.0e-5)) {
+    std::cerr << label << ": expected Source/Palette owner fields from the manual capture to survive diagnostics state load\n";
+    return false;
+  }
+  if (params.color_shape_stack_count != 1 ||
+      params.color_shape_stack[0].shape != ColorPipelineShape::mirror_repeat ||
+      !NearlyEqual(params.color_shape_stack[0].params.repeat_frequency, 8.0f, 1.0e-6) ||
+      !NearlyEqual(params.color_shape_stack[0].params.repeat_phase, 0.0f, 1.0e-6)) {
+    std::cerr << label << ": expected the manual capture Shape stack to survive diagnostics state load\n";
+    return false;
+  }
+  if (params.color_grading_stack_count != 1 ||
+      params.color_grading_stack[0].grading != ColorGradingPreset::escape_default ||
+      !NearlyEqual(params.color_grading_stack[0].params.exposure, expectedGradeExposure, 1.0e-7) ||
+      !NearlyEqual(params.color_grading_stack[0].params.saturation, 1.3622f, 1.0e-5) ||
+      !NearlyEqual(params.color_contrast_lift_exposure, expectedGradeExposure, 1.0e-7) ||
+      !NearlyEqual(params.color_contrast_lift_saturation, 1.3622f, 1.0e-5)) {
+    std::cerr << label << ": expected the manual capture Grading stack and legacy mirror to survive diagnostics state load\n";
+    return false;
+  }
+  if (!hasOrientation ||
+      orientation.import_signature != 9475387712945145731ull ||
+      orientation.pack_projection_hash != 17921396840264098233ull ||
+      !NearlyEqual(orientation.field_embedding_stats, 10.0081, 1.0e-5) ||
+      !NearlyEqual(orientation.diff_magnitude, 0.276757, 1.0e-6)) {
+    std::cerr << label << ": expected sidecar orientation hashes and metrics to survive diagnostics state load\n";
+    return false;
+  }
+  SidecarAutoDemoControllerPolicy expectedPolicy{};
+  if (!hasControllerPolicy || !ControllerPoliciesMatch(controllerPolicy, expectedPolicy)) {
+    std::cerr << label << ": expected disabled sidecar auto-demo policy to remain explicitly persisted\n";
+    return false;
+  }
+  if (hasMutationHistory) {
+    std::cerr << label << ": manual capture fixture should not invent sidecar mutation history\n";
+    return false;
+  }
+  if (draft.next_row_id != 8 || draft.lanes.size() != 4 ||
+      draft.lanes[0].lane_id != "source" || draft.lanes[0].rows.size() != 1 ||
+      draft.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+      !DraftRowHasNumberParam(draft.lanes[0].rows[0], "signal.scale", expectedSmoothScale, 1.0e-12) ||
+      !DraftRowHasNumberParam(draft.lanes[0].rows[0], "signal.bias", -0.05512, 1.0e-5) ||
+      draft.lanes[1].lane_id != "shape" || draft.lanes[1].rows.size() != 1 ||
+      draft.lanes[1].rows[0].function_id != "mirror_repeat" ||
+      !DraftRowHasNumberParam(draft.lanes[1].rows[0], "shape.frequency", 8.0) ||
+      draft.lanes[2].lane_id != "palette" || draft.lanes[2].rows.size() != 1 ||
+      draft.lanes[2].rows[0].function_id != "explaino_cmap" ||
+      !DraftRowHasNumberParam(draft.lanes[2].rows[0], "palette.seed_scale", 1.45029, 1.0e-5) ||
+      !DraftRowHasNumberParam(draft.lanes[2].rows[0], "palette.colorfulness", 0.74803, 1.0e-5) ||
+      draft.lanes[3].lane_id != "grading" || draft.lanes[3].rows.size() != 1 ||
+      draft.lanes[3].rows[0].function_id != "contrast_lift" ||
+      !DraftRowHasNumberParam(draft.lanes[3].rows[0], "grade.exposure", expectedGradeExposure, 1.0e-12) ||
+      !DraftRowHasNumberParam(draft.lanes[3].rows[0], "grade.saturation", 1.3622, 1.0e-5)) {
+    std::cerr << label << ": expected the real manual advanced-color draft rows to survive diagnostics state load\n";
+    return false;
+  }
+  return true;
+}
+
+static const char* ManualExplainoJoyCaptureStateJsonLowRes() {
+  return R"({
+  "state_version": 3,
+  "fractal_type": "explaino_joy",
+  "view": {
+    "center_x": -1.84013,
+    "center_y": 0.00927063,
+    "zoom": 2.59374,
+    "rotation_degrees": 0,
+    "center_hp_x": -1.84013,
+    "center_hp_y": 0.00927063,
+    "log2_zoom": 1.37504,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 0.14458
+  },
+  "params": {
+    "max_iter": 376,
+    "epsilon": 1e-06,
+    "exposure": 1,
+    "poly_kind": 2,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "mirror_repeat",
+    "color_palette": "explaino_cmap",
+    "color_grading": "escape_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.01,
+    "phoenix_p_imag": 0.01,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3,
+    "lambda_real": 2.96859,
+    "lambda_imag": -0.274461,
+    "explaino_seed": 0,
+    "explaino_seed_b": 1,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.04097,
+    "explaino_root_spread": 0.18193,
+    "explaino_root_count": 4,
+    "explaino_cluster_radius": 0,
+    "joy_coupling": 0.3,
+    "fold_coupling": 0,
+    "bell_coupling": 0,
+    "ripple_amplitude": 0,
+    "splice_offset": 0,
+    "vortex_strength": 0,
+    "tension_strength": 0,
+    "transcendental_func": "f_sin",
+    "momentum_beta": 0,
+    "mcmullen_preset": "z3_z3",
+    "poly_coeffs": [0.699349, 1.74308, 2.62498, 2.1946, 1],
+    "color_saturation": 1.15,
+    "color_contrast": 1.1,
+    "color_tint_r": 1,
+    "color_tint_g": 1,
+    "color_tint_b": 1,
+    "color_phase_signal_offset": 0,
+    "color_phase_wrap_cycles": 1,
+    "color_phase_palette_offset": 0,
+    "color_shape_offset": 0,
+    "color_shape_scale": 1,
+    "color_shape_repeat_frequency": 8,
+    "color_shape_repeat_phase": 0,
+    "color_shape_posterize_steps": 6,
+    "color_shape_posterize_mix": 1,
+    "color_shape_bias": 0.5,
+    "color_shape_gain": 0.5,
+    "color_shape_window_center": 0.5,
+    "color_shape_window_width": 1,
+    "color_shape_window_softness": 0,
+    "color_shape_stack": [
+      {
+        "shape": "mirror_repeat",
+        "offset": 0,
+        "scale": 1,
+        "repeat_frequency": 8,
+        "repeat_phase": 0,
+        "posterize_steps": 6,
+        "posterize_mix": 1,
+        "bias": 0.5,
+        "gain": 0.5,
+        "window_center": 0.5,
+        "window_width": 1,
+        "window_softness": 0
+      }
+    ],
+    "color_grading_stack": [
+      {
+        "grading": "escape_default",
+        "exposure": 1.19035,
+        "saturation": 1.3622,
+        "contrast": 1
+      }
+    ],
+    "color_iteration_band_count": 8,
+    "color_iteration_band_softness": 0.35,
+    "color_iteration_band_emphasis": 1,
+    "color_iteration_band_palette_offset": 0,
+    "color_smooth_escape_scale": 1.01033,
+    "color_smooth_escape_bias": -0.05512,
+    "color_escape_magnitude_scale": 1,
+    "color_escape_magnitude_bias": 0,
+    "color_orbit_stripe_frequency": 1,
+    "color_orbit_stripe_phase": 0,
+    "color_root_proximity_scale": 1,
+    "color_root_proximity_bias": 0,
+    "color_heatmap_cycle_scale": 1,
+    "color_heatmap_saturation": 1,
+    "color_explaino_palette_seed_scale": 1.45029,
+    "color_explaino_palette_seed_phase": 1,
+    "color_explaino_palette_colorfulness": 0.74803,
+    "color_contrast_lift_exposure": 1.19035,
+    "color_contrast_lift_saturation": 1.3622
+  },
+  "render": {
+    "width": 64,
+    "height": 64,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0,
+    "sample_tier": "fast"
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 9,
+    "last_device_id": 0,
+    "resolved_backend": "float32",
+    "resolved_strategy": "direct"
+  },
+  "sidecar_orientation": {
+    "import_signature": "9475387712945145731",
+    "pack_projection_hash": "17921396840264098233",
+    "field_embedding_stats": 10.0081,
+    "slime_energy_delta": 10.0081,
+    "busy_beaver_metrics": 0.517241,
+    "decode_stability": 0.687303,
+    "diff_magnitude": 0.276757
+  },
+  "sidecar_auto_demo_policy": {
+    "enabled": false,
+    "allow_runtime_mutation": false,
+    "run_paced_loop": false,
+    "paced_loop_interval_seconds": 1,
+    "stop_demonstrated_fraction": 1,
+    "stop_uncertain_count": 0
+  },
+  "color_pipeline_draft": {
+    "next_row_id": 8,
+    "lanes": [
+      {
+        "lane_id": "source",
+        "label": "Source",
+        "rows": [
+        {
+          "ui_row_id": 6,
+          "enabled": true,
+          "function_id": "smooth_escape_ramp",
+          "parameter_values": [
+          {
+            "path": "signal.scale",
+            "type": "float",
+            "number_value": 1.01033
+          },
+          {
+            "path": "signal.bias",
+            "type": "float",
+            "number_value": -0.05512
+          }
+          ]
+        }
+        ]
+      },
+      {
+        "lane_id": "shape",
+        "label": "Shape",
+        "rows": [
+        {
+          "ui_row_id": 2,
+          "enabled": true,
+          "function_id": "mirror_repeat",
+          "parameter_values": [
+          {
+            "path": "shape.frequency",
+            "type": "float",
+            "number_value": 8
+          },
+          {
+            "path": "shape.phase",
+            "type": "float",
+            "number_value": 0
+          }
+          ]
+        }
+        ]
+      },
+      {
+        "lane_id": "palette",
+        "label": "Palette",
+        "rows": [
+        {
+          "ui_row_id": 3,
+          "enabled": true,
+          "function_id": "explaino_cmap",
+          "parameter_values": [
+          {
+            "path": "palette.seed_scale",
+            "type": "float",
+            "number_value": 1.45029
+          },
+          {
+            "path": "palette.seed_phase",
+            "type": "float",
+            "number_value": 1
+          },
+          {
+            "path": "palette.colorfulness",
+            "type": "float",
+            "number_value": 0.74803
+          }
+          ]
+        }
+        ]
+      },
+      {
+        "lane_id": "grading",
+        "label": "Grading",
+        "rows": [
+        {
+          "ui_row_id": 7,
+          "enabled": true,
+          "function_id": "contrast_lift",
+          "parameter_values": [
+          {
+            "path": "grade.exposure",
+            "type": "float",
+            "number_value": 1.19035
+          },
+          {
+            "path": "grade.saturation",
+            "type": "float",
+            "number_value": 1.3622
+          }
+          ]
+        }
+        ]
+      }
+    ]
+  }
+})";
 }
 
 static void WriteMinimalStateWithExtraParams(
@@ -2889,6 +3268,152 @@ int main() {
           !DraftRowHasNumberParam(draft.lanes[3].rows[0], "grade.saturation", 1.0)) {
           std::cerr << "Expected advanced color draft load to seed the bounded contrast_lift grading row when upgrading a legacy three-lane draft\n";
           return 1;
+        }
+    }
+
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        SidecarOrientationVector orientation{};
+        bool hasOrientation = false;
+        SidecarAutoDemoControllerPolicy controllerPolicy{};
+        bool hasControllerPolicy = false;
+        SidecarAutoDemoMutationHistory mutationHistory;
+        bool hasMutationHistory = false;
+        ColorPipelineWindowState draft{};
+        std::string error;
+        if (!LoadDiagnosticsStateJson(
+                ManualExplainoJoyCaptureStateJsonLowRes(),
+                &view,
+                &params,
+                &render,
+                &orientation,
+                &hasOrientation,
+                &controllerPolicy,
+                &hasControllerPolicy,
+                &mutationHistory,
+                &hasMutationHistory,
+                &draft,
+                &error)) {
+            std::cerr << "Manual explaino_joy capture fixture failed to load: " << error << "\n";
+            return 1;
+        }
+        if (!ExpectManualExplainoJoyCaptureState(
+                view,
+                params,
+                render,
+                orientation,
+                hasOrientation,
+                controllerPolicy,
+                hasControllerPolicy,
+                hasMutationHistory,
+                draft,
+                "manual fixture load")) {
+            return 1;
+        }
+
+        const double preciseCenterHpX = -1.840130123456789;
+        const double preciseLog2Zoom = 1.375040123456789;
+        const double preciseSmoothScale = 1.0103987654321;
+        const double preciseGradeExposure = 1.1903987654321;
+        view.center_hp_x = preciseCenterHpX;
+        view.log2_zoom = preciseLog2Zoom;
+        params.color_smooth_escape_scale = static_cast<float>(preciseSmoothScale);
+        params.color_grading_stack[0].params.exposure = static_cast<float>(preciseGradeExposure);
+        params.color_contrast_lift_exposure = static_cast<float>(preciseGradeExposure);
+        if (!SetDraftRowNumberParam(&draft.lanes[0].rows[0], "signal.scale", preciseSmoothScale) ||
+            !SetDraftRowNumberParam(&draft.lanes[3].rows[0], "grade.exposure", preciseGradeExposure)) {
+            std::cerr << "Expected manual capture draft precision sentinels to be editable before save\n";
+            return 1;
+        }
+
+        const fs::path runtimeDir = tempRoot / "manual_explaino_joy_capture_roundtrip_runtime";
+        fs::remove_all(runtimeDir);
+        fs::create_directories(runtimeDir);
+
+        RenderStats stats{};
+        stats.last_iters_avg = 9;
+        std::vector<std::uint32_t> rgba(
+            static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y),
+            0xff224466u);
+        DiagnosticsCaptureResult capture{};
+        const SidecarAutoDemoMutationHistory* persistedHistory = hasMutationHistory ? &mutationHistory : nullptr;
+        if (!CaptureDiagnosticsLastBundle(
+                runtimeDir.string(),
+                view,
+                params,
+                render,
+                stats,
+                rgba.data(),
+                rgba.size(),
+                &orientation,
+                &controllerPolicy,
+                persistedHistory,
+                &draft,
+                &capture,
+                &error)) {
+            std::cerr << "Manual explaino_joy capture fixture failed to serialize: " << error << "\n";
+            return 1;
+        }
+
+        std::string serializedState;
+        if (!ReadTextFile(capture.state_json_path, &serializedState)) {
+            std::cerr << "Expected capture-backed serialization regression to write state.json\n";
+            return 1;
+        }
+        if (serializedState.find("\"width\": 64") == std::string::npos ||
+            serializedState.find("\"height\": 64") == std::string::npos ||
+            serializedState.find("\"color_pipeline_draft\"") == std::string::npos ||
+            serializedState.find("\"color_grading_stack\"") == std::string::npos ||
+            serializedState.find("\"import_signature\": \"9475387712945145731\"") == std::string::npos) {
+            std::cerr << "Expected capture-backed serialization regression to emit low-resolution render settings, draft state, grading stack, and 64-bit sidecar hashes\n";
+            return 1;
+        }
+
+        ViewState roundTripView{};
+        KernelParams roundTripParams{};
+        RenderSettings roundTripRender{};
+        SidecarOrientationVector roundTripOrientation{};
+        bool roundTripHasOrientation = false;
+        SidecarAutoDemoControllerPolicy roundTripControllerPolicy{};
+        bool roundTripHasControllerPolicy = false;
+        SidecarAutoDemoMutationHistory roundTripMutationHistory;
+        bool roundTripHasMutationHistory = false;
+        ColorPipelineWindowState roundTripDraft{};
+        if (!LoadDiagnosticsStateJson(
+                serializedState,
+                &roundTripView,
+                &roundTripParams,
+                &roundTripRender,
+                &roundTripOrientation,
+                &roundTripHasOrientation,
+                &roundTripControllerPolicy,
+                &roundTripHasControllerPolicy,
+                &roundTripMutationHistory,
+                &roundTripHasMutationHistory,
+                &roundTripDraft,
+                &error)) {
+            std::cerr << "Manual explaino_joy emitted capture state failed to reload: " << error << "\n";
+            return 1;
+        }
+        if (!ExpectManualExplainoJoyCaptureState(
+                roundTripView,
+                roundTripParams,
+                roundTripRender,
+                roundTripOrientation,
+                roundTripHasOrientation,
+                roundTripControllerPolicy,
+                roundTripHasControllerPolicy,
+                roundTripHasMutationHistory,
+                roundTripDraft,
+                "manual fixture capture reload",
+                preciseCenterHpX,
+                preciseLog2Zoom,
+                preciseSmoothScale,
+                preciseGradeExposure)) {
+            return 1;
         }
     }
 

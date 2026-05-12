@@ -168,3 +168,5 @@
 - `ck:fba62f55` 2026-05-11 21:17 UTC | score 89 — Composition authority retargeted onto the active Phase 6 contract; workflow-only setup is validated and ready for RED implementation.
 - `ck:679b2bc3` 2026-05-11 21:17 UTC — session-start | branch=feature/advanced-color-pipeline-draft-editor-reframe | head=08bacce | status=clean | profile=runtime | intent=advanced color grading stack implementation REDs
 - `ck:679b2bc3` 2026-05-11 23:27 UTC | score 94 — Grading stack composition landed with bounded runtime ownership, ordered evaluation, live bridge import/apply, diagnostics/capture/reset coverage, native/runtime proof, and repaired hostile-audit findings.
+- `ck:2f9efd8f` 2026-05-11 23:49 UTC — session-start | branch=feature/advanced-color-pipeline-draft-editor-reframe | head=3c1e411 | status=dirty | profile=native | intent=capture-backed diagnostics serialization fixture
+- `ck:2f9efd8f` 2026-05-12 00:57 UTC | score 92 — Repair diagnostics save precision with capture-backed explaino_joy regression; native/code-quality/contract/plan/hostile rails green.

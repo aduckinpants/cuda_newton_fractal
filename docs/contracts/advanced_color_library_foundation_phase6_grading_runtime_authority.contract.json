@@ -2,7 +2,7 @@
   "version": 1,
   "contract_id": "advanced_color_library_foundation_phase6_grading_runtime_authority",
   "feature_id": "advanced_color_library_foundation",
-  "workflow_type": "viewer_first",
+  "workflow_type": "headless_only",
   "plan_path": "docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json",
@@ -16,6 +16,7 @@
     "ui_app/src/fractal_derived_fields.cpp",
     "ui_app/src/fractal_types.h",
     "ui_app/src/runtime_reset.cpp",
+    "ui_app/build_tests_vsdevcmd.cmd",
     "ui_app/tests/test_diagnostics_state_io.cpp",
     "ui_app/tests/test_escape_time_coloring.cpp",
     "ui_app/tests/test_finding_archive_actions.cpp",
@@ -31,14 +32,17 @@
     "treat multi-function composition as the next critical advanced-color implementation thread before remaining single-row grading polish",
     "start composition with Grading stack runtime authority using only already shipped rows: contrast_lift, phase_finish, and band_finish",
     "preserve Shape stack and bounded root-basin pair behavior as predecessors, not proof of generic Source/Palette composition",
-    "follow strict TDD by adding REDs for stack ownership, live snapshot import, persistence, reset, capture/archive, and runtime evaluation before implementation"
+    "follow strict TDD by adding REDs for stack ownership, live snapshot import, persistence, reset, capture/archive, and runtime evaluation before implementation",
+    "add a capture-backed serialization round-trip regression from the manual 183932_396 explaino_joy capture using low-resolution test data"
   ],
   "forbidden_operator_prompts": [
     "ship arbitrary Source signal composition without explicit mixer math",
     "ship arbitrary Palette chaining or blending without explicit RGB blend math and owner fields",
     "expose grade.glow, neutral_finish, tone_map_finish, balance_void_grade, or new grading inventory rows in this stack-composition slice",
     "create a second grading authority outside the reusable color pipeline core and legacy mirror compatibility",
-    "claim the composition foundation is closed after only Grading stack work"
+    "claim the composition foundation is closed after only Grading stack work",
+    "commit the original 4096x4096 manual capture frame into the unit test fixture",
+    "claim capture-backed serialization coverage proves UI/UX behavior"
   ],
   "required_defaults": {
     "composition_priority_before_grading_polish": "required",
@@ -47,7 +51,8 @@
     "shape_stack_preserved": "required",
     "root_basin_pair_schedule_preserved": "required",
     "source_palette_generic_composition_deferred": "required",
-    "visible_rows_runtime_real_only": "required"
+    "visible_rows_runtime_real_only": "required",
+    "manual_capture_state_roundtrip_fixture": "required"
   },
   "forbidden_defaults": {
     "descriptor_only_grading_stack": "forbidden",
@@ -55,11 +60,13 @@
     "new_grade_inventory_rows": "forbidden",
     "grade_glow_control": "forbidden",
     "balance_void_in_first_composition_slice": "forbidden",
-    "generic_source_palette_claims": "forbidden"
+    "generic_source_palette_claims": "forbidden",
+    "high_resolution_frame_fixture": "forbidden"
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_contract.json",
-    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase6_grading_runtime_authority_hostile_audit.json"
   ],
   "required_acceptance_assertions": [
     {

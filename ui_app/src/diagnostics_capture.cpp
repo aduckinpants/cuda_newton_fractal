@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <limits>
 #include <sstream>
 #include <vector>
 
@@ -502,6 +504,7 @@ std::string BuildStateJson(
     const bool hasLegacyColoringMirror = TryMirroredColoringModeForPipeline(params.color_pipeline, &mirroredColoringMode);
 
     std::ostringstream js;
+    js << std::setprecision(std::numeric_limits<double>::max_digits10);
     js << "{\n";
     js << "  \"state_version\": 3,\n";
     js << "  \"fractal_type\": \"" << CaptureFractalTypeId(view.fractal_type) << "\",\n";

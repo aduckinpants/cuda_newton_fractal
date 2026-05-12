@@ -241,14 +241,14 @@ int main() {
             stateJson.find("\"explaino_root_spread\": 1.75") == std::string::npos ||
             stateJson.find("\"color_phase_signal_offset\": 1.25") == std::string::npos ||
             stateJson.find("\"color_iteration_band_count\": 5") == std::string::npos ||
-            stateJson.find("\"color_escape_magnitude_scale\": 1.8") == std::string::npos ||
+            stateJson.find("\"color_escape_magnitude_scale\": 1.7999999523162842") == std::string::npos ||
             stateJson.find("\"color_escape_magnitude_bias\": -0.25") == std::string::npos ||
             stateJson.find("\"color_orbit_stripe_frequency\": 3.5") == std::string::npos ||
-            stateJson.find("\"color_orbit_stripe_phase\": 0.4") == std::string::npos ||
+            stateJson.find("\"color_orbit_stripe_phase\": 0.40000000596046448") == std::string::npos ||
             stateJson.find("\"color_root_proximity_scale\": 2.25") == std::string::npos ||
-            stateJson.find("\"color_root_proximity_bias\": -0.1") == std::string::npos ||
+            stateJson.find("\"color_root_proximity_bias\": -0.10000000149011612") == std::string::npos ||
             stateJson.find("\"color_shape_posterize_steps\": 5") == std::string::npos ||
-            stateJson.find("\"color_shape_posterize_mix\": 0.65") == std::string::npos ||
+            stateJson.find("\"color_shape_posterize_mix\": 0.64999997615814209") == std::string::npos ||
             stateJson.find("\"color_shape_stack\"") == std::string::npos ||
             stateJson.find("\"color_grading_stack\"") == std::string::npos ||
             stateJson.find("\"grading\": \"escape_default\"") == std::string::npos ||
