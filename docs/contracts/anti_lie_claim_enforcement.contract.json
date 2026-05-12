@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "contract_id": "anti_lie_claim_enforcement",
+  "feature_id": "viewer_host_workflow",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/anti_lie_claim_enforcement_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/anti_lie_claim_enforcement.contract.json",
+    "docs/notes/anti_lie_claim_enforcement_PHASED_PLAN.md",
+    "tools",
+    "tests",
+    "artifacts",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "make false status, closure, cleanliness, validation, and feature-progress claims mechanically rejectable",
+    "include an exhaustive forensic dossier that mines every supported failure event and recurrence category from the available evidence corpus",
+    "prove each mined failure category has a detector, blocking condition, proof artifact, and recheck command before closure",
+    "replace proof-marker text with current machine-validated claim evidence for restricted status vocabulary",
+    "revalidate validation-receipt evidence artifacts and live git status during closure",
+    "keep this slice workflow-only and do not count it as product progress"
+  ],
+  "forbidden_operator_prompts": [
+    "start Color Pipeline, capture, new fractal, runtime UI, or product feature work in this slice",
+    "treat this anti-lying work as product progress",
+    "accept inherited agent framing without transcript and evidence validation",
+    "accept fresh command, exit code, artifact path, or checked result marker words as proof by themselves",
+    "accept a validation receipt for HEAD when live git status has staged, unstaged, or untracked changes",
+    "allow false claims to disappear from the claim ledger after correction",
+    "close the slice while any mined failure category lacks a blocking invariant and current proof artifact"
+  ],
+  "required_defaults": {
+    "workflow_only": "required",
+    "forensic_dossier_first": "required",
+    "live_git_status_authoritative": "required",
+    "restricted_status_claims_require_machine_evidence": "required",
+    "receipt_evidence_revalidated_at_closure": "required",
+    "false_claims_remain_auditable": "required",
+    "per_category_guard_invariants": "required"
+  },
+  "forbidden_defaults": {
+    "product_progress_claim": "forbidden",
+    "marker_words_as_proof": "forbidden",
+    "stale_receipts_as_current_truth": "forbidden",
+    "dirty_worktree_closure": "forbidden",
+    "documentation_only_fix": "forbidden",
+    "unclassified_failure_categories": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json",
+    "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py tests/test_viewer_host_contract_proof.py tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+    "py -3.14 tools/viewer_host_truth_report.py --out-json artifacts/validation/viewer_host_truth_report.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/anti_lie_claim_enforcement.contract.json --out-json artifacts/validation/anti_lie_claim_enforcement_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/anti_lie_claim_enforcement_PHASED_PLAN.md --out-json artifacts/validation/anti_lie_claim_enforcement_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "anti_lie_contract_schema_valid",
+      "description": "The anti-lie workflow contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/anti_lie_claim_enforcement_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "anti_lie_plan_sync_ok",
+      "description": "The anti-lie phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "anti_lie_hostile_audit_ok",
+      "description": "The anti-lie hostile audit is complete and proves repaired state",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/anti_lie_claim_enforcement_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "anti_lie_forensic_dossier_ok",
+      "description": "The forensic dossier enumerates and classifies supported failure events and proves per-category guard invariants",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/anti_lie_forensic_timeline.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "anti_lie_truth_report_ok",
+      "description": "The current truth report validates live git status, receipts, commands, artifacts, and claim support",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_truth_report.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "anti_lie_workflow_guard_tests_green",
+      "description": "The workflow guard tests cover false marker denial, stale evidence denial, dirty worktree denial, and valid clean report acceptance",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_status_vocabulary_rejects_fake_proof_marker_text_without_claim_evidence"
+    }
+  ]
+}

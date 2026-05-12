@@ -82,7 +82,13 @@ def _dynamic_validator_json_spec(command: str) -> ValidationEvidenceSpec | None:
     if match is None:
         return None
     normalized = command.replace("\\", "/")
-    if "tools/viewer_host_validate_" not in normalized:
+    allowed_tools = (
+        "tools/viewer_host_validate_",
+        "tools/viewer_host_truth_report.py",
+        "tools/viewer_host_forensic_timeline.py",
+        "tools/viewer_host_claim_ledger.py",
+    )
+    if not any(tool in normalized for tool in allowed_tools):
         return None
     artifact_path = match.group("artifact").replace("\\", "/")
     safe_suffix = re.sub(r"[^A-Za-z0-9]+", "_", artifact_path).strip("_") or "artifact"
@@ -90,6 +96,23 @@ def _dynamic_validator_json_spec(command: str) -> ValidationEvidenceSpec | None:
         evidence_id=f"validator_json_{safe_suffix}",
         command=command,
         artifact_kind="validator_json",
+        artifact_path=artifact_path,
+    )
+
+
+def _dynamic_pytest_junit_spec(command: str) -> ValidationEvidenceSpec | None:
+    normalized = command.replace("\\", "/").strip()
+    if " -m pytest " not in f" {normalized} ":
+        return None
+    match = re.search(r"--junitxml\s+(?P<artifact>\S+)", normalized)
+    if match is None:
+        return None
+    artifact_path = match.group("artifact")
+    safe_suffix = re.sub(r"[^A-Za-z0-9]+", "_", artifact_path).strip("_") or "pytest"
+    return ValidationEvidenceSpec(
+        evidence_id=f"junit_xml_{safe_suffix}",
+        command=command,
+        artifact_kind="junit_xml",
         artifact_path=artifact_path,
     )
 
@@ -138,6 +161,9 @@ def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec
             artifact_kind="validator_json",
             artifact_path="artifacts/validation/viewer_host_assert_phased_plan_sync.json",
         )
+    spec = _dynamic_pytest_junit_spec(command)
+    if spec is not None:
+        return spec
     spec = _dynamic_test_coverage_audit_spec(command)
     if spec is not None:
         return spec

@@ -158,6 +158,39 @@ def test_validation_evidence_spec_for_command_recognizes_hostile_audit_validator
     assert spec.artifact_path == "artifacts/validation/workflow_guard_hostile_review_enforcement_hostile_audit.json"
 
 
+def test_validation_evidence_spec_for_command_recognizes_dynamic_pytest_junit() -> None:
+    command = (
+        "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py "
+        "tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/anti_lie_workflow_tools.junit.xml"
+    )
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "junit_xml"
+    assert spec.artifact_path == "artifacts/pytest/anti_lie_workflow_tools.junit.xml"
+
+
+def test_validation_evidence_spec_for_command_recognizes_truth_report_validator() -> None:
+    command = "py -3.14 tools/viewer_host_truth_report.py --out-json artifacts/validation/viewer_host_truth_report.json"
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/validation/viewer_host_truth_report.json"
+
+
+def test_validation_evidence_spec_for_command_recognizes_forensic_timeline_validator() -> None:
+    command = "py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json"
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "validator_json"
+    assert spec.artifact_path == "artifacts/validation/anti_lie_forensic_timeline.json"
+
+
 def test_validation_evidence_spec_for_command_recognizes_logged_command_pytest() -> None:
     command = (
         "py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py -q --junitxml "

@@ -57,12 +57,10 @@ ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS = (
 )
 STATUS_CLAIM_RE = re.compile(r"\b(green|done|ready|complete|closed|unblocked|good)\b", re.IGNORECASE)
 STATUS_CLAIM_REQUIRED_MARKERS = (
-    "fresh command",
-    "command label",
-    "exit code",
-    "artifact path",
-    "checked result",
+    "valid truth report artifact",
+    "valid claim id",
 )
+STATUS_TRUTH_REPORT_RE = re.compile(r"artifacts[\\/][A-Za-z0-9_./\\-]*truth[A-Za-z0-9_./\\-]*\.json", re.IGNORECASE)
 PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
 SALT_NDEPEND_REQUIRED_DEFAULT_KEYS = (
     "salt_ndepend_gate_is_explicit",
@@ -212,21 +210,60 @@ def _payload_status_claim_text(payload: Any) -> str:
     return "\n".join(texts)
 
 
-def evaluate_status_vocabulary_guard(payload: dict[str, Any] | None) -> tuple[bool, str, dict[str, Any]]:
+def _status_truth_report_candidates(text: str) -> list[str]:
+    return sorted({match.group(0).replace("\\", "/") for match in STATUS_TRUTH_REPORT_RE.finditer(text)})
+
+
+def _validate_status_truth_report(path_text: str, repo_root: Path) -> tuple[bool, str]:
+    path = Path(path_text)
+    if not path.is_absolute():
+        path = repo_root / path
+    if not path.exists():
+        return False, f"truth report missing: {path_text}"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return False, f"truth report invalid json: {path_text}: {exc}"
+    if not bool(payload.get("ok", False)):
+        return False, f"truth report is not ok: {path_text}"
+    live_status = _git_status_short_lines(repo_root)
+    report_status = payload.get("git", {}).get("status_short")
+    if isinstance(report_status, list) and report_status != live_status:
+        return False, f"truth report status is stale: {path_text}"
+    return True, ""
+
+
+def evaluate_status_vocabulary_guard(
+    payload: dict[str, Any] | None,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str, dict[str, Any]]:
     text = _payload_status_claim_text(payload or {})
     if not text:
         return False, "", {}
     matches = sorted({match.group(1).lower() for match in STATUS_CLAIM_RE.finditer(text)})
     if not matches:
         return False, "", {}
-    lower = text.lower()
-    missing = [marker for marker in STATUS_CLAIM_REQUIRED_MARKERS if marker not in lower]
-    if not missing:
-        return False, "", {"restricted_words": matches, "missing_markers": []}
+
+    candidates = _status_truth_report_candidates(text)
+    checked_reports: list[str] = []
+    failures: list[str] = []
+    for candidate in candidates:
+        ok, failure = _validate_status_truth_report(candidate, repo_root)
+        checked_reports.append(candidate)
+        if ok:
+            return False, "", {"restricted_words": matches, "truth_report": candidate}
+        failures.append(failure)
+
+    details = {
+        "restricted_words": matches,
+        "missing_markers": list(STATUS_CLAIM_REQUIRED_MARKERS),
+        "checked_truth_reports": checked_reports,
+        "truth_report_failures": failures,
+    }
     return (
         True,
-        "Restricted status vocabulary requires proof markers in the same task_complete summary.",
-        {"restricted_words": matches, "missing_markers": missing},
+        "Restricted status vocabulary requires current machine-validated claim evidence.",
+        details,
     )
 
 
@@ -467,6 +504,48 @@ def load_validation_receipt(head: str, repo_root: Path = REPO_ROOT) -> dict[str,
     if not path.exists():
         return None
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def validate_validation_receipt_evidence_freshness(
+    validation_receipt: dict[str, Any] | None,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    if validation_receipt is None:
+        return True, ""
+    evidence_entries = validation_receipt.get("evidence", [])
+    if evidence_entries is None:
+        return True, ""
+    if not isinstance(evidence_entries, list):
+        return False, "validation evidence is not a list"
+    for entry in evidence_entries:
+        if not isinstance(entry, dict):
+            return False, "validation evidence contains a non-object entry"
+        artifact_text = str(entry.get("artifact_path", "")).strip()
+        if not artifact_text:
+            return False, "validation evidence entry is missing artifact_path"
+        artifact_path = Path(artifact_text)
+        if not artifact_path.is_absolute():
+            artifact_path = repo_root / artifact_path
+        if not artifact_path.exists():
+            return False, f"validation evidence artifact missing: {artifact_text}"
+        artifact_stat = artifact_path.stat()
+        recorded_size = entry.get("artifact_size_bytes")
+        if recorded_size is not None:
+            try:
+                expected_size = int(recorded_size)
+            except (TypeError, ValueError):
+                return False, f"validation evidence artifact size invalid: {artifact_text}"
+            if artifact_stat.st_size != expected_size:
+                return False, f"validation evidence artifact size mismatch: {artifact_text}"
+        recorded_mtime = str(entry.get("artifact_mtime_utc", "")).strip()
+        if recorded_mtime:
+            current_mtime = datetime.fromtimestamp(artifact_stat.st_mtime, timezone.utc).isoformat()
+            if current_mtime != recorded_mtime:
+                return False, f"validation evidence artifact mtime mismatch: {artifact_text}"
+        recorded_hash = str(entry.get("artifact_sha256", "")).strip()
+        if recorded_hash and recorded_hash != hash_file(artifact_path):
+            return False, f"validation evidence artifact hash mismatch: {artifact_text}"
+    return True, ""
 
 
 def clean_head_has_validation_receipt(snapshot: dict[str, Any], repo_root: Path = REPO_ROOT) -> bool:
@@ -1030,6 +1109,9 @@ def evaluate_contract_proof_receipt_guard(
         return True, "Active slice contract failed validation during closure."
 
     validation_receipt = load_validation_receipt(current_head, repo_root)
+    evidence_fresh, evidence_reason = validate_validation_receipt_evidence_freshness(validation_receipt, repo_root)
+    if not evidence_fresh:
+        return True, evidence_reason
     should_block, reason = evaluate_viewer_first_validation_command_guard(
         None if validation_receipt is None else validation_receipt.get("commands", []),
         str(contract_payload.get("workflow_type", "")).strip(),
@@ -1268,7 +1350,7 @@ def build_pretool_response(
         else:
             salt_ndepend_payload = {}
         if not should_block:
-            should_block, reason, status_claim_payload = evaluate_status_vocabulary_guard(payload)
+            should_block, reason, status_claim_payload = evaluate_status_vocabulary_guard(payload, repo_root)
         else:
             status_claim_payload = {}
         if not should_block:
