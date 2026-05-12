@@ -341,7 +341,10 @@ def test_build_pretool_response_blocks_validation_receipted_head_without_contrac
         baseline,
         current,
         "session-1",
-        {"recipient_name": "functions.task_complete"},
+        {
+            "recipient_name": "functions.task_complete",
+            "parameters": {"summary": checkpoint_guard.REQUIRED_FINAL_CAPSTONE},
+        },
         tmp_path,
     )
 
@@ -428,6 +431,73 @@ def test_status_vocabulary_rejects_fake_proof_marker_text_without_claim_evidence
     assert should_block is True
     assert "machine" in reason.lower() or "claim" in reason.lower()
     assert "done" in details.get("restricted_words", [])
+
+
+def test_required_capstone_guard_rejects_missing_capstone() -> None:
+    should_block, reason, details = checkpoint_guard.evaluate_required_capstone_guard(
+        {"parameters": {"summary": "workflow-only summary without the mandated ending"}}
+    )
+
+    assert should_block is True
+    assert "capstone" in reason.lower()
+    assert details["required_capstone"] == checkpoint_guard.REQUIRED_FINAL_CAPSTONE
+
+
+def test_required_capstone_guard_requires_exact_capstone_at_end() -> None:
+    should_block, reason, _details = checkpoint_guard.evaluate_required_capstone_guard(
+        {"parameters": {"summary": "workflow-only summary. " + checkpoint_guard.REQUIRED_FINAL_CAPSTONE + " extra"}}
+    )
+
+    assert should_block is True
+    assert "end with" in reason.lower()
+
+
+def test_required_capstone_guard_accepts_exact_capstone_at_end() -> None:
+    should_block, reason, details = checkpoint_guard.evaluate_required_capstone_guard(
+        {"parameters": {"summary": "workflow-only summary.\n\n" + checkpoint_guard.REQUIRED_FINAL_CAPSTONE}}
+    )
+
+    assert should_block is False
+    assert reason == ""
+    assert details["required_capstone"] == checkpoint_guard.REQUIRED_FINAL_CAPSTONE
+
+
+def test_build_pretool_response_denies_task_complete_without_required_capstone(tmp_path: Path) -> None:
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {
+            "recipient_name": "functions.task_complete",
+            "parameters": {"summary": "workflow-only summary without the mandated ending"},
+        },
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "deny"
+    assert "capstone" in hook["permissionDecisionReason"].lower()
+    assert checkpoint_guard.REQUIRED_FINAL_CAPSTONE in hook["additionalContext"]
+
+
+def test_build_pretool_response_allows_task_complete_with_required_capstone(tmp_path: Path) -> None:
+    response = build_pretool_response(
+        "task_complete",
+        _snapshot(),
+        _snapshot(),
+        "session-1",
+        {
+            "recipient_name": "functions.task_complete",
+            "parameters": {"summary": "workflow-only summary.\n\n" + checkpoint_guard.REQUIRED_FINAL_CAPSTONE},
+        },
+        tmp_path,
+    )
+
+    assert response is not None
+    hook = response["hookSpecificOutput"]
+    assert hook["permissionDecision"] == "allow"
 
 
 def test_main_pretool_denies_raw_apply_patch_for_non_task_complete_tool(monkeypatch) -> None:
@@ -1240,7 +1310,10 @@ def test_build_pretool_response_allows_task_complete_when_salt_ndepend_gate_is_r
         _snapshot(),
         _snapshot(),
         "session-1",
-        {"recipient_name": "functions.task_complete"},
+        {
+            "recipient_name": "functions.task_complete",
+            "parameters": {"summary": checkpoint_guard.REQUIRED_FINAL_CAPSTONE},
+        },
         tmp_path,
     )
 

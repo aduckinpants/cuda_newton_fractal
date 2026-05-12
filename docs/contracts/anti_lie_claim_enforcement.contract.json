@@ -18,7 +18,9 @@
     "prove each mined failure category has a detector, blocking condition, proof artifact, and recheck command before closure",
     "replace proof-marker text with current machine-validated claim evidence for restricted status vocabulary",
     "revalidate validation-receipt evidence artifacts and live git status during closure",
-    "keep this slice workflow-only and do not count it as product progress"
+    "keep this slice workflow-only and do not count it as product progress",
+    "make the required end-of-turn capstone mechanically enforceable at task_complete",
+    "keep capstone and tooling text name-free unless explicitly requested"
   ],
   "forbidden_operator_prompts": [
     "start Color Pipeline, capture, new fractal, runtime UI, or product feature work in this slice",
@@ -27,7 +29,9 @@
     "accept fresh command, exit code, artifact path, or checked result marker words as proof by themselves",
     "accept a validation receipt for HEAD when live git status has staged, unstaged, or untracked changes",
     "allow false claims to disappear from the claim ledger after correction",
-    "close the slice while any mined failure category lacks a blocking invariant and current proof artifact"
+    "close the slice while any mined failure category lacks a blocking invariant and current proof artifact",
+    "treat memory-only capstone reminders as sufficient enforcement",
+    "use the user's personal name in capstones, plans, or tooling text unless explicitly requested"
   ],
   "required_defaults": {
     "workflow_only": "required",
@@ -36,7 +40,8 @@
     "restricted_status_claims_require_machine_evidence": "required",
     "receipt_evidence_revalidated_at_closure": "required",
     "false_claims_remain_auditable": "required",
-    "per_category_guard_invariants": "required"
+    "per_category_guard_invariants": "required",
+    "task_complete_requires_name_free_capstone": "required"
   },
   "forbidden_defaults": {
     "product_progress_claim": "forbidden",
@@ -44,7 +49,9 @@
     "stale_receipts_as_current_truth": "forbidden",
     "dirty_worktree_closure": "forbidden",
     "documentation_only_fix": "forbidden",
-    "unclassified_failure_categories": "forbidden"
+    "unclassified_failure_categories": "forbidden",
+    "memory_only_capstone_enforcement": "forbidden",
+    "personal_name_in_capstone_or_tooling_text": "forbidden"
   },
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json",
@@ -102,6 +109,13 @@
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
       "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_status_vocabulary_rejects_fake_proof_marker_text_without_claim_evidence"
+    },
+    {
+      "assertion_id": "anti_lie_task_complete_capstone_enforced",
+      "description": "task_complete is denied unless completion text ends with the exact name-free anti-lie capstone",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_task_complete_without_required_capstone"
     }
   ]
 }

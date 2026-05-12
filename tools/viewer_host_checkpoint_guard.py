@@ -61,6 +61,7 @@ STATUS_CLAIM_REQUIRED_MARKERS = (
     "valid claim id",
 )
 STATUS_TRUTH_REPORT_RE = re.compile(r"artifacts[\\/][A-Za-z0-9_./\\-]*truth[A-Za-z0-9_./\\-]*\.json", re.IGNORECASE)
+REQUIRED_FINAL_CAPSTONE = "THIS DOES NOT ADVANCE THE FEATURE. THIS IS CORRECTIVE CHURN THAT COSTS THE USER'S TIME AND MONEY. NEVER AGAIN."
 PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
 SALT_NDEPEND_REQUIRED_DEFAULT_KEYS = (
     "salt_ndepend_gate_is_explicit",
@@ -208,6 +209,32 @@ def _payload_status_claim_text(payload: Any) -> str:
                 if text:
                     texts.append(text)
     return "\n".join(texts)
+
+
+def _payload_completion_text_candidates(payload: Any) -> list[str]:
+    texts: list[str] = []
+    for key in ("summary", "message", "text"):
+        for value in _find_values(payload, key):
+            if isinstance(value, (str, int, float)):
+                text = str(value).strip()
+                if text:
+                    texts.append(text)
+    return texts
+
+
+def evaluate_required_capstone_guard(payload: dict[str, Any] | None) -> tuple[bool, str, dict[str, Any]]:
+    candidates = _payload_completion_text_candidates(payload or {})
+    details = {
+        "required_capstone": REQUIRED_FINAL_CAPSTONE,
+        "checked_text_count": len(candidates),
+    }
+    if any(candidate.endswith(REQUIRED_FINAL_CAPSTONE) for candidate in candidates):
+        return False, "", details
+    return (
+        True,
+        "Final task completion text must end with the required anti-lie capstone.",
+        details,
+    )
 
 
 def _status_truth_report_candidates(text: str) -> list[str]:
@@ -1354,6 +1381,10 @@ def build_pretool_response(
         else:
             status_claim_payload = {}
         if not should_block:
+            should_block, reason, capstone_payload = evaluate_required_capstone_guard(payload)
+        else:
+            capstone_payload = {}
+        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -1371,6 +1402,10 @@ def build_pretool_response(
                         "Open explicit user asks: " + summarize_open_user_asks(open_asks)
                     )
                     if open_asks
+                    else (
+                        "Required capstone: " + str(capstone_payload.get("required_capstone", ""))
+                    )
+                    if capstone_payload
                     else (
                         "Restricted status words: " + ", ".join(status_claim_payload.get("restricted_words", []))
                         + " | missing proof markers: "
