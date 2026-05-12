@@ -13,9 +13,9 @@ Phase 3 - blocked published-runtime reproduction. The split-color common-param l
 
 ## Explicit User Asks
 
-- [open] Treat `D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-05-11/234919_563__explaino_inertial` as a real manual reload failure, not a process-exit success.
+- [done] Treat `D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-05-11/234919_563__explaino_inertial` as a real manual reload failure, not a process-exit success.
 - [done] Turn the failure into a dedicated regression for state serialization/reload drift as advanced-color state grows.
-- [open] Prove the fix against the active published `D:` runtime, because viewer-visible reproduction is the point of this path.
+- [blocked] Prove the fix against the active published `D:` runtime, because viewer-visible reproduction is the point of this path; the active runtime proof is intentionally still red for the historical capture.
 - [done] Keep the prior closure matrix blocked until this capture-backed reproduction proof is green.
 
 ## Presumption Loop
@@ -46,6 +46,7 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - Post-damping blocker: `artifacts/manual_explaino_inertial_runtime_proof.log` still fails the historical capture with `22` unique colors and `mean_abs_rgb=61.984`; the old `state.json` has no saved `explaino_damping`, so that value cannot be recovered from the JSON.
 - Probe evidence: formula/color tuple probes, damping probe best `mean_abs_rgb=58.497`, spread+damping probe best `mean_abs_rgb=57.398`, color-param probe best `mean_abs_rgb=57.415`, and seed/tween/phase probe best `mean_abs_rgb=56.941`; none reproduced the archived 4096x4096 frame.
 - Receipt correction: the contract-proof command list is limited to parseable validator JSON evidence; the validation receipt still records code quality, native helper tests, runtime publish, and the red published-runtime proof command with an explicit blocked-state note.
+- Explicit-ask closure correction: the manual failure ask is marked done, while the published-runtime proof ask is marked blocked because the historical capture remains unreproduced rather than being silently left open at stop time.
 
 ## Hostile Audit
 
@@ -89,8 +90,8 @@ The forward serialization defects found in this slice are repaired, but the orig
 
 ## Action Hostile Review
 
-- Action ID: action-20260512-receipt-evidence-contract-correction
-- Suspected Failure Mode: leaving unparseable logged build commands in `required_validation_commands` prevents the guard from writing machine contract proof for a blocked clean checkpoint.
-- Correct Owner/Action: keep the contract-proof command list on validator JSON evidence, record the build/runtime commands in the validation receipt, and preserve the red runtime proof as the blocker.
-- Proof Surface: contract validator, phased-plan sync, hostile-audit validator, validation receipt commands/notes, and final clean worktree check.
-- Blocked Action: writing a green-sounding receipt or closure claim while the published-runtime capture proof is still red.
+- Action ID: action-20260512-explicit-ask-blocker-status
+- Suspected Failure Mode: leaving explicit asks as `[open]` after checkpointing a documented blocker causes stop-time ambiguity between unfinished work and deliberately blocked proof.
+- Correct Owner/Action: mark completed asks as done and the unreproduced published-runtime proof as blocked, while preserving the closure matrix blocker and red runtime proof evidence.
+- Proof Surface: phased-plan sync, hostile-audit validator, stop-hook simulation, validation receipt commands/notes, and final clean worktree check.
+- Blocked Action: converting the blocked runtime proof ask to done or green language before the historical capture actually reproduces.
