@@ -45,6 +45,7 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - Runtime publish proof: `artifacts/manual_explaino_inertial_runtime_publish.log` passed after the `explaino_damping` repair and republished `D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe`.
 - Post-damping blocker: `artifacts/manual_explaino_inertial_runtime_proof.log` still fails the historical capture with `22` unique colors and `mean_abs_rgb=61.984`; the old `state.json` has no saved `explaino_damping`, so that value cannot be recovered from the JSON.
 - Probe evidence: formula/color tuple probes, damping probe best `mean_abs_rgb=58.497`, spread+damping probe best `mean_abs_rgb=57.398`, color-param probe best `mean_abs_rgb=57.415`, and seed/tween/phase probe best `mean_abs_rgb=56.941`; none reproduced the archived 4096x4096 frame.
+- Receipt correction: the contract-proof command list is limited to parseable validator JSON evidence; the validation receipt still records code quality, native helper tests, runtime publish, and the red published-runtime proof command with an explicit blocked-state note.
 
 ## Hostile Audit
 
@@ -88,8 +89,8 @@ The forward serialization defects found in this slice are repaired, but the orig
 
 ## Action Hostile Review
 
-- Action ID: action-20260512-inertial-render-state-completeness
-- Suspected Failure Mode: fixing only the visible `multibrot_power` drift leaves a second saved-state data-loss bug where render-affecting ExplainO params are absent from diagnostics JSON.
-- Correct Owner/Action: serialize and restore `explaino_damping` through diagnostics state IO, add focused native coverage, and then test whether the historical manual capture can be reproduced or must be recorded as unrecoverable data loss.
-- Proof Surface: native diagnostics-state coverage, runtime publish, published-runtime manual capture repro, and explicit closure-matrix status based on that proof.
-- Blocked Action: changing renderer/color math to chase the image before the missing state field is covered and tested.
+- Action ID: action-20260512-receipt-evidence-contract-correction
+- Suspected Failure Mode: leaving unparseable logged build commands in `required_validation_commands` prevents the guard from writing machine contract proof for a blocked clean checkpoint.
+- Correct Owner/Action: keep the contract-proof command list on validator JSON evidence, record the build/runtime commands in the validation receipt, and preserve the red runtime proof as the blocker.
+- Proof Surface: contract validator, phased-plan sync, hostile-audit validator, validation receipt commands/notes, and final clean worktree check.
+- Blocked Action: writing a green-sounding receipt or closure claim while the published-runtime capture proof is still red.

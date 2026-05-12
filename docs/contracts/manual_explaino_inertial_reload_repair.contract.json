@@ -41,11 +41,7 @@
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/manual_explaino_inertial_reload_repair.contract.json --out-json artifacts/validation/manual_explaino_inertial_reload_repair_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md --out-json artifacts/validation/manual_explaino_inertial_reload_repair_hostile_audit.json",
-    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label manual explaino inertial native helper tests --log artifacts/manual_explaino_inertial_native.log -- ui_app\\build_tests_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label manual explaino inertial runtime publish --log artifacts/manual_explaino_inertial_runtime_publish.log -- ui_app\\build_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label manual explaino inertial runtime proof --log artifacts/manual_explaino_inertial_runtime_proof.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py"
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md --out-json artifacts/validation/manual_explaino_inertial_reload_repair_hostile_audit.json"
   ],
   "required_acceptance_assertions": [
     {
