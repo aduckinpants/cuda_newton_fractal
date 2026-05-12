@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Closed at forward capture/state authority repair checkpoint. The historical `234919_563__explaino_inertial` archive remains an explicit strict xfail tripwire because its archived `frame.png` and `state.json` still do not replay to the same pixels, but current captures now serialize enough ExplainO runtime authority (`explaino_damping`, explicit `explaino_roots`, and `poly_coeffs_b`) for the published `D:` runtime to replay a saved state to exact pixels. Hostile audit found and repaired one additional stale-value loader bug for older states that omit the new fields.
+Phase 5 checkpoint - actual capture-finding route covered, historical archive still blocked. The reopened investigation reproduced the strict historical failure, ruled out nearby color tuple, parameter, no-root-snap, alternate-runtime, and neighboring-capture recovery paths, and added published-runtime coverage for the real `--capture-finding` archive path. Current captures/finding archives are self-consistent; the old `234919_563__explaino_inertial` frame still has no recoverable runtime authority in the saved artifacts.
 
 ## Phase Checklist
 
@@ -10,6 +10,8 @@ Closed at forward capture/state authority repair checkpoint. The historical `234
 - [x] Phase 2 - implement the minimal repair at the real serialization/render/reload owner seam
 - [x] Phase 3 - publish the active `D:` runtime and prove the current capture/state path through the published runtime, while keeping the unreproduced historical archive as a strict tripwire
 - [x] Phase 4 - hostile-audit the repaired state, update the closure matrix evidence, run validation, and checkpoint with an honest historical-xfail/forward-proof result
+- [x] Phase 5 - reopen historical recovery: reproduce the archive mismatch, inspect saved artifacts/provenance, identify a recoverable owner or compatibility path with evidence, and add a fresh proof for the real capture-finding path
+- [x] Phase 6 - checkpoint the bounded result: current capture-finding archives are now covered by runtime self-replay proof; historical visual recovery remains blocked on absent capture-time authority rather than guessed migration
 
 ## Explicit User Asks
 
@@ -17,7 +19,8 @@ Closed at forward capture/state authority repair checkpoint. The historical `234
 - [done] Turn the failure into dedicated regression coverage for state serialization/reload drift as advanced-color state grows.
 - [done] Prove the repaired forward save/load path against the active published `D:` runtime; the proof is exact-pixel self-replay for a current capture state, not a false claim that the old archive was recovered.
 - [done] Keep the historical failure signal alive as a strict `xfail` tripwire instead of weakening the capture-backed proof or hiding the old mismatch.
-- [done] Keep the prior closure matrix honest: historical recovery is not green; the forward serialization authority repair is green.
+- [done] Continue the actual historical recovery work for `234919_563__explaino_inertial`; the reopened slice re-ran the failure and searched concrete recovery owners instead of stopping at the forward-proof checkpoint.
+- [blocked] Recovering the old archived pixels remains blocked: the archive contains only notes, `finding.json`, `finding.md`, `frame.png`, and `state.json`; color, parameter, no-root-snap, alternate-runtime, and neighboring-capture probes did not find a defensible state migration. The next viable product choice is a viewer/archive UX path for displaying unreplayable historical frames, not a guessed renderer/color patch.
 
 ## Presumption Loop
 
@@ -53,10 +56,21 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - Code quality proof: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json` passed with score `97/100` and no critical/error findings.
 - Diff sanity proof: `git diff --check` reported only the existing `HANDOFF_LOG.md` line-ending warning and no whitespace errors in the code/test diff.
 
+- Reopened RED proof: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino historical runxfail repro" --log artifacts/manual_explaino_historical_runxfail_repro.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py -k test_manual_explaino_inertial_capture_reloads_to_detailed_frame --runxfail` failed as expected with `22` unique colors and `mean_abs_rgb=61.984`.
+- Artifact inventory: the historical directory contains only `field-notes.md`, `finding.json`, `finding.md`, `frame.png`, and `state.json`; the archived PNG has no embedded metadata.
+- Neighboring-capture check: same-day manual captures do not provide a matching state/frame pair for `234919_563__explaino_inertial`.
+- Color recovery probe: `artifacts/manual_explaino_historical_color_probe_v2/report.json` shows the saved `smooth_escape`/`cyclic_escape` tuple is still the best tested color tuple at `mean_abs_rgb=61.984`; alternate source/palette tuples were worse or invalid.
+- Parameter recovery probe: `artifacts/manual_explaino_historical_param_search/report.json` tested bounded seed/phase/damping/root/color-shape/grading parameters; the best candidate was `mean_abs_rgb=55.755`, still far above the `<35` proof threshold.
+- No-root-snap probe: `artifacts/manual_explaino_no_root_snap_probe/report.json` showed preserving saved polynomial coefficients with explicit no-root authority still renders the same `mean_abs_rgb=61.984` frame.
+- Alternate-runtime probe: available `fractal_ui_probe.exe` rendered the historical state at `mean_abs_rgb=58.760`, closer but still not a recovery; no capture-time executable is preserved in the runtime directory.
+- Actual capture-finding route proof: a direct `--capture-finding` run from the historical state created a fresh archive with explicit roots and `poly_coeffs_b`; replaying that archive produced `mean_abs_rgb=0.005` after 256px downsample.
+- Regression proof added: `tests/test_fractal_runtime_manual_capture_repro.py` now covers the actual `--capture-finding` archive route in `test_current_explaino_inertial_capture_finding_archive_replays_its_pixels`.
+- Focused runtime validation: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` passed as `2 passed, 1 xfailed`; the xfail remains the unrecovered historical frame/state mismatch.
+
 ## Hostile Audit
 
 - Status: done
-- Required posture: assume the implementation is wrong until the state and pixel evidence say otherwise. The old archive is not recovered; the repaired guarantee is forward capture/state authority plus exact published-runtime self-replay, with the historical mismatch retained as a strict tripwire.
+- Required posture: assume the forward-proof checkpoint missed the actual operator ask. The reopened audit targeted the old archive again, rejected unproven compatibility guesses, and added proof for the real capture-finding route while keeping the historical archive unrecovered.
 
 ## Audit Passes
 
@@ -64,6 +78,8 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - [done] Pass 2 - first-fix audit: after common-param and `explaino_damping` repair, the historical image still failed as a 22-color orange frame, so the old capture was not claimed as fixed.
 - [done] Pass 3 - forward authority audit: explicit roots and `poly_coeffs_b` were added to save/load, recompute was skipped only when saved roots are present and no ExplainO CLI override invalidates them, and the published runtime proved exact self-replay while keeping the historical archive as strict xfail.
 - [done] Pass 4 - clean re-read after hostile finding: reviewed direct-load paths and found stale roots/secondary polynomial values could survive when legacy states omitted the new fields; added the regression, cleared absent authority arrays before optional parse, reran native helper tests, republished runtime, and confirmed the repaired state still passes the forward pixel proof.
+- [done] Pass 5 - reopened historical audit: re-ran the archived capture mismatch, inventoried capture artifacts/provenance, checked neighboring captures and alternate executables, and ran bounded compatibility probes without finding a recoverable historical state.
+- [done] Pass 6 - clean re-read of the product route: proved the current `--capture-finding` archive path creates self-consistent state/frame artifacts and added runtime regression coverage for that route.
 
 ## Audit Findings
 
@@ -71,8 +87,8 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - [done] Real finding: `explaino_damping` is a live schema-bound render parameter used by ExplainO-Inertial iteration, but diagnostics save/load did not serialize or restore it.
 - [done] Real finding: current captures did not persist explicit ExplainO roots or `poly_coeffs_b`, so reload paths could recompute or lose runtime authority that was needed for pixel replay.
 - [done] Real finding: legacy states that omit `explaino_roots` or `poly_coeffs_b` could preserve stale caller values in direct load; the loader now clears those arrays before optional parse.
-- [done] Real finding: the historical `234919_563__explaino_inertial` capture remains unreproduced after the covered repairs; the old JSON omitted at least one render-affecting value, and compatibility probes did not find a defensible default or migration.
-- [clean] Clean re-read: no additional real defect found in the repaired save/load/recompute guards after the stale-authority regression, native helper rerun, runtime republish, and final forward runtime pixel proof.
+- [blocked] Historical finding: the old `234919_563__explaino_inertial` archive still fails visual reload, and the saved artifacts do not contain enough authority to reconstruct the archived frame through a defensible state migration.
+- [clean] Clean re-read: the current capture-diagnostic and capture-finding routes now create replayable state/frame pairs; no further recoverable owner was found for the historical archive after the reopened probes.
 
 ## Notes
 
@@ -94,12 +110,12 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 
 ## Resume Point
 
-This slice closes with an honest bounded result: the old `234919_563__explaino_inertial` archive remains a strict xfail recovery tripwire, while current capture/save/load now persists enough ExplainO runtime authority to replay exact pixels through the published runtime. Future work should either find new evidence for historical recovery or leave the old archive classified as unrecoverable frame/state mismatch; do not weaken the strict xfail without actual historical pixel recovery.
+This follow-up closes as a bounded blocker, not a visual recovery claim. Current `--capture-diagnostic` and `--capture-finding` paths are covered by published-runtime self-replay tests, while the old `234919_563__explaino_inertial` frame remains a strict xfail because its saved artifacts do not contain recoverable runtime authority. The next product-level option is an explicit historical-frame viewing/fallback UX for unreplayable archives, not another guessed renderer or palette migration.
 
 ## Action Hostile Review
 
-- Action ID: action-20260512-capture-state-authority
-- Suspected Failure Mode: the archive path can persist a rendered frame and a `state.json` snapshot whose saved runtime authority does not reproduce the rendered dynamics; historical evidence is `stats.last_iters_avg=19` in the archive versus about `23` on saved-state replay, with unchanged renderer/color/sample code.
-- Correct Owner/Action: make diagnostics capture save/load carry the runtime authority required for current ExplainO replay, guard recompute when explicit saved roots are authoritative, and keep the old archive as an explicit strict xfail unless real recovery evidence appears.
-- Proof Surface: focused native helper tests around diagnostics/finding load state authority, `ui_app/build_tests_vsdevcmd.cmd`, runtime publish to `D:`, and `tests/test_fractal_runtime_manual_capture_repro.py` proving exact forward self-replay plus strict historical xfail.
-- Blocked Action: tweaking palette/grading constants, changing renderer semantics without a new RED, or weakening the historical pixel proof without adding actual historical pixel recovery.
+- Action ID: action-20260512-historical-reload-recovery
+- Suspected Failure Mode: the forward replay fix made new captures self-consistent but left the original archived frame/state mismatch unrecovered; the missing owner might have been archived sidecar/provenance, derived ExplainO root reconstruction, load-time defaults, capture-time executable drift, or capture-finding archive behavior.
+- Correct Owner/Action: reproduce the archived mismatch, inventory every artifact in the capture directory, trace runtime-field deltas, probe recoverable compatibility candidates, and lock the real current capture-finding route with published-runtime replay proof.
+- Proof Surface: `tests/test_fractal_runtime_manual_capture_repro.py` keeps the historical case strict xfail and now also proves current diagnostic and capture-finding archives replay through the active published `D:` runtime.
+- Blocked Action: declaring the old pixels recovered without the historical pixel assertion passing, weakening/removing the historical xfail, or changing palette/renderer behavior from a candidate that remains above the proof threshold.
