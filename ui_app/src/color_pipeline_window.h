@@ -1464,6 +1464,105 @@ inline bool IsSupportedRootBasinPaletteFunctionId(const std::string& functionId)
         functionId == "joy_root_palette";
 }
 
+inline ColorPipelineLaneState* FindMutableColorPipelineLaneState(
+    ColorPipelineWindowState* ioState,
+    const char* laneId) {
+    if (!ioState || !laneId || laneId[0] == '\0') {
+        return nullptr;
+    }
+    for (ColorPipelineLaneState& lane : ioState->lanes) {
+        if (lane.lane_id == laneId) {
+            return &lane;
+        }
+    }
+    return nullptr;
+}
+
+inline std::size_t CountEnabledColorPipelineLaneRows(const ColorPipelineLaneState& lane) {
+    std::size_t count = 0;
+    for (const ColorPipelineRowState& row : lane.rows) {
+        if (row.enabled) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+inline bool IsRootBasinPairRowAtIndex(
+    const ColorPipelineLaneState& sourceLane,
+    const ColorPipelineLaneState& paletteLane,
+    std::size_t rowIndex) {
+    return rowIndex < sourceLane.rows.size() &&
+        rowIndex < paletteLane.rows.size() &&
+        sourceLane.rows[rowIndex].function_id == "root_index" &&
+        IsSupportedRootBasinPaletteFunctionId(paletteLane.rows[rowIndex].function_id);
+}
+
+inline std::size_t CountEnabledRootBasinPairRows(
+    const ColorPipelineLaneState& sourceLane,
+    const ColorPipelineLaneState& paletteLane) {
+    const std::size_t rowCount = (std::min)(sourceLane.rows.size(), paletteLane.rows.size());
+    std::size_t count = 0;
+    for (std::size_t rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
+        if (sourceLane.rows[rowIndex].enabled &&
+            paletteLane.rows[rowIndex].enabled &&
+            IsRootBasinPairRowAtIndex(sourceLane, paletteLane, rowIndex)) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+inline bool SetColorPipelineRowEnabledFromUi(
+    ColorPipelineWindowState* ioState,
+    std::size_t laneIndex,
+    std::size_t rowIndex,
+    bool enabled) {
+    if (!ioState || laneIndex >= ioState->lanes.size()) {
+        return false;
+    }
+    ColorPipelineLaneState& lane = ioState->lanes[laneIndex];
+    if (rowIndex >= lane.rows.size()) {
+        return false;
+    }
+
+    bool changed = lane.rows[rowIndex].enabled != enabled;
+    lane.rows[rowIndex].enabled = enabled;
+
+    if (lane.lane_id == "source" || lane.lane_id == "palette") {
+        ColorPipelineLaneState* sourceLane = FindMutableColorPipelineLaneState(ioState, "source");
+        ColorPipelineLaneState* paletteLane = FindMutableColorPipelineLaneState(ioState, "palette");
+        if (sourceLane && paletteLane && IsRootBasinPairRowAtIndex(*sourceLane, *paletteLane, rowIndex)) {
+            ColorPipelineRowState& sourceRow = sourceLane->rows[rowIndex];
+            ColorPipelineRowState& paletteRow = paletteLane->rows[rowIndex];
+            if (sourceRow.enabled != enabled) {
+                sourceRow.enabled = enabled;
+                changed = true;
+            }
+            if (paletteRow.enabled != enabled) {
+                paletteRow.enabled = enabled;
+                changed = true;
+            }
+            if (!enabled && CountEnabledRootBasinPairRows(*sourceLane, *paletteLane) == 0) {
+                sourceRow.enabled = true;
+                paletteRow.enabled = true;
+                PushColorPipelineValidationMessage(ioState,
+                    "At least one root-basin Source / Palette preset pair must stay enabled.");
+                return true;
+            }
+            return changed;
+        }
+    }
+
+    if (!enabled && CountEnabledColorPipelineLaneRows(lane) == 0) {
+        lane.rows[rowIndex].enabled = true;
+        PushColorPipelineValidationMessage(ioState,
+            std::string("At least one ") + lane.label + " row must stay enabled.");
+        return true;
+    }
+    return changed;
+}
+
 inline bool IsRootBasinPairCandidateRows(
     const std::vector<const ColorPipelineRowState*>& sourceRows,
     const std::vector<const ColorPipelineRowState*>& paletteRows) {
@@ -3035,6 +3134,7 @@ inline void RenderColorPipelineWindowLane(
         if (ioState->force_open_for_automation) {
             ImGui::SetNextItemOpen(true, ImGuiCond_Always);
         }
+        const bool rowEnabledBefore = row.enabled;
 
         const ImGuiStackEditorRowChromeResult rowResult = RenderImGuiStackEditorRowChrome(rowSpec, [&]() {
             const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
@@ -3110,6 +3210,10 @@ inline void RenderColorPipelineWindowLane(
             }
         });
 
+        if (row.enabled != rowEnabledBefore) {
+            SetColorPipelineRowEnabledFromUi(ioState, laneIndex, rowIndex, row.enabled);
+            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
+        }
         if (rowResult.changed && ioInteraction) {
             ioInteraction->interacted = true;
         }

@@ -314,6 +314,53 @@ void TestRootBasinPairScheduleBridge() {
         "TestRootBasinPairScheduleBridge_MismatchedPairCountsFailClosed");
 }
 
+void TestSourcePalettePresetCheckboxesTogglePairedRows() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_SyncStartsSupported");
+    Check(SelectColorPipelineLaneFunction(&state, 0, "root_index") &&
+            SelectColorPipelineLaneFunction(&state, 2, "root_classic_palette") &&
+            AddColorPipelineLaneRow(&state, 0, "root_index") &&
+            AddColorPipelineLaneRow(&state, 2, "joy_root_palette"),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_BuildsTwoPresetPairs");
+
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_AppliesInitialPairs");
+    Check(params.color_root_basin_pair_count == 2 && params.color_pipeline.palette == ColorPalette::joy,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_InitialPairsUseLastEnabledPreset");
+
+    Check(SetColorPipelineRowEnabledFromUi(&state, 2, 1, false),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_DisablesPalettePresetRow");
+    Check(!state.lanes[0].rows[1].enabled && !state.lanes[2].rows[1].enabled,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_DisablesMatchingSourceRow");
+    Check(SetColorPipelineRowEnabledFromUi(&state, 2, 1, true),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_ReEnablesPalettePresetRow");
+    Check(state.lanes[0].rows[1].enabled && state.lanes[2].rows[1].enabled,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_ReEnablesMatchingSourceRow");
+
+    Check(SetColorPipelineRowEnabledFromUi(&state, 0, 0, false),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_DisablesSourcePresetRow");
+    Check(!state.lanes[0].rows[0].enabled && !state.lanes[2].rows[0].enabled &&
+            state.lanes[0].rows[1].enabled && state.lanes[2].rows[1].enabled,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_DisablesMatchingPaletteRowOnly");
+
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_AppliesSingleRemainingPair");
+    Check(params.color_root_basin_pair_count == 1 &&
+            params.color_pipeline.signal == ColorSignal::root_index &&
+            params.color_pipeline.palette == ColorPalette::joy,
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_RuntimeUsesRemainingPresetPair");
+
+    ClearColorPipelineValidationMessages(&state);
+    Check(SetColorPipelineRowEnabledFromUi(&state, 2, 0, false),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_LastPairDisableIsHandled");
+    Check(state.lanes[0].rows[0].enabled && state.lanes[2].rows[0].enabled && !state.validation_messages.empty(),
+        "TestSourcePalettePresetCheckboxesTogglePairedRows_LastPairStaysEnabled");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -365,6 +412,7 @@ int main() {
     TestIterationBandsLiveImportShipsBandFinish();
     TestGradingStackApplyAndLiveImport();
     TestRootBasinPairScheduleBridge();
+    TestSourcePalettePresetCheckboxesTogglePairedRows();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);
