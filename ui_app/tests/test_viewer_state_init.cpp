@@ -15,6 +15,12 @@ static bool gLoadStateHasControllerPolicy = false;
 static SidecarAutoDemoControllerPolicy gLoadedControllerPolicyStub{};
 static bool gLoadStateHasMutationHistory = false;
 static SidecarAutoDemoMutationHistory gLoadedMutationHistoryStub{};
+static bool gLoadStateHasExplicitExplainoRoots = false;
+
+bool DiagnosticsStateFileHasExplicitExplainoRoots(const std::string&, bool* outHasExplicitExplainoRoots, std::string*) {
+    if (outHasExplicitExplainoRoots) *outHasExplicitExplainoRoots = gLoadStateHasExplicitExplainoRoots;
+    return true;
+}
 
 bool LoadFindingSelectionIntoRuntime(const std::string&, ViewState*, KernelParams*,
     RenderSettings*, SidecarOrientationVector* outOrientation, bool* outHasOrientation,

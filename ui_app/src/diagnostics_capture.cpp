@@ -585,7 +585,17 @@ std::string BuildStateJson(
     js << "    \"explaino_warp_strength\": " << static_cast<double>(params.explaino_warp_strength) << ",\n";
     js << "    \"explaino_root_spread\": " << static_cast<double>(params.explaino_root_spread) << ",\n";
     js << "    \"explaino_damping\": " << static_cast<double>(params.explaino_damping) << ",\n";
-    js << "    \"explaino_root_count\": " << params.explaino_root_count << ",\n";
+    const int persistedExplainoRootCount = params.explaino_root_count < 0
+        ? 0
+        : (params.explaino_root_count > 4 ? 4 : params.explaino_root_count);
+    js << "    \"explaino_root_count\": " << persistedExplainoRootCount << ",\n";
+    js << "    \"explaino_roots\": [\n";
+    for (int index = 0; index < persistedExplainoRootCount; ++index) {
+        js << "      { \"x\": " << static_cast<double>(params.explaino_roots[index].x)
+           << ", \"y\": " << static_cast<double>(params.explaino_roots[index].y) << " }"
+           << (index + 1 < persistedExplainoRootCount ? "," : "") << "\n";
+    }
+    js << "    ],\n";
     js << "    \"explaino_cluster_radius\": " << static_cast<double>(params.explaino_cluster_radius) << ",\n";
     WriteExplainoVariantParamsJson(js, params);
     js << "    \"transcendental_func\": \"" << CaptureTranscendentalFuncId(params.transcendental_func) << "\",\n";
@@ -595,6 +605,12 @@ std::string BuildStateJson(
     for (int i = 0; i < 5; ++i) {
         if (i > 0) js << ", ";
         js << static_cast<double>(params.poly_coeffs[i]);
+    }
+    js << "],\n";
+    js << "    \"poly_coeffs_b\": [";
+    for (int i = 0; i < 5; ++i) {
+        if (i > 0) js << ", ";
+        js << static_cast<double>(params.poly_coeffs_b[i]);
     }
     js << "],\n";
     WriteColorParamsJson(js, params);

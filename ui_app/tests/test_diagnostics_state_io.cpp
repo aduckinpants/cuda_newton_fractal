@@ -677,6 +677,38 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "legacy_state_without_explicit_explaino_runtime_authority.json";
+        WriteMinimalStateWithExtraParams(statePath, "");
+
+        ViewState view{};
+        KernelParams params{};
+        params.explaino_root_count = 4;
+        params.explaino_roots[0] = {9.0f, 8.0f};
+        params.explaino_roots[3] = {7.0f, 6.0f};
+        params.poly_coeffs_b[0] = 5.0f;
+        params.poly_coeffs_b[4] = 4.0f;
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected legacy state without explicit ExplainO runtime authority to load: " << error << "\n";
+            return 1;
+        }
+        if (params.explaino_root_count != 0 ||
+            !NearlyEqual(params.explaino_roots[0].x, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_roots[0].y, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_roots[3].x, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_roots[3].y, 0.0f, 1.0e-6)) {
+            std::cerr << "Expected legacy state load to clear stale ExplainO roots when explaino_roots is absent\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.poly_coeffs_b[0], 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.poly_coeffs_b[4], 0.0f, 1.0e-6)) {
+            std::cerr << "Expected legacy state load to clear stale secondary ExplainO polynomial when poly_coeffs_b is absent\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "bad_sample_tier_state.json";
         WriteMinimalStateWithExtraParams(statePath, "", "    \"sample_tier\": \"warp_speed\"");
         std::string error;
@@ -3486,6 +3518,16 @@ int main() {
         params.color_palette_stack[1].params.blend_weight = 0.35f;
         params.color_pipeline.palette = ColorPalette::explaino_cmap;
         params.explaino_damping = 0.73f;
+        params.explaino_root_count = 4;
+        params.explaino_roots[0] = {0.125f, -0.25f};
+        params.explaino_roots[1] = {0.5f, -0.75f};
+        params.explaino_roots[2] = {-1.25f, 1.5f};
+        params.explaino_roots[3] = {1.75f, 2.0f};
+        params.poly_coeffs_b[0] = 9.0f;
+        params.poly_coeffs_b[1] = 8.0f;
+        params.poly_coeffs_b[2] = 7.0f;
+        params.poly_coeffs_b[3] = 6.0f;
+        params.poly_coeffs_b[4] = 5.0f;
         params.color_explaino_palette_seed_scale = 1.5f;
         params.color_explaino_palette_seed_phase = 0.25f;
         params.color_explaino_palette_colorfulness = 0.8f;
@@ -3534,6 +3576,8 @@ int main() {
             serializedState.find("\"color_pipeline_draft\"") == std::string::npos ||
             serializedState.find("\"color_palette_stack\"") == std::string::npos ||
             serializedState.find("\"explaino_damping\": 0.73000001907348633") == std::string::npos ||
+            serializedState.find("\"explaino_roots\"") == std::string::npos ||
+            serializedState.find("\"poly_coeffs_b\"") == std::string::npos ||
             serializedState.find("\"blend_weight\": 0.34999999403953552") == std::string::npos ||
             serializedState.find("\"blend_mode\": \"normal\"") == std::string::npos ||
             serializedState.find("\"color_grading_stack\"") == std::string::npos ||
@@ -3589,6 +3633,19 @@ int main() {
         }
         if (!NearlyEqual(roundTripParams.explaino_damping, 0.73f, 1.0e-6)) {
             std::cerr << "Expected capture-backed serialization regression to reload ExplainO damping from emitted state.json\n";
+            return 1;
+        }
+        if (roundTripParams.explaino_root_count != 4 ||
+            !NearlyEqual(roundTripParams.explaino_roots[0].x, 0.125f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.explaino_roots[0].y, -0.25f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.explaino_roots[3].x, 1.75f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.explaino_roots[3].y, 2.0f, 1.0e-6)) {
+            std::cerr << "Expected capture-backed serialization regression to reload ExplainO roots from emitted state.json\n";
+            return 1;
+        }
+        if (!NearlyEqual(roundTripParams.poly_coeffs_b[0], 9.0f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.poly_coeffs_b[4], 5.0f, 1.0e-6)) {
+            std::cerr << "Expected capture-backed serialization regression to reload secondary ExplainO polynomial coefficients from emitted state.json\n";
             return 1;
         }
         if (roundTripParams.color_palette_stack_count != 2 ||

@@ -140,7 +140,11 @@ bool LoadFindingSelectionIntoRuntime(const std::string& selectedPath,
         return false;
     }
 
-    if (IsExplainoFamily(nextView.fractal_type)) {
+    bool hasExplicitExplainoRoots = false;
+    if (!DiagnosticsStateFileHasExplicitExplainoRoots(resolvedStatePath, &hasExplicitExplainoRoots, outError)) {
+        return false;
+    }
+    if (IsExplainoFamily(nextView.fractal_type) && !hasExplicitExplainoRoots) {
         UpdateExplainoPolynomial(nextView, nextParams, nullptr);
     }
     SyncViewUiFromHp(nextView);

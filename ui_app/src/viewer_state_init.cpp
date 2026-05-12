@@ -3,6 +3,7 @@
 #define COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
+#include "diagnostics_state_io.h"
 #include "explaino_seed.h"
 #include "explaino_seed_dynamics.h"
 #include "finding_state_actions.h"
@@ -33,6 +34,19 @@ bool CliOverridesLoadedStateSnapshot(const ViewerCliArgs& cli) {
         cli.sweep_config.enabled;
     }
 
+bool CliOverridesExplainoRuntimeAuthority(const ViewerCliArgs& cli) {
+    return cli.have_fractal_type ||
+        cli.have_explaino_seed ||
+        cli.have_explaino_phase ||
+        cli.have_explaino_seed_drift ||
+        cli.have_explaino_seed_b ||
+        cli.have_explaino_mix ||
+        cli.have_explaino_warp_strength ||
+        cli.have_lambda_real ||
+        cli.have_lambda_imag ||
+        cli.sweep_config.enabled;
+}
+
 } // namespace
 
 int ApplyCliOverrides(const ViewerCliArgs& cli,
@@ -54,6 +68,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
     if (outResolvedLoadedStatePath) outResolvedLoadedStatePath->clear();
 
     bool loadedState = false;
+    bool loadedExplicitExplainoRoots = false;
 
     if (cli.have_load_state_json) {
         std::string loadError;
@@ -79,6 +94,9 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
                 &loadedColorPipelineWindow,
                 &loadedStatePath,
                 &loadError)) {
+            return 1;
+        }
+        if (!DiagnosticsStateFileHasExplicitExplainoRoots(loadedStatePath, &loadedExplicitExplainoRoots, &loadError)) {
             return 1;
         }
         loadedState = true;
@@ -115,11 +133,14 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
     if (cli.have_width) render.resolution.x = cli.width;
     if (cli.have_height) render.resolution.y = cli.height;
 
+    const bool loadedExplicitRuntimeAuthority = loadedState &&
+        loadedExplicitExplainoRoots &&
+        !CliOverridesExplainoRuntimeAuthority(cli);
     const bool needPresetDerivedFields = !loadedState || cli.have_fractal_type || cli.have_explaino_seed || cli.sweep_config.enabled;
     if (needPresetDerivedFields) {
         ApplyFractalDerivedFieldsAndSyncHp(view, params, dirty, cli.have_explaino_seed, cli.explaino_seed);
     } else {
-        if (IsExplainoFamily(view.fractal_type)) {
+        if (IsExplainoFamily(view.fractal_type) && !loadedExplicitRuntimeAuthority) {
             UpdateExplainoPolynomial(view, params, dirty);
         }
         SyncViewUiFromHp(view);
@@ -134,7 +155,7 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
     if (cli.have_lambda_real) params.lambda_real = (float)cli.lambda_real;
     if (cli.have_lambda_imag) params.lambda_imag = (float)cli.lambda_imag;
 
-    if (IsExplainoFamily(view.fractal_type)) {
+    if (IsExplainoFamily(view.fractal_type) && !loadedExplicitRuntimeAuthority) {
         UpdateExplainoPolynomial(view, params, dirty);
     }
 

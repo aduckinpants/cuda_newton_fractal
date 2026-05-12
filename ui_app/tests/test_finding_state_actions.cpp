@@ -285,6 +285,86 @@ int main() {
         }
     }
 
+
+    {
+        const fs::path findingDir = tempRoot / "explaino_finding_with_saved_roots";
+        fs::create_directories(findingDir);
+
+        const fs::path statePath = findingDir / "state.json";
+        WriteTextFile(statePath, R"({
+  "state_version": 3,
+  "fractal_type": "explaino_dual",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 0.0,
+    "lambda_imag": 0.0,
+    "explaino_seed": 6.0,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_count": 4,
+    "explaino_roots": [
+      { "x": 0.125, "y": -0.25 },
+      { "x": 0.5, "y": -0.75 },
+      { "x": -1.25, "y": 1.5 },
+      { "x": 1.75, "y": 2.0 }
+    ],
+    "poly_coeffs": [9.0, 8.0, 7.0, 6.0, 5.0],
+    "poly_coeffs_b": [4.0, 3.0, 2.0, 1.0, 0.5]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  }
+})");
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string resolvedStatePath;
+        std::string error;
+        if (!LoadFindingSelectionIntoRuntime(statePath.string(), &view, &params, &render, &resolvedStatePath, &error)) {
+            std::cerr << "Expected finding-state load with saved ExplainO roots to succeed: " << error << "\n";
+            return 1;
+        }
+        if (params.explaino_root_count != 4 ||
+            !NearlyEqual(params.explaino_roots[0].x, 0.125f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_roots[0].y, -0.25f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_roots[3].x, 1.75f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_roots[3].y, 2.0f, 1.0e-6)) {
+            std::cerr << "Expected finding-state load to preserve explicitly saved ExplainO roots\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.poly_coeffs[0], 9.0f, 1.0e-6) ||
+            !NearlyEqual(params.poly_coeffs[4], 5.0f, 1.0e-6) ||
+            !NearlyEqual(params.poly_coeffs_b[0], 4.0f, 1.0e-6) ||
+            !NearlyEqual(params.poly_coeffs_b[4], 0.5f, 1.0e-6)) {
+            std::cerr << "Expected finding-state load to preserve explicitly saved ExplainO polynomial coefficients\n";
+            return 1;
+        }
+    }
+
     {
         const fs::path findingDir = tempRoot / "explaino_finding_with_orientation";
         fs::create_directories(findingDir);

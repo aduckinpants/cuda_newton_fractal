@@ -120,6 +120,14 @@ bool LoadDiagnosticsStateFile(const std::string& path,
     ColorPipelineWindowState* outColorPipelineWindow,
     std::string* outError);
 
+bool DiagnosticsStateJsonHasExplicitExplainoRoots(const std::string& text,
+    bool* outHasExplicitExplainoRoots,
+    std::string* outError);
+
+bool DiagnosticsStateFileHasExplicitExplainoRoots(const std::string& path,
+    bool* outHasExplicitExplainoRoots,
+    std::string* outError);
+
 bool ResolveFindingStateJsonPath(const std::string& selectedPath,
     std::string* outStateJsonPath,
     std::string* outError);

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+import json
 from pathlib import Path
 import subprocess
 
@@ -38,6 +39,13 @@ def _resampling_lanczos():
     return getattr(getattr(image_module, "Resampling", image_module), "LANCZOS")
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "2026-05-11 ExplainO-Inertial archive is a known frame/state mismatch; "
+        "keep this as the historical recovery tripwire"
+    ),
+)
 def test_manual_explaino_inertial_capture_reloads_to_detailed_frame() -> None:
     image_module = pytest.importorskip("PIL.Image")
     if not MANUAL_CAPTURE_STATE.exists() or not MANUAL_CAPTURE_FRAME.exists():
@@ -67,7 +75,7 @@ def test_manual_explaino_inertial_capture_reloads_to_detailed_frame() -> None:
     assert DIAGNOSTICS_STATE_FILE.exists(), f"missing diagnostics state file: {DIAGNOSTICS_STATE_FILE}"
     assert DIAGNOSTICS_FRAME_FILE.exists(), f"missing diagnostics frame file: {DIAGNOSTICS_FRAME_FILE}"
 
-    loaded_state = __import__("json").loads(DIAGNOSTICS_STATE_FILE.read_text(encoding="utf-8"))
+    loaded_state = json.loads(DIAGNOSTICS_STATE_FILE.read_text(encoding="utf-8"))
     actual = image_module.open(BytesIO(DIAGNOSTICS_FRAME_FILE.read_bytes())).convert("RGB")
     reference = image_module.open(MANUAL_CAPTURE_FRAME).convert("RGB").resize(actual.size, _resampling_lanczos())
     actual_unique_colors = len(set(actual.getdata()))
@@ -81,3 +89,68 @@ def test_manual_explaino_inertial_capture_reloads_to_detailed_frame() -> None:
     if mean_abs_rgb >= 35.0:
         failures.append(f"reloaded frame mean_abs_rgb={mean_abs_rgb:.3f}, expected < 35.0")
     assert not failures, "\n".join(failures)
+
+
+def test_current_explaino_inertial_capture_state_replays_its_pixels(tmp_path: Path) -> None:
+    image_module = pytest.importorskip("PIL.Image")
+    if not MANUAL_CAPTURE_STATE.exists():
+        pytest.skip(f"missing manual ExplainO-Inertial seed fixture: {MANUAL_CAPTURE_STATE}")
+
+    exe_path = _active_runtime_exe()
+    DIAGNOSTICS_STATE_FILE.unlink(missing_ok=True)
+    DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+
+    first = subprocess.run(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(MANUAL_CAPTURE_STATE),
+            "--width",
+            "256",
+            "--height",
+            "256",
+            "--capture-diagnostic",
+        ],
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert first.returncode == 0, first.stderr or first.stdout
+    assert DIAGNOSTICS_STATE_FILE.exists(), f"missing diagnostics state file: {DIAGNOSTICS_STATE_FILE}"
+    assert DIAGNOSTICS_FRAME_FILE.exists(), f"missing diagnostics frame file: {DIAGNOSTICS_FRAME_FILE}"
+
+    emitted_state_path = tmp_path / "state.json"
+    emitted_frame_path = tmp_path / "frame.bmp"
+    emitted_state_path.write_bytes(DIAGNOSTICS_STATE_FILE.read_bytes())
+    emitted_frame_path.write_bytes(DIAGNOSTICS_FRAME_FILE.read_bytes())
+
+    emitted_state = json.loads(emitted_state_path.read_text(encoding="utf-8"))
+    assert len(emitted_state["params"].get("explaino_roots", [])) == 4
+    assert len(emitted_state["params"].get("poly_coeffs_b", [])) == 5
+
+    DIAGNOSTICS_STATE_FILE.unlink(missing_ok=True)
+    DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+    replay = subprocess.run(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(emitted_state_path),
+            "--width",
+            "256",
+            "--height",
+            "256",
+            "--capture-diagnostic",
+        ],
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert replay.returncode == 0, replay.stderr or replay.stdout
+    assert DIAGNOSTICS_FRAME_FILE.exists(), f"missing replay frame file: {DIAGNOSTICS_FRAME_FILE}"
+
+    first_image = image_module.open(BytesIO(emitted_frame_path.read_bytes())).convert("RGB")
+    replay_image = image_module.open(BytesIO(DIAGNOSTICS_FRAME_FILE.read_bytes())).convert("RGB")
+    assert first_image.size == replay_image.size
+    assert _image_mean_abs_rgb(first_image, replay_image) == 0.0

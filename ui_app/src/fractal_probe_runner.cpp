@@ -361,7 +361,12 @@ bool BuildBaseState(const FractalProbeRequest& request, ProbeState* outState, st
                 if (outError) *outError = loadError;
                 return false;
             }
-            if (IsExplainoFamily(state.view.fractal_type)) {
+            bool hasExplicitExplainoRoots = false;
+            if (!DiagnosticsStateFileHasExplicitExplainoRoots(request.base_state_load_path, &hasExplicitExplainoRoots, &loadError)) {
+                if (outError) *outError = loadError;
+                return false;
+            }
+            if (IsExplainoFamily(state.view.fractal_type) && !hasExplicitExplainoRoots) {
                 UpdateExplainoPolynomial(state.view, state.params, nullptr);
             }
             SyncViewUiFromHp(state.view);

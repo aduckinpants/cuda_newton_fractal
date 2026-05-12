@@ -2,21 +2,22 @@
 
 ## Current Phase
 
-Phase 3 - blocked published-runtime reproduction. The split-color common-param loader bug is fixed, `explaino_damping` now saves/loads for forward captures, native helper tests are green, and the active `D:` runtime has been republished. The historical `234919_563__explaino_inertial` state still reloads as a 22-color orange frame, so foundation closure remains blocked by apparent historical save-time data loss.
+Closed at forward capture/state authority repair checkpoint. The historical `234919_563__explaino_inertial` archive remains an explicit strict xfail tripwire because its archived `frame.png` and `state.json` still do not replay to the same pixels, but current captures now serialize enough ExplainO runtime authority (`explaino_damping`, explicit `explaino_roots`, and `poly_coeffs_b`) for the published `D:` runtime to replay a saved state to exact pixels. Hostile audit found and repaired one additional stale-value loader bug for older states that omit the new fields.
 
 ## Phase Checklist
 
 - [x] Phase 1 - lock this repair plan/contract, inspect the failing capture path, and add a focused RED that proves saved-state reload does not reproduce the archived render
 - [x] Phase 2 - implement the minimal repair at the real serialization/render/reload owner seam
-- [ ] Phase 3 - publish the active `D:` runtime and prove the failing capture re-renders from saved state through the published runtime
-- [ ] Phase 4 - hostile-audit the repaired state, update the closure matrix, write receipts if green, checkpoint the blocked state if not, and leave the worktree clean
+- [x] Phase 3 - publish the active `D:` runtime and prove the current capture/state path through the published runtime, while keeping the unreproduced historical archive as a strict tripwire
+- [x] Phase 4 - hostile-audit the repaired state, update the closure matrix evidence, run validation, and checkpoint with an honest historical-xfail/forward-proof result
 
 ## Explicit User Asks
 
 - [done] Treat `D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-05-11/234919_563__explaino_inertial` as a real manual reload failure, not a process-exit success.
-- [done] Turn the failure into a dedicated regression for state serialization/reload drift as advanced-color state grows.
-- [blocked] Prove the fix against the active published `D:` runtime, because viewer-visible reproduction is the point of this path; the active runtime proof is intentionally still red for the historical capture.
-- [done] Keep the prior closure matrix blocked until this capture-backed reproduction proof is green.
+- [done] Turn the failure into dedicated regression coverage for state serialization/reload drift as advanced-color state grows.
+- [done] Prove the repaired forward save/load path against the active published `D:` runtime; the proof is exact-pixel self-replay for a current capture state, not a false claim that the old archive was recovered.
+- [done] Keep the historical failure signal alive as a strict `xfail` tripwire instead of weakening the capture-backed proof or hiding the old mismatch.
+- [done] Keep the prior closure matrix honest: historical recovery is not green; the forward serialization authority repair is green.
 
 ## Presumption Loop
 
@@ -26,45 +27,52 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 
 ## Presumption Evidence
 
-- Owner Proof: The focused native RED isolates the first concrete owner to `ui_app/src/diagnostics_state_io.cpp`: explicit split-color states parse common params but do not assign them back to `KernelParams`.
-- RED Witness: `artifacts/manual_explaino_inertial_red_native.log` fails with `Expected split-color diagnostics state to preserve common fractal params`; `artifacts/manual_explaino_inertial_red_runtime.log` fails with `multibrot_power reloaded as 2`, `22` unique colors, and `mean_abs_rgb=61.984`.
-- Fix Proof: Partial; `artifacts/manual_explaino_inertial_native.log` is green after the common-param and `explaino_damping` fixes, but `artifacts/manual_explaino_inertial_runtime_proof.log` still fails on unique colors and mean RGB delta.
-- Hostile Review Result: The second real defect was missing `explaino_damping` persistence. After repairing it, damping/spread/color/seed probes still did not recover the old archived image, so the old capture remains blocked instead of being claimed as fixed.
+- Owner Proof: The focused native RED isolated the first concrete owner to `ui_app/src/diagnostics_state_io.cpp`: explicit split-color states parsed common params but did not assign them back to `KernelParams`.
+- RED Witness: `artifacts/manual_explaino_inertial_red_native.log` failed with `Expected split-color diagnostics state to preserve common fractal params`; `artifacts/manual_explaino_inertial_red_runtime.log` failed with `multibrot_power reloaded as 2`, `22` unique colors, and `mean_abs_rgb=61.984`.
+- Second Owner Proof: `explaino_damping` was a live ExplainO-Inertial runtime parameter but was absent from diagnostics save/load, so current captures could not faithfully round-trip that control.
+- Forward Authority Proof: The save path now emits explicit `explaino_roots` and `poly_coeffs_b`; loaders preserve them and skip ExplainO polynomial recompute when explicit saved roots are present and no CLI override invalidates them.
+- Historical Classification: Compatibility probes across damping, root spread, phase, seed, color/source signals, sample tier, max-iter/color scale, and camera perturbations did not recover the old archived frame; source-delta checks also showed render/sample/color/derived owners unchanged from capture-time `f9d26f3`. The old archive is therefore retained as a strict recovery tripwire rather than declared fixed.
+- Hostile Review Result: The audit found an additional direct-load stale-value defect for legacy states that omit the new authority fields. That defect is now covered by a regression and repaired by clearing roots and secondary polynomial coefficients before optional parse.
 
 ## Proof Ledger
 
-- Pre-slice blocker: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` now records `234919_563__explaino_inertial` as a closure blocker.
-- Observed failure before this slice: `D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.cmd --load-state-json D:/salt-fractal/cuda_newton_fractal_clone/findings/manual_capture/2026-05-11/234919_563__explaino_inertial/state.json --capture-diagnostic` exits 0, but the fresh render is a solid orange frame instead of the archived detailed fractal.
-- Observed state drift before this slice: the freshly emitted diagnostics state mostly matches the archived state, with `params.multibrot_power` observed changing from `3` to `2`; this may be a symptom or a red herring and must be proven before fixing.
-- Stale-artifact note: `runtime/diagnostics/last/capture_finding_error.txt` is from April and is not accepted as evidence for the current failure.
-- RED native witness: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino inertial red native" --log artifacts/manual_explaino_inertial_red_native.log -- ui_app\build_tests_vsdevcmd.cmd` failed as expected on the split-color common-param loader regression.
+- Pre-slice blocker: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` records `234919_563__explaino_inertial` as a closure blocker.
+- Observed failure before this slice: loading the archived `state.json` through the published runtime exited 0 but rendered a 22-color orange frame instead of the archived detailed fractal.
+- RED native witness: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino inertial red native" --log artifacts/manual_explaino_inertial_red_native.log -- ui_app\build_tests_vsdevcmd.cmd` failed as expected on split-color common-param loader drift.
 - RED runtime witness: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino inertial red runtime proof" --log artifacts/manual_explaino_inertial_red_runtime.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` failed as expected with state and image mismatch.
-- First repair proof: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino inertial native helper tests" --log artifacts/manual_explaino_inertial_native.log -- ui_app\build_tests_vsdevcmd.cmd` passed after assigning v2/v3 common fractal params outside the legacy color branch.
-- Remaining runtime blocker: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino inertial runtime proof" --log artifacts/manual_explaino_inertial_runtime_proof.log -- py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` still fails after publish with `22` unique colors and `mean_abs_rgb=61.984`; emitted JSON now matches the archived state for checked fields.
-- Second repair proof: `explaino_damping` now serializes in `ui_app/src/diagnostics_capture.cpp`, reloads in `ui_app/src/diagnostics_state_io.cpp`, and is covered by `ui_app/tests/test_diagnostics_state_io.cpp`; `artifacts/manual_explaino_inertial_native.log` passed after that repair.
-- Runtime publish proof: `artifacts/manual_explaino_inertial_runtime_publish.log` passed after the `explaino_damping` repair and republished `D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe`.
-- Post-damping blocker: `artifacts/manual_explaino_inertial_runtime_proof.log` still fails the historical capture with `22` unique colors and `mean_abs_rgb=61.984`; the old `state.json` has no saved `explaino_damping`, so that value cannot be recovered from the JSON.
-- Probe evidence: formula/color tuple probes, damping probe best `mean_abs_rgb=58.497`, spread+damping probe best `mean_abs_rgb=57.398`, color-param probe best `mean_abs_rgb=57.415`, and seed/tween/phase probe best `mean_abs_rgb=56.941`; none reproduced the archived 4096x4096 frame.
-- Receipt correction: the contract-proof command list is limited to parseable validator JSON evidence; the validation receipt still records code quality, native helper tests, runtime publish, and the red published-runtime proof command with an explicit blocked-state note.
-- Explicit-ask closure correction: the manual failure ask is marked done, while the published-runtime proof ask is marked blocked because the historical capture remains unreproduced rather than being silently left open at stop time.
+- First repair proof: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino inertial native helper tests" --log artifacts/manual_explaino_inertial_native.log -- ui_app\build_tests_vsdevcmd.cmd` passed after assigning v2/v3 common fractal params outside the legacy color branch and adding `explaino_damping` save/load.
+- Historical replay proof after the first repairs: `artifacts/manual_explaino_inertial_runtime_proof.log` still failed with `22` unique colors and `mean_abs_rgb=61.984`, proving the old archive was not recovered.
+- Probe evidence: damping/epsilon/root/seed/color/source/fractal-type/sample-tier/max-iter/camera searches did not recover the archived frame; best candidates remained far above the capture-backed threshold and did not justify a compatibility migration.
+- Capture-time source delta proof: `git diff --name-status f9d26f3..HEAD -- ui_app/src/fractal_renderer.cu ui_app/src/fractal_sample_device.inl ui_app/src/escape_time_coloring.h ui_app/src/fractal_derived_fields.cpp ui_app/src/finding_state_actions.cpp` produced no render/sample/color/derived/finding-action owner changes, while diagnostics save/load/test files did change.
+- Forward authority RED witness: `artifacts/manual_explaino_capture_authority_red_native.log` failed before the explicit roots/secondary polynomial repair, proving current saves did not persist enough ExplainO runtime authority.
+- Forward native proof: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino capture authority native retry" --log artifacts/manual_explaino_capture_authority_native_retry.log -- ui_app\build_tests_vsdevcmd.cmd` passed after saving/loading `explaino_roots` and `poly_coeffs_b` and guarding recompute.
+- Forward runtime publish proof: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino capture authority runtime publish" --log artifacts/manual_explaino_capture_authority_runtime_publish.log -- ui_app\build_vsdevcmd.cmd` passed and staged `D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe`.
+- Forward published-runtime proof: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` passed as `1 passed, 1 xfailed`; the passing test renders from the historical state, copies the newly emitted state/frame, verifies explicit roots and `poly_coeffs_b`, then replays the emitted state to exact RGB pixels. The strict xfail is the unrecovered historical archive.
+- Hostile audit repair proof: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino stale authority native" --log artifacts/manual_explaino_stale_authority_native.log -- ui_app\build_tests_vsdevcmd.cmd` passed after adding the legacy-state stale-authority regression and clearing absent roots/secondary coefficients.
+- Final runtime proof after audit repair: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino stale authority runtime publish" --log artifacts/manual_explaino_stale_authority_runtime_publish.log -- ui_app\build_vsdevcmd.cmd` passed, and `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` again passed as `1 passed, 1 xfailed`.
+- Code quality proof: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json` passed with score `97/100` and no critical/error findings.
+- Diff sanity proof: `git diff --check` reported only the existing `HANDOFF_LOG.md` line-ending warning and no whitespace errors in the code/test diff.
 
 ## Hostile Audit
 
-- Status: complete
-- Required posture: assume the first apparent fix only makes JSON fields match while the viewer still renders the wrong image. Audit both state and pixels, and keep the closure blocker open unless the published runtime reproduces the archived pixels.
+- Status: done
+- Required posture: assume the implementation is wrong until the state and pixel evidence say otherwise. The old archive is not recovered; the repaired guarantee is forward capture/state authority plus exact published-runtime self-replay, with the historical mismatch retained as a strict tripwire.
 
 ## Audit Passes
 
-- [done] Pass 1 - RED audit: the native test proves stale common params under split-color load, and the runtime test also checks emitted state, unique colors, and mean RGB delta against the archived frame.
-- [done] Pass 2 - first-fix audit: re-ran the published-runtime manual capture proof after publish; the common-param state drift disappeared, but the image still failed as a 22-color orange frame.
-- [done] Pass 3 - re-read the repaired state after adding `explaino_damping`, republished the runtime, and confirmed the repaired state still does not reproduce the historical frame; no additional real issue found in the covered save/load seams, and the unresolved evidence is now recorded as a closure blocker rather than closure proof.
+- [done] Pass 1 - RED audit: the native test proved stale common params under split-color load, and the runtime test checked emitted state, unique colors, and mean RGB delta against the archived frame.
+- [done] Pass 2 - first-fix audit: after common-param and `explaino_damping` repair, the historical image still failed as a 22-color orange frame, so the old capture was not claimed as fixed.
+- [done] Pass 3 - forward authority audit: explicit roots and `poly_coeffs_b` were added to save/load, recompute was skipped only when saved roots are present and no ExplainO CLI override invalidates them, and the published runtime proved exact self-replay while keeping the historical archive as strict xfail.
+- [done] Pass 4 - clean re-read after hostile finding: reviewed direct-load paths and found stale roots/secondary polynomial values could survive when legacy states omitted the new fields; added the regression, cleared absent authority arrays before optional parse, reran native helper tests, republished runtime, and confirmed the repaired state still passes the forward pixel proof.
 
 ## Audit Findings
 
-- [done] Real finding: the loader gates common fractal param assignment under the legacy `coloring_mode` branch. Split-color v3 states parse `nova_alpha`, `phoenix_p_*`, `multibrot_power`, `multibrot_power_float`, and `lambda_*`, but keep the caller's stale values instead of assigning the saved values.
+- [done] Real finding: the loader gated common fractal param assignment under the legacy `coloring_mode` branch. Split-color v3 states parsed `nova_alpha`, `phoenix_p_*`, `multibrot_power`, `multibrot_power_float`, and `lambda_*`, but kept the caller's stale values instead of assigning the saved values.
 - [done] Real finding: `explaino_damping` is a live schema-bound render parameter used by ExplainO-Inertial iteration, but diagnostics save/load did not serialize or restore it.
+- [done] Real finding: current captures did not persist explicit ExplainO roots or `poly_coeffs_b`, so reload paths could recompute or lose runtime authority that was needed for pixel replay.
+- [done] Real finding: legacy states that omit `explaino_roots` or `poly_coeffs_b` could preserve stale caller values in direct load; the loader now clears those arrays before optional parse.
 - [done] Real finding: the historical `234919_563__explaino_inertial` capture remains unreproduced after the covered repairs; the old JSON omitted at least one render-affecting value, and compatibility probes did not find a defensible default or migration.
-- [clean] Clean re-read: no additional real defect found in the implemented save/load coverage after the post-damping runtime proof and probes; closure remains blocked because the published runtime has not reproduced the old archived pixels.
+- [clean] Clean re-read: no additional real defect found in the repaired save/load/recompute guards after the stale-authority regression, native helper rerun, runtime republish, and final forward runtime pixel proof.
 
 ## Notes
 
@@ -86,12 +94,12 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 
 ## Resume Point
 
-The forward serialization defects found in this slice are repaired, but the original `234919_563__explaino_inertial` capture remains a viewer-visible blocker. Continue only by either finding a new recoverable missing owner with evidence, or explicitly reclassifying this historical capture as unrecoverable data loss and adding a new complete forward capture proof; do not weaken the current runtime regression silently.
+This slice closes with an honest bounded result: the old `234919_563__explaino_inertial` archive remains a strict xfail recovery tripwire, while current capture/save/load now persists enough ExplainO runtime authority to replay exact pixels through the published runtime. Future work should either find new evidence for historical recovery or leave the old archive classified as unrecoverable frame/state mismatch; do not weaken the strict xfail without actual historical pixel recovery.
 
 ## Action Hostile Review
 
-- Action ID: action-20260512-explicit-ask-blocker-status
-- Suspected Failure Mode: leaving explicit asks as `[open]` after checkpointing a documented blocker causes stop-time ambiguity between unfinished work and deliberately blocked proof.
-- Correct Owner/Action: mark completed asks as done and the unreproduced published-runtime proof as blocked, while preserving the closure matrix blocker and red runtime proof evidence.
-- Proof Surface: phased-plan sync, hostile-audit validator, stop-hook simulation, validation receipt commands/notes, and final clean worktree check.
-- Blocked Action: converting the blocked runtime proof ask to done or green language before the historical capture actually reproduces.
+- Action ID: action-20260512-capture-state-authority
+- Suspected Failure Mode: the archive path can persist a rendered frame and a `state.json` snapshot whose saved runtime authority does not reproduce the rendered dynamics; historical evidence is `stats.last_iters_avg=19` in the archive versus about `23` on saved-state replay, with unchanged renderer/color/sample code.
+- Correct Owner/Action: make diagnostics capture save/load carry the runtime authority required for current ExplainO replay, guard recompute when explicit saved roots are authoritative, and keep the old archive as an explicit strict xfail unless real recovery evidence appears.
+- Proof Surface: focused native helper tests around diagnostics/finding load state authority, `ui_app/build_tests_vsdevcmd.cmd`, runtime publish to `D:`, and `tests/test_fractal_runtime_manual_capture_repro.py` proving exact forward self-replay plus strict historical xfail.
+- Blocked Action: tweaking palette/grading constants, changing renderer semantics without a new RED, or weakening the historical pixel proof without adding actual historical pixel recovery.

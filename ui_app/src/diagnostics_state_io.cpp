@@ -121,6 +121,58 @@ bool GetOptionalBool(const json_min::Value& object, const char* key, bool* outVa
     return true;
 }
 
+bool ParseFixedFloatArray(const json_min::Value& value, const char* fieldName, float* outValues, size_t expectedCount, std::string* outError) {
+    if (!value.is_array()) {
+        if (outError) *outError = std::string(fieldName) + " must be an array";
+        return false;
+    }
+    if (value.as_array().size() != expectedCount) {
+        if (outError) *outError = std::string(fieldName) + " must contain exactly " + std::to_string(expectedCount) + " numbers";
+        return false;
+    }
+    for (size_t index = 0; index < expectedCount; ++index) {
+        const json_min::Value& entry = value.as_array()[index];
+        if (!entry.is_number()) {
+            if (outError) *outError = std::string(fieldName) + " must contain only numbers";
+            return false;
+        }
+        outValues[index] = static_cast<float>(entry.as_number());
+    }
+    return true;
+}
+
+bool ParseOptionalExplainoRoots(const json_min::Value& paramsObject, int rootCount, KernelParams* outParams, bool* outPresent, std::string* outError) {
+    if (outPresent) *outPresent = false;
+    const json_min::Value* rootsValue = paramsObject.get("explaino_roots");
+    if (!rootsValue) return true;
+    if (outPresent) *outPresent = true;
+    if (!rootsValue->is_array()) {
+        if (outError) *outError = "explaino_roots must be an array";
+        return false;
+    }
+    if (rootCount < 0 || rootCount > 4) {
+        if (outError) *outError = "explaino_root_count must be within [0, 4] when explaino_roots is present";
+        return false;
+    }
+    if (rootsValue->as_array().size() != static_cast<size_t>(rootCount)) {
+        if (outError) *outError = "explaino_roots length must match explaino_root_count";
+        return false;
+    }
+    for (int index = 0; index < rootCount; ++index) {
+        const json_min::Value& rootValue = rootsValue->as_array()[static_cast<size_t>(index)];
+        if (!rootValue.is_object()) {
+            if (outError) *outError = "explaino_roots entries must be objects";
+            return false;
+        }
+        double x = 0.0;
+        double y = 0.0;
+        if (!GetRequiredNumber(rootValue, "x", &x, outError)) return false;
+        if (!GetRequiredNumber(rootValue, "y", &y, outError)) return false;
+        outParams->explaino_roots[index] = {static_cast<float>(x), static_cast<float>(y)};
+    }
+    return true;
+}
+
 bool SidecarOrientationFieldsAreFinite(const SidecarOrientationVector& orientation) {
     return std::isfinite(orientation.field_embedding_stats) &&
            std::isfinite(orientation.slime_energy_delta) &&
@@ -1287,6 +1339,46 @@ bool IsFindingStateRelativePathAllowed(const std::filesystem::path& relativePath
 
 } // namespace
 
+bool DiagnosticsStateJsonHasExplicitExplainoRoots(const std::string& text,
+    bool* outHasExplicitExplainoRoots,
+    std::string* outError) {
+    if (outError) outError->clear();
+    if (!outHasExplicitExplainoRoots) {
+        if (outError) *outError = "DiagnosticsStateJsonHasExplicitExplainoRoots requires non-null output pointer";
+        return false;
+    }
+    *outHasExplicitExplainoRoots = false;
+
+    json_min::ParseResult parseResult = json_min::Parse(text);
+    if (!parseResult.error.empty()) {
+        if (outError) *outError = "JSON parse failed: " + parseResult.error;
+        return false;
+    }
+    if (!parseResult.value.is_object()) {
+        if (outError) *outError = "State JSON root must be an object";
+        return false;
+    }
+
+    const json_min::Value* paramsObject = nullptr;
+    if (!GetRequiredObject(parseResult.value, "params", &paramsObject, outError)) return false;
+    const json_min::Value* rootsValue = paramsObject->get("explaino_roots");
+    if (!rootsValue) return true;
+    if (!rootsValue->is_array()) {
+        if (outError) *outError = "explaino_roots must be an array";
+        return false;
+    }
+    *outHasExplicitExplainoRoots = true;
+    return true;
+}
+
+bool DiagnosticsStateFileHasExplicitExplainoRoots(const std::string& path,
+    bool* outHasExplicitExplainoRoots,
+    std::string* outError) {
+    std::string text;
+    if (!ReadTextFile(std::filesystem::path(path), &text, outError)) return false;
+    return DiagnosticsStateJsonHasExplicitExplainoRoots(text, outHasExplicitExplainoRoots, outError);
+}
+
 bool LoadDiagnosticsStateJson(const std::string& text,
     ViewState* ioView,
     KernelParams* ioParams,
@@ -1515,6 +1607,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double vortexStrength = nextParams.vortex_strength;
     double tensionStrength = nextParams.tension_strength;
     const json_min::Value* polyCoeffsArray = nullptr;
+    const json_min::Value* polyCoeffsBArray = nullptr;
     if (!ParseIntField(*paramsObject, "max_iter", &maxIter, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "epsilon", &epsilon, outError)) return false;
     if (!GetRequiredNumber(*paramsObject, "exposure", &exposure, outError)) return false;
@@ -1557,10 +1650,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "vortex_strength", &vortexStrength, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "tension_strength", &tensionStrength, nullptr, outError)) return false;
     if (!GetRequiredArray(*paramsObject, "poly_coeffs", &polyCoeffsArray, outError)) return false;
-    if (polyCoeffsArray->as_array().size() != 5) {
-        if (outError) *outError = "poly_coeffs must contain exactly 5 numbers";
-        return false;
-    }
+    polyCoeffsBArray = paramsObject->get("poly_coeffs_b");
 
     if (!ParsePolyKind(rawPolyKind, &nextParams.poly_kind)) {
         if (outError) *outError = "Unknown poly_kind: " + std::to_string(rawPolyKind);
@@ -1661,6 +1751,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.explaino_root_spread = static_cast<float>(explainoRootSpread);
     nextParams.explaino_damping = static_cast<float>(explainoDamping);
     nextParams.explaino_root_count = explainoRootCount;
+    for (Float2& root : nextParams.explaino_roots) {
+        root = {0.0f, 0.0f};
+    }
+    if (!ParseOptionalExplainoRoots(*paramsObject, nextParams.explaino_root_count, &nextParams, nullptr, outError)) return false;
     nextParams.joy_coupling = static_cast<float>(joyCoupling);
     nextParams.fold_coupling = static_cast<float>(foldCoupling);
     nextParams.bell_coupling = static_cast<float>(bellCoupling);
@@ -1875,14 +1969,11 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         }
     }
 
-    for (size_t index = 0; index < 5; ++index) {
-        const json_min::Value& coeff = polyCoeffsArray->as_array()[index];
-        if (!coeff.is_number()) {
-            if (outError) *outError = "poly_coeffs must contain only numbers";
-            return false;
-        }
-        nextParams.poly_coeffs[index] = static_cast<float>(coeff.as_number());
+    if (!ParseFixedFloatArray(*polyCoeffsArray, "poly_coeffs", nextParams.poly_coeffs, 5, outError)) return false;
+    for (float& coeff : nextParams.poly_coeffs_b) {
+        coeff = 0.0f;
     }
+    if (polyCoeffsBArray && !ParseFixedFloatArray(*polyCoeffsBArray, "poly_coeffs_b", nextParams.poly_coeffs_b, 5, outError)) return false;
 
     int width = 0;
     int height = 0;
