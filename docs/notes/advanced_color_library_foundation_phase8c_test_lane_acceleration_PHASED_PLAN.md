@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - checkpoint and receipt closeout after the measured proof-ladder narrowing, hostile audit, and workflow/script validation landed cleanly.
+Complete - checkpoint commit `8e2b27b` and machine proof receipts closed the measured proof-ladder acceleration slice without opening the next feature row.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open the bounded tooling slice, measure the current native/runtime proof rails from this session, and classify the cheapest truthful ladder for grading/color-pipeline owner work
 - [x] Phase 2 - land the smallest truthful helper-lane narrowing and documentation updates without weakening authoritative closure proof
-- [ ] Phase 3 - remeasure, hostile-audit, validate the workflow/script surfaces, checkpoint cleanly, and write machine proof receipts
+- [x] Phase 3 - remeasure, hostile-audit, validate the workflow/script surfaces, checkpoint cleanly, and write machine proof receipts
 
 ## Explicit User Asks
 
@@ -43,6 +43,8 @@ Phase 3 - checkpoint and receipt closeout after the measured proof-ladder narrow
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` -> `OK (3 plan(s), source=dirty)`
   - `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8c_test_lane_acceleration_hostile_audit.json` -> `ok=true`
   - `py -3.14 -m pytest tests/test_agent_workflow_tools.py tests/test_viewer_host_runtime_pytest_lane.py tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/advanced_color_library_foundation_phase8c_test_lane_acceleration.junit.xml` -> `123 passed`
+- Checkpointed: `8e2b27b` / `ck:f886a2b1` recorded the measured proof-ladder acceleration slice with the new focused native selectors, paused weighted-blend continuity update, and workflow/runtime-guard validation on the committed state.
+- Machine proof receipts were written for `8e2b27b3a90392c75ebda55686540a6cdf00d8bf`.
 
 ## Hostile Audit
 
@@ -89,7 +91,7 @@ Phase 3 - checkpoint and receipt closeout after the measured proof-ladder narrow
 
 ## Resume Point
 
-Open the phase8c tooling contract first, then measure the full native helper sweep, runtime publish, and the already-supported focused runtime witness before narrowing the native helper lane.
+Closed. The next feature-row resume remains weighted blend, but it should now start from the measured phase8c command ladder instead of rediscovering the full-helper choke point.
 
 ## Action Hostile Review
 
@@ -97,5 +99,5 @@ Open the phase8c tooling contract first, then measure the full native helper swe
 - Suspected Failure Mode: the slice may create a faster but weaker helper lane, misclassify closure-only proof as routine iteration proof, or leave future agents with ambiguous command choices.
 - Correct Owner/Action: measure the current rails first, add only the narrow native selector(s) that still exercise the current grading/color-pipeline owner seams, pin the selector coverage in tests/docs, and keep runtime publish plus published-runtime proof explicitly at the closure boundary.
 - Proof Surface: measured command timings from this session, focused workflow/script pytest, the narrowed native helper lane itself, contract validation, phased-plan sync, and hostile-audit validation.
-- Outcome: pending
+- Outcome: complete - measured timings recorded, focused native selectors landed, workflow/runtime-guard validation passed, checkpoint commit `8e2b27b` landed, and machine proof receipts were written.
 - Blocked Action: none.
