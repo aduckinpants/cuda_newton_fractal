@@ -65,6 +65,35 @@ Then report:
 - clean/dirty state
 - whether this is a fresh session or crash/carryover recovery
 
+BOOTSTRAP EXIT RULE
+
+Bootstrap is not the task. Bootstrap is only the precondition for the task.
+
+Immediately after the bootstrap read/command pass, you must do exactly one of these two things:
+1. begin concrete repo-grounded execution on the historical archive blocker
+2. declare one specific blocker that makes concrete execution impossible right now
+
+Anything else is noncompliance.
+
+Explicitly forbidden immediately after bootstrap:
+- reviewing this startup prompt instead of doing the task
+- "verifying whether the prompt needs corrections"
+- writing a plan-only response
+- writing status-only notes
+- creating memory files or handoff notes before real task work
+- turning the request into documentation review
+- asking whether to preserve or refine the prompt
+
+If you catch yourself evaluating this prompt instead of executing the blocker lane, stop and return to the blocker lane immediately.
+
+The first substantive action after bootstrap must be one of:
+- run the runtime repro witness for the historical archive
+- inspect the current repro test in detail
+- inspect the historical archive artifacts in detail
+- inspect the diagnostics save/load owner seam
+- inspect the capture/archive owner seam
+- explicitly re-lock and continue the existing manual inertial repair slice if the repo state requires that before mutation
+
 SOURCE-OF-TRUTH RULE
 
 Chat history is not authority.
@@ -153,6 +182,7 @@ It must answer these questions explicitly:
 - Did I confuse current capture replay with historical archive recovery?
 - Did I treat a workflow green as a product green?
 - Did I summarize beyond the proof?
+- Did I waste the session by reviewing the startup prompt instead of executing the blocker lane?
 
 CLOSURE REQUIREMENTS
 
@@ -191,6 +221,21 @@ Your first response must contain:
 
 Do not give a broad plan before the bootstrap read/command pass is complete.
 Do not soften the language.
+
+SECOND RESPONSE RULE
+
+Your second response must not be a plan about this prompt.
+
+Your second response must do one of these:
+- show the concrete execution step you are taking on the blocker lane and why that step is the next proving move
+- or state the one specific blocker that prevents concrete execution right now
+
+Forbidden second responses:
+- "I am verifying the prompt"
+- "I am checking whether this note needs corrections"
+- "Here is the plan for using this prompt"
+- "No repo change is needed"
+- any response whose main purpose is evaluating the startup prompt instead of the historical archive blocker
 ```
 
 ## Usage Notes
