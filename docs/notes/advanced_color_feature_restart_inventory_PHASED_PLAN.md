@@ -2,13 +2,14 @@
 
 ## Current Phase
 
-Phase 3 complete - the durable restart inventory is written, hostile-reviewed as a future-session resume surface, and validated as a docs-only slice so future sessions can resume one feature topic at a time without reconstructing state from hook churn.
+Phase 4 complete - the durable restart inventory is still the restart surface, but it is now repaired to reflect the user's new sprint priority: generic Source composition via weighted blend is the next core-feature lane, while the historical manual archive is tracked as a separate compatibility issue rather than the active sprint blocker.
 
 ## Phase Checklist
 
 - [x] Phase 1 - lock a docs-only restart-inventory slice and restate the user ask as a durable repo deliverable
 - [x] Phase 2 - re-read the checked-in feature authority, code anchors, tests, handoff chain, and branch history to separate actual product work from workflow-only churn
 - [x] Phase 3 - write the detailed restart inventory with shipped state, blockers, deferred work, and prioritized one-topic-at-a-time TODO lanes; validate the docs slice and checkpoint it cleanly
+- [x] Phase 4 - repair the restart inventory priority order and blocker language so the next sprint lane is weighted-blend Source composition rather than historical archive recovery
 
 ## Explicit User Asks
 
@@ -17,6 +18,7 @@ Phase 3 complete - the durable restart inventory is written, hostile-reviewed as
 - [done] Organize the remaining work into distinct prioritized TODO lists.
 - [done] Make the restart surface good enough that future sessions can stop, return here, and resume one topic area at a time.
 - [done] Treat the current hook and anti-lie churn as separate from real feature progress.
+- [done] Stop treating early-beta historical archive compatibility as the active sprint blocker once the user reprioritized the sprint back to core pipeline feature work.
 
 ## Presumption Loop
 
@@ -26,9 +28,9 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 
 ## Presumption Evidence
 
-- The branch is clean, but the active locked contract is still the anti-lie workflow slice rather than a product feature slice.
+- The branch is clean, but restart authority is only useful if it follows the user's current sprint intent instead of freezing an older blocker order forever.
 - The branch history after `4ec49c8` is workflow-only churn; no product-code files changed after that checkpoint.
-- The umbrella foundation plan, closure-control plan, closure matrix, and manual inertial repair plan all agree that the foundation is not closed and that the historical `234919_563__explaino_inertial` archive remains the current blocker.
+- The older umbrella foundation and closure-control surfaces were still describing the historical `234919_563__explaino_inertial` archive as the active blocker even after the user reprioritized the sprint back to generic Source composition and remaining core pipeline work.
 - The current code and tests still expose the shipped bounded advanced-color spine directly: ordered Shape stacks, ordered Grading stacks, Palette RGB blend stacks, and bounded root-basin Source/Palette pairs.
 
 ## Proof Ledger
@@ -37,6 +39,7 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 - History reread: `git log --name-only 4ec49c8..HEAD` proved that every later commit is workflow-only and that `4ec49c8` is the last product-code checkpoint on the branch.
 - Code anchors: `ui_app/src/fractal_types.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/diagnostics_state_io.cpp`, and the advanced-color tests were re-read to anchor shipped runtime behavior to live code.
 - Deliverable target: `docs/notes/advanced_color_feature_restart_inventory.md` is the durable restart note for future one-topic sessions.
+- Priority repair: the restart note now promotes weighted-blend generic Source composition to the next core lane, keeps remaining pipeline/operator work ahead of archive UX/polish, and downgrades the historical manual archive to a separate compatibility issue.
 - Validation: `artifacts/validation/advanced_color_feature_restart_inventory_contract.json` reports the contract schema valid.
 - Validation: `artifacts/validation/viewer_host_assert_phased_plan_sync.json` was regenerated green for this phased plan.
 - Validation: `artifacts/validation/advanced_color_feature_restart_inventory_hostile_audit.json` now reports the hostile-audit validator green on the finished restart-inventory slice.
@@ -44,19 +47,21 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 ## Hostile Audit
 
 - Status: done
-- Required posture: assume the branch story is misleading until the inventory proves which commits were real feature work, which surfaces are genuinely shipped, and which open tasks are still blockers or explicit deferrals.
+- Required posture: assume the branch story is misleading until the inventory proves which commits were real feature work, which surfaces are genuinely shipped, and which open tasks are the active sprint lanes versus separate compatibility follow-ups.
 
 ## Audit Passes
 
 - [done] Pass 1 - audit the current branch, active contract, and handoff chain to separate workflow-only churn from product-code checkpoints.
 - [done] Pass 2 - audit the checked-in foundation plans and live code/test anchors to map the shipped advanced-color spine and the real closure blocker.
-- [done] Pass 3 - audit the final restart inventory for false priority, mixed-topic TODOs, or any place where workflow repairs are still presented as feature progress; the repaired note keeps the historical blocker first, keeps deferred work separate from blockers, and keeps each future lane single-topic.
+- [done] Pass 3 - audit the final restart inventory for false priority, mixed-topic TODOs, or any place where workflow repairs are still presented as feature progress; the repaired note keeps deferred work separate from blockers and keeps each future lane single-topic.
+- [done] Pass 4 - re-audit the restart surface after the user reprioritized the sprint; promote generic Source composition weighted blend to the next core lane, keep remaining pipeline/operator lanes ahead of archive UX, and demote the historical manual archive from active sprint blocker to separate compatibility work.
 
 ## Audit Findings
 
 - [done] Real continuity defect found: the clean branch head and recent checkpoint noise make it non-obvious that the last product-code commit is older than the current workflow head, so feature state had to be rebuilt from the authority surfaces and post-`4ec49c8` diff history.
 - [done] Real status defect found: without a separate restart note, the umbrella foundation plan, closure matrix, manual inertial repair plan, and recent hook-work entries force the reader to assemble feature state by hand across multiple docs.
-- [done] Clean re-read result: no additional contradiction or false priority remained after the final pass; the restart note keeps workflow churn out of product progress, keeps the manual inertial archive as the only current blocker, and keeps deferred Source/Grading work explicitly outside the shipped claim.
+- [done] Real priority defect found: the restart note kept the manual historical archive first even after the user explicitly reprioritized the sprint toward generic Source composition, remaining core pipeline operators, and later ExplainO follow-ons.
+- [done] Clean re-read result: no additional contradiction or false priority remained after the final pass; the restart note now keeps workflow churn out of product progress, promotes weighted-blend Source composition to the next core lane, and keeps the historical archive issue as separate compatibility work rather than the active sprint blocker.
 
 ## Notes
 
@@ -68,9 +73,9 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 - Non-goals for this slice:
   - do not edit runtime code
   - do not change the closure matrix itself
-  - do not reopen or close the manual inertial blocker by documentation alone
+  - do not reopen or close the historical manual archive issue by documentation alone
   - do not fold multiple future feature topics into one fake "next step"
 
 ## Resume Point
 
-Checkpoint the validated restart inventory cleanly. After that, future work should start from the new inventory note instead of reconstructing state from hook history or mixed foundation docs.
+Checkpoint the validated restart inventory cleanly. After that, future work should start from the new inventory note and the weighted-blend Source-composition startup packet instead of reconstructing state from hook history or reopening archive archaeology by inertia.

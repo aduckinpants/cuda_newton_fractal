@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 - closure-control matrix and proof/defer ledger. Grading stack composition, capture-backed diagnostics serialization repair, and Palette blend stack are checkpointed, but foundation closure is now blocked by the manual `234919_563__explaino_inertial` capture failing to visually reproduce from its archived `state.json`. The shipped composition spine still includes bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks. Generic Source signal composition and remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) remain explicit post-matrix forks unless Adam reclassifies them as closure blockers.
+Phase 8 - closure-control matrix and proof/defer ledger. Grading stack composition, capture-backed diagnostics serialization repair, and Palette blend stack are checkpointed. The shipped composition spine still includes bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks. The next active sprint-core lane is now generic Source composition via weighted blend. Remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) remain explicit post-matrix forks. The historical manual `234919_563__explaino_inertial` archive mismatch stays real, but it is now tracked as separate historical compatibility work instead of the default next sprint blocker.
 
 ## Phase Checklist
 
@@ -14,7 +14,7 @@ Phase 8 - closure-control matrix and proof/defer ledger. Grading stack compositi
 - [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
 - [x] Phase 6 - build the shipped multi-function composition spine through bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks while deferring generic Source signal mixing until scalar mixer semantics are locked
 - [x] Phase 7 - record remaining bounded Grading runtime authority as separate owner-proof forks or explicit deferrals; `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, and Balance/Void are not part of the shipped closure claim
-- [ ] Phase 8 - close the four-category foundation with the proof/defer matrix, D: gallery/runtime captures where required, and explicit extension rules
+- [ ] Phase 8 - land generic Source composition via weighted blend, then close the four-category foundation with the proof/defer matrix, D: gallery/runtime captures where required, and explicit extension rules
 - [ ] Phase 9 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
 ## Explicit User Asks
@@ -33,7 +33,7 @@ Phase 8 - closure-control matrix and proof/defer ledger. Grading stack compositi
 
 ## Presumption Loop
 
-The controlling product risk is now closure drift after the shipped composition slices. Bounded root-basin pairs, Shape stack composition, Grading stack composition, capture-backed diagnostics serialization, and Palette blend stack have all checkpointed. The next falsifiable task is not another opportunistic runtime row; it is proving the checked-in closure/defer boundary so future agents cannot treat deferred Source mixing or unowned Grading inventory as shipped work.
+The controlling product risk is now closure drift after the shipped composition slices. Bounded root-basin pairs, Shape stack composition, Grading stack composition, capture-backed diagnostics serialization, and Palette blend stack have all checkpointed. The next falsifiable task is not archive archaeology by inertia; it is landing the missing generic Source composition seam under a locked weighted-blend contract and then closing the checked-in closure/defer boundary without treating deferred Source mixing or unowned Grading inventory as shipped work.
 
 ## Presumption Evidence
 
@@ -137,7 +137,7 @@ The controlling product risk is now closure drift after the shipped composition 
 - Checkpointed: `ck:679b2bc3` closed the Grading stack composition sub-slice with bounded runtime ownership, live import/apply, ordered evaluation, diagnostics persistence, capture/archive serialization, reset clearing, and tests for `contrast_lift`, `phase_finish`, and `band_finish` stacks without exposing new Grade inventory rows.
 - Checkpointed: `ck:2f9efd8f` closed the capture-backed diagnostics serialization repair, proving low-resolution manual `explaino_joy` state load -> capture serialization -> reload and high-precision save output.
 - Checkpointed: `ck:44faf037` closed Palette blend stack with bounded runtime ownership, explicit RGB blend math, diagnostics/reset persistence, phase-wheel saturation repair, native/code-quality/runtime proof, and hostile-audit repairs.
-- Active closure-control proof: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` is now the checked-in proof/defer matrix for feature-closure decisions and records the manual `234919_563__explaino_inertial` reproduction failure as the current blocker.
+- Active closure-control proof: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` is now the checked-in proof/defer matrix for feature-closure decisions, records generic Source composition as the active next core lane, and keeps the manual `234919_563__explaino_inertial` mismatch as separate historical compatibility work.
 
 ## Hostile Audit
 
@@ -194,10 +194,11 @@ The controlling product risk is now closure drift after the shipped composition 
 
 ## Resume Point
 
-Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, not from older Palette-next text. The next implementation fork is now the manual `234919_563__explaino_inertial` capture reproduction repair. After that blocker is repaired, choose explicitly from the matrix:
-1. Source signal composition semantics, only after a scalar mixer contract is locked.
-2. Remaining Grading owner proofs (`basin_default` lane-retention, `neutral_finish`, `tone_map_finish`, `grade.glow`, Balance/Void), one bounded owner-proof slice at a time.
+Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, not from older Palette-next text. The next implementation fork is now generic Source composition via weighted blend. After that lane closes, choose explicitly from the matrix:
+1. Remaining Grading owner proofs (`basin_default` lane-retention, `neutral_finish`, `tone_map_finish`, `grade.glow`), one bounded owner-proof slice at a time.
+2. `balance_void_grade` as its own bounded grading-operator slice.
 3. Foundation closure with explicit deferrals if the matrix is accepted as the merge boundary.
+4. Historical archive compatibility only if it is explicitly reclassified back into active sprint work.
 
-Do not claim generic Source composition, unowned Grading inventory, or foundation closure as shipped work unless a later checked-in contract and proof ledger replaces this boundary and closes the manual capture reproduction blocker.
+Do not claim generic Source composition, unowned Grading inventory, or foundation closure as shipped work unless a later checked-in contract and proof ledger replaces this boundary with runtime-backed Source-composition proof and truthful deferral/closure state.
 

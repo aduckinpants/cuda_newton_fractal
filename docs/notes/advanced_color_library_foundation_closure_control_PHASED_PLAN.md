@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - complete for truthful closure-control checkpoint. Foundation closure is blocked by the manual `explaino_inertial` reload reproduction failure until a repair slice proves the archived capture re-renders from its saved `state.json`.
+Phase 4 - complete for truthful closure-control checkpoint. The closure-control matrix remains the authority for shipped versus deferred advanced-color state, but the later sprint reprioritization means the next active core-feature lane is now generic Source composition via weighted blend. The historical `explaino_inertial` reload mismatch remains a real historical compatibility issue rather than the default next sprint blocker.
 
 ## Phase Checklist
 
@@ -17,15 +17,15 @@ Phase 4 - complete for truthful closure-control checkpoint. Foundation closure i
 - [done] Aim the advanced-color foundation toward actual closure after the prior false-done failure.
 - [done] Make status proof-backed in checked-in repo surfaces, not dependent on chat memory or agent optimism.
 - [done] Keep unproven Source composition and remaining Grading inventory honest as blockers or explicit deferrals.
-- [done] Treat the manual `D:\salt-fractal\cuda_newton_fractal_clone\findings\manual_capture\2026-05-11\234919_563__explaino_inertial` reload failure as a real closure blocker instead of checkpointing the closure matrix as green.
+- [done] Treat the manual `D:\salt-fractal\cuda_newton_fractal_clone\findings\manual_capture\2026-05-11\234919_563__explaino_inertial` reload failure as a real historical compatibility issue instead of silently pretending it is fixed.
 
 ## Presumption Loop
 
-The controlling risk is closure drift, not missing Palette implementation. Grading stack composition, the capture-backed diagnostics serialization repair, and Palette blend stack have all checkpointed, but older plan surfaces still say Palette blend is the next feature slice. That stale authority is a real workflow bug because future agents use checked-in plans as the resume surface. This slice therefore repairs the truth surface before any more runtime implementation.
+The controlling risk is closure drift, not missing Palette implementation. Grading stack composition, the capture-backed diagnostics serialization repair, and Palette blend stack have all checkpointed, but older plan surfaces still said Palette blend was next and then later stale surfaces overcorrected into archive-first routing. That stale authority is a real workflow bug because future agents use checked-in plans as the resume surface. This slice therefore repairs the truth surface before any more runtime implementation.
 
 The bounded hypothesis is that a docs-only closure-control slice can make the feature state hard to overclaim: every advanced-color row/control must be classified as shipped runtime-backed, shipped but intentionally single-row or bounded, deliberately deferred and unselectable, or an open blocker. Anything not classified stays outside closure. This slice does not implement Source signal mixers, new Grading owners, Balance/Void, or UI runtime code.
 
-The new manual `explaino_inertial` capture report does not broaden this workflow-only contract into a code repair. It changes the truthful closure status: the slice deliverable is now a blocked closure matrix plus a durable handoff to a dedicated runtime repair slice. The repair will need C++/test/runtime scope and published-runtime proof under a new contract.
+The manual `explaino_inertial` capture report did not broaden this workflow-only contract into a code repair. It changed the truthful closure status at the time: the slice delivered a blocked closure matrix plus a durable handoff to a dedicated runtime repair slice. Later sprint reprioritization changed only lane priority, not the factual status of that old archive mismatch.
 
 ## Presumption Evidence
 
@@ -46,7 +46,7 @@ The new manual `explaino_inertial` capture report does not broaden this workflow
 - Green rail: `artifacts/validation/advanced_color_library_foundation_closure_control_contract.json` records the closure-control contract schema valid.
 - Green rail: `artifacts/validation/viewer_host_assert_phased_plan_sync.json` records synchronized dirty phased plans after the stale-text repairs.
 - Green rail: `artifacts/validation/advanced_color_library_foundation_closure_control_hostile_audit.json` records a complete hostile audit with five passes, real stale-documentation findings, and repaired-state evidence.
-- Blocker found after the first green docs rails: manual `234919_563__explaino_inertial` reload does not visually reproduce from the archived `state.json`; closure status is downgraded until a runtime repair slice proves capture-backed reproduction.
+- Historical issue recorded after the first green docs rails: manual `234919_563__explaino_inertial` reload does not visually reproduce from the archived `state.json`; the matrix records that mismatch honestly, but later sprint planning no longer treats it as the default next lane.
 - Pending proof for this slice: refreshed docs validators, receipts, checkpoint, and clean worktree.
 
 ## Hostile Audit
@@ -61,7 +61,7 @@ The new manual `explaino_inertial` capture report does not broaden this workflow
 - [done] Pass 3 - re-read the repaired docs and find a second stale-evidence defect: the umbrella and older Phase 6 plan still described Grading/Palette stack owners as missing after they had checkpointed.
 - [done] Pass 4 - re-read the repaired docs and stale-text search results; no additional real defect or workflow mistake found beyond historical RED lines that explicitly say before implementation.
 - [done] Pass 5 - clean re-audit the final repaired state after contract validation and phased-plan sync; no additional real issue found.
-- [done] Pass 6 - re-audit after Adam's manual `234919_563__explaino_inertial` report; reproduced that `--capture-diagnostic` exits 0 while the frame does not match, rejected the April `capture_finding_error.txt` as stale, and downgraded closure status to blocked pending a runtime repair slice.
+- [done] Pass 6 - re-audit after Adam's manual `234919_563__explaino_inertial` report; reproduced that `--capture-diagnostic` exits 0 while the frame does not match, rejected the April `capture_finding_error.txt` as stale, and recorded the mismatch as a real historical compatibility issue.
 
 ## Audit Findings
 
@@ -69,7 +69,7 @@ The new manual `explaino_inertial` capture report does not broaden this workflow
 - [done] Closure risk found: Source composition and remaining Grading inventory were fuzzy future work. The closure matrix now marks generic Source signal mixing and unowned Grading rows as explicit deferred forks unless Adam reclassifies them as blockers.
 - [done] Real stale-evidence defect found: after the headline resume repair, older presumption text still said Grading/Palette stack owners did not exist. The repaired docs now name the real shipped `color_grading_stack` and `color_palette_stack` boundary while leaving generic Source mixing deferred.
 - [done] Clean re-audit evidence: repaired-state grep found no remaining Palette-next handoff text; the remaining `no color_grading_stack` hits are historical RED/proof lines that explicitly describe pre-implementation failures. Contract validation and phased-plan sync are green after the repair.
-- [done] Real closure blocker found: the manual `234919_563__explaino_inertial` archived frame does not reproduce from its saved `state.json`; the fresh headless reload emits a full-frame mismatch despite exit 0. The closure matrix now blocks foundation closure pending a dedicated capture-reproduction repair.
+- [done] Real historical compatibility issue found: the manual `234919_563__explaino_inertial` archived frame does not reproduce from its saved `state.json`; the fresh headless reload emits a full-frame mismatch despite exit 0. The closure matrix records that issue explicitly without forcing every later sprint lane to reopen it first.
 
 ## Notes
 
@@ -88,7 +88,7 @@ The new manual `explaino_inertial` capture report does not broaden this workflow
 
 ## Resume Point
 
-Checkpoint the truthful closure-control matrix as blocked, then open a dedicated code/test/runtime repair slice for the manual `234919_563__explaino_inertial` capture reproduction failure. Do not claim foundation closure until that repair proves the archived frame can be reproduced from the saved state.
+Use the truthful closure-control matrix as the shipped/deferred boundary, then open the next active core-feature lane on generic Source composition via weighted blend. Keep the manual `234919_563__explaino_inertial` mismatch in its separate historical compatibility lane unless Adam explicitly reprioritizes it again. Do not claim foundation closure while active core lanes are still unshipped or while the historical mismatch is falsely described as recovered.
 
 ## Action Hostile Review
 

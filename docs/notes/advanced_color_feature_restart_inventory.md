@@ -10,11 +10,12 @@ Use this note only to recover broad product context or to find the first bounded
 
 When the repo already has a newer real handoff for the same topic, that newer handoff plus the active slice plan become the launch authority instead.
 
-Current live example:
+Current live examples:
 
 - the generic first-lane startup prompt and this restart inventory are no longer the right launch surface for manual ExplainO work
 - the latest real launch authority is the current manual slice plan plus the latest relevant `HANDOFF_LOG.md` closeout for that slice
 - today that means `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md` plus `ck:20260512-serializer-rail`, not a reset back to the original `Priority 0` archaeology prompt
+- the next core-feature launch authority is no longer the historical archive lane by default; it is the weighted-blend generic Source composition lane until a newer real handoff replaces that startup surface
 
 It is intentionally not a workflow status page. It answers four questions only:
 
@@ -28,9 +29,8 @@ It is intentionally not a workflow status page. It answers four questions only:
 ## 1. Current Branch Truth
 
 - Branch: `feature/advanced-color-pipeline-draft-editor-reframe`
-- Current `HEAD`: `bed3310`
-- Current active locked contract: `manual_explaino_inertial_reload_repair`
-- Current worktree state: clean
+- Last reread checkpoint for this note: `82d666c`
+- Live session state must still be rechecked with bootstrap commands before using this note as launch authority
 
 Important continuity facts:
 
@@ -214,70 +214,53 @@ These are not inferred; they are locked by tests or code:
 
 ---
 
-## 3. What Is Blocked Right Now
+## 3. Historical Compatibility Issue
 
-There is one real closure blocker, and it is not a hook problem.
+The old manual archive mismatch is still real, but it is no longer the active sprint-core blocker.
 
-### P0 Blocker - historical manual archive `234919_563__explaino_inertial`
+### Historical issue - manual archive `234919_563__explaino_inertial`
 
 Current truthful status:
 
 - current capture-diagnostic and capture-finding replays are self-consistent
 - the historical archived frame is still not reproducible from the saved artifacts
-- foundation closure is blocked until that is repaired or explicitly reclassified as unrecoverable historical data loss
+- this is separate historical compatibility work, not the default next sprint lane in a moving beta surface
 - the latest bounded follow-up on this same topic is not “restart archaeology from zero”; it is the serializer-owner fast-rail follow-up checkpointed at `ck:20260512-serializer-rail`
 
 Authority surfaces:
 
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md:5)
-- [advanced_color_library_foundation_closure_control_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md:5)
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md:55)
-- [manual_explaino_inertial_reload_repair_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md:5)
-
-Actual landed forward-authority repair:
-
-- `explaino_damping` is persisted
-- explicit `explaino_roots` are persisted
-- `poly_coeffs_b` is persisted
-- legacy omitted authority is cleared instead of leaving stale values alive
-
-Code anchors:
-
-- [fractal_types.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/fractal_types.h:372)
-- [fractal_types.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/fractal_types.h:375)
-- [fractal_types.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/fractal_types.h:383)
-- [diagnostics_state_io.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_state_io.cpp:1643)
-- [diagnostics_state_io.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_state_io.cpp:1752)
-- [diagnostics_state_io.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_state_io.cpp:1976)
+- [manual_explaino_inertial_reload_repair_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+- [diagnostics_state_io.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_state_io.cpp)
+- [diagnostics_capture.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_capture.cpp)
+- [tests/test_fractal_runtime_manual_capture_repro.py](/C:/code/cuda_newton_fractal_clone/tests/test_fractal_runtime_manual_capture_repro.py)
 
 What is still not true:
 
 - the old archive has not been visually recovered
-- the foundation is not closable yet
+- the old archive is not a trustworthy replay witness
 - this is not a “maybe fixed” state
 
 ---
 
-## 4. What Is Deferred, Not Blocked
+## 4. What Is Deferred, Not Shipped Yet
 
 These are real planned/spec'd surfaces, but they are explicitly not shipped today.
 
-### Deferred Source work
-
-- generic Source composition semantics
+### Generic Source composition
 
 Current meaning:
 
-- there is no chosen scalar mixer contract
-- no generic multi-Source runtime claim exists
-- work must not start as opportunistic code without a semantics-first slice
+- weighted blend is now the chosen first mixer contract for the next bounded implementation lane
+- no generic multi-Source runtime claim exists yet
+- work must not start as opportunistic code without the checked-in weighted-blend slice authority
 
 Authority:
 
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md:202)
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md:48)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md:198)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md:42)
 
-### Deferred Grading work
+### Remaining defined pipeline/operator work
 
 - `neutral_finish`
 - `tone_map_finish`
@@ -310,7 +293,7 @@ Ignore these when reconstructing product status:
 Why:
 
 - none of that changed runtime advanced-color behavior
-- none of that changed the manual historical archive blocker
+- none of that changed the shipped bounded advanced-color spine
 - all of it happened after the last product-code checkpoint
 
 The cleanest seam is:
@@ -330,17 +313,17 @@ These were broader asks in the foundation planning thread. This is their current
 
 Status:
 
-- partially satisfied and shipped inside the current bounded foundation
+- partially satisfied and still being completed inside the current bounded foundation
 
 What is true:
 
-- the initial shipped Source, Shape, Palette, and Grading rows listed in the closure matrix are real
+- the shipped Source, Shape, Palette, and Grading rows listed in the closure matrix are real
 - they are descriptor-backed and runtime-backed within the currently proven boundaries
 
 What is not true:
 
 - the broader inventory is not fully shipped just because it appears in planning docs
-- deferred Grading rows and generic Source composition are still outside the shipped boundary
+- deferred rows and generic Source composition are not shipped yet
 
 ### Stronger module boundaries and reusable core
 
@@ -376,12 +359,13 @@ What is not true:
 
 Status:
 
-- still blocked
+- not currently claimed
 
 Why:
 
-- the historical manual archive blocker is unresolved
+- active sprint-core lanes are still unfinished
 - deferred Source and Grading work remain explicitly outside the current closure claim
+- historical archive compatibility is tracked separately rather than as the default next lane
 
 ---
 
@@ -389,129 +373,57 @@ Why:
 
 This is the one-topic-at-a-time work list. Each lane is intentionally bounded so a single session can focus on one topic area without dragging three others behind it.
 
-### Priority 0 - Manual historical archive blocker
+### Priority 0 - Generic Source composition via weighted blend
 
 Goal:
 
-- decide the truth about `234919_563__explaino_inertial`
+- ship the first real generic multi-Source composition model for the reusable pipeline core
 
-Allowed outcomes:
+Why this is first now:
 
-- real recovery of the historical frame from defensible saved-state authority
-- explicit classification as unrecoverable historical data loss, with a product-facing archive/viewer fallback accepted instead
-
-Do first because:
-
-- this is the only checked-in closure blocker
-- every foundation-closure claim is invalid until this is resolved or explicitly reclassified
-
-Owner surfaces:
-
-- [manual_explaino_inertial_reload_repair_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md)
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-- [diagnostics_state_io.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_state_io.cpp)
-- [diagnostics_capture.cpp](/C:/code/cuda_newton_fractal_clone/ui_app/src/diagnostics_capture.cpp)
-- [tests/test_fractal_runtime_manual_capture_repro.py](/C:/code/cuda_newton_fractal_clone/tests/test_fractal_runtime_manual_capture_repro.py)
-
-Bounded TODOs:
-
-1. Re-run the strict historical repro from the existing repair plan.
-2. Verify whether any additional archived authority exists outside the current artifact set.
-3. If no new authority exists, stop guessing at rendering/color migrations.
-4. Decide between:
-   - a bounded product fallback for unreplayable historical captures
-   - explicit acceptance that this archive is unrecoverable historical data loss
-5. Update the closure matrix accordingly.
-
-Proof to require before calling it done:
-
-- strict runtime witness for the historical archive, either green or explicitly reclassified
-- updated closure matrix
-- updated manual repair plan
-- no “maybe fixed” language
-
-Stop point:
-
-- either the old archive replays truthfully, or the repo explicitly says it is historical data loss and switches to the chosen product fallback
-
-Start from:
-
-- [manual_explaino_inertial_reload_repair_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md)
-
-### Priority 1 - Foundation closure decision after the blocker
-
-Goal:
-
-- close or explicitly defer the advanced-color foundation truthfully
-
-Do this only after Priority 0.
-
-Owner surfaces:
-
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
-- [advanced_color_library_foundation_closure_control_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md)
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-
-Decision fork:
-
-1. If the historical blocker is repaired or explicitly reclassified, decide whether the current closure matrix is acceptable as the foundation boundary.
-2. If yes, close the foundation with explicit deferred lanes still deferred.
-3. If no, promote one deferred lane to blocker status and open that one next.
-
-Proof to require before calling it done:
-
-- closure-control docs all agree
-- no stale “next slice” text survives
-- blocker/deferred boundaries are explicit
-- closure is either receipted or still blocked, not ambiguous
-
-Start from:
-
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-
-### Priority 2 - Generic Source composition semantics
-
-Goal:
-
-- decide whether multi-Source composition is actually wanted, and if so, define semantics before code
-
-Why not before Priority 0:
-
-- it is deferred, not blocking
-- it is a larger semantic design lane than the current blocker
+- this is the next missing core composition seam
+- the user explicitly reprioritized the sprint back to core feature correctness over historical back-compat
+- this is a prerequisite for finishing the general composition pattern before later Balance/Void and ExplainO follow-ons
 
 Owner surfaces:
 
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
 - [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+- [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 - [color_pipeline_core.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_core.h)
 - [color_pipeline_window.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_window.h)
+- [fractal_types.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/fractal_types.h)
+- [escape_time_coloring.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/escape_time_coloring.h)
 
 Bounded TODOs:
 
-1. Write the semantics contract first.
-2. Choose the exact operator model:
-   - weighted blend
-   - max/min
-   - modulation
-   - ordered stack behavior
-   - another explicit rule
-3. Define UI/runtime expectations and failure cases.
-4. Only then open implementation.
+1. Lock weighted blend as the first generic Source mixer semantics.
+2. Add a real Source stack owner analogous to Shape / Palette / Grading stacks.
+3. Keep `root_index` out of the generic Source stack and leave root-basin pairing separate.
+4. Add live bridge, runtime math, diagnostics persistence, archive persistence, and reset/default proof for multi-Source rows.
+5. Prove the lane through runtime-backed tests, not only draft/editor behavior.
 
-Not allowed:
+Proof to require before calling it done:
 
-- “just wire multiple Source rows live and see what happens”
+- weighted multi-Source runtime witness
+- live import/apply proof
+- diagnostics and archive persistence proof
+- reset/default proof
+- explicit proof that `root_index` remains pair-only
 
 Stop point:
 
-- a semantics contract exists with testable expectations, or the lane is explicitly deferred again without code churn
+- generic Source composition is runtime-real for the bounded shipped Source set, or the slice stops at a truthful blocked owner seam without claiming it shipped
 
-### Priority 3 - Remaining Grading owner-proof rows
+Start from:
+
+- [gpt54_vscode_source_composition_weighted_blend_startup_prompt.md](/C:/code/cuda_newton_fractal_clone/docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md)
+
+### Priority 1 - Remaining defined pipeline/operator sets
 
 Goal:
 
-- ship any remaining Grading inventory one bounded owner-proof row at a time
+- finish the remaining bounded pipeline/operator work one owner-proof slice at a time
 
 Candidate order:
 
@@ -519,12 +431,6 @@ Candidate order:
 2. `neutral_finish`
 3. `tone_map_finish`
 4. `grade.glow`
-5. Balance/Void
-
-Why this is separate:
-
-- these are not all one slice
-- each row needs owner proof, controls, persistence, reset/default behavior, and runtime proof
 
 Owner surfaces:
 
@@ -534,15 +440,111 @@ Owner surfaces:
 - [escape_time_coloring.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/escape_time_coloring.h)
 - [color_pipeline_window.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_window.h)
 
-Not allowed:
+Proof to require before calling it done:
 
-- bundling multiple unowned grading rows into one “finish the rest” session
+- one operator/row per slice
+- real runtime-backed controls and math
+- persistence/reset/default proof
+- runtime publish/probe proof
+
+Start from:
+
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+
+### Priority 2 - Balance/Void grading operator
+
+Goal:
+
+- ship `balance_void_grade` as a real reusable grading operator after the generic composition and remaining defined pipeline/operator work are in place
+
+Owner surfaces:
+
+- [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+- [color_pipeline_core.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_core.h)
+- [escape_time_coloring.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/escape_time_coloring.h)
+- [color_pipeline_window.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_window.h)
+
+Bounded TODOs:
+
+1. Use the checked-in parameter pack direction:
+   - `balance_void`
+   - `chroma_tension`
+   - `accent_bias`
+2. Keep it generic and reusable across families.
+3. Do not fuse it with ExplainO family geometry work.
 
 Stop point:
 
-- one row, one owner-proof slice, one runtime-backed result
+- one owner-proof grading slice closes truthfully, or the lane stops blocked without pretending the operator shipped
 
-### Priority 4 - Product polish on already-shipped advanced-color behavior
+### Priority 3 - ExplainO-BalanceVoid / ExplainO-all follow-on
+
+Goal:
+
+- move from the reusable pipeline core into the later ExplainO family expansion only after the generic composition and operator lanes above are real
+
+Current meaning:
+
+- this is a later family track, not the next core pipeline slice
+- it should not hitch a ride on Source composition or Balance/Void grading implementation
+
+Owner surfaces:
+
+- [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+
+Stop point:
+
+- a separate family-track slice opens truthfully with neutral-default axis rules, or it stays deferred without code churn
+
+### Priority 4 - Foundation closure decision after core lanes
+
+Goal:
+
+- close or explicitly defer the advanced-color foundation truthfully after the chosen core lanes are actually shipped
+
+Owner surfaces:
+
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+- [advanced_color_library_foundation_closure_control_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+
+Decision fork:
+
+1. Accept the current bounded beta foundation after the new core lanes.
+2. Promote one additional deferred lane if the user explicitly wants it before closure.
+3. Keep historical archive compatibility separate unless the user later reclassifies it again.
+
+Stop point:
+
+- closure is either explicit and receipted or still deferred, not ambiguous
+
+### Priority 5 - Historical archive compatibility / archive UX
+
+Goal:
+
+- preserve an honest path for the unreplayable historical archive without treating it as the active sprint-core lane
+
+This lane should only open after the active core pipeline lanes above are no longer the priority.
+
+Possible bounded outcomes:
+
+1. viewer/archive UI explicitly marks “image preserved, runtime replay unavailable”
+2. archive surfaces show preserved PNG and notes without implying deterministic replay
+3. capture docs stop treating that archive as a silent replay candidate
+
+Owner surfaces:
+
+- archive/viewer UI code
+- capture/archive docs
+- manual inertial repair plan
+
+Stop point:
+
+- the product has an honest user-facing story for unreplayable historical captures
+
+### Priority 6 - Product polish on already-shipped advanced-color behavior
 
 Goal:
 
@@ -567,48 +569,25 @@ Stop point:
 
 - concrete UX bug fixed with no scope broadening into new row/category work
 
-### Priority 5 - Explicit archive/viewer UX for unreplayable historical captures
-
-Goal:
-
-- give the product an honest path for historical captures that cannot reproduce from archived state
-
-This lane should only open if Priority 0 concludes the old archive is genuinely unrecoverable.
-
-Possible bounded outcomes:
-
-1. viewer/archive UI explicitly marks “image preserved, runtime replay unavailable”
-2. archive surfaces show preserved PNG and notes without implying deterministic replay
-3. closure matrix and capture docs stop treating that archive as a silent replay candidate
-
-Owner surfaces:
-
-- archive/viewer UI code
-- capture/archive docs
-- closure matrix and manual inertial repair plan
-
-Stop point:
-
-- the product has an honest user-facing story for unreplayable historical captures
-
 ---
 
 ## 8. Recommended Single-Session Operating Rule
 
 If you resume from this note, do exactly one of these at a time:
 
-1. the manual historical archive blocker
-2. the foundation closure decision
-3. Source composition semantics
-4. one specific remaining Grading row
-5. polish on already-shipped behavior
-6. archive/viewer UX for unreplayable historical captures
+1. generic Source composition via weighted blend
+2. one specific remaining pipeline/operator lane
+3. Balance/Void grading
+4. ExplainO-BalanceVoid / ExplainO-all follow-on
+5. foundation closure decision
+6. historical archive compatibility / archive UX
+7. polish on already-shipped behavior
 
 Do not mix:
 
-- blocker repair plus new feature row work
-- Source semantics plus Grading owner proof
-- product work plus workflow/hook hardening
+- Source composition plus unrelated Grading or family-track work
+- active core feature work plus workflow/hook hardening
+- historical archive compatibility plus new pipeline/operator implementation
 
 If a session starts drifting, stop and restate which one topic lane is active.
 
@@ -629,7 +608,7 @@ For product-state re-entry, start with:
 
 1. [advanced_color_feature_restart_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_feature_restart_inventory.md)
 2. [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-3. [manual_explaino_inertial_reload_repair_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md)
+3. [gpt54_vscode_source_composition_weighted_blend_startup_prompt.md](/C:/code/cuda_newton_fractal_clone/docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md)
 
 ---
 
@@ -637,8 +616,8 @@ For product-state re-entry, start with:
 
 If you want the fastest path back to truthful feature velocity:
 
-1. Open one bounded slice on the historical `234919_563__explaino_inertial` archive blocker.
-2. Either recover it or formally classify it as unrecoverable historical data loss with an accepted product fallback.
-3. Only then decide whether the foundation closes or whether one deferred lane is promoted into the next active topic.
+1. Open one bounded slice on generic Source composition via weighted blend.
+2. Then land the remaining defined pipeline/operator lanes one bounded owner-proof slice at a time.
+3. Only after that move on to Balance/Void and the later ExplainO family track.
 
-That is the shortest path that reduces uncertainty instead of creating more of it.
+That is the shortest path back to truthful core feature velocity instead of reopening historical compatibility work by inertia.

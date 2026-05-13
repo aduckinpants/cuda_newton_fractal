@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "contract_id": "gpt54_vscode_source_composition_weighted_blend_startup_prompt",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/gpt54_vscode_source_composition_weighted_blend_startup_prompt.contract.json",
+    "docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt_PHASED_PLAN.md",
+    "docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "write one paste-ready GPT-5.4 VS Code startup prompt for the generic Source composition weighted-blend implementation lane",
+    "make the anti-lie rule blunt and explicit, including that any agent is assumed to be a liar until machine proof says otherwise",
+    "bind the prompt to generic Source composition via weighted blend while keeping root_index pair-only and keeping Balance/Void, ExplainO-BalanceVoid, ExplainO-all, and archive UX out of scope",
+    "repair stale restart and closure authority so the historical manual archive is no longer the active sprint-core blocker for this lane"
+  ],
+  "forbidden_operator_prompts": [
+    "soften the anti-lie rule into generic caution language",
+    "merge manual archive recovery, hook work, or unrelated feature lanes into the same startup prompt",
+    "let the startup prompt rely on chat memory instead of checked-in repo authority",
+    "leave generic Source composition semantics ambiguous after weighted blend was chosen"
+  ],
+  "required_defaults": {
+    "single_paste_ready_prompt_required": "required",
+    "anti_lie_rule_is_blunt": "required",
+    "single_topic_scope_lock_required": "required",
+    "runtime_code_changes": "forbidden"
+  },
+  "forbidden_defaults": {
+    "softened_lie_definition": "forbidden",
+    "workflow_churn_as_product_progress": "forbidden",
+    "multi_lane_session_prompt": "forbidden",
+    "chat_only_authority": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/gpt54_vscode_source_composition_weighted_blend_startup_prompt.contract.json --out-json artifacts/validation/gpt54_vscode_source_composition_weighted_blend_startup_prompt_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt_PHASED_PLAN.md --out-json artifacts/validation/gpt54_vscode_source_composition_weighted_blend_startup_prompt_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "gpt54_vscode_source_composition_weighted_blend_startup_prompt_contract_schema_valid",
+      "description": "The GPT-5.4 Source composition startup prompt contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/gpt54_vscode_source_composition_weighted_blend_startup_prompt_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "gpt54_vscode_source_composition_weighted_blend_startup_prompt_plan_sync_ok",
+      "description": "The GPT-5.4 Source composition startup prompt phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "gpt54_vscode_source_composition_weighted_blend_startup_prompt_hostile_audit_ok",
+      "description": "The GPT-5.4 Source composition startup prompt hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/gpt54_vscode_source_composition_weighted_blend_startup_prompt_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
