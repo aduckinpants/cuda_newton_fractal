@@ -73,10 +73,14 @@ void TestFunctionIdMappingsRoundTrip() {
         "TestFunctionIdMappingsRoundTrip_PaletteRejectPreservesValue");
 
     ColorGradingPreset grading = ColorGradingPreset::escape_default;
+    Check(std::string(color_pipeline_core::AdvancedColorGradingFunctionId(ColorGradingPreset::basin_default)) == "basin_default",
+        "TestFunctionIdMappingsRoundTrip_GradingIdIncludesBasinDefault");
     Check(std::string(color_pipeline_core::AdvancedColorGradingFunctionId(ColorGradingPreset::bands_default)) == "band_finish",
         "TestFunctionIdMappingsRoundTrip_GradingIdIncludesDraftBandFinish");
+    Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("basin_default", &grading) && grading == ColorGradingPreset::basin_default,
+        "TestFunctionIdMappingsRoundTrip_GradingParseBasinDefault");
     Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("phase_finish", &grading) && grading == ColorGradingPreset::phase_default,
-        "TestFunctionIdMappingsRoundTrip_GradingParse");
+        "TestFunctionIdMappingsRoundTrip_GradingParsePhaseFinish");
     Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::phase_default,
         "TestFunctionIdMappingsRoundTrip_GradingRejectPreservesValue");
 
@@ -112,26 +116,31 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
             HasFunction(*palette, "joy_root_palette"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
-    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 3 &&
-            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish"),
-        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsRuntimeBackedBandFinish");
+    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 4 &&
+            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsRuntimeBackedBasinDefault");
     Check(CatalogIdsEqual(*source, {"smooth_escape_ramp", "phase_orbit", "banded_signal", "escape_magnitude", "orbit_stripe", "root_proximity", "root_index"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
     Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
-    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish"}),
+    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
 
     const std::vector<FunctionDescriptor> allGradeFunctions = color_pipeline_core::BuildColorPipelineGradeFunctions();
     bool rawGradeIncludesBandFinish = false;
+    bool rawGradeIncludesBasinDefault = false;
     for (const FunctionDescriptor& descriptor : allGradeFunctions) {
         rawGradeIncludesBandFinish = rawGradeIncludesBandFinish || descriptor.id == "band_finish";
+        rawGradeIncludesBasinDefault = rawGradeIncludesBasinDefault || descriptor.id == "basin_default";
     }
     Check(rawGradeIncludesBandFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesDraftBandFinish");
+    Check(rawGradeIncludesBasinDefault, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesBasinDefault");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "band_finish"),
         "TestLaneCatalogFiltersRuntimeBackedRows_BandFinishRuntimeBacked");
+    Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "basin_default"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_BasinDefaultRuntimeBacked");
     Check(!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked(nullptr, "heatmap") &&
             !color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("unknown_lane", "heatmap"),
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownLaneFailsClosed");
@@ -180,6 +189,13 @@ void TestRowBuildersAndDefaults() {
             RowNumber(bandFinishDefaultRow, "grade.saturation", 1.15) &&
             RowNumber(bandFinishDefaultRow, "grade.contrast", 1.10),
         "TestRowBuildersAndDefaults_BandFinishBuildsFromRuntimeCatalog");
+    ColorPipelineRowState basinDefaultRow;
+    error.clear();
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "basin_default", 36, &basinDefaultRow, &error) &&
+            basinDefaultRow.ui_row_id == 36 &&
+            basinDefaultRow.function_id == "basin_default" &&
+            basinDefaultRow.parameter_values.empty(),
+        "TestRowBuildersAndDefaults_BasinDefaultBuildsWithoutFakeControls");
     Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "", 1, &unknownRow, &error),
         "TestRowBuildersAndDefaults_EmptyFunctionFailsClosed");
     Check(!color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 1, nullptr, &error),

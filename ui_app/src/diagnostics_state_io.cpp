@@ -946,10 +946,7 @@ bool ParseColorGradingStackEntry(const json_min::Value& entryValue,
         return false;
     }
     const char* functionId = AdvancedColorGradingFunctionId(entry.grading);
-    if (!functionId ||
-        (std::strcmp(functionId, "contrast_lift") != 0 &&
-         std::strcmp(functionId, "phase_finish") != 0 &&
-         std::strcmp(functionId, "band_finish") != 0)) {
+    if (!functionId || !IsSupportedColorPipelineGradingFunctionId(functionId)) {
         if (outError) *outError = "color_grading_stack only supports shipped Grading rows";
         return false;
     }

@@ -317,6 +317,8 @@ inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
         return "phase_finish";
     case ColorGradingPreset::bands_default:
         return "band_finish";
+    case ColorGradingPreset::basin_default:
+        return "basin_default";
     }
     return nullptr;
 }
@@ -332,6 +334,10 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
     }
     if (functionId == "band_finish") {
         if (outValue) *outValue = ColorGradingPreset::bands_default;
+        return true;
+    }
+    if (functionId == "basin_default") {
+        if (outValue) *outValue = ColorGradingPreset::basin_default;
         return true;
     }
     return false;
@@ -562,6 +568,11 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften banded palette intensity.", 0.0, 2.0, 0.01, 1.15),
                 MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch the banded palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
             }),
+        MakeColorPipelineFunction(
+            "basin_default",
+            "Basin Default",
+            "Preserve the legacy basin grading defaults without exposing fake tuning controls.",
+            {}),
     };
 }
 
@@ -599,7 +610,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
     if (std::string(laneId) == "grading") {
         return functionId == "contrast_lift" ||
             functionId == "phase_finish" ||
-            functionId == "band_finish";
+            functionId == "band_finish" ||
+            functionId == "basin_default";
     }
     return false;
 }

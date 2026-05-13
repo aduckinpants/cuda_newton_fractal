@@ -1394,7 +1394,8 @@ inline bool ColorPipelineShapeStackEntriesEqual(
 inline bool IsSupportedColorPipelineGradingFunctionId(const std::string& functionId) {
     return functionId == "contrast_lift" ||
         functionId == "phase_finish" ||
-        functionId == "band_finish";
+        functionId == "band_finish" ||
+        functionId == "basin_default";
 }
 
 inline bool ColorPipelineGradingRuntimeParamsEqual(
@@ -2106,7 +2107,7 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineGradingFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports contrast_lift, phase_finish, and band_finish in the Grading stack.";
+            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, and basin_default in the Grading stack.";
         }
         return false;
     }

@@ -116,8 +116,10 @@ void TestRootSelectionCoSwitchesAndApplies() {
     Check(SelectColorPipelineLaneFunction(&state, 0, "root_index"),
         "TestRootSelectionCoSwitchesAndApplies_SelectRootIndex");
     Check(state.lanes[0].rows[0].function_id == "root_index" &&
-            state.lanes[2].rows[0].function_id == "root_classic_palette",
-        "TestRootSelectionCoSwitchesAndApplies_CoSwitchesRootPalette");
+            state.lanes[2].rows[0].function_id == "root_classic_palette" &&
+            state.lanes[3].rows[0].function_id == "basin_default" &&
+            state.lanes[3].rows[0].parameter_values.empty(),
+        "TestRootSelectionCoSwitchesAndApplies_CoSwitchesRootPaletteAndBasinGrading");
     Check(HasColorPipelineDraftEdits(state), "TestRootSelectionCoSwitchesAndApplies_DraftEditDetected");
 
     bool changed = false;
@@ -126,11 +128,17 @@ void TestRootSelectionCoSwitchesAndApplies() {
     Check(params.coloring_mode == ColoringMode::root_basin &&
             params.color_pipeline.signal == ColorSignal::root_index &&
             params.color_pipeline.palette == ColorPalette::root_classic &&
-            params.color_pipeline.grading == ColorGradingPreset::basin_default,
+            params.color_pipeline.grading == ColorGradingPreset::basin_default &&
+            params.color_grading_stack_count == 1 &&
+            params.color_grading_stack[0].grading == ColorGradingPreset::basin_default,
         "TestRootSelectionCoSwitchesAndApplies_RuntimeTupleIsRootClassic");
     Check(state.live_snapshot.valid && state.live_snapshot.draft_import_supported &&
-            state.live_snapshot.lanes.size() == 3 && !HasColorPipelineDraftEdits(state),
-        "TestRootSelectionCoSwitchesAndApplies_ApplyResyncsSupportedSnapshot");
+            state.live_snapshot.lanes.size() == 4 &&
+            state.live_snapshot.lanes[3].rows.size() == 1 &&
+            state.live_snapshot.lanes[3].rows[0].function_id == "basin_default" &&
+            state.live_snapshot.lanes[3].rows[0].parameter_values.empty() &&
+            !HasColorPipelineDraftEdits(state),
+        "TestRootSelectionCoSwitchesAndApplies_ApplyResyncsSupportedSnapshotWithBasinGrading");
     Check(!SelectColorPipelineLaneFunction(&state, 0, "missing_source") &&
             state.lanes[0].rows[0].function_id == "root_index" && !state.validation_messages.empty(),
         "TestRootSelectionCoSwitchesAndApplies_UnknownFunctionFailsClosed");
@@ -291,14 +299,20 @@ void TestRootBasinPairScheduleBridge() {
     Check(params.color_root_basin_pair_count == 2 &&
             params.color_root_basin_pairs[0].palette == ColorPalette::root_classic &&
             params.color_root_basin_pairs[1].palette == ColorPalette::joy &&
+            params.color_grading_stack_count == 1 &&
+            params.color_grading_stack[0].grading == ColorGradingPreset::basin_default &&
             params.coloring_mode == ColoringMode::joy_basins,
-        "TestRootBasinPairScheduleBridge_RuntimePairScheduleWritten");
+        "TestRootBasinPairScheduleBridge_RuntimePairSchedulePreservesBasinGrading");
     Check(HasCoherentRootBasinPairSchedule(params),
         "TestRootBasinPairScheduleBridge_RuntimePairScheduleCoherent");
     Check(state.live_snapshot.valid && state.live_snapshot.draft_import_supported &&
+            state.live_snapshot.lanes.size() == 4 &&
             state.live_snapshot.lanes[0].rows.size() == 2 && state.live_snapshot.lanes[2].rows.size() == 2 &&
+            state.live_snapshot.lanes[3].rows.size() == 1 &&
+            state.live_snapshot.lanes[3].rows[0].function_id == "basin_default" &&
+            state.live_snapshot.lanes[3].rows[0].parameter_values.empty() &&
             !HasColorPipelineDraftEdits(state),
-        "TestRootBasinPairScheduleBridge_LiveSnapshotImportsPairs");
+        "TestRootBasinPairScheduleBridge_LiveSnapshotImportsPairsWithBasinGrading");
 
     ColorPipelineWindowState mismatchState{};
     Check(EnsureColorPipelineWindowInitialized(&mismatchState) &&

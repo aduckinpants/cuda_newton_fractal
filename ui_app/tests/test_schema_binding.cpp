@@ -978,11 +978,12 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 3 ||
+            coreGradingCatalog->functions.size() != 4 ||
             coreGradingCatalog->functions[0].id != "contrast_lift" ||
             coreGradingCatalog->functions[1].id != "phase_finish" ||
-            coreGradingCatalog->functions[2].id != "band_finish") {
-            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, and band_finish as runtime-real Grading rows\n";
+            coreGradingCatalog->functions[2].id != "band_finish" ||
+            coreGradingCatalog->functions[3].id != "basin_default") {
+            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, and basin_default as runtime-real Grading rows\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -1007,6 +1008,11 @@ int main() {
             coreBandFinishDescriptor->parameters[0].path != "grade.saturation" ||
             coreBandFinishDescriptor->parameters[1].path != "grade.contrast") {
             std::cerr << "Expected band_finish to expose only real saturation and contrast grading owner paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreBasinDefaultDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "basin_default");
+        if (!coreBasinDefaultDescriptor || !coreBasinDefaultDescriptor->parameters.empty()) {
+            std::cerr << "Expected basin_default to stay parameterless so the advanced color grading lane does not invent fake basin controls\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;
@@ -1663,14 +1669,17 @@ int main() {
         }
         if (!windowState.live_snapshot.valid ||
             !windowState.live_snapshot.draft_import_supported ||
-            windowState.live_snapshot.lanes.size() != 3 ||
+            windowState.live_snapshot.lanes.size() != 4 ||
             windowState.live_snapshot.lanes[0].rows.size() != 1 ||
             windowState.live_snapshot.lanes[0].rows[0].function_id != "root_index" ||
             !windowState.live_snapshot.lanes[0].rows[0].parameter_values.empty() ||
             windowState.live_snapshot.lanes[2].rows.size() != 1 ||
             windowState.live_snapshot.lanes[2].rows[0].function_id != "root_classic_palette" ||
-            !windowState.live_snapshot.lanes[2].rows[0].parameter_values.empty()) {
-            std::cerr << "Expected root-basin live tuples to import as a supported root_index plus root_classic_palette snapshot\n";
+            !windowState.live_snapshot.lanes[2].rows[0].parameter_values.empty() ||
+            windowState.live_snapshot.lanes[3].rows.size() != 1 ||
+            windowState.live_snapshot.lanes[3].rows[0].function_id != "basin_default" ||
+            !windowState.live_snapshot.lanes[3].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected root-basin live tuples to import as a supported root_index plus root_classic_palette and basin_default snapshot\n";
             return 1;
         }
         params.coloring_mode = ColoringMode::joy_basins;
@@ -1681,9 +1690,13 @@ int main() {
         }
         if (!windowState.live_snapshot.valid ||
             !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() != 4 ||
             windowState.live_snapshot.lanes[0].rows[0].function_id != "root_index" ||
-            windowState.live_snapshot.lanes[2].rows[0].function_id != "joy_root_palette") {
-            std::cerr << "Expected joy-basins live tuples to import as a supported root_index plus joy_root_palette snapshot\n";
+            windowState.live_snapshot.lanes[2].rows[0].function_id != "joy_root_palette" ||
+            windowState.live_snapshot.lanes[3].rows.size() != 1 ||
+            windowState.live_snapshot.lanes[3].rows[0].function_id != "basin_default" ||
+            !windowState.live_snapshot.lanes[3].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected joy-basins live tuples to import as a supported root_index plus joy_root_palette and basin_default snapshot\n";
             return 1;
         }
 
@@ -1696,6 +1709,7 @@ int main() {
 
         params.coloring_mode = ColoringMode::smooth_escape;
         params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+        params.color_grading_stack_count = 0;
         if (!SyncColorPipelineWindowFromLiveState(&windowState, view.fractal_type, &params)) {
             std::cerr << "Expected supported live tuples to resync the snapshot without clobbering an already-diverged draft\n";
             return 1;
@@ -2514,14 +2528,17 @@ int main() {
             params.color_pipeline.grading != ColorGradingPreset::basin_default ||
             !unsupportedStartupWindowState.live_snapshot.valid ||
             !unsupportedStartupWindowState.live_snapshot.draft_import_supported ||
-            unsupportedStartupWindowState.lanes.size() != 3 ||
+            unsupportedStartupWindowState.lanes.size() != 4 ||
             unsupportedStartupWindowState.lanes[0].rows.size() != 1 ||
             unsupportedStartupWindowState.lanes[0].rows[0].function_id != "root_index" ||
             unsupportedStartupWindowState.lanes[2].rows.size() != 1 ||
             unsupportedStartupWindowState.lanes[2].rows[0].function_id != "root_classic_palette" ||
+            unsupportedStartupWindowState.lanes[3].rows.size() != 1 ||
+            unsupportedStartupWindowState.lanes[3].rows[0].function_id != "basin_default" ||
             !unsupportedStartupWindowState.lanes[0].rows[0].parameter_values.empty() ||
-            !unsupportedStartupWindowState.lanes[2].rows[0].parameter_values.empty()) {
-            std::cerr << "Expected opening the advanced color pipeline window from the default basin tuple to import root_index and root_classic_palette as a supported live advanced row\n";
+            !unsupportedStartupWindowState.lanes[2].rows[0].parameter_values.empty() ||
+            !unsupportedStartupWindowState.lanes[3].rows[0].parameter_values.empty()) {
+            std::cerr << "Expected opening the advanced color pipeline window from the default basin tuple to import root_index, root_classic_palette, and basin_default as a supported live advanced row\n";
             return 1;
         }
 

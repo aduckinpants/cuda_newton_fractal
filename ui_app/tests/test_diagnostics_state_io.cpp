@@ -3673,6 +3673,9 @@ int main() {
       { "signal": "root_index", "palette": "root_classic", "grading": "basin_default" },
       { "signal": "root_index", "palette": "joy", "grading": "basin_default" }
     ],
+    "color_grading_stack": [
+      { "grading": "basin_default" }
+    ],
     "nova_alpha": 0.5,
     "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
     "multibrot_power": 3,
@@ -3696,10 +3699,13 @@ int main() {
             p.color_root_basin_pairs[0].palette != ColorPalette::root_classic ||
             p.color_root_basin_pairs[1].signal != ColorSignal::root_index ||
             p.color_root_basin_pairs[1].palette != ColorPalette::joy ||
+            p.color_pipeline.grading != ColorGradingPreset::basin_default ||
+            p.color_grading_stack_count != 1 ||
+            p.color_grading_stack[0].grading != ColorGradingPreset::basin_default ||
             p.color_pipeline.signal != ColorSignal::root_index ||
             p.color_pipeline.palette != ColorPalette::joy ||
             p.coloring_mode != ColoringMode::joy_basins) {
-            std::cerr << "Expected bounded root-basin pair schedules to round-trip through diagnostics state load while preserving the mirrored final live tuple\n";
+            std::cerr << "Expected bounded root-basin pair schedules to round-trip through diagnostics state load while preserving the mirrored final live tuple and basin-default grading lane\n";
             return 1;
         }
     }
