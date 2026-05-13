@@ -319,6 +319,8 @@ inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
         return "band_finish";
     case ColorGradingPreset::basin_default:
         return "basin_default";
+    case ColorGradingPreset::neutral_default:
+        return "neutral_finish";
     }
     return nullptr;
 }
@@ -338,6 +340,10 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
     }
     if (functionId == "basin_default") {
         if (outValue) *outValue = ColorGradingPreset::basin_default;
+        return true;
+    }
+    if (functionId == "neutral_finish") {
+        if (outValue) *outValue = ColorGradingPreset::neutral_default;
         return true;
     }
     return false;
@@ -573,6 +579,15 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
             "Basin Default",
             "Preserve the legacy basin grading defaults without exposing fake tuning controls.",
             {}),
+        MakeColorPipelineFunction(
+            "neutral_finish",
+            "Neutral Finish",
+            "Apply a neutral grading finish through the shared exposure, saturation, and contrast owners.",
+            {
+                MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall neutral brightness.", 0.1, 3.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften neutral palette intensity.", 0.0, 2.0, 0.01, 1.15),
+                MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch neutral palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
+            }),
     };
 }
 
@@ -611,7 +626,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
         return functionId == "contrast_lift" ||
             functionId == "phase_finish" ||
             functionId == "band_finish" ||
-            functionId == "basin_default";
+            functionId == "basin_default" ||
+            functionId == "neutral_finish";
     }
     return false;
 }

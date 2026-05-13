@@ -1073,6 +1073,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "phase_finish") {
         return path == "grade.saturation" || path == "grade.contrast";
     }
+    if (functionId == "neutral_finish") {
+        return path == "grade.exposure" || path == "grade.saturation" || path == "grade.contrast";
+    }
     if (functionId == "phase_orbit") {
         return path == "signal.phase_offset" || path == "signal.wrap_cycles" || path == "signal.blend_weight";
     }
@@ -1395,7 +1398,8 @@ inline bool IsSupportedColorPipelineGradingFunctionId(const std::string& functio
     return functionId == "contrast_lift" ||
         functionId == "phase_finish" ||
         functionId == "band_finish" ||
-        functionId == "basin_default";
+        functionId == "basin_default" ||
+        functionId == "neutral_finish";
 }
 
 inline bool ColorPipelineGradingRuntimeParamsEqual(
@@ -2107,7 +2111,7 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineGradingFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, and basin_default in the Grading stack.";
+            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, and neutral_finish in the Grading stack.";
         }
         return false;
     }
@@ -2144,6 +2148,21 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
             return false;
         }
         entry.params.exposure = 1.0f;
+        entry.params.saturation = static_cast<float>(saturation);
+        entry.params.contrast = static_cast<float>(contrast);
+    } else if (row.function_id == "neutral_finish") {
+        double exposure = 0.0;
+        double saturation = 0.0;
+        double contrast = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.exposure", &exposure, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.contrast", &contrast, outError) ||
+            !ValidateColorPipelineParamRange("grade.exposure", exposure, 0.1, 3.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.saturation", saturation, 0.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.contrast", contrast, 0.0, 3.0, outError)) {
+            return false;
+        }
+        entry.params.exposure = static_cast<float>(exposure);
         entry.params.saturation = static_cast<float>(saturation);
         entry.params.contrast = static_cast<float>(contrast);
     }
@@ -2263,6 +2282,11 @@ inline bool ImportSupportedColorPipelineParamsFromGradingStackEntry(
         return SetColorPipelineParamNumber(ioRow, "grade.saturation", gradingEntry.params.saturation, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.contrast", gradingEntry.params.contrast, outError);
     }
+    if (ioRow->function_id == "neutral_finish") {
+        return SetColorPipelineParamNumber(ioRow, "grade.exposure", gradingEntry.params.exposure, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.saturation", gradingEntry.params.saturation, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.contrast", gradingEntry.params.contrast, outError);
+    }
     return true;
 }
 
@@ -2325,6 +2349,10 @@ inline bool TryBuildColorPipelineGradingLaneFromLive(
         liveGradingEntry.params.exposure = liveParams.color_contrast_lift_exposure;
         liveGradingEntry.params.saturation = liveParams.color_contrast_lift_saturation;
         liveGradingEntry.params.contrast = 1.0f;
+    } else if (liveGradingEntry.grading == ColorGradingPreset::neutral_default) {
+        liveGradingEntry.params.exposure = liveParams.exposure;
+        liveGradingEntry.params.saturation = liveParams.color_saturation;
+        liveGradingEntry.params.contrast = liveParams.color_contrast;
     } else {
         liveGradingEntry.params.exposure = 1.0f;
         liveGradingEntry.params.saturation = liveParams.color_saturation;
@@ -2759,6 +2787,10 @@ inline bool ApplySupportedColorPipelineParamsToLive(
                    gradingMirrorEntry.grading == ColorGradingPreset::bands_default) {
             assignShapeFloat(&ioParams->color_saturation, gradingMirrorEntry.params.saturation);
             assignShapeFloat(&ioParams->color_contrast, gradingMirrorEntry.params.contrast);
+        } else if (gradingMirrorEntry.grading == ColorGradingPreset::neutral_default) {
+            assignShapeFloat(&ioParams->exposure, gradingMirrorEntry.params.exposure);
+            assignShapeFloat(&ioParams->color_saturation, gradingMirrorEntry.params.saturation);
+            assignShapeFloat(&ioParams->color_contrast, gradingMirrorEntry.params.contrast);
         }
     }
 
@@ -2952,48 +2984,50 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         mode = rowMode;
     }
 
+    const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog("grading");
+    const ColorPipelineLaneState* gradingLane = FindColorPipelineLaneState(state, "grading");
+    if (gradingLane) {
+        std::vector<const ColorPipelineRowState*> gradingRows;
+        if (!CollectEnabledColorPipelineRows(state, "grading", &gradingRows, outError)) {
+            return false;
+        }
+        if (gradingRows.empty()) {
+            if (outError) {
+                *outError = "Selected Source / Shape / Palette recipe requires at least one shipped Grading row.";
+            }
+            return false;
+        }
+        if (gradingRows.size() > static_cast<std::size_t>(kColorPipelineMaxGradingStackCount)) {
+            if (outError) {
+                *outError = "Current live bridge only supports a bounded number of enabled Grading rows in the schedule lane.";
+            }
+            return false;
+        }
+        for (const ColorPipelineRowState* gradingRow : gradingRows) {
+            if (!gradingRow || !IsSupportedColorPipelineGradingFunctionId(gradingRow->function_id)) {
+                if (outError) {
+                    *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, and neutral_finish in the Grading stack.";
+                }
+                return false;
+            }
+        }
+        if (!gradingRows.front() ||
+            !TryParseAdvancedColorGradingFunctionId(gradingRows.front()->function_id, &pipeline.grading)) {
+            if (outError) {
+                *outError = "Selected Source / Shape / Palette recipe requires the first shipped Grading row to map to a runtime grading id.";
+            }
+            return false;
+        }
+    }
     const char* gradingFunctionId = AdvancedColorGradingFunctionId(pipeline.grading);
     if (gradingFunctionId && gradingFunctionId[0] != '\0') {
-        const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog("grading");
         if (!gradingCatalog || !FindColorPipelineFunctionDescriptor(*gradingCatalog, gradingFunctionId)) {
             if (outError) {
                 *outError = "Selected Source / Shape / Palette recipe still depends on an unshipped Grading row and stays draft-only until that grading runtime integration lands.";
             }
             return false;
         }
-        const ColorPipelineLaneState* gradingLane = FindColorPipelineLaneState(state, "grading");
-        if (gradingLane) {
-            std::vector<const ColorPipelineRowState*> gradingRows;
-            if (!CollectEnabledColorPipelineRows(state, "grading", &gradingRows, outError)) {
-                return false;
-            }
-            if (gradingRows.empty()) {
-                if (outError) {
-                    *outError = "Selected Source / Shape / Palette recipe requires at least one shipped Grading row.";
-                }
-                return false;
-            }
-            if (gradingRows.size() > static_cast<std::size_t>(kColorPipelineMaxGradingStackCount)) {
-                if (outError) {
-                    *outError = "Current live bridge only supports a bounded number of enabled Grading rows in the schedule lane.";
-                }
-                return false;
-            }
-            if (!gradingRows.front() || gradingRows.front()->function_id != gradingFunctionId) {
-                if (outError) {
-                    *outError = "Selected Source / Shape / Palette recipe requires the first shipped Grading row to match its runtime bridge.";
-                }
-                return false;
-            }
-            for (const ColorPipelineRowState* gradingRow : gradingRows) {
-                if (!gradingRow || !IsSupportedColorPipelineGradingFunctionId(gradingRow->function_id)) {
-                    if (outError) {
-                        *outError = "Current live bridge only supports contrast_lift, phase_finish, and band_finish in the Grading stack.";
-                    }
-                    return false;
-                }
-            }
-        } else if (gradingCatalog->default_function_id != std::string(gradingFunctionId)) {
+        if (!gradingLane && gradingCatalog->default_function_id != std::string(gradingFunctionId)) {
             if (outError) {
                 *outError = "Selected Source / Shape / Palette recipe requires a shipped Grading row that is not available in the current draft state.";
             }

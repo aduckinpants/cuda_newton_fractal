@@ -355,6 +355,52 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_neutral_finish_runtime";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::neutral_default};
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = ColorGradingPreset::neutral_default;
+        params.color_grading_stack[0].params.exposure = 1.25f;
+        params.color_grading_stack[0].params.saturation = 0.75f;
+        params.color_grading_stack[0].params.contrast = 1.5f;
+        params.exposure = 1.25f;
+        params.color_saturation = 0.75f;
+        params.color_contrast = 1.5f;
+        RenderSettings render{};
+        render.resolution = {64, 48};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff336699u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &capture, &error)) {
+            std::cerr << "Expected neutral-finish diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected neutral-finish diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"coloring_mode\": \"smooth_escape\"") == std::string::npos ||
+            stateJson.find("\"color_grading\": \"neutral_default\"") == std::string::npos ||
+            stateJson.find("\"color_grading_stack\"") == std::string::npos ||
+            stateJson.find("\"grading\": \"neutral_default\"") == std::string::npos ||
+            stateJson.find("\"exposure\": 1.25") == std::string::npos ||
+            stateJson.find("\"saturation\": 0.75") == std::string::npos ||
+            stateJson.find("\"contrast\": 1.5") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist neutral_finish grading ids, stack rows, and mirrored owner values in the finding archive bundle\n";
+            return 1;
+        }
+    }
+
+    {
         RenderSettings render{};
         render.resolution = {1536, 1024};
         render.block_size = 128;

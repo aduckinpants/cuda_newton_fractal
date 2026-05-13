@@ -792,6 +792,10 @@ void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry
                gradingEntry.grading == ColorGradingPreset::bands_default) {
         ioParams->color_saturation = gradingEntry.params.saturation;
         ioParams->color_contrast = gradingEntry.params.contrast;
+    } else if (gradingEntry.grading == ColorGradingPreset::neutral_default) {
+        ioParams->exposure = gradingEntry.params.exposure;
+        ioParams->color_saturation = gradingEntry.params.saturation;
+        ioParams->color_contrast = gradingEntry.params.contrast;
     }
 }
 

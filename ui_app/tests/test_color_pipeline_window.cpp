@@ -280,6 +280,32 @@ void TestGradingStackApplyAndLiveImport() {
         "TestGradingStackApplyAndLiveImport_RemoveSecondGradingRow");
     Check(!RemoveColorPipelineLaneRow(&state, 3, 0),
         "TestGradingStackApplyAndLiveImport_CannotRemoveLastGradingRow");
+
+    ColorGradingPreset neutralGrading = ColorGradingPreset::escape_default;
+    const bool neutralConfigured = SelectColorPipelineLaneFunction(&state, 3, "neutral_finish") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.exposure", 1.25) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.saturation", 0.85) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.contrast", 1.4);
+    Check(neutralConfigured,
+        "TestGradingStackApplyAndLiveImport_ConfiguresNeutralFinish");
+    if (neutralConfigured) {
+        changed = false;
+        Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+            "TestGradingStackApplyAndLiveImport_ApplyNeutralFinish");
+        Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("neutral_finish", &neutralGrading) &&
+                params.color_grading_stack_count == 1 &&
+                params.color_grading_stack[0].grading == neutralGrading &&
+                Near(params.color_grading_stack[0].params.exposure, 1.25) &&
+                Near(params.color_grading_stack[0].params.saturation, 0.85) &&
+                Near(params.color_grading_stack[0].params.contrast, 1.4),
+            "TestGradingStackApplyAndLiveImport_RuntimeWritesNeutralFinish");
+        Check(params.color_pipeline.grading == neutralGrading && Near(params.exposure, 1.25) && Near(params.color_saturation, 0.85) && Near(params.color_contrast, 1.4),
+            "TestGradingStackApplyAndLiveImport_NeutralFinishMirrorsLegacyOwners");
+        Check(state.live_snapshot.valid && state.live_snapshot.lanes[3].rows.size() == 1 &&
+                state.live_snapshot.lanes[3].rows[0].function_id == "neutral_finish" &&
+                state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 3,
+            "TestGradingStackApplyAndLiveImport_ApplyResyncsNeutralFinish");
+    }
 }
 
 void TestRootBasinPairScheduleBridge() {

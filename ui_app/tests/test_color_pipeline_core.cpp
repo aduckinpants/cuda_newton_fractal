@@ -81,7 +81,10 @@ void TestFunctionIdMappingsRoundTrip() {
         "TestFunctionIdMappingsRoundTrip_GradingParseBasinDefault");
     Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("phase_finish", &grading) && grading == ColorGradingPreset::phase_default,
         "TestFunctionIdMappingsRoundTrip_GradingParsePhaseFinish");
-    Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::phase_default,
+    Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("neutral_finish", &grading) &&
+            std::string(color_pipeline_core::AdvancedColorGradingFunctionId(grading)) == "neutral_finish",
+        "TestFunctionIdMappingsRoundTrip_GradingParseNeutralFinish");
+    Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::neutral_default,
         "TestFunctionIdMappingsRoundTrip_GradingRejectPreservesValue");
 
     Check(std::string(color_pipeline_core::AdvancedColorShapeFunctionId(ColorPipelineShape::smooth_window)) == "smooth_window",
@@ -116,31 +119,36 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
             HasFunction(*palette, "joy_root_palette"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
-    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 4 &&
-            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default"),
-        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsRuntimeBackedBasinDefault");
+    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 5 &&
+            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsNeutralFinish");
     Check(CatalogIdsEqual(*source, {"smooth_escape_ramp", "phase_orbit", "banded_signal", "escape_magnitude", "orbit_stripe", "root_proximity", "root_index"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
     Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
-    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default"}),
+    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
 
     const std::vector<FunctionDescriptor> allGradeFunctions = color_pipeline_core::BuildColorPipelineGradeFunctions();
     bool rawGradeIncludesBandFinish = false;
     bool rawGradeIncludesBasinDefault = false;
+    bool rawGradeIncludesNeutralFinish = false;
     for (const FunctionDescriptor& descriptor : allGradeFunctions) {
         rawGradeIncludesBandFinish = rawGradeIncludesBandFinish || descriptor.id == "band_finish";
         rawGradeIncludesBasinDefault = rawGradeIncludesBasinDefault || descriptor.id == "basin_default";
+        rawGradeIncludesNeutralFinish = rawGradeIncludesNeutralFinish || descriptor.id == "neutral_finish";
     }
     Check(rawGradeIncludesBandFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesDraftBandFinish");
     Check(rawGradeIncludesBasinDefault, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesBasinDefault");
+    Check(rawGradeIncludesNeutralFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesNeutralFinish");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "band_finish"),
         "TestLaneCatalogFiltersRuntimeBackedRows_BandFinishRuntimeBacked");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "basin_default"),
         "TestLaneCatalogFiltersRuntimeBackedRows_BasinDefaultRuntimeBacked");
+    Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "neutral_finish"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_NeutralFinishRuntimeBacked");
     Check(!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked(nullptr, "heatmap") &&
             !color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("unknown_lane", "heatmap"),
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownLaneFailsClosed");
@@ -196,6 +204,16 @@ void TestRowBuildersAndDefaults() {
             basinDefaultRow.function_id == "basin_default" &&
             basinDefaultRow.parameter_values.empty(),
         "TestRowBuildersAndDefaults_BasinDefaultBuildsWithoutFakeControls");
+    ColorPipelineRowState neutralFinishRow;
+    error.clear();
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "neutral_finish", 37, &neutralFinishRow, &error) &&
+            neutralFinishRow.ui_row_id == 37 &&
+            neutralFinishRow.function_id == "neutral_finish" &&
+            neutralFinishRow.parameter_values.size() == 3 &&
+            RowNumber(neutralFinishRow, "grade.exposure", 1.0) &&
+            RowNumber(neutralFinishRow, "grade.saturation", 1.15) &&
+            RowNumber(neutralFinishRow, "grade.contrast", 1.10),
+        "TestRowBuildersAndDefaults_NeutralFinishBuildsFromRuntimeCatalog");
     Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "", 1, &unknownRow, &error),
         "TestRowBuildersAndDefaults_EmptyFunctionFailsClosed");
     Check(!color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 1, nullptr, &error),

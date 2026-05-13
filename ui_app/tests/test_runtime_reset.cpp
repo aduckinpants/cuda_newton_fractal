@@ -1,3 +1,4 @@
+#include "../src/color_pipeline_core.h"
 #include "../src/runtime_reset.h"
 
 #include <iostream>
@@ -27,6 +28,11 @@ int main() {
     RenderSettings render{};
     LensSettings lens{};
     bool dirty = false;
+    ColorGradingPreset neutralGrading = ColorGradingPreset::escape_default;
+    if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("neutral_finish", &neutralGrading)) {
+        std::cerr << "Expected neutral_finish to parse before reset proof\n";
+        return 1;
+    }
 
     view.fractal_type = FractalType::explaino_halley;
     view.explaino_phase = 2.0f;
@@ -74,9 +80,10 @@ int main() {
     params.color_grading_stack[0].grading = ColorGradingPreset::escape_default;
     params.color_grading_stack[0].params.exposure = 1.4f;
     params.color_grading_stack[0].params.saturation = 1.2f;
-    params.color_grading_stack[1].grading = ColorGradingPreset::phase_default;
-    params.color_grading_stack[1].params.saturation = 0.8f;
-    params.color_grading_stack[1].params.contrast = 1.6f;
+    params.color_grading_stack[1].grading = neutralGrading;
+    params.color_grading_stack[1].params.exposure = 1.25f;
+    params.color_grading_stack[1].params.saturation = 0.85f;
+    params.color_grading_stack[1].params.contrast = 1.4f;
     params.color_shape_offset = 0.35f;
     params.color_shape_scale = 1.8f;
     params.color_shape_repeat_frequency = 6.0f;
@@ -94,8 +101,9 @@ int main() {
     params.color_iteration_band_palette_offset = 0.4f;
     params.color_smooth_escape_scale = 2.0f;
     params.color_smooth_escape_bias = -0.25f;
-    params.color_saturation = 0.55f;
-    params.color_contrast = 2.2f;
+    params.exposure = 1.25f;
+    params.color_saturation = 0.85f;
+    params.color_contrast = 1.4f;
     params.color_tint_r = 0.4f;
     params.color_tint_g = 1.7f;
     params.color_tint_b = 0.25f;
@@ -162,6 +170,7 @@ int main() {
         !NearlyEqual(params.color_iteration_band_palette_offset, 0.0f) ||
         !NearlyEqual(params.color_smooth_escape_scale, 1.0f) ||
         !NearlyEqual(params.color_smooth_escape_bias, 0.0f) ||
+        !NearlyEqual(params.exposure, 1.0f) ||
         !NearlyEqual(params.color_saturation, 1.15f) ||
         !NearlyEqual(params.color_contrast, 1.10f) ||
         !NearlyEqual(params.color_tint_r, 1.0f) ||

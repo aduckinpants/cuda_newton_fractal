@@ -137,6 +137,10 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
         exposure *= EscapeTimeColorClamp(gradingEntry.params.exposure, 0.1f, 3.0f);
         saturation = EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
         contrast = EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
+    } else if (gradingEntry.grading == ColorGradingPreset::neutral_default) {
+        exposure = EscapeTimeColorClamp(gradingEntry.params.exposure, 0.1f, 3.0f);
+        saturation = EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
+        contrast = EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
     }
     return ApplyFractalColorGradingPass(color, params, exposure, saturation, contrast);
 }

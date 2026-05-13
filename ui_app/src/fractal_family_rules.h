@@ -110,15 +110,18 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
         if (outMode) *outMode = ColoringMode::root_basin;
         return true;
     }
+    const bool isEscapeLikeGrading = pipeline.grading == ColorGradingPreset::escape_default || pipeline.grading == ColorGradingPreset::neutral_default;
+    const bool isPhaseLikeGrading = pipeline.grading == ColorGradingPreset::phase_default || pipeline.grading == ColorGradingPreset::neutral_default;
+    const bool isBandLikeGrading = pipeline.grading == ColorGradingPreset::bands_default || pipeline.grading == ColorGradingPreset::neutral_default;
     if (pipeline.signal == ColorSignal::iteration_count &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::iteration_count;
         return true;
     }
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
     }
@@ -130,13 +133,13 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
     }
     if (pipeline.signal == ColorSignal::phase_angle &&
         pipeline.palette == ColorPalette::phase_wheel &&
-        pipeline.grading == ColorGradingPreset::phase_default) {
+        isPhaseLikeGrading) {
         if (outMode) *outMode = ColoringMode::phase;
         return true;
     }
     if (pipeline.signal == ColorSignal::iteration_bands &&
         pipeline.palette == ColorPalette::banded_escape &&
-        pipeline.grading == ColorGradingPreset::bands_default) {
+        isBandLikeGrading) {
         if (outMode) *outMode = ColoringMode::iteration_bands;
         return true;
     }
@@ -158,39 +161,41 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
     if (TryLegacyColoringModeForPipeline(pipeline, outMode)) {
         return true;
     }
+    const bool isEscapeLikeGrading = pipeline.grading == ColorGradingPreset::escape_default || pipeline.grading == ColorGradingPreset::neutral_default;
+    const bool isPhaseLikeGrading = pipeline.grading == ColorGradingPreset::phase_default || pipeline.grading == ColorGradingPreset::neutral_default;
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
     }
     if (pipeline.signal == ColorSignal::orbit_stripe &&
         pipeline.palette == ColorPalette::phase_wheel &&
-        pipeline.grading == ColorGradingPreset::phase_default) {
+        isPhaseLikeGrading) {
         if (outMode) *outMode = ColoringMode::phase;
         return true;
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
     }
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
     }
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outMode) *outMode = ColoringMode::smooth_escape;
         return true;
     }

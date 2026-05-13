@@ -106,6 +106,7 @@ const char* CaptureColorGradingPresetId(ColorGradingPreset grading) {
     case ColorGradingPreset::escape_default: return "escape_default";
     case ColorGradingPreset::phase_default: return "phase_default";
     case ColorGradingPreset::bands_default: return "bands_default";
+    case ColorGradingPreset::neutral_default: return "neutral_default";
     }
     return "unknown";
 }

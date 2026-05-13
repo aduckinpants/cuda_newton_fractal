@@ -85,6 +85,7 @@ inline constexpr EnumIdPair<ColorGradingPreset> kColorGradingPresetIds[] = {
     {ColorGradingPreset::escape_default, "escape_default"},
     {ColorGradingPreset::phase_default, "phase_default"},
     {ColorGradingPreset::bands_default, "bands_default"},
+    {ColorGradingPreset::neutral_default, "neutral_default"},
 };
 
 inline constexpr EnumIdPair<ColorPipelineShape> kColorPipelineShapeIds[] = {

@@ -1,3 +1,4 @@
+#include "../src/color_pipeline_core.h"
 #include "../src/escape_time_coloring.h"
 #include "../src/fractal_family_rules.h"
 
@@ -436,6 +437,30 @@ int main() {
         }
         if (!Equals(stackedGrade, manualStackedGrade)) {
             std::cerr << "A two-row Grading stack should execute supported Grading rows in order\n";
+            return 1;
+        }
+        ColorGradingPreset neutralGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("neutral_finish", &neutralGrading)) {
+            std::cerr << "neutral_finish should parse as a shipped Grading row id before runtime math proof\n";
+            return 1;
+        }
+        params.exposure = 0.75f;
+        params.color_saturation = 1.6f;
+        params.color_contrast = 0.5f;
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = neutralGrading;
+        params.color_grading_stack[0].params.exposure = 1.25f;
+        params.color_grading_stack[0].params.saturation = 0.85f;
+        params.color_grading_stack[0].params.contrast = 1.4f;
+        const TestColor neutralFinishGrade = ApplyFractalColorGrading(programmableBase, params);
+        const TestColor neutralFinishExpected = ApplyFractalColorGradingPass(programmableBase, params, 1.25f, 0.85f, 1.4f);
+        const TestColor legacyMirrorOnlyGrade = ApplyFractalColorGradingPass(programmableBase, params, 0.75f, 1.6f, 0.5f);
+        if (Equals(neutralFinishGrade, legacyMirrorOnlyGrade)) {
+            std::cerr << "neutral_finish should use its stack-entry exposure, saturation, and contrast values instead of the legacy mirror fallback\n";
+            return 1;
+        }
+        if (!Equals(neutralFinishGrade, neutralFinishExpected)) {
+            std::cerr << "neutral_finish should execute real runtime grading math through the shared grading pass\n";
             return 1;
         }
         params.color_grading_stack_count = 0;
