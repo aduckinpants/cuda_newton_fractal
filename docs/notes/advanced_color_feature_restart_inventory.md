@@ -15,7 +15,7 @@ Current live examples:
 - the generic first-lane startup prompt and this restart inventory are no longer the right launch surface for manual ExplainO work
 - the latest real launch authority is the current manual slice plan plus the latest relevant `HANDOFF_LOG.md` closeout for that slice
 - today that means `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md` plus `ck:20260512-serializer-rail`, not a reset back to the original `Priority 0` archaeology prompt
-- the next core-feature launch authority is no longer the historical archive lane by default; it is the weighted-blend generic Source composition lane until a newer real handoff replaces that startup surface
+- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, and `neutral_finish` are already checkpointed, so the next unopened feature-row resume is `tone_map_finish` until a newer real handoff replaces that startup surface
 
 It is intentionally not a workflow status page. It answers four questions only:
 
@@ -35,14 +35,14 @@ It is intentionally not a workflow status page. It answers four questions only:
 Important continuity facts:
 
 - `93ceeb6` is not a product-feature checkpoint.
-- The last product-code checkpoint on this branch is `4ec49c8` (`ck: preserve color pipeline shared row params`).
-- Every commit after `4ec49c8` is workflow-only: hooks, plans, contracts, workflow docs, or tests for workflow guards.
-- That statement no longer means every newer commit is ignorable for launch flow. Newer commits also contain the current manual slice continuity surfaces and the latest bounded serializer follow-up handoff, which are now the correct launch authority for this topic.
+- `4ec49c8` is no longer the last product-code checkpoint on this branch.
+- The later product checkpoints that now matter are `5e93e48` (`ck:5972173a` weighted blend), `e2e14df` (`ck:47bd4450` basin-default lane retention), and `7d7f779` (`ck:a0ce2d03` neutral_finish owner proof).
+- The newer heads after `7d7f779` (`ab83e0a`, `8e2b27b`, and `a087faf`) are continuity/tooling follow-ups rather than additional shipped feature rows.
 
 Practical meaning:
 
-- The app state is the product state at `4ec49c8`, plus all earlier advanced-color and manual-capture product commits beneath it.
-- The hook and anti-lie work after `4ec49c8` changed the workflow, not the shipped feature behavior.
+- The app state is the product state at `7d7f779`, plus all earlier advanced-color and manual-capture product commits beneath it.
+- The later neutral-finish continuity closeout and phase8c proof-ladder work matter for restart/proof routing, not as new shipped feature rows.
 
 ---
 
@@ -139,6 +139,11 @@ Shipped ordered Grading stack:
 - `contrast_lift`
 - `phase_finish`
 - `band_finish`
+- `neutral_finish`
+
+Bounded pair-only Grading:
+
+- `basin_default`
 
 Catalog anchors:
 
@@ -149,37 +154,49 @@ Catalog anchors:
 
 These are the product checkpoints that still define the branch:
 
-1. `80cc000` / `ck:9a48c0a8`
+1. `7d7f779` / `ck:a0ce2d03`
+   - `neutral_finish` shipped as a real runtime-backed Grading row.
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
+
+2. `e2e14df` / `ck:47bd4450`
+   - basin-default grading lane retention closed as a shipped bounded Grading owner path for root-basin tuples.
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
+
+3. `5e93e48` / `ck:5972173a`
+   - generic Source composition via weighted blend landed as a real bounded Source-stack feature.
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
+
+4. `80cc000` / `ck:9a48c0a8`
    - `band_finish` shipped as a real grading row.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:159).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-2. `3c1e411` / `ck:679b2bc3`
+5. `3c1e411` / `ck:679b2bc3`
    - grading stack composition landed.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:170).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-3. `9a0009b` / `ck:2f9efd8f`
+6. `9a0009b` / `ck:2f9efd8f`
    - diagnostics save precision and capture-backed serialization repair landed.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:172).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-4. `f9d26f3` / `ck:44faf037`
+7. `f9d26f3` / `ck:44faf037`
    - palette blend stack landed.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:174).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-5. `6170dc4` / `ck:85fa0a84`
+8. `6170dc4` / `ck:85fa0a84`
    - `root_proximity` backend precision policy landed.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:156).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-6. `3b08179` / `ck:49038a61`
+9. `3b08179` / `ck:49038a61`
    - forward manual ExplainO capture authority landed for current saves/replays.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:182).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-7. `564f724` / `ck:colorpreset1`
+10. `564f724` / `ck:colorpreset1`
    - root-basin preset checkbox pair behavior landed.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:186).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
-8. `4ec49c8` / `ck:presetpreserve1`
+11. `4ec49c8` / `ck:presetpreserve1`
    - row function switching now preserves same-path/type authored values.
-   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md:187).
+   - See [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md).
 
 ### 2.4 Feature behaviors that have explicit proof anchors
 
@@ -251,34 +268,34 @@ These are real planned/spec'd surfaces, but they are explicitly not shipped toda
 
 Current meaning:
 
-- weighted blend is now the chosen first mixer contract for the next bounded implementation lane
-- no generic multi-Source runtime claim exists yet
-- work must not start as opportunistic code without the checked-in weighted-blend slice authority
+- weighted blend already shipped at `5e93e48` / `ck:5972173a`
+- bounded generic multi-Source runtime/bridge/persistence/reset truth now exists for the shipped non-pair Source set
+- this is no longer the next unshipped feature-row resume surface
 
 Authority:
 
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md:198)
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md:42)
+- [advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+- [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md)
 
 ### Remaining defined pipeline/operator work
 
-- `neutral_finish`
 - `tone_map_finish`
 - `grade.glow`
-- basin lane-retention
 - `balance_void_grade`
 
 Current meaning:
 
-- these are still inventory or follow-up rows
-- they are not part of the shipped foundation closure claim
-- each needs its own owner-proof slice before it becomes visible product work
-- the next feature-row resume remains weighted blend, but it is intentionally paused until the active proof-ladder acceleration slice reduces truthful iteration cost for grading/color-pipeline owner work
+- `basin_default` and `neutral_finish` are already closed and must not be relisted as pending rows
+- `tone_map_finish` is now the next unopened feature-row resume because it remains in the inventory but is still absent from the shipped runtime-backed grading catalog and live bridge
+- `grade.glow` and `balance_void_grade` remain explicitly deferred until their own owner-proof slices exist
+- the closed phase8c command ladder is now the cheapest truthful starting proof surface for later grading/color-pipeline row work
 
 Authority:
 
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md:25)
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md:5)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md)
 
 ---
 
@@ -293,16 +310,16 @@ Ignore these when reconstructing product status:
 
 Why:
 
-- none of that changed runtime advanced-color behavior
-- none of that changed the shipped bounded advanced-color spine
-- all of it happened after the last product-code checkpoint
+- none of that changes product state by itself
+- some later commits did land real product behavior again, so workflow-only heads must be separated from feature checkpoints instead of collapsed into one story
+- phase8c specifically changes proof cost, not the shipped advanced-color row set
 
 The cleanest seam is:
 
-- product code stops at `4ec49c8`
-- workflow-only churn starts immediately after `4ec49c8`
+- product feature checkpoints after preset preservation include `5e93e48`, `e2e14df`, and `7d7f779`
+- continuity/tooling-only follow-ups around them include `ab83e0a`, `8e2b27b`, and `a087faf`
 
-If a future session asks “what changed in the app after preset preservation?”, the answer is: nothing product-facing landed after that point on this branch.
+If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, and neutral_finish landed; later hook/tooling churn still should not be mistaken for additional feature rows.
 
 ---
 
@@ -324,7 +341,7 @@ What is true:
 What is not true:
 
 - the broader inventory is not fully shipped just because it appears in planning docs
-- deferred rows and generic Source composition are not shipped yet
+- deferred rows such as `tone_map_finish`, `grade.glow`, and `balance_void_grade` are not shipped just because they remain in planning inventory
 
 ### Stronger module boundaries and reusable core
 
@@ -374,17 +391,17 @@ Why:
 
 This is the one-topic-at-a-time work list. Each lane is intentionally bounded so a single session can focus on one topic area without dragging three others behind it.
 
-### Priority 0 - Generic Source composition via weighted blend
+### Priority 0 - `tone_map_finish` owner proof
 
 Goal:
 
-- ship the first real generic multi-Source composition model for the reusable pipeline core
+- ship `tone_map_finish` as a real runtime-backed Grading row for the reusable pipeline core
 
 Why this is first now:
 
-- this is the next missing core composition seam
-- the user explicitly reprioritized the sprint back to core feature correctness over historical back-compat
-- this is a prerequisite for finishing the general composition pattern before later Balance/Void and ExplainO follow-ons
+- weighted blend, basin-default, and `neutral_finish` already checkpointed
+- `tone_map_finish` is the nearest remaining defined Grading row that is still absent from the shipped runtime-backed grading catalog, live bridge, diagnostics/archive proof, and reset/default proof
+- `grade.glow` remains excluded because no reusable owner exists yet, and Balance/Void remains a separate operator slice
 
 Owner surfaces:
 
@@ -398,27 +415,29 @@ Owner surfaces:
 
 Bounded TODOs:
 
-1. Lock weighted blend as the first generic Source mixer semantics.
-2. Add a real Source stack owner analogous to Shape / Palette / Grading stacks.
-3. Keep `root_index` out of the generic Source stack and leave root-basin pairing separate.
-4. Add live bridge, runtime math, diagnostics persistence, archive persistence, and reset/default proof for multi-Source rows.
-5. Prove the lane through runtime-backed tests, not only draft/editor behavior.
+1. Lock `tone_map_finish` as a single-row owner-proof slice.
+2. Add truthful live bridge, runtime math, diagnostics/archive persistence, and reset/default behavior for `tone_map_finish`.
+3. Preserve shipped behavior for `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, and `neutral_finish`.
+4. Do not widen into `grade.glow`, `balance_void_grade`, or unrelated grading rewrites.
+5. Prove the lane through runtime-backed tests and a published-runtime witness, not only editor behavior.
 
 Proof to require before calling it done:
 
-- weighted multi-Source runtime witness
+- `tone_map_finish` runtime witness
 - live import/apply proof
 - diagnostics and archive persistence proof
 - reset/default proof
-- explicit proof that `root_index` remains pair-only
+- explicit proof that `grade.glow` remains absent
 
 Stop point:
 
-- generic Source composition is runtime-real for the bounded shipped Source set, or the slice stops at a truthful blocked owner seam without claiming it shipped
+- `tone_map_finish` is runtime-real for the bounded shipped grading stack, or the slice stops at a truthful blocked owner seam without claiming it shipped
 
 Start from:
 
-- [gpt54_vscode_source_composition_weighted_blend_startup_prompt.md](/C:/code/cuda_newton_fractal_clone/docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+- [advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md)
 
 ### Priority 1 - Remaining defined pipeline/operator sets
 
@@ -428,10 +447,7 @@ Goal:
 
 Candidate order:
 
-1. basin lane-retention
-2. `neutral_finish`
-3. `tone_map_finish`
-4. `grade.glow`
+1. `grade.glow`
 
 Owner surfaces:
 
@@ -456,7 +472,7 @@ Start from:
 
 Goal:
 
-- ship `balance_void_grade` as a real reusable grading operator after the generic composition and remaining defined pipeline/operator work are in place
+- ship `balance_void_grade` as a real reusable grading operator after `tone_map_finish` and any chosen remaining base-grading owner proofs are in place
 
 Owner surfaces:
 
@@ -483,7 +499,7 @@ Stop point:
 
 Goal:
 
-- move from the reusable pipeline core into the later ExplainO family expansion only after the generic composition and operator lanes above are real
+- move from the reusable pipeline core into the later ExplainO family expansion only after the remaining grading/operator lanes above are either shipped or explicitly deferred
 
 Current meaning:
 
@@ -576,14 +592,13 @@ Stop point:
 
 If you resume from this note, do exactly one of these at a time:
 
-1. proof-ladder acceleration for the current advanced-color grading/color-pipeline owner seams
-2. generic Source composition via weighted blend
-3. one specific remaining pipeline/operator lane
-4. Balance/Void grading
-5. ExplainO-BalanceVoid / ExplainO-all follow-on
-6. foundation closure decision
-7. historical archive compatibility / archive UX
-8. polish on already-shipped behavior
+1. `tone_map_finish` owner proof
+2. one specific remaining pipeline/operator lane
+3. Balance/Void grading
+4. ExplainO-BalanceVoid / ExplainO-all follow-on
+5. foundation closure decision
+6. historical archive compatibility / archive UX
+7. polish on already-shipped behavior
 
 Do not mix:
 
@@ -610,7 +625,7 @@ For product-state re-entry, start with:
 
 1. [advanced_color_feature_restart_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_feature_restart_inventory.md)
 2. [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-3. [gpt54_vscode_source_composition_weighted_blend_startup_prompt.md](/C:/code/cuda_newton_fractal_clone/docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md)
+3. [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
 
 ---
 
@@ -618,9 +633,9 @@ For product-state re-entry, start with:
 
 If you want the fastest path back to truthful feature velocity:
 
-1. Close the bounded proof-ladder acceleration slice first so grading/color-pipeline owner work has a cheaper truthful native rerun path.
-2. Then open one bounded slice on generic Source composition via weighted blend.
-3. After that land the remaining defined pipeline/operator lanes one bounded owner-proof slice at a time.
-4. Only after that move on to Balance/Void and the later ExplainO family track.
+1. Reuse the closed phase8c command ladder for the next grading/color-pipeline owner slice.
+2. Then open one bounded slice on `tone_map_finish` owner proof.
+3. After that choose explicitly between `grade.glow`, `balance_void_grade`, or foundation closure from the matrix.
+4. Keep historical archive compatibility separate unless it is explicitly reprioritized.
 
-That is the shortest path back to truthful core feature velocity instead of reopening historical compatibility work by inertia.
+That is the shortest path back to truthful core feature velocity instead of reopening already closed weighted-blend/basin-default/neutral-finish work or historical compatibility by inertia.

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2 complete - the paste-ready startup prompt for generic Source composition via weighted blend is landed, and the stale restart/closure authority that still treated the historical manual archive as the active sprint blocker is repaired so the prompt launches into the real next core-feature lane.
+Phase 2 complete - this paste-ready startup prompt remains checked in as the historical packet for the now-closed weighted-blend Source-composition lane. It repaired stale archive-first authority at the time, but the current next unopened feature row has since moved forward to `tone_map_finish`.
 
 ## Phase Checklist
 
@@ -14,13 +14,13 @@ Phase 2 complete - the paste-ready startup prompt for generic Source composition
 - [done] Implement the next bounded work prompt instead of leaving it in chat.
 - [done] Make the anti-lie rule explicit: any agent is assumed to be a liar until machine proof says otherwise.
 - [done] Make hostile review explicitly assume the agent, its claims, its tests, and its summaries are guilty by default.
-- [done] Target the next large useful core-feature lane: generic Source composition via weighted blend.
+- [done] Target what was then the next large useful core-feature lane: generic Source composition via weighted blend.
 - [done] Keep root_index pair-only and keep Balance/Void, ExplainO-BalanceVoid, ExplainO-all, archive UX, and workflow churn out of this slice.
 - [done] Repair the stale authority that still treated the historical manual archive as the active sprint blocker for future sessions.
 
 ## Presumption Loop
 
-The controlling risk is not missing wording; it is launching the next GPT-5.4 session into stale product authority. A prompt that says "implement weighted blend" while the checked-in restart and closure surfaces still say the historical manual archive is the only active blocker would immediately produce contradiction, scope drift, and more wasted turns. The startup packet is only useful if it does two things at once: hard-lock the future session onto the generic Source composition weighted-blend lane, and remove the stale repo-authority claim that old historical archive compatibility outranks current core feature completion in this moving beta surface.
+The controlling risk was not missing wording; it was launching the then-next GPT-5.4 session into stale product authority. A prompt that said "implement weighted blend" while the checked-in restart and closure surfaces still said the historical manual archive was the only active blocker would have produced contradiction, scope drift, and more wasted turns. The startup packet was only useful if it did two things at once: hard-lock that session onto the generic Source composition weighted-blend lane, and remove the stale repo-authority claim that old historical archive compatibility outranked current core feature completion in that earlier branch state.
 
 The cheapest disconfirming path is to reread the restart inventory, foundation plan, closure matrix, and closure-control plan against the user's reprioritization, then reread the final prompt as if a future GPT-5.4 session were trying to substitute archive archaeology, workflow churn, or planning theater for actual Source-composition implementation. If any checked-in authority still points the agent back at the archive lane or leaves weighted-blend semantics ambiguous, the startup packet is not done.
 
@@ -35,7 +35,7 @@ The cheapest disconfirming path is to reread the restart inventory, foundation p
 
 - Authority reread: `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, and `docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md` were re-read before rewriting the prompt and reprioritizing the restart surfaces.
 - Deliverable target: `docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md` is the checked-in paste-ready startup prompt for future GPT-5.4 VS Code sessions on the new Source-composition lane.
-- Authority repair: the restart inventory and foundation closure docs now describe the historical manual archive as a separate historical-compatibility issue rather than the active sprint-core blocker, and they promote weighted-blend generic Source composition to the next high-priority lane.
+- Authority repair: the restart inventory and foundation closure docs first moved the branch off archive-first routing and onto weighted blend; later checkpoints then closed weighted blend itself and moved the current next unopened row forward to `tone_map_finish`.
 
 ## Hostile Audit
 

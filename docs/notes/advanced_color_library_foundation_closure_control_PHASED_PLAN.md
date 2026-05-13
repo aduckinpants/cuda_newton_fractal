@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - complete for truthful closure-control checkpoint. The closure-control matrix remains the authority for shipped versus deferred advanced-color state, but the later sprint reprioritization means the next active core-feature lane is now generic Source composition via weighted blend. The historical `explaino_inertial` reload mismatch remains a real historical compatibility issue rather than the default next sprint blocker.
+Phase 4 - complete for truthful closure-control checkpoint. The closure-control matrix remains the authority for shipped versus deferred advanced-color state, but later feature checkpoints moved past the weighted-blend reprioritization that this plan originally recorded. Weighted blend, basin-default, and neutral_finish are now closed, so the current next unopened feature row is `tone_map_finish` while the historical `explaino_inertial` reload mismatch remains a real separate compatibility issue rather than the default next sprint blocker.
 
 ## Phase Checklist
 
@@ -88,7 +88,7 @@ The manual `explaino_inertial` capture report did not broaden this workflow-only
 
 ## Resume Point
 
-Use the truthful closure-control matrix as the shipped/deferred boundary, then open the next active core-feature lane on generic Source composition via weighted blend. Keep the manual `234919_563__explaino_inertial` mismatch in its separate historical compatibility lane unless Adam explicitly reprioritizes it again. Do not claim foundation closure while active core lanes are still unshipped or while the historical mismatch is falsely described as recovered.
+Use the truthful closure-control matrix as the shipped/deferred boundary, then open the current next unopened feature row on `tone_map_finish` rather than restarting weighted blend. Keep the manual `234919_563__explaino_inertial` mismatch in its separate historical compatibility lane unless Adam explicitly reprioritizes it again. Do not claim foundation closure while active deferred lanes are still unshipped or while the historical mismatch is falsely described as recovered.
 
 ## Action Hostile Review
 

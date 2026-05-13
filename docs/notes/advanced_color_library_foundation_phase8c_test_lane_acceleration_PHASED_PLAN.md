@@ -13,7 +13,7 @@ Complete - checkpoint commit `8e2b27b` and machine proof receipts closed the mea
 ## Explicit User Asks
 
 - [done] Reduce test/proof latency for the current advanced-color grading/color-pipeline workflow without lying about coverage.
-- [done] Do not open the next feature row yet; keep generic Source weighted blend paused behind this technical-debt slice.
+- [done] Do not open the next feature row yet; keep this tooling slice bounded even though later continuity repair confirmed weighted blend, basin-default, and neutral_finish were already closed before the restart authority caught up.
 - [done] Do not implement `tone_map_finish`, `grade.glow`, `balance_void_grade`, ExplainO-BalanceVoid, or ExplainO-all.
 - [done] Do not reopen manual archive work.
 - [done] Avoid hook/crash-recovery/anti-lie edits unless a proof-lane tooling change absolutely requires touching an existing viewer-host wrapper.
@@ -91,7 +91,7 @@ Complete - checkpoint commit `8e2b27b` and machine proof receipts closed the mea
 
 ## Resume Point
 
-Closed. The next feature-row resume remains weighted blend, but it should now start from the measured phase8c command ladder instead of rediscovering the full-helper choke point.
+Closed. The measured phase8c command ladder remains the cheapest truthful proof surface for the next feature-row resume, but current restart authority now points to `tone_map_finish` rather than weighted blend.
 
 ## Action Hostile Review
 

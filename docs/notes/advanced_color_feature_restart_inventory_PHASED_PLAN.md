@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 complete - the durable restart inventory is still the restart surface, but it is now repaired to reflect the user's new sprint priority: generic Source composition via weighted blend is the next core-feature lane, while the historical manual archive is tracked as a separate compatibility issue rather than the active sprint blocker.
+Phase 4 complete - the durable restart inventory is still the restart surface, but later feature checkpoints moved past the weighted-blend reprioritization that this plan originally recorded. Weighted blend, basin-default, and neutral_finish are now closed, so the current next unopened feature row is `tone_map_finish` while the historical manual archive remains a separate compatibility issue rather than the active sprint blocker.
 
 ## Phase Checklist
 
@@ -39,7 +39,7 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 - History reread: `git log --name-only 4ec49c8..HEAD` proved that every later commit is workflow-only and that `4ec49c8` is the last product-code checkpoint on the branch.
 - Code anchors: `ui_app/src/fractal_types.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/diagnostics_state_io.cpp`, and the advanced-color tests were re-read to anchor shipped runtime behavior to live code.
 - Deliverable target: `docs/notes/advanced_color_feature_restart_inventory.md` is the durable restart note for future one-topic sessions.
-- Priority repair: the restart note now promotes weighted-blend generic Source composition to the next core lane, keeps remaining pipeline/operator work ahead of archive UX/polish, and downgrades the historical manual archive to a separate compatibility issue.
+- Priority repair: the restart note first promoted weighted-blend generic Source composition over archive recovery, and the current continuity repair now moves the next unopened row forward again to `tone_map_finish` after weighted blend, basin-default, and neutral_finish closed.
 - Validation: `artifacts/validation/advanced_color_feature_restart_inventory_contract.json` reports the contract schema valid.
 - Validation: `artifacts/validation/viewer_host_assert_phased_plan_sync.json` was regenerated green for this phased plan.
 - Validation: `artifacts/validation/advanced_color_feature_restart_inventory_hostile_audit.json` now reports the hostile-audit validator green on the finished restart-inventory slice.
@@ -54,7 +54,7 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 - [done] Pass 1 - audit the current branch, active contract, and handoff chain to separate workflow-only churn from product-code checkpoints.
 - [done] Pass 2 - audit the checked-in foundation plans and live code/test anchors to map the shipped advanced-color spine and the real closure blocker.
 - [done] Pass 3 - audit the final restart inventory for false priority, mixed-topic TODOs, or any place where workflow repairs are still presented as feature progress; the repaired note keeps deferred work separate from blockers and keeps each future lane single-topic.
-- [done] Pass 4 - re-audit the restart surface after the user reprioritized the sprint; promote generic Source composition weighted blend to the next core lane, keep remaining pipeline/operator lanes ahead of archive UX, and demote the historical manual archive from active sprint blocker to separate compatibility work.
+- [done] Pass 4 - re-audit the restart surface after the user's then-current reprioritization; weighted blend replaced archive recovery as the next core lane at that checkpoint, and later continuity work moved the current next unopened row forward again to `tone_map_finish`.
 
 ## Audit Findings
 
@@ -78,4 +78,4 @@ The cheapest disconfirming path is a zero-assumption reread of the checked-in fo
 
 ## Resume Point
 
-Checkpoint the validated restart inventory cleanly. After that, future work should start from the new inventory note and the weighted-blend Source-composition startup packet instead of reconstructing state from hook history or reopening archive archaeology by inertia.
+Checkpoint the validated restart inventory cleanly. After that, future work should start from the inventory note plus the current foundation/matrix authority instead of reconstructing state from hook history, reopening archive archaeology by inertia, or relaunching the now-historical weighted-blend startup packet as if it were still next.

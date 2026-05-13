@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8d_restart_authority_repair",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8d_restart_authority_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8d_restart_authority_repair.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8d_restart_authority_repair_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md",
+    "docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md",
+    "docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_closure_control_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "treat the stale weighted-blend restart guidance as a critical continuity bug",
+    "open a new bounded workflow continuity slice before mutating restart-authority docs",
+    "repair only the stale restart-authority surfaces needed to make the next feature lane truthful again",
+    "close with hostile review, commit, receipts, and a clean tree"
+  ],
+  "forbidden_operator_prompts": [
+    "mutate restart authority under the closed phase8c contract",
+    "claim weighted blend is still the next unshipped feature row after ck:5972173a",
+    "implement tone_map_finish, grade.glow, balance_void_grade, ExplainO-BalanceVoid, ExplainO-all, or more tooling work in this slice",
+    "reopen manual archive work or runtime feature work in this docs-only continuity repair"
+  ],
+  "required_defaults": {
+    "restart_authority_truth_required": "required",
+    "weighted_blend_next_lane_removed": "required",
+    "next_feature_row_authority": "tone_map_finish",
+    "runtime_code_changes": "forbidden"
+  },
+  "forbidden_defaults": {
+    "weighted_blend_next_feature_row": "forbidden",
+    "phase8c_contract_reuse": "forbidden",
+    "feature_scope_widening": "forbidden",
+    "tooling_scope_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8d_restart_authority_repair.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8d_restart_authority_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8d_restart_authority_repair_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8d_restart_authority_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8d_restart_authority_repair_contract_schema_valid",
+      "description": "The phase8d restart-authority repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8d_restart_authority_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8d_restart_authority_repair_plan_sync_ok",
+      "description": "The phase8d restart-authority repair phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8d_restart_authority_repair_hostile_audit_ok",
+      "description": "The phase8d restart-authority repair hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8d_restart_authority_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

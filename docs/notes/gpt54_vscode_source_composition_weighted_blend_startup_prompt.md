@@ -1,10 +1,10 @@
 # GPT-5.4 VS Code Startup Prompt For Generic Source Composition Weighted Blend
 
-Paste the following as the first message in a fresh GPT-5.4 VS Code chat when starting the generic Source composition implementation lane.
+This file is a historical startup packet for the now-closed generic Source composition weighted-blend lane. Weighted blend closed at `ck:5972173a`; do not use this as the current next-lane launch authority now that restart authority has moved forward to `tone_map_finish`.
 
 ## Do Not Use This Prompt Blindly
 
-This prompt is for the next core-feature lane:
+This prompt was for the then-next core-feature lane:
 
 - generic Source composition via weighted blend
 
@@ -23,14 +23,14 @@ Mainline working pattern:
 - then launch from the latest real `HANDOFF_LOG.md` entry for the active topic
 - then continue the active slice plan directly
 
-For this repo, after the historical manual archive lane was deprioritized as a sprint gate, the next default core-feature launch authority is:
+For this repo, after the historical manual archive lane was deprioritized as a sprint gate, the weighted-blend launch authority at that time was:
 
 - `docs/notes/advanced_color_feature_restart_inventory.md`
 - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
 - `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`
 - the latest relevant `HANDOFF_LOG.md` entry for the Source-composition lane once one exists
 
-Until a newer real Source-composition handoff exists, this startup prompt is the correct bootstrap surface for that lane.
+This startup prompt is now a historical record of the closed weighted-blend lane, not the current bootstrap surface for the next unopened feature row.
 
 ```text
 You are working in C:\code\cuda_newton_fractal_clone on branch feature/advanced-color-pipeline-draft-editor-reframe.
