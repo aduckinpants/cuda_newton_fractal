@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_feature_restart_inventory",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_feature_restart_inventory.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "write a detailed restart inventory for the actual advanced-color and manual-capture feature state",
+    "separate shipped work from blocked work, deferred work, and workflow-only churn",
+    "organize the remaining work into distinct prioritized topic areas that can be resumed one at a time",
+    "make the restart surface durable enough that future sessions do not depend on chat reconstruction"
+  ],
+  "forbidden_operator_prompts": [
+    "treat workflow hook repairs as product feature progress",
+    "claim foundation closure while the manual explaino inertial archive blocker remains open",
+    "merge multiple unrelated feature topics into one resume lane without saying so",
+    "leave shipped versus deferred advanced-color behavior ambiguous"
+  ],
+  "required_defaults": {
+    "restart_inventory_required": "required",
+    "shipped_vs_blocked_vs_deferred_boundary_required": "required",
+    "prioritized_topic_todos_required": "required",
+    "runtime_code_changes": "forbidden"
+  },
+  "forbidden_defaults": {
+    "chat_only_resume_state": "forbidden",
+    "workflow_churn_as_feature_progress": "forbidden",
+    "foundation_closure_claim_without_blocker_resolution": "forbidden",
+    "multi_topic_resume_ambiguity": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_feature_restart_inventory.contract.json --out-json artifacts/validation/advanced_color_feature_restart_inventory_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_feature_restart_inventory_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_feature_restart_inventory_contract_schema_valid",
+      "description": "The advanced color restart inventory contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_feature_restart_inventory_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_feature_restart_inventory_plan_sync_ok",
+      "description": "The restart inventory phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_feature_restart_inventory_hostile_audit_ok",
+      "description": "The restart inventory hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_feature_restart_inventory_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
