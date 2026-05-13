@@ -15,6 +15,7 @@ try:
         contract_proof_receipt_path,
         discover_repo_root,
         evaluate_checkpoint_guard,
+        evaluate_inherited_clean_closure_guard,
         evaluate_contract_proof_receipt_guard,
         evaluate_validation_receipt_guard,
         load_active_contract_state,
@@ -32,6 +33,7 @@ except ModuleNotFoundError:
         contract_proof_receipt_path,
         discover_repo_root,
         evaluate_checkpoint_guard,
+        evaluate_inherited_clean_closure_guard,
         evaluate_contract_proof_receipt_guard,
         evaluate_validation_receipt_guard,
         load_active_contract_state,
@@ -231,6 +233,20 @@ def build_userprompt_response(
             ),
         }
 
+    if resolution_status in {"clean_validation_receipt_required", "clean_contract_proof_required"}:
+        should_block, reason = evaluate_inherited_clean_closure_guard(baseline, current, session_id, repo_root)
+        if should_block:
+            head = str(current.get("head", "")).strip()
+            if "contract proof" in reason.lower() or "contract_id" in reason.lower() or "contract_hash" in reason.lower():
+                return {
+                    "continue": False,
+                    "systemMessage": banner + " " + build_contract_proof_prompt_message(prompt_text, repo_root, head, reason),
+                }
+            return {
+                "continue": False,
+                "systemMessage": banner + " " + build_validation_receipt_prompt_message(prompt_text, repo_root, head),
+            }
+
     if baseline is None and not bool(current.get("clean", False)):
         changed_paths = (
             evaluate_checkpoint_guard(None, current).changed_paths
@@ -254,15 +270,13 @@ def build_userprompt_response(
             "systemMessage": banner + " " + build_dirty_prompt_message(status.changed_paths, prompt_text),
         }
 
-    baseline_head = "" if baseline is None else str(baseline.get("head", "")).strip()
-    current_head = str(current.get("head", "")).strip()
-    head_advanced = bool(baseline_head and current_head and baseline_head != current_head)
-
-    should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
-    if not should_block and head_advanced:
+    should_block, reason = evaluate_inherited_clean_closure_guard(baseline, current, session_id, repo_root)
+    if not should_block:
+        should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+    if not should_block:
         should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
     if should_block:
-        head = current_head
+        head = str(current.get("head", "")).strip()
         if "contract proof" in reason.lower() or "contract_id" in reason.lower() or "contract_hash" in reason.lower():
             return {
                 "continue": False,

@@ -88,6 +88,7 @@ def _write_active_contract_with_plan(
 ) -> tuple[Path, Path]:
     contract_path = repo_root / "docs" / "contracts" / f"{contract_id}.contract.json"
     plan_path = repo_root / "docs" / "notes" / f"{contract_id}_PHASED_PLAN.md"
+    (repo_root / "tools").mkdir(parents=True, exist_ok=True)
     contract_path.parent.mkdir(parents=True, exist_ok=True)
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     plan_path.write_text(plan_text, encoding="utf-8")
@@ -321,15 +322,12 @@ def test_completion_hook_blocks_missing_validation_receipt_via_recipient_name(mo
     assert "def456.json" in hook["additionalContext"]
 
 
-def test_build_pretool_response_allows_clean_inherited_head_without_contract_proof(tmp_path: Path) -> None:
+def test_build_pretool_response_denies_fresh_clean_head_without_contract_proof(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         session_id="session-1",
         plan_text=TEST_PLAN_TEXT,
     )
-    (tmp_path / "tools").mkdir()
-    baseline = _snapshot()
-    baseline["head"] = "def456"
     current = _snapshot()
     current["head"] = "def456"
     receipt_path = validation_receipt_path("def456", tmp_path)
@@ -338,7 +336,7 @@ def test_build_pretool_response_allows_clean_inherited_head_without_contract_pro
 
     response = build_pretool_response(
         "task_complete",
-        baseline,
+        None,
         current,
         "session-1",
         {
@@ -350,26 +348,28 @@ def test_build_pretool_response_allows_clean_inherited_head_without_contract_pro
 
     assert response is not None
     hook = response["hookSpecificOutput"]
-    assert hook["permissionDecision"] == "allow"
+    assert hook["permissionDecision"] == "deny"
+    assert "contract proof receipt" in hook["permissionDecisionReason"].lower()
 
 
-def test_build_stop_response_allows_clean_inherited_head_without_contract_proof(tmp_path: Path) -> None:
+def test_build_stop_response_blocks_fresh_clean_head_without_contract_proof(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         session_id="session-1",
         plan_text=TEST_PLAN_TEXT,
     )
-    baseline = _snapshot()
-    baseline["head"] = "def456"
     current = _snapshot()
     current["head"] = "def456"
     receipt_path = validation_receipt_path("def456", tmp_path)
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(json.dumps({"head": "def456"}, indent=2) + "\n", encoding="utf-8")
 
-    response = build_stop_response(baseline, current, "session-1", tmp_path)
+    response = build_stop_response(None, current, "session-1", tmp_path)
 
-    assert response is None
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "contract proof receipt" in payload["reason"].lower()
 
 
 def test_completion_hook_allows_non_task_complete(monkeypatch) -> None:
@@ -718,24 +718,23 @@ def test_build_userprompt_response_warns_when_head_advanced_without_receipt(tmp_
     assert "def456.json" in response["systemMessage"]
 
 
-def test_build_userprompt_response_allows_clean_inherited_receipted_head_without_contract_proof(tmp_path: Path) -> None:
+def test_build_userprompt_response_blocks_fresh_clean_receipted_head_without_contract_proof(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         session_id="session-1",
         plan_text=TEST_PLAN_TEXT,
     )
-    baseline = _snapshot()
-    baseline["head"] = "def456"
     current = _snapshot()
     current["head"] = "def456"
     receipt_path = validation_receipt_path("def456", tmp_path)
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(json.dumps({"head": "def456"}, indent=2) + "\n", encoding="utf-8")
 
-    response = build_userprompt_response(baseline, current, "fresh prompt", "session-1", tmp_path)
+    response = build_userprompt_response(None, current, "fresh prompt", "session-1", tmp_path)
 
     assert response is not None
-    assert response["continue"] is True
+    assert response["continue"] is False
+    assert "contract proof receipt" in response["systemMessage"].lower()
 
 
 def test_build_userprompt_response_requires_explicit_crash_recovery_when_dirty_baseline_missing() -> None:
@@ -908,7 +907,7 @@ def test_carryover_hook_allows_read_only_tool_when_dirty_state_active(monkeypatc
     assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
 
 
-def test_build_pretool_response_allows_task_complete_with_open_explicit_user_asks(tmp_path: Path) -> None:
+def test_build_pretool_response_denies_task_complete_with_open_explicit_user_asks(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         plan_text=(
@@ -934,10 +933,12 @@ def test_build_pretool_response_allows_task_complete_with_open_explicit_user_ask
 
     assert response is not None
     hook = response["hookSpecificOutput"]
-    assert hook["permissionDecision"] == "allow"
+    assert hook["permissionDecision"] == "deny"
+    assert "explicit user asks" in hook["permissionDecisionReason"].lower()
+    assert "Fix the real bug" in hook["additionalContext"]
 
 
-def test_build_stop_response_ignores_open_explicit_user_asks(tmp_path: Path) -> None:
+def test_build_stop_response_blocks_open_explicit_user_asks(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         plan_text=(
@@ -953,10 +954,14 @@ def test_build_stop_response_ignores_open_explicit_user_asks(tmp_path: Path) -> 
 
     response = build_stop_response(_snapshot(), _snapshot(), "session-1", tmp_path)
 
-    assert response is None
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "explicit user asks" in payload["reason"].lower()
+    assert "Land the runtime proof" in payload["reason"]
 
 
-def test_build_pretool_response_allows_task_complete_with_pending_hostile_audit(tmp_path: Path) -> None:
+def test_build_pretool_response_denies_task_complete_with_pending_hostile_audit(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         plan_text=(
@@ -985,10 +990,11 @@ def test_build_pretool_response_allows_task_complete_with_pending_hostile_audit(
 
     assert response is not None
     hook = response["hookSpecificOutput"]
-    assert hook["permissionDecision"] == "allow"
+    assert hook["permissionDecision"] == "deny"
+    assert "hostile" in hook["permissionDecisionReason"].lower()
 
 
-def test_build_stop_response_ignores_pending_hostile_audit(tmp_path: Path) -> None:
+def test_build_stop_response_blocks_pending_hostile_audit(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         plan_text=(
@@ -1008,7 +1014,10 @@ def test_build_stop_response_ignores_pending_hostile_audit(tmp_path: Path) -> No
 
     response = build_stop_response(_snapshot(), _snapshot(), "session-1", tmp_path)
 
-    assert response is None
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "hostile" in payload["reason"].lower()
 
 
 def test_validate_hostile_audit_plan_blocks_when_repaired_state_is_not_proven(tmp_path: Path) -> None:
@@ -1057,7 +1066,7 @@ def test_validate_hostile_audit_plan_allows_repaired_state_once_clean_reaudit_is
     assert payload["real_finding_recorded"] is True
 
 
-def test_build_pretool_response_allows_task_complete_without_hostile_reaudit_proof(tmp_path: Path) -> None:
+def test_build_pretool_response_denies_task_complete_without_hostile_reaudit_proof(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         plan_text=(
@@ -1090,10 +1099,12 @@ def test_build_pretool_response_allows_task_complete_without_hostile_reaudit_pro
 
     assert response is not None
     hook = response["hookSpecificOutput"]
-    assert hook["permissionDecision"] == "allow"
+    assert hook["permissionDecision"] == "deny"
+    assert "hostile review is incomplete" in hook["permissionDecisionReason"].lower()
+    assert "prove the repaired state" in hook["permissionDecisionReason"].lower()
 
 
-def test_build_pretool_response_allows_task_complete_when_salt_ndepend_gate_is_open(tmp_path: Path) -> None:
+def test_build_pretool_response_denies_task_complete_when_salt_ndepend_gate_is_open(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         contract_id="ui_integration_harness_completion",
@@ -1133,10 +1144,13 @@ def test_build_pretool_response_allows_task_complete_when_salt_ndepend_gate_is_o
 
     assert response is not None
     hook = response["hookSpecificOutput"]
-    assert hook["permissionDecision"] == "allow"
+    assert hook["permissionDecision"] == "deny"
+    assert "salt_ndepend" in hook["permissionDecisionReason"].lower()
+    assert "packet gate" in hook["permissionDecisionReason"].lower()
+    assert "runtime_ui_harness_contract.v1" in hook["additionalContext"]
 
 
-def test_build_stop_response_ignores_salt_ndepend_gate(tmp_path: Path) -> None:
+def test_build_stop_response_blocks_when_salt_ndepend_gate_is_open(tmp_path: Path) -> None:
     _write_active_contract_with_plan(
         tmp_path,
         contract_id="ui_integration_harness_completion",
@@ -1167,7 +1181,11 @@ def test_build_stop_response_ignores_salt_ndepend_gate(tmp_path: Path) -> None:
 
     response = build_stop_response(_snapshot(), _snapshot(), "session-1", tmp_path)
 
-    assert response is None
+    assert response is not None
+    payload = response["hookSpecificOutput"]
+    assert payload["decision"] == "block"
+    assert "salt_ndepend" in payload["reason"].lower()
+    assert "packet gate" in payload["reason"].lower()
 
 
 def test_build_pretool_response_allows_task_complete_when_salt_ndepend_gate_is_ready(tmp_path: Path) -> None:
@@ -1396,6 +1414,54 @@ def test_resolve_session_baseline_keeps_stale_clean_baseline_when_current_head_l
     assert resolution.status == "existing"
     assert resolution.baseline == first_snapshot
     assert checkpoint_guard.load_session_baseline("unknown_session", repo_root) == first_snapshot
+
+
+def test_resolve_session_baseline_does_not_bootstrap_fresh_clean_head_without_validation_receipt(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "ignore artifacts"], cwd=repo_root, check=True, capture_output=True, text=True)
+    _write_active_contract_with_plan(
+        repo_root,
+        session_id=contract_state.GLOBAL_CONTRACT_SESSION_ID,
+        plan_text=TEST_PLAN_TEXT,
+    )
+    subprocess.run(["git", "add", "docs"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock slice contract"], cwd=repo_root, check=True, capture_output=True, text=True)
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+
+    resolution = checkpoint_guard.resolve_session_baseline("fresh_session", current_snapshot, repo_root)
+
+    assert resolution.status == "clean_validation_receipt_required"
+    assert resolution.baseline is None
+    assert not checkpoint_guard.state_path_for_session("fresh_session", repo_root).exists()
+
+
+def test_resolve_session_baseline_does_not_bootstrap_fresh_clean_head_without_contract_proof(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+    (repo_root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "ignore artifacts"], cwd=repo_root, check=True, capture_output=True, text=True)
+    _write_active_contract_with_plan(
+        repo_root,
+        session_id=contract_state.GLOBAL_CONTRACT_SESSION_ID,
+        plan_text=TEST_PLAN_TEXT,
+    )
+    subprocess.run(["git", "add", "docs"], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "lock slice contract"], cwd=repo_root, check=True, capture_output=True, text=True)
+    current_snapshot = checkpoint_guard.capture_repo_snapshot(repo_root)
+    current_head = str(current_snapshot["head"])
+    validation_path = validation_receipt_path(current_head, repo_root)
+    validation_path.parent.mkdir(parents=True, exist_ok=True)
+    validation_path.write_text(json.dumps({"head": current_head}, indent=2) + "\n", encoding="utf-8")
+
+    resolution = checkpoint_guard.resolve_session_baseline("fresh_session", current_snapshot, repo_root)
+
+    assert resolution.status == "clean_contract_proof_required"
+    assert resolution.baseline is None
+    assert not checkpoint_guard.state_path_for_session("fresh_session", repo_root).exists()
 
 
 def test_resolve_session_baseline_keeps_stale_clean_baseline_when_receipt_metadata_is_malformed(tmp_path: Path) -> None:

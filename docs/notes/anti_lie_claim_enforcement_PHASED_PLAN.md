@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-Phase 4 complete: the anti-lie slice was rebuilt around machine-state closure rules only. The repaired hook path now blocks on dirty-state drift, missing validation receipts for session-advanced `HEAD`, stale or missing contract proof for session-advanced `HEAD`, and locked-contract mismatches. Bootstrap audit output no longer rewrites the authoritative code-quality artifact path. This slice remains workflow-only and does not resume feature work.
+Phase 4 complete: the anti-lie slice was rebuilt around machine-state receipt proof plus the repo-wide closure gates that already remain authoritative elsewhere. The repaired hook path now blocks on dirty-state drift, missing validation receipts for inherited clean or session-advanced `HEAD`s, stale or missing contract proof for inherited clean or session-advanced `HEAD`s, locked-contract mismatches, open explicit user asks, pending hostile audit, and required `salt_ndepend` packet gates. Bootstrap audit output no longer rewrites the authoritative code-quality artifact path. This slice remains workflow-only and does not resume feature work.
 
 ## Phase Checklist
 
 - [x] Phase 1 - inventory every anti-lie-owned or anti-lie-modified surface and classify the real failure each one claims to prevent
-- [x] Phase 2 - narrow the active hook path to machine-state blockers only and remove rhetoric-only blockers from `task_complete` and `Stop`
+- [x] Phase 2 - remove rhetoric-only blockers from `task_complete` and `Stop` while preserving the repo-wide closure gates that remain authoritative outside this slice
 - [x] Phase 3 - split bootstrap audit output from authoritative receipt-evidence artifacts and add regressions for both the stale-authoritative-artifact case and the inherited-clean-head false-block case
 - [x] Phase 4 - rewrite the active anti-lie contract, phased plan, and workflow guidance to describe the reduced truthful design; revalidate, refresh receipts, and leave the slice clean
 
@@ -25,14 +25,14 @@ Phase 4 complete: the anti-lie slice was rebuilt around machine-state closure ru
 | Surface | Claimed purpose | Real failure covered | Failure mode / cost | Decision |
 | --- | --- | --- | --- | --- |
 | `evaluate_validation_receipt_guard(...)` | deny false "validated" closure after session-local commits | real and still needed | low false-block risk when tied to session-advanced `HEAD` only | keep |
-| `evaluate_contract_proof_receipt_guard(...)` | deny false "receipted / closed" claims after session-local commits | real and still needed | previous implementation false-blocked fresh clean sessions when the active contract changed on an inherited `HEAD` | replace with narrower session-advanced-only rule |
+| `evaluate_contract_proof_receipt_guard(...)` | deny false "receipted / closed" claims after session-local commits | real and still needed | previous implementation both false-blocked some inherited clean states and fail-opened inherited clean states with no proof after a fresh session | replace with a split rule: inherited clean heads still require receipts, session-advanced heads keep the session-local enforcement path |
 | `validate_validation_receipt_evidence_freshness(...)` | catch stale authoritative artifacts after receipt writing | real and still needed | correct, but only when checking authoritative receipt evidence | keep |
 | bootstrap audit write to `artifacts/code_quality_report.json` | quick orientation audit | real bootstrap need, wrong artifact path | rewrote authoritative closure evidence and triggered false Stop-hook stale-proof failures | replace with non-authoritative bootstrap artifact path |
 | restricted status-vocabulary blocker | police words like `done` and `green` | partially real, but not a closure-state guard | high false-block risk, prose policing, duplicates actual receipt/dirty-state guards poorly | remove from active blockers |
 | required completion capstone text | force a final corrective-churn slogan | no machine-state failure prevented | pure rhetoric gate; false-blocks honest completion text | remove |
-| hostile-audit validator | prove the repaired state was re-audited before closing this workflow slice | useful as slice-local evidence | valuable for this repair slice, but not a general Stop/task_complete blocker | keep as validation surface, remove from active blockers |
-| explicit-user-asks blocker inside `task_complete` / `Stop` | stop closure while plan asks remain open | partially useful plan hygiene | false-blocked clean inherited states and mixed plan discipline with closure proof | remove from active blockers |
-| `salt_ndepend` packet gate inside `task_complete` / `Stop` | enforce a separate packet-readiness policy | real in its own domain | unrelated to this repo-wide anti-lie closure repair; over-broad in generic closure hooks | remove from active blockers |
+| hostile-audit validator | prove the repaired state was re-audited before closing this workflow slice | real and still needed | broad anti-lie prose policing was not justified, but the repo already treats hostile review as an authoritative closure gate | keep as validation surface and keep the existing repo-wide closure gate |
+| explicit-user-asks blocker inside `task_complete` / `Stop` | stop closure while plan asks remain open | real repo-wide workflow authority | removing it from the shared closure path silently fail-opened other slices that still depend on that gate | keep |
+| `salt_ndepend` packet gate inside `task_complete` / `Stop` | enforce a separate packet-readiness policy | real in its own domain | removing it from the shared closure path silently fail-opened slices that still require the packet gate | keep |
 | truth report / forensic timeline / claim ledger tools | offline truth and forensic reporting | can still be useful for diagnostics | not needed as closure authority for this slice | demote to optional diagnostics |
 
 ## Replacement Design
@@ -41,16 +41,18 @@ Phase 4 complete: the anti-lie slice was rebuilt around machine-state closure ru
 
 - Dirty repo state that differs from the session baseline.
 - Missing validation receipt when the session advanced `HEAD`.
+- Missing validation receipt when a fresh session inherits a clean committed `HEAD`.
 - Missing, stale, or contract-mismatched contract proof when the session advanced `HEAD`.
+- Missing, stale, or contract-mismatched contract proof when a fresh session inherits a clean committed `HEAD`.
 - Locked-contract drift or missing required assertion results for the current session-advanced `HEAD`.
+- Open explicit user asks in the active phased plan.
+- Pending hostile audit in the active phased plan.
+- Required `salt_ndepend` packet gate failures for slices that declare that dependency.
 
 ### Active hook blockers removed
 
 - Restricted status-vocabulary policing.
 - Required anti-lie capstone text.
-- `task_complete` and `Stop` blocks driven by open explicit asks.
-- `task_complete` and `Stop` blocks driven by hostile-audit state.
-- `task_complete` and `Stop` blocks driven by `salt_ndepend` packet-readiness state.
 
 ### Receipt / artifact policy
 
@@ -72,15 +74,15 @@ Phase 4 complete: the anti-lie slice was rebuilt around machine-state closure ru
 
 ## Audit Passes
 
-- [done] Pass 1 - re-read the active anti-lie hook path and found real defects: fresh clean sessions on inherited receipted `HEAD`s could still false-block on contract-proof checks, and session bootstrap rewrote the authoritative code-quality artifact used later for closure freshness.
-- [done] Pass 2 - removed the rhetoric-only blockers from `task_complete` and `Stop`, narrowed contract-proof enforcement to session-advanced `HEAD`s only, and moved bootstrap audit output onto a non-authoritative path.
-- [done] Pass 3 - re-read the repaired state with focused regressions and confirmed the repaired slice still blocks authoritative-artifact drift while no longer false-blocking inherited clean heads.
+- [done] Pass 1 - re-read the active anti-lie hook path and found real defects: fresh clean sessions could inherit unreceipted closure debt, and session bootstrap rewrote the authoritative code-quality artifact used later for closure freshness.
+- [done] Pass 2 - removed the rhetoric-only blockers, split bootstrap audit output onto a non-authoritative path, and reintroduced inherited-clean receipt checks plus the shared repo-wide closure gates that other slices still depend on.
+- [done] Pass 3 - re-read the repaired state with focused regressions and confirmed the repaired slice blocks authoritative-artifact drift, inherited-clean receipt bypass, and repo-wide closure-gate bypass.
 
 ## Audit Findings
 
-- [done] Real defect found and repaired: `evaluate_contract_proof_receipt_guard(...)` treated a clean inherited validation-receipted `HEAD` as closure debt for the current session. The repaired guard now returns early unless the session actually advanced `HEAD`.
+- [done] Real defect found and repaired: fresh clean sessions could inherit a committed `HEAD` with no validation receipt or contract-proof receipt. The repaired baseline/bootstrap path now refuses to materialize a fresh clean baseline until the inherited committed state has the required receipts, and the prompt / `task_complete` / `Stop` hooks now block inherited clean debt directly.
 - [done] Real defect found and repaired: `tools/viewer_host_session_bootstrap.py --audit` wrote to `artifacts/code_quality_report.json`, which is also the authoritative artifact used for closure freshness checks. The repaired bootstrap audit now writes to `artifacts/bootstrap/code_quality_report.json`.
-- [done] Real defect found and repaired: the active `task_complete` / `Stop` path blocked on restricted status vocabulary, mandatory capstone text, hostile-audit state, open explicit asks, and `salt_ndepend` gate state. Those blockers were removed from the active closure path because they were not machine-state closure proof.
+- [done] Real defect found and repaired: the anti-lie rebuild removed shared `task_complete` / `Stop` gates for open explicit asks, pending hostile audit, and required `salt_ndepend` packet state across the whole repo. Those repo-wide closure gates were restored, while rhetoric-only blockers such as restricted status vocabulary and mandatory capstone text remain removed.
 - [done] No additional real defect found in the repaired state after the focused re-audit.
 
 ## Proof Ledger
@@ -89,10 +91,10 @@ Phase 4 complete: the anti-lie slice was rebuilt around machine-state closure ru
 - Bootstrap audit path separation lives in `tools/viewer_host_session_bootstrap.py`.
 - Focused regressions live in `tests/test_viewer_host_checkpoint_guard.py` and `tests/test_agent_workflow_tools.py`.
 - The replacement contract lives in `docs/contracts/anti_lie_claim_enforcement.contract.json`.
-- Workflow guidance was trimmed in `AGENTS.md`, `AGENT_WORKING_PROTOCOL.md`, and `.github/copilot-instructions.md` so they no longer prescribe anti-lie-only plan theater as if it were general proof.
+- Workflow guidance was trimmed in `AGENTS.md`, `AGENT_WORKING_PROTOCOL.md`, and `.github/copilot-instructions.md` so they no longer prescribe anti-lie-only rhetoric as proof, while still preserving the existing repo-wide closure gates.
 - Offline diagnostics survive, but they are no longer closure authority for this slice.
 
 ## Stop Point
 
-- The anti-lie replacement slice ends only after the repo is clean, the focused workflow validations are green, the replacement contract is re-locked and receipted, and direct hook probes confirm that clean inherited heads are no longer false-blocked.
+- The anti-lie replacement slice ends only after the repo is clean, the focused workflow validations are green, the replacement contract is re-locked and receipted, and direct hook probes confirm that clean inherited heads cannot bypass receipts and that shared closure gates still block when required.
 - Do not resume feature work from this plan. Pick the next feature slice explicitly in a fresh prompt.

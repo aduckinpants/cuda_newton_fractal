@@ -18,23 +18,26 @@
   ],
   "required_operator_inputs": [
     "rebuild the anti-lie stop/task_complete slice from zero trust",
-    "keep only machine-state closure blockers in the active hook path",
+    "keep only anti-lie-specific blockers that justify themselves with current machine evidence and preserve the existing repo-wide closure gates that other slices still depend on",
     "separate bootstrap or orientation outputs from authoritative receipt-evidence paths",
     "record which anti-lie surfaces were kept, narrowed, or demoted",
-    "leave the repaired slice clean, receipted, and non-blocking without resuming feature work"
+    "leave the repaired slice clean, receipted, and non-blocking without resuming feature work",
+    "do not allow fresh clean sessions to inherit unreceipted closure debt"
   ],
   "forbidden_operator_prompts": [
     "treat bootstrap or orientation artifacts as authoritative closure proof",
     "block closure on prose-only status rules, capstones, or rhetoric-only audit surfaces",
     "resume product feature work from this repair slice",
     "refresh receipts before the replacement design is stable",
-    "treat inherited clean heads as if the current session advanced them"
+    "let inherited clean heads bypass validation or contract-proof receipts",
+    "remove shared explicit-user-asks hostile-audit or salt_ndepend closure gates from the repo-wide hook path"
   ],
   "required_defaults": {
     "workflow_only": "required",
     "authoritative_receipt_evidence_is_stable": "required",
-    "closure_blockers_are_machine_state_only": "required",
-    "inherited_clean_heads_do_not_require_reproof": "required"
+    "anti_lie_specific_blockers_must_be_machine_state_backed": "required",
+    "inherited_clean_heads_still_require_receipts": "required",
+    "repo_wide_closure_gates_preserved": "required"
   },
   "forbidden_defaults": {
     "shared_receipt_artifact_paths": "forbidden",
@@ -82,11 +85,11 @@
       "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_evaluate_contract_proof_receipt_guard_revalidates_validation_evidence_artifact_drift"
     },
     {
-      "assertion_id": "anti_lie_clean_inherited_head_is_not_reblocked",
-      "description": "A clean inherited head without session-local advancement does not false-block stop",
+      "assertion_id": "anti_lie_fresh_clean_head_without_contract_proof_blocks",
+      "description": "A fresh clean session cannot inherit a committed head that still lacks contract-proof receipts",
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
-      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_stop_response_allows_clean_inherited_head_without_contract_proof"
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_stop_response_blocks_fresh_clean_head_without_contract_proof"
     },
     {
       "assertion_id": "anti_lie_bootstrap_audit_path_is_non_authoritative",
@@ -94,6 +97,27 @@
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
       "test_nodeid": "tests/test_agent_workflow_tools.py::test_bootstrap_audit_writes_to_non_authoritative_path"
+    },
+    {
+      "assertion_id": "anti_lie_open_explicit_user_asks_still_block",
+      "description": "Shared explicit-user-asks closure gates still block task completion after the anti-lie rebuild",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_task_complete_with_open_explicit_user_asks"
+    },
+    {
+      "assertion_id": "anti_lie_hostile_audit_gate_still_blocks",
+      "description": "Shared hostile-audit closure gates still block task completion after the anti-lie rebuild",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_task_complete_with_pending_hostile_audit"
+    },
+    {
+      "assertion_id": "anti_lie_salt_ndepend_gate_still_blocks",
+      "description": "Shared salt_ndepend closure gates still block task completion for slices that require them",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_task_complete_when_salt_ndepend_gate_is_open"
     }
   ]
 }

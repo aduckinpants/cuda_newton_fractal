@@ -1010,21 +1010,13 @@ def evaluate_validation_receipt_guard(
     return False, ""
 
 
-def evaluate_contract_proof_receipt_guard(
-    baseline: dict[str, Any] | None,
-    current: dict[str, Any],
+def _evaluate_contract_proof_for_current_head(
+    current_head: str,
     session_id: str,
-    repo_root: Path = REPO_ROOT,
+    repo_root: Path,
+    *,
+    inherited_clean_head: bool,
 ) -> tuple[bool, str]:
-    baseline_head = "" if baseline is None else str(baseline.get("head", "")).strip()
-    current_head = str(current.get("head", "")).strip()
-    if not current_head:
-        return False, ""
-
-    head_advanced = bool(baseline_head and baseline_head != current_head)
-    if not head_advanced:
-        return False, ""
-
     contract_state, contract_error = validate_locked_contract_state(session_id, repo_root)
     if contract_error:
         return True, contract_error
@@ -1047,13 +1039,13 @@ def evaluate_contract_proof_receipt_guard(
 
     receipt = load_contract_proof_receipt(current_head, repo_root)
     if receipt is None:
-        if head_advanced:
+        if inherited_clean_head:
             return True, (
-                "Current HEAD differs from the session baseline and lacks a contract proof receipt for the committed state. "
+                "Current clean inherited HEAD lacks a contract proof receipt for the committed state. "
                 "Run the required validators and record proof with tools/viewer_host_checkpoint_slice.py write-receipts before completion."
             )
         return True, (
-            "Current clean validation-receipted HEAD lacks a contract proof receipt for the committed state. "
+            "Current HEAD differs from the session baseline and lacks a contract proof receipt for the committed state. "
             "Run the required validators and record proof with tools/viewer_host_checkpoint_slice.py write-receipts before completion."
         )
     if str(receipt.get("head", "")).strip() != current_head:
@@ -1084,6 +1076,56 @@ def evaluate_contract_proof_receipt_guard(
                 return True, f"Contract proof assertion failed: {assertion_id} ({detail})"
             return True, f"Contract proof assertion failed: {assertion_id}"
     return False, ""
+
+
+def evaluate_contract_proof_receipt_guard(
+    baseline: dict[str, Any] | None,
+    current: dict[str, Any],
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    baseline_head = "" if baseline is None else str(baseline.get("head", "")).strip()
+    current_head = str(current.get("head", "")).strip()
+    if not current_head:
+        return False, ""
+
+    head_advanced = bool(baseline_head and baseline_head != current_head)
+    if not head_advanced:
+        return False, ""
+
+    return _evaluate_contract_proof_for_current_head(
+        current_head,
+        session_id,
+        repo_root,
+        inherited_clean_head=False,
+    )
+
+
+def evaluate_inherited_clean_closure_guard(
+    baseline: dict[str, Any] | None,
+    current: dict[str, Any],
+    session_id: str,
+    repo_root: Path = REPO_ROOT,
+) -> tuple[bool, str]:
+    if baseline is not None or not snapshot_is_clean(current):
+        return False, ""
+
+    current_head = str(current.get("head", "")).strip()
+    if not current_head:
+        return False, ""
+
+    if not clean_head_has_validation_receipt(current, repo_root):
+        return True, (
+            "Current clean inherited HEAD lacks a validation receipt for the committed state. "
+            "Run the required validation, then record it with tools/viewer_host_write_validation_receipt.py before completion."
+        )
+
+    return _evaluate_contract_proof_for_current_head(
+        current_head,
+        session_id,
+        repo_root,
+        inherited_clean_head=True,
+    )
 
 
 def _contract_drift_reason(session_id: str, repo_root: Path) -> str:
@@ -1260,9 +1302,23 @@ def build_pretool_response(
     payload = payload or {}
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
-        should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+        should_block, reason = evaluate_inherited_clean_closure_guard(baseline, current, session_id, repo_root)
+        if not should_block:
+            should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
         if not should_block:
             should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
+        if not should_block:
+            should_block, reason, open_asks = evaluate_open_explicit_user_asks_guard(session_id, repo_root)
+        else:
+            open_asks = []
+        if not should_block:
+            should_block, reason, hostile_audit_payload = evaluate_hostile_audit_guard(session_id, repo_root)
+        else:
+            hostile_audit_payload = {}
+        if not should_block:
+            should_block, reason, salt_ndepend_payload = evaluate_salt_ndepend_gate_guard(session_id, repo_root)
+        else:
+            salt_ndepend_payload = {}
         if not should_block:
             return {
                 "hookSpecificOutput": {
@@ -1277,10 +1333,30 @@ def build_pretool_response(
                 "permissionDecision": "deny",
                 "permissionDecisionReason": banner + " " + reason,
                 "additionalContext": (
-                    "Expected receipt path: "
-                    + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
-                    + " | expected contract proof receipt: "
-                    + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                    (
+                        "Open explicit user asks: " + summarize_open_user_asks(open_asks)
+                    )
+                    if open_asks
+                    else (
+                        "salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
+                        + " | freeze_ready: "
+                        + str(salt_ndepend_payload.get("freeze_ready", "unknown"))
+                        + " | findings: "
+                        + _summarize_salt_ndepend_finding_codes(list(salt_ndepend_payload.get("finding_codes", [])))
+                    )
+                    if salt_ndepend_payload
+                    else (
+                        "Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
+                        + " | blocked_reason: "
+                        + str(hostile_audit_payload.get("blocked_reason", ""))
+                    )
+                    if hostile_audit_payload
+                    else (
+                        "Expected receipt path: "
+                        + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                        + " | expected contract proof receipt: "
+                        + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                    )
                 ),
             }
         }
@@ -1358,7 +1434,9 @@ def build_posttool_response(
             },
         }
 
-    should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+    should_block, reason = evaluate_inherited_clean_closure_guard(baseline, current, session_id, repo_root)
+    if not should_block:
+        should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
     if not should_block:
         should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
     if not should_block:
@@ -1397,16 +1475,40 @@ def build_stop_response(
     banner = build_strict_banner(load_active_contract_state(session_id, repo_root))
     status = evaluate_checkpoint_guard(baseline, current)
     if not status.should_block:
-        should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
+        should_block, reason = evaluate_inherited_clean_closure_guard(baseline, current, session_id, repo_root)
+        if not should_block:
+            should_block, reason = evaluate_validation_receipt_guard(baseline, current, repo_root)
         if not should_block:
             should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
+        if not should_block:
+            should_block, reason, open_asks = evaluate_open_explicit_user_asks_guard(session_id, repo_root)
+        else:
+            open_asks = []
+        if not should_block:
+            should_block, reason, hostile_audit_payload = evaluate_hostile_audit_guard(session_id, repo_root)
+        else:
+            hostile_audit_payload = {}
+        if not should_block:
+            should_block, reason, salt_ndepend_payload = evaluate_salt_ndepend_gate_guard(session_id, repo_root)
+        else:
+            salt_ndepend_payload = {}
         if not should_block:
             return None
         return {
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
                 "decision": "block",
-                "reason": banner + " " + reason,
+                "reason": banner + " " + reason + (
+                    " Open explicit user asks: " + summarize_open_user_asks(open_asks)
+                    if open_asks
+                    else " salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
+                    + " | freeze_ready: " + str(salt_ndepend_payload.get("freeze_ready", "unknown"))
+                    + " | findings: " + _summarize_salt_ndepend_finding_codes(list(salt_ndepend_payload.get("finding_codes", [])))
+                    if salt_ndepend_payload
+                    else " Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
+                    if hostile_audit_payload
+                    else ""
+                ),
             }
         }
 
@@ -1526,6 +1628,18 @@ def resolve_session_baseline(
         )
 
     if snapshot_is_clean(current):
+        if not clean_head_has_validation_receipt(current, repo_root):
+            return SessionBaselineResolution(
+                baseline=None,
+                status="clean_validation_receipt_required",
+                changed_paths=[],
+            )
+        if not clean_head_has_closure_receipts(current, repo_root):
+            return SessionBaselineResolution(
+                baseline=None,
+                status="clean_contract_proof_required",
+                changed_paths=[],
+            )
         path = write_session_baseline(session_id, current, repo_root)
         return SessionBaselineResolution(
             baseline=current,
@@ -1607,17 +1721,28 @@ def _session_start_response(session_id: str, repo_root: Path) -> dict[str, Any]:
             }
         }
 
-    detail = (
-        build_strict_banner(active_contract)
-        + " viewer_host_checkpoint_guard did not capture a dirty-session baseline automatically. "
-        + "Run "
-        + recovery_helper_command()
-        + " and retry once the recovery adoption artifact is in place. "
-        + "Changed paths: "
-        + summarize_changed_paths(resolution.changed_paths)
-    )
-    if resolution.status == "adoption_stale":
-        detail += " Existing recovery adoption artifact does not match the current dirty snapshot; rerun the recovery helper."
+    detail = build_strict_banner(active_contract)
+    if resolution.status == "clean_validation_receipt_required":
+        detail += (
+            " viewer_host_checkpoint_guard did not capture a clean-session baseline automatically because the current inherited HEAD lacks a validation receipt. "
+            "Write the validation receipt for the current committed state before treating this as a fresh closure-safe session."
+        )
+    elif resolution.status == "clean_contract_proof_required":
+        detail += (
+            " viewer_host_checkpoint_guard did not capture a clean-session baseline automatically because the current inherited HEAD lacks contract-proof closure receipts. "
+            "Write the contract proof receipt for the current committed state before treating this as a fresh closure-safe session."
+        )
+    else:
+        detail += (
+            " viewer_host_checkpoint_guard did not capture a dirty-session baseline automatically. "
+            + "Run "
+            + recovery_helper_command()
+            + " and retry once the recovery adoption artifact is in place. "
+            + "Changed paths: "
+            + summarize_changed_paths(resolution.changed_paths)
+        )
+        if resolution.status == "adoption_stale":
+            detail += " Existing recovery adoption artifact does not match the current dirty snapshot; rerun the recovery helper."
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
