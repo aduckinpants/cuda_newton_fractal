@@ -2,21 +2,21 @@
 
 ## Current Phase
 
-Phase 3 - the bounded neutral_finish owner path is implemented and revalidated. Native helper tests, runtime publish, and the focused published-runtime neutral_finish witness are green; checkpoint commit, receipts, and handoff remain pending because this turn stops before repo closure.
+Phase 3 - complete and checkpointed at `7d7f779`. The bounded neutral_finish owner path is closed with native helper proof, runtime publish, focused published-runtime proof, validators, handoff, checkpoint commit, and machine proof receipts. Follow-on work, if any, starts from the deferred grading rows rather than reopening this slice.
 
 ## Phase Checklist
 
 - [x] Phase 1 - add focused REDs proving `neutral_finish` is still inventory-only across the runtime-backed Grading catalog, live import/apply bridge, runtime grading stack math, diagnostics/archive persistence, and reset/default seams while existing shipped Grading rows stay intact
 - [x] Phase 2 - land the smallest truthful `neutral_finish` owner path using the existing grading owner trio (`grade.exposure`, `grade.saturation`, `grade.contrast`) plus a dedicated runtime stack-math branch, without widening into `tone_map_finish`, `grade.glow`, or `balance_void_grade`
-- [ ] Phase 3 - validate, hostile-audit, runtime-publish, published-runtime proof, write receipts, and checkpoint the `neutral_finish` slice cleanly
+- [x] Phase 3 - validate, hostile-audit, runtime-publish, published-runtime proof, write receipts, and checkpoint the `neutral_finish` slice cleanly
 
 ## Explicit User Asks
 
 - [done] Ship `neutral_finish` as a real runtime-backed Grading row end to end.
 - [done] Treat basin-default grading lane retention as already closed at `e2e14df`.
-- [open] Keep `tone_map_finish` deferred for this session.
-- [open] Keep `grade.glow` and `balance_void_grade` out of scope.
-- [open] Do not reopen Source weighted-blend work, manual archive work, hooks/workflow tooling, crash recovery, or unrelated UI polish.
+- [deferred] Keep `tone_map_finish` deferred for this session.
+- [deferred] Keep `grade.glow` and `balance_void_grade` out of scope.
+- [done] Do not reopen Source weighted-blend work, manual archive work, hooks/workflow tooling, crash recovery, or unrelated UI polish.
 - [done] Prove descriptor/catalog truth, live bridge import/apply, runtime math, diagnostics persistence, archive persistence, reset/default behavior, and runtime proof for `neutral_finish`.
 
 ## Presumption Loop
@@ -40,7 +40,8 @@ The controlling risk is owner fraud: `neutral_finish` currently exists only as i
 - Owner diagnosis: `neutral_finish` still exists only in the checked-in inventory/closure docs and not in the runtime-backed Grading core/window/runtime/test seams.
 - Owner diagnosis: the live grading owner trio already exists as `KernelParams::{exposure,color_saturation,color_contrast}` and `ColorPipelineGradingRuntimeParams::{exposure,saturation,contrast}`, so this slice starts by proving whether those owners are sufficient before any wider grading rewrite is considered.
 - RED progression: focused native-helper reruns moved the failure one owner seam at a time through core mapping, live bridge, diagnostics classification, runtime grading math, reset/default proof, and archive persistence proof before the repaired state went green again.
-- Repaired-state validation: `artifacts/neutral_finish_archive_proof_rerun.log` ends with `All helper tests passed`; `artifacts/neutral_finish_runtime_publish.log` published `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`; and `artifacts/neutral_finish_runtime_proof.log` reports `1 passed, 23 deselected` for the focused published-runtime neutral_finish witness.
+- Checkpointed: `7d7f779` / `ck:a0ce2d03` closed the neutral_finish owner-proof slice with truthful catalog/window/runtime/diagnostics/archive/reset ownership and the focused published-runtime neutral_finish witness.
+- Repaired-state validation: `artifacts/neutral_finish_archive_proof_rerun.log` ends with `All helper tests passed`; `artifacts/neutral_finish_runtime_publish.log` published `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`; `artifacts/neutral_finish_runtime_proof.log` reports `1 passed, 23 deselected`; `artifacts/validation/advanced_color_library_foundation_phase8b_neutral_finish_owner_proof_contract.json` has `checks.contract_schema_valid=true`; `artifacts/validation/advanced_color_library_foundation_phase8b_neutral_finish_owner_proof_hostile_audit.json` has `ok=true`; and machine receipts were written for `7d7f77998b4a417de72ecf29720b4bbc02fcc134`.
 
 ## Hostile Audit
 
@@ -57,7 +58,7 @@ The controlling risk is owner fraud: `neutral_finish` currently exists only as i
 
 - [done] Real defect found: diagnostics load failed because mirrored-mode classification excluded `neutral_default` for the shipped escape-time tuples, so saved neutral_finish states were rejected as unsupported. `ui_app/src/fractal_family_rules.h` now maps those tuples back onto the existing mirrored coloring modes.
 - [done] Real defect found: live draft apply/resync failed because the draft builder still forced the source/palette bridge grading and treated `neutral_finish` as a mismatch, so the first Grading row could not become runtime-authoritative. `ui_app/src/color_pipeline_window.h` now derives the pipeline grading from the first enabled Grading row for supported tuples.
-- [done] Clean re-audit evidence: repaired-state proof is recorded in `artifacts/neutral_finish_archive_proof_rerun.log`, `artifacts/neutral_finish_runtime_publish.log`, and `artifacts/neutral_finish_runtime_proof.log`.
+- [done] Clean re-audit evidence: repaired-state proof is recorded in `artifacts/neutral_finish_archive_proof_rerun.log`, `artifacts/neutral_finish_runtime_publish.log`, `artifacts/neutral_finish_runtime_proof.log`, and the machine receipts for `7d7f77998b4a417de72ecf29720b4bbc02fcc134`.
 
 ## Notes
 
@@ -91,7 +92,7 @@ The controlling risk is owner fraud: `neutral_finish` currently exists only as i
 
 ## Resume Point
 
-Resume from formal closure only: run the contract/plan/hostile-audit validators, write receipts, append `HANDOFF_LOG.md`, and checkpoint the neutral_finish slice once a commit is authorized.
+Closed. Resume from the next explicitly contracted advanced-color slice; do not reopen neutral_finish unless a regression or new user ask makes it the active owner seam again.
 
 ## Action Hostile Review
 
@@ -99,5 +100,5 @@ Resume from formal closure only: run the contract/plan/hostile-audit validators,
 - Suspected Failure Mode: the slice may expose `neutral_finish` in the catalog or bridge without real stack-entry grading math, or it may piggyback on deferred `tone_map_finish` / `grade.glow` semantics.
 - Correct Owner/Action: add REDs first across core/window/runtime/persistence/reset seams, then land only the bounded `neutral_finish` owner path through the existing exposure/saturation/contrast grading owners plus a dedicated stack-math branch.
 - Proof Surface: focused native helper tests for the touched owner seams, runtime publish, published-runtime proof or the closest existing truthful runtime rail, contract validation, phased-plan sync, and hostile-audit validation.
-- Outcome: done for the current implementation action: REDs, owner-path repairs, archive proof, full native helper proof, runtime publish, and the focused published-runtime neutral_finish witness are green; checkpoint and receipts remain pending.
+- Outcome: complete - REDs, owner-path repairs, archive proof, native helper proof, runtime publish, focused published-runtime proof, checkpoint commit `7d7f779`, and machine proof receipts are all landed.
 - Blocked Action: none.
