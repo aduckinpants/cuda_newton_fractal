@@ -2,6 +2,29 @@
 
 Paste the following as the first message in a fresh GPT-5.4 VS Code chat when starting the first feature lane.
 
+## Do Not Use This Prompt Blindly
+
+This prompt is only for the first entry into the manual historical archive blocker after continuity loss.
+
+It is not the right launch surface once the repo already has a newer slice-specific handoff on the same topic.
+
+Mainline working pattern:
+
+- use repo rules and continuity surfaces first
+- then launch from the latest real `HANDOFF_LOG.md` entry for the active topic
+- then continue the active slice plan directly
+
+For this repo, once `ck:20260512-serializer-rail` exists, the default launch authority for this topic is:
+
+- `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md`
+- the latest relevant `HANDOFF_LOG.md` entry for the manual ExplainO slice
+
+It is not:
+
+- this startup prompt by itself
+- the restart inventory by itself
+- a reset back to the original historical-archive archaeology lane unless the latest handoff still says that is the current task
+
 ```text
 You are working in C:\code\cuda_newton_fractal_clone on branch feature/advanced-color-pipeline-draft-editor-reframe.
 
@@ -244,4 +267,6 @@ Forbidden second responses:
 - It is not a generic workflow bootstrap.
 - It is only for the first lane from the restart inventory:
   - the historical `234919_563__explaino_inertial` archive blocker
+- Once a newer real handoff exists for the same topic, stop using this note as the launch authority and switch to the current slice plan plus the latest relevant `HANDOFF_LOG.md` entry.
+- If the repo is already on the correct live contract for that topic, do not waste a session re-deriving the old blocker framing from this prompt.
 - If the session broadens beyond that lane without first stopping and naming the blocker lane as blocked, the session is already drifting.

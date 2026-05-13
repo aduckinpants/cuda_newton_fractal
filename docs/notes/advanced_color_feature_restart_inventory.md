@@ -2,6 +2,20 @@
 
 This note is the restart surface for the current advanced-color and manual-capture feature state on `feature/advanced-color-pipeline-draft-editor-reframe`.
 
+## Launch Authority Rule
+
+This note is not the default launch authority once a newer slice-specific handoff exists.
+
+Use this note only to recover broad product context or to find the first bounded lane after major continuity loss.
+
+When the repo already has a newer real handoff for the same topic, that newer handoff plus the active slice plan become the launch authority instead.
+
+Current live example:
+
+- the generic first-lane startup prompt and this restart inventory are no longer the right launch surface for manual ExplainO work
+- the latest real launch authority is the current manual slice plan plus the latest relevant `HANDOFF_LOG.md` closeout for that slice
+- today that means `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md` plus `ck:20260512-serializer-rail`, not a reset back to the original `Priority 0` archaeology prompt
+
 It is intentionally not a workflow status page. It answers four questions only:
 
 1. What product code is actually landed on this branch right now?
@@ -14,15 +28,16 @@ It is intentionally not a workflow status page. It answers four questions only:
 ## 1. Current Branch Truth
 
 - Branch: `feature/advanced-color-pipeline-draft-editor-reframe`
-- Current `HEAD`: `93ceeb6`
-- Current active locked contract: `anti_lie_claim_enforcement`
+- Current `HEAD`: `bed3310`
+- Current active locked contract: `manual_explaino_inertial_reload_repair`
 - Current worktree state: clean
 
-Important continuity fact:
+Important continuity facts:
 
 - `93ceeb6` is not a product-feature checkpoint.
 - The last product-code checkpoint on this branch is `4ec49c8` (`ck: preserve color pipeline shared row params`).
 - Every commit after `4ec49c8` is workflow-only: hooks, plans, contracts, workflow docs, or tests for workflow guards.
+- That statement no longer means every newer commit is ignorable for launch flow. Newer commits also contain the current manual slice continuity surfaces and the latest bounded serializer follow-up handoff, which are now the correct launch authority for this topic.
 
 Practical meaning:
 
@@ -210,6 +225,7 @@ Current truthful status:
 - current capture-diagnostic and capture-finding replays are self-consistent
 - the historical archived frame is still not reproducible from the saved artifacts
 - foundation closure is blocked until that is repaired or explicitly reclassified as unrecoverable historical data loss
+- the latest bounded follow-up on this same topic is not “restart archaeology from zero”; it is the serializer-owner fast-rail follow-up checkpointed at `ck:20260512-serializer-rail`
 
 Authority surfaces:
 

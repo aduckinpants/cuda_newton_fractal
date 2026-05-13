@@ -121,6 +121,14 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 
 This follow-up closes as a bounded blocker, not a visual recovery claim. Current `--capture-diagnostic` and `--capture-finding` paths are covered by published-runtime self-replay tests, the diagnostics owner seam now has exhaustive supported single-row plus bounded non-first Palette/Grading serialization coverage, and `ui_app\build_tests_vsdevcmd.cmd serializer_owner_fast` is the fast recheck rail for this seam. The old `234919_563__explaino_inertial` frame remains a strict xfail because its saved artifacts do not contain recoverable runtime authority. The next product-level option is an explicit historical-frame viewing/fallback UX for unreplayable archives, not another guessed renderer or palette migration.
 
+Launch rule for future sessions:
+
+- do not restart this topic from `docs/notes/advanced_color_feature_restart_inventory.md` or the generic Priority 0 startup prompt if a newer real handoff already exists
+- read repo rules, then this plan, then the latest relevant `HANDOFF_LOG.md` entry for this slice
+- for the current state of this topic, the launch authority is this plan plus `ck:20260512-serializer-rail`
+- if a session closes cleanly with a newer handoff on the same topic, that newer handoff replaces `ck:20260512-serializer-rail` as the launch authority
+- after a clean checkpoint + receipts + clean worktree, summarize and stop; do not burn extra turns on prompt review, memory notes, todo churn, or proof-grep theater
+
 ## Action Hostile Review
 
 - Action ID: action-20260512-serializer-coverage-recheck
