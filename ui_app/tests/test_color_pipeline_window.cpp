@@ -310,7 +310,7 @@ void TestRootBasinPairScheduleBridge() {
     ColoringMode mode = ColoringMode::smooth_escape;
     std::string error;
     Check(!TryBuildColorPipelineSelectionFromDraft(mismatchState, &pipeline, &mode, &error) &&
-            error.find("one enabled Source row") != std::string::npos,
+            error.find("row counts match") != std::string::npos,
         "TestRootBasinPairScheduleBridge_MismatchedPairCountsFailClosed");
 }
 

@@ -3541,6 +3541,115 @@ int main() {
     }
 
     {
+        const fs::path statePath = tempRoot / "v3_source_stack_params.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "escape_magnitude",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "color_source_stack": [
+      { "signal": "smooth_escape", "scale": 0.5, "bias": 0.25, "blend_weight": 1.0 },
+      { "signal": "escape_magnitude", "magnitude_scale": 1.5, "magnitude_bias": -0.25, "blend_weight": 0.25 }
+    ],
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        ColorPipelineWindowState windowState{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &windowState, &error)) {
+            std::cerr << "V3 source-stack parameter load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_source_stack_count != 2 ||
+            p.color_source_stack[0].signal != ColorSignal::smooth_escape ||
+            !NearlyEqual(p.color_source_stack[0].params.scale, 0.5, 0.001) ||
+            !NearlyEqual(p.color_source_stack[0].params.bias, 0.25, 0.001) ||
+            p.color_source_stack[1].signal != ColorSignal::escape_magnitude ||
+            !NearlyEqual(p.color_source_stack[1].params.magnitude_scale, 1.5, 0.001) ||
+            !NearlyEqual(p.color_source_stack[1].params.magnitude_bias, -0.25, 0.001) ||
+            !NearlyEqual(p.color_source_stack[1].params.blend_weight, 0.25, 0.001) ||
+            p.color_pipeline.signal != ColorSignal::escape_magnitude ||
+            !NearlyEqual(p.color_escape_magnitude_scale, 1.5, 0.001) ||
+            !NearlyEqual(p.color_escape_magnitude_bias, -0.25, 0.001) ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() < 4 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 2 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            windowState.live_snapshot.lanes[0].rows[1].function_id != "escape_magnitude") {
+            std::cerr << "Expected supported Source stacks to round-trip through diagnostics state load with a live two-row Source lane and a legacy mirror of the final row\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "v3_source_stack_root_index_reject.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "mandelbrot",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "color_source_stack": [
+      { "signal": "root_index", "blend_weight": 1.0 }
+    ],
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error) ||
+            error.find("root_index") == std::string::npos) {
+            std::cerr << "Expected diagnostics state load to reject root_index inside generic Source composition\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_root_basin_pair_schedule.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

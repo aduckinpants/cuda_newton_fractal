@@ -181,6 +181,12 @@ ESCAPE_TIME_COLOR_HD inline float ResolvePhaseOrbitSignal(float angle, const Ker
     return ((angle + params.color_phase_signal_offset) / twoPi) * wrapCycles;
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolvePhaseOrbitSignal(float angle, const ColorPipelineSourceRuntimeParams& sourceParams) {
+    const float twoPi = 6.28318530717958647692f;
+    const float wrapCycles = sourceParams.wrap_cycles < 0.5f ? 0.5f : sourceParams.wrap_cycles;
+    return ((angle + sourceParams.phase_offset) / twoPi) * wrapCycles;
+}
+
 ESCAPE_TIME_COLOR_HD inline float ResolveIterationRatioSignal(int iteration, int maxIter) {
     const int safeMaxIter = maxIter > 0 ? maxIter : 1;
     return static_cast<float>(iteration) / static_cast<float>(safeMaxIter);
@@ -189,6 +195,11 @@ ESCAPE_TIME_COLOR_HD inline float ResolveIterationRatioSignal(int iteration, int
 ESCAPE_TIME_COLOR_HD inline float ResolveEscapeMagnitudeSignal(float magnitude, const KernelParams& params) {
     return logf(1.0f + fmaxf(magnitude, 0.0f)) * EscapeTimeColorClamp(params.color_escape_magnitude_scale, 0.25f, 4.0f) +
         EscapeTimeColorClamp(params.color_escape_magnitude_bias, -1.0f, 1.0f);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveEscapeMagnitudeSignal(float magnitude, const ColorPipelineSourceRuntimeParams& sourceParams) {
+    return logf(1.0f + fmaxf(magnitude, 0.0f)) * EscapeTimeColorClamp(sourceParams.magnitude_scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(sourceParams.magnitude_bias, -1.0f, 1.0f);
 }
 
 ESCAPE_TIME_COLOR_HD inline float ComputeEscapeTimeNu(
@@ -207,10 +218,43 @@ ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
         EscapeTimeColorClamp(params.color_smooth_escape_bias, -1.0f, 1.0f);
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolveSmoothEscapeSignal(
+    FractalType fractalType,
+    int iteration,
+    float magnitude,
+    const ColorPipelineSourceRuntimeParams& sourceParams,
+    const KernelParams& params) {
+    const float nu = ComputeEscapeTimeNu(fractalType, iteration, magnitude, params);
+    return nu * 0.025f * EscapeTimeColorClamp(sourceParams.scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(sourceParams.bias, -1.0f, 1.0f);
+}
+
 ESCAPE_TIME_COLOR_HD inline float ResolveOrbitStripeSignal(float angle, const KernelParams& params) {
     return 0.5f + 0.5f * sinf(
         angle * EscapeTimeColorClamp(params.color_orbit_stripe_frequency, 0.25f, 12.0f) +
         EscapeTimeColorClamp(params.color_orbit_stripe_phase, -3.14159265358979323846f, 3.14159265358979323846f));
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveOrbitStripeSignal(float angle, const ColorPipelineSourceRuntimeParams& sourceParams) {
+    return 0.5f + 0.5f * sinf(
+        angle * EscapeTimeColorClamp(sourceParams.stripe_frequency, 0.25f, 12.0f) +
+        EscapeTimeColorClamp(sourceParams.stripe_phase, -3.14159265358979323846f, 3.14159265358979323846f));
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveBandedIterationSignal(
+    int iteration,
+    int maxIter,
+    const ColorPipelineSourceRuntimeParams& sourceParams) {
+    const float baseSignal = ResolveIterationRatioSignal(iteration, maxIter);
+    const int bandCount = sourceParams.band_count < 2 ? 2 : sourceParams.band_count;
+    const float rawBand = baseSignal * static_cast<float>(bandCount);
+    const float baseBand = floorf(rawBand);
+    const float frac = rawBand - baseBand;
+    const float softness = EscapeTimeColorClamp(sourceParams.softness, 0.0f, 1.0f);
+    const float blend = softness <= 0.0f
+        ? (frac >= 0.5f ? 1.0f : 0.0f)
+        : EscapeTimeColorSmoothstep(0.5f - 0.5f * softness, 0.5f + 0.5f * softness, frac);
+    return (baseBand + blend) / static_cast<float>(bandCount);
 }
 
 ESCAPE_TIME_COLOR_HD inline float ResolveEscapeFamilySignal(
@@ -229,10 +273,39 @@ ESCAPE_TIME_COLOR_HD inline float ResolveEscapeFamilySignal(
     return ResolveIterationRatioSignal(iteration, maxIter);
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolveEscapeFamilySignal(
+    ColorSignal signal,
+    FractalType fractalType,
+    int iteration,
+    int maxIter,
+    float magnitude,
+    const ColorPipelineSourceRuntimeParams& sourceParams,
+    const KernelParams& params) {
+    if (signal == ColorSignal::smooth_escape) {
+        return ResolveSmoothEscapeSignal(fractalType, iteration, magnitude, sourceParams, params);
+    }
+    if (signal == ColorSignal::escape_magnitude) {
+        return ResolveEscapeMagnitudeSignal(magnitude, sourceParams);
+    }
+    if (signal == ColorSignal::iteration_bands) {
+        return ResolveBandedIterationSignal(iteration, maxIter, sourceParams);
+    }
+    return ResolveIterationRatioSignal(iteration, maxIter);
+}
+
 ESCAPE_TIME_COLOR_HD inline float ResolveAngularSignal(ColorSignal signal, float angle, const KernelParams& params) {
     return signal == ColorSignal::phase_angle
         ? ResolvePhaseOrbitSignal(angle, params)
         : ResolveOrbitStripeSignal(angle, params);
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveAngularSignal(
+    ColorSignal signal,
+    float angle,
+    const ColorPipelineSourceRuntimeParams& sourceParams) {
+    return signal == ColorSignal::phase_angle
+        ? ResolvePhaseOrbitSignal(angle, sourceParams)
+        : ResolveOrbitStripeSignal(angle, sourceParams);
 }
 
 template <typename Complex>
@@ -633,6 +706,21 @@ ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(Complex z, const Ke
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveRootProximitySignal(
+    Complex z,
+    const KernelParams& params,
+    const ColorPipelineSourceRuntimeParams& sourceParams) {
+    float distance = 0.0f;
+    if (!TryResolveRootProximityDistance(z, params, &distance)) {
+        return 0.0f;
+    }
+    const float scale = EscapeTimeColorClamp(sourceParams.proximity_scale, 0.25f, 8.0f);
+    const float bias = EscapeTimeColorClamp(sourceParams.proximity_bias, -1.0f, 1.0f);
+    const float safeDistance = fmaxf(distance, 1.0e-12f);
+    return -log2f(fmaxf(scale * safeDistance, 1.0e-12f)) + bias;
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootSample(
     FractalType fractalType,
     Complex z,
@@ -663,6 +751,58 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineRootSignal(int rootIndex, 
     return (static_cast<float>(rootIndex) + 0.5f) / static_cast<float>(rootCount);
 }
 
+ESCAPE_TIME_COLOR_HD inline int ClampColorPipelineSourceStackCount(int count) {
+    if (count < 0) {
+        return 0;
+    }
+    return count > kColorPipelineMaxSourceStackCount ? kColorPipelineMaxSourceStackCount : count;
+}
+
+ESCAPE_TIME_COLOR_HD inline float ResolveBasinResidualMetric(float residual);
+
+ESCAPE_TIME_COLOR_HD inline float ResolveBasinSmoothEscapeSignal(
+    float residual,
+    const ColorPipelineSourceRuntimeParams& sourceParams) {
+    return ResolveBasinResidualMetric(residual) * 0.05f *
+        EscapeTimeColorClamp(sourceParams.scale, 0.25f, 4.0f) +
+        EscapeTimeColorClamp(sourceParams.bias, -1.0f, 1.0f);
+}
+
+template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryEscapeSignal(
+    FractalType fractalType,
+    int iteration,
+    int maxIter,
+    Complex z,
+    float magnitude,
+    float angle,
+    const KernelParams& params,
+    const ColorPipelineSourceStackEntry& entry) {
+    if (entry.signal == ColorSignal::root_proximity) {
+        return ResolveRootProximitySignal(z, params, entry.params);
+    }
+    if (entry.signal == ColorSignal::phase_angle ||
+        entry.signal == ColorSignal::orbit_stripe) {
+        return ResolveAngularSignal(entry.signal, angle, entry.params);
+    }
+    if (entry.signal == ColorSignal::root_index) {
+        int rootIndex = -1;
+        int rootCount = 0;
+        if (TryResolveColorPipelineRootSample(fractalType, z, params, &rootIndex, &rootCount)) {
+            return ResolveColorPipelineRootSignal(rootIndex, rootCount);
+        }
+        return 0.0f;
+    }
+    return ResolveEscapeFamilySignal(
+        entry.signal,
+        fractalType,
+        iteration,
+        maxIter,
+        magnitude,
+        entry.params,
+        params);
+}
+
 ESCAPE_TIME_COLOR_HD inline int ResolveShapedColorPipelineRootIndex(int rootIndex, int rootCount, const KernelParams& params) {
     if (rootIndex < 0 || rootCount <= 0) {
         return -1;
@@ -688,6 +828,37 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableEscapeTimeSignal(
     int maxIter,
     Complex z,
     const KernelParams& params) {
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    if (sourceStackCount > 0) {
+        const float magnitude = EscapeTimeColorAbs(z);
+        const float angle = atan2f(z.y, z.x);
+        float blendedSignal = ResolveColorPipelineSourceStackEntryEscapeSignal(
+            fractalType,
+            iteration,
+            maxIter,
+            z,
+            magnitude,
+            angle,
+            params,
+            params.color_source_stack[0]);
+        for (int index = 1; index < sourceStackCount; ++index) {
+            const ColorPipelineSourceStackEntry& entry = params.color_source_stack[index];
+            const float nextSignal = ResolveColorPipelineSourceStackEntryEscapeSignal(
+                fractalType,
+                iteration,
+                maxIter,
+                z,
+                magnitude,
+                angle,
+                params,
+                entry);
+            blendedSignal = EscapeTimeColorLerp(
+                blendedSignal,
+                nextSignal,
+                EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f));
+        }
+        return blendedSignal;
+    }
     if (params.color_pipeline.signal == ColorSignal::root_proximity) {
         return ResolveRootProximitySignal(z, params);
     }
@@ -906,6 +1077,44 @@ ESCAPE_TIME_COLOR_HD inline float ResolveBasinSmoothEscapeSignal(float residual,
 }
 
 template <typename Complex>
+ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryBasinSignal(
+    FractalType fractalType,
+    int iteration,
+    int maxIter,
+    Complex z,
+    float magnitude,
+    float angle,
+    float residual,
+    const KernelParams& params,
+    const ColorPipelineSourceStackEntry& entry) {
+    if (entry.signal == ColorSignal::root_proximity) {
+        return ResolveRootProximitySignal(z, params, entry.params);
+    }
+    if (entry.signal == ColorSignal::phase_angle ||
+        entry.signal == ColorSignal::orbit_stripe) {
+        return ResolveAngularSignal(entry.signal, angle, entry.params);
+    }
+    if (entry.signal == ColorSignal::root_index) {
+        int rootIndex = -1;
+        int rootCount = 0;
+        if (TryResolveColorPipelineRootSample(fractalType, z, params, &rootIndex, &rootCount)) {
+            return ResolveColorPipelineRootSignal(rootIndex, rootCount);
+        }
+        return 0.0f;
+    }
+    if (entry.signal == ColorSignal::smooth_escape) {
+        return ResolveBasinSmoothEscapeSignal(residual, entry.params);
+    }
+    if (entry.signal == ColorSignal::escape_magnitude) {
+        return ResolveEscapeMagnitudeSignal(magnitude, entry.params);
+    }
+    if (entry.signal == ColorSignal::iteration_bands) {
+        return ResolveBandedIterationSignal(iteration, maxIter, entry.params);
+    }
+    return ResolveIterationRatioSignal(iteration, maxIter);
+}
+
+template <typename Complex>
 ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
     FractalType fractalType,
     int iteration,
@@ -913,6 +1122,39 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
     Complex z,
     float residual,
     const KernelParams& params) {
+    const int sourceStackCount = ClampColorPipelineSourceStackCount(params.color_source_stack_count);
+    if (sourceStackCount > 0) {
+        const float magnitude = EscapeTimeColorAbs(z);
+        const float angle = atan2f(z.y, z.x);
+        float blendedSignal = ResolveColorPipelineSourceStackEntryBasinSignal(
+            fractalType,
+            iteration,
+            maxIter,
+            z,
+            magnitude,
+            angle,
+            residual,
+            params,
+            params.color_source_stack[0]);
+        for (int index = 1; index < sourceStackCount; ++index) {
+            const ColorPipelineSourceStackEntry& entry = params.color_source_stack[index];
+            const float nextSignal = ResolveColorPipelineSourceStackEntryBasinSignal(
+                fractalType,
+                iteration,
+                maxIter,
+                z,
+                magnitude,
+                angle,
+                residual,
+                params,
+                entry);
+            blendedSignal = EscapeTimeColorLerp(
+                blendedSignal,
+                nextSignal,
+                EscapeTimeColorClamp(entry.params.blend_weight, 0.0f, 1.0f));
+        }
+        return blendedSignal;
+    }
     if (params.color_pipeline.signal == ColorSignal::root_proximity) {
         return ResolveRootProximitySignal(z, params);
     }

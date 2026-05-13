@@ -41,6 +41,15 @@ int main() {
     params.color_phase_signal_offset = 1.25f;
     params.color_phase_wrap_cycles = 2.5f;
     params.color_phase_palette_offset = -0.75f;
+    params.color_source_stack_count = 2;
+    params.color_source_stack[0].signal = ColorSignal::smooth_escape;
+    params.color_source_stack[0].params.scale = 0.5f;
+    params.color_source_stack[0].params.bias = 0.25f;
+    params.color_source_stack[0].params.blend_weight = 1.0f;
+    params.color_source_stack[1].signal = ColorSignal::escape_magnitude;
+    params.color_source_stack[1].params.magnitude_scale = 1.5f;
+    params.color_source_stack[1].params.magnitude_bias = -0.25f;
+    params.color_source_stack[1].params.blend_weight = 0.25f;
     params.color_shape = ColorPipelineShape::offset_scale;
     params.color_shape_stack_count = 2;
     params.color_shape_stack[0].shape = ColorPipelineShape::offset_scale;
@@ -130,6 +139,7 @@ int main() {
     if (!NearlyEqual(params.color_phase_signal_offset, 0.0f) ||
         !NearlyEqual(params.color_phase_wrap_cycles, 1.0f) ||
         !NearlyEqual(params.color_phase_palette_offset, 0.0f) ||
+        params.color_source_stack_count != 0 ||
         params.color_root_basin_pair_count != 0 ||
         params.color_shape != ColorPipelineShape::identity ||
         params.color_shape_stack_count != 0 ||

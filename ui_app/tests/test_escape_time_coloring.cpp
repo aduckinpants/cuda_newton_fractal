@@ -440,6 +440,75 @@ int main() {
         }
         params.color_grading_stack_count = 0;
 
+        KernelParams smoothSourceParams = params;
+        smoothSourceParams.color_source_stack_count = 0;
+        smoothSourceParams.color_pipeline.signal = ColorSignal::smooth_escape;
+        smoothSourceParams.color_smooth_escape_scale = 0.5f;
+        smoothSourceParams.color_smooth_escape_bias = 0.25f;
+
+        KernelParams magnitudeSourceParams = params;
+        magnitudeSourceParams.color_source_stack_count = 0;
+        magnitudeSourceParams.color_pipeline.signal = ColorSignal::escape_magnitude;
+        magnitudeSourceParams.color_escape_magnitude_scale = 1.5f;
+        magnitudeSourceParams.color_escape_magnitude_bias = -0.25f;
+
+        KernelParams sourceStackParams = magnitudeSourceParams;
+        sourceStackParams.color_source_stack_count = 2;
+        sourceStackParams.color_source_stack[0].signal = ColorSignal::smooth_escape;
+        sourceStackParams.color_source_stack[0].params.scale = 0.5f;
+        sourceStackParams.color_source_stack[0].params.bias = 0.25f;
+        sourceStackParams.color_source_stack[0].params.blend_weight = 1.0f;
+        sourceStackParams.color_source_stack[1].signal = ColorSignal::escape_magnitude;
+        sourceStackParams.color_source_stack[1].params.magnitude_scale = 1.5f;
+        sourceStackParams.color_source_stack[1].params.magnitude_bias = -0.25f;
+        sourceStackParams.color_source_stack[1].params.blend_weight = 0.25f;
+
+        const TestComplex sourceCoord{4.0f, 1.0f};
+        const float smoothSourceValue = ResolveProgrammableEscapeTimeSignal(
+            FractalType::mandelbrot,
+            10,
+            100,
+            sourceCoord,
+            smoothSourceParams);
+        const float magnitudeSourceValue = ResolveProgrammableEscapeTimeSignal(
+            FractalType::mandelbrot,
+            10,
+            100,
+            sourceCoord,
+            magnitudeSourceParams);
+        const float stackedSourceValue = ResolveProgrammableEscapeTimeSignal(
+            FractalType::mandelbrot,
+            10,
+            100,
+            sourceCoord,
+            sourceStackParams);
+        const float manualWeightedBlend = EscapeTimeColorLerp(smoothSourceValue, magnitudeSourceValue, 0.25f);
+        if (std::fabs(stackedSourceValue - magnitudeSourceValue) <= 1.0e-6f) {
+            std::cerr << "A two-row Source stack should not collapse to the final Source row only\n";
+            return 1;
+        }
+        if (std::fabs(stackedSourceValue - manualWeightedBlend) > 1.0e-6f) {
+            std::cerr << "A two-row Source stack should execute weighted blend math before Shape, Palette, and Grading\n";
+            return 1;
+        }
+
+        KernelParams singleSourceStackParams = smoothSourceParams;
+        singleSourceStackParams.color_source_stack_count = 1;
+        singleSourceStackParams.color_source_stack[0].signal = ColorSignal::smooth_escape;
+        singleSourceStackParams.color_source_stack[0].params.scale = 0.5f;
+        singleSourceStackParams.color_source_stack[0].params.bias = 0.25f;
+        singleSourceStackParams.color_source_stack[0].params.blend_weight = 1.0f;
+        const float singleSourceStackValue = ResolveProgrammableEscapeTimeSignal(
+            FractalType::mandelbrot,
+            10,
+            100,
+            sourceCoord,
+            singleSourceStackParams);
+        if (std::fabs(singleSourceStackValue - smoothSourceValue) > 1.0e-6f) {
+            std::cerr << "A one-row Source stack should preserve the existing shipped single-row Source behavior\n";
+            return 1;
+        }
+
         params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::escape_default};
         params.color_palette_stack_count = 2;
         params.color_palette_stack[0].palette = ColorPalette::cyclic_escape;

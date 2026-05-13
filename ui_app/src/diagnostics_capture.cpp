@@ -269,7 +269,39 @@ void WriteExplainoVariantParamsJson(std::ostringstream& js, const KernelParams& 
     js << "    \"tension_strength\": " << static_cast<double>(params.tension_strength) << ",\n";
 }
 
+void WriteColorSourceStackJson(std::ostringstream& js, const KernelParams& params) {
+    if (params.color_source_stack_count <= 0) {
+        return;
+    }
+    int sourceStackCount = params.color_source_stack_count;
+    if (sourceStackCount > kColorPipelineMaxSourceStackCount) {
+        sourceStackCount = kColorPipelineMaxSourceStackCount;
+    }
+    js << "    \"color_source_stack\": [\n";
+    for (int index = 0; index < sourceStackCount; ++index) {
+        const ColorPipelineSourceStackEntry& sourceEntry = params.color_source_stack[index];
+        js << "      {\n";
+        js << "        \"signal\": \"" << CaptureColorSignalId(sourceEntry.signal) << "\",\n";
+        js << "        \"scale\": " << static_cast<double>(sourceEntry.params.scale) << ",\n";
+        js << "        \"bias\": " << static_cast<double>(sourceEntry.params.bias) << ",\n";
+        js << "        \"phase_offset\": " << static_cast<double>(sourceEntry.params.phase_offset) << ",\n";
+        js << "        \"wrap_cycles\": " << static_cast<double>(sourceEntry.params.wrap_cycles) << ",\n";
+        js << "        \"band_count\": " << sourceEntry.params.band_count << ",\n";
+        js << "        \"softness\": " << static_cast<double>(sourceEntry.params.softness) << ",\n";
+        js << "        \"magnitude_scale\": " << static_cast<double>(sourceEntry.params.magnitude_scale) << ",\n";
+        js << "        \"magnitude_bias\": " << static_cast<double>(sourceEntry.params.magnitude_bias) << ",\n";
+        js << "        \"stripe_frequency\": " << static_cast<double>(sourceEntry.params.stripe_frequency) << ",\n";
+        js << "        \"stripe_phase\": " << static_cast<double>(sourceEntry.params.stripe_phase) << ",\n";
+        js << "        \"proximity_scale\": " << static_cast<double>(sourceEntry.params.proximity_scale) << ",\n";
+        js << "        \"proximity_bias\": " << static_cast<double>(sourceEntry.params.proximity_bias) << ",\n";
+        js << "        \"blend_weight\": " << static_cast<double>(sourceEntry.params.blend_weight) << "\n";
+        js << "      }" << (index + 1 < sourceStackCount ? "," : "") << "\n";
+    }
+    js << "    ],\n";
+}
+
 void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& params) {
+    WriteColorSourceStackJson(js, params);
     if (params.color_shape_stack_count > 0) {
         int shapeStackCount = params.color_shape_stack_count;
         if (shapeStackCount > kColorPipelineMaxShapeStackCount) {

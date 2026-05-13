@@ -187,6 +187,17 @@ inline FunctionParamDescriptor MakeColorPipelinePaletteBlendModeParam() {
         "normal");
 }
 
+inline FunctionParamDescriptor MakeColorPipelineSourceBlendWeightParam() {
+    return MakeColorPipelineFloatParam(
+        "signal.blend_weight",
+        "Blend Weight",
+        "Blend this Source row into the accumulated Source stack signal.",
+        0.0,
+        1.0,
+        0.01,
+        1.0);
+}
+
 inline FunctionDescriptor MakeColorPipelineFunction(
     const char* id,
     const char* name,
@@ -355,6 +366,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.scale", "Scale", "Expand or compress the smooth escape ramp.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.bias", "Bias", "Shift the smooth escape ramp before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
             "phase_orbit",
@@ -363,6 +375,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Rotate the sampled phase before downstream palette work.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
                 MakeColorPipelineFloatParam("signal.wrap_cycles", "Wrap Cycles", "Control how many hue cycles appear across one full rotation.", 0.5, 6.0, 0.01, 1.0),
+                MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
             "banded_signal",
@@ -371,6 +384,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineIntParam("signal.band_count", "Band Count", "Choose how many bands to carve out of the escape signal.", 2, 24, 1, 8),
                 MakeColorPipelineFloatParam("signal.softness", "Softness", "Blend between hard posterization and soft band transitions.", 0.0, 1.0, 0.01, 0.35),
+                MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
             "escape_magnitude",
@@ -379,6 +393,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.magnitude_scale", "Magnitude Scale", "Expand or compress the escape-magnitude source before palette lookup.", 0.25, 4.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.magnitude_bias", "Magnitude Bias", "Shift the escape-magnitude source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
             "orbit_stripe",
@@ -387,6 +402,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.stripe_frequency", "Stripe Frequency", "Control how often orbit stripes repeat around the phase wheel.", 0.25, 12.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.phase_offset", "Phase Offset", "Offset the stripe wave before palette lookup.", -3.141592653589793, 3.141592653589793, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
             "root_proximity",
@@ -395,6 +411,7 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineSignalFunctions() {
             {
                 MakeColorPipelineFloatParam("signal.proximity_scale", "Proximity Scale", "Control how quickly root proximity falls off away from a root.", 0.25, 8.0, 0.01, 1.0),
                 MakeColorPipelineFloatParam("signal.proximity_bias", "Proximity Bias", "Shift the root-proximity source before palette lookup.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineSourceBlendWeightParam(),
             }),
         MakeColorPipelineFunction(
             "root_index",

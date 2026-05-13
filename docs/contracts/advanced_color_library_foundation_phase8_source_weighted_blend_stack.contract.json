@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8_source_weighted_blend_stack",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8_source_weighted_blend_stack.contract.json",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "start the active Phase 8 slice as generic Source composition via weighted blend for the shipped non-pair Source rows",
+    "add focused REDs for live bridge, runtime weighted blend evaluation, diagnostics/archive persistence, reset/default handling, and explicit root_index exclusion",
+    "keep root_index pair-only and preserve the bounded root-basin pair behavior while Shape, Palette, and Grading remain downstream of the composed Source scalar",
+    "keep the legacy flat Source fields as compatibility mirrors while color_source_stack becomes the runtime authority when present"
+  ],
+  "forbidden_operator_prompts": [
+    "claim editor-only multi-Source draft behavior as shipped Source composition",
+    "silently fall back to one generic Source row or last-row-wins runtime semantics",
+    "fold root_index into the generic Source stack or break the bounded root-basin pair family",
+    "widen into remaining Grading owner proofs, Balance/Void, ExplainO-BalanceVoid, ExplainO-all, archive recovery, hook work, or workflow guard work",
+    "accept unknown Source ids, invalid weights, or unsupported family rows through fallback"
+  ],
+  "required_defaults": {
+    "source_stack_runtime_owner_exists": "required",
+    "weighted_blend_scalar_math_explicit": "required",
+    "root_index_excluded_from_generic_source_stack": "required",
+    "legacy_source_tuple_mirrors_final_valid_row": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "editor_only_source_stack": "forbidden",
+    "hidden_single_row_fallback": "forbidden",
+    "last_row_wins_source_collapse": "forbidden",
+    "root_index_generic_source_row": "forbidden",
+    "scope_widening_beyond_source_lane": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8_source_weighted_blend_stack.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8_source_weighted_blend_stack_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8_source_weighted_blend_stack_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8_source_weighted_blend_stack_contract_schema_valid",
+      "description": "The advanced color Source weighted-blend stack contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8_source_weighted_blend_stack_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8_source_weighted_blend_stack_plan_sync_ok",
+      "description": "The Source weighted-blend stack phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8_source_weighted_blend_stack_hostile_audit_ok",
+      "description": "The Source weighted-blend stack hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8_source_weighted_blend_stack_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

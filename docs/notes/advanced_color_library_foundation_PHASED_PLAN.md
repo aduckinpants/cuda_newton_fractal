@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 - closure-control matrix and proof/defer ledger. Grading stack composition, capture-backed diagnostics serialization repair, and Palette blend stack are checkpointed. The shipped composition spine still includes bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks. The next active sprint-core lane is now generic Source composition via weighted blend. Remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) remain explicit post-matrix forks. The historical manual `234919_563__explaino_inertial` archive mismatch stays real, but it is now tracked as separate historical compatibility work instead of the default next sprint blocker.
+Phase 8 - closure-control matrix and proof/defer ledger. Grading stack composition, capture-backed diagnostics serialization repair, and Palette blend stack are checkpointed. The shipped composition spine still includes bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks. The next active sprint-core lane is now generic Source composition via weighted blend, and the checked-in Phase 8 Source weighted-blend subplan/contract now own that executable slice. Remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) remain explicit post-matrix forks. The historical manual `234919_563__explaino_inertial` archive mismatch stays real, but it is now tracked as separate historical compatibility work instead of the default next sprint blocker.
 
 ## Phase Checklist
 
@@ -14,7 +14,7 @@ Phase 8 - closure-control matrix and proof/defer ledger. Grading stack compositi
 - [x] Phase 5 - repair the stack/backend requirement and grading authority boundary so the next executable slice lands truthful multi-row lane support instead of a false Grading continuation
 - [x] Phase 6 - build the shipped multi-function composition spine through bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks while deferring generic Source signal mixing until scalar mixer semantics are locked
 - [x] Phase 7 - record remaining bounded Grading runtime authority as separate owner-proof forks or explicit deferrals; `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, and Balance/Void are not part of the shipped closure claim
-- [ ] Phase 8 - land generic Source composition via weighted blend, then close the four-category foundation with the proof/defer matrix, D: gallery/runtime captures where required, and explicit extension rules
+- [ ] Phase 8 - land generic Source composition via weighted blend through the checked-in Source weighted-blend subplan, then close the four-category foundation with the proof/defer matrix, D: gallery/runtime captures where required, and explicit extension rules
 - [ ] Phase 9 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
 ## Explicit User Asks
@@ -138,6 +138,7 @@ The controlling product risk is now closure drift after the shipped composition 
 - Checkpointed: `ck:2f9efd8f` closed the capture-backed diagnostics serialization repair, proving low-resolution manual `explaino_joy` state load -> capture serialization -> reload and high-precision save output.
 - Checkpointed: `ck:44faf037` closed Palette blend stack with bounded runtime ownership, explicit RGB blend math, diagnostics/reset persistence, phase-wheel saturation repair, native/code-quality/runtime proof, and hostile-audit repairs.
 - Active closure-control proof: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` is now the checked-in proof/defer matrix for feature-closure decisions, records generic Source composition as the active next core lane, and keeps the manual `234919_563__explaino_inertial` mismatch as separate historical compatibility work.
+- Landed: `docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase8_source_weighted_blend_stack.contract.json` now bind the first executable Phase 8 slice around bounded generic Source stacks, weighted blend semantics, persistence/reset proof, and root-basin separation.
 
 ## Hostile Audit
 
@@ -170,27 +171,30 @@ The controlling product risk is now closure drift after the shipped composition 
 
 - Expected owner files for the next bounded slice:
   - `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`
-  - `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md`
-  - `docs/contracts/advanced_color_library_foundation_phase6_grading_runtime_authority.contract.json`
+  - `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`
+  - `docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md`
+  - `docs/contracts/advanced_color_library_foundation_phase8_source_weighted_blend_stack.contract.json`
   - `ui_app/src/color_pipeline_core.h`
   - `ui_app/src/color_pipeline_window.h`
   - `ui_app/src/diagnostics_capture.cpp`
   - `ui_app/src/diagnostics_state_io.cpp`
+  - `ui_app/src/fractal_derived_fields.cpp`
   - `ui_app/src/fractal_types.h`
   - `ui_app/src/escape_time_coloring.h`
   - `ui_app/src/runtime_reset.cpp`
+  - `ui_app/tests/test_color_pipeline_core.cpp`
+  - `ui_app/tests/test_diagnostics_capture.cpp`
   - `ui_app/tests/test_schema_binding.cpp`
   - `ui_app/tests/test_escape_time_coloring.cpp`
   - `ui_app/tests/test_diagnostics_state_io.cpp`
   - `ui_app/tests/test_finding_archive_actions.cpp`
   - `ui_app/tests/test_runtime_reset.cpp`
-- Non-goals for Phase 6:
+- Non-goals for Phase 8:
   - do not redefine the mapped Source / Shape / Palette / Grading inventory
-  - do not ship non-runtime grading rows just because they are named in the inventory
-  - do not expose `grade.glow` until a runtime owner exists
-  - do not implement `balance_void_grade` in the `band_finish` owner-proof slice
-  - do not reopen the common-fractal wave or the CUDA catalog refactor as the active thread yet
-  - do not create a second grading authority outside the legacy Color-panel mirror
+  - do not put `root_index` into generic Source composition
+  - do not widen remaining Grading owner proofs, `balance_void_grade`, ExplainO-BalanceVoid, ExplainO-all, archive UX/recovery, or workflow tooling in this slice
+  - do not claim editor-only or serialization-only Source composition as shipped
+  - do not create a second Source authority outside the runtime stack plus legacy compatibility mirror
 
 ## Resume Point
 

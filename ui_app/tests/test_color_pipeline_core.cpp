@@ -152,8 +152,9 @@ void TestRowBuildersAndDefaults() {
         "TestRowBuildersAndDefaults_PhaseRowBuilds");
     Check(phaseRow.ui_row_id == 17 && phaseRow.enabled && phaseRow.function_id == "phase_orbit",
         "TestRowBuildersAndDefaults_PhaseRowIdentity");
-    Check(phaseRow.parameter_values.size() == 2 && RowNumber(phaseRow, "signal.phase_offset", 0.0) &&
-            RowNumber(phaseRow, "signal.wrap_cycles", 1.0),
+    Check(phaseRow.parameter_values.size() == 3 && RowNumber(phaseRow, "signal.phase_offset", 0.0) &&
+            RowNumber(phaseRow, "signal.wrap_cycles", 1.0) &&
+            RowNumber(phaseRow, "signal.blend_weight", 1.0),
         "TestRowBuildersAndDefaults_PhaseRowDefaults");
 
     ColorPipelineLaneState repeatLane;
@@ -400,4 +401,4 @@ int main() {
 
     std::printf("test_color_pipeline_core: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;
-}
+}

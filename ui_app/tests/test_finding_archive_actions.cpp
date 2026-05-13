@@ -306,6 +306,55 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_source_stack_runtime";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::escape_magnitude, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_source_stack_count = 2;
+        params.color_source_stack[0].signal = ColorSignal::smooth_escape;
+        params.color_source_stack[0].params.scale = 0.5f;
+        params.color_source_stack[0].params.bias = 0.25f;
+        params.color_source_stack[0].params.blend_weight = 1.0f;
+        params.color_source_stack[1].signal = ColorSignal::escape_magnitude;
+        params.color_source_stack[1].params.magnitude_scale = 1.5f;
+        params.color_source_stack[1].params.magnitude_bias = -0.25f;
+        params.color_source_stack[1].params.blend_weight = 0.25f;
+        params.color_escape_magnitude_scale = 1.5f;
+        params.color_escape_magnitude_bias = -0.25f;
+        RenderSettings render{};
+        render.resolution = {64, 48};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff336699u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &capture, &error)) {
+            std::cerr << "Expected Source-stack diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected Source-stack diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"color_source_stack\"") == std::string::npos ||
+            stateJson.find("\"signal\": \"smooth_escape\"") == std::string::npos ||
+            stateJson.find("\"signal\": \"escape_magnitude\"") == std::string::npos ||
+            stateJson.find("\"magnitude_scale\": 1.5") == std::string::npos ||
+            stateJson.find("\"magnitude_bias\": -0.25") == std::string::npos ||
+            stateJson.find("\"blend_weight\": 0.25") == std::string::npos ||
+            stateJson.find("\"color_signal\": \"escape_magnitude\"") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist the generic Source stack while mirroring the final Source row into the flat split-color tuple\n";
+            return 1;
+        }
+    }
+
+    {
         RenderSettings render{};
         render.resolution = {1536, 1024};
         render.block_size = 128;

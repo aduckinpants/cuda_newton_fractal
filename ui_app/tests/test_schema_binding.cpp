@@ -856,26 +856,29 @@ int main() {
         }
         const FunctionDescriptor* coreEscapeMagnitudeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "escape_magnitude");
         if (!coreEscapeMagnitudeDescriptor ||
-            coreEscapeMagnitudeDescriptor->parameters.size() != 2 ||
+            coreEscapeMagnitudeDescriptor->parameters.size() != 3 ||
             coreEscapeMagnitudeDescriptor->parameters[0].path != "signal.magnitude_scale" ||
-            coreEscapeMagnitudeDescriptor->parameters[1].path != "signal.magnitude_bias") {
-            std::cerr << "Expected escape_magnitude to carry stable magnitude-scale and magnitude-bias source parameters\n";
+            coreEscapeMagnitudeDescriptor->parameters[1].path != "signal.magnitude_bias" ||
+            coreEscapeMagnitudeDescriptor->parameters[2].path != "signal.blend_weight") {
+            std::cerr << "Expected escape_magnitude to carry stable magnitude-scale, magnitude-bias, and blend-weight source parameters\n";
             return 1;
         }
         const FunctionDescriptor* coreOrbitStripeDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "orbit_stripe");
         if (!coreOrbitStripeDescriptor ||
-            coreOrbitStripeDescriptor->parameters.size() != 2 ||
+            coreOrbitStripeDescriptor->parameters.size() != 3 ||
             coreOrbitStripeDescriptor->parameters[0].path != "signal.stripe_frequency" ||
-            coreOrbitStripeDescriptor->parameters[1].path != "signal.phase_offset") {
-            std::cerr << "Expected orbit_stripe to carry stable stripe-frequency and phase-offset source parameters\n";
+            coreOrbitStripeDescriptor->parameters[1].path != "signal.phase_offset" ||
+            coreOrbitStripeDescriptor->parameters[2].path != "signal.blend_weight") {
+            std::cerr << "Expected orbit_stripe to carry stable stripe-frequency, phase-offset, and blend-weight source parameters\n";
             return 1;
         }
         const FunctionDescriptor* coreRootProximityDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_proximity");
         if (!coreRootProximityDescriptor ||
-            coreRootProximityDescriptor->parameters.size() != 2 ||
+            coreRootProximityDescriptor->parameters.size() != 3 ||
             coreRootProximityDescriptor->parameters[0].path != "signal.proximity_scale" ||
-            coreRootProximityDescriptor->parameters[1].path != "signal.proximity_bias") {
-            std::cerr << "Expected root_proximity to carry stable proximity-scale and proximity-bias source parameters\n";
+            coreRootProximityDescriptor->parameters[1].path != "signal.proximity_bias" ||
+            coreRootProximityDescriptor->parameters[2].path != "signal.blend_weight") {
+            std::cerr << "Expected root_proximity to carry stable proximity-scale, proximity-bias, and blend-weight source parameters\n";
             return 1;
         }
         const FunctionDescriptor* coreRootIndexDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreSourceCatalog, "root_index");
@@ -1194,10 +1197,11 @@ int main() {
 
         std::vector<std::size_t> visibleParamIndexes;
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[0].rows[0], &visibleParamIndexes) ||
-            visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes.size() != 3 ||
             visibleParamIndexes[0] != 0 ||
-            visibleParamIndexes[1] != 1) {
-            std::cerr << "Expected the shipped smooth_escape_ramp signal to expose its runtime-backed parameter controls\n";
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2) {
+            std::cerr << "Expected the shipped smooth_escape_ramp signal to expose its runtime-backed parameter controls including blend weight\n";
             return 1;
         }
         if (!SelectColorPipelineLaneFunction(&windowState, 0, "root_index") ||
@@ -1372,16 +1376,18 @@ int main() {
             return 1;
         }
         if (windowState.lanes[0].rows[0].function_id != "banded_signal" ||
-            windowState.lanes[0].rows[0].parameter_values.size() != 2 ||
-            windowState.lanes[0].rows[0].parameter_values[0].path != "signal.band_count") {
-            std::cerr << "Expected advanced color pipeline lane edits to swap the live-backed descriptor parameter surface\n";
+            windowState.lanes[0].rows[0].parameter_values.size() != 3 ||
+            windowState.lanes[0].rows[0].parameter_values[0].path != "signal.band_count" ||
+            windowState.lanes[0].rows[0].parameter_values[2].path != "signal.blend_weight") {
+            std::cerr << "Expected advanced color pipeline lane edits to swap the live-backed descriptor parameter surface including Source blend weight\n";
             return 1;
         }
         if (!CollectRenderableColorPipelineParamIndexes(windowState.lanes[0].rows[0], &visibleParamIndexes) ||
-            visibleParamIndexes.size() != 2 ||
+            visibleParamIndexes.size() != 3 ||
             visibleParamIndexes[0] != 0 ||
-            visibleParamIndexes[1] != 1) {
-            std::cerr << "Expected runtime-backed advanced color functions to expose only their real renderable parameter controls\n";
+            visibleParamIndexes[1] != 1 ||
+            visibleParamIndexes[2] != 2) {
+            std::cerr << "Expected runtime-backed advanced color functions to expose only their real renderable parameter controls including Source blend weight\n";
             return 1;
         }
         if (!AddColorPipelineLaneRow(&windowState, 1, "offset_scale") ||
@@ -2146,6 +2152,53 @@ int main() {
             windowState.lanes[0].rows.size() != 1 ||
             windowState.lanes[2].rows.size() != 1) {
             std::cerr << "Expected the root-basin pair coverage to restore the draft editor to one Source row and one Palette row before later single-row tuple tests\n";
+            return 1;
+        }
+
+        if (!SelectColorPipelineLaneFunction(&windowState, 0, "smooth_escape_ramp") ||
+            !SelectColorPipelineLaneFunction(&windowState, 1, "identity") ||
+            !SelectColorPipelineLaneFunction(&windowState, 2, "heatmap") ||
+            !setParam(windowState.lanes[0].rows[0], "signal.scale", 0.5) ||
+            !setParam(windowState.lanes[0].rows[0], "signal.bias", 0.25) ||
+            !AddColorPipelineLaneRow(&windowState, 0, "escape_magnitude") ||
+            windowState.lanes[0].rows.size() != 2 ||
+            !setParam(windowState.lanes[0].rows[1], "signal.magnitude_scale", 1.5) ||
+            !setParam(windowState.lanes[0].rows[1], "signal.magnitude_bias", -0.25) ||
+            !setParam(windowState.lanes[0].rows[1], "signal.blend_weight", 0.25)) {
+            std::cerr << "Expected the Source weighted-blend RED to construct a supported two-row generic Source lane with per-row Source params and blend weight\n";
+            return 1;
+        }
+        bool sourceStackChanged = false;
+        if (!ApplyColorPipelineDraftToLiveState(&windowState, view.fractal_type, &params, &sourceStackChanged)) {
+            std::cerr << "Expected a supported two-row generic Source lane to apply to live runtime state instead of failing at the single-row Source bridge\n";
+            return 1;
+        }
+        if (!sourceStackChanged ||
+            params.coloring_mode != ColoringMode::smooth_escape ||
+            params.color_pipeline.signal != ColorSignal::escape_magnitude ||
+            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
+            params.color_source_stack_count != 2 ||
+            params.color_source_stack[0].signal != ColorSignal::smooth_escape ||
+            !NearlyEqual(params.color_source_stack[0].params.scale, 0.5) ||
+            !NearlyEqual(params.color_source_stack[0].params.bias, 0.25) ||
+            params.color_source_stack[1].signal != ColorSignal::escape_magnitude ||
+            !NearlyEqual(params.color_source_stack[1].params.magnitude_scale, 1.5) ||
+            !NearlyEqual(params.color_source_stack[1].params.magnitude_bias, -0.25) ||
+            !NearlyEqual(params.color_source_stack[1].params.blend_weight, 0.25) ||
+            !windowState.live_snapshot.valid ||
+            !windowState.live_snapshot.draft_import_supported ||
+            windowState.live_snapshot.lanes.size() < 3 ||
+            windowState.live_snapshot.lanes[0].rows.size() != 2 ||
+            windowState.live_snapshot.lanes[0].rows[0].function_id != "smooth_escape_ramp" ||
+            windowState.live_snapshot.lanes[0].rows[1].function_id != "escape_magnitude" ||
+            HasColorPipelineDraftEdits(windowState)) {
+            std::cerr << "Expected live programmable apply to persist and resync a two-row generic Source lane while mirroring the final valid Source row into the legacy runtime tuple\n";
+            return 1;
+        }
+        if (!RemoveColorPipelineLaneRow(&windowState, 0, 1) ||
+            windowState.lanes[0].rows.size() != 1) {
+            std::cerr << "Expected Source weighted-blend coverage to restore the draft editor to one Source row before later tuple tests\n";
             return 1;
         }
 

@@ -300,6 +300,74 @@ bool ParseSampleTier(const std::string& text, SampleTier* outTier) {
     return TryParseSampleTierId(text, outTier);
 }
 
+void ResetLegacyColorSourceMirror(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    ioParams->color_smooth_escape_scale = 1.0f;
+    ioParams->color_smooth_escape_bias = 0.0f;
+    ioParams->color_phase_signal_offset = 0.0f;
+    ioParams->color_phase_wrap_cycles = 1.0f;
+    ioParams->color_iteration_band_count = 8;
+    ioParams->color_iteration_band_softness = 0.35f;
+    ioParams->color_escape_magnitude_scale = 1.0f;
+    ioParams->color_escape_magnitude_bias = 0.0f;
+    ioParams->color_orbit_stripe_frequency = 1.0f;
+    ioParams->color_orbit_stripe_phase = 0.0f;
+    ioParams->color_root_proximity_scale = 1.0f;
+    ioParams->color_root_proximity_bias = 0.0f;
+}
+
+void ApplyLegacyColorSourceMirrorParams(const ColorPipelineSourceStackEntry& sourceEntry, KernelParams* ioParams) {
+    switch (sourceEntry.signal) {
+    case ColorSignal::smooth_escape:
+        ioParams->color_smooth_escape_scale = sourceEntry.params.scale;
+        ioParams->color_smooth_escape_bias = sourceEntry.params.bias;
+        break;
+    case ColorSignal::phase_angle:
+        ioParams->color_phase_signal_offset = sourceEntry.params.phase_offset;
+        ioParams->color_phase_wrap_cycles = sourceEntry.params.wrap_cycles;
+        break;
+    case ColorSignal::iteration_bands:
+        ioParams->color_iteration_band_count = sourceEntry.params.band_count;
+        ioParams->color_iteration_band_softness = sourceEntry.params.softness;
+        break;
+    case ColorSignal::escape_magnitude:
+        ioParams->color_escape_magnitude_scale = sourceEntry.params.magnitude_scale;
+        ioParams->color_escape_magnitude_bias = sourceEntry.params.magnitude_bias;
+        break;
+    case ColorSignal::orbit_stripe:
+        ioParams->color_orbit_stripe_frequency = sourceEntry.params.stripe_frequency;
+        ioParams->color_orbit_stripe_phase = sourceEntry.params.stripe_phase;
+        break;
+    case ColorSignal::root_proximity:
+        ioParams->color_root_proximity_scale = sourceEntry.params.proximity_scale;
+        ioParams->color_root_proximity_bias = sourceEntry.params.proximity_bias;
+        break;
+    case ColorSignal::root_index:
+    case ColorSignal::iteration_count:
+    default:
+        break;
+    }
+}
+
+void MirrorLegacyColorSourceFromStackEntry(const ColorPipelineSourceStackEntry& sourceEntry, KernelParams* ioParams) {
+    if (!ioParams) return;
+    ResetLegacyColorSourceMirror(ioParams);
+    ioParams->color_pipeline.signal = sourceEntry.signal;
+    ApplyLegacyColorSourceMirrorParams(sourceEntry, ioParams);
+}
+
+void ClearColorSourceStack(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    ioParams->color_source_stack_count = 0;
+    for (ColorPipelineSourceStackEntry& sourceEntry : ioParams->color_source_stack) {
+        sourceEntry = {};
+    }
+}
+
 void ResetLegacyColorShapeMirror(KernelParams* ioParams) {
     if (!ioParams) {
         return;
@@ -449,6 +517,129 @@ bool ParseOptionalColorRootBasinPairs(const json_min::Value& paramsObject,
         if (!ParseColorRootBasinPairEntry(pairArray[index], &ioParams->color_root_basin_pairs[index], outError)) {
             return false;
         }
+    }
+    return true;
+}
+
+bool ParseColorSourceStackEntry(const json_min::Value& entryValue,
+                                ColorPipelineSourceStackEntry* outEntry,
+                                std::string* outError) {
+    if (!outEntry) {
+        if (outError) *outError = "color_source_stack requires output storage";
+        return false;
+    }
+    if (!entryValue.is_object()) {
+        if (outError) *outError = "color_source_stack entries must be objects";
+        return false;
+    }
+
+    std::string signalId;
+    if (!GetRequiredString(entryValue, "signal", &signalId, outError)) {
+        return false;
+    }
+
+    ColorPipelineSourceStackEntry entry;
+    if (!ParseColorSignal(signalId, &entry.signal)) {
+        if (outError) *outError = std::string("Unknown color_source_stack signal id: ") + signalId;
+        return false;
+    }
+    const char* functionId = AdvancedColorSignalFunctionId(entry.signal);
+    if (!functionId || std::strcmp(functionId, "root_index") == 0) {
+        if (outError) *outError = "color_source_stack does not allow root_index; root_index stays on color_root_basin_pairs";
+        return false;
+    }
+
+    double scale = entry.params.scale;
+    double bias = entry.params.bias;
+    double phaseOffset = entry.params.phase_offset;
+    double wrapCycles = entry.params.wrap_cycles;
+    double bandCountRaw = static_cast<double>(entry.params.band_count);
+    bool hasBandCount = false;
+    double softness = entry.params.softness;
+    double magnitudeScale = entry.params.magnitude_scale;
+    double magnitudeBias = entry.params.magnitude_bias;
+    double stripeFrequency = entry.params.stripe_frequency;
+    double stripePhase = entry.params.stripe_phase;
+    double proximityScale = entry.params.proximity_scale;
+    double proximityBias = entry.params.proximity_bias;
+    double blendWeight = entry.params.blend_weight;
+    if (!GetOptionalNumber(entryValue, "scale", &scale, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "bias", &bias, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "phase_offset", &phaseOffset, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "wrap_cycles", &wrapCycles, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "band_count", &bandCountRaw, &hasBandCount, outError) ||
+        !GetOptionalNumber(entryValue, "softness", &softness, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "magnitude_scale", &magnitudeScale, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "magnitude_bias", &magnitudeBias, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "stripe_frequency", &stripeFrequency, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "stripe_phase", &stripePhase, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "proximity_scale", &proximityScale, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "proximity_bias", &proximityBias, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "blend_weight", &blendWeight, nullptr, outError)) {
+        return false;
+    }
+    if (hasBandCount) {
+        if (!std::isfinite(bandCountRaw) || std::floor(bandCountRaw) != bandCountRaw) {
+            if (outError) *outError = "Invalid integer field: color_source_stack.band_count";
+            return false;
+        }
+        entry.params.band_count = static_cast<int>(bandCountRaw);
+    }
+    entry.params.scale = static_cast<float>(scale);
+    entry.params.bias = static_cast<float>(bias);
+    entry.params.phase_offset = static_cast<float>(phaseOffset);
+    entry.params.wrap_cycles = static_cast<float>(wrapCycles);
+    entry.params.softness = static_cast<float>(softness);
+    entry.params.magnitude_scale = static_cast<float>(magnitudeScale);
+    entry.params.magnitude_bias = static_cast<float>(magnitudeBias);
+    entry.params.stripe_frequency = static_cast<float>(stripeFrequency);
+    entry.params.stripe_phase = static_cast<float>(stripePhase);
+    entry.params.proximity_scale = static_cast<float>(proximityScale);
+    entry.params.proximity_bias = static_cast<float>(proximityBias);
+    entry.params.blend_weight = static_cast<float>(blendWeight);
+    *outEntry = entry;
+    return true;
+}
+
+bool ParseOptionalColorSourceStack(const json_min::Value& paramsObject,
+                                   KernelParams* ioParams,
+                                   std::string* outError) {
+    if (!ioParams) {
+        return false;
+    }
+    ClearColorSourceStack(ioParams);
+    const json_min::Value* stackValue = paramsObject.get("color_source_stack");
+    if (!stackValue) {
+        return true;
+    }
+    if (ioParams->color_root_basin_pair_count > 0) {
+        if (outError) *outError = "color_source_stack cannot be combined with color_root_basin_pairs";
+        return false;
+    }
+    if (!stackValue->is_array()) {
+        if (outError) *outError = "Field color_source_stack must be an array";
+        return false;
+    }
+
+    const auto& stackArray = stackValue->as_array();
+    if (stackArray.size() > static_cast<std::size_t>(kColorPipelineMaxSourceStackCount)) {
+        if (outError) *outError = "color_source_stack exceeds the supported maximum row count";
+        return false;
+    }
+
+    ioParams->color_source_stack_count = static_cast<int>(stackArray.size());
+    for (std::size_t index = 0; index < stackArray.size(); ++index) {
+        if (!ParseColorSourceStackEntry(stackArray[index], &ioParams->color_source_stack[index], outError)) {
+            return false;
+        }
+    }
+    if (!stackArray.empty()) {
+        const ColorPipelineSourceStackEntry& finalEntry = ioParams->color_source_stack[stackArray.size() - 1];
+        if (finalEntry.signal != ioParams->color_pipeline.signal) {
+            if (outError) *outError = "color_source_stack final entry must mirror the saved flat color pipeline signal";
+            return false;
+        }
+        MirrorLegacyColorSourceFromStackEntry(finalEntry, ioParams);
     }
     return true;
 }
@@ -1117,7 +1308,9 @@ bool ParseColorPipelineDraftRow(const json_min::Value& rowObject,
     for (std::size_t index = 0; index < seenParams.size(); ++index) {
         if (!seenParams[index]) {
             const std::string& missingPath = descriptor->parameters[index].path;
-            if (missingPath == "palette.blend_weight" || missingPath == "palette.blend_mode") {
+            if (missingPath == "palette.blend_weight" ||
+                missingPath == "palette.blend_mode" ||
+                missingPath == "signal.blend_weight") {
                 continue;
             }
             if (outError) *outError = "Missing color_pipeline_draft parameter path '" + descriptor->parameters[index].path + "' for function '" + functionId + "'";
@@ -1189,6 +1382,30 @@ bool ParseOptionalColorPipelineDraft(const json_min::Value& root,
 
     const json_min::Value* draftObject = root.get("color_pipeline_draft");
     if (!draftObject) {
+        if (!outColorPipelineWindow) {
+            return true;
+        }
+        ColorPipelineWindowState rebuiltState;
+        std::string snapshotError;
+        if (!TryBuildColorPipelineLiveSnapshot(liveFractalType, liveParams, &rebuiltState.live_snapshot, &snapshotError)) {
+            if (outError) *outError = "Saved color pipeline live snapshot cannot be rebuilt: " + snapshotError;
+            return false;
+        }
+        if (!EnsureColorPipelineWindowInitialized(&rebuiltState)) {
+            if (outError) *outError = "Saved color pipeline window could not initialize the shipped programmable lanes";
+            return false;
+        }
+        if (rebuiltState.live_snapshot.valid &&
+            rebuiltState.live_snapshot.draft_import_supported &&
+            !rebuiltState.live_snapshot.lanes.empty()) {
+            rebuiltState.lanes = rebuiltState.live_snapshot.lanes;
+            rebuiltState.initialized = true;
+            if (!EnsureColorPipelineWindowInitialized(&rebuiltState)) {
+                if (outError) *outError = "Saved color pipeline live snapshot could not assign stable row ids";
+                return false;
+            }
+        }
+        *outColorPipelineWindow = std::move(rebuiltState);
         return true;
     }
     if (!draftObject->is_object()) {
@@ -1909,6 +2126,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_explaino_palette_colorfulness = static_cast<float>(colorExplainoPaletteColorfulness);
     nextParams.color_contrast_lift_exposure = static_cast<float>(colorContrastLiftExposure);
     nextParams.color_contrast_lift_saturation = static_cast<float>(colorContrastLiftSaturation);
+    if (!ParseOptionalColorSourceStack(*paramsObject, &nextParams, outError)) return false;
     if (!ParseOptionalColorShapeStack(*paramsObject, &nextParams, outError)) return false;
     if (!ParseOptionalColorPaletteStack(*paramsObject, &nextParams, outError)) return false;
     if (!ParseOptionalColorGradingStack(*paramsObject, &nextParams, outError)) return false;

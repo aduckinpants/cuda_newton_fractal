@@ -89,10 +89,32 @@ enum class ColorPipelineShape : int {
     smooth_window = 6,
 };
 
+constexpr int kColorPipelineMaxSourceStackCount = 8;
 constexpr int kColorPipelineMaxShapeStackCount = 8;
 constexpr int kColorPipelineMaxRootBasinPairCount = 8;
 constexpr int kColorPipelineMaxPaletteStackCount = 8;
 constexpr int kColorPipelineMaxGradingStackCount = 8;
+
+struct ColorPipelineSourceRuntimeParams {
+    float scale{1.0f};
+    float bias{0.0f};
+    float phase_offset{0.0f};
+    float wrap_cycles{1.0f};
+    int band_count{8};
+    float softness{0.35f};
+    float magnitude_scale{1.0f};
+    float magnitude_bias{0.0f};
+    float stripe_frequency{1.0f};
+    float stripe_phase{0.0f};
+    float proximity_scale{1.0f};
+    float proximity_bias{0.0f};
+    float blend_weight{1.0f};
+};
+
+struct ColorPipelineSourceStackEntry {
+    ColorSignal signal{ColorSignal::smooth_escape};
+    ColorPipelineSourceRuntimeParams params{};
+};
 
 struct ColorPipelineShapeRuntimeParams {
     float offset{0.0f};
@@ -324,6 +346,8 @@ struct KernelParams {
     float color_phase_signal_offset{0.0f};
     float color_phase_wrap_cycles{1.0f};
     float color_phase_palette_offset{0.0f};
+    int color_source_stack_count{0};
+    ColorPipelineSourceStackEntry color_source_stack[kColorPipelineMaxSourceStackCount]{};
     ColorPipelineShape color_shape{ColorPipelineShape::identity};
     int color_shape_stack_count{0};
     ColorPipelineShapeStackEntry color_shape_stack[kColorPipelineMaxShapeStackCount]{};
