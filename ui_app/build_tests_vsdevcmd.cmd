@@ -40,6 +40,15 @@ if errorlevel 1 exit /b 1
 
 set CL=/FS /Fo"%OBJROOT%\\" /Fd"%PDBROOT%\\build_tests.pdb"
 
+set FOCUSED_TEST=%~1
+if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fast
+if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
+if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
+if not "%FOCUSED_TEST%"=="" (
+  echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
+  exit /b 1
+)
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\cli_args.cpp .\tests\test_cli_args.cpp ^
   /Fe:"%TESTROOT%\test_cli_args.exe"
@@ -461,6 +470,43 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_explaino_exploration_advisor.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
+
+goto full_test_run
+
+:focused_test_diagnostics_state_io
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:focused_test_finding_archive_actions
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
+  /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:focused_serializer_owner_fast
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
+  /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:full_test_run
 
 "%TESTROOT%\test_cli_args.exe"
 if errorlevel 1 exit /b 1

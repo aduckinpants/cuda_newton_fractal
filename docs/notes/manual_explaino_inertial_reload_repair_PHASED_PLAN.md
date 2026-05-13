@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 checkpoint - actual capture-finding route covered, historical archive still blocked. The reopened investigation reproduced the strict historical failure, ruled out nearby color tuple, parameter, no-root-snap, alternate-runtime, and neighboring-capture recovery paths, and added published-runtime coverage for the real `--capture-finding` archive path. Current captures/finding archives are self-consistent; the old `234919_563__explaino_inertial` frame still has no recoverable runtime authority in the saved artifacts.
+Phase 5 checkpoint - actual capture-finding route covered, historical archive still blocked. The reopened investigation reproduced the strict historical failure, ruled out nearby color tuple, parameter, no-root-snap, alternate-runtime, and neighboring-capture recovery paths, and added published-runtime coverage for the real `--capture-finding` archive path. The follow-up serializer distrust pass also rechecked the current diagnostics owner seam with exhaustive supported single-row advanced-color round-trips, bounded non-first Palette/Grading second-row round-trips, and a focused `serializer_owner_fast` validation rail. Current captures/finding archives are self-consistent; the old `234919_563__explaino_inertial` frame still has no recoverable runtime authority in the saved artifacts.
 
 ## Phase Checklist
 
@@ -20,6 +20,9 @@ Phase 5 checkpoint - actual capture-finding route covered, historical archive st
 - [done] Prove the repaired forward save/load path against the active published `D:` runtime; the proof is exact-pixel self-replay for a current capture state, not a false claim that the old archive was recovered.
 - [done] Keep the historical failure signal alive as a strict `xfail` tripwire instead of weakening the capture-backed proof or hiding the old mismatch.
 - [done] Continue the actual historical recovery work for `234919_563__explaino_inertial`; the reopened slice re-ran the failure and searched concrete recovery owners instead of stopping at the forward-proof checkpoint.
+- [done] Double-check whether the current serializer is still broken today instead of trusting earlier churn.
+- [done] Cover every runtime-backed single-row advanced-color function plus bounded non-first Palette/Grading rows in the diagnostics round-trip owner test.
+- [done] Add a focused serializer-owner validation surface so this seam no longer requires the full 900+ second helper suite for every follow-up.
 - [blocked] Recovering the old archived pixels remains blocked: the archive contains only notes, `finding.json`, `finding.md`, `frame.png`, and `state.json`; color, parameter, no-root-snap, alternate-runtime, and neighboring-capture probes did not find a defensible state migration. The next viable product choice is a viewer/archive UX path for displaying unreplayable historical frames, not a guessed renderer/color patch.
 
 ## Presumption Loop
@@ -66,6 +69,10 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - Actual capture-finding route proof: a direct `--capture-finding` run from the historical state created a fresh archive with explicit roots and `poly_coeffs_b`; replaying that archive produced `mean_abs_rgb=0.005` after 256px downsample.
 - Regression proof added: `tests/test_fractal_runtime_manual_capture_repro.py` now covers the actual `--capture-finding` archive route in `test_current_explaino_inertial_capture_finding_archive_replays_its_pixels`.
 - Focused runtime validation: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` passed as `2 passed, 1 xfailed`; the xfail remains the unrecovered historical frame/state mismatch.
+- Focused serializer-owner validation rail: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino serializer owner fast" --log artifacts/manual_explaino_serializer_owner_fast.log -- ui_app\build_tests_vsdevcmd.cmd serializer_owner_fast` passed; the checked-in fast mode only builds/runs `test_diagnostics_state_io.exe` and `test_finding_archive_actions.exe`.
+- Current serializer owner proof: `ui_app/tests/test_diagnostics_state_io.cpp` now exercises every runtime-backed single-row Source, Shape, Palette, and Grading function through diagnostics capture/load round-trips seeded from the current ExplainO fixture.
+- Non-first row serializer owner proof: the same owner binary now covers every supported non-first Palette stack function and every supported non-first Grading row by applying a bounded two-row draft, capturing `state.json`, reloading it, and comparing both runtime stack entries and normalized draft lanes.
+- Post-follow-up runtime witness: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` again passed as `2 passed, 1 xfailed` after the focused owner-test coverage expansion.
 
 ## Hostile Audit
 
@@ -80,6 +87,7 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - [done] Pass 4 - clean re-read after hostile finding: reviewed direct-load paths and found stale roots/secondary polynomial values could survive when legacy states omitted the new fields; added the regression, cleared absent authority arrays before optional parse, reran native helper tests, republished runtime, and confirmed the repaired state still passes the forward pixel proof.
 - [done] Pass 5 - reopened historical audit: re-ran the archived capture mismatch, inventoried capture artifacts/provenance, checked neighboring captures and alternate executables, and ran bounded compatibility probes without finding a recoverable historical state.
 - [done] Pass 6 - clean re-read of the product route: proved the current `--capture-finding` archive path creates self-consistent state/frame artifacts and added runtime regression coverage for that route.
+- [done] Pass 7 - serializer distrust re-audit: treated the current diagnostics serializer as still suspect, expanded the owner test to cover every runtime-backed single-row function plus bounded non-first Palette/Grading rows, added the focused `serializer_owner_fast` validation rail, reran that fast owner proof, and rechecked the published-runtime witness.
 
 ## Audit Findings
 
@@ -87,8 +95,9 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - [done] Real finding: `explaino_damping` is a live schema-bound render parameter used by ExplainO-Inertial iteration, but diagnostics save/load did not serialize or restore it.
 - [done] Real finding: current captures did not persist explicit ExplainO roots or `poly_coeffs_b`, so reload paths could recompute or lose runtime authority that was needed for pixel replay.
 - [done] Real finding: legacy states that omit `explaino_roots` or `poly_coeffs_b` could preserve stale caller values in direct load; the loader now clears those arrays before optional parse.
+- [done] Real finding: the current serializer proof was still example-based for non-first Palette/Grading rows and forced slow broad reruns to recheck the owner seam; the owner binary now carries exhaustive supported single-row coverage, bounded second-row Palette/Grading coverage, and a checked-in focused `serializer_owner_fast` validation rail.
 - [blocked] Historical finding: the old `234919_563__explaino_inertial` archive still fails visual reload, and the saved artifacts do not contain enough authority to reconstruct the archived frame through a defensible state migration.
-- [clean] Clean re-read: the current capture-diagnostic and capture-finding routes now create replayable state/frame pairs; no further recoverable owner was found for the historical archive after the reopened probes.
+- [clean] Clean re-read: the current capture-diagnostic and capture-finding routes now create replayable state/frame pairs, and the diagnostics serializer recheck found no surviving hole across supported single-row or bounded non-first Palette/Grading rows. No further recoverable owner was found for the historical archive after the reopened probes.
 
 ## Notes
 
@@ -110,12 +119,12 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 
 ## Resume Point
 
-This follow-up closes as a bounded blocker, not a visual recovery claim. Current `--capture-diagnostic` and `--capture-finding` paths are covered by published-runtime self-replay tests, while the old `234919_563__explaino_inertial` frame remains a strict xfail because its saved artifacts do not contain recoverable runtime authority. The next product-level option is an explicit historical-frame viewing/fallback UX for unreplayable archives, not another guessed renderer or palette migration.
+This follow-up closes as a bounded blocker, not a visual recovery claim. Current `--capture-diagnostic` and `--capture-finding` paths are covered by published-runtime self-replay tests, the diagnostics owner seam now has exhaustive supported single-row plus bounded non-first Palette/Grading serialization coverage, and `ui_app\build_tests_vsdevcmd.cmd serializer_owner_fast` is the fast recheck rail for this seam. The old `234919_563__explaino_inertial` frame remains a strict xfail because its saved artifacts do not contain recoverable runtime authority. The next product-level option is an explicit historical-frame viewing/fallback UX for unreplayable archives, not another guessed renderer or palette migration.
 
 ## Action Hostile Review
 
-- Action ID: action-20260512-historical-reload-recovery
-- Suspected Failure Mode: the forward replay fix made new captures self-consistent but left the original archived frame/state mismatch unrecovered; the missing owner might have been archived sidecar/provenance, derived ExplainO root reconstruction, load-time defaults, capture-time executable drift, or capture-finding archive behavior.
-- Correct Owner/Action: reproduce the archived mismatch, inventory every artifact in the capture directory, trace runtime-field deltas, probe recoverable compatibility candidates, and lock the real current capture-finding route with published-runtime replay proof.
-- Proof Surface: `tests/test_fractal_runtime_manual_capture_repro.py` keeps the historical case strict xfail and now also proves current diagnostic and capture-finding archives replay through the active published `D:` runtime.
-- Blocked Action: declaring the old pixels recovered without the historical pixel assertion passing, weakening/removing the historical xfail, or changing palette/renderer behavior from a candidate that remains above the proof threshold.
+- Action ID: action-20260512-serializer-coverage-recheck
+- Suspected Failure Mode: the historical archive is still unrecoverable, but the current diagnostics serializer could still drop newer advanced-color state on save/load, especially outside the first row, and broad validation was too slow to make that recheck practical.
+- Correct Owner/Action: re-audit the current diagnostics owner seam directly by extending `test_diagnostics_state_io.cpp` to cover every runtime-backed single-row function plus bounded non-first Palette/Grading rows, add a focused `serializer_owner_fast` build/test mode, and prove the result with that fast owner rail plus the existing runtime witness.
+- Proof Surface: `py -3.14 tools/viewer_host_run_logged_command.py --label "manual explaino serializer owner fast" --log artifacts/manual_explaino_serializer_owner_fast.log -- ui_app\build_tests_vsdevcmd.cmd serializer_owner_fast` and `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py`.
+- Blocked Action: claiming a full multi-row cartesian-product proof, rerunning the 900+ second helper suite as the default validation surface for this seam, or reopening historical archive archaeology instead of proving the current serializer truthfully.

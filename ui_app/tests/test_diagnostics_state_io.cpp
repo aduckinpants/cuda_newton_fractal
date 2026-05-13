@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -62,6 +63,256 @@ static bool SetDraftRowNumberParam(ColorPipelineRowState* row, const char* path,
       param.number_value = value;
       return true;
     }
+  }
+  return false;
+}
+
+static bool SetDraftRowBoolParam(ColorPipelineRowState* row, const char* path, bool value) {
+  if (!row) return false;
+  for (ColorPipelineParamState& param : row->parameter_values) {
+    if (param.path == path) {
+      param.bool_value = value;
+      return true;
+    }
+  }
+  return false;
+}
+
+static std::size_t FindDraftLaneIndex(const ColorPipelineWindowState& state, const char* laneId) {
+  for (std::size_t index = 0; index < state.lanes.size(); ++index) {
+    if (state.lanes[index].lane_id == (laneId ? laneId : "")) {
+      return index;
+    }
+  }
+  return state.lanes.size();
+}
+
+static bool NormalizeDraftForLaneComparison(
+  ColorPipelineWindowState* state,
+  std::string* outError = nullptr) {
+  if (!state) {
+    if (outError) *outError = "Advanced color matrix comparison requires a draft state";
+    return false;
+  }
+
+  const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+  std::vector<ColorPipelineLaneState> normalizedLanes;
+  normalizedLanes.reserve(catalogs.size());
+  for (const ColorPipelineLaneCatalog& catalog : catalogs) {
+    const std::size_t existingIndex = FindDraftLaneIndex(*state, catalog.lane_id);
+    if (existingIndex < state->lanes.size()) {
+      normalizedLanes.push_back(state->lanes[existingIndex]);
+      continue;
+    }
+
+    ColorPipelineLaneState lane;
+    if (!BuildColorPipelineLaneWithSingleRow(catalog, catalog.default_function_id, 0, &lane, outError)) {
+      return false;
+    }
+    normalizedLanes.push_back(std::move(lane));
+  }
+
+  state->lanes = std::move(normalizedLanes);
+  state->initialized = true;
+  std::uint64_t nextRowId = state->next_row_id;
+  for (ColorPipelineLaneState& lane : state->lanes) {
+    if (!EnsureColorPipelineLaneRowsInitialized(&lane, &nextRowId)) {
+      if (outError) *outError = "Advanced color matrix comparison failed to normalize draft row ids";
+      return false;
+    }
+  }
+  state->next_row_id = nextRowId;
+  return true;
+}
+
+static double ChooseDistinctDraftNumberValue(const FunctionParamDescriptor& param, double currentValue, int variantIndex = 0) {
+  if (param.type == "int") {
+    const int currentInt = static_cast<int>(std::lround(currentValue));
+    const int minInt = param.has_min ? static_cast<int>(std::lround(param.min_value)) : (currentInt - 2);
+    const int maxInt = param.has_max ? static_cast<int>(std::lround(param.max_value)) : (currentInt + 2);
+    const int midInt = minInt + ((maxInt - minInt) / 2);
+    const int candidates[] = {
+      midInt,
+      minInt,
+      maxInt,
+      currentInt + 1,
+      currentInt - 1,
+    };
+    const int candidateCount = static_cast<int>(sizeof(candidates) / sizeof(candidates[0]));
+    for (int offset = 0; offset < candidateCount; ++offset) {
+      const int candidate = candidates[(variantIndex + offset) % candidateCount];
+      if (candidate < minInt || candidate > maxInt) {
+        continue;
+      }
+      if (candidate != currentInt) {
+        return static_cast<double>(candidate);
+      }
+    }
+    return static_cast<double>(currentInt);
+  }
+
+  double minValue = param.has_min ? param.min_value : (currentValue - 1.0);
+  double maxValue = param.has_max ? param.max_value : (currentValue + 1.0);
+  if (maxValue < minValue) {
+    std::swap(minValue, maxValue);
+  }
+  const double span = maxValue - minValue;
+  const double step = (param.has_step && param.step_value > 0.0) ? param.step_value : 0.125;
+  const double candidates[] = {
+    minValue + span * 0.37,
+    maxValue,
+    minValue,
+    currentValue + step,
+    currentValue - step,
+  };
+  const int candidateCount = static_cast<int>(sizeof(candidates) / sizeof(candidates[0]));
+  for (int offset = 0; offset < candidateCount; ++offset) {
+    const double candidate = candidates[(variantIndex + offset) % candidateCount];
+    if (!std::isfinite(candidate)) {
+      continue;
+    }
+    if (candidate < minValue - 1.0e-9 || candidate > maxValue + 1.0e-9) {
+      continue;
+    }
+    if (!NearlyEqual(candidate, currentValue, 1.0e-6)) {
+      return candidate;
+    }
+  }
+  return currentValue;
+}
+
+static bool ConfigureDistinctDraftRowParams(
+  const FunctionDescriptor& descriptor,
+  ColorPipelineRowState* row,
+  int variantIndex = 0,
+  std::string* outError = nullptr) {
+  if (!row) {
+    if (outError) *outError = "Advanced color matrix test requires a draft row";
+    return false;
+  }
+
+  for (const FunctionParamDescriptor& param : descriptor.parameters) {
+    if (param.type == "float" || param.type == "int") {
+      double currentValue = 0.0;
+      if (!TryGetColorPipelineParamNumber(*row, param.path.c_str(), &currentValue, outError)) {
+        return false;
+      }
+      if (!SetColorPipelineParamNumber(
+              row,
+              param.path.c_str(),
+              ChooseDistinctDraftNumberValue(param, currentValue, variantIndex),
+              outError)) {
+        return false;
+      }
+      continue;
+    }
+
+    if (param.type == "enum") {
+      std::string currentValue;
+      if (!TryGetColorPipelineParamEnum(*row, param.path.c_str(), &currentValue, outError)) {
+        return false;
+      }
+      std::string nextValue = currentValue;
+      const int optionCount = static_cast<int>(param.options.size());
+      for (int offset = 0; offset < optionCount; ++offset) {
+        const UISchemaOption& option = param.options[(variantIndex + offset) % optionCount];
+        if (option.id != currentValue) {
+          nextValue = option.id;
+          break;
+        }
+      }
+      if (!color_pipeline_core::SetColorPipelineParamEnum(row, param.path.c_str(), nextValue, outError)) {
+        return false;
+      }
+      continue;
+    }
+
+    if (param.type == "bool") {
+      bool currentValue = false;
+      bool found = false;
+      for (const ColorPipelineParamState& stateParam : row->parameter_values) {
+        if (stateParam.path == param.path) {
+          currentValue = stateParam.bool_value;
+          found = true;
+          break;
+        }
+      }
+      if (!found || !SetDraftRowBoolParam(row, param.path.c_str(), !currentValue)) {
+        if (outError) {
+          *outError = "Missing advanced color bool parameter path '" + param.path + "'";
+        }
+        return false;
+      }
+      continue;
+    }
+
+    if (outError) {
+      *outError = "Unsupported advanced color parameter type '" + param.type + "' in diagnostics matrix test";
+    }
+    return false;
+  }
+
+  return true;
+}
+
+static bool ConfigureDistinctDraftRowParams(
+  const FunctionDescriptor& descriptor,
+  ColorPipelineRowState* row,
+  std::string* outError) {
+  return ConfigureDistinctDraftRowParams(descriptor, row, 0, outError);
+}
+
+static bool AppendDraftRowForFunction(
+  ColorPipelineWindowState* state,
+  const ColorPipelineLaneCatalog& catalog,
+  std::size_t laneIndex,
+  const FunctionDescriptor& descriptor,
+  std::uint64_t stableRowId,
+  std::string* outError = nullptr) {
+  if (!state || laneIndex >= state->lanes.size()) {
+    if (outError) *outError = "Advanced color matrix append requires a valid lane index";
+    return false;
+  }
+  ColorPipelineRowState row;
+  if (!BuildColorPipelineRowFromFunctionId(catalog, descriptor.id.c_str(), stableRowId, &row, outError)) {
+    return false;
+  }
+  state->lanes[laneIndex].rows.push_back(std::move(row));
+  if (state->next_row_id <= stableRowId) {
+    state->next_row_id = stableRowId + 1;
+  }
+  return true;
+}
+
+static bool ResolveSupportedSourceAndGradingForPaletteFunction(
+  const ColorPipelineLaneCatalog& sourceCatalog,
+  const FunctionDescriptor& paletteDescriptor,
+  const ColorPipelineLaneCatalog& gradingCatalog,
+  const FunctionDescriptor** outSourceDescriptor,
+  const FunctionDescriptor** outGradingDescriptor,
+  std::string* outError = nullptr) {
+  if (outSourceDescriptor) *outSourceDescriptor = nullptr;
+  if (outGradingDescriptor) *outGradingDescriptor = nullptr;
+  for (const FunctionDescriptor& sourceDescriptor : sourceCatalog.functions) {
+    ColorPipelineSelection pipeline{};
+    ColoringMode mode = ColoringMode::root_basin;
+    if (!TryBuildColorPipelineSelectionFromLaneIds(sourceDescriptor.id.c_str(), paletteDescriptor.id.c_str(), &pipeline, &mode)) {
+      continue;
+    }
+    const char* gradingFunctionId = AdvancedColorGradingFunctionId(pipeline.grading);
+    if (!gradingFunctionId) {
+      continue;
+    }
+    const FunctionDescriptor* gradingDescriptor = FindColorPipelineFunctionDescriptor(gradingCatalog, gradingFunctionId);
+    if (!gradingDescriptor) {
+      continue;
+    }
+    if (outSourceDescriptor) *outSourceDescriptor = &sourceDescriptor;
+    if (outGradingDescriptor) *outGradingDescriptor = gradingDescriptor;
+    return true;
+  }
+  if (outError) {
+    *outError = "No supported Source / Grading owner was found for Palette function '" + paletteDescriptor.id + "'";
   }
   return false;
 }
@@ -3657,6 +3908,532 @@ int main() {
             return 1;
         }
     }
+
+      {
+        ViewState matrixView{};
+        KernelParams matrixParams{};
+        RenderSettings matrixRender{};
+        ColorPipelineWindowState baseDraft{};
+        std::string error;
+        if (!LoadDiagnosticsStateJson(
+            ManualExplainoJoyCaptureStateJsonLowRes(),
+            &matrixView,
+            &matrixParams,
+            &matrixRender,
+            &baseDraft,
+            &error)) {
+          std::cerr << "Expected advanced color matrix baseline fixture to load: " << error << "\n";
+          return 1;
+        }
+
+        matrixRender.resolution = {1, 1};
+        matrixRender.block_size = 1;
+        matrixRender.device_id = 0;
+
+        const fs::path runtimeDir = tempRoot / "advanced_color_function_matrix_runtime";
+        fs::remove_all(runtimeDir);
+        fs::create_directories(runtimeDir);
+
+        RenderStats matrixStats{};
+        std::vector<std::uint32_t> rgba(1, 0xff224466u);
+        const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+        const std::size_t sourceLaneIndex = FindDraftLaneIndex(baseDraft, "source");
+        const std::size_t shapeLaneIndex = FindDraftLaneIndex(baseDraft, "shape");
+        const std::size_t paletteLaneIndex = FindDraftLaneIndex(baseDraft, "palette");
+        const std::size_t gradingLaneIndex = FindDraftLaneIndex(baseDraft, "grading");
+        if (sourceLaneIndex >= baseDraft.lanes.size() ||
+          shapeLaneIndex >= baseDraft.lanes.size() ||
+          paletteLaneIndex >= baseDraft.lanes.size() ||
+          gradingLaneIndex >= baseDraft.lanes.size()) {
+          std::cerr << "Expected advanced color matrix baseline draft to expose all four programmable lanes\n";
+          return 1;
+        }
+
+        const ColorPipelineLaneCatalog& sourceCatalog = catalogs[sourceLaneIndex];
+        const ColorPipelineLaneCatalog& shapeCatalog = catalogs[shapeLaneIndex];
+        const ColorPipelineLaneCatalog& paletteCatalog = catalogs[paletteLaneIndex];
+        const ColorPipelineLaneCatalog& gradingCatalog = catalogs[gradingLaneIndex];
+
+        std::set<std::string> coveredSourceFunctions;
+        std::set<std::string> coveredShapeFunctions;
+        std::set<std::string> coveredPaletteFunctions;
+        std::set<std::string> coveredGradingFunctions;
+        int supportedTupleCount = 0;
+
+        for (const FunctionDescriptor& sourceDescriptor : sourceCatalog.functions) {
+          for (const FunctionDescriptor& shapeDescriptor : shapeCatalog.functions) {
+            for (const FunctionDescriptor& paletteDescriptor : paletteCatalog.functions) {
+              for (const FunctionDescriptor& gradingDescriptor : gradingCatalog.functions) {
+                ColorPipelineWindowState candidateDraft = baseDraft;
+                if (!SetColorPipelineRowFunction(&candidateDraft.lanes[sourceLaneIndex].rows[0], sourceDescriptor) ||
+                  !SetColorPipelineRowFunction(&candidateDraft.lanes[shapeLaneIndex].rows[0], shapeDescriptor) ||
+                  !SetColorPipelineRowFunction(&candidateDraft.lanes[paletteLaneIndex].rows[0], paletteDescriptor) ||
+                  !SetColorPipelineRowFunction(&candidateDraft.lanes[gradingLaneIndex].rows[0], gradingDescriptor)) {
+                  std::cerr << "Expected advanced color matrix draft row selection to succeed for supported runtime-backed functions\n";
+                  return 1;
+                }
+
+                error.clear();
+                if (!ConfigureDistinctDraftRowParams(sourceDescriptor, &candidateDraft.lanes[sourceLaneIndex].rows[0], &error) ||
+                  !ConfigureDistinctDraftRowParams(shapeDescriptor, &candidateDraft.lanes[shapeLaneIndex].rows[0], &error) ||
+                  !ConfigureDistinctDraftRowParams(paletteDescriptor, &candidateDraft.lanes[paletteLaneIndex].rows[0], &error) ||
+                  !ConfigureDistinctDraftRowParams(gradingDescriptor, &candidateDraft.lanes[gradingLaneIndex].rows[0], &error)) {
+                  std::cerr << "Expected advanced color matrix draft params to be configurable: " << error << "\n";
+                  return 1;
+                }
+
+                const ColorPipelineDraftApplyState applyState =
+                  DescribeColorPipelineDraftApplyState(candidateDraft, matrixView.fractal_type, &matrixParams);
+                if (applyState.status == ColorPipelineDraftApplyStatus::unsupported_tuple ||
+                  applyState.status == ColorPipelineDraftApplyStatus::disallowed_for_family) {
+                  continue;
+                }
+                if (applyState.status != ColorPipelineDraftApplyStatus::can_apply &&
+                  applyState.status != ColorPipelineDraftApplyStatus::matches_live) {
+                  std::cerr << "Expected advanced color matrix tuple to be valid or explicitly unsupported, but got status "
+                        << static_cast<int>(applyState.status) << " for tuple "
+                        << sourceDescriptor.id << " / "
+                        << shapeDescriptor.id << " / "
+                        << paletteDescriptor.id << " / "
+                        << gradingDescriptor.id << ": "
+                        << applyState.message << "\n";
+                  return 1;
+                }
+
+                KernelParams appliedParams = matrixParams;
+                ColorPipelineWindowState appliedDraft = candidateDraft;
+                bool changed = false;
+                error.clear();
+                if (!ApplyColorPipelineDraftToLiveState(&appliedDraft, matrixView.fractal_type, &appliedParams, &changed)) {
+                  std::cerr << "Expected advanced color matrix tuple to apply: "
+                        << sourceDescriptor.id << " / "
+                        << shapeDescriptor.id << " / "
+                        << paletteDescriptor.id << " / "
+                        << gradingDescriptor.id << "\n";
+                  return 1;
+                }
+
+                DiagnosticsCaptureResult capture{};
+                if (!CaptureDiagnosticsLastBundle(
+                    runtimeDir.string(),
+                    matrixView,
+                    appliedParams,
+                    matrixRender,
+                    matrixStats,
+                    rgba.data(),
+                    rgba.size(),
+                    &appliedDraft,
+                    &capture,
+                    &error)) {
+                  std::cerr << "Expected advanced color matrix tuple to serialize: " << error << "\n";
+                  return 1;
+                }
+
+                std::string stateJson;
+                if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+                  std::cerr << "Expected advanced color matrix tuple to write diagnostics state.json\n";
+                  return 1;
+                }
+
+                ViewState loadedView{};
+                KernelParams loadedParams{};
+                RenderSettings loadedRender{};
+                ColorPipelineWindowState loadedDraft{};
+                error.clear();
+                if (!LoadDiagnosticsStateJson(stateJson, &loadedView, &loadedParams, &loadedRender, &loadedDraft, &error)) {
+                  std::cerr << "Expected advanced color matrix tuple to reload from diagnostics state.json: "
+                        << sourceDescriptor.id << " / "
+                        << shapeDescriptor.id << " / "
+                        << paletteDescriptor.id << " / "
+                        << gradingDescriptor.id << " => " << error << "\n";
+                  return 1;
+                }
+
+                ColorPipelineWindowState normalizedExpectedDraft = appliedDraft;
+                ColorPipelineWindowState normalizedLoadedDraft = loadedDraft;
+                error.clear();
+                if (!NormalizeDraftForLaneComparison(&normalizedExpectedDraft, &error) ||
+                  !NormalizeDraftForLaneComparison(&normalizedLoadedDraft, &error)) {
+                  std::cerr << "Expected advanced color matrix drafts to normalize for comparison: " << error << "\n";
+                  return 1;
+                }
+                for (std::size_t laneIndex = 0; laneIndex < normalizedExpectedDraft.lanes.size(); ++laneIndex) {
+                  if (!ColorPipelineLaneStatesEqual(normalizedExpectedDraft.lanes[laneIndex], normalizedLoadedDraft.lanes[laneIndex])) {
+                    std::cerr << "Expected diagnostics state round-trip to preserve advanced color lane state for tuple "
+                          << sourceDescriptor.id << " / "
+                          << shapeDescriptor.id << " / "
+                          << paletteDescriptor.id << " / "
+                          << gradingDescriptor.id << "\n";
+                    return 1;
+                  }
+                }
+
+                ColorPipelineLiveSnapshot expectedSnapshot{};
+                error.clear();
+                if (!TryBuildColorPipelineLiveSnapshot(matrixView.fractal_type, appliedParams, &expectedSnapshot, &error)) {
+                  std::cerr << "Expected applied advanced color matrix tuple to produce a live snapshot: " << error << "\n";
+                  return 1;
+                }
+
+                ColorPipelineLiveSnapshot loadedSnapshot{};
+                error.clear();
+                if (!TryBuildColorPipelineLiveSnapshot(loadedView.fractal_type, loadedParams, &loadedSnapshot, &error)) {
+                  std::cerr << "Expected reloaded advanced color matrix tuple to produce a live snapshot: " << error << "\n";
+                  return 1;
+                }
+
+                if (!ColorPipelineLiveSnapshotsEqual(expectedSnapshot, loadedSnapshot)) {
+                  std::cerr << "Expected reloaded advanced color matrix tuple to preserve the normalized live runtime snapshot for tuple "
+                        << sourceDescriptor.id << " / "
+                        << shapeDescriptor.id << " / "
+                        << paletteDescriptor.id << " / "
+                        << gradingDescriptor.id << "\n";
+                  return 1;
+                }
+
+                coveredSourceFunctions.insert(sourceDescriptor.id);
+                coveredShapeFunctions.insert(shapeDescriptor.id);
+                coveredPaletteFunctions.insert(paletteDescriptor.id);
+                coveredGradingFunctions.insert(gradingDescriptor.id);
+                ++supportedTupleCount;
+              }
+            }
+          }
+        }
+
+        if (supportedTupleCount <= 0) {
+          std::cerr << "Expected advanced color diagnostics matrix to find at least one supported runtime-backed tuple\n";
+          return 1;
+        }
+        if (coveredSourceFunctions.size() != sourceCatalog.functions.size()) {
+          std::cerr << "Expected advanced color diagnostics matrix to cover every runtime-backed Source function\n";
+          return 1;
+        }
+        if (coveredShapeFunctions.size() != shapeCatalog.functions.size()) {
+          std::cerr << "Expected advanced color diagnostics matrix to cover every runtime-backed Shape function\n";
+          return 1;
+        }
+        if (coveredPaletteFunctions.size() != paletteCatalog.functions.size()) {
+          std::cerr << "Expected advanced color diagnostics matrix to cover every runtime-backed Palette function\n";
+          return 1;
+        }
+        if (coveredGradingFunctions.size() != gradingCatalog.functions.size()) {
+          std::cerr << "Expected advanced color diagnostics matrix to cover every runtime-backed Grading function\n";
+          return 1;
+        }
+      }
+
+      {
+        ViewState stackView{};
+        KernelParams stackParams{};
+        RenderSettings stackRender{};
+        ColorPipelineWindowState baseDraft{};
+        std::string error;
+        if (!LoadDiagnosticsStateJson(
+            ManualExplainoJoyCaptureStateJsonLowRes(),
+            &stackView,
+            &stackParams,
+            &stackRender,
+            &baseDraft,
+            &error)) {
+          std::cerr << "Expected advanced color stack baseline fixture to load: " << error << "\n";
+          return 1;
+        }
+
+        stackRender.resolution = {1, 1};
+        stackRender.block_size = 1;
+        stackRender.device_id = 0;
+
+        const fs::path runtimeDir = tempRoot / "advanced_color_stack_matrix_runtime";
+        fs::remove_all(runtimeDir);
+        fs::create_directories(runtimeDir);
+
+        RenderStats stackStats{};
+        std::vector<std::uint32_t> rgba(1, 0xff557799u);
+        const std::vector<ColorPipelineLaneCatalog>& catalogs = GetColorPipelineLaneCatalogs();
+        const std::size_t sourceLaneIndex = FindDraftLaneIndex(baseDraft, "source");
+        const std::size_t shapeLaneIndex = FindDraftLaneIndex(baseDraft, "shape");
+        const std::size_t paletteLaneIndex = FindDraftLaneIndex(baseDraft, "palette");
+        const std::size_t gradingLaneIndex = FindDraftLaneIndex(baseDraft, "grading");
+        if (sourceLaneIndex >= baseDraft.lanes.size() ||
+            shapeLaneIndex >= baseDraft.lanes.size() ||
+            paletteLaneIndex >= baseDraft.lanes.size() ||
+            gradingLaneIndex >= baseDraft.lanes.size()) {
+          std::cerr << "Expected advanced color stack baseline draft to expose all four programmable lanes\n";
+          return 1;
+        }
+
+        const ColorPipelineLaneCatalog& sourceCatalog = catalogs[sourceLaneIndex];
+        const ColorPipelineLaneCatalog& shapeCatalog = catalogs[shapeLaneIndex];
+        const ColorPipelineLaneCatalog& paletteCatalog = catalogs[paletteLaneIndex];
+        const ColorPipelineLaneCatalog& gradingCatalog = catalogs[gradingLaneIndex];
+        const FunctionDescriptor* identityDescriptor = FindColorPipelineFunctionDescriptor(shapeCatalog, "identity");
+        const FunctionDescriptor* basePaletteDescriptor = FindColorPipelineFunctionDescriptor(paletteCatalog, "heatmap");
+        const FunctionDescriptor* baseSourceDescriptor = FindColorPipelineFunctionDescriptor(sourceCatalog, "smooth_escape_ramp");
+        const FunctionDescriptor* baseGradingDescriptor = FindColorPipelineFunctionDescriptor(gradingCatalog, "contrast_lift");
+        if (!identityDescriptor || !basePaletteDescriptor || !baseSourceDescriptor || !baseGradingDescriptor) {
+          std::cerr << "Expected advanced color stack matrix baseline descriptors to exist\n";
+          return 1;
+        }
+
+        std::set<std::string> coveredPaletteStackFunctions;
+        for (const FunctionDescriptor& paletteDescriptor : paletteCatalog.functions) {
+          if (!IsSupportedColorPipelinePaletteStackFunctionId(paletteDescriptor.id)) {
+            continue;
+          }
+
+          const FunctionDescriptor* supportedSourceDescriptor = nullptr;
+          const FunctionDescriptor* supportedGradingDescriptor = nullptr;
+          error.clear();
+          if (!ResolveSupportedSourceAndGradingForPaletteFunction(
+                  sourceCatalog,
+                  paletteDescriptor,
+                  gradingCatalog,
+                  &supportedSourceDescriptor,
+                  &supportedGradingDescriptor,
+                  &error)) {
+            std::cerr << "Expected advanced color Palette-stack matrix to resolve a supporting tuple: " << error << "\n";
+            return 1;
+          }
+
+          ColorPipelineWindowState candidateDraft = baseDraft;
+          if (!SetColorPipelineRowFunction(&candidateDraft.lanes[sourceLaneIndex].rows[0], *supportedSourceDescriptor) ||
+              !SetColorPipelineRowFunction(&candidateDraft.lanes[shapeLaneIndex].rows[0], *identityDescriptor) ||
+              !SetColorPipelineRowFunction(&candidateDraft.lanes[paletteLaneIndex].rows[0], paletteDescriptor) ||
+              !SetColorPipelineRowFunction(&candidateDraft.lanes[gradingLaneIndex].rows[0], *supportedGradingDescriptor) ||
+              !AppendDraftRowForFunction(&candidateDraft, paletteCatalog, paletteLaneIndex, paletteDescriptor, 100, &error)) {
+            std::cerr << "Expected advanced color Palette-stack matrix draft setup to succeed: " << error << "\n";
+            return 1;
+          }
+
+          if (!ConfigureDistinctDraftRowParams(*supportedSourceDescriptor, &candidateDraft.lanes[sourceLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(*identityDescriptor, &candidateDraft.lanes[shapeLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(paletteDescriptor, &candidateDraft.lanes[paletteLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(*supportedGradingDescriptor, &candidateDraft.lanes[gradingLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(paletteDescriptor, &candidateDraft.lanes[paletteLaneIndex].rows[1], 1, &error)) {
+            std::cerr << "Expected advanced color Palette-stack matrix params to be configurable: " << error << "\n";
+            return 1;
+          }
+
+          const ColorPipelineDraftApplyState applyState =
+              DescribeColorPipelineDraftApplyState(candidateDraft, stackView.fractal_type, &stackParams);
+          if (applyState.status != ColorPipelineDraftApplyStatus::can_apply &&
+              applyState.status != ColorPipelineDraftApplyStatus::matches_live) {
+            std::cerr << "Expected advanced color Palette-stack matrix tuple to apply for second-row function "
+                      << paletteDescriptor.id << ": " << applyState.message << "\n";
+            return 1;
+          }
+
+          ColorPipelinePaletteStackEntry expectedSecondEntry{};
+          if (!TryBuildColorPipelinePaletteStackEntryFromRow(candidateDraft.lanes[paletteLaneIndex].rows[1], &expectedSecondEntry, &error)) {
+            std::cerr << "Expected advanced color Palette-stack matrix to build the second row entry: " << error << "\n";
+            return 1;
+          }
+
+          KernelParams appliedParams = stackParams;
+          ColorPipelineWindowState appliedDraft = candidateDraft;
+          bool changed = false;
+          if (!ApplyColorPipelineDraftToLiveState(&appliedDraft, stackView.fractal_type, &appliedParams, &changed)) {
+            std::cerr << "Expected advanced color Palette-stack matrix tuple to apply for second-row function "
+                      << paletteDescriptor.id << "\n";
+            return 1;
+          }
+          if (appliedParams.color_palette_stack_count != 2 ||
+              !ColorPipelinePaletteStackEntriesEqual(appliedParams.color_palette_stack[1], expectedSecondEntry)) {
+            std::cerr << "Expected advanced color Palette-stack matrix to preserve the second Palette row in live runtime state for function "
+                      << paletteDescriptor.id << "\n";
+            return 1;
+          }
+
+          DiagnosticsCaptureResult capture{};
+          error.clear();
+          if (!CaptureDiagnosticsLastBundle(
+                  runtimeDir.string(),
+                  stackView,
+                  appliedParams,
+                  stackRender,
+                  stackStats,
+                  rgba.data(),
+                  rgba.size(),
+                  &appliedDraft,
+                  &capture,
+                  &error)) {
+            std::cerr << "Expected advanced color Palette-stack matrix tuple to serialize: " << error << "\n";
+            return 1;
+          }
+
+          std::string stateJson;
+          if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected advanced color Palette-stack matrix tuple to write diagnostics state.json\n";
+            return 1;
+          }
+
+          ViewState loadedView{};
+          KernelParams loadedParams{};
+          RenderSettings loadedRender{};
+          ColorPipelineWindowState loadedDraft{};
+          error.clear();
+          if (!LoadDiagnosticsStateJson(stateJson, &loadedView, &loadedParams, &loadedRender, &loadedDraft, &error)) {
+            std::cerr << "Expected advanced color Palette-stack matrix tuple to reload: " << error << "\n";
+            return 1;
+          }
+
+          if (loadedParams.color_palette_stack_count != 2 ||
+              !ColorPipelinePaletteStackEntriesEqual(loadedParams.color_palette_stack[1], expectedSecondEntry)) {
+            std::cerr << "Expected advanced color Palette-stack matrix to reload the second Palette row for function "
+                      << paletteDescriptor.id << "\n";
+            return 1;
+          }
+
+          ColorPipelineWindowState normalizedExpectedDraft = appliedDraft;
+          ColorPipelineWindowState normalizedLoadedDraft = loadedDraft;
+          error.clear();
+          if (!NormalizeDraftForLaneComparison(&normalizedExpectedDraft, &error) ||
+              !NormalizeDraftForLaneComparison(&normalizedLoadedDraft, &error)) {
+            std::cerr << "Expected advanced color Palette-stack drafts to normalize for comparison: " << error << "\n";
+            return 1;
+          }
+          if (!ColorPipelineLaneStatesEqual(
+                  normalizedExpectedDraft.lanes[paletteLaneIndex],
+                  normalizedLoadedDraft.lanes[paletteLaneIndex])) {
+            std::cerr << "Expected advanced color Palette-stack matrix to preserve the serialized Palette lane for second-row function "
+                      << paletteDescriptor.id << "\n";
+            return 1;
+          }
+
+          coveredPaletteStackFunctions.insert(paletteDescriptor.id);
+        }
+
+        int expectedPaletteStackFunctionCount = 0;
+        for (const FunctionDescriptor& paletteDescriptor : paletteCatalog.functions) {
+          if (IsSupportedColorPipelinePaletteStackFunctionId(paletteDescriptor.id)) {
+            ++expectedPaletteStackFunctionCount;
+          }
+        }
+        if (static_cast<int>(coveredPaletteStackFunctions.size()) != expectedPaletteStackFunctionCount) {
+          std::cerr << "Expected advanced color Palette-stack matrix to cover every supported non-first Palette function\n";
+          return 1;
+        }
+
+        std::set<std::string> coveredGradingStackFunctions;
+        for (const FunctionDescriptor& gradingDescriptor : gradingCatalog.functions) {
+          if (!IsSupportedColorPipelineGradingFunctionId(gradingDescriptor.id)) {
+            continue;
+          }
+
+          ColorPipelineWindowState candidateDraft = baseDraft;
+          if (!SetColorPipelineRowFunction(&candidateDraft.lanes[sourceLaneIndex].rows[0], *baseSourceDescriptor) ||
+              !SetColorPipelineRowFunction(&candidateDraft.lanes[shapeLaneIndex].rows[0], *identityDescriptor) ||
+              !SetColorPipelineRowFunction(&candidateDraft.lanes[paletteLaneIndex].rows[0], *basePaletteDescriptor) ||
+              !SetColorPipelineRowFunction(&candidateDraft.lanes[gradingLaneIndex].rows[0], *baseGradingDescriptor) ||
+              !AppendDraftRowForFunction(&candidateDraft, gradingCatalog, gradingLaneIndex, gradingDescriptor, 200, &error)) {
+            std::cerr << "Expected advanced color Grading-stack matrix draft setup to succeed: " << error << "\n";
+            return 1;
+          }
+
+          if (!ConfigureDistinctDraftRowParams(*baseSourceDescriptor, &candidateDraft.lanes[sourceLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(*identityDescriptor, &candidateDraft.lanes[shapeLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(*basePaletteDescriptor, &candidateDraft.lanes[paletteLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(*baseGradingDescriptor, &candidateDraft.lanes[gradingLaneIndex].rows[0], 0, &error) ||
+              !ConfigureDistinctDraftRowParams(gradingDescriptor, &candidateDraft.lanes[gradingLaneIndex].rows[1], 1, &error)) {
+            std::cerr << "Expected advanced color Grading-stack matrix params to be configurable: " << error << "\n";
+            return 1;
+          }
+
+          const ColorPipelineDraftApplyState applyState =
+              DescribeColorPipelineDraftApplyState(candidateDraft, stackView.fractal_type, &stackParams);
+          if (applyState.status != ColorPipelineDraftApplyStatus::can_apply &&
+              applyState.status != ColorPipelineDraftApplyStatus::matches_live) {
+            std::cerr << "Expected advanced color Grading-stack matrix tuple to apply for second-row function "
+                      << gradingDescriptor.id << ": " << applyState.message << "\n";
+            return 1;
+          }
+
+          ColorPipelineGradingStackEntry expectedSecondEntry{};
+          if (!TryBuildColorPipelineGradingStackEntryFromRow(candidateDraft.lanes[gradingLaneIndex].rows[1], &expectedSecondEntry, &error)) {
+            std::cerr << "Expected advanced color Grading-stack matrix to build the second row entry: " << error << "\n";
+            return 1;
+          }
+
+          KernelParams appliedParams = stackParams;
+          ColorPipelineWindowState appliedDraft = candidateDraft;
+          bool changed = false;
+          if (!ApplyColorPipelineDraftToLiveState(&appliedDraft, stackView.fractal_type, &appliedParams, &changed)) {
+            std::cerr << "Expected advanced color Grading-stack matrix tuple to apply for second-row function "
+                      << gradingDescriptor.id << "\n";
+            return 1;
+          }
+          if (appliedParams.color_grading_stack_count != 2 ||
+              !ColorPipelineGradingStackEntriesEqual(appliedParams.color_grading_stack[1], expectedSecondEntry)) {
+            std::cerr << "Expected advanced color Grading-stack matrix to preserve the second Grading row in live runtime state for function "
+                      << gradingDescriptor.id << "\n";
+            return 1;
+          }
+
+          DiagnosticsCaptureResult capture{};
+          error.clear();
+          if (!CaptureDiagnosticsLastBundle(
+                  runtimeDir.string(),
+                  stackView,
+                  appliedParams,
+                  stackRender,
+                  stackStats,
+                  rgba.data(),
+                  rgba.size(),
+                  &appliedDraft,
+                  &capture,
+                  &error)) {
+            std::cerr << "Expected advanced color Grading-stack matrix tuple to serialize: " << error << "\n";
+            return 1;
+          }
+
+          std::string stateJson;
+          if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected advanced color Grading-stack matrix tuple to write diagnostics state.json\n";
+            return 1;
+          }
+
+          ViewState loadedView{};
+          KernelParams loadedParams{};
+          RenderSettings loadedRender{};
+          ColorPipelineWindowState loadedDraft{};
+          error.clear();
+          if (!LoadDiagnosticsStateJson(stateJson, &loadedView, &loadedParams, &loadedRender, &loadedDraft, &error)) {
+            std::cerr << "Expected advanced color Grading-stack matrix tuple to reload: " << error << "\n";
+            return 1;
+          }
+
+          if (loadedParams.color_grading_stack_count != 2 ||
+              !ColorPipelineGradingStackEntriesEqual(loadedParams.color_grading_stack[1], expectedSecondEntry)) {
+            std::cerr << "Expected advanced color Grading-stack matrix to reload the second Grading row for function "
+                      << gradingDescriptor.id << "\n";
+            return 1;
+          }
+
+          ColorPipelineWindowState normalizedExpectedDraft = appliedDraft;
+          ColorPipelineWindowState normalizedLoadedDraft = loadedDraft;
+          error.clear();
+          if (!NormalizeDraftForLaneComparison(&normalizedExpectedDraft, &error) ||
+              !NormalizeDraftForLaneComparison(&normalizedLoadedDraft, &error)) {
+            std::cerr << "Expected advanced color Grading-stack drafts to normalize for comparison: " << error << "\n";
+            return 1;
+          }
+          if (!ColorPipelineLaneStatesEqual(
+                  normalizedExpectedDraft.lanes[gradingLaneIndex],
+                  normalizedLoadedDraft.lanes[gradingLaneIndex])) {
+            std::cerr << "Expected advanced color Grading-stack matrix to preserve the serialized Grading lane for second-row function "
+                      << gradingDescriptor.id << "\n";
+            return 1;
+          }
+
+          coveredGradingStackFunctions.insert(gradingDescriptor.id);
+        }
+
+        if (coveredGradingStackFunctions.size() != gradingCatalog.functions.size()) {
+          std::cerr << "Expected advanced color Grading-stack matrix to cover every supported non-first Grading function\n";
+          return 1;
+        }
+      }
 
       {
         const fs::path statePath = tempRoot / "v3_widened_source_runtime_state.json";
