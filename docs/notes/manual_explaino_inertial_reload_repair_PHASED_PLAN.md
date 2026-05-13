@@ -23,6 +23,7 @@ Phase 5 checkpoint - actual capture-finding route covered, historical archive st
 - [done] Double-check whether the current serializer is still broken today instead of trusting earlier churn.
 - [done] Cover every runtime-backed single-row advanced-color function plus bounded non-first Palette/Grading rows in the diagnostics round-trip owner test.
 - [done] Add a focused serializer-owner validation surface so this seam no longer requires the full 900+ second helper suite for every follow-up.
+- [done] Cut the viewer-first receipt friction for workflow-only continuity follow-ups inside this slice so committed continuity corrections do not require a full runtime rebuild/publish just to write receipts.
 - [blocked] Recovering the old archived pixels remains blocked: the archive contains only notes, `finding.json`, `finding.md`, `frame.png`, and `state.json`; color, parameter, no-root-snap, alternate-runtime, and neighboring-capture probes did not find a defensible state migration. The next viable product choice is a viewer/archive UX path for displaying unreplayable historical frames, not a guessed renderer/color patch.
 
 ## Presumption Loop
@@ -73,6 +74,7 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - Current serializer owner proof: `ui_app/tests/test_diagnostics_state_io.cpp` now exercises every runtime-backed single-row Source, Shape, Palette, and Grading function through diagnostics capture/load round-trips seeded from the current ExplainO fixture.
 - Non-first row serializer owner proof: the same owner binary now covers every supported non-first Palette stack function and every supported non-first Grading row by applying a bounded two-row draft, capturing `state.json`, reloading it, and comparing both runtime stack entries and normalized draft lanes.
 - Post-follow-up runtime witness: `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_manual_capture_repro.py` again passed as `2 passed, 1 xfailed` after the focused owner-test coverage expansion.
+- Continuity friction repair proof: `tools/viewer_host_checkpoint_guard.py` now exempts viewer-first receipt writes from runtime publish/published-runtime command requirements when the committed `HEAD` changes only workflow-only continuity surfaces (`docs/contracts`, `docs/notes`, `HANDOFF_LOG.md`, and focused `tools/viewer_host_*` / `tests/test_viewer_host_*` follow-ups); focused guard regression covers the same continuity-only closure case that previously forced a long runtime rebuild for non-runtime edits.
 
 ## Hostile Audit
 
@@ -96,6 +98,7 @@ The likely owner is in the diagnostics state load/save/render boundary, but that
 - [done] Real finding: current captures did not persist explicit ExplainO roots or `poly_coeffs_b`, so reload paths could recompute or lose runtime authority that was needed for pixel replay.
 - [done] Real finding: legacy states that omit `explaino_roots` or `poly_coeffs_b` could preserve stale caller values in direct load; the loader now clears those arrays before optional parse.
 - [done] Real finding: the current serializer proof was still example-based for non-first Palette/Grading rows and forced slow broad reruns to recheck the owner seam; the owner binary now carries exhaustive supported single-row coverage, bounded second-row Palette/Grading coverage, and a checked-in focused `serializer_owner_fast` validation rail.
+- [done] Real finding: viewer-first receipt enforcement was over-broad for this slice and still forced runtime publish/published-runtime proof on committed workflow-only continuity corrections. The guard now exempts committed heads that touch only continuity/workflow surfaces.
 - [blocked] Historical finding: the old `234919_563__explaino_inertial` archive still fails visual reload, and the saved artifacts do not contain enough authority to reconstruct the archived frame through a defensible state migration.
 - [clean] Clean re-read: the current capture-diagnostic and capture-finding routes now create replayable state/frame pairs, and the diagnostics serializer recheck found no surviving hole across supported single-row or bounded non-first Palette/Grading rows. No further recoverable owner was found for the historical archive after the reopened probes.
 

@@ -8,6 +8,7 @@
     "docs/contracts",
     "docs/notes",
     "HANDOFF_LOG.md",
+    "tools",
     "ui_app/src",
     "ui_app/tests",
     "ui_app/build_tests_vsdevcmd.cmd",
@@ -17,7 +18,8 @@
     "treat the manual 234919_563 explaino_inertial capture as a real reload reproduction blocker",
     "add a focused RED before implementation that fails on the current saved-state reload mismatch",
     "repair the real serialization/load/render owner seam instead of relying on process exit success",
-    "publish and prove the active D: runtime after the repair"
+    "publish and prove the active D: runtime after the repair",
+    "do not require runtime publish/runtime proof when a committed follow-up changes only workflow-only continuity surfaces inside this viewer-first slice"
   ],
   "forbidden_operator_prompts": [
     "claim the exact repro exits 0 as proof of visual reproduction",

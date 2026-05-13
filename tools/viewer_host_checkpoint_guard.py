@@ -524,6 +524,32 @@ def _viewer_first_validation_commands(commands: Any) -> list[str]:
     return out
 
 
+def _head_changed_paths(head: str, repo_root: Path = REPO_ROOT) -> list[str]:
+    sanitized = str(head).strip()
+    if not sanitized:
+        return []
+    return _git_lines(repo_root, "diff-tree", "--no-commit-id", "--name-only", "-r", sanitized)
+
+
+def _head_is_workflow_only_continuity_change(head: str, repo_root: Path = REPO_ROOT) -> bool:
+    changed_paths = _head_changed_paths(head, repo_root)
+    if not changed_paths:
+        return False
+    allowed_prefixes = (
+        "docs/contracts/",
+        "docs/notes/",
+        "tools/viewer_host_",
+        "tests/test_viewer_host_",
+    )
+    allowed_exact = {
+        "HANDOFF_LOG.md",
+    }
+    return all(
+        path in allowed_exact or any(path.startswith(prefix) for prefix in allowed_prefixes)
+        for path in changed_paths
+    )
+
+
 def _command_counts_as_runtime_publish(command: str) -> bool:
     normalized = _normalize_text(command)
     return any(
@@ -560,8 +586,14 @@ def _command_counts_as_published_runtime_proof(command: str) -> bool:
 def evaluate_viewer_first_validation_command_guard(
     commands: Any,
     workflow_type: str | None,
+    *,
+    current_head: str = "",
+    repo_root: Path = REPO_ROOT,
 ) -> tuple[bool, str]:
     if str(workflow_type or "").strip() != "viewer_first":
+        return False, ""
+
+    if _head_is_workflow_only_continuity_change(current_head, repo_root):
         return False, ""
 
     command_list = _viewer_first_validation_commands(commands)
@@ -595,15 +627,17 @@ def write_validation_receipt(
     contract_state, contract_error = validate_locked_contract_state(GLOBAL_CONTRACT_SESSION_ID, repo_root)
     if contract_error and contract_error != "no active contract state":
         raise RuntimeError(contract_error)
+    head = str(snapshot.get("head", "")).strip()
 
     should_block, reason = evaluate_viewer_first_validation_command_guard(
         commands_list,
         None if contract_error else str(contract_state.get("workflow_type", "")).strip(),
+        current_head=head,
+        repo_root=repo_root,
     )
     if should_block:
         raise RuntimeError(reason)
 
-    head = str(snapshot.get("head", "")).strip()
     path = validation_receipt_path(head, repo_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {

@@ -646,6 +646,85 @@ def test_write_validation_receipt_accepts_viewer_first_publish_and_runtime_proof
     assert path.exists()
 
 
+def test_write_validation_receipt_accepts_viewer_first_workflow_only_continuity_change_without_runtime_publish(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _init_git_repo(repo_root)
+
+    contract_path = repo_root / "docs" / "contracts" / "slice.contract.json"
+    contract_path.parent.mkdir(parents=True)
+    contract_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "allowed_mutation_scope": ["docs/contracts", "docs/notes", "HANDOFF_LOG.md"],
+                "required_operator_inputs": ["runtime proof"],
+                "forbidden_operator_prompts": ["helper-only proof"],
+                "required_defaults": {"runtime_publish": "required"},
+                "forbidden_defaults": {"helper_only": "forbidden"},
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_acceptance_assertions": [
+                    {
+                        "assertion_id": "contract_schema_valid",
+                        "description": "contract schema valid",
+                        "evidence_kind": "validator_json",
+                        "artifact_path": "artifacts/validation/contract.json",
+                        "json_path": "ok",
+                        "equals": True,
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    state_path = contract_state.contract_state_path_for_session(contract_state.GLOBAL_CONTRACT_SESSION_ID, repo_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "contract_id": "slice",
+                "feature_id": "feature",
+                "workflow_type": "viewer_first",
+                "contract_path": "docs/contracts/slice.contract.json",
+                "plan_path": "docs/notes/plan_PHASED_PLAN.md",
+                "contract_hash": contract_state.hash_file(contract_path),
+                "allowed_mutation_scope": ["docs/contracts", "docs/notes", "HANDOFF_LOG.md"],
+                "required_validation_commands": ["ui_app/build_vsdevcmd.cmd"],
+                "required_validators": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / "docs" / "notes").mkdir(parents=True, exist_ok=True)
+    (repo_root / "docs" / "notes" / "plan_PHASED_PLAN.md").write_text("# plan\n", encoding="utf-8")
+    sync_artifact = repo_root / "artifacts" / "validation" / "viewer_host_assert_phased_plan_sync.json"
+    sync_artifact.parent.mkdir(parents=True, exist_ok=True)
+    sync_artifact.write_text(json.dumps({"ok": True}, indent=2), encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "seed active viewer slice"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+    (repo_root / "docs" / "notes" / "continuity.md").write_text("continuity\n", encoding="utf-8")
+    (repo_root / "HANDOFF_LOG.md").write_text("handoff\n", encoding="utf-8")
+    (repo_root / "tools").mkdir(parents=True, exist_ok=True)
+    (repo_root / "tools" / "viewer_host_checkpoint_guard.py").write_text("guard follow-up\n", encoding="utf-8")
+    (repo_root / "tests").mkdir(parents=True, exist_ok=True)
+    (repo_root / "tests" / "test_viewer_host_checkpoint_guard.py").write_text("def test_placeholder():\n    assert True\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo_root, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-m", "workflow-only continuity follow-up"], cwd=repo_root, check=True, capture_output=True, text=True)
+
+    path = write_validation_receipt(
+        "viewer-first workflow-only continuity follow-up",
+        repo_root=repo_root,
+        commands=["py -3.14 tools/viewer_host_assert_phased_plan_sync.py"],
+    )
+
+    assert path.exists()
+
+
 def test_write_validation_receipt_rejects_dirty_repo(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
