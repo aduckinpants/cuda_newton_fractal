@@ -41,6 +41,8 @@ if errorlevel 1 exit /b 1
 set CL=/FS /Fo"%OBJROOT%\\" /Fd"%PDBROOT%\\build_tests.pdb"
 
 set FOCUSED_TEST=%~1
+if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color_grading_red
+if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_color_grading_owner
 if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fast
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
@@ -503,6 +505,94 @@ if errorlevel 1 exit /b 1
 "%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
 "%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:focused_advanced_color_grading_red
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_schema_binding.cpp ^
+  /Fe:"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_escape_time_coloring.cpp ^
+  /Fe:"%TESTROOT%\test_escape_time_coloring.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_family_rules.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_color_pipeline_core.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_color_pipeline_window.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_escape_time_coloring.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_fractal_family_rules.exe"
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:focused_advanced_color_grading_owner
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\tests\test_color_pipeline_core.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_core.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\tests\test_color_pipeline_window.cpp ^
+  /Fe:"%TESTROOT%\test_color_pipeline_window.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_schema_binding.cpp ^
+  /Fe:"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_escape_time_coloring.cpp ^
+  /Fe:"%TESTROOT%\test_escape_time_coloring.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_family_rules.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
+  /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
+  /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\tests\test_runtime_reset.cpp ^
+  /Fe:"%TESTROOT%\test_runtime_reset.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_color_pipeline_core.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_color_pipeline_window.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_escape_time_coloring.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_fractal_family_rules.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_diagnostics_state_io.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_finding_archive_actions.exe"
+if errorlevel 1 exit /b 1
+"%TESTROOT%\test_runtime_reset.exe"
 if errorlevel 1 exit /b 1
 exit /b 0
 

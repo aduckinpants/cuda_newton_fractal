@@ -273,6 +273,7 @@ Current meaning:
 - these are still inventory or follow-up rows
 - they are not part of the shipped foundation closure claim
 - each needs its own owner-proof slice before it becomes visible product work
+- the next feature-row resume remains weighted blend, but it is intentionally paused until the active proof-ladder acceleration slice reduces truthful iteration cost for grading/color-pipeline owner work
 
 Authority:
 
@@ -575,13 +576,14 @@ Stop point:
 
 If you resume from this note, do exactly one of these at a time:
 
-1. generic Source composition via weighted blend
-2. one specific remaining pipeline/operator lane
-3. Balance/Void grading
-4. ExplainO-BalanceVoid / ExplainO-all follow-on
-5. foundation closure decision
-6. historical archive compatibility / archive UX
-7. polish on already-shipped behavior
+1. proof-ladder acceleration for the current advanced-color grading/color-pipeline owner seams
+2. generic Source composition via weighted blend
+3. one specific remaining pipeline/operator lane
+4. Balance/Void grading
+5. ExplainO-BalanceVoid / ExplainO-all follow-on
+6. foundation closure decision
+7. historical archive compatibility / archive UX
+8. polish on already-shipped behavior
 
 Do not mix:
 
@@ -616,8 +618,9 @@ For product-state re-entry, start with:
 
 If you want the fastest path back to truthful feature velocity:
 
-1. Open one bounded slice on generic Source composition via weighted blend.
-2. Then land the remaining defined pipeline/operator lanes one bounded owner-proof slice at a time.
-3. Only after that move on to Balance/Void and the later ExplainO family track.
+1. Close the bounded proof-ladder acceleration slice first so grading/color-pipeline owner work has a cheaper truthful native rerun path.
+2. Then open one bounded slice on generic Source composition via weighted blend.
+3. After that land the remaining defined pipeline/operator lanes one bounded owner-proof slice at a time.
+4. Only after that move on to Balance/Void and the later ExplainO family track.
 
 That is the shortest path back to truthful core feature velocity instead of reopening historical compatibility work by inertia.

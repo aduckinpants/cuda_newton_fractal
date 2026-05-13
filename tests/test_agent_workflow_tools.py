@@ -369,6 +369,45 @@ def test_runtime_pytest_task_uses_runtime_lane_helper() -> None:
     assert '"tests/test_generic_probe_cli.py"' in tasks_json
 
 
+def test_build_tests_script_exposes_advanced_color_grading_focus_modes() -> None:
+    build_script = (REPO_ROOT / "ui_app" / "build_tests_vsdevcmd.cmd").read_text(encoding="utf-8")
+
+    for snippet in (
+        'if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color_grading_red',
+        'if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_color_grading_owner',
+        ":focused_advanced_color_grading_red",
+        ":focused_advanced_color_grading_owner",
+        'test_color_pipeline_core.exe',
+        'test_color_pipeline_window.exe',
+        'test_schema_binding.exe',
+        'test_escape_time_coloring.exe',
+        'test_fractal_family_rules.exe',
+        'test_diagnostics_state_io.exe',
+        'test_finding_archive_actions.exe',
+        'test_runtime_reset.exe',
+    ):
+        assert snippet in build_script
+
+
+def test_advanced_color_phase8c_plan_documents_fast_medium_and_closure_ladders() -> None:
+    plan_text = (
+        REPO_ROOT / "docs" / "notes" / "advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md"
+    ).read_text(encoding="utf-8")
+
+    for snippet in (
+        "test-only RED",
+        "owner-seam implementation rerun",
+        "seam/integration rerun",
+        "final viewer-first closure proof",
+        "advanced_color_grading_red",
+        "advanced_color_grading_owner",
+        "ui_app\\build_tests_vsdevcmd.cmd",
+        "ui_app\\build_vsdevcmd.cmd",
+        "tools/viewer_host_runtime_pytest_lane.py",
+    ):
+        assert snippet in plan_text
+
+
 def test_runtime_ui_harness_task_targets_shared_runtime_scenarios() -> None:
     tasks_json = (REPO_ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8")
 

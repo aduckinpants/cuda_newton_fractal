@@ -92,7 +92,7 @@ The controlling risk is owner fraud: `neutral_finish` currently exists only as i
 
 ## Resume Point
 
-Closed. Resume from the next explicitly contracted advanced-color slice; do not reopen neutral_finish unless a regression or new user ask makes it the active owner seam again.
+Closed. Resume from the next explicitly contracted advanced-color slice; do not reopen neutral_finish unless a regression or new user ask makes it the active owner seam again. The immediate follow-on is the phase8c proof-ladder acceleration tooling slice, not another grading-row feature fork.
 
 ## Action Hostile Review
 
@@ -101,4 +101,4 @@ Closed. Resume from the next explicitly contracted advanced-color slice; do not 
 - Correct Owner/Action: add REDs first across core/window/runtime/persistence/reset seams, then land only the bounded `neutral_finish` owner path through the existing exposure/saturation/contrast grading owners plus a dedicated stack-math branch.
 - Proof Surface: focused native helper tests for the touched owner seams, runtime publish, published-runtime proof or the closest existing truthful runtime rail, contract validation, phased-plan sync, and hostile-audit validation.
 - Outcome: complete - REDs, owner-path repairs, archive proof, native helper proof, runtime publish, focused published-runtime proof, checkpoint commit `7d7f779`, and machine proof receipts are all landed.
-- Blocked Action: none.
+- Blocked Action: none.

@@ -40,7 +40,7 @@ This matrix is the checked-in closure boundary for the advanced-color foundation
 | Capture/archive persistence | Shipped for current forward/runtime boundary with historical-archive caveat | Capture Finding carries advanced-color draft/stack state covered by helper tests and current finding archives replay through the repaired forward-authority path. The old `234919_563__explaino_inertial` archive remains an honest historical compatibility issue, not the default sprint-core proof surface. | `ui_app/tests/test_finding_archive_actions.cpp`, `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md`, `ck:49038a61`, `ck:20260512-serializer-rail` |
 | Reset/defaults | Shipped for current closure boundary | Runtime reset/default paths clear Shape, Palette, and Grading stacks. | `ui_app/src/runtime_reset.cpp`, `ui_app/src/fractal_derived_fields.cpp`, `ui_app/tests/test_runtime_reset.cpp` |
 | Published runtime | Shipped for latest implementation slices | Grading stack and Palette blend stack both published to the active `D:` runtime and passed probe/session pytest rails. | `artifacts/grading_stack_runtime_publish.log`, `artifacts/grading_stack_runtime_probe_session_pytest.log`, `artifacts/palette_blend_stack_runtime_publish_final.log`, `artifacts/palette_blend_stack_runtime_probe_session_pytest_final.log` |
-| Generic Source composition | Deferred, active next lane | Weighted blend is now the chosen first mixer contract, but no generic multi-Source runtime/bridge/persistence owner has shipped yet. Implement through a dedicated weighted-blend Source-composition slice. | This matrix, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, `docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md` |
+| Generic Source composition | Deferred, next feature lane after phase8c tooling debt | Weighted blend is now the chosen first mixer contract, but no generic multi-Source runtime/bridge/persistence owner has shipped yet. Implement it only after the active phase8c proof-ladder acceleration slice closes, so the feature row starts with the cheaper truthful command ladder. | This matrix, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, `docs/notes/gpt54_vscode_source_composition_weighted_blend_startup_prompt.md`, `docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md` |
 | Remaining Grading inventory | Deferred | Not a hidden blocker unless Adam reclassifies it; each row needs a separate owner-proof contract before becoming visible runtime work. | This matrix, `docs/notes/advanced_color_library_foundation_phase6_grading_runtime_authority_PHASED_PLAN.md` |
 
 ## Known Historical Compatibility Issues
@@ -51,9 +51,10 @@ This matrix is the checked-in closure boundary for the advanced-color foundation
 
 ## Closure Decision Forks
 
-1. Implement generic Source composition via weighted blend as the next active sprint-core lane.
-2. After that lane closes, accept this matrix as the foundation boundary only if remaining deferred Grading inventory stays explicitly deferred and truthful.
-3. Reclassify remaining Grading inventory as blockers if needed: split into basin lane-retention, neutral/tone-map, `grade.glow`, and Balance/Void owner-proof slices.
-4. Keep the historical `explaino_inertial` archive mismatch in its separate compatibility lane unless Adam explicitly reprioritizes it back into active sprint work.
+1. Close phase8c proof-ladder acceleration first so the next feature row starts with the measured cheapest-truthful command ladder.
+2. Then implement generic Source composition via weighted blend as the next active sprint-core feature lane.
+3. After that lane closes, accept this matrix as the foundation boundary only if remaining deferred Grading inventory stays explicitly deferred and truthful.
+4. Reclassify remaining Grading inventory as blockers if needed: split into basin lane-retention, neutral/tone-map, `grade.glow`, and Balance/Void owner-proof slices.
+5. Keep the historical `explaino_inertial` archive mismatch in its separate compatibility lane unless Adam explicitly reprioritizes it back into active sprint work.
 
 No closure claim may cite this matrix while also showing addable visible rows that are marked Deferred here, while generic Source composition remains unshipped but overclaimed, or while a separate historical compatibility issue is falsely described as already recovered.

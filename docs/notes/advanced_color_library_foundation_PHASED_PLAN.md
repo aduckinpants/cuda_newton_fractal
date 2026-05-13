@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 - closure-control matrix and proof/defer ledger. Grading stack composition, capture-backed diagnostics serialization repair, and Palette blend stack are checkpointed. The shipped composition spine still includes bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks. The next active sprint-core lane is now generic Source composition via weighted blend, and the checked-in Phase 8 Source weighted-blend subplan/contract now own that executable slice. Remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) remain explicit post-matrix forks. The historical manual `234919_563__explaino_inertial` archive mismatch stays real, but it is now tracked as separate historical compatibility work instead of the default next sprint blocker.
+Phase 8 - closure-control matrix and proof/defer ledger. Grading stack composition, capture-backed diagnostics serialization repair, and Palette blend stack are checkpointed. The shipped composition spine still includes bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks. Generic Source composition via weighted blend remains the next sprint-core feature row, but it is intentionally paused behind the checked-in Phase 8C proof-ladder acceleration slice so the current advanced-color grading/color-pipeline owner seams can iterate on a cheaper truthful command ladder first. Remaining single-row Grading owner proofs (`grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, Balance/Void) remain explicit post-matrix forks. The historical manual `234919_563__explaino_inertial` archive mismatch stays real, but it is now tracked as separate historical compatibility work instead of the default next sprint blocker.
 
 ## Phase Checklist
 
@@ -198,7 +198,7 @@ The controlling product risk is now closure drift after the shipped composition 
 
 ## Resume Point
 
-Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, not from older Palette-next text. The next implementation fork is now generic Source composition via weighted blend. After that lane closes, choose explicitly from the matrix:
+Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, not from older Palette-next text. The immediate active slice is Phase 8C proof-ladder acceleration for grading/color-pipeline owner work. After that slice closes, the next implementation fork is generic Source composition via weighted blend. After weighted blend closes, choose explicitly from the matrix:
 1. Remaining Grading owner proofs (`basin_default` lane-retention, `neutral_finish`, `tone_map_finish`, `grade.glow`), one bounded owner-proof slice at a time.
 2. `balance_void_grade` as its own bounded grading-operator slice.
 3. Foundation closure with explicit deferrals if the matrix is accepted as the merge boundary.

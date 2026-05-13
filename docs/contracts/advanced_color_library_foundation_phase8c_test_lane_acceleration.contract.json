@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8c_test_lane_acceleration",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8c_test_lane_acceleration.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_phase8b_neutral_finish_owner_proof_PHASED_PLAN.md",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "tests/test_agent_workflow_tools.py",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "measure before-and-after timings from this session before claiming any speed improvement",
+    "keep generic Source weighted blend paused until this proof-ladder tooling slice closes",
+    "preserve authoritative viewer-first closure proof by keeping runtime publish plus published-runtime proof at the final boundary for feature slices",
+    "reduce proof cost specifically for the current advanced-color grading/color-pipeline owner seams rather than broadening into generic build cleanup"
+  ],
+  "forbidden_operator_prompts": [
+    "claim tone_map_finish shipped in this slice",
+    "claim grade.glow, balance_void_grade, ExplainO-BalanceVoid, or ExplainO-all shipped in this slice",
+    "reopen manual archive work",
+    "pretend docs-only reshuffling is a performance fix",
+    "treat helper-only proof as viewer-first closure proof"
+  ],
+  "required_defaults": {
+    "measured_before_after_timings_recorded": "required",
+    "advanced_color_owner_fast_native_lane_exists": "required",
+    "weighted_blend_stays_paused": "required",
+    "viewer_first_closure_boundary_preserved": "required"
+  },
+  "forbidden_defaults": {
+    "new_feature_row_shipped": "forbidden",
+    "runtime_publish_demoted_from_closure": "forbidden",
+    "published_runtime_proof_demoted_from_closure": "forbidden",
+    "manual_archive_reopened": "forbidden",
+    "broad_ci_redesign": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8c_test_lane_acceleration.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8c_test_lane_acceleration_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8c_test_lane_acceleration_hostile_audit.json",
+    "py -3.14 -m pytest tests/test_agent_workflow_tools.py tests/test_viewer_host_runtime_pytest_lane.py tests/test_viewer_host_checkpoint_guard.py -q --junitxml artifacts/pytest/advanced_color_library_foundation_phase8c_test_lane_acceleration.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8c_test_lane_acceleration_contract_schema_valid",
+      "description": "The phase8c proof-ladder acceleration contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8c_test_lane_acceleration_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8c_test_lane_acceleration_plan_sync_ok",
+      "description": "The phase8c proof-ladder acceleration phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8c_test_lane_acceleration_hostile_audit_ok",
+      "description": "The phase8c proof-ladder acceleration hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8c_test_lane_acceleration_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_owner_fast_selector_is_pinned",
+      "description": "Workflow tests pin the new advanced-color focused native selectors and command ladder docs",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/advanced_color_library_foundation_phase8c_test_lane_acceleration.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_build_tests_script_exposes_advanced_color_grading_focus_modes"
+    },
+    {
+      "assertion_id": "advanced_color_command_ladder_doc_is_pinned",
+      "description": "Workflow tests pin the advanced-color proof-ladder documentation surface",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/advanced_color_library_foundation_phase8c_test_lane_acceleration.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_advanced_color_phase8c_plan_documents_fast_medium_and_closure_ladders"
+    },
+    {
+      "assertion_id": "runtime_lane_still_accepts_focused_pytest_args",
+      "description": "The shared runtime lane still accepts focused file overrides plus pytest args for row-specific published-runtime witnesses",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/advanced_color_library_foundation_phase8c_test_lane_acceleration.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_runtime_pytest_lane.py::test_main_forwards_additional_pytest_args"
+    },
+    {
+      "assertion_id": "viewer_first_receipt_guard_still_requires_publish_and_runtime_proof",
+      "description": "Viewer-first closure proof still requires runtime publish plus published-runtime proof",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/advanced_color_library_foundation_phase8c_test_lane_acceleration.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_write_validation_receipt_accepts_viewer_first_publish_and_runtime_proof"
+    }
+  ]
+}
