@@ -294,7 +294,7 @@ For any multi-slice initiative:
 - Each phase has explicit exit criteria
 - Each turn updates the checklist: mark completed steps, note blockers
 - The plan is the resumable state — not chat history
-- For new meaningful multi-step plans, carry `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, and `## Proof Ledger` alongside `## Current Phase` and `## Phase Checklist`
+- For new meaningful multi-step plans, carry `## Explicit User Asks` and `## Proof Ledger` alongside `## Current Phase` and `## Phase Checklist`
 - For new meaningful multi-step plans, also carry `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings`; `tools/viewer_host_assert_phased_plan_sync.py` now fails meaningful plans with explicit user asks when those hostile-audit sections are missing
 - Keep those added sections short, evidence-driven, and repo-specific instead of copying mainline ritual verbatim
 

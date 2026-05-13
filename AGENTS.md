@@ -21,7 +21,7 @@ Do these before making architecture claims or starting broad edits:
    - Prefer the nearest existing plan doc.
    - Otherwise create `docs/notes/<slug>_PHASED_PLAN.md`.
    - Protocol: `docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md`.
-   - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Presumption Loop`, `## Presumption Evidence`, `## Proof Ledger`, `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings` alongside `## Current Phase` and `## Phase Checklist`.
+   - For new meaningful multi-step plans, prefer the current section set: `## Explicit User Asks`, `## Proof Ledger`, `## Hostile Audit`, `## Audit Passes`, and `## Audit Findings` alongside `## Current Phase` and `## Phase Checklist`.
 9. Read `.github/copilot-instructions.md` after this file, not instead of it.
 10. If the repo is already dirty and `SessionStart` or `UserPromptSubmit` says the session has no checkpoint baseline, do not treat the session as fresh. Run `py -3.14 tools\viewer_host_recover_crash_state.py --summary "<operator note>" --adopt-current-state`, inspect `artifacts/hooks/viewer_host_checkpoint_guard/recovery/`, then resume the stranded slice in crash-safe mode.
 

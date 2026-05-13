@@ -1,107 +1,98 @@
-# Anti-Lie Claim Enforcement
+# Anti-Lie Claim Enforcement Replacement
 
 ## Current Phase
 
-Phase 6 - capstone tooling enforcement validated and checkpoint-ready. The task_complete guard now requires the exact name-free anti-lie capstone at the end of completion text; focused checkpoint-guard tests report 77 passed and the anti-lie workflow subset reports 132 passed. This slice remains workflow-only and does not advance Color Pipeline, capture, the new fractal, UI polish, or product roadmap work.
+Phase 4 complete: the anti-lie slice was rebuilt around machine-state closure rules only. The repaired hook path now blocks on dirty-state drift, missing validation receipts for session-advanced `HEAD`, stale or missing contract proof for session-advanced `HEAD`, and locked-contract mismatches. Bootstrap audit output no longer rewrites the authoritative code-quality artifact path. This slice remains workflow-only and does not resume feature work.
 
 ## Phase Checklist
 
-- [x] Phase 1 - produce the forensic dossier and RED tests that prove the current guard still accepts false or stale claims
-- [x] Phase 2 - add the truth-report and claim-ledger validator surfaces that generate status from live evidence
-- [x] Phase 3 - tighten the checkpoint guard so restricted status claims require current validated evidence, not marker words
-- [x] Phase 4 - revalidate receipt evidence and live git status during closure
-- [x] Phase 5 - run focused workflow tests, validators, hostile audit, checkpoint-ready proof, and receipt evidence mapping; post-commit receipts are written by the checkpoint wrapper
-- [x] Phase 6 - enforce the name-free anti-lie capstone through task_complete tooling, validate, checkpoint, and write receipts
+- [x] Phase 1 - inventory every anti-lie-owned or anti-lie-modified surface and classify the real failure each one claims to prevent
+- [x] Phase 2 - narrow the active hook path to machine-state blockers only and remove rhetoric-only blockers from `task_complete` and `Stop`
+- [x] Phase 3 - split bootstrap audit output from authoritative receipt-evidence artifacts and add regressions for both the stale-authoritative-artifact case and the inherited-clean-head false-block case
+- [x] Phase 4 - rewrite the active anti-lie contract, phased plan, and workflow guidance to describe the reduced truthful design; revalidate, refresh receipts, and leave the slice clean
 
 ## Explicit User Asks
 
-- [done] Make it impossible to lie about status, closure, cleanliness, validation, or feature progress.
-- [done] Explain and encode why the previous anti-lying attempt failed instead of repeating the same protocol-only mistake.
-- [done] Include a hostile review that attacks the plan for new ways it can still lie.
-- [done] Include a forensic audit task that reconstructs the entire failure timeline from transcript, git, recovery reports, receipts, command logs, and dirty-state evidence.
-- [done] Enumerate every supported lie, regression, wasted turn, wrong-scope detour, and user correction from the evidence corpus, including previous-agent failures where evidence is available.
-- [done] Mine every recurrence category, then map each category to a detector, blocking condition, proof artifact, and recheck command.
-- [done] Prove with a finite evidence/category/guard invariant check that every mined failure category is blocked before closure.
-- [done] Add a capstone reminder that this work is corrective churn caused by agent failure, not feature or product progress.
-- [done] Do no product work, Color Pipeline work, capture work, or new fractal work until this gate is real.
-- [done] Make the required end-of-turn capstone a task_complete tooling denial condition, not a memory note or convention.
-- [done] Keep the capstone and tooling text name-free unless the user explicitly asks otherwise.
+- [done] Treat the entire previous anti-lie slice as untrusted and rebuild it from zero trust.
+- [done] Remove blocker behavior that does not justify its operational cost.
+- [done] Keep the system able to deny false clean, validated, receipted, or closed claims with current machine evidence.
+- [done] Split bootstrap or orientation outputs away from authoritative receipt-evidence artifact paths.
+- [done] Re-audit the anti-lie docs and newer workflow docs so they describe the repaired behavior instead of the previous doctrine.
+- [done] Leave the replacement slice clean, receipted, and non-blocking without switching back to feature work.
 
-## Capstone Reminder
+## Zero-Trust Inventory
 
-This anti-lying slice is not product progress. It does not advance Color Pipeline, capture, the new fractal, runtime features, UX polish, or any feature roadmap. It exists because agents overclaimed, accepted inherited framing, wasted limited premium tokens, left hook/worktree churn, and forced the user to spend time correcting preventable failures. No agent may count this work as feature progress or a substitute for the requested software work.
+| Surface | Claimed purpose | Real failure covered | Failure mode / cost | Decision |
+| --- | --- | --- | --- | --- |
+| `evaluate_validation_receipt_guard(...)` | deny false "validated" closure after session-local commits | real and still needed | low false-block risk when tied to session-advanced `HEAD` only | keep |
+| `evaluate_contract_proof_receipt_guard(...)` | deny false "receipted / closed" claims after session-local commits | real and still needed | previous implementation false-blocked fresh clean sessions when the active contract changed on an inherited `HEAD` | replace with narrower session-advanced-only rule |
+| `validate_validation_receipt_evidence_freshness(...)` | catch stale authoritative artifacts after receipt writing | real and still needed | correct, but only when checking authoritative receipt evidence | keep |
+| bootstrap audit write to `artifacts/code_quality_report.json` | quick orientation audit | real bootstrap need, wrong artifact path | rewrote authoritative closure evidence and triggered false Stop-hook stale-proof failures | replace with non-authoritative bootstrap artifact path |
+| restricted status-vocabulary blocker | police words like `done` and `green` | partially real, but not a closure-state guard | high false-block risk, prose policing, duplicates actual receipt/dirty-state guards poorly | remove from active blockers |
+| required completion capstone text | force a final corrective-churn slogan | no machine-state failure prevented | pure rhetoric gate; false-blocks honest completion text | remove |
+| hostile-audit validator | prove the repaired state was re-audited before closing this workflow slice | useful as slice-local evidence | valuable for this repair slice, but not a general Stop/task_complete blocker | keep as validation surface, remove from active blockers |
+| explicit-user-asks blocker inside `task_complete` / `Stop` | stop closure while plan asks remain open | partially useful plan hygiene | false-blocked clean inherited states and mixed plan discipline with closure proof | remove from active blockers |
+| `salt_ndepend` packet gate inside `task_complete` / `Stop` | enforce a separate packet-readiness policy | real in its own domain | unrelated to this repo-wide anti-lie closure repair; over-broad in generic closure hooks | remove from active blockers |
+| truth report / forensic timeline / claim ledger tools | offline truth and forensic reporting | can still be useful for diagnostics | not needed as closure authority for this slice | demote to optional diagnostics |
 
-Never again means no status claim without live machine proof, no product detour before this gate is real, no inherited-agent framing without evidence validation, no clean or closed language while `git status --short` has output, no final answer that asks the user to trust agent memory or intent, and no end-of-turn capstone that uses the user's personal name unless explicitly asked.
+## Replacement Design
 
-## Presumption Loop
+### Active hook blockers kept
 
-Presumption under test: the repository can mechanically deny false status claims if the final status surface is generated from live evidence instead of agent prose. The repaired state makes restricted status vocabulary require a current truth-report artifact and makes contract-proof closure revalidate validation-receipt evidence hashes, sizes, and mtimes. If fake marker words, stale receipt evidence, missing artifacts, dirty worktree state, or an unclassified forensic category can still pass, the slice fails.
+- Dirty repo state that differs from the session baseline.
+- Missing validation receipt when the session advanced `HEAD`.
+- Missing, stale, or contract-mismatched contract proof when the session advanced `HEAD`.
+- Locked-contract drift or missing required assertion results for the current session-advanced `HEAD`.
 
-## Presumption Evidence
+### Active hook blockers removed
 
-- `tools/viewer_host_checkpoint_guard.py` previously allowed restricted status vocabulary when marker phrases such as `fresh command`, `command label`, `exit code`, `artifact path`, and `checked result` appeared in the claim text.
-- `tools/viewer_host_checkpoint_guard.py` now requires current machine-validated claim evidence for restricted status vocabulary and rejects marker text alone.
-- `tools/viewer_host_checkpoint_guard.py` now exposes `validate_validation_receipt_evidence_freshness(...)` and calls it from `evaluate_contract_proof_receipt_guard(...)`, so stale validation artifact hash/size/mtime data blocks closure.
-- `tools/viewer_host_truth_report.py` writes a current machine-readable status report with live branch, `HEAD`, `git status --short`, receipt paths, and evidence freshness checks.
-- `tools/viewer_host_forensic_timeline.py` ingests the transcript/user-message audit, recovery reports, receipts, and live git status, then emits a categorized forensic dossier with per-category guard invariants.
-- `tools/viewer_host_claim_ledger.py` records and validates status claims so invalid claims remain auditable instead of disappearing after correction.
-- `artifacts/hooks/viewer_host_checkpoint_guard/recovery/recovery_20260512T223247Z_ab858670f3e4.json` proves the recent failure mode: receipts existed for `HEAD`, but the worktree was dirty with `ui_app/tests/test_color_pipeline_core.cpp`.
-- The profile-local transcript path under `%APPDATA%\Code\User\workspaceStorage\...\GitHub.copilot-chat\transcripts\d751df96-0238-4a44-9852-fdd1ca0af265.jsonl` and extracted audit under `%LOCALAPPDATA%\Temp\d751df96_user_messages_audit.txt` are the user-command and correction sources for the forensic dossier.
+- Restricted status-vocabulary policing.
+- Required anti-lie capstone text.
+- `task_complete` and `Stop` blocks driven by open explicit asks.
+- `task_complete` and `Stop` blocks driven by hostile-audit state.
+- `task_complete` and `Stop` blocks driven by `salt_ndepend` packet-readiness state.
 
-## Forensic Audit Task
+### Receipt / artifact policy
 
-`artifacts/validation/anti_lie_forensic_timeline.json` is the machine dossier. The latest run extracted 474 supported events and these 12 recurrence categories: dirty worktree missed after closure, final report shape ignored, hook friction without preventing the lie, hostile review omitted or weakened, other-agent framing accepted without revalidation, product work before anti-lying gate, protocol prose substituted for enforcement, regression hidden by narrow validation, repeated user escalation required, scope drift from controlling ask, stale receipt or artifact treated as truth, and status overclaim without live evidence.
+- `artifacts/code_quality_report.json` remains the authoritative closure-evidence artifact for the real code-quality validation command.
+- Session bootstrap audit now writes to `artifacts/bootstrap/code_quality_report.json`.
+- Authoritative receipt-evidence artifacts are expected to stay stable between receipt write and later closure recheck unless explicit revalidation runs.
 
-The dossier records the finite evidence set `E`, extracted timeline `T = extract(E)`, category set `C = classify(T)`, guard invariant set `G`, and quantifier check: for every category in `C`, there is a guard invariant with a detector, blocking condition, proof artifact, and recheck command. The latest generated dossier reports `ok=true`, `event_count=474`, and `quantifier_check.ok=true`.
+## Optional Diagnostics
+
+- `tools/viewer_host_truth_report.py` survives as an optional offline truth surface.
+- `tools/viewer_host_forensic_timeline.py` survives as an optional offline forensic surface.
+- `tools/viewer_host_claim_ledger.py` survives as an optional offline claim-record surface.
+- None of those tools are required for `task_complete` or `Stop` in the repaired anti-lie design.
 
 ## Hostile Audit
 
-- Status: complete
-- Required posture: assume the new tools can become another lie surface unless RED tests prove the old failure and GREEN tests prove the new block.
-
-## Action Hostile Review
-
-- Action ID: action-20260512-anti-lie-repaired-state
-- Suspected Failure Mode: the agent could stop after a tool-shaped implementation while fake marker text, stale receipt evidence, dirty worktree state, or incomplete forensic categories still pass.
-- Correct Owner/Action: keep the slice workflow-only, require RED tests for marker text, stale evidence, and missing capstone enforcement, generate the forensic dossier, require truth-report artifacts for restricted status claims, require the name-free capstone at task_complete, and run workflow pytest plus contract/plan/hostile-audit validators before checkpoint.
-- Proof Surface: `artifacts/validation/anti_lie_forensic_timeline.json`, `artifacts/pytest/anti_lie_workflow_tools.junit.xml`, `artifacts/pytest/test_viewer_host_checkpoint_guard.junit.xml`, `artifacts/validation/anti_lie_claim_enforcement_contract.json`, `artifacts/validation/viewer_host_assert_phased_plan_sync.json`, `artifacts/validation/anti_lie_claim_enforcement_hostile_audit.json`, `artifacts/validation/viewer_host_truth_report.json`, and final empty `git status --short`.
-- Outcome: capstone RED tests proved task_complete previously allowed completion without the capstone; focused checkpoint-guard tests now report 77 passed, full anti-lie workflow tests report 132 passed, contract validation/plan sync/hostile audit/code quality report ok, and checkpoint/receipts/final status remain.
-- Blocked Action: product work, Color Pipeline work, capture work, new fractal work, application-code edits, or final closure language before final validation and checkpoint.
+- Status: done
+- Required posture: assume the previous anti-lie implementation was overfit to anger-era workflow failures and likely mixed useful closure proof with rhetoric, duplicate gates, and shared-path artifact hazards.
 
 ## Audit Passes
 
-- [done] Pass 1 - forensic review found concrete system/tooling failures: marker-word status proof was accepted as if words were evidence, and contract-proof closure trusted stale assertion results without revalidating validation artifact metadata.
-- [done] Pass 2 - RED review proved the current guard accepted false claim patterns: `test_status_vocabulary_rejects_fake_proof_marker_text_without_claim_evidence` and `test_evaluate_contract_proof_receipt_guard_revalidates_validation_evidence_artifact_drift` both failed before the repair.
-- [done] Pass 3 - clean re-read of the repaired state proved the new guard blocks the repaired failure patterns: the focused workflow subset reported `126 passed`, the forensic dossier reported 474 events across 12 categories with `quantifier_check.ok=true`, and no additional real defect found in the touched workflow seams.
-- [done] Pass 4 - receipt-proof hostile review found another real defect: the contract-proof mapper lacked parseable evidence for the exact code-quality command; the repaired state now maps `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json` to `artifacts/code_quality_report.json`, focused contract-proof tests pass, the full workflow subset reports `127 passed`, and no additional workflow mistake found in the repaired proof path.
-- [done] Pass 5 - capstone-enforcement hostile review found another real defect: the capstone was a memory/final-answer convention instead of a task_complete blocking condition, and the prior wording used the user's personal name. Focused RED tests failed because the guard helper/constant were missing and task_complete allowed completion without the capstone; focused GREEN tests now report 5 passed, and no additional workflow mistake found in the capstone guard path.
+- [done] Pass 1 - re-read the active anti-lie hook path and found real defects: fresh clean sessions on inherited receipted `HEAD`s could still false-block on contract-proof checks, and session bootstrap rewrote the authoritative code-quality artifact used later for closure freshness.
+- [done] Pass 2 - removed the rhetoric-only blockers from `task_complete` and `Stop`, narrowed contract-proof enforcement to session-advanced `HEAD`s only, and moved bootstrap audit output onto a non-authoritative path.
+- [done] Pass 3 - re-read the repaired state with focused regressions and confirmed the repaired slice still blocks authoritative-artifact drift while no longer false-blocking inherited clean heads.
 
 ## Audit Findings
 
-- [done] Real defect found: restricted status vocabulary accepted marker words such as `fresh command`, `exit code`, and `artifact path` without validating a current machine evidence artifact. The guard now requires a current valid truth-report artifact or claim id.
-- [done] Real defect found: contract-proof closure accepted stale assertion results even when validation-receipt evidence artifacts drifted after receipt writing. The guard now recomputes artifact size, mtime, and hash before accepting closure proof.
-- [done] Real defect found: the first forensic implementation only surfaced recovery/receipt categories and missed the extracted user-message audit. The parser now ingests the audit and emits 12 recurrence categories from 474 events.
-- [done] Real defect found: the receipt writer could record the exact code-quality command, but contract-proof receipt writing could not parse evidence for `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json`. The proof mapper now records `artifacts/code_quality_report.json` as validator JSON, and `tests/test_viewer_host_contract_proof.py` covers that mapping.
-- [done] Real defect found: the capstone requirement existed only in memory/final-answer convention and therefore could still be omitted from task_complete. `tools/viewer_host_checkpoint_guard.py` now requires completion text to end with the exact name-free capstone before task_complete can pass, and `tests/test_viewer_host_checkpoint_guard.py` covers missing, misplaced, and accepted capstone text.
-- [done] Clean re-audit evidence: re-read the repaired state with `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py tests/test_viewer_host_contract_proof.py tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/anti_lie_workflow_tools.junit.xml` reporting 127 passed; `py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json` reporting ok=true and 473 events; contract validation, hostile-audit validation, code quality, and plan sync reporting ok=true; no additional real issue found.
-- [done] Clean re-audit evidence: focused capstone guard tests report 5 passed after the task_complete enforcement repair; full checkpoint-guard tests report 77 passed; full anti-lie workflow validation reports 132 passed; no additional real issue found.
+- [done] Real defect found and repaired: `evaluate_contract_proof_receipt_guard(...)` treated a clean inherited validation-receipted `HEAD` as closure debt for the current session. The repaired guard now returns early unless the session actually advanced `HEAD`.
+- [done] Real defect found and repaired: `tools/viewer_host_session_bootstrap.py --audit` wrote to `artifacts/code_quality_report.json`, which is also the authoritative artifact used for closure freshness checks. The repaired bootstrap audit now writes to `artifacts/bootstrap/code_quality_report.json`.
+- [done] Real defect found and repaired: the active `task_complete` / `Stop` path blocked on restricted status vocabulary, mandatory capstone text, hostile-audit state, open explicit asks, and `salt_ndepend` gate state. Those blockers were removed from the active closure path because they were not machine-state closure proof.
+- [done] No additional real defect found in the repaired state after the focused re-audit.
 
 ## Proof Ledger
 
-- Bootstrap evidence: session bootstrap on 2026-05-12 reported branch `feature/advanced-color-pipeline-draft-editor-reframe`, `HEAD=4ec49c8`, and `status=clean` before this workflow slice was created.
-- Slice lock: `ck:e671fbd7` session-start locked `docs/notes/anti_lie_claim_enforcement_PHASED_PLAN.md` and `docs/contracts/anti_lie_claim_enforcement.contract.json` as the active workflow-only slice.
-- RED proof: the first focused pytest run showed both new anti-lie tests failing: fake marker text was accepted (`should_block` false) and stale validation evidence after receipt writing was accepted (`should_block` false).
-- Implementation landed: `tools/viewer_host_checkpoint_guard.py` now requires machine evidence for status vocabulary and revalidates validation-receipt artifact freshness; `tools/viewer_host_contract_proof.py` recognizes dynamic pytest JUnit, truth-report, forensic-timeline, and claim-ledger artifacts.
-- Tooling landed: `tools/viewer_host_truth_report.py`, `tools/viewer_host_forensic_timeline.py`, and `tools/viewer_host_claim_ledger.py` provide current truth-report, forensic dossier, and claim-ledger surfaces.
-- Repaired-state proof before the first checkpoint: workflow pytest reported 126 passed, forensic dossier reported 474 events/12 categories/ok=true, contract validation reported `checks.contract_schema_valid=true`, and phased plan sync reported ok=true.
-- Receipt-proof blocker found after commit `719ade5`: `viewer_host_write_contract_proof_receipt.py` rejected the validation receipt because the exact code-quality command lacked parseable evidence.
-- Receipt-proof repair: `tools/viewer_host_contract_proof.py` now recognizes `tools/code_quality_audit.py --out <artifact>` as validator JSON evidence, and `tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_code_quality_audit` covers the exact required command.
-- Repaired-state proof after the receipt-mapping repair: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof.junit.xml` reports 16 passed; the full workflow subset reports 127 passed; code quality baseline passes; contract validation reports ok=true.
-- Capstone RED proof: `py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py -q -k "required_capstone or task_complete_without_required_capstone or task_complete_with_required_capstone"` failed because `evaluate_required_capstone_guard` and `REQUIRED_FINAL_CAPSTONE` were absent and task_complete allowed a summary without the capstone.
-- Capstone GREEN proof: the same focused capstone command reports 5 passed after adding the name-free required capstone constant, guard helper, and task_complete denial path. Full checkpoint-guard JUnit proof reports 77 passed; full anti-lie workflow JUnit proof reports 132 passed.
+- The repaired hook path lives in `tools/viewer_host_checkpoint_guard.py`.
+- Bootstrap audit path separation lives in `tools/viewer_host_session_bootstrap.py`.
+- Focused regressions live in `tests/test_viewer_host_checkpoint_guard.py` and `tests/test_agent_workflow_tools.py`.
+- The replacement contract lives in `docs/contracts/anti_lie_claim_enforcement.contract.json`.
+- Workflow guidance was trimmed in `AGENTS.md`, `AGENT_WORKING_PROTOCOL.md`, and `.github/copilot-instructions.md` so they no longer prescribe anti-lie-only plan theater as if it were general proof.
+- Offline diagnostics survive, but they are no longer closure authority for this slice.
 
-## Notes
+## Stop Point
 
-- This slice is workflow-only.
-- Do not use this slice to repair Color Pipeline, capture, ExplainO, runtime UI, or any product feature.
-- Future status reports should be generated from `artifacts/validation/viewer_host_truth_report.json`, not hand-written from memory.
+- The anti-lie replacement slice ends only after the repo is clean, the focused workflow validations are green, the replacement contract is re-locked and receipted, and direct hook probes confirm that clean inherited heads are no longer false-blocked.
+- Do not resume feature work from this plan. Pick the next feature slice explicitly in a fresh prompt.

@@ -12,7 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 from tools.viewer_host_begin_work_slice import build_breadcrumb_append_plan, build_breadcrumb_message, main as begin_work_slice_main
 from tools.viewer_host_checkpoint_slice import main as checkpoint_slice_main
 from tools.viewer_host_contract_proof import build_validation_evidence_entries, validation_evidence_spec_for_command
-from tools.viewer_host_session_bootstrap import build_bootstrap_state, build_validation_profiles, legacy_pending_handoff_entries, tail_handoff_entries
+from tools.viewer_host_session_bootstrap import BOOTSTRAP_AUDIT_PATH, _run_audit, build_bootstrap_state, build_validation_profiles, legacy_pending_handoff_entries, tail_handoff_entries
 from tools.viewer_host_assert_phased_plan_sync import PLAN_SYNC_VALIDATION_ARTIFACT, main as assert_plan_sync_main, validate_plan_text
 from tools.viewer_host_validate_slice_contract import main as validate_slice_contract_main
 
@@ -290,6 +290,25 @@ def test_bootstrap_surface_advertises_checkpoint_id_handoff_flow() -> None:
     )
 
 
+def test_bootstrap_audit_writes_to_non_authoritative_path(monkeypatch) -> None:
+    class _Proc:
+        returncode = 0
+        stdout = "ok\n"
+
+    captured: dict[str, object] = {}
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = list(cmd)
+        return _Proc()
+
+    monkeypatch.setattr("tools.viewer_host_session_bootstrap.subprocess.run", fake_run)
+
+    audit = _run_audit("py")
+
+    assert audit.command == ["py", "tools/code_quality_audit.py", "--check-baseline", "--out", BOOTSTRAP_AUDIT_PATH]
+    assert captured["cmd"] == audit.command
+
+
 def test_bootstrap_surface_describes_checkpoint_profile_steps_and_outputs() -> None:
     state = build_bootstrap_state(run_audit=False, tail_handoff=1)
 
@@ -497,24 +516,25 @@ def test_phase0_workflow_docs_require_mainline_style_plan_sections() -> None:
     expected = {
         REPO_ROOT / "AGENTS.md": [
             "Explicit User Asks",
-            "Presumption Loop",
             "Proof Ledger",
+            "Hostile Audit",
         ],
         REPO_ROOT / "AGENT_WORKING_PROTOCOL.md": [
             "Explicit User Asks",
-            "Presumption Loop",
             "Proof Ledger",
+            "Hostile Audit",
         ],
         REPO_ROOT / ".github" / "copilot-instructions.md": [
             "Explicit User Asks",
-            "Presumption Loop",
             "Proof Ledger",
+            "Hostile Audit",
         ],
         REPO_ROOT / "docs" / "PHASED_PLAN_CONTINUITY_PROTOCOL.md": [
             "## Explicit User Asks",
-            "## Presumption Loop",
-            "## Presumption Evidence",
             "## Proof Ledger",
+            "## Hostile Audit",
+            "## Audit Passes",
+            "## Audit Findings",
         ],
     }
 

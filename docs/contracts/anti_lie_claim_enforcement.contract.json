@@ -10,53 +10,40 @@
     "tools",
     "tests",
     "artifacts",
+    "AGENTS.md",
+    "AGENT_WORKING_PROTOCOL.md",
+    "docs/PHASED_PLAN_CONTINUITY_PROTOCOL.md",
+    ".github/copilot-instructions.md",
     "HANDOFF_LOG.md"
   ],
   "required_operator_inputs": [
-    "make false status, closure, cleanliness, validation, and feature-progress claims mechanically rejectable",
-    "include an exhaustive forensic dossier that mines every supported failure event and recurrence category from the available evidence corpus",
-    "prove each mined failure category has a detector, blocking condition, proof artifact, and recheck command before closure",
-    "replace proof-marker text with current machine-validated claim evidence for restricted status vocabulary",
-    "revalidate validation-receipt evidence artifacts and live git status during closure",
-    "keep this slice workflow-only and do not count it as product progress",
-    "make the required end-of-turn capstone mechanically enforceable at task_complete",
-    "keep capstone and tooling text name-free unless explicitly requested"
+    "rebuild the anti-lie stop/task_complete slice from zero trust",
+    "keep only machine-state closure blockers in the active hook path",
+    "separate bootstrap or orientation outputs from authoritative receipt-evidence paths",
+    "record which anti-lie surfaces were kept, narrowed, or demoted",
+    "leave the repaired slice clean, receipted, and non-blocking without resuming feature work"
   ],
   "forbidden_operator_prompts": [
-    "start Color Pipeline, capture, new fractal, runtime UI, or product feature work in this slice",
-    "treat this anti-lying work as product progress",
-    "accept inherited agent framing without transcript and evidence validation",
-    "accept fresh command, exit code, artifact path, or checked result marker words as proof by themselves",
-    "accept a validation receipt for HEAD when live git status has staged, unstaged, or untracked changes",
-    "allow false claims to disappear from the claim ledger after correction",
-    "close the slice while any mined failure category lacks a blocking invariant and current proof artifact",
-    "treat memory-only capstone reminders as sufficient enforcement",
-    "use the user's personal name in capstones, plans, or tooling text unless explicitly requested"
+    "treat bootstrap or orientation artifacts as authoritative closure proof",
+    "block closure on prose-only status rules, capstones, or rhetoric-only audit surfaces",
+    "resume product feature work from this repair slice",
+    "refresh receipts before the replacement design is stable",
+    "treat inherited clean heads as if the current session advanced them"
   ],
   "required_defaults": {
     "workflow_only": "required",
-    "forensic_dossier_first": "required",
-    "live_git_status_authoritative": "required",
-    "restricted_status_claims_require_machine_evidence": "required",
-    "receipt_evidence_revalidated_at_closure": "required",
-    "false_claims_remain_auditable": "required",
-    "per_category_guard_invariants": "required",
-    "task_complete_requires_name_free_capstone": "required"
+    "authoritative_receipt_evidence_is_stable": "required",
+    "closure_blockers_are_machine_state_only": "required",
+    "inherited_clean_heads_do_not_require_reproof": "required"
   },
   "forbidden_defaults": {
-    "product_progress_claim": "forbidden",
-    "marker_words_as_proof": "forbidden",
-    "stale_receipts_as_current_truth": "forbidden",
-    "dirty_worktree_closure": "forbidden",
-    "documentation_only_fix": "forbidden",
-    "unclassified_failure_categories": "forbidden",
-    "memory_only_capstone_enforcement": "forbidden",
-    "personal_name_in_capstone_or_tooling_text": "forbidden"
+    "shared_receipt_artifact_paths": "forbidden",
+    "prose_only_completion_rules": "forbidden",
+    "fresh_session_false_block": "forbidden",
+    "product_progress_claim": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 tools/viewer_host_forensic_timeline.py --out-json artifacts/validation/anti_lie_forensic_timeline.json",
     "py -3.14 -m pytest tests/test_viewer_host_checkpoint_guard.py tests/test_viewer_host_contract_proof.py tests/test_agent_workflow_tools.py -q --junitxml artifacts/pytest/anti_lie_workflow_tools.junit.xml",
-    "py -3.14 tools/viewer_host_truth_report.py --out-json artifacts/validation/viewer_host_truth_report.json",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/anti_lie_claim_enforcement.contract.json --out-json artifacts/validation/anti_lie_claim_enforcement_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/anti_lie_claim_enforcement_PHASED_PLAN.md --out-json artifacts/validation/anti_lie_claim_enforcement_hostile_audit.json",
@@ -65,7 +52,7 @@
   "required_acceptance_assertions": [
     {
       "assertion_id": "anti_lie_contract_schema_valid",
-      "description": "The anti-lie workflow contract validates successfully",
+      "description": "The replacement anti-lie contract validates successfully",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/anti_lie_claim_enforcement_contract.json",
       "json_path": "checks.contract_schema_valid",
@@ -73,7 +60,7 @@
     },
     {
       "assertion_id": "anti_lie_plan_sync_ok",
-      "description": "The anti-lie phased plan stays synchronized",
+      "description": "The replacement anti-lie phased plan stays synchronized",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
       "json_path": "ok",
@@ -81,41 +68,32 @@
     },
     {
       "assertion_id": "anti_lie_hostile_audit_ok",
-      "description": "The anti-lie hostile audit is complete and proves repaired state",
+      "description": "The replacement anti-lie slice records a clean hostile re-audit",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/anti_lie_claim_enforcement_hostile_audit.json",
       "json_path": "ok",
       "equals": true
     },
     {
-      "assertion_id": "anti_lie_forensic_dossier_ok",
-      "description": "The forensic dossier enumerates and classifies supported failure events and proves per-category guard invariants",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/anti_lie_forensic_timeline.json",
-      "json_path": "ok",
-      "equals": true
-    },
-    {
-      "assertion_id": "anti_lie_truth_report_ok",
-      "description": "The current truth report validates live git status, receipts, commands, artifacts, and claim support",
-      "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/viewer_host_truth_report.json",
-      "json_path": "ok",
-      "equals": true
-    },
-    {
-      "assertion_id": "anti_lie_workflow_guard_tests_green",
-      "description": "The workflow guard tests cover false marker denial, stale evidence denial, dirty worktree denial, and valid clean report acceptance",
+      "assertion_id": "anti_lie_stale_authoritative_artifact_still_blocks",
+      "description": "Authoritative validation evidence drift still blocks contract-proof closure",
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
-      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_status_vocabulary_rejects_fake_proof_marker_text_without_claim_evidence"
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_evaluate_contract_proof_receipt_guard_revalidates_validation_evidence_artifact_drift"
     },
     {
-      "assertion_id": "anti_lie_task_complete_capstone_enforced",
-      "description": "task_complete is denied unless completion text ends with the exact name-free anti-lie capstone",
+      "assertion_id": "anti_lie_clean_inherited_head_is_not_reblocked",
+      "description": "A clean inherited head without session-local advancement does not false-block stop",
       "evidence_kind": "pytest_junit_case",
       "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
-      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_pretool_response_denies_task_complete_without_required_capstone"
+      "test_nodeid": "tests/test_viewer_host_checkpoint_guard.py::test_build_stop_response_allows_clean_inherited_head_without_contract_proof"
+    },
+    {
+      "assertion_id": "anti_lie_bootstrap_audit_path_is_non_authoritative",
+      "description": "Bootstrap audit output stays off the authoritative code-quality artifact path",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/anti_lie_workflow_tools.junit.xml",
+      "test_nodeid": "tests/test_agent_workflow_tools.py::test_bootstrap_audit_writes_to_non_authoritative_path"
     }
   ]
 }

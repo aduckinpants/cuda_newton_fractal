@@ -55,13 +55,6 @@ ACTION_HOSTILE_REVIEW_REQUIRED_FIELDS = (
     "proof surface",
     "blocked action",
 )
-STATUS_CLAIM_RE = re.compile(r"\b(green|done|ready|complete|closed|unblocked|good)\b", re.IGNORECASE)
-STATUS_CLAIM_REQUIRED_MARKERS = (
-    "valid truth report artifact",
-    "valid claim id",
-)
-STATUS_TRUTH_REPORT_RE = re.compile(r"artifacts[\\/][A-Za-z0-9_./\\-]*truth[A-Za-z0-9_./\\-]*\.json", re.IGNORECASE)
-REQUIRED_FINAL_CAPSTONE = "THIS DOES NOT ADVANCE THE FEATURE. THIS IS CORRECTIVE CHURN THAT COSTS THE USER'S TIME AND MONEY. NEVER AGAIN."
 PATCH_FILE_RE = re.compile(r"--patch-file\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))", re.IGNORECASE)
 SALT_NDEPEND_REQUIRED_DEFAULT_KEYS = (
     "salt_ndepend_gate_is_explicit",
@@ -198,100 +191,6 @@ def _extract_payload_command_text(payload: Any) -> str:
 def _payload_requests_task_complete(payload: Any) -> bool:
     haystack = " ".join(_payload_tool_candidates(payload)).lower()
     return "task_complete" in haystack or "taskcomplete" in haystack
-
-
-def _payload_status_claim_text(payload: Any) -> str:
-    texts: list[str] = []
-    for key in ("summary", "message", "text"):
-        for value in _find_values(payload, key):
-            if isinstance(value, (str, int, float)):
-                text = str(value).strip()
-                if text:
-                    texts.append(text)
-    return "\n".join(texts)
-
-
-def _payload_completion_text_candidates(payload: Any) -> list[str]:
-    texts: list[str] = []
-    for key in ("summary", "message", "text"):
-        for value in _find_values(payload, key):
-            if isinstance(value, (str, int, float)):
-                text = str(value).strip()
-                if text:
-                    texts.append(text)
-    return texts
-
-
-def evaluate_required_capstone_guard(payload: dict[str, Any] | None) -> tuple[bool, str, dict[str, Any]]:
-    candidates = _payload_completion_text_candidates(payload or {})
-    details = {
-        "required_capstone": REQUIRED_FINAL_CAPSTONE,
-        "checked_text_count": len(candidates),
-    }
-    if any(candidate.endswith(REQUIRED_FINAL_CAPSTONE) for candidate in candidates):
-        return False, "", details
-    return (
-        True,
-        "Final task completion text must end with the required anti-lie capstone.",
-        details,
-    )
-
-
-def _status_truth_report_candidates(text: str) -> list[str]:
-    return sorted({match.group(0).replace("\\", "/") for match in STATUS_TRUTH_REPORT_RE.finditer(text)})
-
-
-def _validate_status_truth_report(path_text: str, repo_root: Path) -> tuple[bool, str]:
-    path = Path(path_text)
-    if not path.is_absolute():
-        path = repo_root / path
-    if not path.exists():
-        return False, f"truth report missing: {path_text}"
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return False, f"truth report invalid json: {path_text}: {exc}"
-    if not bool(payload.get("ok", False)):
-        return False, f"truth report is not ok: {path_text}"
-    live_status = _git_status_short_lines(repo_root)
-    report_status = payload.get("git", {}).get("status_short")
-    if isinstance(report_status, list) and report_status != live_status:
-        return False, f"truth report status is stale: {path_text}"
-    return True, ""
-
-
-def evaluate_status_vocabulary_guard(
-    payload: dict[str, Any] | None,
-    repo_root: Path = REPO_ROOT,
-) -> tuple[bool, str, dict[str, Any]]:
-    text = _payload_status_claim_text(payload or {})
-    if not text:
-        return False, "", {}
-    matches = sorted({match.group(1).lower() for match in STATUS_CLAIM_RE.finditer(text)})
-    if not matches:
-        return False, "", {}
-
-    candidates = _status_truth_report_candidates(text)
-    checked_reports: list[str] = []
-    failures: list[str] = []
-    for candidate in candidates:
-        ok, failure = _validate_status_truth_report(candidate, repo_root)
-        checked_reports.append(candidate)
-        if ok:
-            return False, "", {"restricted_words": matches, "truth_report": candidate}
-        failures.append(failure)
-
-    details = {
-        "restricted_words": matches,
-        "missing_markers": list(STATUS_CLAIM_REQUIRED_MARKERS),
-        "checked_truth_reports": checked_reports,
-        "truth_report_failures": failures,
-    }
-    return (
-        True,
-        "Restricted status vocabulary requires current machine-validated claim evidence.",
-        details,
-    )
 
 
 def _normalize_text(text: str) -> str:
@@ -1123,7 +1022,7 @@ def evaluate_contract_proof_receipt_guard(
         return False, ""
 
     head_advanced = bool(baseline_head and baseline_head != current_head)
-    if not head_advanced and not clean_head_has_validation_receipt(current, repo_root):
+    if not head_advanced:
         return False, ""
 
     contract_state, contract_error = validate_locked_contract_state(session_id, repo_root)
@@ -1365,26 +1264,6 @@ def build_pretool_response(
         if not should_block:
             should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
         if not should_block:
-            should_block, reason, open_asks = evaluate_open_explicit_user_asks_guard(session_id, repo_root)
-        else:
-            open_asks = []
-        if not should_block:
-            should_block, reason, hostile_audit_payload = evaluate_hostile_audit_guard(session_id, repo_root)
-        else:
-            hostile_audit_payload = {}
-        if not should_block:
-            should_block, reason, salt_ndepend_payload = evaluate_salt_ndepend_gate_guard(session_id, repo_root)
-        else:
-            salt_ndepend_payload = {}
-        if not should_block:
-            should_block, reason, status_claim_payload = evaluate_status_vocabulary_guard(payload, repo_root)
-        else:
-            status_claim_payload = {}
-        if not should_block:
-            should_block, reason, capstone_payload = evaluate_required_capstone_guard(payload)
-        else:
-            capstone_payload = {}
-        if not should_block:
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -1398,39 +1277,10 @@ def build_pretool_response(
                 "permissionDecision": "deny",
                 "permissionDecisionReason": banner + " " + reason,
                 "additionalContext": (
-                    (
-                        "Open explicit user asks: " + summarize_open_user_asks(open_asks)
-                    )
-                    if open_asks
-                    else (
-                        "Required capstone: " + str(capstone_payload.get("required_capstone", ""))
-                    )
-                    if capstone_payload
-                    else (
-                        "Restricted status words: " + ", ".join(status_claim_payload.get("restricted_words", []))
-                        + " | missing proof markers: "
-                        + ", ".join(status_claim_payload.get("missing_markers", []))
-                    )
-                    if status_claim_payload
-                    else (
-                        "salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
-                        + " | freeze_ready: "
-                        + str(salt_ndepend_payload.get("freeze_ready", "unknown"))
-                        + " | findings: "
-                        + _summarize_salt_ndepend_finding_codes(list(salt_ndepend_payload.get("finding_codes", [])))
-                    )
-                    if salt_ndepend_payload
-                    else (
-                        "Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
-                        + " | blocked_reason: "
-                        + str(hostile_audit_payload.get("blocked_reason", ""))
-                    )
-                    if hostile_audit_payload
-                    else (
-                        "Expected receipt path: " + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
-                        + " | expected contract proof receipt: "
-                        + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
-                    )
+                    "Expected receipt path: "
+                    + validation_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
+                    + " | expected contract proof receipt: "
+                    + contract_proof_receipt_path(str(current.get("head", "")), repo_root).relative_to(repo_root).as_posix()
                 ),
             }
         }
@@ -1551,34 +1401,12 @@ def build_stop_response(
         if not should_block:
             should_block, reason = evaluate_contract_proof_receipt_guard(baseline, current, session_id, repo_root)
         if not should_block:
-            should_block, reason, open_asks = evaluate_open_explicit_user_asks_guard(session_id, repo_root)
-        else:
-            open_asks = []
-        if not should_block:
-            should_block, reason, hostile_audit_payload = evaluate_hostile_audit_guard(session_id, repo_root)
-        else:
-            hostile_audit_payload = {}
-        if not should_block:
-            should_block, reason, salt_ndepend_payload = evaluate_salt_ndepend_gate_guard(session_id, repo_root)
-        else:
-            salt_ndepend_payload = {}
-        if not should_block:
             return None
         return {
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
                 "decision": "block",
-                "reason": banner + " " + reason + (
-                    " Open explicit user asks: " + summarize_open_user_asks(open_asks)
-                    if open_asks
-                    else " salt_ndepend doctor: " + str(salt_ndepend_payload.get("doctor_path", "unknown"))
-                    + " | freeze_ready: " + str(salt_ndepend_payload.get("freeze_ready", "unknown"))
-                    + " | findings: " + _summarize_salt_ndepend_finding_codes(list(salt_ndepend_payload.get("finding_codes", [])))
-                    if salt_ndepend_payload
-                    else " Hostile audit status: " + str(hostile_audit_payload.get("status", "unknown"))
-                    if hostile_audit_payload
-                    else ""
-                ),
+                "reason": banner + " " + reason,
             }
         }
 

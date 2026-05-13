@@ -18,6 +18,7 @@ except ModuleNotFoundError:
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXTERNAL_TESTING_CHEAT_SHEET = Path(r"C:\code\salticid-cuda\docs\testing_cheat_sheet.md")
+BOOTSTRAP_AUDIT_PATH = "artifacts/bootstrap/code_quality_report.json"
 
 
 @dataclass(frozen=True)
@@ -148,7 +149,7 @@ def _capture_git(*args: str) -> str:
 
 
 def _run_audit(py: str) -> AuditSummary:
-    cmd = [py, "tools/code_quality_audit.py", "--check-baseline", "--out", "artifacts/code_quality_report.json"]
+    cmd = [py, "tools/code_quality_audit.py", "--check-baseline", "--out", BOOTSTRAP_AUDIT_PATH]
     proc = subprocess.run(
         cmd,
         cwd=str(REPO_ROOT),
