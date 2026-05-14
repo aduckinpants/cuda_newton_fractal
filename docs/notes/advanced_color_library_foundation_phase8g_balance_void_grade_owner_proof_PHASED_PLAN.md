@@ -67,6 +67,8 @@ The controlling risk is operator fraud: `balance_void_grade` could be exposed as
 - [done] Pass 1 - added and ran focused REDs proving the missing catalog, live-bridge, runtime-math, diagnostics/archive, and reset/default surfaces on current HEAD.
 - [done] Pass 2 - re-read the touched seams after the owner-path repair as if `balance_void_grade` were still editor-only, bridge-only, persistence-only, or an alias of `neutral_finish`, `tone_map_finish`, or `grade.glow`; the landed row still requires dedicated owner mirrors and its own runtime grading pass.
 - [done] Pass 3 - reran the focused owner rails, runtime publish, and the published-runtime `balance_void_grade` witness, then inspected for shipped-row regressions or scope widening; the only broader-rail failure remains the pre-existing `full_test_run` batch-label defect outside this slice.
+- [done] Pass 4 - clean re-read the repaired state across the touched owner seams after the green owner/runtime proofs; no additional real defect found beyond the unrelated `full_test_run` batch-label script miss.
+- [done] Pass 5 - confirmed the repaired state cleanly after the closure/restart authority doc sync and committed diff review; this re-read did not expose another product defect or workflow mistake in the shipped `balance_void_grade` boundary.
 
 ## Audit Findings
 
