@@ -24,8 +24,15 @@
         params.splice_offset != 0.0f ||
         params.vortex_strength != 0.0f ||
         params.tension_strength != 0.0f;
+    const bool hasExplainoBalanceVoidPerturbation =
+        params.balance_void != 0.0f ||
+        params.symmetry_tension != 0.0f ||
+        params.field_curvature != 0.0f;
     // Zero-axis Explaino variants must collapse to the baseline Explaino path exactly.
     if (isExplainoComposedVariant && !hasExplainoComposedPerturbation) {
+        ft = FractalType::explaino;
+    }
+    if (ft == FractalType::explaino_balance_void && !hasExplainoBalanceVoidPerturbation) {
         ft = FractalType::explaino;
     }
     if (ft == FractalType::newton) {
@@ -111,6 +118,233 @@
                 if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
             }
             converged = (pAbs < eps);
+        }
+    } else if (ft == FractalType::explaino_balance_void) {
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        const bool useExplicitRoots = params.explaino_root_count > 0;
+        const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
+        const int rootCount = useExplicitRoots ? params.explaino_root_count : polynomialRootCount;
+        int bestIt_balance_void = 0;
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
+            double pAbsD = 0.0;
+            double bestPD_balance_void = 1.0e30;
+            for (; it < maxIter; ++it) {
+                Cxd P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4_d(coeffs, zd, &P, &dP);
+                pAbsD = cxd_abs(P);
+                if (pAbsD < bestPD_balance_void) { bestPD_balance_void = pAbsD; bestIt_balance_void = it; }
+                if (pAbsD < epsD) break;
+                double dAbs2 = cxd_abs2(dP);
+                Cxd newtonStep = (dAbs2 < 1e-30) ? P : cxd_div(P, dP);
+                double stepMag = sqrt(fmax(0.0, cxd_abs2(newtonStep)));
+                double damp = (double)userDamp / (1.0 + 0.25 * stepMag);
+
+                Cxd bias = {0.0, 0.0};
+                if (rootCount >= 2) {
+                    int idxNearest = 0;
+                    int idxSecond = 1;
+                    double best1 = 1.0e30;
+                    double best2 = 1.0e30;
+                    for (int rootIndex = 0; rootIndex < rootCount; ++rootIndex) {
+                        Cx root{};
+                        if (useExplicitRoots) {
+                            root = {params.explaino_roots[rootIndex].x, params.explaino_roots[rootIndex].y};
+                        } else {
+                            root = unit_root_k(rootIndex, polynomialRootCount);
+                        }
+                        double dx = zd.x - (double)root.x;
+                        double dy = zd.y - (double)root.y;
+                        double d2 = dx * dx + dy * dy;
+                        if (d2 < best1) {
+                            best2 = best1;
+                            idxSecond = idxNearest;
+                            best1 = d2;
+                            idxNearest = rootIndex;
+                        } else if (d2 < best2) {
+                            best2 = d2;
+                            idxSecond = rootIndex;
+                        }
+                    }
+
+                    Cx rootA{};
+                    Cx rootB{};
+                    if (useExplicitRoots) {
+                        rootA = {params.explaino_roots[idxNearest].x, params.explaino_roots[idxNearest].y};
+                        rootB = {params.explaino_roots[idxSecond].x, params.explaino_roots[idxSecond].y};
+                    } else {
+                        rootA = unit_root_k(idxNearest, polynomialRootCount);
+                        rootB = unit_root_k(idxSecond, polynomialRootCount);
+                    }
+
+                    double midX = 0.5 * ((double)rootA.x + (double)rootB.x);
+                    double midY = 0.5 * ((double)rootA.y + (double)rootB.y);
+                    double axisX = (double)rootB.x - (double)rootA.x;
+                    double axisY = (double)rootB.y - (double)rootA.y;
+                    double axisLen = sqrt(axisX * axisX + axisY * axisY);
+                    if (axisLen > 1e-30) {
+                        double offsetX = zd.x - midX;
+                        double offsetY = zd.y - midY;
+                        Cxd balanceBias = {
+                            (midX - zd.x) * (double)params.balance_void * 0.20,
+                            (midY - zd.y) * (double)params.balance_void * 0.20};
+                        double axisHatX = axisX / axisLen;
+                        double axisHatY = axisY / axisLen;
+                        double along = offsetX * axisHatX + offsetY * axisHatY;
+                        double perpX = offsetX - along * axisHatX;
+                        double perpY = offsetY - along * axisHatY;
+                        Cxd symmetryBias = {
+                            -perpX * (double)params.symmetry_tension * 0.25,
+                            -perpY * (double)params.symmetry_tension * 0.25};
+                        Cxd curvatureBias = {0.0, 0.0};
+                        double radialLen = sqrt(offsetX * offsetX + offsetY * offsetY);
+                        if (radialLen > 1e-30) {
+                            double curvatureScale = 0.20 * (double)params.field_curvature * axisLen;
+                            curvatureBias = {
+                                (-offsetY / radialLen) * curvatureScale,
+                                (offsetX / radialLen) * curvatureScale};
+                        }
+                        bias = cxd_add(balanceBias, cxd_add(symmetryBias, curvatureBias));
+                    }
+                }
+
+                zd = cxd_add(cxd_sub(zd, cxd_scale(newtonStep, damp)), cxd_scale(bias, damp));
+                double r2 = cxd_abs2(zd);
+                if (r2 > 16.0) {
+                    double r = sqrt(r2);
+                    double s = 4.0 / fmax(1e-24, r);
+                    zd = cxd_scale(zd, s);
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) { zd = {0.0, 0.0}; break; }
+            }
+            z = {(float)zd.x, (float)zd.y};
+            pAbs = (float)pAbsD;
+            converged = (pAbsD < epsD);
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            float bestPF_balance_void = 1.0e30f;
+            for (; it < maxIter; ++it) {
+                Cx P, dP;
+                float coeffs[5];
+                #pragma unroll
+                for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+                poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
+                pAbs = cx_abs(P);
+                if (pAbs < bestPF_balance_void) { bestPF_balance_void = pAbs; bestIt_balance_void = it; }
+                if (pAbs < eps) break;
+                float dAbs2 = cx_abs2(dP);
+                Cx newtonStep = (dAbs2 < 1e-20f) ? P : cx_div(P, dP);
+                float stepMag = sqrtf(fmaxf(0.0f, cx_abs2(newtonStep)));
+                float damp = userDamp / (1.0f + 0.25f * stepMag);
+
+                Cx bias = {0.0f, 0.0f};
+                if (rootCount >= 2) {
+                    int idxNearest = 0;
+                    int idxSecond = 1;
+                    float best1 = 1.0e30f;
+                    float best2 = 1.0e30f;
+                    for (int rootIndex = 0; rootIndex < rootCount; ++rootIndex) {
+                        Cx root{};
+                        if (useExplicitRoots) {
+                            root = {params.explaino_roots[rootIndex].x, params.explaino_roots[rootIndex].y};
+                        } else {
+                            root = unit_root_k(rootIndex, polynomialRootCount);
+                        }
+                        float dx = z.x - root.x;
+                        float dy = z.y - root.y;
+                        float d2 = dx * dx + dy * dy;
+                        if (d2 < best1) {
+                            best2 = best1;
+                            idxSecond = idxNearest;
+                            best1 = d2;
+                            idxNearest = rootIndex;
+                        } else if (d2 < best2) {
+                            best2 = d2;
+                            idxSecond = rootIndex;
+                        }
+                    }
+
+                    Cx rootA{};
+                    Cx rootB{};
+                    if (useExplicitRoots) {
+                        rootA = {params.explaino_roots[idxNearest].x, params.explaino_roots[idxNearest].y};
+                        rootB = {params.explaino_roots[idxSecond].x, params.explaino_roots[idxSecond].y};
+                    } else {
+                        rootA = unit_root_k(idxNearest, polynomialRootCount);
+                        rootB = unit_root_k(idxSecond, polynomialRootCount);
+                    }
+
+                    float midX = 0.5f * (rootA.x + rootB.x);
+                    float midY = 0.5f * (rootA.y + rootB.y);
+                    float axisX = rootB.x - rootA.x;
+                    float axisY = rootB.y - rootA.y;
+                    float axisLen = sqrtf(axisX * axisX + axisY * axisY);
+                    if (axisLen > 1e-20f) {
+                        float offsetX = z.x - midX;
+                        float offsetY = z.y - midY;
+                        Cx balanceBias = {
+                            (midX - z.x) * params.balance_void * 0.20f,
+                            (midY - z.y) * params.balance_void * 0.20f};
+                        float axisHatX = axisX / axisLen;
+                        float axisHatY = axisY / axisLen;
+                        float along = offsetX * axisHatX + offsetY * axisHatY;
+                        float perpX = offsetX - along * axisHatX;
+                        float perpY = offsetY - along * axisHatY;
+                        Cx symmetryBias = {
+                            -perpX * params.symmetry_tension * 0.25f,
+                            -perpY * params.symmetry_tension * 0.25f};
+                        Cx curvatureBias = {0.0f, 0.0f};
+                        float radialLen = sqrtf(offsetX * offsetX + offsetY * offsetY);
+                        if (radialLen > 1e-20f) {
+                            float curvatureScale = 0.20f * params.field_curvature * axisLen;
+                            curvatureBias = {
+                                (-offsetY / radialLen) * curvatureScale,
+                                (offsetX / radialLen) * curvatureScale};
+                        }
+                        bias = cx_add(balanceBias, cx_add(symmetryBias, curvatureBias));
+                    }
+                }
+
+                z = cx_add(cx_sub(z, cx_scale(newtonStep, damp)), cx_scale(bias, damp));
+                float r2 = cx_abs2(z);
+                if (r2 > 16.0f) {
+                    float r = sqrtf(r2);
+                    float s = 4.0f / fmaxf(1e-12f, r);
+                    z = cx_scale(z, s);
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) { z = {0.0f, 0.0f}; break; }
+            }
+            converged = (pAbs < eps);
+        }
+        if (!converged) {
+            it = bestIt_balance_void;
+            if (polynomialRootCount > 0) {
+                if (useFP64) {
+                    Cxd zd = {(double)z.x, (double)z.y};
+                    int idx = NearestRootIndexUnitRoots(zd, polynomialRootCount);
+                    z = unit_root_k(idx, polynomialRootCount);
+                } else {
+                    int idx = NearestRootIndexUnitRoots(z, polynomialRootCount);
+                    z = unit_root_k(idx, polynomialRootCount);
+                }
+            } else if (params.explaino_root_count > 0) {
+                if (useFP64) {
+                    Cxd zd = {(double)z.x, (double)z.y};
+                    int idx = NearestRootIndexList(zd, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                } else {
+                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+                    z = {params.explaino_roots[idx].x, params.explaino_roots[idx].y};
+                }
+            }
+            converged = true;
         }
     } else if (ft == FractalType::explaino_fp) {
         float phase = view.explaino_phase;

@@ -30,6 +30,13 @@ void ResetRuntimeStateForCurrentFractal(
     params.explaino_root_spread = 0.5f;
     params.explaino_damping = 1.0f;
     params.explaino_cluster_radius = 0.0f;
+    params.balance_void = 0.0f;
+    params.symmetry_tension = 0.0f;
+    params.field_curvature = 0.0f;
+    params.ripple_amplitude = 0.0f;
+    params.splice_offset = 0.0f;
+    params.vortex_strength = 0.0f;
+    params.tension_strength = 0.0f;
     params.momentum_beta = 0.0f;
     ApplyFractalPresetDefaults(view, params, ioDirty);
     params.color_source_stack_count = 0;

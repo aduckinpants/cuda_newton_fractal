@@ -83,6 +83,32 @@ int main() {
     }
 
     {
+        if (!IsExplainoFamily(FractalType::explaino_balance_void)) {
+            std::cerr << "Explaino-BalanceVoid should stay in the Explaino family surface instead of existing only as generic grading intent\n";
+            return 1;
+        }
+        if (!SupportsBasinColoring(FractalType::explaino_balance_void)) {
+            std::cerr << "Explaino-BalanceVoid should support basin coloring as a root-finding family track\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::explaino_balance_void)) {
+            std::cerr << "Explaino-BalanceVoid should remain a basin-capable Explaino family track, not an escape-time generic grading alias\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_balance_void) != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-BalanceVoid should inherit the neutral Explaino basin-default coloring mode\n";
+            return 1;
+        }
+        const ColorPipelineSelection pipeline = DefaultColorPipelineForFractal(FractalType::explaino_balance_void);
+        if (pipeline.signal != ColorSignal::root_index ||
+            pipeline.palette != ColorPalette::joy ||
+            pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "Explaino-BalanceVoid should default to the neutral Explaino basin pipeline instead of widening into generic balance_void_grade ownership\n";
+            return 1;
+        }
+    }
+
+    {
         if (!IsExplainoFamily(FractalType::explaino_nova)) {
             std::cerr << "Explaino-Nova should stay in the Explaino family surface\n";
             return 1;

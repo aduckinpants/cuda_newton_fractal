@@ -47,6 +47,7 @@ const char* CaptureFractalTypeId(FractalType fractalType) {
     case FractalType::explaino_splice: return "explaino_splice";
     case FractalType::explaino_vortex: return "explaino_vortex";
     case FractalType::explaino_tension: return "explaino_tension";
+    case FractalType::explaino_balance_void: return "explaino_balance_void";
     case FractalType::multicorn: return "multicorn";
     case FractalType::halley: return "halley";
     case FractalType::collatz: return "collatz";
@@ -267,6 +268,9 @@ void WriteExplainoVariantParamsJson(std::ostringstream& js, const KernelParams& 
     js << "    \"joy_coupling\": " << static_cast<double>(params.joy_coupling) << ",\n";
     js << "    \"fold_coupling\": " << static_cast<double>(params.fold_coupling) << ",\n";
     js << "    \"bell_coupling\": " << static_cast<double>(params.bell_coupling) << ",\n";
+    js << "    \"balance_void\": " << static_cast<double>(params.balance_void) << ",\n";
+    js << "    \"symmetry_tension\": " << static_cast<double>(params.symmetry_tension) << ",\n";
+    js << "    \"field_curvature\": " << static_cast<double>(params.field_curvature) << ",\n";
     js << "    \"ripple_amplitude\": " << static_cast<double>(params.ripple_amplitude) << ",\n";
     js << "    \"splice_offset\": " << static_cast<double>(params.splice_offset) << ",\n";
     js << "    \"vortex_strength\": " << static_cast<double>(params.vortex_strength) << ",\n";

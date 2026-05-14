@@ -492,7 +492,14 @@ bool SamplePoint(const ProbeState& state,
         params.splice_offset != 0.0f ||
         params.vortex_strength != 0.0f ||
         params.tension_strength != 0.0f;
+    const bool hasExplainoBalanceVoidPerturbation =
+        params.balance_void != 0.0f ||
+        params.symmetry_tension != 0.0f ||
+        params.field_curvature != 0.0f;
     if (isExplainoComposedVariant && !hasExplainoComposedPerturbation) {
+        ft = FractalType::explaino;
+    }
+    if (ft == FractalType::explaino_balance_void && !hasExplainoBalanceVoidPerturbation) {
         ft = FractalType::explaino;
     }
 
@@ -527,6 +534,120 @@ bool SamplePoint(const ProbeState& state,
             z = CxSub(z, CxScale(CxDiv(P, dP), params.explaino_damping));
             if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
         }
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (ft == FractalType::explaino_balance_void) {
+        z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
+        const bool useExplicitRoots = params.explaino_root_count > 0;
+        const int polynomialRootCount =
+            params.poly_kind == PolyKind::z3_minus_1 ? 3 :
+            (params.poly_kind == PolyKind::z4_minus_1 ? 4 : 0);
+        const int rootCount = useExplicitRoots ? params.explaino_root_count : polynomialRootCount;
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                status = FractalProbeSampleStatus::converged;
+                break;
+            }
+
+            const Cx newtonStep = CxAbs2(dP) < 1.0e-20f ? P : CxDiv(P, dP);
+            const float stepMag = std::sqrt(std::max(0.0f, CxAbs2(newtonStep)));
+            const float damp = params.explaino_damping / (1.0f + 0.25f * stepMag);
+            Cx bias{0.0f, 0.0f};
+
+            if (rootCount >= 2) {
+                int idxNearest = 0;
+                int idxSecond = 1;
+                float best1 = std::numeric_limits<float>::max();
+                float best2 = std::numeric_limits<float>::max();
+                for (int rootIndex = 0; rootIndex < rootCount; ++rootIndex) {
+                    Cx root{};
+                    if (useExplicitRoots) {
+                        root = {params.explaino_roots[rootIndex].x, params.explaino_roots[rootIndex].y};
+                    } else {
+                        root = UnitRoot(rootIndex, polynomialRootCount);
+                    }
+                    const float dx = z.x - root.x;
+                    const float dy = z.y - root.y;
+                    const float d2 = dx * dx + dy * dy;
+                    if (d2 < best1) {
+                        best2 = best1;
+                        idxSecond = idxNearest;
+                        best1 = d2;
+                        idxNearest = rootIndex;
+                    } else if (d2 < best2) {
+                        best2 = d2;
+                        idxSecond = rootIndex;
+                    }
+                }
+
+                Cx rootA{};
+                Cx rootB{};
+                if (useExplicitRoots) {
+                    rootA = {params.explaino_roots[idxNearest].x, params.explaino_roots[idxNearest].y};
+                    rootB = {params.explaino_roots[idxSecond].x, params.explaino_roots[idxSecond].y};
+                } else {
+                    rootA = UnitRoot(idxNearest, polynomialRootCount);
+                    rootB = UnitRoot(idxSecond, polynomialRootCount);
+                }
+
+                const float midX = 0.5f * (rootA.x + rootB.x);
+                const float midY = 0.5f * (rootA.y + rootB.y);
+                const float axisX = rootB.x - rootA.x;
+                const float axisY = rootB.y - rootA.y;
+                const float axisLen = std::sqrt(axisX * axisX + axisY * axisY);
+                if (axisLen > 1.0e-20f) {
+                    const float offsetX = z.x - midX;
+                    const float offsetY = z.y - midY;
+                    const Cx balanceBias{
+                        (midX - z.x) * params.balance_void * 0.20f,
+                        (midY - z.y) * params.balance_void * 0.20f};
+                    const float axisHatX = axisX / axisLen;
+                    const float axisHatY = axisY / axisLen;
+                    const float along = offsetX * axisHatX + offsetY * axisHatY;
+                    const float perpX = offsetX - along * axisHatX;
+                    const float perpY = offsetY - along * axisHatY;
+                    const Cx symmetryBias{
+                        -perpX * params.symmetry_tension * 0.25f,
+                        -perpY * params.symmetry_tension * 0.25f};
+                    Cx curvatureBias{0.0f, 0.0f};
+                    const float radialLen = std::sqrt(offsetX * offsetX + offsetY * offsetY);
+                    if (radialLen > 1.0e-20f) {
+                        const float curvatureScale = 0.20f * params.field_curvature * axisLen;
+                        curvatureBias = {
+                            (-offsetY / radialLen) * curvatureScale,
+                            (offsetX / radialLen) * curvatureScale};
+                    }
+                    bias = CxAdd(balanceBias, CxAdd(symmetryBias, curvatureBias));
+                }
+            }
+
+            z = CxAdd(CxSub(z, CxScale(newtonStep, damp)), CxScale(bias, damp));
+
+            const float r2 = CxAbs2(z);
+            if (r2 > 16.0f) {
+                const float scale = 4.0f / std::max(1.0e-12f, std::sqrt(r2));
+                z = CxScale(z, scale);
+            }
+
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+        }
+
+        if (status != FractalProbeSampleStatus::converged) {
+            Cx snappedRoot{0.0f, 0.0f};
+            if (SnapToKnownRoot(params, z, &snappedRoot)) {
+                z = snappedRoot;
+                status = FractalProbeSampleStatus::converged;
+            }
+        }
+
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
         return true;
     }

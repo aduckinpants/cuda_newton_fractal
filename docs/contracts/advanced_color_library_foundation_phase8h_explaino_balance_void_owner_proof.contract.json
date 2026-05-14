@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_oracle_and_inventory.md",
+    "docs/notes/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/function_descriptor.cpp",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_cli_args.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_explaino_zero_axis_equivalence.cu",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_sample_equivalence.cu",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_function_descriptor.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat ExplainO-BalanceVoid as the only active family-track feature slice in this session",
+    "keep balance_void_grade inside the already shipped generic grading boundary instead of reopening generic color-pipeline debt",
+    "add focused REDs first for missing family identity, neutral-default collapse proof, runtime-visible control behavior, diagnostics round-trip, and reset/default truth on current HEAD",
+    "keep ExplainO-all, historical 234919_563__explaino_inertial compatibility, archive recovery, hooks, crash recovery, anti-lie tooling, and unrelated UI polish out of scope"
+  ],
+  "forbidden_operator_prompts": [
+    "claim ExplainO-BalanceVoid shipped if the repo still lacks a separate runtime family identity or published-runtime witness",
+    "reuse color_balance_void, color_chroma_tension, or color_accent_bias as if generic grading controls were the fractal-family controls",
+    "treat neutral-default collapse back to plain ExplainO as assumed instead of proved",
+    "open ExplainO-all or historical archive compatibility in this slice",
+    "mutate the generic color-pipeline core as though balance_void_grade were still unfinished shipped debt"
+  ],
+  "required_defaults": {
+    "explaino_balance_void_family_identity_exists": "required",
+    "neutral_default_collapse_proven": "required",
+    "family_track_controls_are_separate_from_generic_grading_controls": "required",
+    "family_track_persistence_and_reset_truth_preserved": "required",
+    "generic_balance_void_grade_boundary_preserved": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "explaino_all_scope_widening": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden",
+    "generic_color_pipeline_reopened": "forbidden",
+    "family_controls_backed_only_by_generic_grading_owners": "forbidden",
+    "editor_only_family_identity": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_contract_schema_valid",
+      "description": "The ExplainO-BalanceVoid owner-proof contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_plan_sync_ok",
+      "description": "The ExplainO-BalanceVoid phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_hostile_audit_ok",
+      "description": "The ExplainO-BalanceVoid hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8h_explaino_balance_void_owner_proof_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

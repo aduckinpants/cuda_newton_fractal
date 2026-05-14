@@ -40,6 +40,7 @@ constexpr FractalType kSupportedProbeFractalTypes[] = {
     FractalType::explaino_splice,
     FractalType::explaino_vortex,
     FractalType::explaino_tension,
+    FractalType::explaino_balance_void,
     FractalType::explaino_transcendental,
     FractalType::explaino_inertial,
     FractalType::explaino_julia,
@@ -179,6 +180,9 @@ constexpr FunctionParamCostHintData kExplainoSidecarCostHints[] = {
     {"fractal.params.joy_coupling", 0.0},
     {"fractal.params.fold_coupling", 0.0},
     {"fractal.params.bell_coupling", 0.0},
+    {"fractal.params.balance_void", 0.0},
+    {"fractal.params.symmetry_tension", 0.0},
+    {"fractal.params.field_curvature", 0.0},
 };
 
 const FunctionParamSensitivityReportData* FindOptimizationStagingSensitivity(const std::string& path) {

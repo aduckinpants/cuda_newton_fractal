@@ -103,6 +103,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
     case FractalType::explaino_splice:
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
+    case FractalType::explaino_balance_void:
     case FractalType::collatz:
     case FractalType::mcmullen:
     default:
@@ -228,6 +229,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_splice:
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
+    case FractalType::explaino_balance_void:
         return true;
     default:
         return false;
@@ -252,6 +254,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_splice:
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
+    case FractalType::explaino_balance_void:
         return 500;
     case FractalType::explaino_nova:
         return 300;
@@ -282,6 +285,9 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.joy_coupling = 0.0f;
     params.fold_coupling = 0.0f;
     params.bell_coupling = 0.0f;
+    params.balance_void = 0.0f;
+    params.symmetry_tension = 0.0f;
+    params.field_curvature = 0.0f;
     params.ripple_amplitude = 0.0f;
     params.splice_offset = 0.0f;
     params.vortex_strength = 0.0f;

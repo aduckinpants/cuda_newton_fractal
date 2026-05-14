@@ -48,6 +48,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"explaino_splice", "Explaino Splice", "Explaino"},
     {"explaino_vortex", "Explaino Vortex", "Explaino"},
     {"explaino_tension", "Explaino Tension", "Explaino"},
+    {"explaino_balance_void", "Explaino BalanceVoid", "Explaino"},
 };
 
 UISchemaBinding MakeBinding(const char* kind, const char* path) {

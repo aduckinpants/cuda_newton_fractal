@@ -232,6 +232,7 @@ enum class FractalType : int {
     explaino_splice = 34,
     explaino_vortex = 35,
     explaino_tension = 36,
+    explaino_balance_void = 37,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -414,6 +415,9 @@ struct KernelParams {
     float joy_coupling{0.0f};
     float fold_coupling{0.0f};
     float bell_coupling{0.0f};
+    float balance_void{0.0f};
+    float symmetry_tension{0.0f};
+    float field_curvature{0.0f};
     float ripple_amplitude{0.0f};
     float splice_offset{0.0f};
     float poly_coeffs_b[5]{0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // Second polynomial for splice

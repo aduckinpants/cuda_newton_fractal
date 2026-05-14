@@ -1687,6 +1687,113 @@ int main() {
         }
     }
     {
+        const fs::path statePath = tempRoot / "explaino_balance_void_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_balance_void",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 500,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "joy_basins",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 2.9685855,
+    "lambda_imag": -0.27446103,
+    "explaino_seed": 2.0,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_spread": 0.5,
+    "explaino_root_count": 4,
+    "explaino_cluster_radius": 0.0,
+    "joy_coupling": 0.0,
+    "fold_coupling": 0.0,
+    "bell_coupling": 0.0,
+    "balance_void": 0.42,
+    "symmetry_tension": 0.18,
+    "field_curvature": -0.35,
+    "ripple_amplitude": 0.0,
+    "splice_offset": 0.0,
+    "vortex_strength": 0.0,
+    "tension_strength": 0.0,
+    "transcendental_func": "f_sin",
+    "momentum_beta": 0.0,
+    "mcmullen_preset": "z3_z3",
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0],
+    "color_saturation": 1.15,
+    "color_contrast": 1.1,
+    "color_tint_r": 1.0,
+    "color_tint_g": 1.0,
+    "color_tint_b": 1.0
+  },
+  "render": {
+    "width": 320,
+    "height": 240,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30.0,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "ExplainO-BalanceVoid state should load: " << error << "\n";
+            return 1;
+        }
+
+        if (view.fractal_type != FractalType::explaino_balance_void) {
+            std::cerr << "ExplainO-BalanceVoid fractal_type should round-trip through diagnostics state loading\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.balance_void, 0.42f, 1.0e-6) ||
+            !NearlyEqual(params.symmetry_tension, 0.18f, 1.0e-6) ||
+            !NearlyEqual(params.field_curvature, -0.35f, 1.0e-6)) {
+            std::cerr << "ExplainO-BalanceVoid family-axis params should round-trip through diagnostics state loading\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.ripple_amplitude, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.splice_offset, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.vortex_strength, 0.0f, 1.0e-6) ||
+            !NearlyEqual(params.tension_strength, 0.0f, 1.0e-6)) {
+            std::cerr << "ExplainO-BalanceVoid diagnostics load should keep legacy composed-variant axes neutral instead of widening into Explaino-all\n";
+            return 1;
+        }
+        if (params.color_pipeline.signal != ColorSignal::root_index ||
+            params.color_pipeline.palette != ColorPalette::joy ||
+            params.color_pipeline.grading != ColorGradingPreset::basin_default) {
+            std::cerr << "ExplainO-BalanceVoid diagnostics load should preserve the neutral Explaino basin-default runtime tuple\n";
+            return 1;
+        }
+    }
+    {
         const fs::path statePath = tempRoot / "legacy_explaino_nova_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

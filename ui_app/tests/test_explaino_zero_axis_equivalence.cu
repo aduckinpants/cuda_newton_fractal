@@ -62,7 +62,10 @@ void BuildExplainoVariantState(FractalType fractalType,
     float spliceOffset,
     float vortexStrength,
     float tensionStrength,
-    ZeroAxisState* outState) {
+    ZeroAxisState* outState,
+    float balanceVoid = 0.0f,
+    float symmetryTension = 0.0f,
+    float fieldCurvature = 0.0f) {
     outState->view = {};
     outState->params = {};
     outState->render = {};
@@ -87,6 +90,9 @@ void BuildExplainoVariantState(FractalType fractalType,
     outState->params.splice_offset = spliceOffset;
     outState->params.vortex_strength = vortexStrength;
     outState->params.tension_strength = tensionStrength;
+    outState->params.balance_void = balanceVoid;
+    outState->params.symmetry_tension = symmetryTension;
+    outState->params.field_curvature = fieldCurvature;
 
     outState->render.resolution = {kWidth, kHeight};
     outState->render.block_size = 256;
@@ -386,8 +392,78 @@ void CheckPlainExplainoIgnoresLatentComposition() {
         DefaultVariantStrength(FractalType::explaino_splice),
         DefaultVariantStrength(FractalType::explaino_vortex),
         DefaultVariantStrength(FractalType::explaino_tension),
-        &actual);
+        &actual,
+        0.35f,
+        -0.2f,
+        0.25f);
     CheckStateEquivalence(expected, actual, "plain explaino latent params");
+}
+
+void BuildExplainoBalanceVoidState(float balanceVoid,
+    float symmetryTension,
+    float fieldCurvature,
+    ZeroAxisState* outState) {
+    BuildExplainoVariantState(FractalType::explaino_balance_void,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        outState,
+        balanceVoid,
+        symmetryTension,
+        fieldCurvature);
+}
+
+void CheckBalanceVoidControlPerturbation() {
+    ZeroAxisState neutral;
+    ZeroAxisState perturbed;
+    BuildExplainoBalanceVoidState(0.0f, 0.0f, 0.0f, &neutral);
+    BuildExplainoBalanceVoidState(0.35f, -0.2f, 0.25f, &perturbed);
+
+    std::vector<Double2> coords;
+    BuildGridCoordinates(neutral.view, &coords);
+
+    std::vector<FractalSampleResult> neutralResults;
+    std::vector<FractalSampleResult> perturbedResults;
+    CHECK("balance-void neutral sample ok", SampleGrid(neutral, coords, &neutralResults));
+    CHECK("balance-void perturbed sample ok", SampleGrid(perturbed, coords, &perturbedResults));
+    if (neutralResults.size() != perturbedResults.size() || neutralResults.empty()) {
+        CHECK("balance-void sample result counts match", false);
+        return;
+    }
+
+    int changedFlags = 0;
+    int changedIterations = 0;
+    int changedBasins = 0;
+    int changedFinalZ = 0;
+    for (size_t index = 0; index < neutralResults.size(); ++index) {
+        const FractalSampleResult& neutralResult = neutralResults[index];
+        const FractalSampleResult& perturbedResult = perturbedResults[index];
+        if (neutralResult.converged != perturbedResult.converged || neutralResult.escaped != perturbedResult.escaped) {
+            ++changedFlags;
+        }
+        if (neutralResult.iterations != perturbedResult.iterations) {
+            ++changedIterations;
+        }
+        if (neutralResult.converged && perturbedResult.converged) {
+            if (NearestRootIndex(neutral.params, neutralResult) != NearestRootIndex(perturbed.params, perturbedResult)) {
+                ++changedBasins;
+            }
+            if (Distance(neutralResult.final_z_x, neutralResult.final_z_y, perturbedResult.final_z_x, perturbedResult.final_z_y) > 1.0e-5) {
+                ++changedFinalZ;
+            }
+        }
+    }
+
+    std::printf("    %-18s flag=%4d basin=%4d iter=%4d final_z=%4d\n",
+        "balance_void_axes",
+        changedFlags,
+        changedBasins,
+        changedIterations,
+        changedFinalZ);
+
+    CHECK("balance-void controls perturb runtime",
+        changedFlags > 0 || changedIterations > 0 || changedBasins > 0 || changedFinalZ > 0);
 }
 
 void CheckComposedLabelInvariance(FractalType leftType,
@@ -426,12 +502,14 @@ int main() {
     CheckVariantAgainstBaseline(FractalType::explaino_splice, "explaino_splice");
     CheckVariantAgainstBaseline(FractalType::explaino_vortex, "explaino_vortex");
     CheckVariantAgainstBaseline(FractalType::explaino_tension, "explaino_tension");
+    CheckVariantAgainstBaseline(FractalType::explaino_balance_void, "explaino_balance_void");
     std::printf("=== Explaino composed secondary reductions ===\n");
     CheckSecondaryVariantReduction(FractalType::explaino_ripple, "explaino_ripple", FractalType::explaino_vortex, "explaino_vortex");
     CheckSecondaryVariantReduction(FractalType::explaino_vortex, "explaino_vortex", FractalType::explaino_splice, "explaino_splice");
     CheckSecondaryVariantReduction(FractalType::explaino_splice, "explaino_splice", FractalType::explaino_tension, "explaino_tension");
     CheckSecondaryVariantReduction(FractalType::explaino_tension, "explaino_tension", FractalType::explaino_ripple, "explaino_ripple");
     CheckPlainExplainoIgnoresLatentComposition();
+    CheckBalanceVoidControlPerturbation();
     CheckComposedLabelInvariance(
         FractalType::explaino_ripple,
         "explaino_ripple",

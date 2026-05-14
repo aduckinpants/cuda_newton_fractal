@@ -281,6 +281,47 @@ int main() {
         }
     }
 
+    {
+        ViewState balanceVoidView{};
+        KernelParams balanceVoidParams{};
+        RenderSettings balanceVoidRender{};
+        LensSettings balanceVoidLens{};
+        bool balanceVoidDirty = false;
+
+        balanceVoidView.fractal_type = FractalType::explaino_balance_void;
+        balanceVoidParams.balance_void = 0.4f;
+        balanceVoidParams.symmetry_tension = -0.3f;
+        balanceVoidParams.field_curvature = 0.25f;
+        balanceVoidParams.ripple_amplitude = 0.15f;
+        balanceVoidParams.splice_offset = 0.5f;
+        balanceVoidParams.vortex_strength = 0.3f;
+        balanceVoidParams.tension_strength = 0.02f;
+
+        ResetRuntimeStateForCurrentFractal(balanceVoidView, balanceVoidParams, balanceVoidRender, balanceVoidLens, &balanceVoidDirty);
+
+        if (!balanceVoidDirty) {
+            std::cerr << "ExplainO-BalanceVoid reset should mark dirty\n";
+            return 1;
+        }
+        if (balanceVoidView.fractal_type != FractalType::explaino_balance_void) {
+            std::cerr << "ExplainO-BalanceVoid reset should preserve the selected family identity while restoring neutral defaults\n";
+            return 1;
+        }
+        if (!NearlyEqual(balanceVoidParams.balance_void, 0.0f) ||
+            !NearlyEqual(balanceVoidParams.symmetry_tension, 0.0f) ||
+            !NearlyEqual(balanceVoidParams.field_curvature, 0.0f)) {
+            std::cerr << "ExplainO-BalanceVoid reset should restore the dedicated family axes to the neutral Explaino collapse point\n";
+            return 1;
+        }
+        if (!NearlyEqual(balanceVoidParams.ripple_amplitude, 0.0f) ||
+            !NearlyEqual(balanceVoidParams.splice_offset, 0.0f) ||
+            !NearlyEqual(balanceVoidParams.vortex_strength, 0.0f) ||
+            !NearlyEqual(balanceVoidParams.tension_strength, 0.0f)) {
+            std::cerr << "ExplainO-BalanceVoid reset should clear unrelated composed-variant axes instead of widening into Explaino-all\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_runtime_reset: all passed\n";
     return 0;
 }

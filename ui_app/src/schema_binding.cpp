@@ -635,6 +635,9 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.joy_coupling") { *outPtr = &params->joy_coupling; return true; }
         if (path == "fractal.params.fold_coupling") { *outPtr = &params->fold_coupling; return true; }
         if (path == "fractal.params.bell_coupling") { *outPtr = &params->bell_coupling; return true; }
+        if (path == "fractal.params.balance_void") { *outPtr = &params->balance_void; return true; }
+        if (path == "fractal.params.symmetry_tension") { *outPtr = &params->symmetry_tension; return true; }
+        if (path == "fractal.params.field_curvature") { *outPtr = &params->field_curvature; return true; }
         if (path == "fractal.params.ripple_amplitude") { *outPtr = &params->ripple_amplitude; return true; }
         if (path == "fractal.params.splice_offset") { *outPtr = &params->splice_offset; return true; }
         if (path == "fractal.params.vortex_strength") { *outPtr = &params->vortex_strength; return true; }

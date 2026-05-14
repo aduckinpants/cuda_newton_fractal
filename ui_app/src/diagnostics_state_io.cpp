@@ -1846,6 +1846,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double joyCoupling = nextParams.joy_coupling;
     double foldCoupling = nextParams.fold_coupling;
     double bellCoupling = nextParams.bell_coupling;
+    double balanceVoid = nextParams.balance_void;
+    double symmetryTension = nextParams.symmetry_tension;
+    double fieldCurvature = nextParams.field_curvature;
     double rippleAmplitude = nextParams.ripple_amplitude;
     double spliceOffset = nextParams.splice_offset;
     double vortexStrength = nextParams.vortex_strength;
@@ -1889,6 +1892,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "joy_coupling", &joyCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "fold_coupling", &foldCoupling, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "bell_coupling", &bellCoupling, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "balance_void", &balanceVoid, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "symmetry_tension", &symmetryTension, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "field_curvature", &fieldCurvature, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "ripple_amplitude", &rippleAmplitude, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "splice_offset", &spliceOffset, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "vortex_strength", &vortexStrength, nullptr, outError)) return false;
@@ -2002,6 +2008,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.joy_coupling = static_cast<float>(joyCoupling);
     nextParams.fold_coupling = static_cast<float>(foldCoupling);
     nextParams.bell_coupling = static_cast<float>(bellCoupling);
+    nextParams.balance_void = static_cast<float>(balanceVoid);
+    nextParams.symmetry_tension = static_cast<float>(symmetryTension);
+    nextParams.field_curvature = static_cast<float>(fieldCurvature);
     nextParams.ripple_amplitude = static_cast<float>(rippleAmplitude);
     nextParams.splice_offset = static_cast<float>(spliceOffset);
     nextParams.vortex_strength = static_cast<float>(vortexStrength);

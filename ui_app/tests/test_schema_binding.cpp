@@ -187,6 +187,39 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to accept lambda\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_balance_void") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_balance_void") {
+            std::cerr << "Expected fractal type enum round-trip to expose ExplainO-BalanceVoid as a separate family-track identity\n";
+            return 1;
+        }
+        float* balanceVoidParam = nullptr;
+        float* symmetryTensionParam = nullptr;
+        float* fieldCurvatureParam = nullptr;
+        if (!ctx.BindFloat("fractal.params.balance_void", &balanceVoidParam) ||
+            !ctx.BindFloat("fractal.params.symmetry_tension", &symmetryTensionParam) ||
+            !ctx.BindFloat("fractal.params.field_curvature", &fieldCurvatureParam) ||
+            balanceVoidParam != &params.balance_void ||
+            symmetryTensionParam != &params.symmetry_tension ||
+            fieldCurvatureParam != &params.field_curvature) {
+            std::cerr << "Expected ExplainO-BalanceVoid schema bindings to own dedicated family-axis params instead of reusing grading-only balance_void_grade paths\n";
+            return 1;
+        }
+        if (!NearlyEqual(*balanceVoidParam, 0.0f) ||
+            !NearlyEqual(*symmetryTensionParam, 0.0f) ||
+            !NearlyEqual(*fieldCurvatureParam, 0.0f)) {
+            std::cerr << "Expected ExplainO-BalanceVoid family axes to start from the neutral Explaino collapse point\n";
+            return 1;
+        }
+        bool familyDirty = false;
+        UISchemaControl symmetryDefault = MakeBoundControl("symmetry_tension", "slider_float", "Symmetry Tension", "float", "param", "fractal.params.symmetry_tension");
+        symmetryDefault.has_default = true;
+        symmetryDefault.def = json_min::Value{0.125};
+        if (!ApplySchemaDefaultForControl(symmetryDefault, ctx, &familyDirty) ||
+            !familyDirty ||
+            !NearlyEqual(params.symmetry_tension, 0.125f)) {
+            std::cerr << "Expected ExplainO-BalanceVoid schema defaults to drive the dedicated family-axis owner path\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.view.camera_behavior", "orbit") ||
             ctx.GetEnumId("fractal.view.camera_behavior") != "orbit") {
             std::cerr << "Expected camera behavior enum round-trip to accept orbit\n";
