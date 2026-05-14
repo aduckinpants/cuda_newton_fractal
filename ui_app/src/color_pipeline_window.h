@@ -106,6 +106,30 @@ inline std::string BuildColorPipelineRowRemoveControlId(
     return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".remove";
 }
 
+inline const char* ColorPipelineWindowDraftRecipesIntroText() {
+    return "Draft Source / Shape / Palette / Grading recipes here. The legacy Color panel still shows the simple mode and grading mirrors during the schedule-editor transition.";
+}
+
+inline const char* ColorPipelineWindowLaneModelSummaryText() {
+    return "This window now models four typed editor lanes instead of a fixed Signal / Palette / Grade trio.";
+}
+
+inline const char* ColorPipelineWindowBridgeBoundarySummaryText() {
+    return "Current live apply bridge supports the bounded shipped Source / Shape / Palette / Grading recipes shown here; root_index with root_classic_palette or joy_root_palette stays on the separate row-indexed root-basin schedule.";
+}
+
+inline const char* ColorPipelineWindowFixedPresetHelpText() {
+    return "Some Source / Palette rows are fixed presets with no tunable parameters; choosing the row is itself the live change.";
+}
+
+inline const char* ColorPipelineUnsupportedShapeRowsMessage() {
+    return "Current live bridge only supports the shipped Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows in bounded ordered Shape stacks; unshipped custom Shape recipes stay draft-only until custom runtime integration lands.";
+}
+
+inline const char* ColorPipelineShapeRowBridgeHelpText() {
+    return "Shape rows edit the schedule draft now; shipped ordered Shape stacks participate in the current bridge, and the last enabled Shape row still mirrors into the legacy single-shape owners.";
+}
+
 #ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
 inline void NoteColorPipelineUiAutomationRect(
     ColorPipelineWindowState* ioState,
@@ -2271,7 +2295,7 @@ inline bool TryBuildColorPipelineShapeStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineShapeFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+            *outError = ColorPipelineUnsupportedShapeRowsMessage();
         }
         return false;
     }
@@ -3050,7 +3074,7 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
     for (const ColorPipelineRowState* shapeRow : shapeRows) {
         if (!shapeRow || !IsSupportedColorPipelineShapeFunctionId(shapeRow->function_id)) {
             if (outError) {
-                *outError = "Current live bridge only supports the Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, and Smooth Window Shape rows; stacked or remapped Shape recipes stay draft-only until custom runtime integration lands.";
+                *outError = ColorPipelineUnsupportedShapeRowsMessage();
             }
             return false;
         }
@@ -3266,6 +3290,45 @@ inline ColorPipelineDraftApplyState DescribeColorPipelineCandidateApplyState(
     FractalType liveFractalType,
     const KernelParams* liveParams = nullptr) {
     return DescribeColorPipelineCandidateApplyState(state, laneIndex, 0, functionId, liveFractalType, liveParams);
+}
+
+inline bool ShouldColorPipelineCandidateUseDraftOnlyLabel(
+    const ColorPipelineWindowState& state,
+    std::size_t laneIndex,
+    std::size_t rowIndex,
+    const char* functionId,
+    FractalType liveFractalType,
+    const KernelParams* liveParams = nullptr) {
+    if (!functionId || functionId[0] == '\0' || laneIndex >= state.lanes.size()) {
+        return true;
+    }
+    const ColorPipelineDraftApplyState candidateState = DescribeColorPipelineCandidateApplyState(
+        state,
+        laneIndex,
+        rowIndex,
+        functionId,
+        liveFractalType,
+        liveParams);
+    if (candidateState.status == ColorPipelineDraftApplyStatus::can_apply ||
+        candidateState.status == ColorPipelineDraftApplyStatus::matches_live) {
+        return false;
+    }
+    const char* laneId = state.lanes[laneIndex].lane_id.c_str();
+    if (!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked(laneId, functionId)) {
+        return true;
+    }
+    const ColorPipelineDraftApplyState baseState = DescribeColorPipelineDraftApplyState(state, liveFractalType, liveParams);
+    return baseState.status == ColorPipelineDraftApplyStatus::can_apply ||
+        baseState.status == ColorPipelineDraftApplyStatus::matches_live;
+}
+
+inline bool ShouldColorPipelineCandidateUseDraftOnlyLabel(
+    const ColorPipelineWindowState& state,
+    std::size_t laneIndex,
+    const char* functionId,
+    FractalType liveFractalType,
+    const KernelParams* liveParams = nullptr) {
+    return ShouldColorPipelineCandidateUseDraftOnlyLabel(state, laneIndex, 0, functionId, liveFractalType, liveParams);
 }
 
 inline bool ApplyColorPipelineDraftToLiveState(
@@ -3676,10 +3739,10 @@ inline void RenderColorPipelineWindowSummary(
     ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
     (void)ioDirty;
     (void)ioInteraction;
-    ImGui::TextWrapped("Draft Source / Shape / Palette recipes here. The legacy Color mode and grading controls stay in the main Color panel during the schedule-editor transition.");
-    ImGui::TextDisabled("This window now models three typed lane stacks instead of a fixed Signal / Palette / Grade trio.");
-    ImGui::TextDisabled("Current live apply bridge supports the bounded shipped Source / Shape / Palette / Grading recipes shown here; root_index with root_classic_palette or joy_root_palette stays on the separate row-indexed root-basin schedule.");
-    ImGui::TextDisabled("Some Source / Palette rows are fixed presets with no tunable parameters; choosing the row is itself the live change.");
+    ImGui::TextWrapped(ColorPipelineWindowDraftRecipesIntroText());
+    ImGui::TextDisabled(ColorPipelineWindowLaneModelSummaryText());
+    ImGui::TextDisabled(ColorPipelineWindowBridgeBoundarySummaryText());
+    ImGui::TextDisabled(ColorPipelineWindowFixedPresetHelpText());
     ImGui::Separator();
     if (ioState && liveParams) {
         ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
@@ -3808,7 +3871,7 @@ inline void RenderColorPipelineWindowLane(
             if (ImGui::BeginCombo("Function", comboPreview)) {
                 for (const FunctionDescriptor& candidate : catalog->functions) {
                     const bool isSelected = (candidate.id == row.function_id);
-                    const ColorPipelineDraftApplyState candidateState = DescribeColorPipelineCandidateApplyState(
+                    const bool candidateDraftOnly = ShouldColorPipelineCandidateUseDraftOnlyLabel(
                         *ioState,
                         laneIndex,
                         rowIndex,
@@ -3816,8 +3879,7 @@ inline void RenderColorPipelineWindowLane(
                         liveFractalType,
                         liveParams);
                     std::string optionLabel = candidate.name;
-                    if (!isSelected && candidateState.status != ColorPipelineDraftApplyStatus::can_apply &&
-                        candidateState.status != ColorPipelineDraftApplyStatus::matches_live) {
+                    if (!isSelected && candidateDraftOnly) {
                         optionLabel += " (draft only)";
                     }
                     if (ImGui::Selectable(optionLabel.c_str(), isSelected)) {
@@ -3870,7 +3932,7 @@ inline void RenderColorPipelineWindowLane(
                 ImGui::TextDisabled("Only the visible controls are live in this slice.");
             }
             if (!currentDescriptor->parameters.empty() && lane.lane_id == "shape") {
-                ImGui::TextDisabled("Shape rows edit the schedule draft now; only one live-backed Shape row participates in the current bridge at a time.");
+                ImGui::TextDisabled(ColorPipelineShapeRowBridgeHelpText());
             }
         });
 
@@ -3965,3 +4027,4 @@ inline bool RenderColorPipelineWindow(ColorPipelineWindowState* ioState) {
     return RenderColorPipelineWindow(ioState, FractalType::explaino, nullptr);
 }
 #endif
+

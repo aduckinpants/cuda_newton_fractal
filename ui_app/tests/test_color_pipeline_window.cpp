@@ -629,6 +629,66 @@ void TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync() {
         "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisabledUnsupportedRowClearsValidationNoise");
 }
 
+void TestCandidateDraftOnlyTruthAndCopySurfaces() {
+    ColorPipelineWindowState inheritedUnsupportedState{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&inheritedUnsupportedState, FractalType::newton, &params),
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_SyncStartsSupported");
+    Check(AddColorPipelineLaneRow(&inheritedUnsupportedState, 2, "root_classic_palette") &&
+            inheritedUnsupportedState.lanes[2].rows.size() == 2,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_AddsUnrelatedUnsupportedPaletteRow");
+    const ColorPipelineDraftApplyState inheritedUnsupportedCandidateState = DescribeColorPipelineCandidateApplyState(
+        inheritedUnsupportedState,
+        3,
+        0,
+        "neutral_finish",
+        FractalType::newton,
+        &params);
+    Check(inheritedUnsupportedCandidateState.status == ColorPipelineDraftApplyStatus::unsupported_tuple,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_ShippedCandidateStillHitsFullDraftUnsupportedBranch");
+    Check(!ShouldColorPipelineCandidateUseDraftOnlyLabel(
+            inheritedUnsupportedState,
+            3,
+            0,
+            "neutral_finish",
+            FractalType::newton,
+            &params),
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_ShippedCandidateDoesNotInheritFalseDraftOnlyBadge");
+
+    ColorPipelineWindowState contextUnsupportedCandidateState{};
+    Check(SyncColorPipelineWindowFromLiveState(&contextUnsupportedCandidateState, FractalType::newton, &params),
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_SecondSyncStartsSupported");
+    Check(AddColorPipelineLaneRow(&contextUnsupportedCandidateState, 2, "explaino_cmap") &&
+            contextUnsupportedCandidateState.lanes[2].rows.size() == 2,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_AddsSupportedSecondPaletteRow");
+    const ColorPipelineDraftApplyState rootPaletteCandidateState = DescribeColorPipelineCandidateApplyState(
+        contextUnsupportedCandidateState,
+        2,
+        1,
+        "root_classic_palette",
+        FractalType::newton,
+        &params);
+    Check(rootPaletteCandidateState.status == ColorPipelineDraftApplyStatus::unsupported_tuple,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_ContextUnsupportedCandidateClassified");
+    Check(ShouldColorPipelineCandidateUseDraftOnlyLabel(
+            contextUnsupportedCandidateState,
+            2,
+            1,
+            "root_classic_palette",
+            FractalType::newton,
+            &params),
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_ContextUnsupportedCandidateKeepsDraftOnlyBadge");
+
+    Check(std::string(ColorPipelineWindowDraftRecipesIntroText()).find("Source / Shape / Palette / Grading") != std::string::npos,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_SummaryIntroMentionsFourRecipeLanes");
+    Check(std::string(ColorPipelineWindowLaneModelSummaryText()).find("four typed editor lanes") != std::string::npos,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_LaneModelSummaryMentionsFourLanes");
+    Check(std::string(ColorPipelineUnsupportedShapeRowsMessage()).find("bounded ordered Shape stacks") != std::string::npos,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_UnsupportedShapeMessageMentionsOrderedStacks");
+    Check(std::string(ColorPipelineShapeRowBridgeHelpText()).find("ordered Shape stacks participate") != std::string::npos &&
+            std::string(ColorPipelineShapeRowBridgeHelpText()).find("legacy single-shape owners") != std::string::npos,
+        "TestCandidateDraftOnlyTruthAndCopySurfaces_ShapeHelpMentionsStackBridgeAndLegacyMirror");
+}
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -684,8 +744,10 @@ int main() {
     TestSourcePalettePresetCheckboxesTogglePairedRows();
     TestDisablePreservesSupportedGradingRowAcrossApplyResync();
     TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync();
+    TestCandidateDraftOnlyTruthAndCopySurfaces();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;
 }
+

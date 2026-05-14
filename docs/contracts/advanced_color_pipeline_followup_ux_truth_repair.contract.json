@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_followup_ux_truth_repair",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/advanced_color_pipeline_followup_ux_truth_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_pipeline_followup_ux_truth_repair.contract.json",
+    "docs/notes/advanced_color_pipeline_followup_ux_truth_repair_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "prove on current HEAD which shipped candidate-label or support-text surfaces still lie about shipped advanced-color behavior",
+    "repair candidate-label and editor support text so shipped rows and shipped ordered Shape behavior stop reading as draft-only or single-row-only in supported contexts",
+    "keep unsupported tuples and unsupported candidates truthfully draft-only instead of promoting them to shipped",
+    "stay within the bounded window, core, test, and plan-contract seams for this follow-up UX truth repair"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the UX truth repair is fixed if shipped candidates can still inherit false draft-only labels from unrelated unsupported state",
+    "repair only one visible string while leaving the candidate support-state path inconsistent",
+    "promote unsupported tuples or unsupported candidates to shipped to silence the label",
+    "reopen archive work, ExplainO family work, hooks, crash recovery, anti-lie tooling, or unrelated UI polish"
+  ],
+  "required_defaults": {
+    "phase8c_command_ladder": "required",
+    "candidate_label_truth": "required",
+    "shape_stack_help_truth": "required",
+    "unsupported_candidate_truth": "required",
+    "summary_support_text_truth": "required"
+  },
+  "forbidden_defaults": {
+    "label_only_cosmetic_fix": "forbidden",
+    "unsupported_tuple_false_promotion": "forbidden",
+    "closed_prior_contract_reuse": "forbidden",
+    "scope_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_followup_ux_truth_repair.contract.json --out-json artifacts/validation/advanced_color_pipeline_followup_ux_truth_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_pipeline_followup_ux_truth_repair_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_pipeline_followup_ux_truth_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_followup_ux_truth_repair_contract_schema_valid",
+      "description": "The follow-up UX truth-repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_followup_ux_truth_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_followup_ux_truth_repair_plan_sync_ok",
+      "description": "The follow-up UX truth-repair plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_followup_ux_truth_repair_hostile_audit_ok",
+      "description": "The follow-up UX truth-repair hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_followup_ux_truth_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
