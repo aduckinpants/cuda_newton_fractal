@@ -6,6 +6,8 @@
   "plan_path": "docs/notes/advanced_color_library_foundation_phase8d_restart_authority_repair_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts/advanced_color_library_foundation_phase8d_restart_authority_repair.contract.json",
+    "docs/contracts",
+    "docs/notes",
     "docs/notes/advanced_color_library_foundation_phase8d_restart_authority_repair_PHASED_PLAN.md",
     "docs/notes/advanced_color_feature_restart_inventory.md",
     "docs/notes/advanced_color_feature_restart_inventory_PHASED_PLAN.md",

@@ -78,6 +78,7 @@ enum class ColorGradingPreset : int {
     phase_default = 2,
     bands_default = 3,
     neutral_default = 4,
+    tone_map_default = 5,
 };
 
 enum class ColorPipelineShape : int {

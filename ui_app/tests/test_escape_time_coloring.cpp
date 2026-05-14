@@ -463,6 +463,44 @@ int main() {
             std::cerr << "neutral_finish should execute real runtime grading math through the shared grading pass\n";
             return 1;
         }
+        ColorGradingPreset toneMapGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("tone_map_finish", &toneMapGrading)) {
+            std::cerr << "tone_map_finish should parse as a shipped Grading row id before runtime math proof\n";
+            return 1;
+        }
+        params.exposure = 0.65f;
+        params.color_saturation = 1.4f;
+        params.color_contrast = 0.55f;
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = toneMapGrading;
+        params.color_grading_stack[0].params.exposure = 1.35f;
+        params.color_grading_stack[0].params.saturation = 0.75f;
+        params.color_grading_stack[0].params.contrast = 1.6f;
+        const TestColor toneMapFinishGrade = ApplyFractalColorGrading(programmableBase, params);
+        const TestColor toneMapNeutralOrder = ApplyFractalColorGradingPass(programmableBase, params, 1.35f, 0.75f, 1.6f);
+        const TestColor toneMapPreToneMap = ApplyFractalColorContrast(
+            ApplyFractalColorSaturation(
+                ApplyFractalColorTint(programmableBase, params),
+                0.75f),
+            1.6f);
+        const TestColor toneMapExpected = EscapeTimeColorMake<TestColor>(
+            EscapeTimeColorToneMap(toneMapPreToneMap.x, 1.35f),
+            EscapeTimeColorToneMap(toneMapPreToneMap.y, 1.35f),
+            EscapeTimeColorToneMap(toneMapPreToneMap.z, 1.35f),
+            255);
+        const TestColor toneMapLegacyMirrorOnly = ApplyFractalColorGradingPass(programmableBase, params, 0.65f, 1.4f, 0.55f);
+        if (Equals(toneMapFinishGrade, toneMapLegacyMirrorOnly)) {
+            std::cerr << "tone_map_finish should use its stack-entry exposure, saturation, and contrast values instead of the legacy mirror fallback\n";
+            return 1;
+        }
+        if (Equals(toneMapFinishGrade, toneMapNeutralOrder)) {
+            std::cerr << "tone_map_finish should not collapse to neutral_finish ordering; it needs its own runtime math branch\n";
+            return 1;
+        }
+        if (!Equals(toneMapFinishGrade, toneMapExpected)) {
+            std::cerr << "tone_map_finish should execute real runtime grading math by tone-mapping after tint, saturation, and contrast\n";
+            return 1;
+        }
         params.color_grading_stack_count = 0;
 
         KernelParams smoothSourceParams = params;

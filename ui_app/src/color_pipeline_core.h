@@ -321,6 +321,8 @@ inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
         return "basin_default";
     case ColorGradingPreset::neutral_default:
         return "neutral_finish";
+    case ColorGradingPreset::tone_map_default:
+        return "tone_map_finish";
     }
     return nullptr;
 }
@@ -344,6 +346,10 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
     }
     if (functionId == "neutral_finish") {
         if (outValue) *outValue = ColorGradingPreset::neutral_default;
+        return true;
+    }
+    if (functionId == "tone_map_finish") {
+        if (outValue) *outValue = ColorGradingPreset::tone_map_default;
         return true;
     }
     return false;
@@ -588,6 +594,15 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften neutral palette intensity.", 0.0, 2.0, 0.01, 1.15),
                 MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch neutral palette mid-tones.", 0.0, 3.0, 0.01, 1.10),
             }),
+        MakeColorPipelineFunction(
+            "tone_map_finish",
+            "Tone Map Finish",
+            "Apply tone mapping after tint, saturation, and contrast through the shared exposure, saturation, and contrast owners.",
+            {
+                MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall tone-map finish exposure.", 0.1, 3.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften tone-map finish palette intensity before tone mapping.", 0.0, 2.0, 0.01, 1.15),
+                MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch tone-map finish mid-tones before tone mapping.", 0.0, 3.0, 0.01, 1.10),
+            }),
     };
 }
 
@@ -627,7 +642,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "phase_finish" ||
             functionId == "band_finish" ||
             functionId == "basin_default" ||
-            functionId == "neutral_finish";
+            functionId == "neutral_finish" ||
+            functionId == "tone_map_finish";
     }
     return false;
 }
@@ -919,6 +935,11 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
         return SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError);
     }
+    if (ioRow->function_id == "neutral_finish" || ioRow->function_id == "tone_map_finish") {
+        return SetColorPipelineParamNumber(ioRow, "grade.exposure", liveParams.exposure, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError);
+    }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
@@ -1142,6 +1163,21 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         }
         assignFloat(&ioParams->color_saturation, static_cast<float>(saturation));
         assignFloat(&ioParams->color_contrast, static_cast<float>(contrast));
+    } else if (row.function_id == "neutral_finish" || row.function_id == "tone_map_finish") {
+        double exposure = 0.0;
+        double saturation = 0.0;
+        double contrast = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.exposure", &exposure, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.contrast", &contrast, outError) ||
+            !ValidateColorPipelineParamRange("grade.exposure", exposure, 0.1, 3.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.saturation", saturation, 0.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.contrast", contrast, 0.0, 3.0, outError)) {
+            return false;
+        }
+        assignFloat(&ioParams->exposure, static_cast<float>(exposure));
+        assignFloat(&ioParams->color_saturation, static_cast<float>(saturation));
+        assignFloat(&ioParams->color_contrast, static_cast<float>(contrast));
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;
@@ -1258,9 +1294,13 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
         *outPaletteFunctionId = nullptr;
     }
 
+    const bool isEscapeLikeGrading =
+        pipeline.grading == ColorGradingPreset::escape_default ||
+        pipeline.grading == ColorGradingPreset::tone_map_default;
+
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outSourceFunctionId) *outSourceFunctionId = "smooth_escape_ramp";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
@@ -1281,7 +1321,7 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
     }
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outSourceFunctionId) *outSourceFunctionId = "escape_magnitude";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
@@ -1295,28 +1335,28 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::cyclic_escape &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
         if (outPaletteFunctionId) *outPaletteFunctionId = "heatmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outSourceFunctionId) *outSourceFunctionId = "smooth_escape_ramp";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outSourceFunctionId) *outSourceFunctionId = "escape_magnitude";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;
     }
     if (pipeline.signal == ColorSignal::root_proximity &&
         pipeline.palette == ColorPalette::explaino_cmap &&
-        pipeline.grading == ColorGradingPreset::escape_default) {
+        isEscapeLikeGrading) {
         if (outSourceFunctionId) *outSourceFunctionId = "root_proximity";
         if (outPaletteFunctionId) *outPaletteFunctionId = "explaino_cmap";
         return true;

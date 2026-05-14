@@ -859,6 +859,53 @@ def test_explaino_headless_color_pipeline_scenario_can_switch_grading_row_to_neu
     )
 
 
+def test_explaino_headless_color_pipeline_scenario_can_switch_grading_row_to_tone_map_finish(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advanced-color runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
+
+    draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
+    scenario_result = _run_headless_loaded_state_scenario(
+        tmp_path,
+        exe_path=exe_path,
+        scenario=_HeadlessLoadedStateScenario(
+            name="headless_color_pipeline_tone_map_finish",
+            state=draft_state,
+            action_args=(
+                "--color-pipeline-action",
+                "select_function:grading:0:tone_map_finish",
+                "--color-pipeline-action",
+                "set_param:grading:0:grade.exposure:number:1.35",
+                "--color-pipeline-action",
+                "set_param:grading:0:grade.saturation:number:0.75",
+                "--color-pipeline-action",
+                "set_param:grading:0:grade.contrast:number:1.6",
+            ),
+        ),
+    )
+    tone_map_capture = scenario_result.scenario_capture
+
+    tone_map_params = tone_map_capture["state"]["params"]
+    assert isinstance(tone_map_params, dict)
+    assert tone_map_params["color_grading"] == "tone_map_default"
+    assert tone_map_params["exposure"] == pytest.approx(1.35, abs=1e-6)
+    assert tone_map_params["color_saturation"] == pytest.approx(0.75, abs=1e-6)
+    assert tone_map_params["color_contrast"] == pytest.approx(1.6, abs=1e-6)
+
+    tone_map_grading_row = _color_pipeline_first_row(tone_map_capture["state"], "grading")
+    assert tone_map_grading_row["ui_row_id"] == 14
+    assert tone_map_grading_row["function_id"] == "tone_map_finish"
+    assert _color_pipeline_number_param(tone_map_grading_row, "grade.exposure") == pytest.approx(1.35, abs=1e-6)
+    assert _color_pipeline_number_param(tone_map_grading_row, "grade.saturation") == pytest.approx(0.75, abs=1e-6)
+    assert _color_pipeline_number_param(tone_map_grading_row, "grade.contrast") == pytest.approx(1.6, abs=1e-6)
+
+    assert tone_map_capture["frame_hash"] != scenario_result.baseline_capture["frame_hash"], (
+        "expected a headless advanced-color grading-row switch to tone_map_finish to change the published runtime frame while persisting the grading draft row"
+    )
+
+
 def test_explaino_headless_color_pipeline_scenario_can_add_shape_row_and_change_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino advanced-color runtime regression is Windows-only")

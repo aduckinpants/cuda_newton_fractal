@@ -3760,6 +3760,55 @@ int main() {
     }
 
     {
+        ColorGradingPreset toneMapGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("tone_map_finish", &toneMapGrading)) {
+            std::cerr << "Expected tone_map_finish to parse as a shipped Grading row before diagnostics round-trip proof\n";
+            return 1;
+        }
+        const fs::path statePath = tempRoot / "v3_tone_map_finish_grading_stack.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 0.65,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "tone_map_default",
+    "color_grading_stack": [
+      { "grading": "tone_map_default", "exposure": 1.35, "saturation": 0.75, "contrast": 1.6 }
+    ],
+    "nova_alpha": 0.5, "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0, "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "Tone-map-finish diagnostics state load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_pipeline.grading != toneMapGrading || p.color_grading_stack_count != 1 || p.color_grading_stack[0].grading != toneMapGrading || !NearlyEqual(p.color_grading_stack[0].params.exposure, 1.35, 0.001) || !NearlyEqual(p.color_grading_stack[0].params.saturation, 0.75, 0.001) || !NearlyEqual(p.color_grading_stack[0].params.contrast, 1.6, 0.001) || !NearlyEqual(p.exposure, 1.35, 0.001) || !NearlyEqual(p.color_saturation, 0.75, 0.001) || !NearlyEqual(p.color_contrast, 1.6, 0.001)) {
+            std::cerr << "Expected tone_map_finish diagnostics state load to preserve grading stack params and the mirrored legacy grading owners\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_advanced_color_draft.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

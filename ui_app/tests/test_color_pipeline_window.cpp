@@ -306,6 +306,32 @@ void TestGradingStackApplyAndLiveImport() {
                 state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 3,
             "TestGradingStackApplyAndLiveImport_ApplyResyncsNeutralFinish");
     }
+
+    ColorGradingPreset toneMapGrading = ColorGradingPreset::escape_default;
+    const bool toneMapConfigured = SelectColorPipelineLaneFunction(&state, 3, "tone_map_finish") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.exposure", 1.35) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.saturation", 0.75) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.contrast", 1.6);
+    Check(toneMapConfigured,
+        "TestGradingStackApplyAndLiveImport_ConfiguresToneMapFinish");
+    if (toneMapConfigured) {
+        changed = false;
+        Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+            "TestGradingStackApplyAndLiveImport_ApplyToneMapFinish");
+        Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("tone_map_finish", &toneMapGrading) &&
+                params.color_grading_stack_count == 1 &&
+                params.color_grading_stack[0].grading == toneMapGrading &&
+                Near(params.color_grading_stack[0].params.exposure, 1.35) &&
+                Near(params.color_grading_stack[0].params.saturation, 0.75) &&
+                Near(params.color_grading_stack[0].params.contrast, 1.6),
+            "TestGradingStackApplyAndLiveImport_RuntimeWritesToneMapFinish");
+        Check(params.color_pipeline.grading == toneMapGrading && Near(params.exposure, 1.35) && Near(params.color_saturation, 0.75) && Near(params.color_contrast, 1.6),
+            "TestGradingStackApplyAndLiveImport_ToneMapFinishMirrorsLegacyOwners");
+        Check(state.live_snapshot.valid && state.live_snapshot.lanes[3].rows.size() == 1 &&
+                state.live_snapshot.lanes[3].rows[0].function_id == "tone_map_finish" &&
+                state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 3,
+            "TestGradingStackApplyAndLiveImport_ApplyResyncsToneMapFinish");
+    }
 }
 
 void TestRootBasinPairScheduleBridge() {

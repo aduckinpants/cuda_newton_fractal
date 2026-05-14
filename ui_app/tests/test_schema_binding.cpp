@@ -978,13 +978,14 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 5 ||
+            coreGradingCatalog->functions.size() != 6 ||
             coreGradingCatalog->functions[0].id != "contrast_lift" ||
             coreGradingCatalog->functions[1].id != "phase_finish" ||
             coreGradingCatalog->functions[2].id != "band_finish" ||
             coreGradingCatalog->functions[3].id != "basin_default" ||
-            coreGradingCatalog->functions[4].id != "neutral_finish") {
-            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, and neutral_finish as runtime-real Grading rows\n";
+            coreGradingCatalog->functions[4].id != "neutral_finish" ||
+            coreGradingCatalog->functions[5].id != "tone_map_finish") {
+            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, and tone_map_finish as runtime-real Grading rows\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -1023,6 +1024,15 @@ int main() {
             coreNeutralFinishDescriptor->parameters[1].path != "grade.saturation" ||
             coreNeutralFinishDescriptor->parameters[2].path != "grade.contrast") {
             std::cerr << "Expected neutral_finish to expose stable exposure, saturation, and contrast grading owner paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreToneMapFinishDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "tone_map_finish");
+        if (!coreToneMapFinishDescriptor ||
+            coreToneMapFinishDescriptor->parameters.size() != 3 ||
+            coreToneMapFinishDescriptor->parameters[0].path != "grade.exposure" ||
+            coreToneMapFinishDescriptor->parameters[1].path != "grade.saturation" ||
+            coreToneMapFinishDescriptor->parameters[2].path != "grade.contrast") {
+            std::cerr << "Expected tone_map_finish to expose stable exposure, saturation, and contrast grading owner paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;

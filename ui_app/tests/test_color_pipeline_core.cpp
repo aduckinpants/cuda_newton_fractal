@@ -84,7 +84,10 @@ void TestFunctionIdMappingsRoundTrip() {
     Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("neutral_finish", &grading) &&
             std::string(color_pipeline_core::AdvancedColorGradingFunctionId(grading)) == "neutral_finish",
         "TestFunctionIdMappingsRoundTrip_GradingParseNeutralFinish");
-    Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::neutral_default,
+    Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("tone_map_finish", &grading) &&
+            std::string(color_pipeline_core::AdvancedColorGradingFunctionId(grading)) == "tone_map_finish",
+        "TestFunctionIdMappingsRoundTrip_GradingParseToneMapFinish");
+    Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::tone_map_default,
         "TestFunctionIdMappingsRoundTrip_GradingRejectPreservesValue");
 
     Check(std::string(color_pipeline_core::AdvancedColorShapeFunctionId(ColorPipelineShape::smooth_window)) == "smooth_window",
@@ -119,36 +122,41 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
             HasFunction(*palette, "joy_root_palette"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
-    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 5 &&
-            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish"),
-        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsNeutralFinish");
+    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 6 &&
+            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish") && HasFunction(*grading, "tone_map_finish"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsToneMapFinish");
     Check(CatalogIdsEqual(*source, {"smooth_escape_ramp", "phase_orbit", "banded_signal", "escape_magnitude", "orbit_stripe", "root_proximity", "root_index"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
     Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
-    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish"}),
+    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish", "tone_map_finish"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
 
     const std::vector<FunctionDescriptor> allGradeFunctions = color_pipeline_core::BuildColorPipelineGradeFunctions();
     bool rawGradeIncludesBandFinish = false;
     bool rawGradeIncludesBasinDefault = false;
     bool rawGradeIncludesNeutralFinish = false;
+    bool rawGradeIncludesToneMapFinish = false;
     for (const FunctionDescriptor& descriptor : allGradeFunctions) {
         rawGradeIncludesBandFinish = rawGradeIncludesBandFinish || descriptor.id == "band_finish";
         rawGradeIncludesBasinDefault = rawGradeIncludesBasinDefault || descriptor.id == "basin_default";
         rawGradeIncludesNeutralFinish = rawGradeIncludesNeutralFinish || descriptor.id == "neutral_finish";
+        rawGradeIncludesToneMapFinish = rawGradeIncludesToneMapFinish || descriptor.id == "tone_map_finish";
     }
     Check(rawGradeIncludesBandFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesDraftBandFinish");
     Check(rawGradeIncludesBasinDefault, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesBasinDefault");
     Check(rawGradeIncludesNeutralFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesNeutralFinish");
+    Check(rawGradeIncludesToneMapFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesToneMapFinish");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "band_finish"),
         "TestLaneCatalogFiltersRuntimeBackedRows_BandFinishRuntimeBacked");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "basin_default"),
         "TestLaneCatalogFiltersRuntimeBackedRows_BasinDefaultRuntimeBacked");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "neutral_finish"),
         "TestLaneCatalogFiltersRuntimeBackedRows_NeutralFinishRuntimeBacked");
+    Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "tone_map_finish"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_ToneMapFinishRuntimeBacked");
     Check(!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked(nullptr, "heatmap") &&
             !color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("unknown_lane", "heatmap"),
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownLaneFailsClosed");
@@ -214,6 +222,16 @@ void TestRowBuildersAndDefaults() {
             RowNumber(neutralFinishRow, "grade.saturation", 1.15) &&
             RowNumber(neutralFinishRow, "grade.contrast", 1.10),
         "TestRowBuildersAndDefaults_NeutralFinishBuildsFromRuntimeCatalog");
+    ColorPipelineRowState toneMapFinishRow;
+    error.clear();
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "tone_map_finish", 38, &toneMapFinishRow, &error) &&
+            toneMapFinishRow.ui_row_id == 38 &&
+            toneMapFinishRow.function_id == "tone_map_finish" &&
+            toneMapFinishRow.parameter_values.size() == 3 &&
+            RowNumber(toneMapFinishRow, "grade.exposure", 1.0) &&
+            RowNumber(toneMapFinishRow, "grade.saturation", 1.15) &&
+            RowNumber(toneMapFinishRow, "grade.contrast", 1.10),
+        "TestRowBuildersAndDefaults_ToneMapFinishBuildsFromRuntimeCatalog");
     Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "", 1, &unknownRow, &error),
         "TestRowBuildersAndDefaults_EmptyFunctionFailsClosed");
     Check(!color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 1, nullptr, &error),
@@ -340,6 +358,32 @@ void TestImportAndApplySupportedParams() {
         "TestImportAndApplySupportedParams_BandFinishApplies");
     Check(Near(bandGradeParams.color_saturation, 0.75f, 1.0e-6) && Near(bandGradeParams.color_contrast, 1.8f, 1.0e-6),
         "TestImportAndApplySupportedParams_BandFinishUsesLegacyRuntimeOwners");
+
+    ColorPipelineRowState toneMapImportedRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "tone_map_finish", 36, &toneMapImportedRow),
+        "TestImportAndApplySupportedParams_ToneMapFinishBuildsForImport");
+    KernelParams importedToneMapParams{};
+    importedToneMapParams.exposure = 1.25f;
+    importedToneMapParams.color_saturation = 0.75f;
+    importedToneMapParams.color_contrast = 1.5f;
+    Check(color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&toneMapImportedRow, importedToneMapParams) &&
+            RowNumber(toneMapImportedRow, "grade.exposure", 1.25) &&
+            RowNumber(toneMapImportedRow, "grade.saturation", 0.75) &&
+            RowNumber(toneMapImportedRow, "grade.contrast", 1.5),
+        "TestImportAndApplySupportedParams_ToneMapFinishImportsLiveValues");
+
+    ColorPipelineRowState toneMapFinishRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "tone_map_finish", 37, &toneMapFinishRow) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&toneMapFinishRow, "grade.exposure", 1.35) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&toneMapFinishRow, "grade.saturation", 0.75) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&toneMapFinishRow, "grade.contrast", 1.6),
+        "TestImportAndApplySupportedParams_ToneMapFinishBuildsAndEdits");
+    KernelParams toneMapGradeParams;
+    changed = false;
+    Check(color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(toneMapFinishRow, &toneMapGradeParams, &changed) && changed,
+        "TestImportAndApplySupportedParams_ToneMapFinishApplies");
+    Check(Near(toneMapGradeParams.exposure, 1.35f, 1.0e-6) && Near(toneMapGradeParams.color_saturation, 0.75f, 1.0e-6) && Near(toneMapGradeParams.color_contrast, 1.6f, 1.0e-6),
+        "TestImportAndApplySupportedParams_ToneMapFinishUsesLegacyRuntimeOwners");
 
     ColorPipelineRowState bandedRow;
     std::string error;

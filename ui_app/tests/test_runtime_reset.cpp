@@ -33,6 +33,11 @@ int main() {
         std::cerr << "Expected neutral_finish to parse before reset proof\n";
         return 1;
     }
+    ColorGradingPreset toneMapGrading = ColorGradingPreset::escape_default;
+    if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("tone_map_finish", &toneMapGrading)) {
+        std::cerr << "Expected tone_map_finish to parse before reset proof\n";
+        return 1;
+    }
 
     view.fractal_type = FractalType::explaino_halley;
     view.explaino_phase = 2.0f;
@@ -76,7 +81,7 @@ int main() {
     params.color_palette_stack[1].params.seed_phase = 0.25f;
     params.color_palette_stack[1].params.colorfulness = 0.8f;
     params.color_palette_stack[1].params.blend_weight = 0.35f;
-    params.color_grading_stack_count = 2;
+    params.color_grading_stack_count = 3;
     params.color_grading_stack[0].grading = ColorGradingPreset::escape_default;
     params.color_grading_stack[0].params.exposure = 1.4f;
     params.color_grading_stack[0].params.saturation = 1.2f;
@@ -84,6 +89,10 @@ int main() {
     params.color_grading_stack[1].params.exposure = 1.25f;
     params.color_grading_stack[1].params.saturation = 0.85f;
     params.color_grading_stack[1].params.contrast = 1.4f;
+    params.color_grading_stack[2].grading = toneMapGrading;
+    params.color_grading_stack[2].params.exposure = 1.35f;
+    params.color_grading_stack[2].params.saturation = 0.75f;
+    params.color_grading_stack[2].params.contrast = 1.6f;
     params.color_shape_offset = 0.35f;
     params.color_shape_scale = 1.8f;
     params.color_shape_repeat_frequency = 6.0f;
@@ -188,6 +197,13 @@ int main() {
     }
     if (render.resolution.x != 2048 || render.resolution.y != 1536 || render.block_size != 256 || render.device_id != 0 || render.benchmark) {
         std::cerr << "Reset should restore render defaults\n";
+        return 1;
+    }
+    if (params.color_grading_stack[2].grading != ColorGradingPreset::escape_default ||
+        !NearlyEqual(params.color_grading_stack[2].params.exposure, 1.0f) ||
+        !NearlyEqual(params.color_grading_stack[2].params.saturation, 1.0f) ||
+        !NearlyEqual(params.color_grading_stack[2].params.contrast, 1.0f)) {
+        std::cerr << "Reset should clear tone_map_finish grading stack storage back to the default grading-entry state\n";
         return 1;
     }
     if (render.interaction_debounce_ms != 200 || !NearlyEqual(render.preview_target_fps, 30.0f) || !NearlyEqual(render.preview_min_scale, 0.5f)) {

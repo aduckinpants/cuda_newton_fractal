@@ -110,7 +110,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryLegacyColoringModeForPipeline(
         if (outMode) *outMode = ColoringMode::root_basin;
         return true;
     }
-    const bool isEscapeLikeGrading = pipeline.grading == ColorGradingPreset::escape_default || pipeline.grading == ColorGradingPreset::neutral_default;
+    const bool isEscapeLikeGrading = pipeline.grading == ColorGradingPreset::escape_default ||
+        pipeline.grading == ColorGradingPreset::neutral_default ||
+        pipeline.grading == ColorGradingPreset::tone_map_default;
     const bool isPhaseLikeGrading = pipeline.grading == ColorGradingPreset::phase_default || pipeline.grading == ColorGradingPreset::neutral_default;
     const bool isBandLikeGrading = pipeline.grading == ColorGradingPreset::bands_default || pipeline.grading == ColorGradingPreset::neutral_default;
     if (pipeline.signal == ColorSignal::iteration_count &&
@@ -161,7 +163,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool TryMirroredColoringModeForPipeline
     if (TryLegacyColoringModeForPipeline(pipeline, outMode)) {
         return true;
     }
-    const bool isEscapeLikeGrading = pipeline.grading == ColorGradingPreset::escape_default || pipeline.grading == ColorGradingPreset::neutral_default;
+    const bool isEscapeLikeGrading = pipeline.grading == ColorGradingPreset::escape_default ||
+        pipeline.grading == ColorGradingPreset::neutral_default ||
+        pipeline.grading == ColorGradingPreset::tone_map_default;
     const bool isPhaseLikeGrading = pipeline.grading == ColorGradingPreset::phase_default || pipeline.grading == ColorGradingPreset::neutral_default;
     if (pipeline.signal == ColorSignal::escape_magnitude &&
         pipeline.palette == ColorPalette::cyclic_escape &&
