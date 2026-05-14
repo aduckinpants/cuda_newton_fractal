@@ -15,7 +15,7 @@ Current live examples:
 - the generic first-lane startup prompt and this restart inventory are no longer the right launch surface for manual ExplainO work
 - the latest real launch authority is the current manual slice plan plus the latest relevant `HANDOFF_LOG.md` closeout for that slice
 - today that means `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md` plus `ck:20260512-serializer-rail`, not a reset back to the original `Priority 0` archaeology prompt
-- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, and the bounded `grade.glow` owner-proof row now define the shipped grading boundary, so the next post-`grade.glow` decision is `balance_void_grade` or explicit foundation closure once a newer real handoff replaces this startup surface
+- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, and the bounded `grade.glow` owner-proof row now define the shipped grading boundary, and the later enabled-toggle preserve-disabled-rows regression closeout keeps that shipped boundary truthful without opening a new feature row, so the next feature decision remains `balance_void_grade` or explicit foundation closure
 
 It is intentionally not a workflow status page. It answers four questions only:
 
@@ -29,21 +29,20 @@ It is intentionally not a workflow status page. It answers four questions only:
 ## 1. Current Branch Truth
 
 - Branch: `feature/advanced-color-pipeline-draft-editor-reframe`
-- Last reread checkpoint for this note: current phase8f `grade.glow` working tree (base `a59e657`)
+- Last reread checkpoint for this note: closed enabled-toggle preserve-disabled-rows head `0e35f7a`
 - Live session state must still be rechecked with bootstrap commands before using this note as launch authority
 
 Important continuity facts:
 
 - `93ceeb6` is not a product-feature checkpoint.
 - `4ec49c8` is no longer the last product-code checkpoint on this branch.
-- The later product checkpoints that now matter are `5e93e48` (`ck:5972173a` weighted blend), `e2e14df` (`ck:47bd4450` basin-default lane retention), `7d7f779` (`ck:a0ce2d03` neutral_finish owner proof), and `a59e657` (`ck:ae3b50a8` tone_map_finish owner proof).
-- The current phase8f `grade.glow` owner-proof slice is tracked by `ck:2f8a4f58` and extends that shipped boundary on the current working tree.
-- The continuity/tooling-only follow-up heads around those product checkpoints include `ab83e0a` and `a087faf`; the current phase8f `grade.glow` slice is product work again, not more workflow churn.
+- The later product checkpoints that now matter are `5e93e48` (`ck:5972173a` weighted blend), `e2e14df` (`ck:47bd4450` basin-default lane retention), `7d7f779` (`ck:a0ce2d03` neutral_finish owner proof), `a59e657` (`ck:ae3b50a8` tone_map_finish owner proof), `5273e7b` (`ck:2f8a4f58` grade.glow owner proof), and `0e35f7a` (`ck:a72faa5a` enabled-toggle preserve-disabled-rows regression).
+- The continuity/tooling-only follow-up heads around those product checkpoints include `ab83e0a` and `a087faf`; `5273e7b` and `0e35f7a` are later product-facing closeouts, not more workflow churn.
 
 Practical meaning:
 
-- The app state is the product state at `a59e657` (`ck:ae3b50a8` tone_map_finish), plus the current phase8f `grade.glow` working tree tracked by `ck:2f8a4f58`, and all earlier advanced-color and manual-capture product commits beneath it.
-- The neutral-finish continuity closeout and phase8c proof-ladder work still matter for restart/proof routing, not as separate shipped feature rows, and the current `grade.glow` slice reuses that ladder instead of reopening weighted blend or tone-map archaeology.
+- The app state now includes the closed `grade.glow` owner-proof checkpoint at `5273e7b` (`ck:2f8a4f58`) plus the later enabled-toggle preserve-disabled-rows regression fix at `0e35f7a` (`ck:a72faa5a`), on top of all earlier advanced-color and manual-capture product commits beneath them.
+- The neutral-finish continuity closeout and phase8c proof-ladder work still matter for restart/proof routing, but `grade.glow` and the enabled-toggle preservation fix are already closed rather than active working-tree lanes.
 
 ---
 
@@ -157,8 +156,8 @@ Catalog anchors:
 
 These are the product checkpoints that still define the branch:
 
-- Current phase8f closeout tracked by `ck:2f8a4f58` ships `grade.glow` as the next real runtime-backed Grading row on the current working tree.
-- The latest fully checkpointed product commit beneath that working tree is `a59e657` / `ck:ae3b50a8`, which closed `tone_map_finish`.
+- `5273e7b` / `ck:2f8a4f58` closed `grade.glow` as the next real runtime-backed Grading row.
+- `0e35f7a` / `ck:a72faa5a` later closed the preserve-disabled-rows regression without opening a new feature row and is the latest advanced-color product-facing checkpoint on this branch.
 
 1. `7d7f779` / `ck:a0ce2d03`
    - `neutral_finish` shipped as a real runtime-backed Grading row.
@@ -319,10 +318,10 @@ Why:
 
 The cleanest seam is:
 
-- product feature checkpoints after preset preservation include `5e93e48`, `e2e14df`, `7d7f779`, and `a59e657`; the current phase8f `grade.glow` working tree tracked by `ck:2f8a4f58` is product work on top of that base
+- product feature checkpoints after preset preservation include `5e93e48`, `e2e14df`, `7d7f779`, `a59e657`, `5273e7b`, and `0e35f7a`
 - continuity/tooling-only follow-ups around them include `ab83e0a` and `a087faf`
 
-If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, neutral_finish, tone_map_finish, and the current `grade.glow` owner-proof slice landed; later hook/tooling churn still should not be mistaken for additional feature rows.
+If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, neutral_finish, tone_map_finish, `grade.glow`, and the later enabled-toggle preserve-disabled-rows regression fix all landed; later hook/tooling churn still should not be mistaken for additional feature rows.
 
 ---
 
@@ -631,7 +630,7 @@ For product-state re-entry, start with:
 
 If you want the fastest path back to truthful feature velocity:
 
-1. Use the newer `grade.glow` closeout handoff instead of restarting from older pre-`grade.glow` prompts.
+1. Use the latest closed advanced-color handoff chain through `ck:2f8a4f58` and `ck:a72faa5a` instead of restarting from older pre-`grade.glow` prompts.
 2. Reuse the closed phase8c command ladder for whichever next grading/operator slice or closure decision is chosen.
 3. Choose explicitly between `balance_void_grade` or foundation closure from the matrix.
 4. Keep historical archive compatibility separate unless it is explicitly reprioritized.

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 complete - the advanced window now applies the live split-color tuple and the published runtime is refreshed
+Complete - checkpoint commit `c6a11ba` and machine proof receipts closed the live-apply slice. The advanced window applies the live split-color tuple, and this plan remains historical closure evidence only.
 
 ## Phase Checklist
 
@@ -15,8 +15,8 @@ Phase 4 complete - the advanced window now applies the live split-color tuple an
 
 - [done] Start implementation on the next advanced color-pipeline slice.
 - [done] Stop being overly cautious and land the working feature across the next phased slices.
-- [open] Keep the simple fixed three-slot editor where each selection controls which tuning surface appears beneath it.
-- [open] Keep the main Color panel simple rather than turning the public surface back into three alias dropdowns.
+- [done] Keep the simple fixed three-slot editor where each selection controls which tuning surface appears beneath it.
+- [done] Keep the main Color panel simple rather than turning the public surface back into three alias dropdowns.
 
 ## Presumption Loop
 
@@ -60,4 +60,4 @@ The falsifiable local hypothesis is that the advanced window can build an exact 
 
 ## Resume Point
 
-Slice 5 is ready for checkpoint closure. The next bounded slice is slice 6: add the first real parameterized pipelines so the currently preview-only per-function tuning controls begin to own real runtime fields and affect pixels for a small curated subset of functions.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

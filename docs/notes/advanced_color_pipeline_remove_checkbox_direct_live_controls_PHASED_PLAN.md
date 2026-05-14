@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - direct-live supported slider updates landed, the checkbox-owned path is removed, and validation is green for checkpoint closure
+Complete - checkpoint commit `27074c6` and machine proof receipts closed the direct-live supported-controls slice. The checkbox-owned path is removed, and this plan remains historical closure evidence only.
 
 ## Phase Checklist
 
@@ -12,9 +12,9 @@ Complete - direct-live supported slider updates landed, the checkbox-owned path 
 
 ## Explicit User Asks
 
-- [open] Get rid of the apply checkbox.
-- [open] Stop the checkbox path from breaking slider behavior.
-- [open] Make the color-pipeline sliders work like every other slider in the application.
+- [done] Get rid of the apply checkbox.
+- [done] Stop the checkbox path from breaking slider behavior.
+- [done] Make the color-pipeline sliders work like every other slider in the application.
 
 ## Presumption Loop
 
@@ -46,4 +46,4 @@ The controlling seam is still `RenderColorPipelineParamControl(...)` plus the en
 
 ## Resume Point
 
-Run phased-plan sync plus contract validation, write the validation and contract-proof receipts, append the handoff entry against `ck:3cbfed67`, and close the slice on a clean worktree.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

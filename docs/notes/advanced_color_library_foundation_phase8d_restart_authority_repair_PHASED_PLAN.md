@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the bounded docs-only repair, validator pass, and hostile re-audit are complete. The restart inventory, umbrella foundation plan, and closure matrix now route the next unopened feature row to `tone_map_finish` instead of stale weighted-blend restart text. The remaining operator work is mechanical checkpoint/receipt closeout on this validated state.
+Complete - checkpoint commit `560cbd1` and machine proof receipts closed the bounded restart-authority repair slice. This plan remains historical continuity evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -12,11 +12,11 @@ Complete - the bounded docs-only repair, validator pass, and hostile re-audit ar
 
 ## Explicit User Asks
 
-- [open] Treat the stale next-lane guidance as a critical continuity bug, not wording polish.
-- [open] Open a new bounded workflow/continuity slice before any restart-authority mutation and do not mutate under the closed phase8c contract.
-- [open] Fix only the stale restart-authority surfaces needed to make the next feature lane truthful again.
-- [open] Keep feature work, tooling work, manual archive work, and unrelated continuity churn out of scope.
-- [open] Close cleanly with commit, receipts, hostile review, and a clean worktree.
+- [done] Treat the stale next-lane guidance as a critical continuity bug, not wording polish.
+- [done] Open a new bounded workflow/continuity slice before any restart-authority mutation and do not mutate under the closed phase8c contract.
+- [done] Fix only the stale restart-authority surfaces needed to make the next feature lane truthful again.
+- [done] Keep feature work, tooling work, manual archive work, and unrelated continuity churn out of scope.
+- [done] Close cleanly with commit, receipts, hostile review, and a clean worktree.
 
 ## Presumption Loop
 
@@ -77,4 +77,4 @@ The controlling risk is stale restart authority, not missing implementation. A d
 
 ## Resume Point
 
-Open and lock this docs-only slice first, then repair the stale next-lane authority without reopening weighted-blend implementation or neutral_finish archaeology. The repaired restart surfaces must route the next unshipped feature row truthfully and leave the repo ready for a later explicit feature-row prompt.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

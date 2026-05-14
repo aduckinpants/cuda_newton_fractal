@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - hostile-audit the live-sync boundary, validate, publish, and checkpoint the slice
+Complete - checkpoint commit `8c72364` and machine proof receipts closed the live-draft-sync slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -13,10 +13,10 @@ Phase 4 - hostile-audit the live-sync boundary, validate, publish, and checkpoin
 
 ## Explicit User Asks
 
-- [open] Move forward to the next advanced color-pipeline slice.
-- [open] Keep the restored main Color panel as the live authority while the advanced window becomes more real.
-- [open] Continue building toward the fixed three-segment combinator editor where each selector determines the tuning controls shown beneath it.
-- [open] Do not widen this slice into renderer dispatch or a second live runtime authority.
+- [done] Move forward to the next advanced color-pipeline slice.
+- [done] Keep the restored main Color panel as the live authority while the advanced window becomes more real.
+- [done] Continue building toward the fixed three-segment combinator editor where each selector determines the tuning controls shown beneath it.
+- [done] Do not widen this slice into renderer dispatch or a second live runtime authority.
 
 ## Presumption Loop
 
@@ -60,4 +60,4 @@ The falsifiable local hypothesis is that `ColorPipelineWindowState` can carry an
 
 ## Resume Point
 
-Slice 4 is ready for checkpoint closure. The next bounded slice can decide whether the advanced draft should remain read-only with richer descriptors or begin a controlled apply-back path from the window into the live main-panel authority.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

@@ -2,20 +2,20 @@
 
 ## Current Phase
 
-Phase 2 - debounced live preview is implemented and validated; checkpoint, receipts, and clean-worktree closure remain
+Complete - checkpoint commit `3b8b287` and machine proof receipts closed the debounced live-preview slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
 - [x] Phase 0 - prove the current gate starves live feedback during active drag and lock the desired debounced-preview behavior in focused coverage
 - [x] Phase 1 - restore live preview with short debounced end-of-frame apply while keeping the checkbox persistent, default-on, and drag-safe
-- [ ] Phase 2 - validate the focused seam, refresh published runtime proof, and close the slice cleanly
+- [x] Phase 2 - validate the focused seam, refresh published runtime proof, and close the slice cleanly
 
 ## Explicit User Asks
 
-- [open] Keep the checkbox behavior instead of bringing back a separate apply button.
-- [open] Restore live runtime feedback while dragging programmable color sliders.
-- [open] Make these sliders behave like the rest of the application instead of waiting until mouse release.
-- [open] Land the fix with TDD and regression coverage before discussing wider color-pipeline productization.
+- [done] Keep the checkbox behavior instead of bringing back a separate apply button.
+- [done] Restore live runtime feedback while dragging programmable color sliders.
+- [done] Make these sliders behave like the rest of the application instead of waiting until mouse release.
+- [done] Land the fix with TDD and regression coverage before discussing wider color-pipeline productization.
 
 ## Presumption Loop
 
@@ -49,4 +49,4 @@ The controlling seam is still the post-lane auto-apply path in `RenderColorPipel
 
 ## Resume Point
 
-Run phased-plan sync and contract validation for `advanced_color_pipeline_debounced_live_preview`, append the handoff entry with `ck:b3259d9b`, checkpoint the slice, write receipts, and finish on a zero-output repo-status check.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

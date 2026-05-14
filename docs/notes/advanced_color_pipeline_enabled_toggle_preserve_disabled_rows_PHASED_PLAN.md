@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 - complete. The published-runtime witness now proves the real viewer path preserves disabled grading and unsupported palette rows in the draft, flips only their enabled state, and still routes deletion solely through the explicit Remove control. The slice is ready for clean checkpoint closure on this head.
+Complete - checkpoint commit `0e35f7a` and machine proof receipts closed the preserve-disabled-rows regression slice. The published-runtime witness proves the real viewer path preserves disabled grading and unsupported palette rows in the draft, flips only their enabled state, and still routes deletion solely through the explicit Remove control.
 
 ## Phase Checklist
 
@@ -67,4 +67,4 @@ Phase 3 - complete. The published-runtime witness now proves the real viewer pat
 
 ## Resume Point
 
-- If checkpoint closure is interrupted before the final commit and receipts, rerun the plan/contract/hostile-audit validators, then resume at `viewer_host_checkpoint_slice.py commit` plus `write-receipts` only; do not reopen broader advanced-color work.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

@@ -2,19 +2,19 @@
 
 ## Current Phase
 
-Phase 2 - auto-apply drag stability is implemented and validated; checkpoint, receipts, and clean-worktree closure remain
+Complete - checkpoint commit `4cfbae2` and machine proof receipts closed the auto-apply drag-stability slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
 - [x] Phase 0 - confirm the active-drag focus loss is caused by the auto-apply loop rather than the slider widgets
 - [x] Phase 1 - defer auto-apply while any programmable control is actively being manipulated, then apply after edit completion
-- [ ] Phase 2 - validate focused behavior, refresh published runtime proof, and close the slice cleanly
+- [x] Phase 2 - validate focused behavior, refresh published runtime proof, and close the slice cleanly
 
 ## Explicit User Asks
 
-- [open] Keep the new checkbox behavior.
-- [open] Restore normal slider dragging while auto-apply stays enabled.
-- [open] Stop guessing and land the next move against the confirmed culprit.
+- [done] Keep the new checkbox behavior.
+- [done] Restore normal slider dragging while auto-apply stays enabled.
+- [done] Stop guessing and land the next move against the confirmed culprit.
 
 ## Presumption Loop
 
@@ -48,4 +48,4 @@ The controlling seam is still `RenderColorPipelineWindow(...)` and `RenderColorP
 
 ## Resume Point
 
-Write the handoff entry with `ck:0a88a3aa`, validate plan sync and the slice contract, checkpoint the slice, write receipts, and finish on a zero-output repo-status check.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

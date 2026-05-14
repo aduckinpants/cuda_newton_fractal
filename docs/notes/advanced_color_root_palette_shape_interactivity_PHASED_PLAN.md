@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the root-palette Shape regressions, renderer repair, validation rails, and hostile audit are green; resume the paused advanced-color foundation plan from Phase 5 after this checkpoint
+Complete - checkpoint commit `cc3d785` and machine proof receipts closed the root-palette Shape interactivity detour. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -12,9 +12,9 @@ Complete - the root-palette Shape regressions, renderer repair, validation rails
 
 ## Explicit User Asks
 
-- [open] Fix the actual product behavior where Explaino and Explaino Joy open into an advanced root-palette tuple whose Shape controls do nothing.
-- [open] Treat runtime interactivity as the real requirement instead of declaring catalog rows done because the editor can select them.
-- [open] Keep the fix bounded and test-backed instead of papering over it with more editor-only explanation text.
+- [done] Fix the actual product behavior where Explaino and Explaino Joy open into an advanced root-palette tuple whose Shape controls do nothing.
+- [done] Treat runtime interactivity as the real requirement instead of declaring catalog rows done because the editor can select them.
+- [done] Keep the fix bounded and test-backed instead of papering over it with more editor-only explanation text.
 
 ## Presumption Loop
 
@@ -57,4 +57,4 @@ The controlling defect is in the basin renderer path, not in the advanced color 
 
 ## Resume Point
 
-Close this root-palette Shape detour first. After the renderer proves that Explaino root-classic and joy tuples react to Shape in both native and published-runtime paths, return to `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

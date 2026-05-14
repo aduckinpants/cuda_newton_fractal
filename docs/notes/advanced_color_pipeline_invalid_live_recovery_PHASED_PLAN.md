@@ -2,19 +2,19 @@
 
 ## Current Phase
 
-Phase 2 - invalid-live recovery is implemented and validated; checkpoint, receipts, and clean-worktree closure remain
+Complete - checkpoint commit `f987a8a` and machine proof receipts closed the invalid-live recovery slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
 - [x] Phase 0 - prove the current window hides or disables recovery when the live color state is invalid or out of sync, and lock the expected recovery behavior in focused coverage
 - [x] Phase 1 - keep the summary controls available and allow a supported draft to repair an invalid live color state
-- [ ] Phase 2 - validate the recovery fix on the focused seam, refresh published runtime proof, and close the slice cleanly
+- [x] Phase 2 - validate the recovery fix on the focused seam, refresh published runtime proof, and close the slice cleanly
 
 ## Explicit User Asks
 
-- [open] Stop going in circles around sliders and simple build rules.
-- [open] If the checkbox is supposed to exist, keep it present instead of letting it disappear.
-- [open] Make the color-pipeline sliders actually affect the runtime on the staged D: build.
+- [done] Stop going in circles around sliders and simple build rules.
+- [done] If the checkbox is supposed to exist, keep it present instead of letting it disappear.
+- [done] Make the color-pipeline sliders actually affect the runtime on the staged D: build.
 
 ## Presumption Loop
 
@@ -47,4 +47,4 @@ The controlling seam is the summary/apply path in `ui_app/src/color_pipeline_win
 
 ## Resume Point
 
-Run phased-plan sync and contract validation for `advanced_color_pipeline_invalid_live_recovery`, append the handoff entry with `ck:06fbb088`, checkpoint the slice, write receipts, and finish on a zero-output repo-status check.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - tuple-aware Source/Palette co-switching and fixed-row messaging are landed, the checkpoint/profile validation rail is green, and this follow-up is ready to checkpoint before Phase 4 resumes at `joy_root_palette`
+Complete - checkpoint commit `274d310` and machine proof receipts closed the root-palette tuple-switch follow-up. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -12,10 +12,10 @@ Complete - tuple-aware Source/Palette co-switching and fixed-row messaging are l
 
 ## Explicit User Asks
 
-- [open] Existing items merely appearing in the list is not enough if they all present as non-working `(draft)` options.
-- [open] Root Classic Palette exposing no parameters without clear guidance is not a usable operator experience.
-- [open] If the last slice only removed prerequisites, say so clearly; otherwise treat the current selector behavior as a bug.
-- [open] Resume the planned advanced-color work, but not by papering over a friction point that leaves the newly landed row effectively unusable.
+- [done] Existing items merely appearing in the list is not enough if they all present as non-working `(draft)` options.
+- [done] Root Classic Palette exposing no parameters without clear guidance is not a usable operator experience.
+- [done] If the last slice only removed prerequisites, say so clearly; otherwise treat the current selector behavior as a bug.
+- [done] Resume the planned advanced-color work, but not by papering over a friction point that leaves the newly landed row effectively unusable.
 
 ## Presumption Loop
 
@@ -52,4 +52,4 @@ The controlling bug is local UI behavior, not missing runtime support. The publi
 
 ## Resume Point
 
-Checkpoint this tuple-switch follow-up, then resume the main foundation plan at `joy_root_palette` with the editor now treating shipped Source/Palette rows as auto-completed supported pairs instead of draft-only dead ends.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

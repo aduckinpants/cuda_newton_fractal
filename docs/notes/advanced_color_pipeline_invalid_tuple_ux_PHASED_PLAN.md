@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 complete - unsupported draft tuples are explicit, non-actionable, and republished
+Complete - checkpoint commit `ca0f880` and machine proof receipts closed the unsupported-tuple UX slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -12,9 +12,9 @@ Phase 3 complete - unsupported draft tuples are explicit, non-actionable, and re
 
 ## Explicit User Asks
 
-- [open] Make it clear what is and is not supposed to be working right now.
-- [open] Stop presenting broken or non-reviewable advanced-window behavior as something to review.
-- [open] Keep moving the feature forward instead of asking for review on a misleading partial state.
+- [done] Make it clear what is and is not supposed to be working right now.
+- [done] Stop presenting broken or non-reviewable advanced-window behavior as something to review.
+- [done] Keep moving the feature forward instead of asking for review on a misleading partial state.
 
 ## Presumption Loop
 
@@ -48,4 +48,4 @@ The falsifiable local hypothesis is that the current UX confusion comes from the
 
 ## Resume Point
 
-Slice is ready for plan/contract validation and checkpoint closure.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

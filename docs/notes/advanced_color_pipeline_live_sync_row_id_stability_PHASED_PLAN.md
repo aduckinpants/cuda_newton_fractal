@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - unchanged live sync no longer rebuilds the programmable draft, row ids stay stable across frames, and validation is green for checkpoint closure
+Complete - checkpoint commit `c88ac90` and machine proof receipts closed the live-sync row-id stability slice. The programmable draft no longer rebuilds on unchanged live sync, and this plan remains historical closure evidence only.
 
 ## Phase Checklist
 
@@ -12,9 +12,9 @@ Complete - unchanged live sync no longer rebuilds the programmable draft, row id
 
 ## Explicit User Asks
 
-- [open] Explain why the previous fixes still wasted time.
-- [open] Fix the real D: runtime slider failure instead of another helper-only surrogate.
-- [open] Add coverage that catches this drag-reset path before another handoff.
+- [done] Explain why the previous fixes still wasted time.
+- [done] Fix the real D: runtime slider failure instead of another helper-only surrogate.
+- [done] Add coverage that catches this drag-reset path before another handoff.
 
 ## Presumption Loop
 
@@ -47,4 +47,4 @@ The controlling seam is now `SyncColorPipelineWindowFromLiveState(...)` in `ui_a
 
 ## Resume Point
 
-Run phased-plan sync plus contract validation, write the validation and contract-proof receipts, append the handoff entry against `ck:49b036c3`, and close the slice on a clean worktree.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_closed_slice_truth_repair",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/advanced_color_closed_slice_truth_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_closed_slice_truth_repair.contract.json",
+    "docs/notes/advanced_color_closed_slice_truth_repair_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase6_palette_blend_stack_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8d_restart_authority_repair_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8f_grade_glow_owner_proof_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_apply_affordance_stability_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_auto_apply_drag_stability_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_debounced_live_preview_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_invalid_live_recovery_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_invalid_tuple_ux_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_live_sync_row_id_stability_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_remove_checkbox_direct_live_controls_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_shape_repeat_runtime_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slice1_row_chrome_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slice4_live_draft_sync_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slice5_live_apply_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slice6_phase_bands_params_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slider_active_item_smoke_PHASED_PLAN.md",
+    "docs/notes/advanced_color_pipeline_slider_contract_parity_PHASED_PLAN.md",
+    "docs/notes/advanced_color_root_palette_shape_interactivity_PHASED_PLAN.md",
+    "docs/notes/advanced_color_root_palette_tuple_switch_followup_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "repair stale post-closeout phased-plan truth in receipt-backed closed advanced-color slices",
+    "replace pre-closeout Current Phase and Resume Point wording with truthful closed-state wording",
+    "remove lingering [open] asks from repaired slices only when the repo proves the slice already closed with commit plus receipts",
+    "keep restart-authority edits minimal and strictly limited to stale-closeout continuity truth"
+  ],
+  "forbidden_operator_prompts": [
+    "open a new feature row in this session",
+    "reopen balance_void_grade, weighted blend, basin-default, neutral_finish, tone_map_finish, grade.glow, the enabled-toggle regression, or manual archive as feature work",
+    "broaden into hook, crash-recovery, anti-lie tooling, or generic workflow redesign beyond tiny continuity wording required by this repair",
+    "mark a slice closed without proving its last-touch commit already has validation and contract-proof receipts"
+  ],
+  "required_defaults": {
+    "receipt_proven_closed_state_required": "required",
+    "closed_slice_truth_repair_required": "required",
+    "resume_point_truth_required": "required",
+    "runtime_code_changes": "forbidden",
+    "new_feature_rows": "forbidden"
+  },
+  "forbidden_defaults": {
+    "ready_for_checkpoint_on_closed_slice": "forbidden",
+    "ready_for_receipts_on_closed_slice": "forbidden",
+    "open_explicit_asks_on_receipted_closed_slice": "forbidden",
+    "pre_closeout_resume_text_on_closed_slice": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_closed_slice_truth_repair.contract.json --out-json artifacts/validation/advanced_color_closed_slice_truth_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_closed_slice_truth_repair_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_closed_slice_truth_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_closed_slice_truth_repair_contract_schema_valid",
+      "description": "The advanced color closed-slice truth-repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_closed_slice_truth_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_closed_slice_truth_repair_plan_sync_ok",
+      "description": "The closed-slice truth-repair plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_closed_slice_truth_repair_hostile_audit_ok",
+      "description": "The closed-slice truth-repair hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_closed_slice_truth_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - slider-active interaction tracking now survives the combined slider-plus-input seam and the validation rails are green for checkpoint closure
+Complete - checkpoint commit `6c314f5` and machine proof receipts closed the slider-active-item smoke slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -12,9 +12,9 @@ Complete - slider-active interaction tracking now survives the combined slider-p
 
 ## Explicit User Asks
 
-- [open] Add a real smoke test for the slider path.
-- [open] Fix the advanced color pipeline sliders so they actually slide.
-- [open] Stop shipping turns where the helper tests are green but the slider interaction is still broken.
+- [done] Add a real smoke test for the slider path.
+- [done] Fix the advanced color pipeline sliders so they actually slide.
+- [done] Stop shipping turns where the helper tests are green but the slider interaction is still broken.
 
 ## Presumption Loop
 
@@ -46,4 +46,4 @@ The likely root cause is local to `RenderColorPipelineParamControl(...)` and `No
 
 ## Resume Point
 
-Run phased-plan sync plus contract validation, write the validation and contract-proof receipts, append the handoff entry against `ck:1eb39d7d`, and close the slice on a clean worktree.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

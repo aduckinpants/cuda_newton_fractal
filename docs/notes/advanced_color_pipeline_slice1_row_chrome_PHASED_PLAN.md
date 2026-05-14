@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete
+Complete - checkpoint commit `25ef27b` and machine proof receipts closed the row-chrome extraction slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -13,11 +13,11 @@ Complete
 
 ## Explicit User Asks
 
-- [open] Start implementation.
-- [open] Build the advanced color-pipeline work around a separate custom ImGui window rather than the static schema panel.
-- [open] Do not make that new window a one-off; extract a reusable row-stack/chrome helper first.
-- [open] Be smarter in the initial refactor so the helper saves time long term instead of becoming a framework detour.
-- [open] Treat the Salticid ImGui transpiler as design precedent only, not as a direct dependency.
+- [done] Start implementation.
+- [done] Build the advanced color-pipeline work around a separate custom ImGui window rather than the static schema panel.
+- [done] Do not make that new window a one-off; extract a reusable row-stack/chrome helper first.
+- [done] Be smarter in the initial refactor so the helper saves time long term instead of becoming a framework detour.
+- [done] Treat the Salticid ImGui transpiler as design precedent only, not as a direct dependency.
 
 ## Presumption Loop
 
@@ -65,4 +65,4 @@ The first falsifiable hypothesis is local: a header-only helper plus an existing
 
 ## Resume Point
 
-Slice 1 is complete on `feature/advanced-color-pipeline-row-chrome`. The next step is Slice 2: restore the main Color panel to one legacy `coloring_mode` control plus the existing grading controls, then add the advanced Color Pipeline entry button without letting the advanced path become a second live authority.
+Closed. Do not resume from this slice's old successor notes. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

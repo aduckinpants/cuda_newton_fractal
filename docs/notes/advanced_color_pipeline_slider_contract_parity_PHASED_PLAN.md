@@ -2,20 +2,20 @@
 
 ## Current Phase
 
-Phase 2 - slider-contract parity is implemented and validated; checkpoint, receipts, and clean-worktree closure remain
+Complete - checkpoint commit `8f2b39e` and machine proof receipts closed the slider-contract parity slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
 - [x] Phase 0 - prove the current color-pipeline control path still diverges from the working slider contract and lock the required parity behavior in focused coverage
 - [x] Phase 1 - replace the custom color-pipeline numeric control contract with the working slider-plus-input, clamp-on-edit, post-lane live-apply pattern
-- [ ] Phase 2 - validate the parity fix on the focused seam, refresh published runtime proof, and close the slice cleanly
+- [x] Phase 2 - validate the parity fix on the focused seam, refresh published runtime proof, and close the slice cleanly
 
 ## Explicit User Asks
 
-- [open] Stop reinventing slider behavior.
-- [open] Make the shipped color-pipeline sliders behave like the other sliders in the application.
-- [open] Restore live runtime feedback during drag instead of the current no-feedback behavior.
-- [open] Fix it TDD-first with regression coverage before resuming broader color-pipeline productization.
+- [done] Stop reinventing slider behavior.
+- [done] Make the shipped color-pipeline sliders behave like the other sliders in the application.
+- [done] Restore live runtime feedback during drag instead of the current no-feedback behavior.
+- [done] Fix it TDD-first with regression coverage before resuming broader color-pipeline productization.
 
 ## Presumption Loop
 
@@ -53,4 +53,4 @@ The controlling seam is `RenderColorPipelineParamControl(...)` plus the end-of-f
 
 ## Resume Point
 
-Run phased-plan sync and contract validation for `advanced_color_pipeline_slider_contract_parity`, append the handoff entry with `ck:65879704`, checkpoint the slice, write receipts, and finish on a zero-output repo-status check.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

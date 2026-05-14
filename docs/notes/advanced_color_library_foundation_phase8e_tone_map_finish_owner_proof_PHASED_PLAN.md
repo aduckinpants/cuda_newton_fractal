@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 - validation, hostile audit, and authority-surface updates are complete on the current working tree. The bounded `tone_map_finish` owner path is ready for checkpoint commit, handoff, and machine proof receipts without reopening `grade.glow`, `balance_void_grade`, Source weighted blend, manual archive, or workflow/tooling side work.
+Complete - checkpoint commit `a59e657` and machine proof receipts closed the bounded `tone_map_finish` owner-proof slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -95,7 +95,7 @@ The controlling risk was owner fraud: `tone_map_finish` could have been exposed 
 
 ## Resume Point
 
-Working-tree implementation, focused proof, and hostile audit are complete. Once the checkpoint commit, handoff, validators, and machine receipts are written, resume from the remaining explicitly deferred grading inventory rather than reopening `tone_map_finish` by default.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.
 
 ## Action Hostile Review
 
@@ -103,5 +103,5 @@ Working-tree implementation, focused proof, and hostile audit are complete. Once
 - Suspected Failure Mode: the slice could expose `tone_map_finish` in the catalog or bridge without distinct runtime grading math, or it could widen into deferred `grade.glow` / `balance_void_grade` semantics under adjacent grading pressure.
 - Correct Owner/Action: add REDs first across core/window/runtime/persistence/reset seams, then land only the bounded `tone_map_finish` owner path through the existing grading owner trio plus a dedicated tone-map-last runtime branch.
 - Proof Surface: focused native helper tests for the touched owner seams, runtime publish, focused published-runtime proof, contract validation, phased-plan sync, and hostile-audit validation.
-- Outcome: complete on the current working tree - REDs, owner-path repairs, diagnostics/archive/reset proof, runtime publish, and the focused published-runtime `tone_map_finish` witness are all green without widening into deferred grading rows.
+- Outcome: closed at checkpoint commit `a59e657` with machine proof receipts. REDs, owner-path repairs, diagnostics/archive/reset proof, runtime publish, and the focused published-runtime `tone_map_finish` witness are all green without widening into deferred grading rows.
 - Blocked Action: the unrelated full-suite `full_test_run` batch-label miss remains outside this slice.

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 complete - the first real phase/bands parameter seam is live, audited, and republished
+Complete - checkpoint commit `fff220a` and machine proof receipts closed the phase-and-bands parameter slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -13,10 +13,10 @@ Phase 4 complete - the first real phase/bands parameter seam is live, audited, a
 
 ## Explicit User Asks
 
-- [open] Continue from slice 5 instead of stopping at review.
-- [open] Land the working feature through the next phased slices rather than staying overly cautious.
-- [open] Keep the simple fixed three-slot editor where slot choice determines the controls shown beneath it.
-- [open] Avoid collapsing back into three alias dropdowns with fake knobs.
+- [done] Continue from slice 5 instead of stopping at review.
+- [done] Land the working feature through the next phased slices rather than staying overly cautious.
+- [done] Keep the simple fixed three-slot editor where slot choice determines the controls shown beneath it.
+- [done] Avoid collapsing back into three alias dropdowns with fake knobs.
 
 ## Presumption Loop
 
@@ -72,4 +72,4 @@ The falsifiable local hypothesis is that a small set of new `KernelParams` field
 
 ## Resume Point
 
-Slice 6 is ready for plan/contract validation and checkpoint closure.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

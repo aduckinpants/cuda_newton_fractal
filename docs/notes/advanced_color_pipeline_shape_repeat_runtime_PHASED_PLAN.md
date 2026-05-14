@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2 - repeat is runtime-real, validated, and ready for checkpoint closure
+Complete - checkpoint commit `6f2dc2b` and machine proof receipts closed the repeat-runtime widening slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -12,10 +12,10 @@ Phase 2 - repeat is runtime-real, validated, and ready for checkpoint closure
 
 ## Explicit User Asks
 
-- [open] Learn the slider runtime lesson and document it so the repo stops repeating the same mistake.
-- [open] Flesh out and harden the advanced color pipeline tool instead of stopping at the drag fix.
-- [open] Expand the real slider-backed function surface with correct properties and runtime-backed behavior.
-- [open] Plan toward the full lane-stack backend where multiple functions can eventually work per segment.
+- [done] Learn the slider runtime lesson and document it so the repo stops repeating the same mistake.
+- [done] Flesh out and harden the advanced color pipeline tool instead of stopping at the drag fix.
+- [done] Expand the real slider-backed function surface with correct properties and runtime-backed behavior.
+- [done] Plan toward the full lane-stack backend where multiple functions can eventually work per segment.
 
 ## Presumption Loop
 
@@ -59,4 +59,4 @@ The smallest honest next slice after the live-sync row-id stability fix is one m
 
 ## Resume Point
 
-Checkpoint this completed slice, then plan the next bounded runtime-real widening step without pretending multi-function lane composition already exists.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

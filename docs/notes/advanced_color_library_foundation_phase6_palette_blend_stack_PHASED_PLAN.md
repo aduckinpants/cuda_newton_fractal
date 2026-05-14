@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - complete and ready for checkpoint closure. The bounded Palette stack runtime owner, explicit RGB blend evaluator, live bridge import/apply path, diagnostics persistence, reset coverage, hostile audit, native helper rail, code-quality audit, runtime publish, and published-runtime probe/session proof are green.
+Complete - checkpoint commit `f9d26f3` and machine proof receipts closed the bounded Palette blend stack slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
@@ -103,7 +103,7 @@ The first runtime semantics should be boring and inspectable: row 0 seeds the ac
 
 ## Resume Point
 
-Start with REDs in `ui_app/tests/test_schema_binding.cpp` and `ui_app/tests/test_escape_time_coloring.cpp` that prove multi-row Palette drafts still collapse/reject without a real `color_palette_stack` owner and explicit RGB blend math. Then add persistence/reset/capture REDs before implementing the bounded stack.
+Closed. Do not resume from this slice's old implementation checklist. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.
 
 ## Action Hostile Review
 

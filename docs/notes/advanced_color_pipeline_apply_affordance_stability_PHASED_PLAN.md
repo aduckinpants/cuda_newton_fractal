@@ -2,20 +2,20 @@
 
 ## Current Phase
 
-Phase 2 - the persistent default-on auto-apply checkbox is implemented and validated; checkpoint, receipts, and clean-worktree closure remain
+Complete - checkpoint commit `e0fa9b5` and machine proof receipts closed the persistent auto-apply checkbox slice. This plan remains historical closure evidence only and must not be read as live pre-closeout restart authority.
 
 ## Phase Checklist
 
 - [x] Phase 0 - identify the exact summary-row seam that collapses when the draft matches live
 - [x] Phase 1 - replace the visibility-toggling apply affordance with a persistent default-on checkbox and stable summary layout
-- [ ] Phase 2 - validate the focused UI behavior, publish proof, and close the slice cleanly
+- [x] Phase 2 - validate the focused UI behavior, publish proof, and close the slice cleanly
 
 ## Explicit User Asks
 
-- [open] Stop making the apply control hide/show and move the whole UI vertically.
-- [open] Replace the extra apply button workflow with a checkbox.
-- [open] Leave the checkbox on by default.
-- [open] Do not make the operator repeatedly click an extra button to keep edits flowing.
+- [done] Stop making the apply control hide/show and move the whole UI vertically.
+- [done] Replace the extra apply button workflow with a checkbox.
+- [done] Leave the checkbox on by default.
+- [done] Do not make the operator repeatedly click an extra button to keep edits flowing.
 
 ## Presumption Loop
 
@@ -49,4 +49,4 @@ The controlling seam is the advanced color pipeline summary renderer in `ui_app/
 
 ## Resume Point
 
-Write the handoff entry with `ck:c6b3d385`, validate plan sync and the slice contract, checkpoint the slice, write receipts, and finish on a zero-output repo-status check.
+Closed. Do not resume from this slice's old checkpoint chores. Re-enter later advanced-color work from `docs/notes/advanced_color_feature_restart_inventory.md`, `docs/notes/advanced_color_library_foundation_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` instead.

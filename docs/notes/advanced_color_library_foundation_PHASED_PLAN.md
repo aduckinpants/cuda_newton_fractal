@@ -214,7 +214,7 @@ The controlling product risk is now overclaim after `grade.glow`, not missing So
 
 ## Resume Point
 
-Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` and the `grade.glow` closeout surfaces, not from older Palette-next or weighted-blend-next text. The phase8c tooling slice is closed and its command ladder is now reusable proof infrastructure, and `grade.glow` is no longer the next unopened feature row. Choose explicitly from the matrix:
+Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, `docs/notes/advanced_color_feature_restart_inventory.md`, and the latest closed advanced-color checkpoints through `0e35f7a`, not from older Palette-next, weighted-blend-next, or pre-closeout `tone_map_finish` / `grade.glow` text. The phase8c tooling slice is closed and its command ladder is now reusable proof infrastructure, and `grade.glow` is no longer the next unopened feature row. Choose explicitly from the matrix:
 1. `balance_void_grade` as its own bounded grading-operator slice if Adam still wants the remaining generic grading operator.
 2. Foundation closure with explicit deferrals if the matrix is accepted as the merge boundary.
 3. Historical archive compatibility only if it is explicitly reclassified back into active sprint work.
