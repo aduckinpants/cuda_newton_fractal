@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - validation and checkpoint closure on the repaired active-drag and supported-palette-preserve seams.
+Complete - this bounded regression slice is closed on its committed head, and the later live-drag runtime-restore follow-up replaced only the rejected defer-until-release contract rather than reopening checkpoint chores here.
 
 ## Phase Checklist
 
 - [x] Phase 1 - add focused REDs that prove active slider edits currently apply and resync during manipulation, and prove source or palette tuple changes reset a still-supported grading row
 - [x] Phase 2 - defer live apply and resync until active slider interaction completes, and preserve the current grading row and values across supported source-palette switches unless the new tuple truly disallows that grading
-- [ ] Phase 3 - rerun the narrow owner and runtime lanes, hostile-audit the repaired state, checkpoint, and write machine proof receipts
+- [x] Phase 3 - rerun the narrow owner and runtime lanes, hostile-audit the repaired state, checkpoint, and write machine proof receipts
 
 ## Explicit User Asks
 
@@ -44,7 +44,7 @@ Phase 3 - validation and checkpoint closure on the repaired active-drag and supp
 
 - [x] Pass 1 - re-read the active-drag apply path and grading co-switch path after landing REDs; this exposed a real ordering bug in the numeric input seam instead of a clean closure state.
 - [x] Pass 2 - clean re-read of the repaired owner and runtime lanes found no additional real defect while `advanced_color_grading_red`, `advanced_color_grading_owner`, and the focused published-runtime palette witness stayed green.
-- [x] Pass 3 - clean re-read of the final diff, plan text, validator outputs, and current proof outputs found no additional workflow mistake or unsupported closeout claim beyond the remaining checkpoint and receipt work.
+- [x] Pass 3 - clean re-read of the final diff, plan text, validator outputs, and current proof outputs found no additional workflow mistake or unsupported product claim on the closed head.
 
 ## Audit Findings
 

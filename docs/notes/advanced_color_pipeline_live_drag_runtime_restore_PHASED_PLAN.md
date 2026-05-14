@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - live-drag runtime authority restored with seam, viewer, and palette-preserve proof; checkpoint and receipt closeout is the only remaining mechanical step in this turn.
+Complete - live-drag runtime authority is restored with seam, viewer, and palette-preserve proof, and this plan now records the closed committed state rather than pre-closeout mechanics.
 
 ## Phase Checklist
 
@@ -43,7 +43,7 @@ Complete - live-drag runtime authority restored with seam, viewer, and palette-p
 
 - [x] Pass 1 - force the current head through the live-drag witnesses and find the real seam that fails; this exposed the false defer-until-release contract in the direct numeric apply path.
 - [x] Pass 2 - clean re-read of the repaired seam and viewer proofs found no reopened palette-preserve regression while the viewport updated live during drag.
-- [x] Pass 3 - clean re-read of the final diff and current proof outputs found no additional real defect or unsupported closeout claim beyond the remaining checkpoint and receipt work.
+- [x] Pass 3 - clean re-read of the final diff and current proof outputs found no additional real defect or unsupported claim on the closed head.
 
 ## Audit Findings
 

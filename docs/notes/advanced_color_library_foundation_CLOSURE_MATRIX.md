@@ -46,7 +46,7 @@ This matrix is the checked-in closure boundary for the advanced-color foundation
 
 | Issue | Evidence | Required Next Proof |
 | --- | --- | --- |
-| Manual `234919_563__explaino_inertial` capture does not reproduce from `state.json` | The repair slice fixed `params.multibrot_power` reload drift and added forward `explaino_damping` persistence, but the old `state.json` lacks the missing damping value and the republished runtime still renders only 22 unique colors with `mean_abs_rgb=61.984` against the archived frame. Damping, spread, color-param, color-tuple, formula, and seed/tween/phase probes did not recover the image. | Either find another recoverable saved-state owner with capture-backed evidence and prove the archived frame in the published runtime, or explicitly accept this old capture as unrecoverable historical data loss and add a new complete forward capture proof. This is tracked separately from the active tone-map sprint lane unless Adam reprioritizes it again. |
+| Manual `234919_563__explaino_inertial` capture does not reproduce from `state.json` | The repair slice fixed `params.multibrot_power` reload drift and added forward `explaino_damping` persistence, but the old `state.json` lacks the missing damping value and the republished runtime still renders only 22 unique colors with `mean_abs_rgb=61.984` against the archived frame. Damping, spread, color-param, color-tuple, formula, and seed/tween/phase probes did not recover the image. | Accepted historical incompatibility for the current feature family. No generic-core follow-up is required unless Adam explicitly reprioritizes this legacy archive lane later. |
 
 ## Closure Decision Forks
 
@@ -54,6 +54,6 @@ This matrix is the checked-in closure boundary for the advanced-color foundation
 2. After `balance_void_grade`, choose explicitly between foundation closure and any later family-track deferrals.
 3. Accept this matrix as the foundation boundary only if later family-track work stays explicit and no hidden generic core grading inventory is still being deferred.
 4. Reclassify later work as blockers only if Adam explicitly promotes a separate family-track lane before closure; do not smuggle ExplainO-BalanceVoid or historical archive compatibility into generic core closure.
-5. Keep the historical `explaino_inertial` archive mismatch in its separate compatibility lane unless Adam explicitly reprioritizes it back into active sprint work.
+5. Keep the historical `explaino_inertial` archive mismatch as accepted separate compatibility debt unless Adam explicitly reprioritizes it back into active sprint work.
 
 No closure claim may cite this matrix while also showing shipped generic core rows that are still marked Deferred here, while later family-track work is overclaimed as shipped, or while a separate historical compatibility issue is falsely described as already recovered.

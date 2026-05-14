@@ -631,6 +631,6 @@ If you want the fastest path back to truthful feature velocity:
 1. Use the latest advanced-color handoff chain through `ck:2f8a4f58`, `ck:a72faa5a`, and the `balance_void_grade` owner-proof slice instead of restarting from older pre-`grade.glow` prompts.
 2. Reuse the closed phase8c command ladder for whichever next family-track, regression, or closure slice is chosen.
 3. Choose explicitly between foundation closure or a separate later family-track lane from the matrix.
-4. Keep historical archive compatibility separate unless it is explicitly reprioritized.
+4. Treat historical archive compatibility as accepted non-goal debt unless it is explicitly reprioritized.
 
 That is the shortest path back to truthful core feature velocity instead of reopening already closed weighted-blend/basin-default/neutral-finish/tone-map/`grade.glow` work or historical compatibility by inertia.
