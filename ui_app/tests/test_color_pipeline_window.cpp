@@ -388,6 +388,45 @@ void TestGradingStackApplyAndLiveImport() {
     }
 }
 
+void TestPaletteSwitchPreservesSupportedBalanceVoidGrade() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_SyncStartsSupported");
+    Check(SelectColorPipelineLaneFunction(&state, 3, "balance_void_grade") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.balance_void", 0.35) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.chroma_tension", 0.6) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.accent_bias", -0.25),
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_ConfiguresBalanceVoidGrade");
+
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_ApplyBalanceVoidGrade");
+    const std::uint64_t gradingRowId = state.lanes[3].rows[0].ui_row_id;
+    ColorGradingPreset balanceVoidGrading = ColorGradingPreset::escape_default;
+    Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &balanceVoidGrading),
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_ParsesBalanceVoidGradingId");
+
+    Check(SelectColorPipelineLaneFunction(&state, 2, "explaino_cmap"),
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_SwitchesPaletteToExplaino");
+    Check(state.lanes[3].rows.size() == 1 &&
+            state.lanes[3].rows[0].ui_row_id == gradingRowId &&
+            state.lanes[3].rows[0].function_id == "balance_void_grade" &&
+            RowNumber(state.lanes[3].rows[0], "grade.balance_void", 0.35) &&
+            RowNumber(state.lanes[3].rows[0], "grade.chroma_tension", 0.6) &&
+            RowNumber(state.lanes[3].rows[0], "grade.accent_bias", -0.25),
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_DraftKeepsSupportedGradingRowAndValues");
+
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_ApplySwitchedPalette");
+    Check(params.color_pipeline.palette == ColorPalette::explaino_cmap &&
+            params.color_pipeline.grading == balanceVoidGrading &&
+            Near(params.color_balance_void, 0.35) && Near(params.color_chroma_tension, 0.6) && Near(params.color_accent_bias, -0.25),
+        "TestPaletteSwitchPreservesSupportedBalanceVoidGrade_RuntimeKeepsSupportedGradingOwners");
+}
+
+
 void TestRootBasinPairScheduleBridge() {
     ColorPipelineWindowState state{};
     KernelParams params = SmoothEscapeParams();
@@ -641,6 +680,7 @@ int main() {
     TestIterationBandsLiveImportShipsBandFinish();
     TestGradingStackApplyAndLiveImport();
     TestRootBasinPairScheduleBridge();
+    TestPaletteSwitchPreservesSupportedBalanceVoidGrade();
     TestSourcePalettePresetCheckboxesTogglePairedRows();
     TestDisablePreservesSupportedGradingRowAcrossApplyResync();
     TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync();

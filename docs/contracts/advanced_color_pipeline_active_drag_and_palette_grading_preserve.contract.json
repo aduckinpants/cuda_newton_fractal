@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_active_drag_and_palette_grading_preserve",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_active_drag_and_palette_grading_preserve_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_pipeline_active_drag_and_palette_grading_preserve.contract.json",
+    "docs/notes/advanced_color_pipeline_active_drag_and_palette_grading_preserve_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "prove on current HEAD whether active slider edits still apply and resync the live runtime before interaction release",
+    "preserve the current grading row and parameter values across source or palette switches when that grading remains runtime-supported for the new tuple",
+    "recreate both regressions in checked-in harnesses instead of relying on manual viewer claims",
+    "keep this slice bounded to the advanced color viewer-window and runtime proof seams for the two reported UX regressions"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the slider flicker is fixed if active control edits still mutate live state before release",
+    "claim the palette-switch regression is fixed if a still-supported grading row resets or loses its values",
+    "reopen balance_void_grade feature work or previously closed grading owner-proof slices",
+    "widen into archive archaeology, hooks, crash recovery, anti-lie tooling, or unrelated UI polish"
+  ],
+  "required_defaults": {
+    "active_drag_live_apply": "must_defer_until_interaction_completes",
+    "supported_palette_switch_preserves_grading": "required",
+    "focused_window_and_runtime_reds": "required",
+    "phase8c_command_ladder": "required"
+  },
+  "forbidden_defaults": {
+    "mid_drag_resync": "forbidden",
+    "supported_grading_row_reset_on_palette_switch": "forbidden",
+    "manual_only_regression_claim": "forbidden",
+    "scope_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_active_drag_and_palette_grading_preserve.contract.json --out-json artifacts/validation/advanced_color_pipeline_active_drag_and_palette_grading_preserve_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_pipeline_active_drag_and_palette_grading_preserve_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_pipeline_active_drag_and_palette_grading_preserve_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_active_drag_and_palette_grading_preserve_contract_schema_valid",
+      "description": "The active-drag and palette-grading preserve contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_active_drag_and_palette_grading_preserve_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_active_drag_and_palette_grading_preserve_plan_sync_ok",
+      "description": "The active-drag and palette-grading preserve plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_active_drag_and_palette_grading_preserve_hostile_audit_ok",
+      "description": "The active-drag and palette-grading preserve hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_active_drag_and_palette_grading_preserve_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -1004,6 +1004,55 @@ def test_explaino_headless_color_pipeline_scenario_can_switch_grading_row_to_bal
     )
 
 
+def test_explaino_headless_color_pipeline_palette_switch_preserves_supported_balance_void_grade(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino advanced-color runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
+
+    draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
+    scenario_result = _run_headless_loaded_state_scenario(
+        tmp_path,
+        exe_path=exe_path,
+        scenario=_HeadlessLoadedStateScenario(
+            name="headless_color_pipeline_palette_switch_preserves_balance_void",
+            state=draft_state,
+            action_args=(
+                "--color-pipeline-action",
+                "select_function:grading:0:balance_void_grade",
+                "--color-pipeline-action",
+                "set_param:grading:0:grade.balance_void:number:0.35",
+                "--color-pipeline-action",
+                "set_param:grading:0:grade.chroma_tension:number:0.6",
+                "--color-pipeline-action",
+                "set_param:grading:0:grade.accent_bias:number:-0.25",
+                "--color-pipeline-action",
+                "select_function:palette:0:explaino_cmap",
+            ),
+        ),
+    )
+    switched_capture = scenario_result.scenario_capture
+
+    switched_params = switched_capture["state"]["params"]
+    assert isinstance(switched_params, dict)
+    assert switched_params["color_palette"] == "explaino_cmap"
+    assert switched_params["color_grading"] == "balance_void_default"
+    assert switched_params["color_balance_void"] == pytest.approx(0.35, abs=1e-6)
+    assert switched_params["color_chroma_tension"] == pytest.approx(0.6, abs=1e-6)
+    assert switched_params["color_accent_bias"] == pytest.approx(-0.25, abs=1e-6)
+
+    switched_palette_row = _color_pipeline_first_row(switched_capture["state"], "palette")
+    assert switched_palette_row["ui_row_id"] == 13
+    assert switched_palette_row["function_id"] == "explaino_cmap"
+    switched_grading_row = _color_pipeline_first_row(switched_capture["state"], "grading")
+    assert switched_grading_row["ui_row_id"] == 14
+    assert switched_grading_row["function_id"] == "balance_void_grade"
+    assert _color_pipeline_number_param(switched_grading_row, "grade.balance_void") == pytest.approx(0.35, abs=1e-6)
+    assert _color_pipeline_number_param(switched_grading_row, "grade.chroma_tension") == pytest.approx(0.6, abs=1e-6)
+    assert _color_pipeline_number_param(switched_grading_row, "grade.accent_bias") == pytest.approx(-0.25, abs=1e-6)
+
+
 def test_explaino_headless_color_pipeline_scenario_can_add_shape_row_and_change_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino advanced-color runtime regression is Windows-only")

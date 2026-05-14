@@ -2619,21 +2619,90 @@ int main() {
             }
             return false;
         };
+        auto findParamState = [](ColorPipelineRowState& row, const char* path) -> ColorPipelineParamState* {
+            for (ColorPipelineParamState& param : row.parameter_values) {
+                if (param.path == path) {
+                    return &param;
+                }
+            }
+            return nullptr;
+        };
+        auto findParamDescriptor = [](const FunctionDescriptor& descriptor, const char* path) -> const FunctionParamDescriptor* {
+            for (const FunctionParamDescriptor& param : descriptor.parameters) {
+                if (param.path == path) {
+                    return &param;
+                }
+            }
+            return nullptr;
+        };
         if (!SelectColorPipelineLaneFunction(&explainoRenderWindowState, 1, "offset_scale") ||
             !setParam(explainoRenderWindowState.lanes[0].rows[0], "signal.scale", 0.625) ||
             !setParam(explainoRenderWindowState.lanes[1].rows[0], "shape.scale", 2.0)) {
             std::cerr << "Expected the advanced color pipeline window render test to find the supported live-backed controls before auto-apply coverage\n";
             return 1;
         }
+        const ColorPipelineLaneCatalog* shapeCatalog = FindColorPipelineLaneCatalog("shape");
+        if (!shapeCatalog) {
+            std::cerr << "Expected the shape catalog to remain available for direct control coverage\n";
+            return 1;
+        }
+        const FunctionDescriptor* offsetScaleDescriptor = FindColorPipelineFunctionDescriptor(*shapeCatalog, "offset_scale");
+        if (!offsetScaleDescriptor) {
+            std::cerr << "Expected the offset_scale descriptor to remain available for direct control coverage\n";
+            return 1;
+        }
+        const FunctionParamDescriptor* shapeScaleDescriptor = findParamDescriptor(*offsetScaleDescriptor, "shape.scale");
+        ColorPipelineParamState* shapeScaleParam = findParamState(explainoRenderWindowState.lanes[1].rows[0], "shape.scale");
+        if (!shapeScaleDescriptor || !shapeScaleParam) {
+            std::cerr << "Expected the offset_scale row to expose the live-backed shape.scale control\n";
+            return 1;
+        }
+
         bool directControlDirty = false;
-        ColorPipelineRenderInteractionState directControlInteraction{};
-        if (!TryApplySupportedColorPipelineDraftFromControl(
+        ColorPipelineRenderInteractionState activeDirectControlInteraction{};
+        if (CommitColorPipelineNumericParamEdit(
                 &explainoRenderWindowState,
                 view.fractal_type,
                 &params,
+                ResolveColorPipelineNumericControlRange(*shapeScaleDescriptor),
+                2.0,
+                shapeScaleParam,
+                true,
+                true,
+                true,
+                false,
+                &directControlDirty,
+                &activeDirectControlInteraction)) {
+            std::cerr << "Expected active advanced color numeric edits to stay draft-only until release instead of applying before the control reports its active state\n";
+            return 1;
+        }
+        if (directControlDirty ||
+            !activeDirectControlInteraction.interacted ||
+            !activeDirectControlInteraction.has_active_item ||
+            !NearlyEqual(params.color_smooth_escape_scale, 1.0) ||
+            !NearlyEqual(params.color_shape_scale, 1.0) ||
+            !NearlyEqual(shapeScaleParam->number_value, 2.0) ||
+            !HasColorPipelineDraftEdits(explainoRenderWindowState)) {
+            std::cerr << "Expected active advanced color numeric edits to leave the live runtime unchanged while the dirty draft tracks the control value\n";
+            return 1;
+        }
+
+        directControlDirty = false;
+        ColorPipelineRenderInteractionState directControlInteraction{};
+        if (!CommitColorPipelineNumericParamEdit(
+                &explainoRenderWindowState,
+                view.fractal_type,
+                &params,
+                ResolveColorPipelineNumericControlRange(*shapeScaleDescriptor),
+                2.0,
+                shapeScaleParam,
+                true,
+                false,
+                false,
+                true,
                 &directControlDirty,
                 &directControlInteraction)) {
-            std::cerr << "Expected the advanced color pipeline control helper to keep supported live-backed edits synced without a separate apply toggle\n";
+            std::cerr << "Expected the advanced color numeric control helper to apply the dirty draft once the control releases\n";
             return 1;
         }
         if (!NearlyEqual(params.color_smooth_escape_scale, 0.625) ||
@@ -2643,8 +2712,9 @@ int main() {
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !directControlDirty ||
             !directControlInteraction.interacted ||
+            directControlInteraction.has_active_item ||
             HasColorPipelineDraftEdits(explainoRenderWindowState)) {
-            std::cerr << "Expected supported edits to keep live-backed params synced without a separate apply toggle\n";
+            std::cerr << "Expected released numeric edits to sync the supported live-backed draft without a separate apply toggle\n";
             return 1;
         }
 

@@ -994,11 +994,23 @@ inline bool SelectColorPipelineRowFunction(
                     &supportedMode)) {
                 const char* requiredGradingFunctionId = AdvancedColorGradingFunctionId(supportedPipeline.grading);
                 if (requiredGradingFunctionId && requiredGradingFunctionId[0] != '\0') {
-                    const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog(gradingLane->lane_id);
-                    if (gradingCatalog) {
-                        const FunctionDescriptor* gradingDescriptor = FindColorPipelineFunctionDescriptor(*gradingCatalog, requiredGradingFunctionId);
-                        if (gradingDescriptor && gradingLane->rows[0].function_id != requiredGradingFunctionId) {
-                            SetColorPipelineRowFunction(&gradingLane->rows[0], *gradingDescriptor, false);
+                    const FractalType supportedFractalType = ioState->live_snapshot.valid
+                        ? ioState->live_snapshot.fractal_type
+                        : FractalType::explaino;
+                    bool preserveCurrentGrading = false;
+                    ColorGradingPreset currentGrading = ColorGradingPreset::escape_default;
+                    if (TryParseAdvancedColorGradingFunctionId(gradingLane->rows[0].function_id, &currentGrading)) {
+                        ColorPipelineSelection preservedPipeline = supportedPipeline;
+                        preservedPipeline.grading = currentGrading;
+                        preserveCurrentGrading = IsColorPipelineAllowedForFractal(supportedFractalType, preservedPipeline);
+                    }
+                    if (!preserveCurrentGrading) {
+                        const ColorPipelineLaneCatalog* gradingCatalog = FindColorPipelineLaneCatalog(gradingLane->lane_id);
+                        if (gradingCatalog) {
+                            const FunctionDescriptor* gradingDescriptor = FindColorPipelineFunctionDescriptor(*gradingCatalog, requiredGradingFunctionId);
+                            if (gradingDescriptor && gradingLane->rows[0].function_id != requiredGradingFunctionId) {
+                                SetColorPipelineRowFunction(&gradingLane->rows[0], *gradingDescriptor, false);
+                            }
                         }
                     }
                 }
@@ -3343,6 +3355,15 @@ inline bool ApplyColorPipelineDraftToLiveState(
     return true;
 }
 
+#ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
+inline bool TryApplySupportedColorPipelineDraftFromControl(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    bool* ioDirty,
+    ColorPipelineRenderInteractionState* ioInteraction);
+#endif
+
 inline void NoteColorPipelineInteractionSnapshot(
     bool changed,
     bool itemActivated,
@@ -3370,6 +3391,68 @@ inline void NoteColorPipelineCurrentItemInteraction(
         ioState);
 }
 
+template <typename T>
+inline bool CommitColorPipelineNumericParamEdit(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    const NumericControlRange& range,
+    T value,
+    ColorPipelineParamState* ioValue,
+    bool changed,
+    bool itemActivated,
+    bool itemActive,
+    bool itemDeactivatedAfterEdit,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ioValue) {
+        return false;
+    }
+    NoteColorPipelineInteractionSnapshot(
+        changed,
+        itemActivated,
+        itemActive,
+        itemDeactivatedAfterEdit,
+        ioInteraction);
+    if (!changed) {
+        return false;
+    }
+    ClampColorPipelineNumericValue(&value, range);
+    ioValue->number_value = static_cast<double>(value);
+    return TryApplySupportedColorPipelineDraftFromControl(
+        ioState,
+        liveFractalType,
+        liveParams,
+        ioDirty,
+        ioInteraction);
+}
+
+template <typename T>
+inline bool CommitColorPipelineNumericParamEditFromCurrentItem(
+    ColorPipelineWindowState* ioState,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    const NumericControlRange& range,
+    T value,
+    ColorPipelineParamState* ioValue,
+    bool changed,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    return CommitColorPipelineNumericParamEdit(
+        ioState,
+        liveFractalType,
+        liveParams,
+        range,
+        value,
+        ioValue,
+        changed,
+        ImGui::IsItemActivated(),
+        ImGui::IsItemActive(),
+        ImGui::IsItemDeactivatedAfterEdit(),
+        ioDirty,
+        ioInteraction);
+}
+
 inline bool ShouldAutoApplySupportedColorPipelineDraft(
     const ColorPipelineWindowState& state,
     const ColorPipelineDraftApplyState& applyState,
@@ -3389,6 +3472,9 @@ inline bool TryApplySupportedColorPipelineDraftFromControl(
     bool* ioDirty,
     ColorPipelineRenderInteractionState* ioInteraction) {
     if (!ioState || !liveParams) {
+        return false;
+    }
+    if (ioInteraction && ioInteraction->has_active_item) {
         return false;
     }
     const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
@@ -3440,16 +3526,29 @@ inline bool RenderColorPipelineParamControl(
             sliderChanged = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, "%.3f");
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
-        NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
+        CommitColorPipelineNumericParamEditFromCurrentItem(
+            ioState,
+            liveFractalType,
+            liveParams,
+            range,
+            value,
+            ioValue,
+            sliderChanged,
+            ioDirty,
+            ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputFloat("##value_input", &value, 0.0f, 0.0f, "%.5f");
+        CommitColorPipelineNumericParamEditFromCurrentItem(
+            ioState,
+            liveFractalType,
+            liveParams,
+            range,
+            value,
+            ioValue,
+            typedChanged,
+            ioDirty,
+            ioInteraction);
         changed = sliderChanged || typedChanged;
-        if (changed) {
-            ClampColorPipelineNumericValue(&value, range);
-            ioValue->number_value = value;
-            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
-        }
-        NoteColorPipelineCurrentItemInteraction(typedChanged, ioInteraction);
     } else if (param.type == "double") {
         double value = ioValue->number_value;
         const NumericControlRange range = ResolveColorPipelineNumericControlRange(param);
@@ -3466,16 +3565,29 @@ inline bool RenderColorPipelineParamControl(
             sliderChanged = ImGui::DragScalar(param.label.c_str(), ImGuiDataType_Double, &value, static_cast<float>(step), dragMin, dragMax, "%.6f");
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
-        NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
+        CommitColorPipelineNumericParamEditFromCurrentItem(
+            ioState,
+            liveFractalType,
+            liveParams,
+            range,
+            value,
+            ioValue,
+            sliderChanged,
+            ioDirty,
+            ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputDouble("##value_input", &value, 0.0, 0.0, "%.6f");
+        CommitColorPipelineNumericParamEditFromCurrentItem(
+            ioState,
+            liveFractalType,
+            liveParams,
+            range,
+            value,
+            ioValue,
+            typedChanged,
+            ioDirty,
+            ioInteraction);
         changed = sliderChanged || typedChanged;
-        if (changed) {
-            ClampColorPipelineNumericValue(&value, range);
-            ioValue->number_value = value;
-            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
-        }
-        NoteColorPipelineCurrentItemInteraction(typedChanged, ioInteraction);
     } else if (param.type == "int") {
         int value = static_cast<int>(std::lround(ioValue->number_value));
         const NumericControlRange range = ResolveColorPipelineNumericControlRange(param);
@@ -3492,16 +3604,29 @@ inline bool RenderColorPipelineParamControl(
             sliderChanged = ImGui::DragInt(param.label.c_str(), &value, step, dragMin, dragMax);
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
-        NoteColorPipelineCurrentItemInteraction(sliderChanged, ioInteraction);
+        CommitColorPipelineNumericParamEditFromCurrentItem(
+            ioState,
+            liveFractalType,
+            liveParams,
+            range,
+            value,
+            ioValue,
+            sliderChanged,
+            ioDirty,
+            ioInteraction);
         ImGui::SameLine();
         const bool typedChanged = ImGui::InputInt("##value_input", &value, 0, 0);
+        CommitColorPipelineNumericParamEditFromCurrentItem(
+            ioState,
+            liveFractalType,
+            liveParams,
+            range,
+            value,
+            ioValue,
+            typedChanged,
+            ioDirty,
+            ioInteraction);
         changed = sliderChanged || typedChanged;
-        if (changed) {
-            ClampColorPipelineNumericValue(&value, range);
-            ioValue->number_value = static_cast<double>(value);
-            TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
-        }
-        NoteColorPipelineCurrentItemInteraction(typedChanged, ioInteraction);
     } else if (param.type == "bool") {
         bool value = ioValue->bool_value;
         changed = ImGui::Checkbox(param.label.c_str(), &value);
