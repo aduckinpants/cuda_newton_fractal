@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <utility>
 #include <vector>
@@ -50,6 +51,7 @@ inline bool EnsureImGuiStackEditorRowId(std::uint64_t* ioRowId, std::uint64_t* i
 }
 
 struct ImGuiStackEditorRowChromeSpec {
+    using NoteItemRectFn = void(*)(void* user_data, const char* control_id);
 	const char* tree_node_id = "row";
 	const char* header_label = "(row)";
 	std::uint64_t stable_row_id = 0;
@@ -60,6 +62,12 @@ struct ImGuiStackEditorRowChromeSpec {
 	const char* move_up_button_label = "Up";
 	const char* move_down_button_label = "Down";
 	const char* remove_button_label = "Remove";
+	const char* enabled_control_id = nullptr;
+	const char* remove_control_id = nullptr;
+	NoteItemRectFn note_item_rect = nullptr;
+	void* note_item_rect_user_data = nullptr;
+	const char* emulate_activate_control_id = nullptr;
+	bool* emulate_activate_consumed = nullptr;
 	ImGuiTreeNodeFlags tree_flags = ImGuiTreeNodeFlags_DefaultOpen;
 };
 
@@ -71,6 +79,30 @@ struct ImGuiStackEditorRowChromeResult {
 	bool move_down_requested = false;
 };
 
+inline void MaybeNoteImGuiStackEditorItemRect(
+	const ImGuiStackEditorRowChromeSpec& spec,
+	const char* controlId) {
+	if (spec.note_item_rect && controlId && controlId[0] != '\0') {
+		spec.note_item_rect(spec.note_item_rect_user_data, controlId);
+	}
+}
+
+inline bool ShouldEmulateImGuiStackEditorControlActivation(
+	const ImGuiStackEditorRowChromeSpec& spec,
+	const char* controlId) {
+	if (!spec.emulate_activate_control_id || !spec.emulate_activate_consumed || *spec.emulate_activate_consumed) {
+		return false;
+	}
+	return controlId && controlId[0] != '\0' &&
+		std::strcmp(spec.emulate_activate_control_id, controlId) == 0;
+}
+
+inline void MarkEmulatedImGuiStackEditorControlActivated(
+	const ImGuiStackEditorRowChromeSpec& spec) {
+	if (spec.emulate_activate_consumed) {
+		*spec.emulate_activate_consumed = true;
+	}
+}
 template <typename RenderBodyFn>
 inline ImGuiStackEditorRowChromeResult RenderImGuiStackEditorRowChrome(
 	const ImGuiStackEditorRowChromeSpec& spec,
@@ -110,9 +142,22 @@ inline ImGuiStackEditorRowChromeResult RenderImGuiStackEditorRowChrome(
 			result.remove_requested = true;
 			result.changed = true;
 		}
+		MaybeNoteImGuiStackEditorItemRect(spec, spec.remove_control_id);
+		if (ShouldEmulateImGuiStackEditorControlActivation(spec, spec.remove_control_id)) {
+			result.remove_requested = true;
+			result.changed = true;
+			MarkEmulatedImGuiStackEditorControlActivated(spec);
+		}
 	}
 	if (spec.enabled) {
-		result.changed = ImGui::Checkbox("Enabled", spec.enabled) || result.changed;
+		const bool checkboxChanged = ImGui::Checkbox("Enabled", spec.enabled);
+		result.changed = checkboxChanged || result.changed;
+		MaybeNoteImGuiStackEditorItemRect(spec, spec.enabled_control_id);
+		if (ShouldEmulateImGuiStackEditorControlActivation(spec, spec.enabled_control_id)) {
+			*spec.enabled = !*spec.enabled;
+			result.changed = true;
+			MarkEmulatedImGuiStackEditorControlActivated(spec);
+		}
 	}
 	if (result.open) {
 		std::forward<RenderBodyFn>(renderBody)();

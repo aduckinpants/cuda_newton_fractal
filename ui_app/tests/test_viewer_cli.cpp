@@ -377,6 +377,21 @@ static void TestUiAutomationReportJsonMissingValue() {
     Check(rc != 0, "TestUiAutomationReportJsonMissingValue_Fails");
 }
 
+static void TestUiAutomationClickControlIdFlag() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({
+        "--ui-automation-click-control-id", "color_pipeline.grading.15.enabled"
+    }), &cli);
+    Check(rc == 0, "TestUiAutomationClickControlIdFlag_ReturnCode");
+    Check(cli.have_ui_automation_click_control_id, "TestUiAutomationClickControlIdFlag_HaveUiAutomationClickControlId");
+    Check(cli.ui_automation_click_control_id == "color_pipeline.grading.15.enabled", "TestUiAutomationClickControlIdFlag_Value");
+}
+
+static void TestUiAutomationClickControlIdMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--ui-automation-click-control-id"}), &cli);
+    Check(rc != 0, "TestUiAutomationClickControlIdMissingValue_Fails");
+}
 static void TestColorPipelineActionsParseTypedSequence() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -590,6 +605,8 @@ int main() {
     TestLoadStateJson();
     TestUiAutomationReportFlags();
     TestUiAutomationReportJsonMissingValue();
+    TestUiAutomationClickControlIdFlag();
+    TestUiAutomationClickControlIdMissingValue();
     TestColorPipelineActionsParseTypedSequence();
     TestColorPipelineActionsRejectInvalidSpec();
     TestSidecarApplyArmedStepCount();

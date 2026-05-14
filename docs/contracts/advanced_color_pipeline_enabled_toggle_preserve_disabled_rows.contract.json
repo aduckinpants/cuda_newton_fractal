@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_enabled_toggle_preserve_disabled_rows",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows.contract.json",
+    "docs/notes/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/headless_modes.h",
+    "ui_app/src/headless_modes.cpp",
+    "ui_app/src/viewer_cli.h",
+    "ui_app/src/viewer_cli.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_headless_modes.cpp",
+    "ui_app/tests/test_viewer_cli.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md",
+    "ui_app/src/imgui_stack_editor.h",
+    "ui_app/src/main.cpp",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py"
+  ],
+  "required_operator_inputs": [
+    "prove on current HEAD whether the enabled-toggle deletion regression is still present in the real viewer checkbox path before claiming a product fix",
+    "preserve disabled row count, stable row identity, and enabled-state truth across live resync instead of normalizing disabled rows away",
+    "keep unsupported rows visible and disabled in the draft while allowing the remaining supported rows to auto-apply truthfully",
+    "prove explicit remove remains separate and the existing UX/window or published-runtime harness can toggle enabled state without using remove_row"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the regression is fixed if disabled rows still disappear after live resync",
+    "replace explicit remove semantics with disable semantics or disable semantics with delete semantics",
+    "reopen balance_void_grade, weighted blend, basin-default, neutral_finish, tone_map_finish, grade.glow, manual archive, hooks, crash recovery, anti-lie tooling, or unrelated UI polish",
+    "reuse the closed phase8f contract as the mutation authority for this regression"
+  ],
+  "required_defaults": {
+    "enabled_toggle_preserves_disabled_rows": "required",
+    "unsupported_disabled_rows_remain_visible": "required",
+    "explicit_remove_remains_separate": "required",
+    "phase8c_command_ladder": "required",
+    "existing_ux_window_harness_proof": "required"
+  },
+  "forbidden_defaults": {
+    "delete_on_uncheck": "forbidden",
+    "unsupported_row_normalization": "forbidden",
+    "balance_void_grade": "forbidden",
+    "phase8f_contract_reuse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows.contract.json --out-json artifacts/validation/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_contract_schema_valid",
+      "description": "The enabled-toggle preserve-disabled-rows contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_plan_sync_ok",
+      "description": "The enabled-toggle preserve-disabled-rows plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_hostile_audit_ok",
+      "description": "The enabled-toggle preserve-disabled-rows hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_enabled_toggle_preserve_disabled_rows_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

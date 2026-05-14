@@ -5,22 +5,28 @@ from ctypes import wintypes
 import json
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 import pytest
 
 from tests.runtime_harness import (
+    HeadlessLoadedStateScenario as _HeadlessLoadedStateScenario,
     RUNTIME_DIR,
     WM_CLOSE,
     active_runtime_exe as _active_runtime_exe,
+    capture_explaino_runtime_baseline as _capture_explaino_runtime_baseline,
     capture_ready_window_pixels as _capture_ready_window_pixels,
     drag_screen_rect,
     find_window_for_pid as _find_window_for_pid,
     focus_window as _focus_window,
+    run_headless_loaded_state_scenario as _run_headless_loaded_state_scenario,
     wait_for_ui_automation_rect,
     wait_for_window as _wait_for_window,
 )
+
+from tests.test_fractal_runtime_explaino_escape_variants import _with_explaino_repeat_heatmap_draft_state
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -167,6 +173,157 @@ def _mean_abs_diff(left: bytes, right: bytes) -> float:
         total += abs(left_byte - right_byte)
     return total / len(left)
 
+def _write_loaded_state_json(path: Path, state: dict[str, object]) -> None:
+    path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+
+
+def _draft_row(state: dict[str, object], lane_id: str, row_index: int) -> dict[str, object]:
+    draft = state.get("color_pipeline_draft")
+    assert isinstance(draft, dict), "expected loaded state to include color_pipeline_draft"
+    lanes = draft.get("lanes")
+    assert isinstance(lanes, list), "expected color_pipeline_draft.lanes to be a list"
+    for lane in lanes:
+        if not isinstance(lane, dict) or lane.get("lane_id") != lane_id:
+            continue
+        rows = lane.get("rows")
+        assert isinstance(rows, list), f"expected lane {lane_id} rows to be a list"
+        assert 0 <= row_index < len(rows), f"expected lane {lane_id} to contain row {row_index}"
+        row = rows[row_index]
+        assert isinstance(row, dict), f"expected lane {lane_id} row {row_index} to be an object"
+        return row
+    raise AssertionError(f"missing lane {lane_id}")
+
+
+def _load_ui_automation_report(report_path: Path) -> dict[str, object] | None:
+    if not report_path.exists():
+        return None
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _lane_rows_from_report(payload: dict[str, object], lane_id: str) -> list[dict[str, object]]:
+    rows = payload.get("rows", [])
+    if not isinstance(rows, list):
+        return []
+    lane_rows: list[dict[str, object]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("lane_id", "")).strip() != lane_id:
+            continue
+        lane_rows.append(row)
+    return lane_rows
+
+
+def _wait_for_lane_rows(
+    report_path: Path,
+    lane_id: str,
+    *,
+    expected_count: int,
+    target_row_id: int,
+    target_enabled: bool,
+    timeout_seconds: float = 10.0,
+) -> list[dict[str, object]]:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, object] | None = None
+    while time.monotonic() < deadline:
+        payload = _load_ui_automation_report(report_path)
+        if payload is None:
+            time.sleep(0.1)
+            continue
+        last_payload = payload
+        lane_rows = _lane_rows_from_report(payload, lane_id)
+        if len(lane_rows) != expected_count:
+            time.sleep(0.1)
+            continue
+        for row in lane_rows:
+            try:
+                row_id = int(row.get("ui_row_id", -1))
+            except (TypeError, ValueError):
+                continue
+            enabled = row.get("enabled")
+            if row_id == target_row_id and isinstance(enabled, bool) and enabled == target_enabled:
+                return lane_rows
+        time.sleep(0.1)
+    raise AssertionError(
+        f"automation report never reached lane={lane_id!r} count={expected_count} row_id={target_row_id} enabled={target_enabled}; last_payload={last_payload!r}"
+    )
+
+
+def _wait_for_ui_automation_click(
+    report_path: Path,
+    control_id: str,
+    *,
+    timeout_seconds: float = 10.0,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, object] | None = None
+    while time.monotonic() < deadline:
+        payload = _load_ui_automation_report(report_path)
+        if payload is None:
+            time.sleep(0.1)
+            continue
+        last_payload = payload
+        if payload.get("requested_click_control_id") != control_id:
+            time.sleep(0.1)
+            continue
+        if payload.get("click_consumed") is True:
+            return payload
+        time.sleep(0.1)
+    raise AssertionError(
+        f"automation report never consumed requested click {control_id!r}; last_payload={last_payload!r}"
+    )
+
+def _seed_two_grading_row_state(tmp_path: Path, exe_path: Path) -> dict[str, object]:
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
+    draft_state = _with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])
+    scenario_result = _run_headless_loaded_state_scenario(
+        tmp_path / "seed_two_grading_rows",
+        exe_path=exe_path,
+        scenario=_HeadlessLoadedStateScenario(
+            name="seed_two_grading_rows",
+            state=draft_state,
+            action_args=(
+                "--color-pipeline-action",
+                "add_row:grading:phase_finish",
+                "--color-pipeline-action",
+                "set_param:grading:1:grade.saturation:number:0.8",
+                "--color-pipeline-action",
+                "set_param:grading:1:grade.contrast:number:1.6",
+            ),
+        ),
+    )
+    return scenario_result.scenario_capture["state"]
+
+
+def _seed_unsupported_palette_row_state(exe_path: Path) -> dict[str, object]:
+    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
+    state = json.loads(json.dumps(_with_explaino_repeat_heatmap_draft_state(baseline_capture["state"])))
+    draft = state.get("color_pipeline_draft")
+    assert isinstance(draft, dict), "expected baseline capture to expose color_pipeline_draft"
+    lanes = draft.get("lanes")
+    assert isinstance(lanes, list), "expected color_pipeline_draft.lanes to be a list"
+    next_row_id = int(draft.get("next_row_id", 0))
+    assert next_row_id > 0, "expected color_pipeline_draft.next_row_id to stay positive"
+    for lane in lanes:
+        if not isinstance(lane, dict) or lane.get("lane_id") != "palette":
+            continue
+        rows = lane.get("rows")
+        assert isinstance(rows, list), "expected Palette lane rows to be a list"
+        rows.append(
+            {
+                "ui_row_id": next_row_id,
+                "enabled": True,
+                "function_id": "root_classic_palette",
+                "parameter_values": [],
+            }
+        )
+        draft["next_row_id"] = next_row_id + 1
+        return state
+    raise AssertionError("missing Palette lane in baseline color_pipeline_draft")
 
 def _load_recent_runtime_walk_sessions() -> dict:
     recent_path = RUNTIME_DIR / "diagnostics" / "runtime_walk_sessions" / "recent_sessions.json"
@@ -306,6 +463,280 @@ def test_runtime_walk_viewer_physical_color_pipeline_drag_changes_frame(tmp_path
                 proc.kill()
                 proc.wait(timeout=5.0)
 
+
+def test_runtime_viewer_grading_enabled_checkbox_preserves_disabled_row(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("advanced-color viewer checkbox regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    viewer_dir = Path(tempfile.mkdtemp())
+    seeded_state = _seed_two_grading_row_state(viewer_dir, exe_path)
+    toggled_row = _draft_row(seeded_state, "grading", 1)
+    row_id = int(toggled_row["ui_row_id"])
+    control_id = f"color_pipeline.grading.{row_id}.enabled"
+
+    state_path = viewer_dir / "state.json"
+    baseline_report_path = viewer_dir / "report.json"
+    toggled_report_path = viewer_dir / "toggle.json"
+    _write_loaded_state_json(state_path, seeded_state)
+
+    baseline_proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(baseline_report_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    baseline_hwnd: int | None = None
+    try:
+        baseline_hwnd = _wait_for_window(baseline_proc)
+        wait_for_ui_automation_rect(baseline_report_path, control_id)
+        baseline_rows = _wait_for_lane_rows(
+            baseline_report_path,
+            "grading",
+            expected_count=2,
+            target_row_id=row_id,
+            target_enabled=True,
+        )
+        assert int(baseline_rows[1]["ui_row_id"]) == row_id
+        assert str(baseline_rows[1]["function_id"]) == "phase_finish"
+        assert [bool(row.get("enabled")) for row in baseline_rows] == [True, True]
+    finally:
+        if baseline_hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(baseline_hwnd), WM_CLOSE, 0, 0)
+        if baseline_proc.poll() is None:
+            try:
+                baseline_proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                baseline_proc.kill()
+                baseline_proc.wait(timeout=5.0)
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(toggled_report_path),
+            "--ui-automation-click-control-id",
+            control_id,
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        payload = _wait_for_ui_automation_click(toggled_report_path, control_id)
+        toggled_rows = _wait_for_lane_rows(
+            toggled_report_path,
+            "grading",
+            expected_count=2,
+            target_row_id=row_id,
+            target_enabled=False,
+        )
+        assert int(toggled_rows[1]["ui_row_id"]) == row_id
+        assert str(toggled_rows[1]["function_id"]) == "phase_finish"
+        assert [bool(row.get("enabled")) for row in toggled_rows] == [True, False]
+        assert payload.get("validation_messages") == []
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_viewer_unsupported_palette_checkbox_preserves_disabled_row(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("advanced-color viewer checkbox regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    viewer_dir = Path(tempfile.mkdtemp())
+    seeded_state = _seed_unsupported_palette_row_state(exe_path)
+    toggled_row = _draft_row(seeded_state, "palette", 1)
+    row_id = int(toggled_row["ui_row_id"])
+    control_id = f"color_pipeline.palette.{row_id}.enabled"
+
+    state_path = viewer_dir / "state.json"
+    baseline_report_path = viewer_dir / "report.json"
+    toggled_report_path = viewer_dir / "toggle.json"
+    _write_loaded_state_json(state_path, seeded_state)
+
+    baseline_proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(baseline_report_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    baseline_hwnd: int | None = None
+    try:
+        baseline_hwnd = _wait_for_window(baseline_proc)
+        wait_for_ui_automation_rect(baseline_report_path, control_id)
+        baseline_rows = _wait_for_lane_rows(
+            baseline_report_path,
+            "palette",
+            expected_count=2,
+            target_row_id=row_id,
+            target_enabled=True,
+        )
+        assert [str(row.get("function_id")) for row in baseline_rows] == ["heatmap", "root_classic_palette"]
+        assert [bool(row.get("enabled")) for row in baseline_rows] == [True, True]
+    finally:
+        if baseline_hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(baseline_hwnd), WM_CLOSE, 0, 0)
+        if baseline_proc.poll() is None:
+            try:
+                baseline_proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                baseline_proc.kill()
+                baseline_proc.wait(timeout=5.0)
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(toggled_report_path),
+            "--ui-automation-click-control-id",
+            control_id,
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        payload = _wait_for_ui_automation_click(toggled_report_path, control_id)
+        toggled_rows = _wait_for_lane_rows(
+            toggled_report_path,
+            "palette",
+            expected_count=2,
+            target_row_id=row_id,
+            target_enabled=False,
+        )
+        assert int(toggled_rows[1]["ui_row_id"]) == row_id
+        assert str(toggled_rows[1]["function_id"]) == "root_classic_palette"
+        assert [bool(row.get("enabled")) for row in toggled_rows] == [True, False]
+        assert payload.get("validation_messages") == []
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_viewer_explicit_remove_button_still_removes_row(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("advanced-color viewer checkbox regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    viewer_dir = Path(tempfile.mkdtemp())
+    seeded_state = _seed_two_grading_row_state(viewer_dir, exe_path)
+    remaining_row = _draft_row(seeded_state, "grading", 0)
+    removed_row = _draft_row(seeded_state, "grading", 1)
+    remaining_row_id = int(remaining_row["ui_row_id"])
+    removed_row_id = int(removed_row["ui_row_id"])
+    control_id = f"color_pipeline.grading.{removed_row_id}.remove"
+
+    state_path = viewer_dir / "state.json"
+    baseline_report_path = viewer_dir / "report.json"
+    removed_report_path = viewer_dir / "remove.json"
+    _write_loaded_state_json(state_path, seeded_state)
+
+    baseline_proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(baseline_report_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    baseline_hwnd: int | None = None
+    try:
+        baseline_hwnd = _wait_for_window(baseline_proc)
+        wait_for_ui_automation_rect(baseline_report_path, control_id)
+        baseline_rows = _wait_for_lane_rows(
+            baseline_report_path,
+            "grading",
+            expected_count=2,
+            target_row_id=removed_row_id,
+            target_enabled=True,
+        )
+        assert [str(row.get("function_id")) for row in baseline_rows] == ["contrast_lift", "phase_finish"]
+    finally:
+        if baseline_hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(baseline_hwnd), WM_CLOSE, 0, 0)
+        if baseline_proc.poll() is None:
+            try:
+                baseline_proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                baseline_proc.kill()
+                baseline_proc.wait(timeout=5.0)
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(removed_report_path),
+            "--ui-automation-click-control-id",
+            control_id,
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        payload = _wait_for_ui_automation_click(removed_report_path, control_id)
+        remaining_rows = _wait_for_lane_rows(
+            removed_report_path,
+            "grading",
+            expected_count=1,
+            target_row_id=remaining_row_id,
+            target_enabled=True,
+        )
+        assert [int(row.get("ui_row_id", -1)) for row in remaining_rows] == [remaining_row_id]
+        assert [str(row.get("function_id")) for row in remaining_rows] == ["contrast_lift"]
+        assert all(int(row.get("ui_row_id", -1)) != removed_row_id for row in remaining_rows)
+        assert payload.get("validation_messages") == []
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
 
 def test_runtime_walk_viewer_tolerates_missing_companion_fits(tmp_path: Path) -> None:
     if sys.platform != "win32":

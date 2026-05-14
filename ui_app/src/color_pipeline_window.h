@@ -38,6 +38,9 @@ struct ColorPipelineWindowState {
     bool open = false;
     bool initialized = false;
     bool force_open_for_automation = false;
+    std::string ui_automation_click_control_id;
+    bool ui_automation_click_pending = false;
+    bool ui_automation_click_consumed = false;
     std::uint64_t next_row_id = 1;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
@@ -91,6 +94,18 @@ inline std::string BuildColorPipelinePrimaryControlId(
     return std::string("color_pipeline.") + laneId + "." + functionId + "." + param.path + ".primary";
 }
 
+inline std::string BuildColorPipelineRowEnabledControlId(
+    const std::string& laneId,
+    std::uint64_t rowId) {
+    return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".enabled";
+}
+
+inline std::string BuildColorPipelineRowRemoveControlId(
+    const std::string& laneId,
+    std::uint64_t rowId) {
+    return std::string("color_pipeline.") + laneId + "." + std::to_string(rowId) + ".remove";
+}
+
 #ifndef COLOR_PIPELINE_WINDOW_NO_IMGUI
 inline void NoteColorPipelineUiAutomationRect(
     ColorPipelineWindowState* ioState,
@@ -111,6 +126,12 @@ inline void NoteColorPipelineUiAutomationRect(
     rect.client_bottom = static_cast<int>(std::lround(max.y));
     ioState->ui_automation_rects.push_back(std::move(rect));
 }
+inline void NoteColorPipelineUiAutomationRectFromStackEditor(
+    void* userData,
+    const char* controlId) {
+    NoteColorPipelineUiAutomationRect(static_cast<ColorPipelineWindowState*>(userData), controlId);
+}
+
 #else
 inline void NoteColorPipelineUiAutomationRect(
     ColorPipelineWindowState* ioState,
@@ -544,13 +565,7 @@ inline bool ResetColorPipelineDraftFromLiveState(ColorPipelineWindowState* ioSta
         return false;
     }
     const std::vector<ColorPipelineLaneState> previousLanes = ioState->lanes;
-    if (ioState->lanes.size() != ioState->live_snapshot.lanes.size()) {
-        ioState->lanes = ioState->live_snapshot.lanes;
-    } else {
-        for (std::size_t index = 0; index < ioState->lanes.size(); ++index) {
-            ioState->lanes[index] = ioState->live_snapshot.lanes[index];
-        }
-    }
+    ioState->lanes = ioState->live_snapshot.lanes;
 
     const std::size_t sharedLaneCount = (std::min)(ioState->lanes.size(), previousLanes.size());
     for (std::size_t laneIndex = 0; laneIndex < sharedLaneCount; ++laneIndex) {
@@ -559,10 +574,26 @@ inline bool ResetColorPipelineDraftFromLiveState(ColorPipelineWindowState* ioSta
         if (lane.lane_id != previousLane.lane_id) {
             continue;
         }
-        const std::size_t sharedRowCount = (std::min)(lane.rows.size(), previousLane.rows.size());
-        for (std::size_t rowIndex = 0; rowIndex < sharedRowCount; ++rowIndex) {
-            lane.rows[rowIndex].ui_row_id = previousLane.rows[rowIndex].ui_row_id;
+
+        std::vector<ColorPipelineRowState> mergedRows;
+        mergedRows.reserve(lane.rows.size() + previousLane.rows.size());
+        std::size_t liveRowIndex = 0;
+        for (const ColorPipelineRowState& previousRow : previousLane.rows) {
+            if (previousRow.enabled) {
+                if (liveRowIndex >= lane.rows.size()) {
+                    continue;
+                }
+                ColorPipelineRowState liveRow = lane.rows[liveRowIndex++];
+                liveRow.ui_row_id = previousRow.ui_row_id;
+                mergedRows.push_back(std::move(liveRow));
+                continue;
+            }
+            mergedRows.push_back(previousRow);
         }
+        while (liveRowIndex < lane.rows.size()) {
+            mergedRows.push_back(lane.rows[liveRowIndex++]);
+        }
+        lane.rows = std::move(mergedRows);
     }
     for (ColorPipelineLaneState& lane : ioState->lanes) {
         if (!EnsureColorPipelineLaneRowsInitialized(&lane, &ioState->next_row_id)) {
@@ -3587,19 +3618,32 @@ inline void RenderColorPipelineWindowLane(
         const FunctionDescriptor* descriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
         const char* rowLabel = descriptor ? descriptor->name.c_str() : row.function_id.c_str();
 
+        const bool rowEnabledBefore = row.enabled;
+        bool requestedEnabled = rowEnabledBefore;
+
         ImGuiStackEditorRowChromeSpec rowSpec;
         rowSpec.tree_node_id = lane.lane_id.c_str();
         rowSpec.header_label = rowLabel;
         rowSpec.stable_row_id = row.ui_row_id;
-        rowSpec.enabled = &row.enabled;
+        rowSpec.enabled = &requestedEnabled;
+        const std::string enabledControlId = BuildColorPipelineRowEnabledControlId(lane.lane_id, row.ui_row_id);
+        const std::string removeControlId = BuildColorPipelineRowRemoveControlId(lane.lane_id, row.ui_row_id);
+        rowSpec.enabled_control_id = enabledControlId.c_str();
+        rowSpec.remove_control_id = removeControlId.c_str();
+        rowSpec.note_item_rect = NoteColorPipelineUiAutomationRectFromStackEditor;
+        rowSpec.note_item_rect_user_data = ioState;
+        rowSpec.emulate_activate_control_id = ioState->ui_automation_click_pending
+            ? ioState->ui_automation_click_control_id.c_str()
+            : nullptr;
+        rowSpec.emulate_activate_consumed = ioState->ui_automation_click_pending
+            ? &ioState->ui_automation_click_consumed
+            : nullptr;
         rowSpec.allow_remove = lane.rows.size() > 1;
         rowSpec.allow_move_up = rowIndex > 0;
         rowSpec.allow_move_down = rowIndex + 1 < lane.rows.size();
         if (ioState->force_open_for_automation) {
             ImGui::SetNextItemOpen(true, ImGuiCond_Always);
         }
-        const bool rowEnabledBefore = row.enabled;
-
         const ImGuiStackEditorRowChromeResult rowResult = RenderImGuiStackEditorRowChrome(rowSpec, [&]() {
             const FunctionDescriptor* currentDescriptor = FindColorPipelineFunctionDescriptor(*catalog, row.function_id);
             const char* comboPreview = (currentDescriptor && !currentDescriptor->name.empty())
@@ -3674,8 +3718,8 @@ inline void RenderColorPipelineWindowLane(
             }
         });
 
-        if (row.enabled != rowEnabledBefore) {
-            SetColorPipelineRowEnabledFromUi(ioState, laneIndex, rowIndex, row.enabled);
+        if (requestedEnabled != rowEnabledBefore) {
+            SetColorPipelineRowEnabledFromUi(ioState, laneIndex, rowIndex, requestedEnabled);
             TryApplySupportedColorPipelineDraftFromControl(ioState, liveFractalType, liveParams, ioDirty, ioInteraction);
         }
         if (rowResult.changed && ioInteraction) {

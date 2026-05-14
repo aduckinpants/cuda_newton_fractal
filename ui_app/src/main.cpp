@@ -1304,6 +1304,12 @@ static void WriteColorPipelineUiAutomationReport(
     out << "  \"window_open\": " << (colorPipelineWindow.open ? "true" : "false") << ",\n";
     out << "  \"initialized\": " << (colorPipelineWindow.initialized ? "true" : "false") << ",\n";
     out << "  \"force_open_for_automation\": " << (colorPipelineWindow.force_open_for_automation ? "true" : "false") << ",\n";
+    if (colorPipelineWindow.ui_automation_click_control_id.empty()) {
+        out << "  \"requested_click_control_id\": null,\n";
+    } else {
+        out << "  \"requested_click_control_id\": \"" << colorPipelineWindow.ui_automation_click_control_id << "\",\n";
+    }
+    out << "  \"click_consumed\": " << (colorPipelineWindow.ui_automation_click_consumed ? "true" : "false") << ",\n";
     out << "  \"lane_rows\": [";
     bool firstLaneRow = true;
     for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
@@ -1316,6 +1322,24 @@ static void WriteColorPipelineUiAutomationReport(
         }
     }
     if (!firstLaneRow) {
+        out << '\n';
+    }
+    out << "  ],\n";
+    out << "  \"rows\": [";
+    bool firstRowState = true;
+    for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
+        for (const ColorPipelineRowState& row : lane.rows) {
+            if (!firstRowState) {
+                out << ",";
+            }
+            firstRowState = false;
+            out << "\n    {\"lane_id\": \"" << lane.lane_id
+                << "\", \"ui_row_id\": " << row.ui_row_id
+                << ", \"function_id\": \"" << row.function_id
+                << "\", \"enabled\": " << (row.enabled ? "true" : "false") << "}";
+        }
+    }
+    if (!firstRowState) {
         out << '\n';
     }
     out << "  ],\n";
@@ -1435,7 +1459,7 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
     if (params.poly_kind != PolyKind::custom) {
         SetPolyPreset(params);
     }
-    return ApplyCliOverrides(
+    const int applyCliRc = ApplyCliOverrides(
         cli,
         view,
         params,
@@ -1448,6 +1472,17 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         &colorPipelineWindow,
         &currentLoadedStatePath,
         &dirty);
+    if (applyCliRc != 0) {
+        return applyCliRc;
+    }
+    if (cli.have_ui_automation_click_control_id) {
+        colorPipelineWindow.open = true;
+        colorPipelineWindow.force_open_for_automation = true;
+        colorPipelineWindow.ui_automation_click_control_id = cli.ui_automation_click_control_id;
+        colorPipelineWindow.ui_automation_click_pending = true;
+        colorPipelineWindow.ui_automation_click_consumed = false;
+    }
+    return 0;
 }
 
 static bool InitializeViewerWindowAndImGui(HINSTANCE hInstance, const std::string& exeDir,
@@ -2704,3 +2739,4 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ShutdownViewer(hwnd, wc);
     return 0;
 }
+

@@ -455,6 +455,115 @@ void TestSourcePalettePresetCheckboxesTogglePairedRows() {
         "TestSourcePalettePresetCheckboxesTogglePairedRows_LastPairStaysEnabled");
 }
 
+void TestDisablePreservesSupportedGradingRowAcrossApplyResync() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_SyncStartsSupported");
+    Check(AddColorPipelineLaneRow(&state, 3, "phase_finish") && state.lanes[3].rows.size() == 2,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_AddsSecondGradingRow");
+    Check(SetRowNumber(state.lanes[3].rows[1], "grade.saturation", 0.8) &&
+            SetRowNumber(state.lanes[3].rows[1], "grade.contrast", 1.6),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ConfiguresSecondRow");
+
+    const std::uint64_t secondRowId = state.lanes[3].rows[1].ui_row_id;
+    bool changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_AppliesTwoRowStack");
+    Check(state.lanes[3].rows.size() == 2 && state.lanes[3].rows[1].ui_row_id == secondRowId &&
+            state.lanes[3].rows[1].enabled && params.color_grading_stack_count == 2,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ApplyKeepsSecondRowIdentity");
+
+    Check(SetColorPipelineRowEnabledFromUi(&state, 3, 1, false),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_DisablesSecondRow");
+    const ColorPipelineDraftApplyState disabledApplyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(disabledApplyState.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_DisabledRowCanStillApply");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ApplyDisabledRowState");
+    Check(changed,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_DisablingChangesLiveStack");
+    Check(state.lanes[3].rows.size() == 2 && state.lanes[3].rows[1].ui_row_id == secondRowId &&
+            state.lanes[3].rows[1].function_id == "phase_finish" && !state.lanes[3].rows[1].enabled,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_DisabledRowStaysVisibleAfterResync");
+    Check(state.live_snapshot.valid && state.live_snapshot.lanes[3].rows.size() == 1 &&
+            params.color_grading_stack_count == 1,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_LiveSnapshotDropsDisabledRowOnly");
+    Check(HasColorPipelineDraftEdits(state),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_DisabledRowRemainsDraftDelta");
+
+    Check(SetColorPipelineRowEnabledFromUi(&state, 3, 1, true),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ReEnablesSecondRow");
+    const ColorPipelineDraftApplyState reenabledApplyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(reenabledApplyState.status == ColorPipelineDraftApplyStatus::can_apply,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ReEnabledRowCanApply");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ReApplyRestoresTwoRowStack");
+    Check(state.lanes[3].rows.size() == 2 && state.lanes[3].rows[1].ui_row_id == secondRowId &&
+            state.lanes[3].rows[1].enabled && params.color_grading_stack_count == 2,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ReEnableRestoresSameRow");
+
+    Check(RemoveColorPipelineLaneRow(&state, 3, 1),
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ExplicitRemoveDeletesSecondRow");
+    Check(state.lanes[3].rows.size() == 1,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_RemoveShrinksDraftOnlyOnExplicitRemove");
+    changed = false;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_ApplyAfterExplicitRemove");
+    Check(state.lanes[3].rows.size() == 1 && params.color_grading_stack_count == 1,
+        "TestDisablePreservesSupportedGradingRowAcrossApplyResync_RemoveKeepsExplicitDeleteSeparateFromDisable");
+}
+
+void TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync() {
+    ColorPipelineWindowState state{};
+    KernelParams params = SmoothEscapeParams();
+    Check(SyncColorPipelineWindowFromLiveState(&state, FractalType::newton, &params),
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_SyncStartsSupported");
+    Check(AddColorPipelineLaneRow(&state, 2, "root_classic_palette") && state.lanes[2].rows.size() == 2,
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_AddsUnsupportedPaletteRow");
+
+    const std::uint64_t unsupportedRowId = state.lanes[2].rows[1].ui_row_id;
+    const ColorPipelineDraftApplyState unsupportedApplyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(unsupportedApplyState.status == ColorPipelineDraftApplyStatus::unsupported_tuple,
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_ExtraRootPaletteStartsUnsupported");
+
+    Check(SetColorPipelineRowEnabledFromUi(&state, 2, 1, false),
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisablesUnsupportedRow");
+    const ColorPipelineDraftApplyState disabledApplyState = DescribeColorPipelineDraftApplyState(
+        state,
+        FractalType::newton,
+        &params);
+    Check(disabledApplyState.status == ColorPipelineDraftApplyStatus::matches_live,
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisabledUnsupportedRowMatchesEnabledLiveTuple");
+
+    bool changed = true;
+    Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed),
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_ApplyDisabledUnsupportedRow");
+    Check(!changed,
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisablingUnsupportedRowDoesNotChangeLiveTuple");
+    Check(state.lanes[2].rows.size() == 2 && state.lanes[2].rows[1].ui_row_id == unsupportedRowId &&
+            state.lanes[2].rows[1].function_id == "root_classic_palette" && !state.lanes[2].rows[1].enabled,
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisabledUnsupportedRowStaysVisibleAfterResync");
+    Check(state.live_snapshot.valid && state.live_snapshot.lanes[2].rows.size() == 1 &&
+            state.live_snapshot.lanes[2].rows[0].function_id == "heatmap",
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_LiveSnapshotKeepsOnlySupportedEnabledPalette");
+    Check(HasColorPipelineDraftEdits(state),
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisabledUnsupportedRowRemainsDraftDelta");
+    Check(state.validation_messages.empty(),
+        "TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync_DisabledUnsupportedRowClearsValidationNoise");
+}
+
 void TestWindowUtilityContracts() {
     ColorPipelineWindowState state{};
     PushColorPipelineValidationMessage(&state, "first");
@@ -507,6 +616,8 @@ int main() {
     TestGradingStackApplyAndLiveImport();
     TestRootBasinPairScheduleBridge();
     TestSourcePalettePresetCheckboxesTogglePairedRows();
+    TestDisablePreservesSupportedGradingRowAcrossApplyResync();
+    TestDisablePreservesUnsupportedPaletteRowAcrossApplyResync();
     TestWindowUtilityContracts();
 
     std::printf("test_color_pipeline_window: passed=%d failed=%d\n", g_passed, g_failed);

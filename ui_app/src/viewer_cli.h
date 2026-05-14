@@ -66,6 +66,8 @@ struct ViewerCliArgs {
     bool open_color_pipeline_window_on_startup = false;
     bool have_ui_automation_report_json = false;
     std::string ui_automation_report_json_path;
+    bool have_ui_automation_click_control_id = false;
+    std::string ui_automation_click_control_id;
 
     // Fractal type
     bool have_fractal_type = false;
