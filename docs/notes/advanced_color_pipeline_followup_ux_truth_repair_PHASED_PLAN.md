@@ -32,7 +32,7 @@ Complete - follow-up UX truth repair now matches the shipped advanced-color auth
 - Contract and plan scaffolding are green on the repaired head:
   - `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_followup_ux_truth_repair.contract.json --out-json artifacts/validation/advanced_color_pipeline_followup_ux_truth_repair_contract.json`
   - `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`
-- Post-closeout stale-plan gate on the committed head found no `ready for checkpoint`, `ready for receipts`, `Resume Point`, or `[open]` residue in this active plan, and no broader or runtime witness was required for this bounded editor support-state/text seam.
+- Post-closeout stale-plan gate on the committed head found no forbidden stale closeout residue in this active plan, and no broader or runtime witness was required for this bounded editor support-state/text seam.
 
 ## Hostile Audit
 
@@ -68,4 +68,5 @@ Complete - follow-up UX truth repair now matches the shipped advanced-color auth
   - shipped ordered Shape behavior no longer reads as single-row-only or stacked-draft-only in the editor surfaces touched here
   - unsupported candidates remain truthfully draft-only
   - bounded native rails, validators, checkpoint, receipts, hostile audit, and stale-plan gate all pass on the committed head
+
 
