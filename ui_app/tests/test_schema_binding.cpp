@@ -1588,6 +1588,39 @@ int main() {
             std::cerr << "Expected syncing from a supported non-basin live tuple to import the smooth-escape draft before root tuple-switch coverage\n";
             return 1;
         }
+        struct ShippedGradingCandidateExpectation {
+            const char* functionId;
+            const char* failureMessage;
+        };
+        const ShippedGradingCandidateExpectation shippedGradingCandidates[] = {
+            {"neutral_finish", "Expected selecting neutral_finish from a shipped smooth-escape tuple to stay out of draft-only labeling\n"},
+            {"tone_map_finish", "Expected selecting tone_map_finish from a shipped smooth-escape tuple to stay out of draft-only labeling\n"},
+            {"grade_glow", "Expected selecting grade_glow from a shipped smooth-escape tuple to stay out of draft-only labeling\n"},
+            {"balance_void_grade", "Expected selecting balance_void_grade from a shipped smooth-escape tuple to stay out of draft-only labeling\n"},
+        };
+        for (const ShippedGradingCandidateExpectation& expectation : shippedGradingCandidates) {
+            const ColorPipelineDraftApplyState candidateState = DescribeColorPipelineCandidateApplyState(
+                windowState,
+                3,
+                expectation.functionId,
+                view.fractal_type,
+                &params);
+            if (candidateState.status != ColorPipelineDraftApplyStatus::can_apply) {
+                std::cerr << expectation.failureMessage;
+                return 1;
+            }
+        }
+        ColorPipelineWindowState invalidGradingMessageState = windowState;
+        invalidGradingMessageState.lanes[3].rows[0].function_id = "missing_grade";
+        const ColorPipelineDraftApplyState invalidGradingMessageApplyState = DescribeColorPipelineDraftApplyState(
+            invalidGradingMessageState,
+            view.fractal_type,
+            &params);
+        if (invalidGradingMessageApplyState.status != ColorPipelineDraftApplyStatus::unsupported_tuple ||
+            invalidGradingMessageApplyState.message.find("balance_void_grade") == std::string::npos) {
+            std::cerr << "Expected unsupported Grading guidance to list balance_void_grade inside the shipped Grading stack boundary\n";
+            return 1;
+        }
         const ColorPipelineDraftApplyState rootIndexCandidateState = DescribeColorPipelineCandidateApplyState(
             windowState,
             0,
@@ -1616,6 +1649,16 @@ int main() {
             params.color_pipeline.palette != ColorPalette::root_classic ||
             params.color_pipeline.grading != ColorGradingPreset::basin_default) {
             std::cerr << "Expected applying the tuple-aware root selection to move the live runtime from a non-basin tuple into root_index plus root_classic\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState basinDefaultCandidateState = DescribeColorPipelineCandidateApplyState(
+            windowState,
+            3,
+            "basin_default",
+            view.fractal_type,
+            &params);
+        if (basinDefaultCandidateState.status != ColorPipelineDraftApplyStatus::matches_live) {
+            std::cerr << "Expected the shipped basin_default row to stop reading as draft-only once the root-basin tuple is aligned\n";
             return 1;
         }
         const ColorPipelineDraftApplyState rootClassicCandidateState = DescribeColorPipelineCandidateApplyState(
@@ -2221,6 +2264,14 @@ int main() {
             !setParam(windowState.lanes[0].rows[1], "signal.magnitude_bias", -0.25) ||
             !setParam(windowState.lanes[0].rows[1], "signal.blend_weight", 0.25)) {
             std::cerr << "Expected the Source weighted-blend RED to construct a supported two-row generic Source lane with per-row Source params and blend weight\n";
+            return 1;
+        }
+        const ColorPipelineDraftApplyState weightedSourceApplyState = DescribeColorPipelineDraftApplyState(
+            windowState,
+            view.fractal_type,
+            &params);
+        if (weightedSourceApplyState.status != ColorPipelineDraftApplyStatus::can_apply) {
+            std::cerr << "Expected the shipped two-row weighted Source stack to stay live-applicable instead of reading as draft-only\n";
             return 1;
         }
         bool sourceStackChanged = false;

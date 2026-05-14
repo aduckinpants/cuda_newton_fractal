@@ -3131,7 +3131,7 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         for (const ColorPipelineRowState* gradingRow : gradingRows) {
             if (!gradingRow || !IsSupportedColorPipelineGradingFunctionId(gradingRow->function_id)) {
                 if (outError) {
-                    *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade_glow in the Grading stack.";
+                    *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade in the Grading stack.";
                 }
                 return false;
             }
@@ -3678,7 +3678,7 @@ inline void RenderColorPipelineWindowSummary(
     (void)ioInteraction;
     ImGui::TextWrapped("Draft Source / Shape / Palette recipes here. The legacy Color mode and grading controls stay in the main Color panel during the schedule-editor transition.");
     ImGui::TextDisabled("This window now models three typed lane stacks instead of a fixed Signal / Palette / Grade trio.");
-    ImGui::TextDisabled("Current live apply bridge supports one enabled Source row, one enabled Palette row, and one live-backed Shape row (Identity, Offset + Scale, Repeat, Posterize, Mirror Repeat, Bias + Gain Curve, or Smooth Window).");
+    ImGui::TextDisabled("Current live apply bridge supports the bounded shipped Source / Shape / Palette / Grading recipes shown here; root_index with root_classic_palette or joy_root_palette stays on the separate row-indexed root-basin schedule.");
     ImGui::TextDisabled("Some Source / Palette rows are fixed presets with no tunable parameters; choosing the row is itself the live change.");
     ImGui::Separator();
     if (ioState && liveParams) {
