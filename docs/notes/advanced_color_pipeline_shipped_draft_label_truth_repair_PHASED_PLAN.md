@@ -40,6 +40,7 @@ Complete - shipped-vs-draft support-text truth now matches the current shipped a
 - [x] Pass 1 - add the first REDs and confirm a real shipped-vs-draft defect on current HEAD. Result: the supported shipped candidate-state assertions stayed green in the covered smooth-escape, root-basin, and weighted Source seams, but the unsupported Grading guidance failed because it still omitted `balance_void_grade` from the shipped stack list.
 - [x] Pass 2 - clean re-read of the repaired support-state and label seams after green owner rails. Result: the repaired `balance_void_grade` support text stayed aligned with the shipped Grading boundary, the stale one-row Source / Palette summary banner was removed, and no additional shipped candidate omission or unsupported false promotion surfaced.
 - [x] Pass 3 - clean re-read of the repaired diff, validator outputs, and stale-support grep after the native green rails. Result: no additional real defect, stale shipped-boundary wording, or scope-widening claim surfaced in the repaired state.
+- [x] Pass 4 - clean re-read of the checkpoint artifacts before receipts. Result: the product diff stayed clean, but `HANDOFF_LOG.md` had a duplicated `ck:ddddac4c` closeout line from manual append plus checkpoint-wrapper append; the final clean head removes the duplicate and preserves one truthful session-start plus one truthful completion entry.
 
 ## Audit Findings
 
@@ -47,3 +48,4 @@ Complete - shipped-vs-draft support-text truth now matches the current shipped a
 - [x] Real UI truth defect found: the summary banner still claimed the live apply bridge only supported one enabled Source row and one enabled Palette row after weighted Source and Palette stack shipping closed.
 - [x] Narrower-than-feared scope: the first shipped-candidate REDs proved the covered supported candidate branches were already classifying correctly, so this slice did not need deeper support-state logic changes for those contexts.
 - [x] Clean re-read: after the support-text repair and native green rails, no additional real defect or hidden scope widening surfaced in the shipped candidate-state seams covered by this slice.
+- [x] Workflow closeout defect found: `HANDOFF_LOG.md` carried a duplicated `ck:ddddac4c` completion line after the checkpoint wrapper commit because the same closing handoff had already been appended manually earlier in the slice. The final cleanup removes the duplicate before receipts so the checkpoint history stays fail-closed and non-ambiguous.
