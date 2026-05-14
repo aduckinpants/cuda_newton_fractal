@@ -13,6 +13,9 @@ import pytest
 
 from tests.runtime_harness import (
     HeadlessLoadedStateScenario as _HeadlessLoadedStateScenario,
+    MOUSEEVENTF_LEFTDOWN,
+    MOUSEEVENTF_LEFTUP,
+    POINT,
     RUNTIME_DIR,
     WM_CLOSE,
     active_runtime_exe as _active_runtime_exe,
@@ -172,6 +175,69 @@ def _mean_abs_diff(left: bytes, right: bytes) -> float:
     for left_byte, right_byte in zip(left, right):
         total += abs(left_byte - right_byte)
     return total / len(left)
+
+
+def _client_size(hwnd: int) -> tuple[int, int]:
+    rect = wintypes.RECT()
+    if not ctypes.windll.user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect)):
+        raise OSError("GetClientRect failed for viewport probe")
+    width = rect.right - rect.left
+    height = rect.bottom - rect.top
+    if width <= 0 or height <= 0:
+        raise OSError(f"invalid client size for viewport probe: width={width} height={height}")
+    return width, height
+
+
+def _client_origin(hwnd: int) -> tuple[int, int]:
+    origin = POINT()
+    if not ctypes.windll.user32.ClientToScreen(wintypes.HWND(hwnd), ctypes.byref(origin)):
+        raise OSError("ClientToScreen failed for viewport probe")
+    return origin.x, origin.y
+
+
+def _crop_rgba_region(
+    pixels: bytes,
+    width: int,
+    height: int,
+    *,
+    left: int,
+    top: int,
+    right: int,
+    bottom: int,
+) -> bytes:
+    clamped_left = max(0, min(left, width))
+    clamped_top = max(0, min(top, height))
+    clamped_right = max(clamped_left, min(right, width))
+    clamped_bottom = max(clamped_top, min(bottom, height))
+    if clamped_right <= clamped_left or clamped_bottom <= clamped_top:
+        raise AssertionError(
+            f"invalid crop region left={left} top={top} right={right} bottom={bottom} for client {width}x{height}"
+        )
+    row_stride = width * 4
+    region = bytearray()
+    for y in range(clamped_top, clamped_bottom):
+        start = y * row_stride + clamped_left * 4
+        end = y * row_stride + clamped_right * 4
+        region.extend(pixels[start:end])
+    return bytes(region)
+
+
+def _viewport_probe_region(hwnd: int, control_rect: object) -> tuple[int, int, int, int]:
+    width, height = _client_size(hwnd)
+    client_origin_x, _ = _client_origin(hwnd)
+    control_left = int(control_rect.screen_left) - client_origin_x
+    probe_right = min(max(control_left - 24, width // 3), width)
+    if probe_right <= 32:
+        probe_right = max(64, width // 4)
+    return 0, 0, probe_right, height
+
+
+def _viewport_probe_pixels(hwnd: int, control_rect: object) -> bytes:
+    width, height = _client_size(hwnd)
+    left, top, right, bottom = _viewport_probe_region(hwnd, control_rect)
+    pixels = _capture_ready_window_pixels(hwnd)
+    return _crop_rgba_region(pixels, width, height, left=left, top=top, right=right, bottom=bottom)
+
 
 def _write_loaded_state_json(path: Path, state: dict[str, object]) -> None:
     path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
@@ -454,6 +520,98 @@ def test_runtime_walk_viewer_physical_color_pipeline_drag_changes_frame(tmp_path
             f"diff={steady_after_drag:.3f}"
         )
     finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_walk_viewer_physical_color_pipeline_drag_updates_frame_before_release(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    state_path = tmp_path / "state.json"
+    bundle_path = tmp_path / "bundle.json"
+    request_path = tmp_path / "runtime_walk_viewer_request.json"
+    automation_report_path = tmp_path / "ui_automation_report.json"
+    out_dir = tmp_path / "out"
+    _write_state_json(state_path)
+    _write_bundle_json(bundle_path)
+    _write_request_json(request_path, state_path, bundle_path, out_dir)
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-runtime-walk-request-json",
+            str(request_path),
+            "--open-color-pipeline-window",
+            "--ui-automation-report-json",
+            str(automation_report_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    user32 = ctypes.windll.user32
+    original_cursor = POINT()
+    left_button_down = False
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        control_rect = wait_for_ui_automation_rect(automation_report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
+
+        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
+        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
+
+        time.sleep(0.5)
+        paused_frame_a, paused_frame_b = _capture_stable_window_pixels(hwnd)
+        paused_diff = _mean_abs_diff(paused_frame_a, paused_frame_b)
+        assert paused_diff < 0.1, f"Space pause did not freeze runtime-walk playback before the held color-pipeline drag; diff={paused_diff:.3f}"
+
+        paused_viewport = _viewport_probe_pixels(hwnd, control_rect)
+        user32.GetCursorPos(ctypes.byref(original_cursor))
+        start_x = round(control_rect.screen_left + control_rect.width * 0.35)
+        mid_x = round(control_rect.screen_left + control_rect.width * 0.58)
+        end_x = round(control_rect.screen_left + control_rect.width * 0.82)
+        y = round(control_rect.screen_top + control_rect.height * 0.5)
+
+        user32.SetCursorPos(start_x, y)
+        time.sleep(0.05)
+        user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        left_button_down = True
+        time.sleep(0.05)
+        user32.SetCursorPos(mid_x, y)
+        time.sleep(0.25)
+
+        mid_drag_frame_a = _viewport_probe_pixels(hwnd, control_rect)
+        time.sleep(0.2)
+        mid_drag_frame_b = _viewport_probe_pixels(hwnd, control_rect)
+        mid_drag_diff = _mean_abs_diff(paused_viewport, mid_drag_frame_a)
+        assert mid_drag_diff > 0.03, (
+            "Holding a physical drag on the Color Pipeline Source Scale control did not visibly change the viewport region before mouse release; "
+            f"diff={mid_drag_diff:.3f}"
+        )
+
+        steady_while_held = _mean_abs_diff(mid_drag_frame_a, mid_drag_frame_b)
+        assert steady_while_held < 0.1, (
+            "The viewport region did not settle on the held mid-drag Color Pipeline value while playback was paused; "
+            f"diff={steady_while_held:.3f}"
+        )
+
+        user32.SetCursorPos(end_x, y)
+        time.sleep(0.05)
+        user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        left_button_down = False
+        time.sleep(0.3)
+    finally:
+        if left_button_down:
+            user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        user32.SetCursorPos(original_cursor.x, original_cursor.y)
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
         if proc.poll() is None:

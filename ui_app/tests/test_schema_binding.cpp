@@ -2660,7 +2660,7 @@ int main() {
 
         bool directControlDirty = false;
         ColorPipelineRenderInteractionState activeDirectControlInteraction{};
-        if (CommitColorPipelineNumericParamEdit(
+        if (!CommitColorPipelineNumericParamEdit(
                 &explainoRenderWindowState,
                 view.fractal_type,
                 &params,
@@ -2673,17 +2673,20 @@ int main() {
                 false,
                 &directControlDirty,
                 &activeDirectControlInteraction)) {
-            std::cerr << "Expected active advanced color numeric edits to stay draft-only until release instead of applying before the control reports its active state\n";
+            std::cerr << "Expected active advanced color numeric edits to keep the viewport live while the control remains held\n";
             return 1;
         }
-        if (directControlDirty ||
+        if (!directControlDirty ||
             !activeDirectControlInteraction.interacted ||
             !activeDirectControlInteraction.has_active_item ||
-            !NearlyEqual(params.color_smooth_escape_scale, 1.0) ||
-            !NearlyEqual(params.color_shape_scale, 1.0) ||
+            !NearlyEqual(params.color_smooth_escape_scale, 0.625) ||
+            !NearlyEqual(params.color_shape_scale, 2.0) ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::explaino_cmap ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !NearlyEqual(shapeScaleParam->number_value, 2.0) ||
-            !HasColorPipelineDraftEdits(explainoRenderWindowState)) {
-            std::cerr << "Expected active advanced color numeric edits to leave the live runtime unchanged while the dirty draft tracks the control value\n";
+            HasColorPipelineDraftEdits(explainoRenderWindowState)) {
+            std::cerr << "Expected active advanced color numeric edits to mutate the live runtime immediately without leaving draft residue\n";
             return 1;
         }
 
@@ -2694,7 +2697,7 @@ int main() {
                 view.fractal_type,
                 &params,
                 ResolveColorPipelineNumericControlRange(*shapeScaleDescriptor),
-                2.0,
+                2.25,
                 shapeScaleParam,
                 true,
                 false,
@@ -2702,19 +2705,20 @@ int main() {
                 true,
                 &directControlDirty,
                 &directControlInteraction)) {
-            std::cerr << "Expected the advanced color numeric control helper to apply the dirty draft once the control releases\n";
+            std::cerr << "Expected released numeric edits to keep the supported live-backed draft synced without a separate apply toggle\n";
             return 1;
         }
         if (!NearlyEqual(params.color_smooth_escape_scale, 0.625) ||
-            !NearlyEqual(params.color_shape_scale, 2.0) ||
+            !NearlyEqual(params.color_shape_scale, 2.25) ||
             params.color_pipeline.signal != ColorSignal::smooth_escape ||
             params.color_pipeline.palette != ColorPalette::explaino_cmap ||
             params.color_pipeline.grading != ColorGradingPreset::escape_default ||
             !directControlDirty ||
             !directControlInteraction.interacted ||
             directControlInteraction.has_active_item ||
+            !NearlyEqual(shapeScaleParam->number_value, 2.25) ||
             HasColorPipelineDraftEdits(explainoRenderWindowState)) {
-            std::cerr << "Expected released numeric edits to sync the supported live-backed draft without a separate apply toggle\n";
+            std::cerr << "Expected released numeric edits to keep the live runtime and draft aligned after the last drag step\n";
             return 1;
         }
 

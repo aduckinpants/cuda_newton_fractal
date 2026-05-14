@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_pipeline_live_drag_runtime_restore",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_pipeline_live_drag_runtime_restore_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_pipeline_live_drag_runtime_restore.contract.json",
+    "docs/notes/advanced_color_pipeline_live_drag_runtime_restore_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "prove on current HEAD whether color-pipeline numeric drags still update the live runtime continuously during interaction",
+    "restore live drag viewport updates without letting draft or live resync stomp sibling controls under the active row",
+    "keep the supported palette-switch grading preservation proof green while restoring live drag behavior",
+    "recreate the regression in checked-in seam and viewer/runtime harnesses instead of relying on manual claims"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the slider regression is fixed if color-pipeline drags still fail to live-update the viewport",
+    "claim the slider regression is fixed by deferring apply until release",
+    "claim success if palette switching regresses the supported grading preserve witness",
+    "reopen balance_void_grade feature work, archive archaeology, ExplainO family work, hooks, crash recovery, anti-lie tooling, or unrelated UI polish"
+  ],
+  "required_defaults": {
+    "active_drag_live_apply": "required",
+    "active_drag_row_stability": "required",
+    "existing_physical_viewer_drag_witness": "required",
+    "supported_palette_switch_preserves_grading": "required"
+  },
+  "forbidden_defaults": {
+    "defer_until_release": "forbidden",
+    "mid_drag_row_jump_or_resync_stomp": "forbidden",
+    "manual_only_regression_claim": "forbidden",
+    "scope_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_pipeline_live_drag_runtime_restore.contract.json --out-json artifacts/validation/advanced_color_pipeline_live_drag_runtime_restore_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_pipeline_live_drag_runtime_restore_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_pipeline_live_drag_runtime_restore_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_pipeline_live_drag_runtime_restore_contract_schema_valid",
+      "description": "The live-drag runtime-restore contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_live_drag_runtime_restore_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_live_drag_runtime_restore_plan_sync_ok",
+      "description": "The live-drag runtime-restore plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_pipeline_live_drag_runtime_restore_hostile_audit_ok",
+      "description": "The live-drag runtime-restore hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_pipeline_live_drag_runtime_restore_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -3345,10 +3345,6 @@ inline bool ApplyColorPipelineDraftToLiveState(
     if (!SyncColorPipelineWindowFromLiveState(ioState, liveFractalType, ioParams)) {
         return false;
     }
-    if (ioState->live_snapshot.draft_import_supported &&
-        !ResetColorPipelineDraftFromLiveState(ioState)) {
-        return false;
-    }
     if (outChanged) {
         *outChanged = changed || paramChanged;
     }
@@ -3472,9 +3468,6 @@ inline bool TryApplySupportedColorPipelineDraftFromControl(
     bool* ioDirty,
     ColorPipelineRenderInteractionState* ioInteraction) {
     if (!ioState || !liveParams) {
-        return false;
-    }
-    if (ioInteraction && ioInteraction->has_active_item) {
         return false;
     }
     const ColorPipelineDraftApplyState applyState = DescribeColorPipelineDraftApplyState(*ioState, liveFractalType, liveParams);
