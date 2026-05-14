@@ -108,6 +108,7 @@ const char* CaptureColorGradingPresetId(ColorGradingPreset grading) {
     case ColorGradingPreset::bands_default: return "bands_default";
     case ColorGradingPreset::neutral_default: return "neutral_default";
     case ColorGradingPreset::tone_map_default: return "tone_map_default";
+    case ColorGradingPreset::glow_default: return "glow_default";
     }
     return "unknown";
 }
@@ -364,7 +365,8 @@ void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& pa
             js << "        \"grading\": \"" << CaptureColorGradingPresetId(gradingEntry.grading) << "\",\n";
             js << "        \"exposure\": " << static_cast<double>(gradingEntry.params.exposure) << ",\n";
             js << "        \"saturation\": " << static_cast<double>(gradingEntry.params.saturation) << ",\n";
-            js << "        \"contrast\": " << static_cast<double>(gradingEntry.params.contrast) << "\n";
+            js << "        \"contrast\": " << static_cast<double>(gradingEntry.params.contrast) << ",\n";
+            js << "        \"glow\": " << static_cast<double>(gradingEntry.params.glow) << "\n";
             js << "      }" << (index + 1 < gradingStackCount ? "," : "") << "\n";
         }
         js << "    ],\n";
@@ -374,6 +376,7 @@ void WriteColorPipelineStacksJson(std::ostringstream& js, const KernelParams& pa
 void WriteColorParamsJson(std::ostringstream& js, const KernelParams& params) {
     js << "    \"color_saturation\": " << static_cast<double>(params.color_saturation) << ",\n";
     js << "    \"color_contrast\": " << static_cast<double>(params.color_contrast) << ",\n";
+    js << "    \"color_glow\": " << static_cast<double>(params.color_glow) << ",\n";
     js << "    \"color_tint_r\": " << static_cast<double>(params.color_tint_r) << ",\n";
     js << "    \"color_tint_g\": " << static_cast<double>(params.color_tint_g) << ",\n";
     js << "    \"color_tint_b\": " << static_cast<double>(params.color_tint_b) << ",\n";

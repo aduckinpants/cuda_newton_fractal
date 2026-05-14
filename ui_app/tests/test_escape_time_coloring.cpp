@@ -28,6 +28,29 @@ bool NearlyEqual(float left, float right, float eps = 1.0e-6f) {
     return delta < eps && delta > -eps;
 }
 
+TestColor ApplyGlowHighlight(TestColor color, float glow) {
+    const float clampedGlow = EscapeTimeColorClamp(glow, 0.0f, 2.0f);
+    const auto applyChannel = [clampedGlow](unsigned char value) {
+        const float normalized = static_cast<float>(value) / 255.0f;
+        const float highlight = normalized * normalized;
+        const float boosted = static_cast<float>(value) + (255.0f - static_cast<float>(value)) * highlight * (clampedGlow * 0.5f);
+        return static_cast<unsigned char>(EscapeTimeColorClamp(boosted, 0.0f, 255.0f));
+    };
+    return {applyChannel(color.x), applyChannel(color.y), applyChannel(color.z), color.w};
+}
+
+TestColor ApplyFractalColorGlowFinishPassForTest(
+    TestColor color,
+    const KernelParams& params,
+    float exposure,
+    float saturation,
+    float contrast,
+    float glow) {
+    return ApplyGlowHighlight(
+        ApplyFractalColorGradingPass(color, params, exposure, saturation, contrast),
+        glow);
+}
+
 } // namespace
 
 int main() {
@@ -499,6 +522,40 @@ int main() {
         }
         if (!Equals(toneMapFinishGrade, toneMapExpected)) {
             std::cerr << "tone_map_finish should execute real runtime grading math by tone-mapping after tint, saturation, and contrast\n";
+            return 1;
+        }
+        params.color_grading_stack_count = 0;
+
+        ColorGradingPreset gradeGlowGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("grade_glow", &gradeGlowGrading)) {
+            std::cerr << "grade_glow should parse as a shipped Grading row id before runtime math proof\n";
+            return 1;
+        }
+        params.exposure = 0.7f;
+        params.color_saturation = 1.4f;
+        params.color_contrast = 0.6f;
+        params.color_glow = 0.1f;
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = gradeGlowGrading;
+        params.color_grading_stack[0].params.exposure = 1.2f;
+        params.color_grading_stack[0].params.saturation = 0.8f;
+        params.color_grading_stack[0].params.contrast = 1.5f;
+        params.color_grading_stack[0].params.glow = 0.6f;
+        const TestColor gradeGlowFinishGrade = ApplyFractalColorGrading(programmableBase, params);
+        const TestColor gradeGlowNeutralOrder = ApplyFractalColorGradingPass(programmableBase, params, 1.2f, 0.8f, 1.5f);
+        const TestColor gradeGlowToneMapOrder = ApplyFractalColorToneMapFinishPass(programmableBase, params, 1.2f, 0.8f, 1.5f);
+        const TestColor gradeGlowExpected = ApplyFractalColorGlowFinishPassForTest(programmableBase, params, 1.2f, 0.8f, 1.5f, 0.6f);
+        const TestColor gradeGlowLegacyMirrorOnly = ApplyFractalColorGlowFinishPassForTest(programmableBase, params, 0.7f, 1.4f, 0.6f, 0.1f);
+        if (Equals(gradeGlowFinishGrade, gradeGlowLegacyMirrorOnly)) {
+            std::cerr << "grade_glow should use its stack-entry exposure, saturation, contrast, and glow values instead of the legacy mirror fallback\n";
+            return 1;
+        }
+        if (Equals(gradeGlowFinishGrade, gradeGlowNeutralOrder) || Equals(gradeGlowFinishGrade, gradeGlowToneMapOrder)) {
+            std::cerr << "grade_glow should not collapse to neutral_finish or tone_map_finish ordering; it needs its own runtime glow branch\n";
+            return 1;
+        }
+        if (!Equals(gradeGlowFinishGrade, gradeGlowExpected)) {
+            std::cerr << "grade_glow should execute real runtime grading math by adding controlled highlight bloom after the shared grading pass\n";
             return 1;
         }
         params.color_grading_stack_count = 0;

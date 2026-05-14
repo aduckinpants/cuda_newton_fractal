@@ -323,6 +323,8 @@ inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
         return "neutral_finish";
     case ColorGradingPreset::tone_map_default:
         return "tone_map_finish";
+    case ColorGradingPreset::glow_default:
+        return "grade_glow";
     }
     return nullptr;
 }
@@ -350,6 +352,10 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
     }
     if (functionId == "tone_map_finish") {
         if (outValue) *outValue = ColorGradingPreset::tone_map_default;
+        return true;
+    }
+    if (functionId == "grade_glow") {
+        if (outValue) *outValue = ColorGradingPreset::glow_default;
         return true;
     }
     return false;
@@ -603,6 +609,16 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
                 MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften tone-map finish palette intensity before tone mapping.", 0.0, 2.0, 0.01, 1.15),
                 MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch tone-map finish mid-tones before tone mapping.", 0.0, 3.0, 0.01, 1.10),
             }),
+        MakeColorPipelineFunction(
+            "grade_glow",
+            "Grade Glow",
+            "Apply shared exposure, saturation, and contrast grading, then add a dedicated glow highlight finish through the runtime glow owner.",
+            {
+                MakeColorPipelineFloatParam("grade.exposure", "Exposure", "Set the overall grade-glow exposure before the highlight finish.", 0.1, 3.0, 0.01, 1.0),
+                MakeColorPipelineFloatParam("grade.saturation", "Saturation", "Push or soften grade-glow palette intensity before the highlight finish.", 0.0, 2.0, 0.01, 1.15),
+                MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch grade-glow mid-tones before the highlight finish.", 0.0, 3.0, 0.01, 1.10),
+                MakeColorPipelineFloatParam("grade.glow", "Glow", "Control the strength of the runtime highlight bloom after grading.", 0.0, 2.0, 0.01, 0.25),
+            }),
     };
 }
 
@@ -643,7 +659,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "band_finish" ||
             functionId == "basin_default" ||
             functionId == "neutral_finish" ||
-            functionId == "tone_map_finish";
+            functionId == "tone_map_finish" ||
+            functionId == "grade_glow";
     }
     return false;
 }
@@ -940,6 +957,12 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
             SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError);
     }
+    if (ioRow->function_id == "grade_glow") {
+        return SetColorPipelineParamNumber(ioRow, "grade.exposure", liveParams.exposure, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.glow", liveParams.color_glow, outError);
+    }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
             SetColorPipelineParamNumber(ioRow, "signal.wrap_cycles", liveParams.color_phase_wrap_cycles, outError);
@@ -1178,6 +1201,25 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         assignFloat(&ioParams->exposure, static_cast<float>(exposure));
         assignFloat(&ioParams->color_saturation, static_cast<float>(saturation));
         assignFloat(&ioParams->color_contrast, static_cast<float>(contrast));
+    } else if (row.function_id == "grade_glow") {
+        double exposure = 0.0;
+        double saturation = 0.0;
+        double contrast = 0.0;
+        double glow = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.exposure", &exposure, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.contrast", &contrast, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.glow", &glow, outError) ||
+            !ValidateColorPipelineParamRange("grade.exposure", exposure, 0.1, 3.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.saturation", saturation, 0.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.contrast", contrast, 0.0, 3.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.glow", glow, 0.0, 2.0, outError)) {
+            return false;
+        }
+        assignFloat(&ioParams->exposure, static_cast<float>(exposure));
+        assignFloat(&ioParams->color_saturation, static_cast<float>(saturation));
+        assignFloat(&ioParams->color_contrast, static_cast<float>(contrast));
+        assignFloat(&ioParams->color_glow, static_cast<float>(glow));
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;
@@ -1296,7 +1338,8 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
 
     const bool isEscapeLikeGrading =
         pipeline.grading == ColorGradingPreset::escape_default ||
-        pipeline.grading == ColorGradingPreset::tone_map_default;
+        pipeline.grading == ColorGradingPreset::tone_map_default ||
+        pipeline.grading == ColorGradingPreset::glow_default;
 
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::cyclic_escape &&

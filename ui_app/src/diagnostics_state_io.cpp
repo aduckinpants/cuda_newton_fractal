@@ -780,6 +780,7 @@ void ResetLegacyColorGradingMirror(KernelParams* ioParams) {
     if (!ioParams) return;
     ioParams->color_contrast_lift_exposure = 1.0f;
     ioParams->color_contrast_lift_saturation = 1.0f;
+    ioParams->color_glow = 0.25f;
 }
 
 void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry& gradingEntry, KernelParams* ioParams) {
@@ -797,6 +798,11 @@ void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry
         ioParams->exposure = gradingEntry.params.exposure;
         ioParams->color_saturation = gradingEntry.params.saturation;
         ioParams->color_contrast = gradingEntry.params.contrast;
+    } else if (gradingEntry.grading == ColorGradingPreset::glow_default) {
+        ioParams->exposure = gradingEntry.params.exposure;
+        ioParams->color_saturation = gradingEntry.params.saturation;
+        ioParams->color_contrast = gradingEntry.params.contrast;
+        ioParams->color_glow = gradingEntry.params.glow;
     }
 }
 
@@ -958,14 +964,17 @@ bool ParseColorGradingStackEntry(const json_min::Value& entryValue,
     double exposure = entry.params.exposure;
     double saturation = entry.params.saturation;
     double contrast = entry.params.contrast;
+    double glow = entry.params.glow;
     if (!GetOptionalNumber(entryValue, "exposure", &exposure, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
-        !GetOptionalNumber(entryValue, "contrast", &contrast, nullptr, outError)) {
+        !GetOptionalNumber(entryValue, "contrast", &contrast, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "glow", &glow, nullptr, outError)) {
         return false;
     }
     entry.params.exposure = static_cast<float>(exposure);
     entry.params.saturation = static_cast<float>(saturation);
     entry.params.contrast = static_cast<float>(contrast);
+    entry.params.glow = static_cast<float>(glow);
     *outEntry = entry;
     return true;
 }
@@ -1988,6 +1997,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     // Color grading (v3+, optional for backward compat)
     double colorSaturation = nextParams.color_saturation;
     double colorContrast = nextParams.color_contrast;
+    double colorGlow = nextParams.color_glow;
     double colorTintR = nextParams.color_tint_r;
     double colorTintG = nextParams.color_tint_g;
     double colorTintB = nextParams.color_tint_b;
@@ -2028,6 +2038,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorContrastLiftSaturation = nextParams.color_contrast_lift_saturation;
     if (!GetOptionalNumber(*paramsObject, "color_saturation", &colorSaturation, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast", &colorContrast, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_glow", &colorGlow, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_r", &colorTintR, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_g", &colorTintG, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_b", &colorTintB, nullptr, outError)) return false;
@@ -2092,6 +2103,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_contrast_lift_saturation", &colorContrastLiftSaturation, nullptr, outError)) return false;
     nextParams.color_saturation = static_cast<float>(colorSaturation);
     nextParams.color_contrast = static_cast<float>(colorContrast);
+    nextParams.color_glow = static_cast<float>(colorGlow);
     nextParams.color_tint_r = static_cast<float>(colorTintR);
     nextParams.color_tint_g = static_cast<float>(colorTintG);
     nextParams.color_tint_b = static_cast<float>(colorTintB);

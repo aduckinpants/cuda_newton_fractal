@@ -1076,6 +1076,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "neutral_finish" || functionId == "tone_map_finish") {
         return path == "grade.exposure" || path == "grade.saturation" || path == "grade.contrast";
     }
+    if (functionId == "grade_glow") {
+        return path == "grade.exposure" || path == "grade.saturation" || path == "grade.contrast" || path == "grade.glow";
+    }
     if (functionId == "phase_orbit") {
         return path == "signal.phase_offset" || path == "signal.wrap_cycles" || path == "signal.blend_weight";
     }
@@ -1400,7 +1403,8 @@ inline bool IsSupportedColorPipelineGradingFunctionId(const std::string& functio
         functionId == "band_finish" ||
         functionId == "basin_default" ||
         functionId == "neutral_finish" ||
-        functionId == "tone_map_finish";
+        functionId == "tone_map_finish" ||
+        functionId == "grade_glow";
 }
 
 inline bool ColorPipelineGradingRuntimeParamsEqual(
@@ -1408,7 +1412,8 @@ inline bool ColorPipelineGradingRuntimeParamsEqual(
     const ColorPipelineGradingRuntimeParams& right) {
     return std::fabs(left.exposure - right.exposure) <= 1.0e-6f &&
         std::fabs(left.saturation - right.saturation) <= 1.0e-6f &&
-        std::fabs(left.contrast - right.contrast) <= 1.0e-6f;
+        std::fabs(left.contrast - right.contrast) <= 1.0e-6f &&
+        std::fabs(left.glow - right.glow) <= 1.0e-6f;
 }
 
 inline bool ColorPipelineGradingStackEntriesEqual(
@@ -2112,7 +2117,7 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineGradingFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, and tone_map_finish in the Grading stack.";
+            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade_glow in the Grading stack.";
         }
         return false;
     }
@@ -2166,6 +2171,25 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
         entry.params.exposure = static_cast<float>(exposure);
         entry.params.saturation = static_cast<float>(saturation);
         entry.params.contrast = static_cast<float>(contrast);
+    } else if (row.function_id == "grade_glow") {
+        double exposure = 0.0;
+        double saturation = 0.0;
+        double contrast = 0.0;
+        double glow = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.exposure", &exposure, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.saturation", &saturation, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.contrast", &contrast, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.glow", &glow, outError) ||
+            !ValidateColorPipelineParamRange("grade.exposure", exposure, 0.1, 3.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.saturation", saturation, 0.0, 2.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.contrast", contrast, 0.0, 3.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.glow", glow, 0.0, 2.0, outError)) {
+            return false;
+        }
+        entry.params.exposure = static_cast<float>(exposure);
+        entry.params.saturation = static_cast<float>(saturation);
+        entry.params.contrast = static_cast<float>(contrast);
+        entry.params.glow = static_cast<float>(glow);
     }
 
     *outEntry = entry;
@@ -2288,6 +2312,12 @@ inline bool ImportSupportedColorPipelineParamsFromGradingStackEntry(
             SetColorPipelineParamNumber(ioRow, "grade.saturation", gradingEntry.params.saturation, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.contrast", gradingEntry.params.contrast, outError);
     }
+    if (ioRow->function_id == "grade_glow") {
+        return SetColorPipelineParamNumber(ioRow, "grade.exposure", gradingEntry.params.exposure, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.saturation", gradingEntry.params.saturation, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.contrast", gradingEntry.params.contrast, outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.glow", gradingEntry.params.glow, outError);
+    }
     return true;
 }
 
@@ -2355,6 +2385,11 @@ inline bool TryBuildColorPipelineGradingLaneFromLive(
         liveGradingEntry.params.exposure = liveParams.exposure;
         liveGradingEntry.params.saturation = liveParams.color_saturation;
         liveGradingEntry.params.contrast = liveParams.color_contrast;
+    } else if (liveGradingEntry.grading == ColorGradingPreset::glow_default) {
+        liveGradingEntry.params.exposure = liveParams.exposure;
+        liveGradingEntry.params.saturation = liveParams.color_saturation;
+        liveGradingEntry.params.contrast = liveParams.color_contrast;
+        liveGradingEntry.params.glow = liveParams.color_glow;
     } else {
         liveGradingEntry.params.exposure = 1.0f;
         liveGradingEntry.params.saturation = liveParams.color_saturation;
@@ -2782,6 +2817,7 @@ inline bool ApplySupportedColorPipelineParamsToLive(
 
     if (!nextGradingStack.empty()) {
         const ColorPipelineGradingStackEntry& gradingMirrorEntry = nextGradingStack.back();
+        assignShapeFloat(&ioParams->color_glow, 0.25f);
         if (gradingMirrorEntry.grading == ColorGradingPreset::escape_default) {
             assignShapeFloat(&ioParams->color_contrast_lift_exposure, gradingMirrorEntry.params.exposure);
             assignShapeFloat(&ioParams->color_contrast_lift_saturation, gradingMirrorEntry.params.saturation);
@@ -2794,6 +2830,11 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             assignShapeFloat(&ioParams->exposure, gradingMirrorEntry.params.exposure);
             assignShapeFloat(&ioParams->color_saturation, gradingMirrorEntry.params.saturation);
             assignShapeFloat(&ioParams->color_contrast, gradingMirrorEntry.params.contrast);
+        } else if (gradingMirrorEntry.grading == ColorGradingPreset::glow_default) {
+            assignShapeFloat(&ioParams->exposure, gradingMirrorEntry.params.exposure);
+            assignShapeFloat(&ioParams->color_saturation, gradingMirrorEntry.params.saturation);
+            assignShapeFloat(&ioParams->color_contrast, gradingMirrorEntry.params.contrast);
+            assignShapeFloat(&ioParams->color_glow, gradingMirrorEntry.params.glow);
         }
     }
 
@@ -3009,7 +3050,7 @@ inline bool TryBuildColorPipelineSelectionFromDraft(
         for (const ColorPipelineRowState* gradingRow : gradingRows) {
             if (!gradingRow || !IsSupportedColorPipelineGradingFunctionId(gradingRow->function_id)) {
                 if (outError) {
-                    *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, and tone_map_finish in the Grading stack.";
+                    *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade_glow in the Grading stack.";
                 }
                 return false;
             }

@@ -140,6 +140,36 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorToneMapFinishPass(
 }
 
 template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGlowHighlight(Color color, float glow) {
+    const float clampedGlow = EscapeTimeColorClamp(glow, 0.0f, 2.0f);
+    const auto applyChannel = [clampedGlow](unsigned char value) {
+        const float normalized = static_cast<float>(value) / 255.0f;
+        const float highlight = normalized * normalized;
+        const float boosted = static_cast<float>(value) +
+            (255.0f - static_cast<float>(value)) * highlight * (clampedGlow * 0.5f);
+        return static_cast<unsigned char>(EscapeTimeColorClamp(boosted, 0.0f, 255.0f));
+    };
+    return EscapeTimeColorMake<Color>(
+        applyChannel(color.x),
+        applyChannel(color.y),
+        applyChannel(color.z),
+        color.w);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGlowFinishPass(
+    Color color,
+    const KernelParams& params,
+    float exposure,
+    float saturation,
+    float contrast,
+    float glow) {
+    return ApplyFractalColorGlowHighlight(
+        ApplyFractalColorGradingPass(color, params, exposure, saturation, contrast),
+        glow);
+}
+
+template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
     Color color,
     const KernelParams& params,
@@ -147,7 +177,9 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
     float exposure = params.exposure < 0.0f ? 0.0f : params.exposure;
     float saturation = params.color_saturation;
     float contrast = params.color_contrast;
+    float glow = params.color_glow;
     bool toneMapFinish = false;
+    bool glowFinish = false;
     if (gradingEntry.grading == ColorGradingPreset::escape_default) {
         exposure *= EscapeTimeColorClamp(gradingEntry.params.exposure, 0.1f, 3.0f);
         saturation *= EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
@@ -163,9 +195,18 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
         saturation = EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
         contrast = EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
         toneMapFinish = gradingEntry.grading == ColorGradingPreset::tone_map_default;
+    } else if (gradingEntry.grading == ColorGradingPreset::glow_default) {
+        exposure = EscapeTimeColorClamp(gradingEntry.params.exposure, 0.1f, 3.0f);
+        saturation = EscapeTimeColorClamp(gradingEntry.params.saturation, 0.0f, 2.0f);
+        contrast = EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
+        glow = EscapeTimeColorClamp(gradingEntry.params.glow, 0.0f, 2.0f);
+        glowFinish = true;
     }
     if (toneMapFinish) {
         return ApplyFractalColorToneMapFinishPass(color, params, exposure, saturation, contrast);
+    }
+    if (glowFinish) {
+        return ApplyFractalColorGlowFinishPass(color, params, exposure, saturation, contrast, glow);
     }
     return ApplyFractalColorGradingPass(color, params, exposure, saturation, contrast);
 }
@@ -192,6 +233,15 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const Ke
             exposure,
             saturation,
             params.color_contrast);
+    }
+    if (params.color_pipeline.grading == ColorGradingPreset::glow_default) {
+        return ApplyFractalColorGlowFinishPass(
+            color,
+            params,
+            params.exposure < 0.0f ? 0.0f : params.exposure,
+            params.color_saturation,
+            params.color_contrast,
+            params.color_glow);
     }
     return ApplyFractalColorGradingPass(
         color,

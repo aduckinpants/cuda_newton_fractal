@@ -15,7 +15,7 @@ Current live examples:
 - the generic first-lane startup prompt and this restart inventory are no longer the right launch surface for manual ExplainO work
 - the latest real launch authority is the current manual slice plan plus the latest relevant `HANDOFF_LOG.md` closeout for that slice
 - today that means `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md` plus `ck:20260512-serializer-rail`, not a reset back to the original `Priority 0` archaeology prompt
-- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, `neutral_finish`, and the bounded `tone_map_finish` owner-proof row now define the shipped grading boundary, so the next post-tone-map decision is `grade.glow`, `balance_void_grade`, or explicit foundation closure once a newer real handoff replaces this startup surface
+- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, and the bounded `grade.glow` owner-proof row now define the shipped grading boundary, so the next post-`grade.glow` decision is `balance_void_grade` or explicit foundation closure once a newer real handoff replaces this startup surface
 
 It is intentionally not a workflow status page. It answers four questions only:
 
@@ -29,20 +29,21 @@ It is intentionally not a workflow status page. It answers four questions only:
 ## 1. Current Branch Truth
 
 - Branch: `feature/advanced-color-pipeline-draft-editor-reframe`
-- Last reread checkpoint for this note: `82d666c`
+- Last reread checkpoint for this note: current phase8f `grade.glow` working tree (base `a59e657`)
 - Live session state must still be rechecked with bootstrap commands before using this note as launch authority
 
 Important continuity facts:
 
 - `93ceeb6` is not a product-feature checkpoint.
 - `4ec49c8` is no longer the last product-code checkpoint on this branch.
-- The later product checkpoints that now matter are `5e93e48` (`ck:5972173a` weighted blend), `e2e14df` (`ck:47bd4450` basin-default lane retention), and `7d7f779` (`ck:a0ce2d03` neutral_finish owner proof).
-- The newer heads after `7d7f779` (`ab83e0a`, `8e2b27b`, and `a087faf`) are continuity/tooling follow-ups rather than additional shipped feature rows.
+- The later product checkpoints that now matter are `5e93e48` (`ck:5972173a` weighted blend), `e2e14df` (`ck:47bd4450` basin-default lane retention), `7d7f779` (`ck:a0ce2d03` neutral_finish owner proof), and `a59e657` (`ck:ae3b50a8` tone_map_finish owner proof).
+- The current phase8f `grade.glow` owner-proof slice is tracked by `ck:2f8a4f58` and extends that shipped boundary on the current working tree.
+- The continuity/tooling-only follow-up heads around those product checkpoints include `ab83e0a` and `a087faf`; the current phase8f `grade.glow` slice is product work again, not more workflow churn.
 
 Practical meaning:
 
-- The app state is the product state at `7d7f779`, plus all earlier advanced-color and manual-capture product commits beneath it.
-- The later neutral-finish continuity closeout and phase8c proof-ladder work matter for restart/proof routing, not as new shipped feature rows.
+- The app state is the product state at `a59e657` (`ck:ae3b50a8` tone_map_finish), plus the current phase8f `grade.glow` working tree tracked by `ck:2f8a4f58`, and all earlier advanced-color and manual-capture product commits beneath it.
+- The neutral-finish continuity closeout and phase8c proof-ladder work still matter for restart/proof routing, not as separate shipped feature rows, and the current `grade.glow` slice reuses that ladder instead of reopening weighted blend or tone-map archaeology.
 
 ---
 
@@ -141,6 +142,7 @@ Shipped ordered Grading stack:
 - `band_finish`
 - `neutral_finish`
 - `tone_map_finish`
+- `grade_glow`
 
 Bounded pair-only Grading:
 
@@ -154,6 +156,9 @@ Catalog anchors:
 ### 2.3 Most recent real feature checkpoints that matter
 
 These are the product checkpoints that still define the branch:
+
+- Current phase8f closeout tracked by `ck:2f8a4f58` ships `grade.glow` as the next real runtime-backed Grading row on the current working tree.
+- The latest fully checkpointed product commit beneath that working tree is `a59e657` / `ck:ae3b50a8`, which closed `tone_map_finish`.
 
 1. `7d7f779` / `ck:a0ce2d03`
    - `neutral_finish` shipped as a real runtime-backed Grading row.
@@ -281,14 +286,13 @@ Authority:
 
 ### Remaining defined pipeline/operator work
 
-- `grade.glow`
 - `balance_void_grade`
 
 Current meaning:
 
-- `basin_default`, `neutral_finish`, and the bounded `tone_map_finish` owner-proof row now belong to the shipped grading boundary and must not be relisted as deferred inventory
-- `grade.glow` and `balance_void_grade` remain explicitly deferred until their own owner-proof slices exist
-- the closed phase8c command ladder is still the cheapest truthful starting proof surface for any later grading/color-pipeline row work
+- `basin_default`, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, and `grade.glow` now belong to the shipped grading boundary and must not be relisted as deferred inventory
+- `balance_void_grade` remains explicitly deferred until its own owner-proof slice exists or the foundation closes without it
+- the closed phase8c command ladder is still the cheapest truthful starting proof surface for that later grading/operator work
 
 Authority:
 
@@ -315,10 +319,10 @@ Why:
 
 The cleanest seam is:
 
-- product feature checkpoints after preset preservation include `5e93e48`, `e2e14df`, and `7d7f779`
-- continuity/tooling-only follow-ups around them include `ab83e0a`, `8e2b27b`, and `a087faf`
+- product feature checkpoints after preset preservation include `5e93e48`, `e2e14df`, `7d7f779`, and `a59e657`; the current phase8f `grade.glow` working tree tracked by `ck:2f8a4f58` is product work on top of that base
+- continuity/tooling-only follow-ups around them include `ab83e0a` and `a087faf`
 
-If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, and neutral_finish landed; later hook/tooling churn still should not be mistaken for additional feature rows.
+If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, neutral_finish, tone_map_finish, and the current `grade.glow` owner-proof slice landed; later hook/tooling churn still should not be mistaken for additional feature rows.
 
 ---
 
@@ -340,7 +344,7 @@ What is true:
 What is not true:
 
 - the broader inventory is not fully shipped just because it appears in planning docs
-- deferred rows such as `grade.glow` and `balance_void_grade` are not shipped just because they remain in planning inventory
+- deferred rows such as `balance_void_grade` are not shipped just because they remain in planning inventory
 
 ### Stronger module boundaries and reusable core
 
@@ -381,7 +385,7 @@ Status:
 Why:
 
 - active sprint-core lanes are still unfinished
-- deferred Source and Grading work remain explicitly outside the current closure claim
+- the remaining deferred grading/operator work and any explicit closure decision remain outside the current closure claim until a later slice resolves them
 - historical archive compatibility is tracked separately rather than as the default next lane
 
 ---
@@ -390,43 +394,43 @@ Why:
 
 This is the one-topic-at-a-time work list. Each lane is intentionally bounded so a single session can focus on one topic area without dragging three others behind it.
 
-### Priority 0 - Post-`tone_map_finish` grading decision
+### Priority 0 - Post-`grade.glow` grading decision
 
 Goal:
 
-- choose the next bounded post-`tone_map_finish` lane truthfully instead of reopening the now-shipped row by inertia
+- choose the next bounded post-`grade.glow` lane truthfully instead of reopening the now-shipped row by inertia
 
 Why this is first now:
 
-- the bounded `tone_map_finish` owner path now covers descriptor/catalog truth, live bridge import/apply, runtime math, diagnostics/archive persistence, reset/default behavior, and published-runtime proof
-- `grade.glow` and `balance_void_grade` are the only remaining deferred Grading/operator rows in this restart surface
-- foundation closure is still a separate explicit decision, not an implied side effect of landing `tone_map_finish`
+- the bounded `grade.glow` owner path now covers descriptor/catalog truth, live bridge import/apply, runtime math, diagnostics/archive persistence, reset/default behavior, and published-runtime proof
+- `balance_void_grade` is now the only remaining deferred Grading/operator row in this restart surface
+- foundation closure is still a separate explicit decision, not an implied side effect of landing `grade.glow`
 
 Owner surfaces:
 
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
 - [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-- [advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8f_grade_glow_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8f_grade_glow_owner_proof_PHASED_PLAN.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 
 Bounded TODOs:
 
-1. Choose exactly one of `grade.glow`, `balance_void_grade`, or explicit foundation closure.
+1. Choose exactly one of `balance_void_grade` or explicit foundation closure.
 2. Keep the chosen lane single-topic and bounded.
-3. Preserve shipped behavior for `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, and `tone_map_finish`.
-4. Do not reopen weighted blend, manual archive, or workflow/tooling churn by inertia.
-5. Require runtime-backed proof, not editor-only behavior, before promoting any later row.
+3. Preserve shipped behavior for `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, `tone_map_finish`, and `grade_glow`.
+4. Do not reopen weighted blend, `grade.glow`, manual archive, or workflow/tooling churn by inertia.
+5. Require runtime-backed proof, not editor-only behavior, before promoting any later row or closure claim.
 
 Proof to require before calling it done:
 
 - one owner-proof or closure lane per slice
 - runtime math and live bridge proof for any newly promoted row
 - diagnostics/archive/reset proof when a row is promoted
-- explicit proof that untouched deferred rows remain deferred
+- explicit proof that untouched deferred work remains deferred
 
 Stop point:
 
-- one later lane opens truthfully, or the matrix keeps the remaining inventory explicitly deferred without pretending more shipped rows exist
+- one later lane opens truthfully, or the matrix keeps `balance_void_grade` explicitly deferred without pretending more shipped rows or closure proof exist
 
 Start from:
 
@@ -442,7 +446,7 @@ Goal:
 
 Candidate order:
 
-1. `grade.glow`
+1. `balance_void_grade`
 
 Owner surfaces:
 
@@ -627,9 +631,9 @@ For product-state re-entry, start with:
 
 If you want the fastest path back to truthful feature velocity:
 
-1. Use the newer `tone_map_finish` closeout handoff instead of restarting from older pre-tone-map prompts.
-2. Reuse the closed phase8c command ladder for whichever next grading/color-pipeline owner slice or closure decision is chosen.
-3. Choose explicitly between `grade.glow`, `balance_void_grade`, or foundation closure from the matrix.
+1. Use the newer `grade.glow` closeout handoff instead of restarting from older pre-`grade.glow` prompts.
+2. Reuse the closed phase8c command ladder for whichever next grading/operator slice or closure decision is chosen.
+3. Choose explicitly between `balance_void_grade` or foundation closure from the matrix.
 4. Keep historical archive compatibility separate unless it is explicitly reprioritized.
 
-That is the shortest path back to truthful core feature velocity instead of reopening already closed weighted-blend/basin-default/neutral-finish work or historical compatibility by inertia.
+That is the shortest path back to truthful core feature velocity instead of reopening already closed weighted-blend/basin-default/neutral-finish/tone-map/`grade.glow` work or historical compatibility by inertia.

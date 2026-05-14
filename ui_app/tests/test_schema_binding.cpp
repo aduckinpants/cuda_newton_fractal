@@ -978,14 +978,15 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 6 ||
+            coreGradingCatalog->functions.size() != 7 ||
             coreGradingCatalog->functions[0].id != "contrast_lift" ||
             coreGradingCatalog->functions[1].id != "phase_finish" ||
             coreGradingCatalog->functions[2].id != "band_finish" ||
             coreGradingCatalog->functions[3].id != "basin_default" ||
             coreGradingCatalog->functions[4].id != "neutral_finish" ||
-            coreGradingCatalog->functions[5].id != "tone_map_finish") {
-            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, and tone_map_finish as runtime-real Grading rows\n";
+            coreGradingCatalog->functions[5].id != "tone_map_finish" ||
+            coreGradingCatalog->functions[6].id != "grade_glow") {
+            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade_glow as runtime-real Grading rows\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -1033,6 +1034,16 @@ int main() {
             coreToneMapFinishDescriptor->parameters[1].path != "grade.saturation" ||
             coreToneMapFinishDescriptor->parameters[2].path != "grade.contrast") {
             std::cerr << "Expected tone_map_finish to expose stable exposure, saturation, and contrast grading owner paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreGradeGlowDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "grade_glow");
+        if (!coreGradeGlowDescriptor ||
+            coreGradeGlowDescriptor->parameters.size() != 4 ||
+            coreGradeGlowDescriptor->parameters[0].path != "grade.exposure" ||
+            coreGradeGlowDescriptor->parameters[1].path != "grade.saturation" ||
+            coreGradeGlowDescriptor->parameters[2].path != "grade.contrast" ||
+            coreGradeGlowDescriptor->parameters[3].path != "grade.glow") {
+            std::cerr << "Expected grade_glow to expose stable exposure, saturation, contrast, and glow grading owner paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;

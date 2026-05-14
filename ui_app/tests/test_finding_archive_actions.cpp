@@ -452,6 +452,61 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_grade_glow_runtime";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        ColorGradingPreset gradeGlowGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("grade_glow", &gradeGlowGrading)) {
+            std::cerr << "Expected grade_glow to parse as a shipped Grading row before finding-archive proof\n";
+            return 1;
+        }
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, gradeGlowGrading};
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = gradeGlowGrading;
+        params.color_grading_stack[0].params.exposure = 1.2f;
+        params.color_grading_stack[0].params.saturation = 0.8f;
+        params.color_grading_stack[0].params.contrast = 1.5f;
+        params.color_grading_stack[0].params.glow = 0.6f;
+        params.exposure = 1.2f;
+        params.color_saturation = 0.8f;
+        params.color_contrast = 1.5f;
+        params.color_glow = 0.6f;
+        RenderSettings render{};
+        render.resolution = {64, 48};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff336699u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &capture, &error)) {
+            std::cerr << "Expected grade-glow diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected grade-glow diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"coloring_mode\": \"smooth_escape\"") == std::string::npos ||
+            stateJson.find("\"color_grading\": \"glow_default\"") == std::string::npos ||
+            stateJson.find("\"color_glow\": 0.6") == std::string::npos ||
+            stateJson.find("\"color_grading_stack\"") == std::string::npos ||
+            stateJson.find("\"grading\": \"glow_default\"") == std::string::npos ||
+            stateJson.find("\"exposure\": 1.2") == std::string::npos ||
+            stateJson.find("\"saturation\": 0.8") == std::string::npos ||
+            stateJson.find("\"contrast\": 1.5") == std::string::npos ||
+            stateJson.find("\"glow\": 0.6") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist grade_glow grading ids, stack rows, glow owner values, and mirrored owner values in the finding archive bundle\n";
+            return 1;
+        }
+    }
+
+    {
         RenderSettings render{};
         render.resolution = {1536, 1024};
         render.block_size = 128;

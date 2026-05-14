@@ -332,6 +332,34 @@ void TestGradingStackApplyAndLiveImport() {
                 state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 3,
             "TestGradingStackApplyAndLiveImport_ApplyResyncsToneMapFinish");
     }
+
+    ColorGradingPreset gradeGlowGrading = ColorGradingPreset::escape_default;
+    const bool gradeGlowConfigured = SelectColorPipelineLaneFunction(&state, 3, "grade_glow") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.exposure", 1.2) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.saturation", 0.8) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.contrast", 1.5) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.glow", 0.6);
+    Check(gradeGlowConfigured,
+        "TestGradingStackApplyAndLiveImport_ConfiguresGradeGlow");
+    if (gradeGlowConfigured) {
+        changed = false;
+        Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+            "TestGradingStackApplyAndLiveImport_ApplyGradeGlow");
+        Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("grade_glow", &gradeGlowGrading) &&
+                params.color_grading_stack_count == 1 &&
+                params.color_grading_stack[0].grading == gradeGlowGrading &&
+                Near(params.color_grading_stack[0].params.exposure, 1.2) &&
+                Near(params.color_grading_stack[0].params.saturation, 0.8) &&
+                Near(params.color_grading_stack[0].params.contrast, 1.5) &&
+                Near(params.color_grading_stack[0].params.glow, 0.6),
+            "TestGradingStackApplyAndLiveImport_RuntimeWritesGradeGlow");
+        Check(params.color_pipeline.grading == gradeGlowGrading && Near(params.exposure, 1.2) && Near(params.color_saturation, 0.8) && Near(params.color_contrast, 1.5) && Near(params.color_glow, 0.6),
+            "TestGradingStackApplyAndLiveImport_GradeGlowMirrorsLegacyOwners");
+        Check(state.live_snapshot.valid && state.live_snapshot.lanes[3].rows.size() == 1 &&
+                state.live_snapshot.lanes[3].rows[0].function_id == "grade_glow" &&
+                state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 4,
+            "TestGradingStackApplyAndLiveImport_ApplyResyncsGradeGlow");
+    }
 }
 
 void TestRootBasinPairScheduleBridge() {

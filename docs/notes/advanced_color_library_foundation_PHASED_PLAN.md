@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8B - closure-control matrix and proof/defer ledger after the weighted-blend, basin-default, neutral_finish, `tone_map_finish`, and phase8c continuity work. The shipped composition spine now includes bounded Source stacks via weighted blend, bounded root-basin pairs, ordered Shape stacks, explicit Palette RGB blend stacks, and runtime-backed Grading rows `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, and `tone_map_finish`. `grade.glow` and Balance/Void remain later deferred forks, and the historical manual `234919_563__explaino_inertial` archive mismatch stays real as separate historical compatibility work instead of the default next sprint blocker.
+Phase 8B - closure-control matrix and proof/defer ledger after the weighted-blend, basin-default, neutral_finish, `tone_map_finish`, `grade.glow`, and phase8c continuity work. The shipped composition spine now includes bounded Source stacks via weighted blend, bounded root-basin pairs, ordered Shape stacks, explicit Palette RGB blend stacks, and runtime-backed Grading rows `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, `tone_map_finish`, and `grade.glow`. Only Balance/Void remains a later deferred grading/operator fork, and the historical manual `234919_563__explaino_inertial` archive mismatch stays real as separate historical compatibility work instead of the default next sprint blocker.
 
 ## Phase Checklist
 
@@ -15,7 +15,7 @@ Phase 8B - closure-control matrix and proof/defer ledger after the weighted-blen
 - [x] Phase 6 - build the shipped multi-function composition spine through bounded Shape stacks, bounded root-basin pairs, ordered Grading stacks, and explicit Palette RGB blend stacks while deferring generic Source signal mixing until scalar mixer semantics are locked
 - [x] Phase 7 - record remaining bounded Grading runtime authority as separate owner-proof forks or explicit deferrals; `grade.glow`, basin lane-retention, `neutral_finish`, `tone_map_finish`, and Balance/Void are not part of the shipped closure claim
 - [x] Phase 8A - land generic Source composition via weighted blend through the checked-in Source weighted-blend subplan
-- [x] Phase 8B - resolve the post-weighted-blend grading/closure forks truthfully: basin-default, neutral_finish, and `tone_map_finish` are now closed in bounded owner-proof slices, and foundation closure remains explicit rather than implied
+- [x] Phase 8B - resolve the post-weighted-blend grading/closure forks truthfully: basin-default, neutral_finish, `tone_map_finish`, and `grade.glow` are now closed in bounded owner-proof slices, and foundation closure remains explicit rather than implied
 - [ ] Phase 9 - only after the foundation closes, widen into additional categories; recommended order remains Blend first, then Mask/Domain
 
 ## Explicit User Asks
@@ -34,7 +34,7 @@ Phase 8B - closure-control matrix and proof/defer ledger after the weighted-blen
 
 ## Presumption Loop
 
-The controlling product risk is now overclaim after `tone_map_finish`, not missing Source composition. Bounded Source stacks, root-basin pairs, Shape stack composition, Grading stack composition, capture-backed diagnostics serialization, basin-default lane retention, `neutral_finish`, and the bounded `tone_map_finish` owner path are all now in the shipped boundary. The next falsifiable task is to keep the remaining grading inventory and closure decision truthful: `grade.glow` and Balance/Void remain deferred, and phase8c is reusable proof infrastructure rather than an active feature gate.
+The controlling product risk is now overclaim after `grade.glow`, not missing Source composition. Bounded Source stacks, root-basin pairs, Shape stack composition, Grading stack composition, capture-backed diagnostics serialization, basin-default lane retention, `neutral_finish`, the bounded `tone_map_finish` owner path, and the bounded `grade.glow` owner path are all now in the shipped boundary. The next falsifiable task is to keep the remaining grading/operator inventory and closure decision truthful: only Balance/Void remains deferred, and phase8c is reusable proof infrastructure rather than an active feature gate.
 
 ## Presumption Evidence
 
@@ -43,7 +43,7 @@ The controlling product risk is now overclaim after `tone_map_finish`, not missi
 - `ui_app/src/color_pipeline_core.h` already defines `BuildColorPipelineGradeFunctions()` for `contrast_lift`, `phase_finish`, and `band_finish`; all three now ship only through runtime-backed grading owners.
 - `ui_app/src/fractal_types.h` plus `ui_app/src/escape_time_coloring.h` carry the generic `color_saturation` / `color_contrast` grading owners that made `phase_finish` and `band_finish` honest without adding a second grading authority.
 - `ui_app/src/fractal_types.h` proves the current composition boundary directly: Shape has `color_shape_stack`, root-basin has bounded `color_root_basin_pairs`, Grading has `color_grading_stack`, and Palette has `color_palette_stack`; generic Source signal mixing still has no scalar mixer owner.
-- `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_state_io.cpp`, and the focused owner/runtime tests now ship runtime-backed `basin_default`, `neutral_finish`, and `tone_map_finish`; only `grade.glow` and `balance_void_grade` remain explicitly deferred until separate owner-proof slices exist or Adam reclassifies them as closure blockers.
+- `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_state_io.cpp`, and the focused owner/runtime tests now ship runtime-backed `basin_default`, `neutral_finish`, `tone_map_finish`, and `grade.glow`; only `balance_void_grade` remains explicitly deferred until a separate owner-proof slice exists or Adam reclassifies it as a closure blocker.
 - The verified references still split the ExplainO surfaces cleanly: the legacy LUT lineage lives in `c:\code\salticid-cuda\carl-ca-python\ca_viewer.py`, while the current basin/root palettes live in `c:\code\salticid-cuda\content\packs\explaino\cuda\explaino_cuda_helpers.inl` and `c:\code\salticid-cuda\cuda_core\src\ops_special.cu`, and the generic viewport colormap surface in `c:\code\salticid-cuda\ide_ui_dx11\ui_app\src\viewport_colormap.cpp` / `.h` does not contain an ExplainO colormap.
 
 ## Proof Ledger
@@ -142,15 +142,18 @@ The controlling product risk is now overclaim after `tone_map_finish`, not missi
 - Checkpointed: `e2e14df` / `ck:47bd4450` closed basin-default grading lane retention as a shipped bounded root-basin grading owner path.
 - Checkpointed: `7d7f779` / `ck:a0ce2d03` closed neutral_finish as a runtime-backed Grading row with truthful catalog/window/runtime/diagnostics/archive/reset ownership.
 - Checkpointed: `a087faf` / `ck:f886a2b1` closed the phase8c proof-ladder acceleration continuity slice without opening a new feature row.
-- Landed: `docs/notes/advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, `ui_app/src/fractal_family_rules.h`, and the focused owner/runtime tests now carry `tone_map_finish` as a runtime-backed Grading row with truthful catalog/window/runtime/diagnostics/archive/reset ownership while keeping `grade.glow` and `balance_void_grade` deferred.
-- Validated: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_red`, `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner`, `cmd /c ui_app\build_vsdevcmd.cmd`, and `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_escape_variants.py -k tone_map_finish` are green for the active `tone_map_finish` slice; the broader `cmd /c ui_app\build_tests_vsdevcmd.cmd` sweep still stops at the unrelated `full_test_run` batch-label miss outside this bounded slice.
-- Active closure-control proof: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` is now the checked-in proof/defer matrix for feature-closure decisions, records `tone_map_finish` inside the shipped bounded grading stack, and keeps only `grade.glow`, Balance/Void, and the manual `234919_563__explaino_inertial` mismatch as separate explicit later decisions.
+- Landed: `docs/notes/advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, `ui_app/src/fractal_family_rules.h`, and the focused owner/runtime tests now carry `tone_map_finish` as a runtime-backed Grading row with truthful catalog/window/runtime/diagnostics/archive/reset ownership while keeping `grade.glow` and `balance_void_grade` deferred at that time.
+- Validated: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_red`, `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner`, `cmd /c ui_app\build_vsdevcmd.cmd`, and `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_escape_variants.py -k tone_map_finish` are green for the active `tone_map_finish` slice; the broader `cmd /c ui_app\build_tests_vsdevcmd.cmd` sweep still stops at the unrelated `full_test_run` batch-label miss outside that bounded slice.
+- Landed: `docs/notes/advanced_color_library_foundation_phase8f_grade_glow_owner_proof_PHASED_PLAN.md`, `ui_app/src/color_pipeline_core.h`, `ui_app/src/color_pipeline_window.h`, `ui_app/src/fractal_types.h`, `ui_app/src/escape_time_coloring.h`, `ui_app/src/diagnostics_capture.cpp`, `ui_app/src/diagnostics_state_io.cpp`, `ui_app/src/runtime_reset.cpp`, `ui_app/src/fractal_family_rules.h`, `ui_app/src/enum_id_utils.h`, and the focused owner/runtime tests now carry `grade.glow` as a runtime-backed Grading row with truthful catalog/window/runtime/diagnostics/archive/reset ownership while keeping `balance_void_grade` deferred.
+- Validated: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_red`, `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner`, `cmd /c ui_app\build_vsdevcmd.cmd`, and `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_escape_variants.py -k grade_glow` are green for the active `grade.glow` slice; the broader `cmd /c ui_app\build_tests_vsdevcmd.cmd` sweep was not required because the phase8c ladder only escalates there when the focused lanes stop discriminating the touched seams.
+- Active closure-control proof: `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` is now the checked-in proof/defer matrix for feature-closure decisions, records `grade.glow` inside the shipped bounded grading stack, and keeps only `balance_void_grade` plus the manual `234919_563__explaino_inertial` mismatch as separate explicit later decisions.
+- Landed: `docs/notes/advanced_color_feature_restart_inventory.md` now routes post-`grade.glow` re-entry through `balance_void_grade` or explicit foundation closure instead of reopening earlier grading rows by inertia.
 - Landed: `docs/notes/advanced_color_library_foundation_phase8_source_weighted_blend_stack_PHASED_PLAN.md` plus `docs/contracts/advanced_color_library_foundation_phase8_source_weighted_blend_stack.contract.json` bind the closed Source-stack weighted-blend slice, while `docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md` now preserves the cheapest truthful command ladder for later grading/color-pipeline row work.
 
 ## Hostile Audit
 
 - Status: complete
-- Required posture: treat the repaired `tone_map_finish` state as guilty by default until catalog/window/runtime/persistence/reset proof, runtime publish, and the focused published-runtime witness all agree without widening into deferred rows.
+- Required posture: treat the repaired `grade.glow` state as guilty by default until catalog/window/runtime/persistence/reset proof, runtime publish, and the focused published-runtime witness all agree without widening into deferred rows.
 
 ## Audit Passes
 
@@ -163,6 +166,7 @@ The controlling product risk is now overclaim after `tone_map_finish`, not missi
 - [done] Pass 7 - after the user's composition-priority challenge, re-read the runtime model and corrected the next-work order so the composition spine precedes remaining grading-row owner proofs.
 - [done] Pass 8 - audit the `tone_map_finish` owner path across catalog, window bridge, runtime math, diagnostics/archive persistence, and reset/default seams to prove the row is not editor-only or a silent `neutral_finish` duplicate.
 - [done] Pass 9 - rerun the repaired `tone_map_finish` state through focused native owner rails, runtime publish, and the published-runtime witness, then re-read the touched seams for regressions or accidental widening into deferred rows.
+- [done] Pass 10 - rerun the repaired `grade.glow` state through focused native owner rails, runtime publish, and the published-runtime witness, then re-read the touched seams for regressions or accidental widening into `balance_void_grade` or false editor-only shipping.
 
 ## Audit Findings
 
@@ -177,6 +181,7 @@ The controlling product risk is now overclaim after `tone_map_finish`, not missi
 - [done] Real priority defect found after the user's challenge: the repaired next-slice index still underweighted multi-function composition by listing grading-row polish first, so this composition authority slice moves composition ahead of those owner-proof leftovers.
 - [done] Real defect found during the `tone_map_finish` slice: the row still had no shipped internal grading authority (`ColorGradingPreset`, enum ids, runtime-backed catalog membership, or live-bridge support), so it remained deferred inventory only until the bounded owner path landed.
 - [done] Real defect found during hostile review of the repaired `tone_map_finish` state: the first green pass still skipped `tone_map_finish` in the extracted core owner-apply path, which would have left editor/persistence truth ahead of the shared owner core until that bridge defect was repaired.
+- [done] Real defect found during the `grade.glow` slice: the row still had no shipped internal glow owner (`ColorGradingPreset::glow_default`, enum ids, runtime-backed catalog membership, live-bridge support, `ColorPipelineGradingRuntimeParams::glow`, and `KernelParams::color_glow`), so it remained deferred inventory only until the bounded owner path landed.
 
 ## Notes
 
@@ -202,18 +207,17 @@ The controlling product risk is now overclaim after `tone_map_finish`, not missi
   - `ui_app/tests/test_color_pipeline_window.cpp`
   - `tests/test_fractal_runtime_explaino_escape_variants.py`
 - Non-goals for Phase 8B:
-  - do not reopen weighted blend, basin-default, `neutral_finish`, or `tone_map_finish` as the active feature row by inertia
-  - do not widen into `grade.glow`, `balance_void_grade`, ExplainO-BalanceVoid, ExplainO-all, archive UX/recovery, or workflow tooling in the next row slice
+  - do not reopen weighted blend, basin-default, `neutral_finish`, `tone_map_finish`, or `grade.glow` as the active feature row by inertia
+  - do not widen into `balance_void_grade`, ExplainO-BalanceVoid, ExplainO-all, archive UX/recovery, or workflow tooling in the next row slice
   - do not overclaim remaining deferred grading inventory as shipped work
   - do not create a second grading-owner authority outside the existing grading stack params plus legacy compatibility mirror
 
 ## Resume Point
 
-Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` and the `tone_map_finish` closeout surfaces, not from older Palette-next or weighted-blend-next text. The phase8c tooling slice is closed and its command ladder is now reusable proof infrastructure, and `tone_map_finish` is no longer the next unopened feature row. Choose explicitly from the matrix:
-1. `grade.glow` as its own bounded owner-proof slice if Adam still wants the remaining base grading row.
-2. `balance_void_grade` as its own bounded grading-operator slice.
-3. Foundation closure with explicit deferrals if the matrix is accepted as the merge boundary.
-4. Historical archive compatibility only if it is explicitly reclassified back into active sprint work.
+Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md` and the `grade.glow` closeout surfaces, not from older Palette-next or weighted-blend-next text. The phase8c tooling slice is closed and its command ladder is now reusable proof infrastructure, and `grade.glow` is no longer the next unopened feature row. Choose explicitly from the matrix:
+1. `balance_void_grade` as its own bounded grading-operator slice if Adam still wants the remaining generic grading operator.
+2. Foundation closure with explicit deferrals if the matrix is accepted as the merge boundary.
+3. Historical archive compatibility only if it is explicitly reclassified back into active sprint work.
 
 Do not claim remaining unowned Grading inventory or foundation closure as shipped work unless a later checked-in contract and proof ledger replaces this boundary with runtime-backed owner proof and truthful deferral/closure state.
 

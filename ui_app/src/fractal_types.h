@@ -79,6 +79,7 @@ enum class ColorGradingPreset : int {
     bands_default = 3,
     neutral_default = 4,
     tone_map_default = 5,
+    glow_default = 6,
 };
 
 enum class ColorPipelineShape : int {
@@ -162,6 +163,7 @@ struct ColorPipelineGradingRuntimeParams {
     float exposure{1.0f};
     float saturation{1.0f};
     float contrast{1.0f};
+    float glow{0.25f};
 };
 
 struct ColorPipelineGradingStackEntry {
@@ -342,6 +344,7 @@ struct KernelParams {
 
     float color_saturation{1.15f};
     float color_contrast{1.10f};
+    float color_glow{0.25f};
     float color_tint_r{1.0f};
     float color_tint_g{1.0f};
     float color_tint_b{1.0f};
