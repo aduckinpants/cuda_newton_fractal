@@ -51,6 +51,48 @@ TestColor ApplyFractalColorGlowFinishPassForTest(
         glow);
 }
 
+float NormalizeChannel(unsigned char value) {
+    return static_cast<float>(value) / 255.0f;
+}
+
+unsigned char QuantizeChannel(float value) {
+    return static_cast<unsigned char>(EscapeTimeColorClamp(std::round(value * 255.0f), 0.0f, 255.0f));
+}
+
+TestColor ApplyBalanceVoidGradeForTest(
+    TestColor color,
+    float balanceVoid,
+    float chromaTension,
+    float accentBias) {
+    const float clampedBalanceVoid = EscapeTimeColorClamp(balanceVoid, -1.0f, 1.0f);
+    const float clampedChromaTension = EscapeTimeColorClamp(chromaTension, -1.0f, 1.0f);
+    const float clampedAccentBias = EscapeTimeColorClamp(accentBias, -1.0f, 1.0f);
+
+    const float red = NormalizeChannel(color.x);
+    const float green = NormalizeChannel(color.y);
+    const float blue = NormalizeChannel(color.z);
+    const float luminance = red * 0.299f + green * 0.587f + blue * 0.114f;
+    const float accent = (luminance - 0.5f) * 2.0f;
+    const float chromaScale = 1.0f + clampedChromaTension * (0.35f + 0.35f * std::fabs(accent));
+    const float warmShift = clampedBalanceVoid * (0.12f + 0.08f * (1.0f - std::fabs(accent)));
+    const float accentLift = clampedAccentBias * accent * 0.18f;
+
+    const float balancedRed = EscapeTimeColorClamp(
+        luminance + (red - luminance) * chromaScale + warmShift + accentLift,
+        0.0f,
+        1.0f);
+    const float balancedGreen = EscapeTimeColorClamp(
+        luminance + (green - luminance) * (1.0f - clampedChromaTension * 0.18f) - accentLift * 0.35f,
+        0.0f,
+        1.0f);
+    const float balancedBlue = EscapeTimeColorClamp(
+        luminance + (blue - luminance) * chromaScale - warmShift - accentLift,
+        0.0f,
+        1.0f);
+
+    return {QuantizeChannel(balancedRed), QuantizeChannel(balancedGreen), QuantizeChannel(balancedBlue), color.w};
+}
+
 } // namespace
 
 int main() {
@@ -556,6 +598,32 @@ int main() {
         }
         if (!Equals(gradeGlowFinishGrade, gradeGlowExpected)) {
             std::cerr << "grade_glow should execute real runtime grading math by adding controlled highlight bloom after the shared grading pass\n";
+            return 1;
+        }
+        params.color_grading_stack_count = 0;
+
+        ColorGradingPreset balanceVoidGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &balanceVoidGrading)) {
+            std::cerr << "balance_void_grade should parse as a shipped Grading row before runtime math proof\n";
+            return 1;
+        }
+        params.exposure = 0.9f;
+        params.color_saturation = 1.35f;
+        params.color_contrast = 0.55f;
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = balanceVoidGrading;
+        params.color_grading_stack[0].params.balance_void = 0.35f;
+        params.color_grading_stack[0].params.chroma_tension = 0.6f;
+        params.color_grading_stack[0].params.accent_bias = -0.25f;
+        const TestColor balanceVoidFinishGrade = ApplyFractalColorGrading(programmableBase, params);
+        const TestColor balanceVoidNeutralOrder = ApplyFractalColorGradingPass(programmableBase, params, 0.9f, 1.35f, 0.55f);
+        const TestColor balanceVoidExpected = ApplyBalanceVoidGradeForTest(programmableBase, 0.35f, 0.6f, -0.25f);
+        if (Equals(balanceVoidFinishGrade, balanceVoidNeutralOrder)) {
+            std::cerr << "balance_void_grade should not collapse to neutral_finish ordering; it needs its own runtime balance/void math branch\n";
+            return 1;
+        }
+        if (!Equals(balanceVoidFinishGrade, balanceVoidExpected)) {
+            std::cerr << "balance_void_grade should execute dedicated balance/void grading math through its balance_void, chroma_tension, and accent_bias owners\n";
             return 1;
         }
         params.color_grading_stack_count = 0;

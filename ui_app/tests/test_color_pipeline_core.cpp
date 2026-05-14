@@ -92,7 +92,12 @@ void TestFunctionIdMappingsRoundTrip() {
     Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("grade_glow", &grading) &&
             std::string(color_pipeline_core::AdvancedColorGradingFunctionId(grading)) == "grade_glow",
         "TestFunctionIdMappingsRoundTrip_GradingParseGradeGlow");
-    Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::glow_default,
+    Check(std::string(color_pipeline_core::AdvancedColorGradingFunctionId(ColorGradingPreset::balance_void_default)) == "balance_void_grade",
+        "TestFunctionIdMappingsRoundTrip_GradingIdIncludesBalanceVoidGrade");
+    Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &grading) &&
+            std::string(color_pipeline_core::AdvancedColorGradingFunctionId(grading)) == "balance_void_grade",
+        "TestFunctionIdMappingsRoundTrip_GradingParseBalanceVoidGrade");
+    Check(!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("missing_grade", &grading) && grading == ColorGradingPreset::balance_void_default,
         "TestFunctionIdMappingsRoundTrip_GradingRejectPreservesValue");
 
     Check(std::string(color_pipeline_core::AdvancedColorShapeFunctionId(ColorPipelineShape::smooth_window)) == "smooth_window",
@@ -127,16 +132,16 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
             HasFunction(*palette, "explaino_cmap") && HasFunction(*palette, "root_classic_palette") &&
             HasFunction(*palette, "joy_root_palette"),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctions");
-    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 7 &&
-            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish") && HasFunction(*grading, "tone_map_finish") && HasFunction(*grading, "grade_glow"),
-        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsGradeGlow");
+    Check(grading->default_function_id == std::string("contrast_lift") && grading->functions.size() == 8 &&
+            HasFunction(*grading, "contrast_lift") && HasFunction(*grading, "phase_finish") && HasFunction(*grading, "band_finish") && HasFunction(*grading, "basin_default") && HasFunction(*grading, "neutral_finish") && HasFunction(*grading, "tone_map_finish") && HasFunction(*grading, "grade_glow") && HasFunction(*grading, "balance_void_grade"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_GradingShipsBalanceVoidGrade");
     Check(CatalogIdsEqual(*source, {"smooth_escape_ramp", "phase_orbit", "banded_signal", "escape_magnitude", "orbit_stripe", "root_proximity", "root_index"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_SourceFunctionOrder");
     Check(CatalogIdsEqual(*shape, {"identity", "offset_scale", "repeat", "posterize", "mirror_repeat", "bias_gain_curve", "smooth_window"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_ShapeFunctionOrder");
     Check(CatalogIdsEqual(*palette, {"heatmap", "phase_wheel_palette", "banded_heatmap", "explaino_cmap", "root_classic_palette", "joy_root_palette"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_PaletteFunctionOrder");
-    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish", "tone_map_finish", "grade_glow"}),
+    Check(CatalogIdsEqual(*grading, {"contrast_lift", "phase_finish", "band_finish", "basin_default", "neutral_finish", "tone_map_finish", "grade_glow", "balance_void_grade"}),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradingFunctionOrder");
 
     const std::vector<FunctionDescriptor> allGradeFunctions = color_pipeline_core::BuildColorPipelineGradeFunctions();
@@ -145,18 +150,21 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
     bool rawGradeIncludesNeutralFinish = false;
     bool rawGradeIncludesToneMapFinish = false;
     bool rawGradeIncludesGradeGlow = false;
+    bool rawGradeIncludesBalanceVoidGrade = false;
     for (const FunctionDescriptor& descriptor : allGradeFunctions) {
         rawGradeIncludesBandFinish = rawGradeIncludesBandFinish || descriptor.id == "band_finish";
         rawGradeIncludesBasinDefault = rawGradeIncludesBasinDefault || descriptor.id == "basin_default";
         rawGradeIncludesNeutralFinish = rawGradeIncludesNeutralFinish || descriptor.id == "neutral_finish";
         rawGradeIncludesToneMapFinish = rawGradeIncludesToneMapFinish || descriptor.id == "tone_map_finish";
         rawGradeIncludesGradeGlow = rawGradeIncludesGradeGlow || descriptor.id == "grade_glow";
+        rawGradeIncludesBalanceVoidGrade = rawGradeIncludesBalanceVoidGrade || descriptor.id == "balance_void_grade";
     }
     Check(rawGradeIncludesBandFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesDraftBandFinish");
     Check(rawGradeIncludesBasinDefault, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesBasinDefault");
     Check(rawGradeIncludesNeutralFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesNeutralFinish");
     Check(rawGradeIncludesToneMapFinish, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesToneMapFinish");
     Check(rawGradeIncludesGradeGlow, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesGradeGlow");
+    Check(rawGradeIncludesBalanceVoidGrade, "TestLaneCatalogFiltersRuntimeBackedRows_RawGradeCatalogNamesBalanceVoidGrade");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "band_finish"),
         "TestLaneCatalogFiltersRuntimeBackedRows_BandFinishRuntimeBacked");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "basin_default"),
@@ -167,6 +175,8 @@ void TestLaneCatalogFiltersRuntimeBackedRows() {
         "TestLaneCatalogFiltersRuntimeBackedRows_ToneMapFinishRuntimeBacked");
     Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "grade_glow"),
         "TestLaneCatalogFiltersRuntimeBackedRows_GradeGlowRuntimeBacked");
+    Check(color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("grading", "balance_void_grade"),
+        "TestLaneCatalogFiltersRuntimeBackedRows_BalanceVoidGradeRuntimeBacked");
     Check(!color_pipeline_core::IsColorPipelineFunctionRuntimeBacked(nullptr, "heatmap") &&
             !color_pipeline_core::IsColorPipelineFunctionRuntimeBacked("unknown_lane", "heatmap"),
         "TestLaneCatalogFiltersRuntimeBackedRows_UnknownLaneFailsClosed");
@@ -253,6 +263,16 @@ void TestRowBuildersAndDefaults() {
             RowNumber(gradeGlowRow, "grade.contrast", 1.10) &&
             RowNumber(gradeGlowRow, "grade.glow", 0.25),
         "TestRowBuildersAndDefaults_GradeGlowBuildsFromRuntimeCatalog");
+    ColorPipelineRowState balanceVoidGradeRow;
+    error.clear();
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "balance_void_grade", 40, &balanceVoidGradeRow, &error) &&
+            balanceVoidGradeRow.ui_row_id == 40 &&
+            balanceVoidGradeRow.function_id == "balance_void_grade" &&
+            balanceVoidGradeRow.parameter_values.size() == 3 &&
+            RowNumber(balanceVoidGradeRow, "grade.balance_void", 0.0) &&
+            RowNumber(balanceVoidGradeRow, "grade.chroma_tension", 0.0) &&
+            RowNumber(balanceVoidGradeRow, "grade.accent_bias", 0.0),
+        "TestRowBuildersAndDefaults_BalanceVoidGradeBuildsFromRuntimeCatalog");
     Check(!color_pipeline_core::BuildColorPipelineRowFromFunctionId(*source, "", 1, &unknownRow, &error),
         "TestRowBuildersAndDefaults_EmptyFunctionFailsClosed");
     Check(!color_pipeline_core::BuildColorPipelineLaneWithSingleRow(*shape, "repeat", 1, nullptr, &error),
@@ -434,6 +454,32 @@ void TestImportAndApplySupportedParams() {
         "TestImportAndApplySupportedParams_GradeGlowApplies");
     Check(Near(gradeGlowParams.exposure, 1.25f, 1.0e-6) && Near(gradeGlowParams.color_saturation, 0.75f, 1.0e-6) && Near(gradeGlowParams.color_contrast, 1.5f, 1.0e-6) && Near(gradeGlowParams.color_glow, 0.625f, 1.0e-6),
         "TestImportAndApplySupportedParams_GradeGlowUsesLegacyRuntimeOwners");
+
+    ColorPipelineRowState balanceVoidImportedRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "balance_void_grade", 40, &balanceVoidImportedRow),
+        "TestImportAndApplySupportedParams_BalanceVoidGradeBuildsForImport");
+    KernelParams importedBalanceVoidParams{};
+    importedBalanceVoidParams.color_balance_void = 0.35f;
+    importedBalanceVoidParams.color_chroma_tension = 0.6f;
+    importedBalanceVoidParams.color_accent_bias = -0.25f;
+    Check(color_pipeline_core::ImportSupportedColorPipelineParamsFromLive(&balanceVoidImportedRow, importedBalanceVoidParams) &&
+            RowNumber(balanceVoidImportedRow, "grade.balance_void", 0.35) &&
+            RowNumber(balanceVoidImportedRow, "grade.chroma_tension", 0.6) &&
+            RowNumber(balanceVoidImportedRow, "grade.accent_bias", -0.25),
+        "TestImportAndApplySupportedParams_BalanceVoidGradeImportsLiveValues");
+
+    ColorPipelineRowState balanceVoidAppliedRow;
+    Check(color_pipeline_core::BuildColorPipelineRowFromFunctionId(*grading, "balance_void_grade", 41, &balanceVoidAppliedRow) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&balanceVoidAppliedRow, "grade.balance_void", 0.35) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&balanceVoidAppliedRow, "grade.chroma_tension", 0.6) &&
+            color_pipeline_core::SetColorPipelineParamNumber(&balanceVoidAppliedRow, "grade.accent_bias", -0.25),
+        "TestImportAndApplySupportedParams_BalanceVoidGradeBuildsAndEdits");
+    KernelParams balanceVoidGradeParams;
+    changed = false;
+    Check(color_pipeline_core::ApplySupportedColorPipelineRowParamsToLive(balanceVoidAppliedRow, &balanceVoidGradeParams, &changed) && changed,
+        "TestImportAndApplySupportedParams_BalanceVoidGradeApplies");
+    Check(Near(balanceVoidGradeParams.color_balance_void, 0.35f, 1.0e-6) && Near(balanceVoidGradeParams.color_chroma_tension, 0.6f, 1.0e-6) && Near(balanceVoidGradeParams.color_accent_bias, -0.25f, 1.0e-6),
+        "TestImportAndApplySupportedParams_BalanceVoidGradeUsesDedicatedRuntimeOwners");
 
     ColorPipelineRowState bandedRow;
     std::string error;

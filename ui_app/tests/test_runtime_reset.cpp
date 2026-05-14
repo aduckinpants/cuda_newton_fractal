@@ -43,6 +43,11 @@ int main() {
         std::cerr << "Expected grade_glow to parse before reset proof\n";
         return 1;
     }
+    ColorGradingPreset balanceVoidGrading = ColorGradingPreset::escape_default;
+    if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &balanceVoidGrading)) {
+        std::cerr << "Expected balance_void_grade to parse before reset proof\n";
+        return 1;
+    }
 
     view.fractal_type = FractalType::explaino_halley;
     view.explaino_phase = 2.0f;
@@ -86,7 +91,7 @@ int main() {
     params.color_palette_stack[1].params.seed_phase = 0.25f;
     params.color_palette_stack[1].params.colorfulness = 0.8f;
     params.color_palette_stack[1].params.blend_weight = 0.35f;
-    params.color_grading_stack_count = 4;
+    params.color_grading_stack_count = 5;
     params.color_grading_stack[0].grading = ColorGradingPreset::escape_default;
     params.color_grading_stack[0].params.exposure = 1.4f;
     params.color_grading_stack[0].params.saturation = 1.2f;
@@ -103,6 +108,10 @@ int main() {
     params.color_grading_stack[3].params.saturation = 0.8f;
     params.color_grading_stack[3].params.contrast = 1.5f;
     params.color_grading_stack[3].params.glow = 0.6f;
+    params.color_grading_stack[4].grading = balanceVoidGrading;
+    params.color_grading_stack[4].params.balance_void = 0.35f;
+    params.color_grading_stack[4].params.chroma_tension = 0.6f;
+    params.color_grading_stack[4].params.accent_bias = -0.25f;
     params.color_shape_offset = 0.35f;
     params.color_shape_scale = 1.8f;
     params.color_shape_repeat_frequency = 6.0f;
@@ -124,6 +133,9 @@ int main() {
     params.color_saturation = 0.85f;
     params.color_contrast = 1.4f;
     params.color_glow = 0.6f;
+    params.color_balance_void = 0.35f;
+    params.color_chroma_tension = 0.6f;
+    params.color_accent_bias = -0.25f;
     params.color_tint_r = 0.4f;
     params.color_tint_g = 1.7f;
     params.color_tint_b = 0.25f;
@@ -194,6 +206,9 @@ int main() {
         !NearlyEqual(params.color_saturation, 1.15f) ||
         !NearlyEqual(params.color_contrast, 1.10f) ||
         !NearlyEqual(params.color_glow, 0.25f) ||
+        !NearlyEqual(params.color_balance_void, 0.0f) ||
+        !NearlyEqual(params.color_chroma_tension, 0.0f) ||
+        !NearlyEqual(params.color_accent_bias, 0.0f) ||
         !NearlyEqual(params.color_tint_r, 1.0f) ||
         !NearlyEqual(params.color_tint_g, 1.0f) ||
         !NearlyEqual(params.color_tint_b, 1.0f) ||
@@ -224,6 +239,13 @@ int main() {
         !NearlyEqual(params.color_grading_stack[3].params.contrast, 1.0f) ||
         !NearlyEqual(params.color_grading_stack[3].params.glow, 0.25f)) {
         std::cerr << "Reset should clear grade_glow grading stack storage back to the default grading-entry state\n";
+        return 1;
+    }
+    if (params.color_grading_stack[4].grading != ColorGradingPreset::escape_default ||
+        !NearlyEqual(params.color_grading_stack[4].params.balance_void, 0.0f) ||
+        !NearlyEqual(params.color_grading_stack[4].params.chroma_tension, 0.0f) ||
+        !NearlyEqual(params.color_grading_stack[4].params.accent_bias, 0.0f)) {
+        std::cerr << "Reset should clear balance_void_grade grading stack storage back to the default grading-entry state\n";
         return 1;
     }
     if (render.interaction_debounce_ms != 200 || !NearlyEqual(render.preview_target_fps, 30.0f) || !NearlyEqual(render.preview_min_scale, 0.5f)) {

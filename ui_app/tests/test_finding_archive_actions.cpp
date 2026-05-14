@@ -507,6 +507,60 @@ int main() {
     }
 
     {
+        const fs::path runtimeDir = tempRoot / "capture_bundle_balance_void_grade_runtime";
+        fs::create_directories(runtimeDir);
+
+        ViewState view{};
+        view.fractal_type = FractalType::mandelbrot;
+        KernelParams params{};
+        ColorGradingPreset balanceVoidGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &balanceVoidGrading)) {
+            std::cerr << "Expected balance_void_grade to parse as a shipped Grading row before finding-archive proof\n";
+            return 1;
+        }
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, balanceVoidGrading};
+        params.color_grading_stack_count = 1;
+        params.color_grading_stack[0].grading = balanceVoidGrading;
+        params.color_grading_stack[0].params.balance_void = 0.35f;
+        params.color_grading_stack[0].params.chroma_tension = 0.6f;
+        params.color_grading_stack[0].params.accent_bias = -0.25f;
+        params.color_balance_void = 0.35f;
+        params.color_chroma_tension = 0.6f;
+        params.color_accent_bias = -0.25f;
+        RenderSettings render{};
+        render.resolution = {64, 48};
+        RenderStats stats{};
+        std::vector<uint32_t> rgba(static_cast<size_t>(render.resolution.x) * static_cast<size_t>(render.resolution.y), 0xff336699u);
+
+        DiagnosticsCaptureResult capture;
+        std::string error;
+        if (!CaptureDiagnosticsLastBundle(runtimeDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &capture, &error)) {
+            std::cerr << "Expected balance-void-grade diagnostics capture bundle to succeed: " << error << "\n";
+            return 1;
+        }
+
+        std::string stateJson;
+        if (!ReadTextFile(capture.state_json_path, &stateJson)) {
+            std::cerr << "Expected balance-void-grade diagnostics capture to write state.json\n";
+            return 1;
+        }
+        if (stateJson.find("\"coloring_mode\": \"smooth_escape\"") == std::string::npos ||
+            stateJson.find("\"color_grading\": \"balance_void_default\"") == std::string::npos ||
+            stateJson.find("\"color_balance_void\": 0.34999999403953552") == std::string::npos ||
+            stateJson.find("\"color_chroma_tension\": 0.60000002384185791") == std::string::npos ||
+            stateJson.find("\"color_accent_bias\": -0.25") == std::string::npos ||
+            stateJson.find("\"color_grading_stack\"") == std::string::npos ||
+            stateJson.find("\"grading\": \"balance_void_default\"") == std::string::npos ||
+            stateJson.find("\"balance_void\": 0.34999999403953552") == std::string::npos ||
+            stateJson.find("\"chroma_tension\": 0.60000002384185791") == std::string::npos ||
+            stateJson.find("\"accent_bias\": -0.25") == std::string::npos) {
+            std::cerr << "Expected diagnostics capture to persist balance_void_grade grading ids, stack rows, and dedicated owner values in the finding archive bundle\n";
+            return 1;
+        }
+    }
+
+    {
         RenderSettings render{};
         render.resolution = {1536, 1024};
         render.block_size = 128;

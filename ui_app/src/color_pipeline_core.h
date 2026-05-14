@@ -325,6 +325,8 @@ inline const char* AdvancedColorGradingFunctionId(ColorGradingPreset value) {
         return "tone_map_finish";
     case ColorGradingPreset::glow_default:
         return "grade_glow";
+    case ColorGradingPreset::balance_void_default:
+        return "balance_void_grade";
     }
     return nullptr;
 }
@@ -356,6 +358,10 @@ inline bool TryParseAdvancedColorGradingFunctionId(const std::string& functionId
     }
     if (functionId == "grade_glow") {
         if (outValue) *outValue = ColorGradingPreset::glow_default;
+        return true;
+    }
+    if (functionId == "balance_void_grade") {
+        if (outValue) *outValue = ColorGradingPreset::balance_void_default;
         return true;
     }
     return false;
@@ -619,6 +625,15 @@ inline std::vector<FunctionDescriptor> BuildColorPipelineGradeFunctions() {
                 MakeColorPipelineFloatParam("grade.contrast", "Contrast", "Stretch grade-glow mid-tones before the highlight finish.", 0.0, 3.0, 0.01, 1.10),
                 MakeColorPipelineFloatParam("grade.glow", "Glow", "Control the strength of the runtime highlight bloom after grading.", 0.0, 2.0, 0.01, 0.25),
             }),
+        MakeColorPipelineFunction(
+            "balance_void_grade",
+            "Balance Void Grade",
+            "Apply the reusable balance-void grading manifold through dedicated runtime owners instead of the shared neutral or ExplainO-specific finish rails.",
+            {
+                MakeColorPipelineFloatParam("grade.balance_void", "Balance Void", "Bias the manifold warmer or cooler around the current luminance center.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("grade.chroma_tension", "Chroma Tension", "Tighten or relax the chroma stretch around the current accent band.", -1.0, 1.0, 0.01, 0.0),
+                MakeColorPipelineFloatParam("grade.accent_bias", "Accent Bias", "Lift or suppress accent regions without reopening ExplainO-family grading work.", -1.0, 1.0, 0.01, 0.0),
+            }),
     };
 }
 
@@ -660,7 +675,8 @@ inline bool IsColorPipelineFunctionRuntimeBacked(const char* laneId, const std::
             functionId == "basin_default" ||
             functionId == "neutral_finish" ||
             functionId == "tone_map_finish" ||
-            functionId == "grade_glow";
+            functionId == "grade_glow" ||
+            functionId == "balance_void_grade";
     }
     return false;
 }
@@ -716,6 +732,10 @@ inline double ResolveColorPipelineNumericDefault(const FunctionParamDescriptor& 
         return (param.min_value + param.max_value) * 0.5;
     }
     return 0.0;
+}
+
+inline double NormalizeImportedColorPipelineNumber(float value) {
+    return std::round(static_cast<double>(value) * 1000000.0) / 1000000.0;
 }
 
 inline bool ResolveColorPipelineBoolDefault(const FunctionParamDescriptor& param) {
@@ -962,6 +982,11 @@ inline bool ImportSupportedColorPipelineParamsFromLive(
             SetColorPipelineParamNumber(ioRow, "grade.saturation", liveParams.color_saturation, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.contrast", liveParams.color_contrast, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.glow", liveParams.color_glow, outError);
+    }
+    if (ioRow->function_id == "balance_void_grade") {
+        return SetColorPipelineParamNumber(ioRow, "grade.balance_void", NormalizeImportedColorPipelineNumber(liveParams.color_balance_void), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", NormalizeImportedColorPipelineNumber(liveParams.color_chroma_tension), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.accent_bias", NormalizeImportedColorPipelineNumber(liveParams.color_accent_bias), outError);
     }
     if (ioRow->function_id == "phase_orbit") {
         return SetColorPipelineParamNumber(ioRow, "signal.phase_offset", liveParams.color_phase_signal_offset, outError) &&
@@ -1220,6 +1245,21 @@ inline bool ApplySupportedColorPipelineRowParamsToLive(
         assignFloat(&ioParams->color_saturation, static_cast<float>(saturation));
         assignFloat(&ioParams->color_contrast, static_cast<float>(contrast));
         assignFloat(&ioParams->color_glow, static_cast<float>(glow));
+    } else if (row.function_id == "balance_void_grade") {
+        double balanceVoid = 0.0;
+        double chromaTension = 0.0;
+        double accentBias = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.balance_void", &balanceVoid, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.chroma_tension", &chromaTension, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.accent_bias", &accentBias, outError) ||
+            !ValidateColorPipelineParamRange("grade.balance_void", balanceVoid, -1.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.chroma_tension", chromaTension, -1.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.accent_bias", accentBias, -1.0, 1.0, outError)) {
+            return false;
+        }
+        assignFloat(&ioParams->color_balance_void, static_cast<float>(balanceVoid));
+        assignFloat(&ioParams->color_chroma_tension, static_cast<float>(chromaTension));
+        assignFloat(&ioParams->color_accent_bias, static_cast<float>(accentBias));
     } else if (row.function_id == "phase_orbit") {
         double phaseOffset = 0.0;
         double wrapCycles = 0.0;

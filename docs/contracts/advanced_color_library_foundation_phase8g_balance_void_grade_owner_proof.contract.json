@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_finding_archive_actions.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat balance_void_grade as the only active feature row in this session",
+    "add focused REDs for runtime-backed grading catalog visibility, live bridge import/apply, runtime grading math, diagnostics save/load, archive persistence, and reset/default behavior before implementation",
+    "prove the existing grading owners are insufficient on current HEAD because balance_void_grade needs a dedicated generic owner pack rather than a recycled neutral_finish, tone_map_finish, or grade_glow alias",
+    "preserve contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade.glow while making balance_void_grade runtime-real"
+  ],
+  "forbidden_operator_prompts": [
+    "treat historical 234919_563__explaino_inertial compatibility as part of this slice",
+    "implement ExplainO-BalanceVoid, ExplainO-all, Source composition, archive recovery, hooks, crash recovery, anti-lie tooling, or unrelated UI polish in this slice",
+    "claim balance_void_grade shipped without real runtime math, live bridge truth, persistence, reset/default behavior, commit, receipts, and published-runtime proof",
+    "accept unknown grading ids or unsupported balance_void controls through fallback"
+  ],
+  "required_defaults": {
+    "balance_void_grade_grading_mapping_exists": "required",
+    "balance_void_grade_runtime_math_exists": "required",
+    "balance_void_grade_diagnostics_archive_reset_truth_preserved": "required",
+    "new_balance_void_owner_pack_required": "required",
+    "existing_grading_rows_regression_free": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "historical_234919_563__explaino_inertial_compatibility": "forbidden",
+    "explaino_balancevoid_family_work": "forbidden",
+    "explaino_all_work": "forbidden",
+    "source_composition_reopened": "forbidden",
+    "draft_only_balance_void_grade": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_contract_schema_valid",
+      "description": "The balance_void_grade owner-proof contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_plan_sync_ok",
+      "description": "The balance_void_grade owner-proof phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_hostile_audit_ok",
+      "description": "The balance_void_grade owner-proof hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

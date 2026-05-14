@@ -120,6 +120,34 @@ int main() {
     }
 
     {
+        ColoringMode mirroredMode = ColoringMode::root_basin;
+        const ColorPipelineSelection smoothBalanceVoid = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::balance_void_default};
+        if (!TryLegacyColoringModeForPipeline(smoothBalanceVoid, &mirroredMode) || mirroredMode != ColoringMode::smooth_escape) {
+            std::cerr << "balance_void_grade should count as an escape-like grading owner on smooth escape tuples\n";
+            return 1;
+        }
+        const ColorPipelineSelection phaseBalanceVoid = {ColorSignal::phase_angle, ColorPalette::phase_wheel, ColorGradingPreset::balance_void_default};
+        if (!TryLegacyColoringModeForPipeline(phaseBalanceVoid, &mirroredMode) || mirroredMode != ColoringMode::phase) {
+            std::cerr << "balance_void_grade should remain reusable on phase tuples instead of being trapped in escape-only grading logic\n";
+            return 1;
+        }
+        const ColorPipelineSelection bandBalanceVoid = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::balance_void_default};
+        if (!TryLegacyColoringModeForPipeline(bandBalanceVoid, &mirroredMode) || mirroredMode != ColoringMode::iteration_bands) {
+            std::cerr << "balance_void_grade should remain reusable on banded tuples instead of collapsing the band runtime bridge\n";
+            return 1;
+        }
+        const ColorPipelineSelection explainoBalanceVoid = {ColorSignal::smooth_escape, ColorPalette::explaino_cmap, ColorGradingPreset::balance_void_default};
+        if (!TryMirroredColoringModeForPipeline(explainoBalanceVoid, &mirroredMode) || mirroredMode != ColoringMode::smooth_escape) {
+            std::cerr << "balance_void_grade should remain reusable on explaino_cmap smooth-escape tuples through the mirrored runtime bridge\n";
+            return 1;
+        }
+        if (!IsColorPipelineAllowedForFractal(FractalType::explaino_nova, explainoBalanceVoid)) {
+            std::cerr << "balance_void_grade should stay available to escape-time Explaino tuples without widening into ExplainO-BalanceVoid family work\n";
+            return 1;
+        }
+    }
+
+    {
         if (!IsEscapeTimeFamily(FractalType::phoenix)) {
             std::cerr << "Phoenix should stay in the escape-time family\n";
             return 1;

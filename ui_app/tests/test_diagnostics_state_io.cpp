@@ -3859,6 +3859,58 @@ int main() {
     }
 
     {
+        ColorGradingPreset balanceVoidGrading = ColorGradingPreset::escape_default;
+        if (!color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &balanceVoidGrading)) {
+            std::cerr << "Expected balance_void_grade to parse as a shipped Grading row before diagnostics round-trip proof\n";
+            return 1;
+        }
+        const fs::path statePath = tempRoot / "v3_balance_void_grade_grading_stack.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "newton",
+  "view": {
+    "center_x": 0.0, "center_y": 0.0, "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0, "center_hp_y": 0.0, "log2_zoom": 0.0,
+    "explaino_phase": 0.0, "explaino_seed_drift": 0.0, "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 500, "epsilon": 1e-06, "exposure": 0.7,
+    "poly_kind": 0,
+    "coloring_mode": "smooth_escape",
+    "color_signal": "smooth_escape",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "balance_void_default",
+    "color_balance_void": 0.35,
+    "color_chroma_tension": 0.6,
+    "color_accent_bias": -0.25,
+    "color_grading_stack": [
+      { "grading": "balance_void_default", "balance_void": 0.35, "chroma_tension": 0.6, "accent_bias": -0.25 }
+    ],
+    "nova_alpha": 0.5, "phoenix_p_real": 0.0, "phoenix_p_imag": 0.0, "multibrot_power": 3,
+    "explaino_seed": 0.0, "explaino_warp_strength": 0.0, "explaino_root_count": 0,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": { "width": 320, "height": 240, "block_size": 256, "device_id": 0 }
+})";
+        file.close();
+        ViewState v{};
+        KernelParams p{};
+        RenderSettings r{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &v, &p, &r, &error)) {
+            std::cerr << "Balance-void-grade diagnostics state load failed: " << error << "\n";
+            return 1;
+        }
+        if (p.color_pipeline.grading != balanceVoidGrading || p.color_grading_stack_count != 1 || p.color_grading_stack[0].grading != balanceVoidGrading || !NearlyEqual(p.color_grading_stack[0].params.balance_void, 0.35, 0.001) || !NearlyEqual(p.color_grading_stack[0].params.chroma_tension, 0.6, 0.001) || !NearlyEqual(p.color_grading_stack[0].params.accent_bias, -0.25, 0.001) || !NearlyEqual(p.color_balance_void, 0.35, 0.001) || !NearlyEqual(p.color_chroma_tension, 0.6, 0.001) || !NearlyEqual(p.color_accent_bias, -0.25, 0.001)) {
+            std::cerr << "Expected balance_void_grade diagnostics state load to preserve grading stack params and the dedicated balance_void, chroma_tension, and accent_bias owner mirrors\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "v3_advanced_color_draft.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

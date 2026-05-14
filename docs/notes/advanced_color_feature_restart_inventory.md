@@ -15,7 +15,7 @@ Current live examples:
 - the generic first-lane startup prompt and this restart inventory are no longer the right launch surface for manual ExplainO work
 - the latest real launch authority is the current manual slice plan plus the latest relevant `HANDOFF_LOG.md` closeout for that slice
 - today that means `docs/notes/manual_explaino_inertial_reload_repair_PHASED_PLAN.md` plus `ck:20260512-serializer-rail`, not a reset back to the original `Priority 0` archaeology prompt
-- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, and the bounded `grade.glow` owner-proof row now define the shipped grading boundary, and the later enabled-toggle preserve-disabled-rows regression closeout keeps that shipped boundary truthful without opening a new feature row, so the next feature decision remains `balance_void_grade` or explicit foundation closure
+- the next core-feature launch authority is no longer the historical archive lane by default; weighted blend, basin-default, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, `grade.glow`, and the bounded `balance_void_grade` owner-proof row now define the shipped generic grading boundary, and the later enabled-toggle preserve-disabled-rows regression closeout keeps that boundary truthful without opening a new feature row, so the next core decision is explicit foundation closure or a separate later family-track lane
 
 It is intentionally not a workflow status page. It answers four questions only:
 
@@ -29,7 +29,7 @@ It is intentionally not a workflow status page. It answers four questions only:
 ## 1. Current Branch Truth
 
 - Branch: `feature/advanced-color-pipeline-draft-editor-reframe`
-- Last reread checkpoint for this note: closed enabled-toggle preserve-disabled-rows head `0e35f7a`
+- Last reread checkpoint for this note: active `balance_void_grade` owner-proof slice worktree on 2026-05-14
 - Live session state must still be rechecked with bootstrap commands before using this note as launch authority
 
 Important continuity facts:
@@ -41,8 +41,8 @@ Important continuity facts:
 
 Practical meaning:
 
-- The app state now includes the closed `grade.glow` owner-proof checkpoint at `5273e7b` (`ck:2f8a4f58`) plus the later enabled-toggle preserve-disabled-rows regression fix at `0e35f7a` (`ck:a72faa5a`), on top of all earlier advanced-color and manual-capture product commits beneath them.
-- The neutral-finish continuity closeout and phase8c proof-ladder work still matter for restart/proof routing, but `grade.glow` and the enabled-toggle preservation fix are already closed rather than active working-tree lanes.
+- The app state now includes the closed `grade.glow` owner-proof checkpoint at `5273e7b` (`ck:2f8a4f58`), the later enabled-toggle preserve-disabled-rows regression fix at `0e35f7a` (`ck:a72faa5a`), and the active `balance_void_grade` owner-proof slice that widens the shipped generic Grading boundary to include the reusable Balance/Void operator.
+- The neutral-finish continuity closeout and phase8c proof-ladder work still matter for restart/proof routing, but `grade.glow`, the enabled-toggle preservation fix, and `balance_void_grade` are product-state surfaces rather than active continuity chores.
 
 ---
 
@@ -141,7 +141,8 @@ Shipped ordered Grading stack:
 - `band_finish`
 - `neutral_finish`
 - `tone_map_finish`
-- `grade_glow`
+- `grade.glow`
+- `balance_void_grade`
 
 Bounded pair-only Grading:
 
@@ -283,20 +284,23 @@ Authority:
 - [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
 - [HANDOFF_LOG.md](/C:/code/cuda_newton_fractal_clone/HANDOFF_LOG.md)
 
-### Remaining defined pipeline/operator work
+### Remaining later family-track or closure work
 
-- `balance_void_grade`
+- explicit foundation closure
+- `ExplainO-BalanceVoid`
+- `Explaino-all`
 
 Current meaning:
 
-- `basin_default`, `neutral_finish`, the bounded `tone_map_finish` owner-proof row, and `grade.glow` now belong to the shipped grading boundary and must not be relisted as deferred inventory
-- `balance_void_grade` remains explicitly deferred until its own owner-proof slice exists or the foundation closes without it
-- the closed phase8c command ladder is still the cheapest truthful starting proof surface for that later grading/operator work
+- `balance_void_grade` now belongs to the shipped generic grading boundary alongside `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, `tone_map_finish`, and `grade.glow`
+- no later session should relist `balance_void_grade` as deferred inventory or treat it as a hidden blocker for historical archive compatibility
+- the closed phase8c command ladder is still the cheapest truthful starting proof surface for any later family-track or regression lane
 
 Authority:
 
 - [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+- [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 - [advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8c_test_lane_acceleration_PHASED_PLAN.md)
 
 ---
@@ -321,7 +325,7 @@ The cleanest seam is:
 - product feature checkpoints after preset preservation include `5e93e48`, `e2e14df`, `7d7f779`, `a59e657`, `5273e7b`, and `0e35f7a`
 - continuity/tooling-only follow-ups around them include `ab83e0a` and `a087faf`
 
-If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, neutral_finish, tone_map_finish, `grade.glow`, and the later enabled-toggle preserve-disabled-rows regression fix all landed; later hook/tooling churn still should not be mistaken for additional feature rows.
+If a future session asks “what changed in the app after preset preservation?”, the answer is: weighted blend Source composition, basin-default lane retention, neutral_finish, tone_map_finish, `grade.glow`, `balance_void_grade`, and the later enabled-toggle preserve-disabled-rows regression fix all landed; later hook/tooling churn still should not be mistaken for additional feature rows.
 
 ---
 
@@ -343,7 +347,7 @@ What is true:
 What is not true:
 
 - the broader inventory is not fully shipped just because it appears in planning docs
-- deferred rows such as `balance_void_grade` are not shipped just because they remain in planning inventory
+- later family-track work such as `ExplainO-BalanceVoid` or `Explaino-all` is not shipped just because it remains in planning inventory
 
 ### Stronger module boundaries and reusable core
 
@@ -383,8 +387,8 @@ Status:
 
 Why:
 
-- active sprint-core lanes are still unfinished
-- the remaining deferred grading/operator work and any explicit closure decision remain outside the current closure claim until a later slice resolves them
+- the generic core grading boundary is now shipped through `balance_void_grade`, but foundation closure itself is still an explicit decision
+- later family-track work remains outside the current closure claim until a later slice resolves it
 - historical archive compatibility is tracked separately rather than as the default next lane
 
 ---
@@ -393,116 +397,111 @@ Why:
 
 This is the one-topic-at-a-time work list. Each lane is intentionally bounded so a single session can focus on one topic area without dragging three others behind it.
 
-### Priority 0 - Post-`grade.glow` grading decision
+### Priority 0 - Post-`balance_void_grade` closure or family-track decision
 
 Goal:
 
-- choose the next bounded post-`grade.glow` lane truthfully instead of reopening the now-shipped row by inertia
+- choose the next bounded post-`balance_void_grade` lane truthfully instead of reopening already-shipped core grading rows by inertia
 
 Why this is first now:
 
-- the bounded `grade.glow` owner path now covers descriptor/catalog truth, live bridge import/apply, runtime math, diagnostics/archive persistence, reset/default behavior, and published-runtime proof
-- `balance_void_grade` is now the only remaining deferred Grading/operator row in this restart surface
-- foundation closure is still a separate explicit decision, not an implied side effect of landing `grade.glow`
+- `balance_void_grade` now closes the remaining generic Grading/operator row in this restart surface
+- foundation closure is still a separate explicit decision, not an implied side effect of landing `balance_void_grade`
+- later family-track work like `ExplainO-BalanceVoid` / `Explaino-all` must stay separate from the shipped generic core
 
 Owner surfaces:
 
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
 - [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-- [advanced_color_library_foundation_phase8f_grade_glow_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8f_grade_glow_owner_proof_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 
 Bounded TODOs:
 
-1. Choose exactly one of `balance_void_grade` or explicit foundation closure.
+1. Choose exactly one of explicit foundation closure or a separate later family-track lane.
 2. Keep the chosen lane single-topic and bounded.
-3. Preserve shipped behavior for `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, `tone_map_finish`, and `grade_glow`.
-4. Do not reopen weighted blend, `grade.glow`, manual archive, or workflow/tooling churn by inertia.
-5. Require runtime-backed proof, not editor-only behavior, before promoting any later row or closure claim.
+3. Preserve shipped behavior for `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, `tone_map_finish`, `grade.glow`, and `balance_void_grade`.
+4. Do not reopen weighted blend, `grade.glow`, `balance_void_grade`, manual archive, or workflow/tooling churn by inertia.
+5. Require runtime-backed proof, not editor-only behavior, before promoting any later family-track work or closure claim.
 
 Proof to require before calling it done:
 
-- one owner-proof or closure lane per slice
-- runtime math and live bridge proof for any newly promoted row
-- diagnostics/archive/reset proof when a row is promoted
-- explicit proof that untouched deferred work remains deferred
+- one closure or family-track lane per slice
+- runtime-visible proof for any newly promoted family track
+- explicit proof that historical archive compatibility stays out of scope unless reclassified
+- explicit proof that shipped generic core rows remain shipped and regression-free
 
 Stop point:
 
-- one later lane opens truthfully, or the matrix keeps `balance_void_grade` explicitly deferred without pretending more shipped rows or closure proof exist
+- closure becomes explicit, or one separate later family-track lane opens truthfully without pretending more generic core grading debt exists
 
 Start from:
 
 - [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
-- [advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8e_tone_map_finish_owner_proof_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md)
+- [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 
-### Priority 1 - Remaining defined pipeline/operator sets
+### Priority 1 - Later defined family tracks
 
 Goal:
 
-- finish the remaining bounded pipeline/operator work one owner-proof slice at a time
+- open later post-foundation family work only if it is explicitly chosen and kept separate from the shipped generic core
 
 Candidate order:
 
-1. `balance_void_grade`
-
-Owner surfaces:
-
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
-- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
-- [color_pipeline_core.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_core.h)
-- [escape_time_coloring.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/escape_time_coloring.h)
-- [color_pipeline_window.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_window.h)
-
-Proof to require before calling it done:
-
-- one operator/row per slice
-- real runtime-backed controls and math
-- persistence/reset/default proof
-- runtime publish/probe proof
-
-Start from:
-
-- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
-
-### Priority 2 - Balance/Void grading operator
-
-Goal:
-
-- ship `balance_void_grade` as a real reusable grading operator after `tone_map_finish` and any chosen remaining base-grading owner proofs are in place
+1. `ExplainO-BalanceVoid`
+2. `Explaino-all`
 
 Owner surfaces:
 
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
-- [color_pipeline_core.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_core.h)
-- [escape_time_coloring.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/escape_time_coloring.h)
-- [color_pipeline_window.h](/C:/code/cuda_newton_fractal_clone/ui_app/src/color_pipeline_window.h)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+
+Proof to require before calling it done:
+
+- one family track per slice
+- runtime-visible proof for any newly promoted family behavior
+- explicit proof that the shipped generic core rows stay stable
+- explicit proof that historical archive compatibility remains separate unless reclassified
+
+Start from:
+
+- [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
+
+### Priority 2 - Shipped `balance_void_grade` regression boundary
+
+Goal:
+
+- keep `balance_void_grade` treated as a shipped generic grading operator, not as deferred inventory or stealth family-track work
+
+Owner surfaces:
+
+- [advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8g_balance_void_grade_owner_proof_PHASED_PLAN.md)
+- [advanced_color_library_foundation_CLOSURE_MATRIX.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md)
+- [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)
 
 Bounded TODOs:
 
-1. Use the checked-in parameter pack direction:
-   - `balance_void`
-   - `chroma_tension`
-   - `accent_bias`
-2. Keep it generic and reusable across families.
-3. Do not fuse it with ExplainO family geometry work.
+1. Reopen only exact regression seams if machine proof says the shipped row broke.
+2. Keep historical archive compatibility separate.
+3. Do not fuse regression repair with ExplainO-BalanceVoid / ExplainO-all expansion.
 
 Stop point:
 
-- one owner-proof grading slice closes truthfully, or the lane stops blocked without pretending the operator shipped
-
+- the shipped row stays in the generic grading boundary, or a bounded regression slice names the exact broken seam
 ### Priority 3 - ExplainO-BalanceVoid / ExplainO-all follow-on
 
 Goal:
 
-- move from the reusable pipeline core into the later ExplainO family expansion only after the remaining grading/operator lanes above are either shipped or explicitly deferred
+- move from the reusable pipeline core into the later ExplainO family expansion only after the shipped generic core boundary and any explicit foundation-closure decision are truthful
 
 Current meaning:
 
 - this is a later family track, not the next core pipeline slice
-- it should not hitch a ride on Source composition or Balance/Void grading implementation
+- it should not hitch a ride on Source composition or `balance_void_grade` regression repair
 
 Owner surfaces:
 
@@ -590,12 +589,11 @@ Stop point:
 
 If you resume from this note, do exactly one of these at a time:
 
-1. one specific remaining pipeline/operator lane after `tone_map_finish`
-2. Balance/Void grading
-3. ExplainO-BalanceVoid / ExplainO-all follow-on
-4. foundation closure decision
-5. historical archive compatibility / archive UX
-6. polish on already-shipped behavior
+1. foundation closure decision
+2. one separate later family-track lane
+3. `balance_void_grade` regression repair if a real seam reopens
+4. historical archive compatibility / archive UX
+5. polish on already-shipped behavior
 
 Do not mix:
 
@@ -630,9 +628,9 @@ For product-state re-entry, start with:
 
 If you want the fastest path back to truthful feature velocity:
 
-1. Use the latest closed advanced-color handoff chain through `ck:2f8a4f58` and `ck:a72faa5a` instead of restarting from older pre-`grade.glow` prompts.
-2. Reuse the closed phase8c command ladder for whichever next grading/operator slice or closure decision is chosen.
-3. Choose explicitly between `balance_void_grade` or foundation closure from the matrix.
+1. Use the latest advanced-color handoff chain through `ck:2f8a4f58`, `ck:a72faa5a`, and the `balance_void_grade` owner-proof slice instead of restarting from older pre-`grade.glow` prompts.
+2. Reuse the closed phase8c command ladder for whichever next family-track, regression, or closure slice is chosen.
+3. Choose explicitly between foundation closure or a separate later family-track lane from the matrix.
 4. Keep historical archive compatibility separate unless it is explicitly reprioritized.
 
 That is the shortest path back to truthful core feature velocity instead of reopening already closed weighted-blend/basin-default/neutral-finish/tone-map/`grade.glow` work or historical compatibility by inertia.

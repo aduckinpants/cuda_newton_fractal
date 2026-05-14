@@ -360,6 +360,32 @@ void TestGradingStackApplyAndLiveImport() {
                 state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 4,
             "TestGradingStackApplyAndLiveImport_ApplyResyncsGradeGlow");
     }
+
+    ColorGradingPreset balanceVoidGrading = ColorGradingPreset::escape_default;
+    const bool balanceVoidConfigured = SelectColorPipelineLaneFunction(&state, 3, "balance_void_grade") &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.balance_void", 0.35) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.chroma_tension", 0.6) &&
+            SetRowNumber(state.lanes[3].rows[0], "grade.accent_bias", -0.25);
+    Check(balanceVoidConfigured,
+        "TestGradingStackApplyAndLiveImport_ConfiguresBalanceVoidGrade");
+    if (balanceVoidConfigured) {
+        changed = false;
+        Check(ApplyColorPipelineDraftToLiveState(&state, FractalType::newton, &params, &changed) && changed,
+            "TestGradingStackApplyAndLiveImport_ApplyBalanceVoidGrade");
+        Check(color_pipeline_core::TryParseAdvancedColorGradingFunctionId("balance_void_grade", &balanceVoidGrading) &&
+                params.color_grading_stack_count == 1 &&
+                params.color_grading_stack[0].grading == balanceVoidGrading &&
+                Near(params.color_grading_stack[0].params.balance_void, 0.35) &&
+                Near(params.color_grading_stack[0].params.chroma_tension, 0.6) &&
+                Near(params.color_grading_stack[0].params.accent_bias, -0.25),
+            "TestGradingStackApplyAndLiveImport_RuntimeWritesBalanceVoidGrade");
+        Check(params.color_pipeline.grading == balanceVoidGrading && Near(params.color_balance_void, 0.35) && Near(params.color_chroma_tension, 0.6) && Near(params.color_accent_bias, -0.25),
+            "TestGradingStackApplyAndLiveImport_BalanceVoidGradeMirrorsDedicatedOwners");
+        Check(state.live_snapshot.valid && state.live_snapshot.lanes[3].rows.size() == 1 &&
+                state.live_snapshot.lanes[3].rows[0].function_id == "balance_void_grade" &&
+                state.live_snapshot.lanes[3].rows[0].parameter_values.size() == 3,
+            "TestGradingStackApplyAndLiveImport_ApplyResyncsBalanceVoidGrade");
+    }
 }
 
 void TestRootBasinPairScheduleBridge() {

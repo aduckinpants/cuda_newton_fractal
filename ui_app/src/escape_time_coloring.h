@@ -170,6 +170,45 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGlowFinishPass(
 }
 
 template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorBalanceVoidGradePass(
+    Color color,
+    float balanceVoid,
+    float chromaTension,
+    float accentBias) {
+    const float clampedBalanceVoid = EscapeTimeColorClamp(balanceVoid, -1.0f, 1.0f);
+    const float clampedChromaTension = EscapeTimeColorClamp(chromaTension, -1.0f, 1.0f);
+    const float clampedAccentBias = EscapeTimeColorClamp(accentBias, -1.0f, 1.0f);
+
+    const float red = static_cast<float>(color.x) / 255.0f;
+    const float green = static_cast<float>(color.y) / 255.0f;
+    const float blue = static_cast<float>(color.z) / 255.0f;
+    const float luminance = red * 0.299f + green * 0.587f + blue * 0.114f;
+    const float accent = (luminance - 0.5f) * 2.0f;
+    const float chromaScale = 1.0f + clampedChromaTension * (0.35f + 0.35f * fabsf(accent));
+    const float warmShift = clampedBalanceVoid * (0.12f + 0.08f * (1.0f - fabsf(accent)));
+    const float accentLift = clampedAccentBias * accent * 0.18f;
+
+    const float balancedRed = EscapeTimeColorClamp(
+        luminance + (red - luminance) * chromaScale + warmShift + accentLift,
+        0.0f,
+        1.0f);
+    const float balancedGreen = EscapeTimeColorClamp(
+        luminance + (green - luminance) * (1.0f - clampedChromaTension * 0.18f) - accentLift * 0.35f,
+        0.0f,
+        1.0f);
+    const float balancedBlue = EscapeTimeColorClamp(
+        luminance + (blue - luminance) * chromaScale - warmShift - accentLift,
+        0.0f,
+        1.0f);
+
+    return EscapeTimeColorMake<Color>(
+        static_cast<unsigned char>(EscapeTimeColorClamp(roundf(balancedRed * 255.0f), 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(roundf(balancedGreen * 255.0f), 0.0f, 255.0f)),
+        static_cast<unsigned char>(EscapeTimeColorClamp(roundf(balancedBlue * 255.0f), 0.0f, 255.0f)),
+        color.w);
+}
+
+template <typename Color>
 ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
     Color color,
     const KernelParams& params,
@@ -201,6 +240,12 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
         contrast = EscapeTimeColorClamp(gradingEntry.params.contrast, 0.0f, 3.0f);
         glow = EscapeTimeColorClamp(gradingEntry.params.glow, 0.0f, 2.0f);
         glowFinish = true;
+    } else if (gradingEntry.grading == ColorGradingPreset::balance_void_default) {
+        return ApplyFractalColorBalanceVoidGradePass(
+            color,
+            gradingEntry.params.balance_void,
+            gradingEntry.params.chroma_tension,
+            gradingEntry.params.accent_bias);
     }
     if (toneMapFinish) {
         return ApplyFractalColorToneMapFinishPass(color, params, exposure, saturation, contrast);
@@ -242,6 +287,13 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const Ke
             params.color_saturation,
             params.color_contrast,
             params.color_glow);
+    }
+    if (params.color_pipeline.grading == ColorGradingPreset::balance_void_default) {
+        return ApplyFractalColorBalanceVoidGradePass(
+            color,
+            params.color_balance_void,
+            params.color_chroma_tension,
+            params.color_accent_bias);
     }
     return ApplyFractalColorGradingPass(
         color,

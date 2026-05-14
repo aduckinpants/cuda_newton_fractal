@@ -49,6 +49,9 @@ void ResetRuntimeStateForCurrentFractal(
         gradingEntry = {};
     }
     params.color_glow = 0.25f;
+    params.color_balance_void = 0.0f;
+    params.color_chroma_tension = 0.0f;
+    params.color_accent_bias = 0.0f;
     if (IsExplainoFamily(view.fractal_type)) {
         UpdateExplainoPolynomial(view, params, nullptr);
     }

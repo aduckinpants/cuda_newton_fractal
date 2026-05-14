@@ -978,15 +978,16 @@ int main() {
         const ColorPipelineLaneCatalog* coreGradingCatalog = color_pipeline_core::FindColorPipelineLaneCatalog("grading");
         if (!coreGradingCatalog ||
             coreGradingCatalog->default_function_id != std::string("contrast_lift") ||
-            coreGradingCatalog->functions.size() != 7 ||
+            coreGradingCatalog->functions.size() != 8 ||
             coreGradingCatalog->functions[0].id != "contrast_lift" ||
             coreGradingCatalog->functions[1].id != "phase_finish" ||
             coreGradingCatalog->functions[2].id != "band_finish" ||
             coreGradingCatalog->functions[3].id != "basin_default" ||
             coreGradingCatalog->functions[4].id != "neutral_finish" ||
             coreGradingCatalog->functions[5].id != "tone_map_finish" ||
-            coreGradingCatalog->functions[6].id != "grade_glow") {
-            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade_glow as runtime-real Grading rows\n";
+            coreGradingCatalog->functions[6].id != "grade_glow" ||
+            coreGradingCatalog->functions[7].id != "balance_void_grade") {
+            std::cerr << "Expected the extracted advanced color core to ship contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade as runtime-real Grading rows\n";
             return 1;
         }
         const FunctionDescriptor* coreContrastLiftDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "contrast_lift");
@@ -1044,6 +1045,15 @@ int main() {
             coreGradeGlowDescriptor->parameters[2].path != "grade.contrast" ||
             coreGradeGlowDescriptor->parameters[3].path != "grade.glow") {
             std::cerr << "Expected grade_glow to expose stable exposure, saturation, contrast, and glow grading owner paths\n";
+            return 1;
+        }
+        const FunctionDescriptor* coreBalanceVoidDescriptor = color_pipeline_core::FindColorPipelineFunctionDescriptor(*coreGradingCatalog, "balance_void_grade");
+        if (!coreBalanceVoidDescriptor ||
+            coreBalanceVoidDescriptor->parameters.size() != 3 ||
+            coreBalanceVoidDescriptor->parameters[0].path != "grade.balance_void" ||
+            coreBalanceVoidDescriptor->parameters[1].path != "grade.chroma_tension" ||
+            coreBalanceVoidDescriptor->parameters[2].path != "grade.accent_bias") {
+            std::cerr << "Expected balance_void_grade to expose dedicated balance_void, chroma_tension, and accent_bias grading owner paths\n";
             return 1;
         }
         const char* bridgeSourceFunctionId = nullptr;

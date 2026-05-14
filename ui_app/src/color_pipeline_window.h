@@ -1110,6 +1110,9 @@ inline bool IsLiveColorPipelineParamPath(const std::string& functionId, const st
     if (functionId == "grade_glow") {
         return path == "grade.exposure" || path == "grade.saturation" || path == "grade.contrast" || path == "grade.glow";
     }
+    if (functionId == "balance_void_grade") {
+        return path == "grade.balance_void" || path == "grade.chroma_tension" || path == "grade.accent_bias";
+    }
     if (functionId == "phase_orbit") {
         return path == "signal.phase_offset" || path == "signal.wrap_cycles" || path == "signal.blend_weight";
     }
@@ -1435,7 +1438,8 @@ inline bool IsSupportedColorPipelineGradingFunctionId(const std::string& functio
         functionId == "basin_default" ||
         functionId == "neutral_finish" ||
         functionId == "tone_map_finish" ||
-        functionId == "grade_glow";
+        functionId == "grade_glow" ||
+        functionId == "balance_void_grade";
 }
 
 inline bool ColorPipelineGradingRuntimeParamsEqual(
@@ -1444,7 +1448,10 @@ inline bool ColorPipelineGradingRuntimeParamsEqual(
     return std::fabs(left.exposure - right.exposure) <= 1.0e-6f &&
         std::fabs(left.saturation - right.saturation) <= 1.0e-6f &&
         std::fabs(left.contrast - right.contrast) <= 1.0e-6f &&
-        std::fabs(left.glow - right.glow) <= 1.0e-6f;
+        std::fabs(left.glow - right.glow) <= 1.0e-6f &&
+        std::fabs(left.balance_void - right.balance_void) <= 1.0e-6f &&
+        std::fabs(left.chroma_tension - right.chroma_tension) <= 1.0e-6f &&
+        std::fabs(left.accent_bias - right.accent_bias) <= 1.0e-6f;
 }
 
 inline bool ColorPipelineGradingStackEntriesEqual(
@@ -2148,7 +2155,7 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
     }
     if (!IsSupportedColorPipelineGradingFunctionId(row.function_id)) {
         if (outError) {
-            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, and grade_glow in the Grading stack.";
+            *outError = "Current live bridge only supports contrast_lift, phase_finish, band_finish, basin_default, neutral_finish, tone_map_finish, grade_glow, and balance_void_grade in the Grading stack.";
         }
         return false;
     }
@@ -2221,6 +2228,21 @@ inline bool TryBuildColorPipelineGradingStackEntryFromRow(
         entry.params.saturation = static_cast<float>(saturation);
         entry.params.contrast = static_cast<float>(contrast);
         entry.params.glow = static_cast<float>(glow);
+    } else if (row.function_id == "balance_void_grade") {
+        double balanceVoid = 0.0;
+        double chromaTension = 0.0;
+        double accentBias = 0.0;
+        if (!TryGetColorPipelineParamNumber(row, "grade.balance_void", &balanceVoid, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.chroma_tension", &chromaTension, outError) ||
+            !TryGetColorPipelineParamNumber(row, "grade.accent_bias", &accentBias, outError) ||
+            !ValidateColorPipelineParamRange("grade.balance_void", balanceVoid, -1.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.chroma_tension", chromaTension, -1.0, 1.0, outError) ||
+            !ValidateColorPipelineParamRange("grade.accent_bias", accentBias, -1.0, 1.0, outError)) {
+            return false;
+        }
+        entry.params.balance_void = static_cast<float>(balanceVoid);
+        entry.params.chroma_tension = static_cast<float>(chromaTension);
+        entry.params.accent_bias = static_cast<float>(accentBias);
     }
 
     *outEntry = entry;
@@ -2349,6 +2371,11 @@ inline bool ImportSupportedColorPipelineParamsFromGradingStackEntry(
             SetColorPipelineParamNumber(ioRow, "grade.contrast", gradingEntry.params.contrast, outError) &&
             SetColorPipelineParamNumber(ioRow, "grade.glow", gradingEntry.params.glow, outError);
     }
+    if (ioRow->function_id == "balance_void_grade") {
+        return SetColorPipelineParamNumber(ioRow, "grade.balance_void", color_pipeline_core::NormalizeImportedColorPipelineNumber(gradingEntry.params.balance_void), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.chroma_tension", color_pipeline_core::NormalizeImportedColorPipelineNumber(gradingEntry.params.chroma_tension), outError) &&
+            SetColorPipelineParamNumber(ioRow, "grade.accent_bias", color_pipeline_core::NormalizeImportedColorPipelineNumber(gradingEntry.params.accent_bias), outError);
+    }
     return true;
 }
 
@@ -2421,6 +2448,10 @@ inline bool TryBuildColorPipelineGradingLaneFromLive(
         liveGradingEntry.params.saturation = liveParams.color_saturation;
         liveGradingEntry.params.contrast = liveParams.color_contrast;
         liveGradingEntry.params.glow = liveParams.color_glow;
+    } else if (liveGradingEntry.grading == ColorGradingPreset::balance_void_default) {
+        liveGradingEntry.params.balance_void = liveParams.color_balance_void;
+        liveGradingEntry.params.chroma_tension = liveParams.color_chroma_tension;
+        liveGradingEntry.params.accent_bias = liveParams.color_accent_bias;
     } else {
         liveGradingEntry.params.exposure = 1.0f;
         liveGradingEntry.params.saturation = liveParams.color_saturation;
@@ -2849,6 +2880,9 @@ inline bool ApplySupportedColorPipelineParamsToLive(
     if (!nextGradingStack.empty()) {
         const ColorPipelineGradingStackEntry& gradingMirrorEntry = nextGradingStack.back();
         assignShapeFloat(&ioParams->color_glow, 0.25f);
+        assignShapeFloat(&ioParams->color_balance_void, 0.0f);
+        assignShapeFloat(&ioParams->color_chroma_tension, 0.0f);
+        assignShapeFloat(&ioParams->color_accent_bias, 0.0f);
         if (gradingMirrorEntry.grading == ColorGradingPreset::escape_default) {
             assignShapeFloat(&ioParams->color_contrast_lift_exposure, gradingMirrorEntry.params.exposure);
             assignShapeFloat(&ioParams->color_contrast_lift_saturation, gradingMirrorEntry.params.saturation);
@@ -2866,6 +2900,10 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             assignShapeFloat(&ioParams->color_saturation, gradingMirrorEntry.params.saturation);
             assignShapeFloat(&ioParams->color_contrast, gradingMirrorEntry.params.contrast);
             assignShapeFloat(&ioParams->color_glow, gradingMirrorEntry.params.glow);
+        } else if (gradingMirrorEntry.grading == ColorGradingPreset::balance_void_default) {
+            assignShapeFloat(&ioParams->color_balance_void, gradingMirrorEntry.params.balance_void);
+            assignShapeFloat(&ioParams->color_chroma_tension, gradingMirrorEntry.params.chroma_tension);
+            assignShapeFloat(&ioParams->color_accent_bias, gradingMirrorEntry.params.accent_bias);
         }
     }
 

@@ -781,6 +781,9 @@ void ResetLegacyColorGradingMirror(KernelParams* ioParams) {
     ioParams->color_contrast_lift_exposure = 1.0f;
     ioParams->color_contrast_lift_saturation = 1.0f;
     ioParams->color_glow = 0.25f;
+    ioParams->color_balance_void = 0.0f;
+    ioParams->color_chroma_tension = 0.0f;
+    ioParams->color_accent_bias = 0.0f;
 }
 
 void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry& gradingEntry, KernelParams* ioParams) {
@@ -803,6 +806,10 @@ void MirrorLegacyColorGradingFromStackEntry(const ColorPipelineGradingStackEntry
         ioParams->color_saturation = gradingEntry.params.saturation;
         ioParams->color_contrast = gradingEntry.params.contrast;
         ioParams->color_glow = gradingEntry.params.glow;
+    } else if (gradingEntry.grading == ColorGradingPreset::balance_void_default) {
+        ioParams->color_balance_void = gradingEntry.params.balance_void;
+        ioParams->color_chroma_tension = gradingEntry.params.chroma_tension;
+        ioParams->color_accent_bias = gradingEntry.params.accent_bias;
     }
 }
 
@@ -965,16 +972,25 @@ bool ParseColorGradingStackEntry(const json_min::Value& entryValue,
     double saturation = entry.params.saturation;
     double contrast = entry.params.contrast;
     double glow = entry.params.glow;
+    double balanceVoid = entry.params.balance_void;
+    double chromaTension = entry.params.chroma_tension;
+    double accentBias = entry.params.accent_bias;
     if (!GetOptionalNumber(entryValue, "exposure", &exposure, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "saturation", &saturation, nullptr, outError) ||
         !GetOptionalNumber(entryValue, "contrast", &contrast, nullptr, outError) ||
-        !GetOptionalNumber(entryValue, "glow", &glow, nullptr, outError)) {
+        !GetOptionalNumber(entryValue, "glow", &glow, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "balance_void", &balanceVoid, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "chroma_tension", &chromaTension, nullptr, outError) ||
+        !GetOptionalNumber(entryValue, "accent_bias", &accentBias, nullptr, outError)) {
         return false;
     }
     entry.params.exposure = static_cast<float>(exposure);
     entry.params.saturation = static_cast<float>(saturation);
     entry.params.contrast = static_cast<float>(contrast);
     entry.params.glow = static_cast<float>(glow);
+    entry.params.balance_void = static_cast<float>(balanceVoid);
+    entry.params.chroma_tension = static_cast<float>(chromaTension);
+    entry.params.accent_bias = static_cast<float>(accentBias);
     *outEntry = entry;
     return true;
 }
@@ -1998,6 +2014,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double colorSaturation = nextParams.color_saturation;
     double colorContrast = nextParams.color_contrast;
     double colorGlow = nextParams.color_glow;
+    double colorBalanceVoid = nextParams.color_balance_void;
+    double colorChromaTension = nextParams.color_chroma_tension;
+    double colorAccentBias = nextParams.color_accent_bias;
     double colorTintR = nextParams.color_tint_r;
     double colorTintG = nextParams.color_tint_g;
     double colorTintB = nextParams.color_tint_b;
@@ -2039,6 +2058,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (!GetOptionalNumber(*paramsObject, "color_saturation", &colorSaturation, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_contrast", &colorContrast, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_glow", &colorGlow, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_balance_void", &colorBalanceVoid, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_chroma_tension", &colorChromaTension, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "color_accent_bias", &colorAccentBias, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_r", &colorTintR, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_g", &colorTintG, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "color_tint_b", &colorTintB, nullptr, outError)) return false;
@@ -2104,6 +2126,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     nextParams.color_saturation = static_cast<float>(colorSaturation);
     nextParams.color_contrast = static_cast<float>(colorContrast);
     nextParams.color_glow = static_cast<float>(colorGlow);
+    nextParams.color_balance_void = static_cast<float>(colorBalanceVoid);
+    nextParams.color_chroma_tension = static_cast<float>(colorChromaTension);
+    nextParams.color_accent_bias = static_cast<float>(colorAccentBias);
     nextParams.color_tint_r = static_cast<float>(colorTintR);
     nextParams.color_tint_g = static_cast<float>(colorTintG);
     nextParams.color_tint_b = static_cast<float>(colorTintB);
