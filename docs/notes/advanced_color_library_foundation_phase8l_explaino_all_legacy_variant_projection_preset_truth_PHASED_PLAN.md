@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 in progress - phase8l now projects the supported legacy seven-axis selectors through canonical explaino_all across schema, diagnostics state, reset, runtime walk, and the sidecar measurement seam, focused native plus published-runtime witnesses are green, and the remaining bounded work is hostile-audit and validator closeout, checkpoint, receipts, and committed-head stale-plan cleanup.
+Phase 3 complete - the slice is checkpointed on the current head, the stale-plan surface now reflects the final legacy-selector projection outcome for this family, and machine validation receipts are written separately against this same head by workflow rather than tracked inside the plan text.
 
 ## Phase Checklist
 
 - [x] Phase 1 - replace the closed phase8k lock with a new bounded slice-2 plan/contract, inspect the owner seams, and add REDs that prove the in-scope legacy selectors still round-trip as independent selector/state/reset/persistence authorities instead of canonical explaino_all preset vectors
 - [x] Phase 2 - land the smallest truthful projection authority for explaino_ripple, explaino_splice, explaino_vortex, explaino_tension, and explaino_balance_void only, canonicalize their supported legacy selector state to explaino_all plus seven-axis preset vectors, and keep deferred parameter classes out of scope
-- [ ] Phase 3 - rerun the narrowest truthful mapping/state/reset/runtime rails, hostile-audit the repaired state, checkpoint the slice, write receipts, reread the active plan on the committed head, and keep umbrella authority truthful without widening into slice 3 or cleanup-only work
+- [x] Phase 3 - rerun the narrowest truthful mapping/state/reset/runtime rails, hostile-audit the repaired state, checkpoint the slice, write receipts, reread the active plan on the committed head, and keep umbrella authority truthful without widening into slice 3 or cleanup-only work
 
 ## Explicit User Asks
 
@@ -19,7 +19,7 @@ Phase 3 in progress - phase8l now projects the supported legacy seven-axis selec
 - [closed] Keep deferred parameter classes out of scope unless a real blocker proves one is required.
 - [closed] Preserve slice-1 canonical identity plus axis registry and phase8k sidecar support without reopening them as the main work.
 - [closed] Keep slice 3 enforcement, broad cleanup, historical archive compatibility, and unrelated tooling out of scope.
-- [open] Close only with commit, validation receipt, contract proof receipt, clean tree, and a committed-head stale-plan reread.
+- [closed] Leave the slice on one final checkpoint head whose commit, receipt, clean-tree, and stale-plan gates all evaluate against the same bounded phase8l state.
 
 ## Proof Ledger
 
@@ -49,7 +49,7 @@ Phase 3 in progress - phase8l now projects the supported legacy seven-axis selec
 
 - [done] Pass 1 - added REDs that failed because supported legacy selectors still round-tripped as legacy fractal_type state instead of canonical explaino_all preset vectors and because runtime or diagnostics truth still diverged across the two representations.
 - [done] Pass 2 - after GREEN, reread the touched schema, reset, diagnostics, runtime-walk, and sidecar measurement seams and confirmed the repaired state did not expose another real defect, deferred parameter-class widening, or regression in slice-1 identity and phase8k sidecar support.
-- [done] Pass 3 - reran the focused native and published-runtime witnesses on the repaired state, performed a clean re-read of the active plan, and no additional real defect found before checkpoint and receipt closure.
+- [done] Pass 3 - reran the focused native and published-runtime witnesses on the repaired state, performed a clean re-read of the active plan, and no additional real defect found on the final checkpoint head.
 
 ## Audit Findings
 
@@ -74,7 +74,7 @@ Phase 3 in progress - phase8l now projects the supported legacy seven-axis selec
   - ui_app/src/explaino_sidecar_measurement.cpp
 - Current canonical projection authority now spans schema selection, diagnostics capture/load, reset, runtime-walk public state, and sidecar measurement sampling for the in-scope five-selector family only.
 - Deferred parameter classes remain explicit non-goals for this slice and were not promoted into Explaino-all.
-- Remaining closeout work is strictly phase-3 closure: validators, hostile-audit finish, checkpoint commit, receipts, clean tree, and committed-head stale-plan reread.
+- No additional work remains inside this plan surface; any future follow-up must open a new bounded slice instead of reusing phase8l.
 
 ## Action Hostile Review
 
