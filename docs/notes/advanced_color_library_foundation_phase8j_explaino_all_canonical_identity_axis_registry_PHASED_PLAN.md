@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 3 - the canonical identity, shared registry, focused native/runtime proofs, and hostile-audit repair are all landed; checkpoint, receipts, and the committed-head stale-plan gate remain open.
+Complete - explaino_all is now the canonical public Explaino identity, the shared seven-axis registry owns the Explaino-all control surface, committed-head proofs plus machine receipts are written, and the stale-plan reread no longer leaves fake open closure chores behind.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open and lock the slice, inspect the owner seams, apply the first checked-in RED witnesses, and prove explaino_all is still missing as a real selector/runtime/default identity and that the seven family axes still rely on per-variant one-off authority instead of one canonical registry
 - [x] Phase 2 - land the smallest truthful explaino_all canonical identity plus shared-axis registry path, make explaino_all first/default, and drive the Explaino-all control surface from the registry without widening into alias migration, enforcement, cleanup, or historical archive work
-- [ ] Phase 3 - validate through the narrowest truthful selector/schema/state/runtime rails, hostile-audit the repaired state, checkpoint, write receipts, clear stale closeout text, and keep umbrella authority truthful
+- [x] Phase 3 - validate through the narrowest truthful selector/schema/state/runtime rails, hostile-audit the repaired state, checkpoint the slice, write the machine receipts, clear stale closeout text, and keep umbrella authority truthful on the committed head
 
 ## Explicit User Asks
 
@@ -18,7 +18,7 @@ Phase 3 - the canonical identity, shared registry, focused native/runtime proofs
 - [done] Define one shared Explaino axis registry for ripple_amplitude, splice_offset, vortex_strength, tension_strength, balance_void, symmetry_tension, and field_curvature.
 - [done] Drive the Explaino-all control surface from that registry instead of per-variant one-off control authority.
 - [done] Keep legacy alias migration, enforcement guardrails, cleanup-only work, generic advanced-color core work, and historical archive compatibility out of this slice except for any minimal viability shim strictly required to make explaino_all runtime-real.
-- [open] Close only with commit, validation receipt, contract proof receipt, clean tree, and a post-closeout stale-plan reread on the committed head.
+- [done] Close only with commit, validation receipt, contract proof receipt, clean tree, and a post-closeout stale-plan reread on the committed head.
 
 ## Proof Ledger
 
@@ -45,6 +45,18 @@ Phase 3 - the canonical identity, shared registry, focused native/runtime proofs
   - `cmd /c "ui_app\build_vsdevcmd.cmd > artifacts\validation\phase8j_focus\build_vsdevcmd.log 2>&1"`
   - `py -3.14 tools/viewer_host_runtime_pytest_lane.py tests/test_fractal_runtime_explaino_escape_variants.py -k explaino_all > artifacts\validation\phase8j_focus\runtime_pytest_explaino_all.log 2>&1`
 - Hostile audit found one post-GREEN UI truth defect: family-wide Explaino controls such as auto_increment_seed, explaino_seed, and epsilon still omitted explaino_all from checked-in visible_if lists. The schema and test witness were repaired and the focused ui-schema plus published-runtime proofs were rerun green.
+- `py -3.14 tools/viewer_host_checkpoint_slice.py commit --session-id global_active_contract --cwd . --checkpoint-id ck:c4b13525 --score 97 --handoff-message "Explaino-all slice 1 landed: explaino_all is now a real canonical Explaino identity, first/default selector wiring and the seven-axis registry are live, focused native/CUDA/runtime proofs are green, and hostile audit repaired the missing explaino_all family-control visibility defect without widening into alias migration or enforcement work." --commit-message "Canonicalize Explaino-all identity and axis registry"` checkpointed the bounded product slice at `e2009ff`.
+- Committed-head narrow witnesses stayed green:
+  - `artifacts/validation/phase8j_receipt_test_enum_id_utils.log`
+  - `artifacts/validation/phase8j_receipt_test_viewer_state_init.log`
+  - `artifacts/validation/phase8j_receipt_test_fractal_family_rules.log`
+  - `artifacts/validation/phase8j_receipt_test_ui_schema.log`
+  - `artifacts/validation/phase8j_receipt_test_fractal_derived_fields.log`
+  - `artifacts/validation/phase8j_receipt_test_explaino_zero_axis_equivalence.log`
+  - `artifacts/validation/phase8j_receipt_build_vsdevcmd.log`
+  - `artifacts/validation/phase8j_receipt_runtime_pytest_explaino_all.log`
+- `py -3.14 tools/viewer_host_checkpoint_slice.py write-receipts --session-id global_active_contract --cwd . --validation-summary "<phase8j committed-head proof summary>" ...` wrote both machine receipts for `e2009ff`.
+- The first receipted head still carried stale pre-closeout continuity text in `## Current Phase`, `## Phase Checklist`, `## Explicit User Asks`, and the old next-step section; this bounded follow-up updates only the active phase8j plan so the checked-in authority matches the already-proven product head.
 
 ## Hostile Audit
 
@@ -55,11 +67,12 @@ Phase 3 - the canonical identity, shared registry, focused native/runtime proofs
 
 - [done] Pass 1 - added and ran REDs that proved explaino_all was still missing as a real enum/schema/default/runtime identity and that the seven family axes still did not live behind one canonical registry on RED HEAD.
 - [done] Pass 2 - the first green read found two real defects: the canonical device/runtime helper was host-only, and several checked-in Explaino family controls still hid from explaino_all because their visible_if lists excluded the canonical identity.
-- [done] Pass 3 - clean re-read the repaired selector/schema/default/runtime seams, reran the narrow native/runtime witnesses plus the published-runtime proof after the repairs, and found no additional real defect before checkpoint/receipt closure work.
+- [done] Pass 3 - clean re-read the repaired selector/schema/default/runtime seams, reran the narrow native/runtime witnesses plus the published-runtime proof after the repairs, and found no additional real product defect before the plan-closeout continuity cleanup.
 
 ## Audit Findings
 
 - [done] Hostile audit found a real UI truth defect after GREEN: checked-in family-wide Explaino controls still omitted explaino_all from visible_if lists, which would have hidden the canonical identity from existing Explaino controls. Repaired in ui/fractal_binding_surface_v1.ui_schema.json, extended ui_app/tests/test_ui_schema.cpp to witness epsilon and explaino_seed visibility on explaino_all, and reran the focused ui-schema and published-runtime proof green.
+- [done] Committed-head stale-plan reread found a real continuity defect: the first receipted phase8j head still advertised open closure chores through pre-closeout `Current Phase`, unchecked `Phase 3`, an `[open]` closeout ask, and a stale next-step section. This follow-up plan cleanup removes that residue without changing the shipped Explaino-all product diff.
 
 ## Notes
 
@@ -83,9 +96,9 @@ Phase 3 - the canonical identity, shared registry, focused native/runtime proofs
 - Non-goals: no full alias migration, no preset projection truth rewrite, no enforcement guardrails, no cleanup-only pass, no generic advanced-color core reopen, no historical 234919_563__explaino_inertial archaeology.
 - Narrow proof ladder target: start with focused helper rails over selector/default/schema/state seams, then add the smallest published-runtime witness needed to prove explaino_all is runtime-real enough for slice 1.
 
-## Resume Point
+## Re-entry Note
 
-Checkpoint the repaired state, append the handoff entry, write the validation and contract-proof receipts, reread the committed plan for stale closeout text, and then stop on a clean tree.
+Closed on this slice contract. If a future session continues Explaino-family canonicalization work, start from the checkpoint/handoff entry for `ck:c4b13525`, the receipts written for the committed head, the launch anchor in `docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md`, and the current foundation authority surfaces instead of reopening slice-1 closure chores.
 
 ## Action Hostile Review
 
