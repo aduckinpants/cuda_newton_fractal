@@ -52,6 +52,7 @@ std::vector<FractalProbeCase> AllProbeCases() {
         {"newton", true, false, {}},
         {"halley", true, false, {}},
         {"explaino", true, false, {}},
+        {"explaino_all", true, false, {}},
         {"explaino_y", true, false, {}},
         {"explaino_fp", true, false, {}},
         {"explaino_halley", true, false, {}},
@@ -69,6 +70,7 @@ std::vector<FractalProbeCase> AllProbeCases() {
         {"explaino_splice", true, false, {}},
         {"explaino_vortex", true, false, {}},
         {"explaino_tension", true, false, {}},
+        {"explaino_balance_void", true, false, {}},
 
         // Escape-time types
         {"mandelbrot", false, true, {}},

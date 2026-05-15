@@ -61,7 +61,11 @@ def test_runtime_default_explaino_startup_stays_visually_stable() -> None:
         _close_runtime(hwnd, proc)
 
 
-def test_runtime_loaded_sidecar_paced_loop_changes_live_view_multiple_times(tmp_path: Path) -> None:
+@pytest.mark.parametrize("fractal_type", ["explaino", "explaino_all"])
+def test_runtime_loaded_sidecar_paced_loop_changes_live_view_multiple_times(
+    tmp_path: Path,
+    fractal_type: str,
+) -> None:
     if sys.platform != "win32":
         pytest.skip("live Explaino runtime regression is Windows-only")
 
@@ -70,7 +74,7 @@ def test_runtime_loaded_sidecar_paced_loop_changes_live_view_multiple_times(tmp_
         str(exe_path),
         "--capture-diagnostic",
         "--fractal-type",
-        "explaino",
+        fractal_type,
         "--width",
         "320",
         "--height",

@@ -41,6 +41,7 @@ int main() {
         fractalTypeControl.options.push_back({"newton", "Newton"});
         fractalTypeControl.options.push_back({"mandelbrot", "Mandelbrot"});
         fractalTypeControl.options.push_back({"explaino", "Explaino"});
+        fractalTypeControl.options.push_back({"explaino_all", "Explaino-all"});
         fractalTypeControl.options.push_back({"burning_ship", "Burning Ship"});
         fractalTypeControl.options.push_back({"multibrot", "Multibrot"});
         fractalTypeControl.options.push_back({"multicorn", "Multicorn"});
@@ -133,15 +134,17 @@ int main() {
             std::cerr << "fractal_type should be required\n";
             return 1;
         }
-        if (p0.options.size() != 7) {
+        if (p0.options.size() != 8) {
             std::cerr << "Expected unsupported fractal types to be filtered from the enum options, got: " << p0.options.size() << "\n";
             return 1;
         }
+        bool foundExplainoAll = false;
         bool foundBurningShip = false;
         bool foundMultibrot = false;
         bool foundMulticorn = false;
         bool foundPhoenix = false;
         for (const auto& option : p0.options) {
+            if (option.id == "explaino_all") foundExplainoAll = true;
             if (option.id == "burning_ship") foundBurningShip = true;
             if (option.id == "multibrot") foundMultibrot = true;
             if (option.id == "multicorn") foundMulticorn = true;
@@ -151,7 +154,7 @@ int main() {
                 return 1;
             }
         }
-        if (!foundBurningShip || !foundMultibrot || !foundMulticorn || !foundPhoenix) {
+        if (!foundExplainoAll || !foundBurningShip || !foundMultibrot || !foundMulticorn || !foundPhoenix) {
             std::cerr << "Expected supported fractal types to be advertised as sampleable\n";
             return 1;
         }

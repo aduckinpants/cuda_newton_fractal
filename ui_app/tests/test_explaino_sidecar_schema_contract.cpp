@@ -102,6 +102,18 @@ const FunctionParamDescriptor* FindParam(const FunctionDescriptor& function, con
     return nullptr;
 }
 
+bool HasOptionId(const FunctionParamDescriptor& param, const char* optionId) {
+    if (!optionId) {
+        return false;
+    }
+    for (const auto& option : param.options) {
+        if (option.id == optionId) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool LoadRealCatalog(BindingContext& bind, EngineFunctionCatalog* outCatalog, std::string* outError) {
     if (!outCatalog) {
         if (outError) *outError = "LoadRealCatalog requires outCatalog";
@@ -211,6 +223,17 @@ int main() {
         std::cerr << "Expected real viewer catalog to describe fractal.sample\n";
         return 1;
     }
+    {
+        const FunctionParamDescriptor* fractalType = FindParam(*fractalSample, "fractal.view.fractal_type");
+        if (!fractalType) {
+            std::cerr << "Expected real viewer catalog to expose fractal.view.fractal_type for the sidecar path\n";
+            return 1;
+        }
+        if (!HasOptionId(*fractalType, "explaino_all")) {
+            std::cerr << "Expected the shipped schema-derived sidecar catalog to advertise explaino_all as a supported fractal.sample enum option\n";
+            return 1;
+        }
+    }
 
     {
         const FunctionParamDescriptor* explainoSeed = FindParam(*fractalSample, "fractal.params.explaino_seed");
@@ -299,6 +322,34 @@ int main() {
         }
         if (beforeResidual == afterResidual) {
             std::cerr << "Expected baseline Explaino auto-demo mutation to change sampled output residual\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        view.fractal_type = FractalType::explaino_all;
+        view.zoom = 10.0f;
+        params.explaino_seed = 7.0;
+        view.explaino_seed_drift = 0.125f;
+        BindingContext stateBind = BuildBindingContext(&view, &params, &render, &lens);
+
+        ContractMeasurementHost host;
+        SidecarAutoDemoControllerPolicy policy;
+        policy.enabled = true;
+        policy.allow_runtime_mutation = true;
+
+        ExplainoSidecarWindowState state;
+        if (!BuildExplainoSidecarWindowState(catalog, stateBind, &host, nullptr, nullptr, nullptr, &policy, &state, &error)) {
+            std::cerr << "Expected canonical explaino_all sidecar state to build on the real schema-derived surface: " << error << "\n";
+            return 1;
+        }
+        if (!state.error_message.empty()) {
+            std::cerr << "Expected canonical explaino_all sidecar state to load without a model error, got: "
+                      << state.error_message << "\n";
             return 1;
         }
     }

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8k_explaino_all_sidecar_support",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_PHASED_PLAN.md",
+    "ui_app/src/function_descriptor.cpp",
+    "ui_app/tests/test_function_descriptor.cpp",
+    "ui_app/tests/test_explaino_sidecar_model.cpp",
+    "ui_app/tests/test_explaino_sidecar_window.cpp",
+    "ui_app/tests/test_explaino_sidecar_schema_contract.cpp",
+    "ui_app/tests/test_fractal_probe_coverage.cpp",
+    "tests/test_fractal_runtime_explaino_sidecar_live.py",
+    "tests/test_function_descriptor_cli.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "support explaino_all in the Explaino sidecar so the canonical identity no longer trips the required-enum model error",
+    "keep the slice bounded to the filtered probe-catalog and sidecar support seam rather than reopening alias migration or generic sidecar redesign",
+    "prove the real schema-derived sidecar path accepts explaino_all after the repair",
+    "close with hostile review, checkpoint commit, receipts, and a committed-head stale-plan reread"
+  ],
+  "forbidden_operator_prompts": [
+    "claim explaino_all sidecar support is fixed if the real schema-derived sidecar path still rejects fractal.view.fractal_type=explaino_all",
+    "widen the slice into legacy alias migration, enforcement guardrails, generic sidecar redesign, unrelated advanced-color core work, or historical archive compatibility",
+    "treat a helper-only catalog fix as sufficient viewer proof for a sidecar error that surfaced in the live UI",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "explaino_all_present_in_filtered_probe_descriptor": "required",
+    "explaino_all_sidecar_real_schema_support": "required",
+    "explaino_all_sidecar_runtime_support": "required",
+    "legacy_explaino_sidecar_behavior_preserved": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "legacy_alias_migration_primary_scope": "forbidden",
+    "generic_sidecar_redesign_primary_scope": "forbidden",
+    "enforcement_guardrails_primary_scope": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_contract_schema_valid",
+      "description": "The Explaino-all sidecar-support contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_plan_sync_ok",
+      "description": "The Explaino-all sidecar-support phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_hostile_audit_ok",
+      "description": "The Explaino-all sidecar-support hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

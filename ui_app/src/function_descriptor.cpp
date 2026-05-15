@@ -26,6 +26,7 @@ constexpr FractalType kSupportedProbeFractalTypes[] = {
     FractalType::multibrot,
     FractalType::phoenix,
     FractalType::explaino,
+    FractalType::explaino_all,
     FractalType::explaino_y,
     FractalType::explaino_fp,
     FractalType::explaino_nova,
