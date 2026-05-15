@@ -533,6 +533,92 @@ int main() {
     }
 
     {
+        ViewState view{};
+        KernelParams neutralParams{};
+        KernelParams activeParams{};
+        view.fractal_type = FractalType::explaino_phoenix;
+        view.explaino_phase = 0.0f;
+        view.explaino_phase_strength = 1.0f;
+        ExplainoSeedSetCombined(view, neutralParams, 4.25);
+        ExplainoSeedSetCombined(view, activeParams, 4.25);
+        neutralParams.explaino_root_spread = 0.5f;
+        activeParams.explaino_root_spread = 0.5f;
+        neutralParams.phoenix_p_real = 0.0f;
+        activeParams.phoenix_p_real = 0.35f;
+
+        UpdateExplainoPolynomial(view, neutralParams, nullptr);
+        UpdateExplainoPolynomial(view, activeParams, nullptr);
+
+        for (int rootIndex = 0; rootIndex < 4; ++rootIndex) {
+            if (!NearlyEqual(neutralParams.explaino_roots[rootIndex].x, activeParams.explaino_roots[rootIndex].x, 1.0e-6f) ||
+                !NearlyEqual(neutralParams.explaino_roots[rootIndex].y, activeParams.explaino_roots[rootIndex].y, 1.0e-6f)) {
+                std::cerr << "phoenix_p_real should stay out of Explaino root-shape authority and act as a runtime memory-term carrier instead\n";
+                return 1;
+            }
+        }
+        for (int coeffIndex = 0; coeffIndex < 5; ++coeffIndex) {
+            if (!NearlyEqual(neutralParams.poly_coeffs[coeffIndex], activeParams.poly_coeffs[coeffIndex], 1.0e-6f)) {
+                std::cerr << "phoenix_p_real should not rewrite the canonical Explaino quartic coefficients in the host-derived-fields seam\n";
+                return 1;
+            }
+        }
+    }
+
+    {
+        ViewState multView{};
+        KernelParams multNeutral{};
+        KernelParams multActive{};
+        multView.fractal_type = FractalType::explaino_mult;
+        multView.explaino_phase = 0.0f;
+        multView.explaino_phase_strength = 1.0f;
+        ExplainoSeedSetCombined(multView, multNeutral, 5.25);
+        ExplainoSeedSetCombined(multView, multActive, 5.25);
+        multNeutral.explaino_root_spread = 0.5f;
+        multActive.explaino_root_spread = 0.5f;
+        multNeutral.explaino_cluster_radius = 0.0f;
+        multActive.explaino_cluster_radius = 0.4f;
+
+        UpdateExplainoPolynomial(multView, multNeutral, nullptr);
+        UpdateExplainoPolynomial(multView, multActive, nullptr);
+
+        if (NearlyEqual(multNeutral.explaino_roots[0].x, multActive.explaino_roots[0].x, 1.0e-6f) ||
+            NearlyEqual(multNeutral.explaino_roots[2].y, multActive.explaino_roots[2].y, 1.0e-6f)) {
+            std::cerr << "explaino_cluster_radius should remain root-shape authority for explaino_mult instead of collapsing into a dead slider\n";
+            return 1;
+        }
+
+        ViewState rationalView{};
+        KernelParams rationalNeutral{};
+        KernelParams rationalActive{};
+        rationalView.fractal_type = FractalType::explaino_rational;
+        rationalView.explaino_phase = 0.0f;
+        rationalView.explaino_phase_strength = 1.0f;
+        ExplainoSeedSetCombined(rationalView, rationalNeutral, 5.25);
+        ExplainoSeedSetCombined(rationalView, rationalActive, 5.25);
+        rationalNeutral.explaino_root_spread = 0.5f;
+        rationalActive.explaino_root_spread = 0.5f;
+        rationalNeutral.explaino_cluster_radius = 0.0f;
+        rationalActive.explaino_cluster_radius = 0.4f;
+
+        UpdateExplainoPolynomial(rationalView, rationalNeutral, nullptr);
+        UpdateExplainoPolynomial(rationalView, rationalActive, nullptr);
+
+        for (int rootIndex = 0; rootIndex < 4; ++rootIndex) {
+            if (!NearlyEqual(rationalNeutral.explaino_roots[rootIndex].x, rationalActive.explaino_roots[rootIndex].x, 1.0e-6f) ||
+                !NearlyEqual(rationalNeutral.explaino_roots[rootIndex].y, rationalActive.explaino_roots[rootIndex].y, 1.0e-6f)) {
+                std::cerr << "explaino_cluster_radius should stay out of root-shape authority for explaino_rational and remain a separate runtime carrier there\n";
+                return 1;
+            }
+        }
+        for (int coeffIndex = 0; coeffIndex < 5; ++coeffIndex) {
+            if (!NearlyEqual(rationalNeutral.poly_coeffs[coeffIndex], rationalActive.poly_coeffs[coeffIndex], 1.0e-6f)) {
+                std::cerr << "explaino_cluster_radius should not rewrite the rational carrier quartic coefficients in host-derived fields\n";
+                return 1;
+            }
+        }
+    }
+
+    {
         const FractalType couplingPresetCases[] = {
             FractalType::explaino_all,
             FractalType::explaino_inertial,
@@ -573,6 +659,54 @@ int main() {
                 !NearlyEqual(params.explaino_cluster_radius, 0.0f)) {
                     std::cerr << "Deferred Explaino coupling presets must not auto-promote the other deferred parameter classes\n";
                     return 1;
+            }
+        }
+    }
+
+    {
+        const FractalType structuralPresetCases[] = {
+            FractalType::explaino_all,
+            FractalType::explaino_phoenix,
+            FractalType::explaino_mult,
+            FractalType::explaino_rational,
+        };
+
+        for (FractalType fractalType : structuralPresetCases) {
+            ViewState view{};
+            KernelParams params{};
+            view.fractal_type = fractalType;
+
+            params.phoenix_p_real = 0.5667f;
+            params.momentum_beta = 0.8f;
+            params.joy_coupling = 0.9f;
+            params.fold_coupling = 0.7f;
+            params.bell_coupling = 0.6f;
+            params.explaino_seed_b = 9.0;
+            params.explaino_mix = 0.9f;
+            params.explaino_cluster_radius = 0.8f;
+
+            ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
+
+            const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(fractalType);
+            const float expectedPhoenix = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::phoenix_p_real
+                ? static_cast<float>(structuralCarrier->default_value)
+                : 0.0f;
+            const float expectedCluster = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::explaino_cluster_radius
+                ? static_cast<float>(structuralCarrier->default_value)
+                : 0.0f;
+            if (!NearlyEqual(params.phoenix_p_real, expectedPhoenix) ||
+                !NearlyEqual(params.explaino_cluster_radius, expectedCluster)) {
+                std::cerr << "Deferred Explaino structural presets should derive from one carrier map instead of per-selector folklore\n";
+                return 1;
+            }
+            if (!NearlyEqual(params.momentum_beta, 0.0f) ||
+                !NearlyEqual(params.joy_coupling, 0.0f) ||
+                !NearlyEqual(params.fold_coupling, 0.0f) ||
+                !NearlyEqual(params.bell_coupling, 0.0f) ||
+                !NearlyEqual(static_cast<float>(params.explaino_seed_b), 1.0f) ||
+                !NearlyEqual(params.explaino_mix, 0.5f)) {
+                std::cerr << "Deferred Explaino structural presets must not auto-promote resolved couplings or dual-seed params\n";
+                return 1;
             }
         }
     }

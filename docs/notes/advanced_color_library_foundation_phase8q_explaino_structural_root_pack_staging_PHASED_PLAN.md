@@ -166,7 +166,7 @@ That file is the reusable entry surface for:
 
 ## Resume Point
 
-Closed. If the next Explaino-family extension lane is chosen now, start from [advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md) and this staged slice map, not from the closed phase8o dual-seed packet.
+Closed. `phase8r` now closes Slice A of this packet. If the next Explaino-family structural/root-pack follow-up is chosen now, start from [advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md) plus [advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md), not from the closed phase8o dual-seed packet or from phase8q alone.
 
 ## Action Hostile Review
 

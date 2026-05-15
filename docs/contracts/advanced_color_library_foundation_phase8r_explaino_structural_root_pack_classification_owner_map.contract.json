@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_fractal_runtime_validation.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_explaino_runtime_walk.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as one bounded structural and root-pack deferred-class classification slice for phoenix_p_real and explaino_cluster_radius only",
+    "classify phoenix_p_real and explaino_cluster_radius explicitly as canonicalizable later, legacy-only, or a different ownership model based on current selector, runtime, default, reset, diagnostics, and published-runtime proof rather than analogy",
+    "make any immediate split explicit when the live runtime/default seams diverge, and land only the minimal authority updates needed to keep that classification truthful",
+    "keep dual-seed or multi-seed structure, resolved couplings, generic advanced-color core work, and historical archive compatibility out of scope unless one of those classes is proven to be a real classification blocker"
+  ],
+  "forbidden_operator_prompts": [
+    "force phoenix_p_real and explaino_cluster_radius into one shared ownership answer because they are the next deferred bucket",
+    "treat hidden legacy selector authority, helper-only proof, or nearby code adjacency as acceptable evidence for canonicalization",
+    "widen the slice into promotion, enforcement, dual-seed or multi-seed follow-up, resolved couplings, cleanup-only work, or unrelated viewer-host workflow repair",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "explicit_ownership_answer_for_phoenix_p_real_required": "required",
+    "explicit_ownership_answer_for_explaino_cluster_radius_required": "required",
+    "runtime_effect_or_truthful_non_effect_answer_required": "required",
+    "zero_or_default_collapse_proof_required": "required",
+    "immediate_split_required_if_seams_diverge": "required",
+    "dual_seed_and_resolved_couplings_stay_out_of_scope": "required",
+    "slice1_slice2_slice3_phase8n_phase8p_preserved": "required"
+  },
+  "forbidden_defaults": {
+    "promotion_primary_scope": "forbidden",
+    "dual_seed_or_multi_seed_reopened": "forbidden",
+    "resolved_couplings_reopened": "forbidden",
+    "cleanup_only_primary_scope": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_contract_schema_valid",
+      "description": "The bounded structural and root-pack classification contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_plan_sync_ok",
+      "description": "The bounded structural and root-pack classification phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_hostile_audit_ok",
+      "description": "The bounded structural and root-pack classification hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

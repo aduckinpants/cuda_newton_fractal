@@ -81,7 +81,7 @@ Rule:
 
 - do not auto-expose the deferred parameter classes under `Explaino-all` just because they already exist in `KernelParams`
 - do not treat their absence from the current `Explaino-all` control surface as a slice-1 regression
-- if structural / root-pack work is chosen next after `phase8p`, start from `docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md` plus `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
+- `phase8q` staged the structural / root-pack packet and `phase8r` closed the shared classification question, so any future structural / root-pack follow-up must start from `docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md` plus `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
 - if one of the remaining groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
 
 ## Required Owner Seams
@@ -155,6 +155,7 @@ Every future `Explaino-all` slice must re-read its active phased plan on the com
 ## Start From
 
 - [advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md)
 - [advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md)
 - [advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)

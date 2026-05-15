@@ -826,6 +826,138 @@ def test_explaino_dual_seed_runtime_behavior_stays_outside_canonical_explaino_al
 
 
 @pytest.mark.parametrize(
+    ("fractal_type", "structural_param", "default_value", "active_value", "neutral_matches_explaino"),
+    [
+        pytest.param("explaino_phoenix", "phoenix_p_real", 0.12, 0.35, False, id="phoenix"),
+        pytest.param("explaino_mult", "explaino_cluster_radius", 0.0, 0.4, False, id="mult"),
+        pytest.param("explaino_rational", "explaino_cluster_radius", 0.1, 0.4, False, id="rational"),
+    ],
+)
+def test_explaino_structural_root_pack_runtime_classification(
+    tmp_path: Path,
+    fractal_type: str,
+    structural_param: str,
+    default_value: float,
+    active_value: float,
+    neutral_matches_explaino: bool,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino structural/root-pack runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    carrier_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        fractal_type,
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    carrier_state = carrier_capture["state"]
+    carrier_params = carrier_state["params"]
+    assert carrier_state["fractal_type"] == fractal_type
+    assert isinstance(carrier_params, dict)
+    assert carrier_params[structural_param] == pytest.approx(default_value, abs=1e-6)
+    assert carrier_params["momentum_beta"] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_params["joy_coupling"] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_params["fold_coupling"] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_params["bell_coupling"] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_params["explaino_seed_b"] == pytest.approx(1.0, abs=1e-6)
+    assert carrier_params["explaino_mix"] == pytest.approx(0.5, abs=1e-6)
+    assert carrier_capture["frame_hash"] != explaino_capture["frame_hash"], (
+        f"expected {fractal_type} structural carrier defaults to stay outside the canonical Explaino frame"
+    )
+    assert _mean_absolute_frame_delta(explaino_capture["frame_bytes"], carrier_capture["frame_bytes"]) > 0.0, (
+        f"expected {fractal_type} structural carrier defaults to produce a measurable published-frame delta"
+    )
+
+    active_state = json.loads(json.dumps(carrier_state))
+    active_params = active_state["params"]
+    assert isinstance(active_params, dict)
+    active_params[structural_param] = active_value
+    active_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"{fractal_type}_active", active_state)),
+        "--capture-diagnostic",
+    )
+    assert active_capture["state"]["params"][structural_param] == pytest.approx(active_value, abs=1e-6)
+    assert active_capture["frame_hash"] != carrier_capture["frame_hash"], (
+        f"expected {fractal_type} structural carrier activation to remain runtime-real"
+    )
+    assert _mean_absolute_frame_delta(carrier_capture["frame_bytes"], active_capture["frame_bytes"]) > 0.0, (
+        f"expected {fractal_type} structural carrier activation to change the published runtime frame"
+    )
+
+    neutral_state = json.loads(json.dumps(active_capture["state"]))
+    neutral_params = neutral_state["params"]
+    assert isinstance(neutral_params, dict)
+    neutral_params[structural_param] = 0.0
+    neutral_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"{fractal_type}_neutral", neutral_state)),
+        "--capture-diagnostic",
+    )
+    assert neutral_capture["state"]["params"][structural_param] == pytest.approx(0.0, abs=1e-6)
+    if neutral_matches_explaino:
+        assert neutral_capture["frame_hash"] == explaino_capture["frame_hash"], (
+            f"expected {fractal_type} neutral structural carrier collapse to match the published Explaino frame"
+        )
+    else:
+        assert neutral_capture["frame_hash"] != explaino_capture["frame_hash"], (
+            f"expected {fractal_type} neutral structural carrier state to stay outside the canonical Explaino baseline"
+        )
+
+
+def test_explaino_all_ignores_deferred_structural_root_pack_params(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino structural/root-pack runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    canonical_state = json.loads(json.dumps(explaino_capture["state"]))
+    canonical_params = canonical_state["params"]
+    assert isinstance(canonical_params, dict)
+    canonical_state["fractal_type"] = "explaino_all"
+    canonical_params["phoenix_p_real"] = 0.35
+    canonical_params["explaino_cluster_radius"] = 0.4
+    canonical_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "canonical_structural_params", canonical_state)),
+        "--capture-diagnostic",
+    )
+    assert canonical_capture["state"]["fractal_type"] == "explaino_all"
+    assert canonical_capture["frame_hash"] == explaino_capture["frame_hash"], (
+        "expected explaino_all to ignore deferred structural/root-pack params until they gain explicit canonical ownership"
+    )
+
+
+@pytest.mark.parametrize(
     ("fractal_type", "coupling_param", "default_value", "neutral_matches_explaino"),
     [
         pytest.param("explaino_inertial", "momentum_beta", 0.15, True, id="inertial"),

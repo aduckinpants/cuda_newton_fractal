@@ -82,6 +82,48 @@ struct ExplainoDualSeedDescriptor {
     bool default_collapses_to_baseline;
 };
 
+enum class ExplainoStructuralParamSlot : int {
+    phoenix_p_real = 0,
+    explaino_cluster_radius = 1,
+};
+
+enum class ExplainoStructuralOwnership : int {
+    canonical_axis = 0,
+    legacy_only = 1,
+    different_ownership_model = 2,
+};
+
+enum class ExplainoStructuralModel : int {
+    shared_phoenix_step_memory_term = 0,
+    root_pack_modifier = 1,
+};
+
+enum class ExplainoStructuralRuntimeRole : int {
+    phoenix_step_memory_term = 0,
+    multi_root_cluster_split = 1,
+    rational_laurent_term = 2,
+};
+
+struct ExplainoStructuralDescriptor {
+    const char* param_id;
+    const char* binding_path;
+    ExplainoStructuralParamSlot slot;
+    ExplainoStructuralOwnership ownership;
+    ExplainoStructuralModel model;
+    bool shared_with_non_explaino_carrier;
+    bool requires_carrier_specific_zero_collapse;
+};
+
+struct ExplainoStructuralCarrierDescriptor {
+    FractalType carrier_fractal_type;
+    ExplainoStructuralParamSlot slot;
+    double default_value;
+    double neutral_value;
+    ExplainoStructuralRuntimeRole runtime_role;
+    bool zero_collapses_to_baseline;
+    bool default_collapses_to_baseline;
+};
+
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ExplainoCanonicalFractalType() {
     return FractalType::explaino_all;
 }
@@ -190,6 +232,25 @@ inline constexpr ExplainoDualSeedDescriptor kExplainoDualSeedRegistry[] = {
     {"explaino_mix", "fractal.params.explaino_mix", FractalType::explaino_dual, 0.5, 0.0, ExplainoDualSeedOwnership::different_ownership_model, ExplainoDualSeedModel::blend_gate, true, false},
 };
 
+inline constexpr ExplainoStructuralDescriptor kExplainoStructuralRegistry[] = {
+    {"phoenix_p_real", "fractal.params.phoenix_p_real", ExplainoStructuralParamSlot::phoenix_p_real, ExplainoStructuralOwnership::different_ownership_model, ExplainoStructuralModel::shared_phoenix_step_memory_term, true, true},
+    {"explaino_cluster_radius", "fractal.params.explaino_cluster_radius", ExplainoStructuralParamSlot::explaino_cluster_radius, ExplainoStructuralOwnership::different_ownership_model, ExplainoStructuralModel::root_pack_modifier, false, true},
+};
+
+inline constexpr ExplainoStructuralCarrierDescriptor kExplainoStructuralCarrierRegistry[] = {
+    {FractalType::phoenix, ExplainoStructuralParamSlot::phoenix_p_real, 0.5667, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_phoenix, ExplainoStructuralParamSlot::phoenix_p_real, 0.12, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_joy, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_fold, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_bell, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_ripple, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_splice, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_vortex, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_tension, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
+    {FractalType::explaino_mult, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.0, 0.0, ExplainoStructuralRuntimeRole::multi_root_cluster_split, false, false},
+    {FractalType::explaino_rational, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.1, 0.0, ExplainoStructuralRuntimeRole::rational_laurent_term, false, false},
+};
+
 inline constexpr const ExplainoAxisDescriptor* FindExplainoSingleAxisProjectionDescriptor(FractalType fractalType) {
     if (!IsExplainoSingleAxisProjectionSelector(fractalType)) {
         return nullptr;
@@ -294,6 +355,33 @@ inline const ExplainoDualSeedDescriptor* FindExplainoDualSeedDescriptorByBinding
     return nullptr;
 }
 
+inline const ExplainoStructuralDescriptor* FindExplainoStructuralDescriptor(std::string_view paramId) {
+    for (const auto& structural : kExplainoStructuralRegistry) {
+        if (paramId == structural.param_id) {
+            return &structural;
+        }
+    }
+    return nullptr;
+}
+
+inline const ExplainoStructuralDescriptor* FindExplainoStructuralDescriptorByBindingPath(std::string_view bindingPath) {
+    for (const auto& structural : kExplainoStructuralRegistry) {
+        if (bindingPath == structural.binding_path) {
+            return &structural;
+        }
+    }
+    return nullptr;
+}
+
+inline constexpr const ExplainoStructuralCarrierDescriptor* FindExplainoStructuralCarrierDescriptor(FractalType fractalType) {
+    for (const auto& carrier : kExplainoStructuralCarrierRegistry) {
+        if (carrier.carrier_fractal_type == fractalType) {
+            return &carrier;
+        }
+    }
+    return nullptr;
+}
+
 inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot) {
     switch (slot) {
     case ExplainoAxisParamSlot::ripple_amplitude:
@@ -362,6 +450,26 @@ inline const float* ResolveExplainoCouplingValue(const KernelParams& params, Exp
     return nullptr;
 }
 
+inline float* ResolveExplainoStructuralValue(KernelParams& params, ExplainoStructuralParamSlot slot) {
+    switch (slot) {
+    case ExplainoStructuralParamSlot::phoenix_p_real:
+        return &params.phoenix_p_real;
+    case ExplainoStructuralParamSlot::explaino_cluster_radius:
+        return &params.explaino_cluster_radius;
+    }
+    return nullptr;
+}
+
+inline const float* ResolveExplainoStructuralValue(const KernelParams& params, ExplainoStructuralParamSlot slot) {
+    switch (slot) {
+    case ExplainoStructuralParamSlot::phoenix_p_real:
+        return &params.phoenix_p_real;
+    case ExplainoStructuralParamSlot::explaino_cluster_radius:
+        return &params.explaino_cluster_radius;
+    }
+    return nullptr;
+}
+
 inline void ResetExplainoAxisRegistryValues(KernelParams& params) {
     for (const auto& axis : kExplainoAxisRegistry) {
         float* value = ResolveExplainoAxisValue(params, axis.slot);
@@ -401,6 +509,27 @@ inline void ApplyExplainoCouplingRegistryDefaults(FractalType fractalType, Kerne
     float* value = ResolveExplainoCouplingValue(params, coupling->slot);
     if (value) {
         *value = coupling->default_value;
+    }
+}
+
+inline void ResetExplainoStructuralRegistryValues(KernelParams& params) {
+    for (const auto& structural : kExplainoStructuralRegistry) {
+        float* value = ResolveExplainoStructuralValue(params, structural.slot);
+        if (value) {
+            *value = 0.0f;
+        }
+    }
+}
+
+inline void ApplyExplainoStructuralRegistryDefaults(FractalType fractalType, KernelParams& params) {
+    ResetExplainoStructuralRegistryValues(params);
+    const ExplainoStructuralCarrierDescriptor* carrier = FindExplainoStructuralCarrierDescriptor(fractalType);
+    if (!carrier) {
+        return;
+    }
+    float* value = ResolveExplainoStructuralValue(params, carrier->slot);
+    if (value) {
+        *value = static_cast<float>(carrier->default_value);
     }
 }
 

@@ -423,6 +423,59 @@ int main() {
         }
     }
 
+    {
+        for (const FractalType structuralViewType : {
+                FractalType::explaino_all,
+                FractalType::explaino_phoenix,
+                FractalType::explaino_mult,
+                FractalType::explaino_rational,
+            }) {
+            ViewState structuralView{};
+            KernelParams structuralParams{};
+            RenderSettings structuralRender{};
+            LensSettings structuralLens{};
+            bool structuralDirty = false;
+
+            structuralView.fractal_type = structuralViewType;
+            structuralParams.phoenix_p_real = 0.5667f;
+            structuralParams.explaino_cluster_radius = 0.8f;
+            structuralParams.momentum_beta = 0.8f;
+            structuralParams.joy_coupling = 0.9f;
+            structuralParams.fold_coupling = 0.7f;
+            structuralParams.bell_coupling = 0.6f;
+            structuralParams.explaino_seed_b = 7.0;
+            structuralParams.explaino_mix = 0.9f;
+
+            ResetRuntimeStateForCurrentFractal(structuralView, structuralParams, structuralRender, structuralLens, &structuralDirty);
+
+            if (!structuralDirty || structuralView.fractal_type != structuralViewType) {
+                std::cerr << "Deferred Explaino structural reset should preserve the owning carrier identity and mark dirty\n";
+                return 1;
+            }
+            const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(structuralViewType);
+            const float expectedPhoenix = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::phoenix_p_real
+                ? static_cast<float>(structuralCarrier->default_value)
+                : 0.0f;
+            const float expectedCluster = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::explaino_cluster_radius
+                ? static_cast<float>(structuralCarrier->default_value)
+                : 0.0f;
+            if (!NearlyEqual(structuralParams.phoenix_p_real, expectedPhoenix) ||
+                !NearlyEqual(structuralParams.explaino_cluster_radius, expectedCluster)) {
+                std::cerr << "Deferred Explaino structural reset should restore only the owning structural carrier default\n";
+                return 1;
+            }
+            if (!NearlyEqual(structuralParams.momentum_beta, 0.0f) ||
+                !NearlyEqual(structuralParams.joy_coupling, 0.0f) ||
+                !NearlyEqual(structuralParams.fold_coupling, 0.0f) ||
+                !NearlyEqual(structuralParams.bell_coupling, 0.0f) ||
+                !NearlyEqual(static_cast<float>(structuralParams.explaino_seed_b), 1.0f) ||
+                !NearlyEqual(structuralParams.explaino_mix, 0.5f)) {
+                std::cerr << "Deferred Explaino structural reset must not auto-promote resolved couplings or dual-seed params\n";
+                return 1;
+            }
+        }
+    }
+
     std::cout << "test_runtime_reset: all passed\n";
     return 0;
 }

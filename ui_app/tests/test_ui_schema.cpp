@@ -437,6 +437,7 @@ int main() {
         bool foundBellCouplingUiRange = false;
         bool foundDeferredCouplingSchemaMatches[sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0])] = {};
         bool foundDualSeedSchemaMatches[sizeof(kExplainoDualSeedRegistry) / sizeof(kExplainoDualSeedRegistry[0])] = {};
+        bool foundStructuralSchemaMatches[sizeof(kExplainoStructuralRegistry) / sizeof(kExplainoStructuralRegistry[0])] = {};
         bool foundRippleAmplitudeUiRange = false;
         bool foundSpliceOffsetUiRange = false;
         bool foundVortexStrengthUiRange = false;
@@ -666,6 +667,35 @@ int main() {
                         }
                         foundDeferredCouplingSchemaMatches[slotIndex] = true;
                     }
+                    const ExplainoStructuralDescriptor* structural = FindExplainoStructuralDescriptorByBindingPath(ctrl.binding.path);
+                    if (structural) {
+                        const std::size_t slotIndex = static_cast<std::size_t>(structural->slot);
+                        if (slotIndex >= (sizeof(foundStructuralSchemaMatches) / sizeof(foundStructuralSchemaMatches[0])) ||
+                            foundStructuralSchemaMatches[slotIndex]) {
+                            std::cerr << "Main schema duplicated a deferred Explaino structural/root-pack control instead of deriving one owner per parameter\n";
+                            return 1;
+                        }
+                        std::size_t expectedCarrierCount = 0;
+                        for (const auto& carrier : kExplainoStructuralCarrierRegistry) {
+                            if (carrier.slot == structural->slot) {
+                                const char* carrierId = FractalTypeId(carrier.carrier_fractal_type);
+                                if (!carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId)) {
+                                    std::cerr << "Main schema deferred Explaino structural/root-pack controls should stay fenced to their owning carrier selectors only\n";
+                                    return 1;
+                                }
+                                ++expectedCarrierCount;
+                            }
+                        }
+                        if (ctrl.id != structural->param_id ||
+                            !ctrl.has_visible_if || ctrl.visible_if.op != "in" ||
+                            ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                            VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
+                            CsvTokenCount(ctrl.visible_if.value) != expectedCarrierCount) {
+                            std::cerr << "Main schema deferred Explaino structural/root-pack controls should decode exactly to their explicit carrier map\n";
+                            return 1;
+                        }
+                        foundStructuralSchemaMatches[slotIndex] = true;
+                    }
                 }
                 if (ctrl.id == "ripple_amplitude" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 0.5 && !ctrl.has_min && !ctrl.has_max) {
@@ -888,6 +918,12 @@ int main() {
         for (bool foundDeferredDualSeedSchema : foundDualSeedSchemaMatches) {
             if (!foundDeferredDualSeedSchema) {
                 std::cerr << "Main schema must expose every deferred Explaino dual-seed control through one explicit explaino_dual fence\n";
+                return 1;
+            }
+        }
+        for (bool foundStructuralSchema : foundStructuralSchemaMatches) {
+            if (!foundStructuralSchema) {
+                std::cerr << "Main schema must expose every deferred Explaino structural/root-pack control through one explicit carrier fence\n";
                 return 1;
             }
         }

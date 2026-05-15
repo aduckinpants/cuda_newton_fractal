@@ -45,6 +45,14 @@ Follow this order unless live repo evidence proves a narrower truthful split is 
 Do not start with enforcement before ownership/classification truth exists.
 Do not start with cleanup before a promoted path or explicit legacy fence exists.
 
+Current closed result:
+
+- phase8r closed Slice A and proved the shared bucket does not stay unified
+- `phoenix_p_real` remains a shared phoenix-step memory-term carrier
+- `explaino_cluster_radius` remains a different root-pack carrier with divergent `explaino_mult` versus `explaino_rational` runtime roles
+- zero/default does not collapse any active carrier back to canonical Explaino
+- any future follow-up must split `phoenix_p_real` and `explaino_cluster_radius` into separate later work instead of reopening one shared classification slice
+
 ## Group Under Review
 
 The bounded deferred bucket for this packet is only:
@@ -126,6 +134,10 @@ Must prove:
 - the answer is based on selector/runtime/default/state proof, not analogy
 - any required split between the two parameters is explicit
 
+Status:
+
+- closed in `phase8r`
+
 ### Slice B - Promotion Only If Supported
 
 Must prove:
@@ -148,6 +160,7 @@ Every future structural / root-pack slice must re-read its active phased plan on
 ## Start From
 
 - [advanced_color_library_foundation_explaino_all_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md)
+- [advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md)
 - [advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 - [advanced_color_feature_restart_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_feature_restart_inventory.md)

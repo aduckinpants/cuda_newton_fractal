@@ -38,12 +38,21 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("nova_alpha must be finite and in (0,5]", outError);
         }
     }
-    if (view.fractal_type == FractalType::phoenix) {
-        if (!std::isfinite(params.phoenix_p_real) || !std::isfinite(params.phoenix_p_imag)) {
-            return FailFractalRuntimeValidation("phoenix_p must be finite", outError);
+    if (const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(view.fractal_type)) {
+        if (structuralCarrier->slot == ExplainoStructuralParamSlot::phoenix_p_real) {
+            if (!std::isfinite(params.phoenix_p_real) || !std::isfinite(params.phoenix_p_imag)) {
+                return FailFractalRuntimeValidation("phoenix_p must be finite", outError);
+            }
+            if (std::fabs(params.phoenix_p_real) > 1.0f || std::fabs(params.phoenix_p_imag) > 1.0f) {
+                return FailFractalRuntimeValidation("phoenix_p_real/imag must be in [-1,1]", outError);
+            }
         }
-        if (std::fabs(params.phoenix_p_real) > 1.0f || std::fabs(params.phoenix_p_imag) > 1.0f) {
-            return FailFractalRuntimeValidation("phoenix_p_real/imag must be in [-1,1]", outError);
+        if (structuralCarrier->slot == ExplainoStructuralParamSlot::explaino_cluster_radius) {
+            if (!std::isfinite(params.explaino_cluster_radius) ||
+                params.explaino_cluster_radius < 0.0f ||
+                params.explaino_cluster_radius > 2.0f) {
+                return FailFractalRuntimeValidation("explaino_cluster_radius must be finite and in [0,2]", outError);
+            }
         }
     }
     if (view.fractal_type == FractalType::multibrot) {

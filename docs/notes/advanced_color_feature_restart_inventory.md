@@ -295,7 +295,7 @@ Current meaning:
 - `balance_void_grade` now belongs to the shipped generic grading boundary alongside `contrast_lift`, `phase_finish`, `band_finish`, `basin_default`, `neutral_finish`, `tone_map_finish`, and `grade.glow`
 - no later session should relist `balance_void_grade` as deferred inventory or treat it as a hidden blocker for historical archive compatibility
 - the closed phase8c command ladder is still the cheapest truthful starting proof surface for any later family-track or regression lane
-- after `phase8p`, the resolved Explaino couplings bucket and the resolved dual-seed / multi-seed bucket are no longer the next deferred `Explaino-all` lanes; the next chosen deferred extension lane is structural / root-pack staging through `phase8q`
+- after `phase8p`, the resolved Explaino couplings bucket and the resolved dual-seed / multi-seed bucket are no longer the next deferred `Explaino-all` lanes; `phase8q` staged the structural / root-pack packet and `phase8r` closed the shared classification question by proving the bucket must split before any later promotion follow-up
 
 Authority:
 
@@ -458,7 +458,7 @@ Current `Explaino-all` restart guidance:
 
 - reuse the main family kickoff surfaces in `docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md`
 - phase8p closed the dual-seed / multi-seed bucket separately, so it is no longer the default next restart lane
-- for the next deferred extension lane after `phase8p`, start from `docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
+- for any future structural / root-pack follow-up after `phase8r`, start from `docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`, then open separate later work for `phoenix_p_real` and/or `explaino_cluster_radius` instead of reusing the old shared bucket
 
 Owner surfaces:
 
