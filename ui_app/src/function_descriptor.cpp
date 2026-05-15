@@ -1,5 +1,6 @@
 #include "function_descriptor.h"
 #include "enum_id_utils.h"
+#include "fractal_family_rules.h"
 
 #include <cctype>
 #include <iomanip>
@@ -17,7 +18,7 @@ constexpr EngineFunctionRegistration kRegisteredEngineFunctions[] = {
     {"generic.sample", EngineFunctionExecutionKind::generic_sampler, &BuildGenericSamplerDescriptorFromRegistry},
 };
 
-constexpr FractalType kSupportedProbeFractalTypes[] = {
+constexpr FractalType kSupportedNonExplainoProbeFractalTypes[] = {
     FractalType::newton,
     FractalType::nova,
     FractalType::mandelbrot,
@@ -25,35 +26,11 @@ constexpr FractalType kSupportedProbeFractalTypes[] = {
     FractalType::burning_ship,
     FractalType::multibrot,
     FractalType::phoenix,
-    FractalType::explaino,
-    FractalType::explaino_all,
-    FractalType::explaino_y,
-    FractalType::explaino_fp,
-    FractalType::explaino_nova,
-    FractalType::explaino_halley,
-    FractalType::explaino_dual,
-    FractalType::explaino_mult,
-    FractalType::explaino_phoenix,
-    FractalType::explaino_joy,
-    FractalType::explaino_fold,
-    FractalType::explaino_bell,
-    FractalType::explaino_ripple,
-    FractalType::explaino_splice,
-    FractalType::explaino_vortex,
-    FractalType::explaino_tension,
-    FractalType::explaino_balance_void,
-    FractalType::explaino_transcendental,
-    FractalType::explaino_inertial,
-    FractalType::explaino_julia,
-    FractalType::explaino_rational,
     FractalType::multicorn,
     FractalType::halley,
     FractalType::collatz,
-    FractalType::explaino_collatz,
     FractalType::mcmullen,
     FractalType::lambda_map,
-    FractalType::explaino_lambda,
-    FractalType::explaino_rational_escape,
     FractalType::spider,
     FractalType::celtic_mandelbrot,
     FractalType::perpendicular_burning_ship,
@@ -72,7 +49,8 @@ std::string TrimAscii(const std::string& value) {
 }
 
 bool IsSupportedProbeFractalType(FractalType fractalType) {
-    for (FractalType candidate : kSupportedProbeFractalTypes) {
+    if (FindExplainoSelectorDescriptor(fractalType)) return true;
+    for (FractalType candidate : kSupportedNonExplainoProbeFractalTypes) {
         if (fractalType == candidate) return true;
     }
     return false;

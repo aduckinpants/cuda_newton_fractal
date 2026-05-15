@@ -192,7 +192,7 @@ def test_probe_cli_supports_variant_crossfade_sequence_mode() -> None:
     response = json.loads(result.stdout)
     assert response["ok"] is True
     assert response["request_id"] == request["request_id"]
-    assert response["runtime"]["fractal_type"] == "explaino_splice"
+    assert response["runtime"]["fractal_type"] == "explaino_all"
     assert response["summary"]["sample_count"] == 20
     assert len(response["sequence_results"]) == 5
     assert len(response["samples"]) == 20

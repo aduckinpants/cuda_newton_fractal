@@ -1605,6 +1605,7 @@ std::vector<std::pair<std::string, FractalProbeScalar>> ToAppliedPairs(const std
 
 struct VariantCrossfadeSpec {
     FractalType fractal_type{FractalType::explaino};
+    const ExplainoAxisDescriptor* axis{nullptr};
     const char* strength_path{nullptr};
     double default_strength{0.0};
 };
@@ -1618,45 +1619,22 @@ bool ResolveVariantCrossfadeSpec(const std::string& variantId,
         return false;
     }
 
-    VariantCrossfadeSpec spec;
-    spec.fractal_type = fractalType;
-    switch (fractalType) {
-    case FractalType::explaino_ripple:
-        spec.strength_path = "fractal.params.ripple_amplitude";
-        break;
-    case FractalType::explaino_splice:
-        spec.strength_path = "fractal.params.splice_offset";
-        break;
-    case FractalType::explaino_vortex:
-        spec.strength_path = "fractal.params.vortex_strength";
-        break;
-    case FractalType::explaino_tension:
-        spec.strength_path = "fractal.params.tension_strength";
-        break;
-    default:
-        if (outError) *outError = "variant_crossfade only supports explaino_ripple, explaino_splice, explaino_vortex, and explaino_tension";
+    const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(fractalType);
+    if (!axis) {
+        if (outError) *outError = "variant_crossfade only supports single-axis Explaino projection selectors";
         return false;
     }
 
     ProbeState defaultState;
     defaultState.view.fractal_type = fractalType;
     ApplyFractalTypeDefaults(&defaultState.view, &defaultState.params, nullptr);
-    switch (fractalType) {
-    case FractalType::explaino_ripple:
-        spec.default_strength = defaultState.params.ripple_amplitude;
-        break;
-    case FractalType::explaino_splice:
-        spec.default_strength = defaultState.params.splice_offset;
-        break;
-    case FractalType::explaino_vortex:
-        spec.default_strength = defaultState.params.vortex_strength;
-        break;
-    case FractalType::explaino_tension:
-        spec.default_strength = defaultState.params.tension_strength;
-        break;
-    default:
-        break;
-    }
+    const float* defaultStrength = ResolveExplainoAxisValue(defaultState.params, axis->slot);
+
+    VariantCrossfadeSpec spec;
+    spec.fractal_type = fractalType;
+    spec.axis = axis;
+    spec.strength_path = axis->binding_path;
+    spec.default_strength = defaultStrength ? static_cast<double>(*defaultStrength) : static_cast<double>(axis->default_value);
 
     if (outSpec) *outSpec = spec;
     return true;

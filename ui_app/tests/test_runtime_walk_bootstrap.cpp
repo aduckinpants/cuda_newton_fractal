@@ -1,10 +1,12 @@
 #include "../src/runtime_walk_bootstrap.h"
 #include "../src/explaino_seed.h"
+#include "../src/fractal_family_rules.h"
 
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 static int g_passed = 0;
@@ -143,6 +145,52 @@ static void TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget() {
         "TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget_Parse");
     Check(catalog.profiles.size() == 1u && catalog.profiles[0].bindings[0].target_path == "fractal.params.explaino_damping",
         "TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget_TargetRetained");
+}
+
+static void TestMappingCatalogAcceptsCanonicalExplainoAxisTargets() {
+    std::ostringstream bindings;
+    const size_t axisCount = sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0]);
+    for (size_t index = 0; index < axisCount; ++index) {
+        if (index > 0) bindings << ",";
+        bindings
+            << "{"
+            << "\"target_selector\":\"explaino_all\"," 
+            << "\"source_signal\":\"mean\"," 
+            << "\"target_path\":\"" << kExplainoAxisRegistry[index].binding_path << "\"," 
+            << "\"input_min\":0.0," 
+            << "\"input_max\":1.0," 
+            << "\"scale\":0.1," 
+            << "\"offset\":0.0"
+            << "}";
+    }
+
+    const std::string json =
+        "{"
+        "\"version\":1,"
+        "\"profiles\":[{"
+        "\"id\":\"canonical_axes\"," 
+        "\"target_selector\":\"explaino_all\"," 
+        "\"base_fractal_type\":\"explaino_all\"," 
+        "\"bindings\":[" +
+        bindings.str() +
+        "]}]}";
+
+    RuntimeWalkFitsMappingCatalog catalog;
+    std::string error;
+    Check(ParseRuntimeWalkFitsMappingCatalogJson(json, &catalog, &error),
+        "TestMappingCatalogAcceptsCanonicalExplainoAxisTargets_Parse");
+
+    bool retainedAllTargets = catalog.profiles.size() == 1u && catalog.profiles[0].bindings.size() == axisCount;
+    if (retainedAllTargets) {
+        for (size_t index = 0; index < axisCount; ++index) {
+            if (catalog.profiles[0].bindings[index].target_path != kExplainoAxisRegistry[index].binding_path) {
+                retainedAllTargets = false;
+                break;
+            }
+        }
+    }
+    Check(retainedAllTargets,
+        "TestMappingCatalogAcceptsCanonicalExplainoAxisTargets_TargetsRetained");
 }
 
 static void TestOrientationInputsRequireFitsPath() {
@@ -432,6 +480,7 @@ int main() {
     TestMappingCatalogRejectsUnsupportedTargetPath();
     TestMappingCatalogRejectsWarpTargetByDefault();
     TestMappingCatalogAcceptsSchemaDerivedExplainoDampingTarget();
+    TestMappingCatalogAcceptsCanonicalExplainoAxisTargets();
     TestOrientationInputsRequireFitsPath();
     TestOrientationInputsParseFrameTimeline();
     TestLiveFitsBindingsApplyOffsetsOverBaseline();

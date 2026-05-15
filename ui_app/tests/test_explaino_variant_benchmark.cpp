@@ -1,5 +1,6 @@
 #include "../src/explaino_variant_benchmark.h"
 #include "../src/enum_id_utils.h"
+#include "../src/fractal_family_rules.h"
 
 #include <cmath>
 #include <cstring>
@@ -22,13 +23,8 @@ int gFail = 0;
 } while(0)
 
 float ExpectedDefaultParam(FractalType fractalType) {
-    switch (fractalType) {
-    case FractalType::explaino_ripple: return 0.15f;
-    case FractalType::explaino_splice: return 0.5f;
-    case FractalType::explaino_vortex: return 0.3f;
-    case FractalType::explaino_tension: return 0.02f;
-    default: return 0.0f;
-    }
+    const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(fractalType);
+    return axis ? axis->default_value : 0.0f;
 }
 
 float ReadUniqueParam(const KernelParams& params, const char* paramName) {
@@ -43,9 +39,15 @@ float ReadUniqueParam(const KernelParams& params, const char* paramName) {
 void TestBenchmarkCaseTable() {
     std::size_t count = 0;
     const ExplainoVariantBenchmarkCase* cases = GetExplainoVariantBenchmarkCases(&count);
+    std::size_t singleAxisProjectionCount = 0;
+    for (const auto& selector : kExplainoSelectorRegistry) {
+        if (selector.role == ExplainoSelectorRole::legacy_projection_single_axis) {
+            ++singleAxisProjectionCount;
+        }
+    }
     CHECK("benchmark case table exists", cases != nullptr);
-    CHECK("benchmark case count", count == 9u);
-    if (!cases || count != 9u) return;
+    CHECK("benchmark case count", count == 1u + singleAxisProjectionCount * 2u);
+    if (!cases || count != 1u + singleAxisProjectionCount * 2u) return;
 
     std::set<std::string> caseIds;
     int baselineCount = 0;

@@ -138,28 +138,31 @@ bool IsWarpTargetPath(std::string_view canonicalPath) {
 }
 
 const std::vector<std::string>& CandidateTargetPaths() {
-    static const std::vector<std::string> kPaths = {
-        "fractal.params.explaino_seed",
-        "fractal.params.explaino_seed_b",
-        "fractal.params.explaino_mix",
-        "fractal.params.explaino_damping",
-        "fractal.params.explaino_root_spread",
-        "fractal.params.explaino_cluster_radius",
-        "fractal.params.momentum_beta",
-        "fractal.params.joy_coupling",
-        "fractal.params.fold_coupling",
-        "fractal.params.bell_coupling",
-        "fractal.params.ripple_amplitude",
-        "fractal.params.splice_offset",
-        "fractal.params.vortex_strength",
-        "fractal.params.tension_strength",
-        "fractal.view.explaino_phase",
-        "fractal.view.explaino_phase_strength",
-        "fractal.view.explaino_seed_drift",
-        "fractal.view.center.x",
-        "fractal.view.center.y",
-        "fractal.view.zoom",
-    };
+    static const std::vector<std::string> kPaths = [] {
+        std::vector<std::string> paths = {
+            "fractal.params.explaino_seed",
+            "fractal.params.explaino_seed_b",
+            "fractal.params.explaino_mix",
+            "fractal.params.explaino_damping",
+            "fractal.params.explaino_root_spread",
+            "fractal.params.explaino_cluster_radius",
+            "fractal.params.momentum_beta",
+            "fractal.params.joy_coupling",
+            "fractal.params.fold_coupling",
+            "fractal.params.bell_coupling",
+        };
+        paths.reserve(paths.size() + (sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0])) + 6u);
+        for (const auto& axis : kExplainoAxisRegistry) {
+            paths.push_back(axis.binding_path);
+        }
+        paths.push_back("fractal.view.explaino_phase");
+        paths.push_back("fractal.view.explaino_phase_strength");
+        paths.push_back("fractal.view.explaino_seed_drift");
+        paths.push_back("fractal.view.center.x");
+        paths.push_back("fractal.view.center.y");
+        paths.push_back("fractal.view.zoom");
+        return paths;
+    }();
     return kPaths;
 }
 

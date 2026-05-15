@@ -2,6 +2,7 @@
 
 #include "enum_id_utils.h"
 #include "fractal_derived_fields.h"
+#include "fractal_family_rules.h"
 #include "sample_tier_resolver.h"
 #include "view_hp_sync.h"
 
@@ -47,45 +48,31 @@ bool ApplyUniqueParamOverride(const ExplainoVariantBenchmarkCase& benchmarkCase,
         return false;
     }
 
-    switch (benchmarkCase.fractal_type) {
-    case FractalType::explaino:
+    if (benchmarkCase.fractal_type == FractalType::explaino) {
         if (std::strcmp(benchmarkCase.param_name, "none") != 0) {
             if (outError) *outError = "baseline explaino benchmark row must use param_name=none";
             return false;
         }
         return true;
-    case FractalType::explaino_ripple:
-        if (std::strcmp(benchmarkCase.param_name, "ripple_amplitude") != 0) {
-            if (outError) *outError = "ripple benchmark row uses unexpected param_name";
-            return false;
-        }
-        ioParams->ripple_amplitude = benchmarkCase.param_value;
-        return true;
-    case FractalType::explaino_splice:
-        if (std::strcmp(benchmarkCase.param_name, "splice_offset") != 0) {
-            if (outError) *outError = "splice benchmark row uses unexpected param_name";
-            return false;
-        }
-        ioParams->splice_offset = benchmarkCase.param_value;
-        return true;
-    case FractalType::explaino_vortex:
-        if (std::strcmp(benchmarkCase.param_name, "vortex_strength") != 0) {
-            if (outError) *outError = "vortex benchmark row uses unexpected param_name";
-            return false;
-        }
-        ioParams->vortex_strength = benchmarkCase.param_value;
-        return true;
-    case FractalType::explaino_tension:
-        if (std::strcmp(benchmarkCase.param_name, "tension_strength") != 0) {
-            if (outError) *outError = "tension benchmark row uses unexpected param_name";
-            return false;
-        }
-        ioParams->tension_strength = benchmarkCase.param_value;
-        return true;
-    default:
+    }
+
+    const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(benchmarkCase.fractal_type);
+    if (!axis) {
         if (outError) *outError = "unsupported fractal type for explaino benchmark case";
         return false;
     }
+    if (std::strcmp(benchmarkCase.param_name, axis->axis_id) != 0) {
+        if (outError) *outError = "benchmark row uses unexpected param_name for its canonical Explaino axis";
+        return false;
+    }
+
+    float* axisValue = ResolveExplainoAxisValue(*ioParams, axis->slot);
+    if (!axisValue) {
+        if (outError) *outError = "benchmark row could not resolve the canonical Explaino axis slot";
+        return false;
+    }
+    *axisValue = benchmarkCase.param_value;
+    return true;
 }
 
 } // namespace

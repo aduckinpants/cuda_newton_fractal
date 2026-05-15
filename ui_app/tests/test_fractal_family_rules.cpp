@@ -1,4 +1,5 @@
 #include "../src/fractal_family_rules.h"
+#include "../src/enum_id_utils.h"
 
 #include <cstddef>
 #include <iostream>
@@ -137,6 +138,57 @@ int main() {
                 std::cerr << "Explaino-all canonical axis registry entry " << index << " drifted from the expected shared authority\n";
                 return 1;
             }
+        }
+
+        std::size_t explainoSelectorRegistryMatches = 0;
+        std::size_t projectionSelectorCount = 0;
+        std::size_t singleAxisProjectionCount = 0;
+        for (const auto& pair : enum_id_utils::kFractalTypeIds) {
+            const std::string_view fractalTypeId = pair.id;
+            const bool isExplainoSelector = fractalTypeId == "explaino" ||
+                fractalTypeId.compare(0, 9, "explaino_") == 0;
+            if (!isExplainoSelector) {
+                continue;
+            }
+
+            const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(pair.value);
+            if (!descriptor || std::string_view(descriptor->fractal_type_id) != fractalTypeId) {
+                std::cerr << "Every checked-in Explaino selector enum id should be classified by one canonical Explaino selector registry\n";
+                return 1;
+            }
+            ++explainoSelectorRegistryMatches;
+            const bool expectLegacyProjection =
+                descriptor->role == ExplainoSelectorRole::legacy_projection_single_axis ||
+                descriptor->role == ExplainoSelectorRole::legacy_projection_multi_axis;
+            const bool expectSingleAxisProjection =
+                descriptor->role == ExplainoSelectorRole::legacy_projection_single_axis;
+            if (!IsExplainoFamily(pair.value) ||
+                IsExplainoLegacyProjectionSelector(pair.value) != expectLegacyProjection ||
+                IsExplainoSingleAxisProjectionSelector(pair.value) != expectSingleAxisProjection ||
+                IsExplainoComposedAxisCarrier(pair.value) != expectSingleAxisProjection) {
+                std::cerr << "Explaino-all slice 3 should keep the CUDA-safe Explaino classifiers in lockstep with the canonical selector registry\n";
+                return 1;
+            }
+            if (expectLegacyProjection) {
+                ++projectionSelectorCount;
+            }
+            if (expectSingleAxisProjection) {
+                const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(pair.value);
+                if (!axis || axis->carrier_fractal_type != pair.value) {
+                    std::cerr << "Every single-axis Explaino projection selector should derive helper coverage from the canonical axis registry\n";
+                    return 1;
+                }
+                ++singleAxisProjectionCount;
+            }
+        }
+        if (explainoSelectorRegistryMatches != (sizeof(kExplainoSelectorRegistry) / sizeof(kExplainoSelectorRegistry[0]))) {
+            std::cerr << "Explaino selector classification should cover every checked-in Explaino selector exactly once\n";
+            return 1;
+        }
+        if (projectionSelectorCount != 5 || singleAxisProjectionCount != 4 ||
+            FindExplainoSingleAxisProjectionDescriptor(FractalType::explaino_balance_void) != nullptr) {
+            std::cerr << "Explaino-all slice 3 should distinguish the four single-axis projection selectors from the multi-axis ExplainO-BalanceVoid projection selector\n";
+            return 1;
         }
     }
 

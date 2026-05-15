@@ -1,5 +1,6 @@
 #include "../src/explaino_seed.h"
 #include "../src/fractal_derived_fields.h"
+#include "../src/fractal_family_rules.h"
 #include "../src/fractal_sample_result.h"
 #include "../src/fractal_types.h"
 #include "../src/view_hp_sync.h"
@@ -43,18 +44,8 @@ double Distance(double ax, double ay, double bx, double by) {
 }
 
 float DefaultVariantStrength(FractalType fractalType) {
-    switch (fractalType) {
-    case FractalType::explaino_ripple:
-        return 0.15f;
-    case FractalType::explaino_splice:
-        return 0.5f;
-    case FractalType::explaino_vortex:
-        return 0.3f;
-    case FractalType::explaino_tension:
-        return 0.02f;
-    default:
-        return 0.0f;
-    }
+    const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(fractalType);
+    return axis ? axis->default_value : 0.0f;
 }
 
 void BuildExplainoVariantState(FractalType fractalType,

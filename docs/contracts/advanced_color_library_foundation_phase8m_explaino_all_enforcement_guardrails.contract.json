@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_oracle_and_inventory.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/explaino_sidecar_measurement.cpp",
+    "ui_app/src/explaino_variant_benchmark.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/function_descriptor.cpp",
+    "ui_app/src/main.cpp",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_bootstrap.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_explaino_sidecar_measurement.cpp",
+    "ui_app/tests/test_explaino_variant_benchmark.cpp",
+    "ui_app/tests/test_explaino_zero_axis_equivalence.cu",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_function_descriptor.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_runtime_walk_bootstrap.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_explaino_param_sensitivity.py",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_probe_cli.py",
+    "tests/test_function_descriptor_cli.py",
+    "tools/reality_toolkit/fractal_explorer/explaino_param_sensitivity.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as Explaino-all slice 3 only: enforcement guardrails for the canonical seven-axis family and its supported legacy projection selectors",
+    "make future Explaino drift fail closed by architecture and proof rather than by memory or discipline",
+    "prove a new Explaino family axis cannot land without canonical registry coverage and a new Explaino alias or preset cannot land without canonical projection coverage",
+    "preserve slice-1 canonical identity truth, slice-2 legacy projection truth, phase8k sidecar support, and neutral default invariants while keeping deferred parameter classes out of scope"
+  ],
+  "forbidden_operator_prompts": [
+    "claim guardrails are real if a new Explaino axis or selector can still land through one seam without checked-in canonical classification and coverage proof",
+    "widen the slice into deferred parameter-class promotion, cleanup-only work, generic advanced-color core work, historical archive compatibility, or unrelated tooling repair",
+    "treat one happy-path test or one helper map as sufficient proof that future Explaino drift now fails closed",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "canonical_explaino_selector_classification_guard_required": "required",
+    "canonical_explaino_axis_registry_guard_required": "required",
+    "legacy_projection_coverage_guard_required": "required",
+    "canonical_neutral_default_invariants_required": "required",
+    "slice1_canonical_identity_preserved": "required",
+    "slice2_legacy_projection_truth_preserved": "required",
+    "phase8k_sidecar_support_preserved": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "deferred_parameter_class_promotion_primary_scope": "forbidden",
+    "slice1_or_slice2_primary_scope": "forbidden",
+    "cleanup_only_primary_scope": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_contract_schema_valid",
+      "description": "The Explaino-all slice-3 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_plan_sync_ok",
+      "description": "The Explaino-all slice-3 phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_hostile_audit_ok",
+      "description": "The Explaino-all slice-3 hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8m_explaino_all_enforcement_guardrails_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

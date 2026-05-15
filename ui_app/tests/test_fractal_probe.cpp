@@ -1,6 +1,8 @@
 #include "../src/fractal_probe_contract.h"
 #include "../src/fractal_probe_runner.h"
 
+#include "../src/enum_id_utils.h"
+#include "../src/fractal_family_rules.h"
 #include "../src/json_min.h"
 
 #include <filesystem>
@@ -453,8 +455,8 @@ int main() {
             std::cerr << "Expected variant_crossfade sequence_grid probe to run: " << error << "\n";
             return 1;
         }
-        if (!response.ok || response.runtime.fractal_type != "explaino_splice") {
-            std::cerr << "Expected successful variant_crossfade probe response ending on explaino_splice\n";
+        if (!response.ok || response.runtime.fractal_type != "explaino_all") {
+            std::cerr << "Expected successful variant_crossfade probe response to publish the canonical explaino_all identity on the final projected selector step\n";
             return 1;
         }
         if (response.sequence_results.size() != 5) {
@@ -502,6 +504,36 @@ int main() {
             lastApplied[0].second.string_value != "explaino_splice" ||
             !NearlyEqual(lastApplied[1].second.number_value, 0.5)) {
             std::cerr << "Expected final crossfade step to use explaino_splice default strength\n";
+            return 1;
+        }
+    }
+
+    {
+        FractalProbeRequest request{};
+        request.request_version = 1;
+        request.request_id = "sequence-grid-variant-crossfade-balance-void-reject";
+        request.function_id = "fractal.sample";
+        request.mode = FractalProbeMode::sequence_grid;
+        request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String("explaino")});
+        request.overrides.push_back({"fractal.params.explaino_seed", FractalProbeScalar::Number(3.0)});
+        request.overrides.push_back({"fractal.params.explaino_warp_strength", FractalProbeScalar::Number(0.25)});
+        request.overrides.push_back({"fractal.view.explaino_seed_drift", FractalProbeScalar::Number(0.1)});
+        request.has_region = true;
+        request.region = {0.0, 0.0, 0.2, 0.2, 2, 2};
+        request.has_sequence = true;
+        request.sequence.mode = FractalProbeSequenceMode::variant_crossfade;
+        request.sequence.variant_crossfade.from_variant_id = "explaino_balance_void";
+        request.sequence.variant_crossfade.to_variant_id = "explaino_splice";
+        request.sequence.variant_crossfade.steps = 5;
+
+        FractalProbeResponse response{};
+        std::string error;
+        if (RunFractalProbeRequest(request, "D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe", &response, &error)) {
+            std::cerr << "variant_crossfade should reject explaino_balance_void because it is not a single-axis Explaino projection selector\n";
+            return 1;
+        }
+        if (error.find("single-axis Explaino projection selectors") == std::string::npos) {
+            std::cerr << "Expected explaino_balance_void crossfade rejection to mention single-axis Explaino projection selectors\n";
             return 1;
         }
     }
@@ -866,8 +898,14 @@ int main() {
                 std::cerr << "Expected point_set probe to run for " << probeCase.fractal_type << ": " << error << "\n";
                 return 1;
             }
-            if (!response.ok || response.runtime.fractal_type != probeCase.fractal_type) {
-                std::cerr << "Expected successful probe response for " << probeCase.fractal_type << "\n";
+            FractalType requestedFractalType = FractalType::newton;
+            if (!TryParseFractalTypeId(probeCase.fractal_type, &requestedFractalType)) {
+                std::cerr << "Expected probe case fractal_type to parse through the checked-in enum id registry: " << probeCase.fractal_type << "\n";
+                return 1;
+            }
+            const char* expectedRuntimeFractalType = FractalTypeId(ResolveExplainoPublicFractalType(requestedFractalType));
+            if (!response.ok || response.runtime.fractal_type != expectedRuntimeFractalType) {
+                std::cerr << "Expected successful probe response for " << probeCase.fractal_type << " to publish runtime.fractal_type=" << expectedRuntimeFractalType << "\n";
                 return 1;
             }
             if (response.summary.sample_count != 2 || response.samples.size() != 2) {

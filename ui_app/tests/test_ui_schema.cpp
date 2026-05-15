@@ -1,4 +1,6 @@
 #include "../src/ui_schema.h"
+#include "../src/fractal_family_rules.h"
+#include "../src/enum_id_utils.h"
 #include "../src/json_min.h"
 #include "../src/safe_mode_schema.h"
 #include "../src/schema_binding.h"
@@ -7,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -107,6 +110,76 @@ const UISchemaControl* FindControlById(const UISchemaPanel& panel, const char* i
         }
     }
     return nullptr;
+}
+
+bool ContainsCsvToken(std::string_view csv, std::string_view token) {
+    std::size_t start = 0;
+    while (start <= csv.size()) {
+        const std::size_t comma = csv.find(',', start);
+        const std::size_t end = (comma == std::string_view::npos) ? csv.size() : comma;
+        if (csv.substr(start, end - start) == token) {
+            return true;
+        }
+        if (comma == std::string_view::npos) {
+            break;
+        }
+        start = comma + 1;
+    }
+    return false;
+}
+
+bool VisibleIfIncludesFractalType(const UISchemaControl& control, std::string_view fractalTypeId) {
+    return control.has_visible_if &&
+        control.visible_if.path == "fractal.view.fractal_type" &&
+        (control.visible_if.op == "eq" || control.visible_if.op == "in") &&
+        ContainsCsvToken(control.visible_if.value, fractalTypeId);
+}
+
+std::size_t CsvTokenCount(std::string_view csv) {
+    if (csv.empty()) {
+        return 0;
+    }
+    std::size_t count = 0;
+    std::size_t start = 0;
+    while (start <= csv.size()) {
+        const std::size_t comma = csv.find(',', start);
+        ++count;
+        if (comma == std::string_view::npos) {
+            break;
+        }
+        start = comma + 1;
+    }
+    return count;
+}
+
+inline constexpr const char* kKnownExplainoAllVisibleBindingPaths[] = {
+    "fractal.view.auto_increment_seed",
+    "fractal.params.epsilon",
+    "fractal.params.explaino_seed",
+    "fractal.actions.prev_seed",
+    "fractal.actions.next_seed",
+    "fractal.params.explaino_warp_strength",
+    "fractal.params.explaino_root_spread",
+    "fractal.view.explaino_phase_strength",
+    "fractal.params.explaino_damping",
+    "fractal.view.explaino_phase",
+    "fractal.view.explaino_seed_drift",
+    "fractal.view.explaino_seed_tween",
+};
+
+inline constexpr std::size_t kKnownExplainoAllVisibleBindingPathCount =
+    sizeof(kKnownExplainoAllVisibleBindingPaths) / sizeof(kKnownExplainoAllVisibleBindingPaths[0]);
+
+inline constexpr std::size_t kExpectedExplainoGroupedSelectorCount =
+    (sizeof(kExplainoSelectorRegistry) / sizeof(kExplainoSelectorRegistry[0])) - 1u;
+
+bool IsKnownExplainoAllVisibleBindingPath(std::string_view bindingPath) {
+    for (const char* knownPath : kKnownExplainoAllVisibleBindingPaths) {
+        if (bindingPath == knownPath) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -320,19 +393,16 @@ int main() {
         bool foundEpsilonVisibleForExplainoAll = false;
         bool foundExplainoSeedVisibleForExplainoAll = false;
         bool foundRippleAmplitudeVisibleForExplainoAll = false;
-        bool foundRippleAmplitudeVisibleForRippleCarrier = false;
         bool foundSpliceOffsetVisibleForExplainoAll = false;
-        bool foundSpliceOffsetVisibleForSpliceCarrier = false;
         bool foundVortexStrengthVisibleForExplainoAll = false;
-        bool foundVortexStrengthVisibleForVortexCarrier = false;
         bool foundTensionStrengthVisibleForExplainoAll = false;
-        bool foundTensionStrengthVisibleForTensionCarrier = false;
         bool foundBalanceVoidVisibleForExplainoAll = false;
-        bool foundBalanceVoidVisibleForBalanceVoidCarrier = false;
         bool foundSymmetryTensionVisibleForExplainoAll = false;
-        bool foundSymmetryTensionVisibleForBalanceVoidCarrier = false;
         bool foundFieldCurvatureVisibleForExplainoAll = false;
-        bool foundFieldCurvatureVisibleForBalanceVoidCarrier = false;
+        std::size_t explainoGroupOptionCount = 0;
+        std::size_t explainoAllVisibleControlCount = 0;
+        std::size_t explainoAllVisibleAxisCount = 0;
+        std::size_t explainoAllVisibleNonAxisCount = 0;
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
         bool foundInteractionDebounceDefault = false;
@@ -404,9 +474,24 @@ int main() {
                     }
                     for (std::size_t optionIndex = 0; optionIndex < ctrl.options.size(); ++optionIndex) {
                         const auto& option = ctrl.options[optionIndex];
-                        if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
+                        if (option.id == "explaino" && option.group == "Common") {
+                            foundFractalTypeCommonGroup = true;
+                            const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
+                            if (!descriptor || descriptor->role != ExplainoSelectorRole::baseline) {
+                                std::cerr << "Main schema did not classify baseline explaino through the canonical Explaino selector registry\n";
+                                return 1;
+                            }
+                        }
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
+                        if (option.group == "Explaino") {
+                            ++explainoGroupOptionCount;
+                            const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
+                            if (!descriptor || descriptor->role == ExplainoSelectorRole::baseline) {
+                                std::cerr << "Main schema Explaino selector options drifted outside the canonical Explaino selector registry\n";
+                                return 1;
+                            }
+                        }
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
@@ -544,81 +629,70 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 0.5 && !ctrl.has_min && !ctrl.has_max) {
                     foundRippleAmplitudeUiRange = true;
                 }
-                if (ctrl.id == "epsilon" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundEpsilonVisibleForExplainoAll = true;
                 }
-                if (ctrl.id == "explaino_seed" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundExplainoSeedVisibleForExplainoAll = true;
                 }
-                if (ctrl.id == "ripple_amplitude" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "ripple_amplitude" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundRippleAmplitudeVisibleForExplainoAll = true;
-                }
-                if (ctrl.id == "ripple_amplitude" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_ripple") != std::string::npos) {
-                    foundRippleAmplitudeVisibleForRippleCarrier = true;
                 }
                 if (ctrl.id == "splice_offset" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundSpliceOffsetUiRange = true;
                 }
-                if (ctrl.id == "splice_offset" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "splice_offset" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundSpliceOffsetVisibleForExplainoAll = true;
-                }
-                if (ctrl.id == "splice_offset" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_splice") != std::string::npos) {
-                    foundSpliceOffsetVisibleForSpliceCarrier = true;
                 }
                 if (ctrl.id == "vortex_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundVortexStrengthUiRange = true;
                 }
-                if (ctrl.id == "vortex_strength" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "vortex_strength" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundVortexStrengthVisibleForExplainoAll = true;
-                }
-                if (ctrl.id == "vortex_strength" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_vortex") != std::string::npos) {
-                    foundVortexStrengthVisibleForVortexCarrier = true;
                 }
                 if (ctrl.id == "tension_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
                     foundTensionStrengthUiRange = true;
                 }
-                if (ctrl.id == "tension_strength" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "tension_strength" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundTensionStrengthVisibleForExplainoAll = true;
                 }
-                if (ctrl.id == "tension_strength" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_tension") != std::string::npos) {
-                    foundTensionStrengthVisibleForTensionCarrier = true;
-                }
-                if (ctrl.id == "balance_void" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "balance_void" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundBalanceVoidVisibleForExplainoAll = true;
                 }
-                if (ctrl.id == "balance_void" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_balance_void") != std::string::npos) {
-                    foundBalanceVoidVisibleForBalanceVoidCarrier = true;
-                }
-                if (ctrl.id == "symmetry_tension" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "symmetry_tension" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundSymmetryTensionVisibleForExplainoAll = true;
                 }
-                if (ctrl.id == "symmetry_tension" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_balance_void") != std::string::npos) {
-                    foundSymmetryTensionVisibleForBalanceVoidCarrier = true;
-                }
-                if (ctrl.id == "field_curvature" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                if (ctrl.id == "field_curvature" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundFieldCurvatureVisibleForExplainoAll = true;
                 }
-                if (ctrl.id == "field_curvature" && ctrl.has_visible_if &&
-                    ctrl.visible_if.value.find("explaino_balance_void") != std::string::npos) {
-                    foundFieldCurvatureVisibleForBalanceVoidCarrier = true;
+                if (VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
+                    ++explainoAllVisibleControlCount;
+                    const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(ctrl.id);
+                    if (axis) {
+                        ++explainoAllVisibleAxisCount;
+                        if (!ctrl.has_binding || ctrl.binding.path != axis->binding_path) {
+                            std::cerr << "Main schema Explaino-all axis controls drifted away from the canonical Explaino axis registry\n";
+                            return 1;
+                        }
+                        const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
+                        if (!ctrl.has_visible_if || ctrl.visible_if.op != "in" ||
+                            ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                            !VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
+                            !carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId) ||
+                            CsvTokenCount(ctrl.visible_if.value) != 2u) {
+                            std::cerr << "Main schema Explaino-all axis controls should decode to explaino_all plus their owning legacy carrier only\n";
+                            return 1;
+                        }
+                    } else {
+                        ++explainoAllVisibleNonAxisCount;
+                        if (!ctrl.has_binding || !IsKnownExplainoAllVisibleBindingPath(ctrl.binding.path)) {
+                            std::cerr << "Main schema exposed a new explaino_all-visible non-axis control without explicit canonical classification\n";
+                            return 1;
+                        }
+                    }
                 }
                 if (ctrl.has_binding && ctrl.binding.path == "fractal.params.coloring_mode") {
                     ++coloringModeControlCount;
@@ -738,6 +812,10 @@ int main() {
             std::cerr << "Did not find Explaino-all as the first Explaino selector entry in schema\n";
             return 1;
         }
+        if (explainoGroupOptionCount != kExpectedExplainoGroupedSelectorCount) {
+            std::cerr << "Schema Explaino selector group count drifted away from the canonical Explaino selector registry\n";
+            return 1;
+        }
         if (!foundFractalTypeDefaultExplainoAll) {
             std::cerr << "Did not find Explaino-all as the canonical startup fractal default in schema\n";
             return 1;
@@ -753,11 +831,10 @@ int main() {
             std::cerr << "Did not find the canonical Explaino-all axis control surface in schema\n";
             return 1;
         }
-        if (!foundRippleAmplitudeVisibleForRippleCarrier || !foundSpliceOffsetVisibleForSpliceCarrier ||
-            !foundVortexStrengthVisibleForVortexCarrier || !foundTensionStrengthVisibleForTensionCarrier ||
-            !foundBalanceVoidVisibleForBalanceVoidCarrier || !foundSymmetryTensionVisibleForBalanceVoidCarrier ||
-            !foundFieldCurvatureVisibleForBalanceVoidCarrier) {
-            std::cerr << "Did not preserve legacy Explaino carrier visibility through the canonical Explaino-all registry surface\n";
+        if (explainoAllVisibleAxisCount != (sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0])) ||
+            explainoAllVisibleNonAxisCount != kKnownExplainoAllVisibleBindingPathCount ||
+            explainoAllVisibleControlCount != explainoAllVisibleAxisCount + explainoAllVisibleNonAxisCount) {
+            std::cerr << "Main schema Explaino-all visible control surface drifted outside the canonical axis registry and explicit non-axis allowlist\n";
             return 1;
         }
         if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {
@@ -799,6 +876,7 @@ int main() {
         bool foundSafeModeZoomNoUiCap = false;
         bool foundSafeModeRotationUiRange = false;
         bool foundSafeModeMaxIterUiCap = false;
+        std::size_t safeModeExplainoGroupOptionCount = 0;
 
         if (!viewPanel || viewPanel->label != "View (Safe Mode)" || !viewPanel->has_order || viewPanel->order != 10 ||
             viewPanel->controls.size() != 11) {
@@ -855,9 +933,24 @@ int main() {
                     }
                     for (std::size_t optionIndex = 0; optionIndex < ctrl.options.size(); ++optionIndex) {
                         const auto& option = ctrl.options[optionIndex];
-                        if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
+                        if (option.id == "explaino" && option.group == "Common") {
+                            foundFractalTypeCommonGroup = true;
+                            const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
+                            if (!descriptor || descriptor->role != ExplainoSelectorRole::baseline) {
+                                std::cerr << "Safe-mode schema did not classify baseline explaino through the canonical Explaino selector registry\n";
+                                return 1;
+                            }
+                        }
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
+                        if (option.group == "Explaino") {
+                            ++safeModeExplainoGroupOptionCount;
+                            const ExplainoSelectorDescriptor* descriptor = FindExplainoSelectorDescriptor(option.id);
+                            if (!descriptor || descriptor->role == ExplainoSelectorRole::baseline) {
+                                std::cerr << "Safe-mode Explaino selector options drifted outside the canonical Explaino selector registry\n";
+                                return 1;
+                            }
+                        }
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
@@ -921,6 +1014,10 @@ int main() {
         }
         if (!foundFractalTypeExplainoAllFirst) {
             std::cerr << "Safe-mode schema did not place Explaino-all first in the Explaino selector group\n";
+            return 1;
+        }
+        if (safeModeExplainoGroupOptionCount != kExpectedExplainoGroupedSelectorCount) {
+            std::cerr << "Safe-mode Explaino selector group count drifted away from the canonical Explaino selector registry\n";
             return 1;
         }
         if (!foundFractalTypeDefaultExplainoAll) {

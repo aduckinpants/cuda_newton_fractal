@@ -2036,15 +2036,25 @@ def test_explaino_exploration_advisor_rejects_non_explaino_loaded_state(tmp_path
     assert not report_path.exists()
 
 
-def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path) -> None:
+@pytest.mark.parametrize("fractal_type", ["explaino", "explaino_all"])
+def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: Path, fractal_type: str) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino sidecar runtime regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    baseline_capture = _capture_explaino_runtime_baseline(exe_path)
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        fractal_type,
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
 
     moving_state_path = _write_state_bundle(
-        tmp_path / "moving",
+        tmp_path / f"{fractal_type}_moving",
         _configure_sidecar_policy(
             baseline_capture["state"],
             enabled=True,
@@ -2056,7 +2066,7 @@ def test_explaino_sidecar_headless_paced_loop_respects_stop_threshold(tmp_path: 
         ),
     )
     stopped_state_path = _write_state_bundle(
-        tmp_path / "stopped",
+        tmp_path / f"{fractal_type}_stopped",
         _configure_sidecar_policy(
             baseline_capture["state"],
             enabled=True,
