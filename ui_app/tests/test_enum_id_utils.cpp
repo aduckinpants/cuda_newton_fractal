@@ -53,6 +53,10 @@ static void TestConcreteEnumIdWrappers() {
     Check(TryParsePolyKindId("custom", &polyKind) && polyKind == PolyKind::custom,
         "TestConcreteEnumIdWrappers_PolyKindParse");
 
+    Check(std::string_view(FractalTypeId(FractalType::explaino_all)) == "explaino_all",
+        "TestConcreteEnumIdWrappers_FractalTypeCanonicalExplainoAllLookup");
+    Check(TryParseFractalTypeId("explaino_all", &fractalType) && fractalType == FractalType::explaino_all,
+        "TestConcreteEnumIdWrappers_FractalTypeCanonicalExplainoAllParse");
     Check(std::string_view(FractalTypeId(FractalType::explaino_lambda)) == "explaino_lambda",
         "TestConcreteEnumIdWrappers_FractalTypeLookup");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,

@@ -110,6 +110,7 @@ inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::multibrot, "multibrot"},
     {FractalType::phoenix, "phoenix"},
     {FractalType::explaino, "explaino"},
+    {FractalType::explaino_all, "explaino_all"},
     {FractalType::explaino_y, "explaino_y"},
     {FractalType::explaino_fp, "explaino_fp"},
     {FractalType::explaino_nova, "explaino_nova"},

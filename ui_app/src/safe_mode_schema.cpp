@@ -27,6 +27,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"collatz", "Collatz", "Escape-Time"},
     {"mcmullen", "McMullen", "Escape-Time"},
     {"lambda", "Lambda", "Escape-Time"},
+    {"explaino_all", "Explaino-all", "Explaino"},
     {"explaino_y", "Explaino Y", "Explaino"},
     {"explaino_fp", "Explaino FP", "Explaino"},
     {"explaino_nova", "Explaino Nova", "Explaino"},
@@ -181,7 +182,7 @@ UISchemaControl BuildSafeModeFractalTypeControl() {
         "Fractal Type",
         "enum",
         "fractal.view.fractal_type",
-        json_min::Value{std::string("explaino")});
+        json_min::Value{std::string("explaino_all")});
     control.options = BuildSafeModeFractalTypeOptions();
     return control;
 }

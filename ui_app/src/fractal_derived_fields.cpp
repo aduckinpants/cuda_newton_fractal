@@ -84,6 +84,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         break;
     case FractalType::newton:
     case FractalType::nova:
+    case FractalType::explaino_all:
     case FractalType::explaino:
     case FractalType::explaino_y:
     case FractalType::explaino_fp:
@@ -207,6 +208,7 @@ static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams&
 
 static bool IsExplainoPresetFractal(FractalType fractalType) {
     switch (fractalType) {
+    case FractalType::explaino_all:
     case FractalType::explaino:
     case FractalType::explaino_y:
     case FractalType::explaino_fp:
@@ -238,6 +240,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
 
 static int DefaultExplainoMaxIter(FractalType fractalType) {
     switch (fractalType) {
+    case FractalType::explaino_all:
     case FractalType::explaino:
     case FractalType::explaino_halley:
     case FractalType::explaino_dual:
@@ -285,13 +288,7 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.joy_coupling = 0.0f;
     params.fold_coupling = 0.0f;
     params.bell_coupling = 0.0f;
-    params.balance_void = 0.0f;
-    params.symmetry_tension = 0.0f;
-    params.field_curvature = 0.0f;
-    params.ripple_amplitude = 0.0f;
-    params.splice_offset = 0.0f;
-    params.vortex_strength = 0.0f;
-    params.tension_strength = 0.0f;
+    ApplyExplainoAxisRegistryDefaults(fractalType, params);
 
     if (fractalType == FractalType::explaino_phoenix) {
         params.phoenix_p_real = 0.12f;
@@ -316,18 +313,6 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     }
     if (fractalType == FractalType::explaino_bell) {
         params.bell_coupling = 0.5f;
-    }
-    if (fractalType == FractalType::explaino_ripple) {
-        params.ripple_amplitude = 0.15f;
-    }
-    if (fractalType == FractalType::explaino_splice) {
-        params.splice_offset = 0.5f;
-    }
-    if (fractalType == FractalType::explaino_vortex) {
-        params.vortex_strength = 0.3f;
-    }
-    if (fractalType == FractalType::explaino_tension) {
-        params.tension_strength = 0.02f;
     }
 }
 
@@ -571,6 +556,7 @@ static void ClearPolynomialCoefficients(float coeffs[5]) {
 
 static bool IsExplainoComposedVariantType(FractalType fractalType) {
     switch (fractalType) {
+    case FractalType::explaino_all:
     case FractalType::explaino_ripple:
     case FractalType::explaino_splice:
     case FractalType::explaino_vortex:

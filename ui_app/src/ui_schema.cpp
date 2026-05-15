@@ -1,5 +1,8 @@
 #include "ui_schema.h"
 
+#include "enum_id_utils.h"
+#include "fractal_family_rules.h"
+
 #include <algorithm>
 #include <sstream>
 
@@ -37,6 +40,27 @@ static void parse_numeric_control_metadata(const json_min::Value& o, UISchemaCon
     if (get_number(o, "min", n)) { ctrl->min = n; ctrl->has_min = true; }
     if (get_number(o, "max", n)) { ctrl->max = n; ctrl->has_max = true; }
     if (get_number(o, "step", n)) { ctrl->step = n; ctrl->has_step = true; }
+}
+
+static void apply_explaino_axis_registry(UISchema* schema) {
+    if (!schema) return;
+    for (UISchemaPanel& panel : schema->panels) {
+        for (UISchemaControl& control : panel.controls) {
+            const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(control.id);
+            if (!axis) continue;
+
+            control.has_visible_if = true;
+            control.visible_if.op = "in";
+            control.visible_if.path = "fractal.view.fractal_type";
+            control.visible_if.value = FractalTypeId(ExplainoCanonicalFractalType());
+
+            const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
+            if (carrierId && control.visible_if.value != carrierId) {
+                control.visible_if.value += ",";
+                control.visible_if.value += carrierId;
+            }
+        }
+    }
 }
 
 UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
@@ -208,6 +232,7 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
         return false; // preserve input order
     });
 
+    apply_explaino_axis_registry(&s);
     r.schema = std::move(s);
     return r;
 }

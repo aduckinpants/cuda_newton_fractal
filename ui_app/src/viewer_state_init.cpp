@@ -112,16 +112,23 @@ int ApplyCliOverrides(const ViewerCliArgs& cli,
         if (dirty) *dirty = true;
     }
 
+    if (!loadedState && !cli.have_fractal_type && !cli.have_explaino_seed && !cli.sweep_config.enabled &&
+        view.fractal_type == FractalType::explaino) {
+        view.fractal_type = ExplainoCanonicalFractalType();
+        ApplyFractalViewPresetDefaults(view, dirty);
+        if (dirty) *dirty = true;
+    }
+
     if (cli.have_fractal_type) {
         view.fractal_type = cli.fractal_type;
         ApplyFractalViewPresetDefaults(view, dirty);
         if (dirty) *dirty = true;
     } else if (cli.have_explaino_seed) {
-        view.fractal_type = FractalType::explaino;
+        view.fractal_type = ExplainoCanonicalFractalType();
         ApplyFractalViewPresetDefaults(view, dirty);
         if (dirty) *dirty = true;
     } else if (cli.sweep_config.enabled) {
-        view.fractal_type = FractalType::explaino;
+        view.fractal_type = ExplainoCanonicalFractalType();
         ApplyFractalViewPresetDefaults(view, dirty);
         if (dirty) *dirty = true;
     }

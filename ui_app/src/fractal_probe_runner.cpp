@@ -481,27 +481,14 @@ bool SamplePoint(const ProbeState& state,
     float pAbs = 0.0f;
     Cx z{0.0f, 0.0f};
     FractalProbeSampleStatus status = FractalProbeSampleStatus::bounded;
-    FractalType ft = view.fractal_type;
-    const bool isExplainoComposedVariant =
-        ft == FractalType::explaino_ripple ||
-        ft == FractalType::explaino_splice ||
-        ft == FractalType::explaino_vortex ||
-        ft == FractalType::explaino_tension;
-    const bool hasExplainoComposedPerturbation =
-        params.ripple_amplitude != 0.0f ||
-        params.splice_offset != 0.0f ||
-        params.vortex_strength != 0.0f ||
-        params.tension_strength != 0.0f;
-    const bool hasExplainoBalanceVoidPerturbation =
-        params.balance_void != 0.0f ||
-        params.symmetry_tension != 0.0f ||
-        params.field_curvature != 0.0f;
-    if (isExplainoComposedVariant && !hasExplainoComposedPerturbation) {
-        ft = FractalType::explaino;
-    }
-    if (ft == FractalType::explaino_balance_void && !hasExplainoBalanceVoidPerturbation) {
-        ft = FractalType::explaino;
-    }
+    const FractalType requestedFt = view.fractal_type;
+    const bool hasExplainoComposedPerturbation = HasExplainoComposedAxisPerturbation(params);
+    const bool hasExplainoBalanceVoidPerturbation = HasExplainoBalanceVoidPerturbation(params);
+    const bool canonicalExplainoAllUsesBalanceVoidBias =
+        requestedFt == ExplainoCanonicalFractalType() &&
+        hasExplainoComposedPerturbation &&
+        hasExplainoBalanceVoidPerturbation;
+    FractalType ft = ResolveExplainoRuntimeFractalType(requestedFt, params);
 
     auto explainoSeed = [&]() {
         const double combinedSeed = params.explaino_seed + static_cast<double>(view.explaino_seed_drift);
@@ -1146,8 +1133,44 @@ bool SamplePoint(const ProbeState& state,
             }
 
             const float damp = params.explaino_damping / (1.0f + stepMag);
+            Cx balanceVoidBias = {0.0f, 0.0f};
+            if (canonicalExplainoAllUsesBalanceVoidBias && nRootsForPull >= 2) {
+                int idxNearest = 0;
+                float bestNearest = 1.0e30f;
+                for (int r = 0; r < nRootsForPull; ++r) {
+                    const float dx = z.x - params.explaino_roots[r].x;
+                    const float dy = z.y - params.explaino_roots[r].y;
+                    const float d2 = dx * dx + dy * dy;
+                    if (d2 < bestNearest) {
+                        bestNearest = d2;
+                        idxNearest = r;
+                    }
+                }
+                int idxFarthest = idxNearest;
+                float bestFarthest = -1.0f;
+                for (int r = 0; r < nRootsForPull; ++r) {
+                    if (r == idxNearest) continue;
+                    const float dx = z.x - params.explaino_roots[r].x;
+                    const float dy = z.y - params.explaino_roots[r].y;
+                    const float d2 = dx * dx + dy * dy;
+                    if (d2 > bestFarthest) {
+                        bestFarthest = d2;
+                        idxFarthest = r;
+                    }
+                }
+                const Cx midpoint = {
+                    0.5f * (params.explaino_roots[idxNearest].x + params.explaino_roots[idxFarthest].x),
+                    0.5f * (params.explaino_roots[idxNearest].y + params.explaino_roots[idxFarthest].y)};
+                const Cx radial = {midpoint.x - z.x, midpoint.y - z.y};
+                const Cx tangential = {-radial.y, radial.x};
+                balanceVoidBias = CxAdd(
+                    CxScale(radial, params.balance_void),
+                    CxAdd(
+                        CxScale(tangential, params.symmetry_tension),
+                        CxScale(midpoint, params.field_curvature)));
+            }
             const Cx zNext = CxAdd(
-                CxAdd(CxAdd(CxSub(z, CxScale(composedStep, damp)), kick), pull),
+                CxAdd(CxAdd(CxAdd(CxSub(z, CxScale(composedStep, damp)), kick), pull), CxScale(balanceVoidBias, damp)),
                 CxMul(pConst, zPrev));
             zPrev = z;
             z = zNext;

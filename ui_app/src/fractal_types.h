@@ -233,6 +233,7 @@ enum class FractalType : int {
     explaino_vortex = 35,
     explaino_tension = 36,
     explaino_balance_void = 37,
+    explaino_all = 38,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---

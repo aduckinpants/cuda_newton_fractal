@@ -311,10 +311,28 @@ int main() {
         bool foundFractalTypeRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
+        bool foundFractalTypeExplainoAllGroup = false;
+        bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
-        bool foundFractalTypeDefaultExplaino = false;
+        bool foundFractalTypeDefaultExplainoAll = false;
+        bool foundEpsilonVisibleForExplainoAll = false;
+        bool foundExplainoSeedVisibleForExplainoAll = false;
+        bool foundRippleAmplitudeVisibleForExplainoAll = false;
+        bool foundRippleAmplitudeVisibleForRippleCarrier = false;
+        bool foundSpliceOffsetVisibleForExplainoAll = false;
+        bool foundSpliceOffsetVisibleForSpliceCarrier = false;
+        bool foundVortexStrengthVisibleForExplainoAll = false;
+        bool foundVortexStrengthVisibleForVortexCarrier = false;
+        bool foundTensionStrengthVisibleForExplainoAll = false;
+        bool foundTensionStrengthVisibleForTensionCarrier = false;
+        bool foundBalanceVoidVisibleForExplainoAll = false;
+        bool foundBalanceVoidVisibleForBalanceVoidCarrier = false;
+        bool foundSymmetryTensionVisibleForExplainoAll = false;
+        bool foundSymmetryTensionVisibleForBalanceVoidCarrier = false;
+        bool foundFieldCurvatureVisibleForExplainoAll = false;
+        bool foundFieldCurvatureVisibleForBalanceVoidCarrier = false;
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
         bool foundInteractionDebounceDefault = false;
@@ -381,14 +399,19 @@ int main() {
                     foundLambdaImag = true;
                 }
                 if (ctrl.id == "fractal_type") {
-                    if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino") {
-                        foundFractalTypeDefaultExplaino = true;
+                    if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
+                        foundFractalTypeDefaultExplainoAll = true;
                     }
-                    for (const auto& option : ctrl.options) {
+                    for (std::size_t optionIndex = 0; optionIndex < ctrl.options.size(); ++optionIndex) {
+                        const auto& option = ctrl.options[optionIndex];
                         if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
+                        if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
+                        if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
+                            foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
+                        }
                         if (option.id == "spider" && option.group == "Escape-Time") foundSpiderEscapeTimeGroup = true;
                         if (option.id == "celtic_mandelbrot" && option.group == "Escape-Time") foundCelticEscapeTimeGroup = true;
                         if (option.id == "perpendicular_burning_ship" && option.group == "Escape-Time") foundPerpendicularShipEscapeTimeGroup = true;
@@ -521,17 +544,81 @@ int main() {
                     ctrl.has_ui_max && ctrl.ui_max == 0.5 && !ctrl.has_min && !ctrl.has_max) {
                     foundRippleAmplitudeUiRange = true;
                 }
+                if (ctrl.id == "epsilon" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundEpsilonVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "explaino_seed" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundExplainoSeedVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "ripple_amplitude" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundRippleAmplitudeVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "ripple_amplitude" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_ripple") != std::string::npos) {
+                    foundRippleAmplitudeVisibleForRippleCarrier = true;
+                }
                 if (ctrl.id == "splice_offset" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 2.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundSpliceOffsetUiRange = true;
+                }
+                if (ctrl.id == "splice_offset" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundSpliceOffsetVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "splice_offset" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_splice") != std::string::npos) {
+                    foundSpliceOffsetVisibleForSpliceCarrier = true;
                 }
                 if (ctrl.id == "vortex_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundVortexStrengthUiRange = true;
                 }
+                if (ctrl.id == "vortex_strength" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundVortexStrengthVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "vortex_strength" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_vortex") != std::string::npos) {
+                    foundVortexStrengthVisibleForVortexCarrier = true;
+                }
                 if (ctrl.id == "tension_strength" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 0.1 && !ctrl.has_min && !ctrl.has_max) {
                     foundTensionStrengthUiRange = true;
+                }
+                if (ctrl.id == "tension_strength" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundTensionStrengthVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "tension_strength" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_tension") != std::string::npos) {
+                    foundTensionStrengthVisibleForTensionCarrier = true;
+                }
+                if (ctrl.id == "balance_void" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundBalanceVoidVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "balance_void" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_balance_void") != std::string::npos) {
+                    foundBalanceVoidVisibleForBalanceVoidCarrier = true;
+                }
+                if (ctrl.id == "symmetry_tension" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundSymmetryTensionVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "symmetry_tension" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_balance_void") != std::string::npos) {
+                    foundSymmetryTensionVisibleForBalanceVoidCarrier = true;
+                }
+                if (ctrl.id == "field_curvature" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_all") != std::string::npos) {
+                    foundFieldCurvatureVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "field_curvature" && ctrl.has_visible_if &&
+                    ctrl.visible_if.value.find("explaino_balance_void") != std::string::npos) {
+                    foundFieldCurvatureVisibleForBalanceVoidCarrier = true;
                 }
                 if (ctrl.has_binding && ctrl.binding.path == "fractal.params.coloring_mode") {
                     ++coloringModeControlCount;
@@ -642,12 +729,35 @@ int main() {
             std::cerr << "Did not find Lambda real/imag controls in schema\n";
             return 1;
         }
-        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup || !foundFractalTypeExplainoGroup) {
-            std::cerr << "Did not find grouped fractal selector categories in schema\n";
+        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup) {
+            std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
         }
-        if (!foundFractalTypeDefaultExplaino) {
-            std::cerr << "Did not find Explaino as the canonical startup fractal default in schema\n";
+        if (!foundFractalTypeExplainoAllFirst) {
+            std::cerr << "Did not find Explaino-all as the first Explaino selector entry in schema\n";
+            return 1;
+        }
+        if (!foundFractalTypeDefaultExplainoAll) {
+            std::cerr << "Did not find Explaino-all as the canonical startup fractal default in schema\n";
+            return 1;
+        }
+        if (!foundEpsilonVisibleForExplainoAll || !foundExplainoSeedVisibleForExplainoAll) {
+            std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
+            return 1;
+        }
+        if (!foundRippleAmplitudeVisibleForExplainoAll || !foundSpliceOffsetVisibleForExplainoAll ||
+            !foundVortexStrengthVisibleForExplainoAll || !foundTensionStrengthVisibleForExplainoAll ||
+            !foundBalanceVoidVisibleForExplainoAll || !foundSymmetryTensionVisibleForExplainoAll ||
+            !foundFieldCurvatureVisibleForExplainoAll) {
+            std::cerr << "Did not find the canonical Explaino-all axis control surface in schema\n";
+            return 1;
+        }
+        if (!foundRippleAmplitudeVisibleForRippleCarrier || !foundSpliceOffsetVisibleForSpliceCarrier ||
+            !foundVortexStrengthVisibleForVortexCarrier || !foundTensionStrengthVisibleForTensionCarrier ||
+            !foundBalanceVoidVisibleForBalanceVoidCarrier || !foundSymmetryTensionVisibleForBalanceVoidCarrier ||
+            !foundFieldCurvatureVisibleForBalanceVoidCarrier) {
+            std::cerr << "Did not preserve legacy Explaino carrier visibility through the canonical Explaino-all registry surface\n";
             return 1;
         }
         if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {
@@ -674,10 +784,12 @@ int main() {
         bool foundFractalTypeRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
+        bool foundFractalTypeExplainoAllGroup = false;
+        bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
-        bool foundFractalTypeDefaultExplaino = false;
+        bool foundFractalTypeDefaultExplainoAll = false;
         bool foundInteractionDebounceDefault = false;
         bool foundPreviewTargetFpsDefault = false;
         bool foundPreviewMinScaleDefault = false;
@@ -738,14 +850,19 @@ int main() {
         for (const auto& panel : safeMode.panels) {
             for (const auto& ctrl : panel.controls) {
                 if (ctrl.id == "fractal_type") {
-                    if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino") {
-                        foundFractalTypeDefaultExplaino = true;
+                    if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
+                        foundFractalTypeDefaultExplainoAll = true;
                     }
-                    for (const auto& option : ctrl.options) {
+                    for (std::size_t optionIndex = 0; optionIndex < ctrl.options.size(); ++optionIndex) {
+                        const auto& option = ctrl.options[optionIndex];
                         if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
+                        if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
+                        if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
+                            foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
+                        }
                         if (option.id == "spider" && option.group == "Escape-Time") foundSpiderEscapeTimeGroup = true;
                         if (option.id == "celtic_mandelbrot" && option.group == "Escape-Time") foundCelticEscapeTimeGroup = true;
                         if (option.id == "perpendicular_burning_ship" && option.group == "Escape-Time") foundPerpendicularShipEscapeTimeGroup = true;
@@ -797,12 +914,17 @@ int main() {
             std::cerr << "Safe-mode schema did not expose the adaptive preview pacing controls with the expected defaults\n";
             return 1;
         }
-        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup || !foundFractalTypeExplainoGroup) {
-            std::cerr << "Safe-mode schema did not expose grouped fractal selector categories\n";
+        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup) {
+            std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;
         }
-        if (!foundFractalTypeDefaultExplaino) {
-            std::cerr << "Safe-mode schema did not default startup fractal selection to Explaino\n";
+        if (!foundFractalTypeExplainoAllFirst) {
+            std::cerr << "Safe-mode schema did not place Explaino-all first in the Explaino selector group\n";
+            return 1;
+        }
+        if (!foundFractalTypeDefaultExplainoAll) {
+            std::cerr << "Safe-mode schema did not default startup fractal selection to Explaino-all\n";
             return 1;
         }
         if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {

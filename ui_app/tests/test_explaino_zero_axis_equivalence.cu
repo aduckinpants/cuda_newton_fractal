@@ -466,6 +466,118 @@ void CheckBalanceVoidControlPerturbation() {
         changedFlags > 0 || changedIterations > 0 || changedBasins > 0 || changedFinalZ > 0);
 }
 
+void CheckCanonicalAllMatchesCarrier(FractalType carrierType,
+    const char* carrierName,
+    float rippleAmplitude,
+    float spliceOffset,
+    float vortexStrength,
+    float tensionStrength) {
+    ZeroAxisState expected;
+    ZeroAxisState actual;
+    BuildExplainoVariantState(carrierType,
+        rippleAmplitude,
+        spliceOffset,
+        vortexStrength,
+        tensionStrength,
+        &expected);
+    BuildExplainoVariantState(FractalType::explaino_all,
+        rippleAmplitude,
+        spliceOffset,
+        vortexStrength,
+        tensionStrength,
+        &actual);
+
+    char label[128];
+    std::snprintf(label, sizeof(label), "explaino_all vs %s carrier", carrierName);
+    CheckStateEquivalence(expected, actual, label);
+}
+
+void CheckCanonicalAllMatchesBalanceVoidCarrier(float balanceVoid,
+    float symmetryTension,
+    float fieldCurvature) {
+    ZeroAxisState expected;
+    ZeroAxisState actual;
+    BuildExplainoBalanceVoidState(balanceVoid, symmetryTension, fieldCurvature, &expected);
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &actual,
+        balanceVoid,
+        symmetryTension,
+        fieldCurvature);
+    CheckStateEquivalence(expected, actual, "explaino_all vs explaino_balance_void carrier");
+}
+
+void CheckCanonicalAllComposedBalanceVoidCoupling() {
+    ZeroAxisState neutral;
+    ZeroAxisState perturbed;
+    BuildExplainoVariantState(FractalType::explaino_all,
+        DefaultVariantStrength(FractalType::explaino_ripple),
+        0.0f,
+        0.0f,
+        0.0f,
+        &neutral,
+        0.0f,
+        0.0f,
+        0.0f);
+    BuildExplainoVariantState(FractalType::explaino_all,
+        DefaultVariantStrength(FractalType::explaino_ripple),
+        0.0f,
+        0.0f,
+        0.0f,
+        &perturbed,
+        0.35f,
+        -0.2f,
+        0.25f);
+
+    std::vector<Double2> coords;
+    BuildGridCoordinates(neutral.view, &coords);
+
+    std::vector<FractalSampleResult> neutralResults;
+    std::vector<FractalSampleResult> perturbedResults;
+    CHECK("canonical explaino_all neutral sample ok", SampleGrid(neutral, coords, &neutralResults));
+    CHECK("canonical explaino_all perturbed sample ok", SampleGrid(perturbed, coords, &perturbedResults));
+    if (neutralResults.size() != perturbedResults.size() || neutralResults.empty()) {
+        CHECK("canonical explaino_all sample result counts match", false);
+        return;
+    }
+
+    int changedFlags = 0;
+    int changedIterations = 0;
+    int changedBasins = 0;
+    int changedFinalZ = 0;
+    for (size_t index = 0; index < neutralResults.size(); ++index) {
+        const FractalSampleResult& neutralResult = neutralResults[index];
+        const FractalSampleResult& perturbedResult = perturbedResults[index];
+        if (neutralResult.converged != perturbedResult.converged || neutralResult.escaped != perturbedResult.escaped) {
+            ++changedFlags;
+        }
+        if (neutralResult.iterations != perturbedResult.iterations) {
+            ++changedIterations;
+        }
+        if (neutralResult.converged && perturbedResult.converged) {
+            if (NearestRootIndex(neutral.params, neutralResult) != NearestRootIndex(perturbed.params, perturbedResult)) {
+                ++changedBasins;
+            }
+            if (Distance(neutralResult.final_z_x, neutralResult.final_z_y, perturbedResult.final_z_x, perturbedResult.final_z_y) > 1.0e-5) {
+                ++changedFinalZ;
+            }
+        }
+    }
+
+    std::printf("    %-30s flag=%4d basin=%4d iter=%4d final_z=%4d\n",
+        "explaino_all balance coupling",
+        changedFlags,
+        changedBasins,
+        changedIterations,
+        changedFinalZ);
+
+    CHECK("canonical explaino_all balance-void controls perturb composed runtime",
+        changedFlags > 0 || changedIterations > 0 || changedBasins > 0 || changedFinalZ > 0);
+}
+
 void CheckComposedLabelInvariance(FractalType leftType,
     const char* leftName,
     FractalType rightType,
@@ -498,6 +610,7 @@ void CheckComposedLabelInvariance(FractalType leftType,
 
 int main() {
     std::printf("=== Explaino zero-axis equivalence ===\n");
+    CheckVariantAgainstBaseline(FractalType::explaino_all, "explaino_all");
     CheckVariantAgainstBaseline(FractalType::explaino_ripple, "explaino_ripple");
     CheckVariantAgainstBaseline(FractalType::explaino_splice, "explaino_splice");
     CheckVariantAgainstBaseline(FractalType::explaino_vortex, "explaino_vortex");
@@ -510,6 +623,36 @@ int main() {
     CheckSecondaryVariantReduction(FractalType::explaino_tension, "explaino_tension", FractalType::explaino_ripple, "explaino_ripple");
     CheckPlainExplainoIgnoresLatentComposition();
     CheckBalanceVoidControlPerturbation();
+    CheckCanonicalAllMatchesCarrier(
+        FractalType::explaino_ripple,
+        "explaino_ripple",
+        DefaultVariantStrength(FractalType::explaino_ripple),
+        0.0f,
+        0.0f,
+        0.0f);
+    CheckCanonicalAllMatchesCarrier(
+        FractalType::explaino_splice,
+        "explaino_splice",
+        0.0f,
+        DefaultVariantStrength(FractalType::explaino_splice),
+        0.0f,
+        0.0f);
+    CheckCanonicalAllMatchesCarrier(
+        FractalType::explaino_vortex,
+        "explaino_vortex",
+        0.0f,
+        0.0f,
+        DefaultVariantStrength(FractalType::explaino_vortex),
+        0.0f);
+    CheckCanonicalAllMatchesCarrier(
+        FractalType::explaino_tension,
+        "explaino_tension",
+        0.0f,
+        0.0f,
+        0.0f,
+        DefaultVariantStrength(FractalType::explaino_tension));
+    CheckCanonicalAllMatchesBalanceVoidCarrier(0.35f, -0.2f, 0.25f);
+    CheckCanonicalAllComposedBalanceVoidCoupling();
     CheckComposedLabelInvariance(
         FractalType::explaino_ripple,
         "explaino_ripple",

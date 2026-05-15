@@ -95,7 +95,7 @@ static void TestDefaultsNoChange() {
     bool dirty = false;
     int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
     CHECK("DefaultsNoChange_ReturnCode", rc == 0);
-    CHECK("DefaultsNoChange_FractalType", view.fractal_type == FractalType::explaino);
+    CHECK("DefaultsNoChange_FractalType", view.fractal_type == FractalType::explaino_all);
     CHECK("DefaultsNoChange_Width", render.resolution.x == 800);
     CHECK("DefaultsNoChange_Height", render.resolution.y == 600);
 }
@@ -130,7 +130,7 @@ static void TestExplainoSeedImpliesExplaino() {
     bool dirty = false;
     int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
     CHECK("ExplainoSeedImplies_ReturnCode", rc == 0);
-    CHECK("ExplainoSeedImplies_Type", view.fractal_type == FractalType::explaino);
+    CHECK("ExplainoSeedImplies_Type", view.fractal_type == FractalType::explaino_all);
     CHECK("ExplainoSeedImplies_Dirty", dirty == true);
 }
 
@@ -149,7 +149,7 @@ static void TestSweepImpliesExplaino() {
     bool dirty = false;
     int rc = ApplyCliOverrides(cli, view, params, render, &dirty);
     CHECK("SweepImpliesExplaino_ReturnCode", rc == 0);
-    CHECK("SweepImpliesExplaino_Type", IsExplainoFamily(view.fractal_type));
+    CHECK("SweepImpliesExplaino_Type", view.fractal_type == FractalType::explaino_all);
 }
 
 // --- Sweep with non-explaino type fails ---

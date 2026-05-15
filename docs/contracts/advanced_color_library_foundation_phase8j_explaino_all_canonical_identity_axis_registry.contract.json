@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_oracle_and_inventory.md",
+    "docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/src/viewer_state_init.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_explaino_zero_axis_equivalence.cu",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "ui_app/tests/test_viewer_state_init.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as the first real Explaino-all implementation slice rather than generic advanced-color core work",
+    "ship explaino_all as the canonical public Explaino identity with first-in-list and default-on-load truth",
+    "centralize ripple_amplitude, splice_offset, vortex_strength, tension_strength, balance_void, symmetry_tension, and field_curvature in one canonical shared registry",
+    "drive the Explaino-all control surface from that registry and keep legacy alias migration, enforcement, cleanup, and historical archive work out of scope except for a minimal viability shim strictly required to make explaino_all runtime-real"
+  ],
+  "forbidden_operator_prompts": [
+    "claim explaino_all shipped if runtime/state/ui truth still belongs to plain explaino plus per-variant one-off wiring",
+    "widen the slice into legacy alias migration, enforcement guardrails, cleanup-only work, generic advanced-color core work, or historical archive compatibility",
+    "treat a selector label or default flip as proof that canonical identity or axis registry authority is complete",
+    "close without commit plus validation receipt plus contract proof receipt plus post-closeout stale-plan reread"
+  ],
+  "required_defaults": {
+    "explaino_all_canonical_identity_exists": "required",
+    "explaino_all_first_selector_entry": "required",
+    "explaino_all_default_on_load": "required",
+    "shared_explaino_axis_registry_exists": "required",
+    "explaino_all_controls_registry_driven": "required",
+    "existing_explaino_family_behavior_preserved": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "legacy_alias_migration_primary_scope": "forbidden",
+    "enforcement_guardrails_primary_scope": "forbidden",
+    "cleanup_only_primary_scope": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_contract_schema_valid",
+      "description": "The Explaino-all slice-1 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_plan_sync_ok",
+      "description": "The Explaino-all slice-1 phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_hostile_audit_ok",
+      "description": "The Explaino-all slice-1 hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
+

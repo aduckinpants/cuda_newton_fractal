@@ -1,6 +1,8 @@
 #include "../src/fractal_family_rules.h"
 
+#include <cstddef>
 #include <iostream>
+#include <string_view>
 
 int main() {
     {
@@ -79,6 +81,47 @@ int main() {
         if (!IsExplainoFamily(FractalType::explaino_y)) {
             std::cerr << "Explaino Y should stay in the Explaino family\n";
             return 1;
+        }
+        if (!IsExplainoFamily(FractalType::explaino_all)) {
+            std::cerr << "Explaino-all should already be a real Explaino family identity, not just a planned selector label\n";
+            return 1;
+        }
+        if (!SupportsBasinColoring(FractalType::explaino_all)) {
+            std::cerr << "Explaino-all should inherit the basin-capable Explaino family baseline\n";
+            return 1;
+        }
+        if (ExplainoCanonicalFractalType() != FractalType::explaino_all) {
+            std::cerr << "Explaino-all should be the canonical Explaino family identity\n";
+            return 1;
+        }
+        struct ExpectedAxis {
+            const char* axis_id;
+            const char* binding_path;
+            FractalType carrier_fractal_type;
+            float default_value;
+        };
+        constexpr ExpectedAxis kExpectedAxes[] = {
+            {"ripple_amplitude", "fractal.params.ripple_amplitude", FractalType::explaino_ripple, 0.15f},
+            {"splice_offset", "fractal.params.splice_offset", FractalType::explaino_splice, 0.5f},
+            {"vortex_strength", "fractal.params.vortex_strength", FractalType::explaino_vortex, 0.3f},
+            {"tension_strength", "fractal.params.tension_strength", FractalType::explaino_tension, 0.02f},
+            {"balance_void", "fractal.params.balance_void", FractalType::explaino_balance_void, 0.0f},
+            {"symmetry_tension", "fractal.params.symmetry_tension", FractalType::explaino_balance_void, 0.0f},
+            {"field_curvature", "fractal.params.field_curvature", FractalType::explaino_balance_void, 0.0f},
+        };
+        if ((sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0])) != (sizeof(kExpectedAxes) / sizeof(kExpectedAxes[0]))) {
+            std::cerr << "Explaino-all should expose exactly one canonical seven-axis registry\n";
+            return 1;
+        }
+        for (std::size_t index = 0; index < (sizeof(kExpectedAxes) / sizeof(kExpectedAxes[0])); ++index) {
+            const auto& axis = kExplainoAxisRegistry[index];
+            if (std::string_view(axis.axis_id) != kExpectedAxes[index].axis_id ||
+                std::string_view(axis.binding_path) != kExpectedAxes[index].binding_path ||
+                axis.carrier_fractal_type != kExpectedAxes[index].carrier_fractal_type ||
+                axis.default_value != kExpectedAxes[index].default_value) {
+                std::cerr << "Explaino-all canonical axis registry entry " << index << " drifted from the expected shared authority\n";
+                return 1;
+            }
         }
     }
 

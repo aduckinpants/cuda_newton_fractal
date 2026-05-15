@@ -489,13 +489,18 @@ int main() {
             float splice_offset;
             float vortex_strength;
             float tension_strength;
+            float balance_void;
+            float symmetry_tension;
+            float field_curvature;
         };
 
         const ComposedVariantExpectation expectations[] = {
-            {FractalType::explaino_ripple, 0.15f, 0.0f, 0.0f, 0.0f},
-            {FractalType::explaino_splice, 0.0f, 0.5f, 0.0f, 0.0f},
-            {FractalType::explaino_vortex, 0.0f, 0.0f, 0.3f, 0.0f},
-            {FractalType::explaino_tension, 0.0f, 0.0f, 0.0f, 0.02f},
+            {FractalType::explaino_all, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+            {FractalType::explaino_ripple, 0.15f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+            {FractalType::explaino_splice, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+            {FractalType::explaino_vortex, 0.0f, 0.0f, 0.3f, 0.0f, 0.0f, 0.0f, 0.0f},
+            {FractalType::explaino_tension, 0.0f, 0.0f, 0.0f, 0.02f, 0.0f, 0.0f, 0.0f},
+            {FractalType::explaino_balance_void, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
         };
 
         for (const ComposedVariantExpectation& expectation : expectations) {
@@ -508,14 +513,20 @@ int main() {
             params.splice_offset = 0.5f;
             params.vortex_strength = 0.3f;
             params.tension_strength = 0.02f;
+            params.balance_void = 0.35f;
+            params.symmetry_tension = -0.2f;
+            params.field_curvature = 0.25f;
 
             ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
 
             if (!NearlyEqual(params.ripple_amplitude, expectation.ripple_amplitude) ||
                 !NearlyEqual(params.splice_offset, expectation.splice_offset) ||
                 !NearlyEqual(params.vortex_strength, expectation.vortex_strength) ||
-                !NearlyEqual(params.tension_strength, expectation.tension_strength)) {
-                std::cerr << "Explaino composed presets must clear latent variant strengths before applying the selected default\n";
+                !NearlyEqual(params.tension_strength, expectation.tension_strength) ||
+                !NearlyEqual(params.balance_void, expectation.balance_void) ||
+                !NearlyEqual(params.symmetry_tension, expectation.symmetry_tension) ||
+                !NearlyEqual(params.field_curvature, expectation.field_curvature)) {
+                std::cerr << "Explaino canonical and carrier presets must derive the seven shared axis defaults from one registry\n";
                 return 1;
             }
         }

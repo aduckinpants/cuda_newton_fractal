@@ -13,28 +13,16 @@
     Cx z{0.0f, 0.0f};
     Cx cConst{0.0f, 0.0f};
 
-    FractalType ft = view.fractal_type;
-    const bool isExplainoComposedVariant =
-        ft == FractalType::explaino_ripple ||
-        ft == FractalType::explaino_splice ||
-        ft == FractalType::explaino_vortex ||
-        ft == FractalType::explaino_tension;
-    const bool hasExplainoComposedPerturbation =
-        params.ripple_amplitude != 0.0f ||
-        params.splice_offset != 0.0f ||
-        params.vortex_strength != 0.0f ||
-        params.tension_strength != 0.0f;
-    const bool hasExplainoBalanceVoidPerturbation =
-        params.balance_void != 0.0f ||
-        params.symmetry_tension != 0.0f ||
-        params.field_curvature != 0.0f;
-    // Zero-axis Explaino variants must collapse to the baseline Explaino path exactly.
-    if (isExplainoComposedVariant && !hasExplainoComposedPerturbation) {
-        ft = FractalType::explaino;
-    }
-    if (ft == FractalType::explaino_balance_void && !hasExplainoBalanceVoidPerturbation) {
-        ft = FractalType::explaino;
-    }
+    const FractalType requestedFt = view.fractal_type;
+    const bool hasExplainoComposedPerturbation = HasExplainoComposedAxisPerturbation(params);
+    const bool hasExplainoBalanceVoidPerturbation = HasExplainoBalanceVoidPerturbation(params);
+    const bool canonicalExplainoAllUsesBalanceVoidBias =
+        requestedFt == ExplainoCanonicalFractalType() &&
+        hasExplainoComposedPerturbation &&
+        hasExplainoBalanceVoidPerturbation;
+    // Slice 1 keeps the legacy carriers as the runtime implementation seam while making
+    // explaino_all the canonical public identity.
+    FractalType ft = ResolveExplainoRuntimeFractalType(requestedFt, params);
     if (ft == FractalType::newton) {
         if (useFP64) {
             Cxd zd = coordD;
@@ -1170,10 +1158,66 @@
                     }
                 }
 
+                Cxd balanceVoidBias = {0.0, 0.0};
+                if (canonicalExplainoAllUsesBalanceVoidBias && nRootsForPull >= 2) {
+                    int idxNearest = 0;
+                    int idxSecond = 1;
+                    double best1 = 1.0e30;
+                    double best2 = 1.0e30;
+                    for (int rootIndex = 0; rootIndex < nRootsForPull; ++rootIndex) {
+                        double dx = zd.x - (double)params.explaino_roots[rootIndex].x;
+                        double dy = zd.y - (double)params.explaino_roots[rootIndex].y;
+                        double d2 = dx * dx + dy * dy;
+                        if (d2 < best1) {
+                            best2 = best1;
+                            idxSecond = idxNearest;
+                            best1 = d2;
+                            idxNearest = rootIndex;
+                        } else if (d2 < best2) {
+                            best2 = d2;
+                            idxSecond = rootIndex;
+                        }
+                    }
+
+                    double rootAX = (double)params.explaino_roots[idxNearest].x;
+                    double rootAY = (double)params.explaino_roots[idxNearest].y;
+                    double rootBX = (double)params.explaino_roots[idxSecond].x;
+                    double rootBY = (double)params.explaino_roots[idxSecond].y;
+                    double midX = 0.5 * (rootAX + rootBX);
+                    double midY = 0.5 * (rootAY + rootBY);
+                    double axisX = rootBX - rootAX;
+                    double axisY = rootBY - rootAY;
+                    double axisLen = sqrt(axisX * axisX + axisY * axisY);
+                    if (axisLen > 1.0e-30) {
+                        double offsetX = zd.x - midX;
+                        double offsetY = zd.y - midY;
+                        Cxd inwardBias = {
+                            (midX - zd.x) * (double)params.balance_void * 0.20,
+                            (midY - zd.y) * (double)params.balance_void * 0.20};
+                        double axisHatX = axisX / axisLen;
+                        double axisHatY = axisY / axisLen;
+                        double along = offsetX * axisHatX + offsetY * axisHatY;
+                        double perpX = offsetX - along * axisHatX;
+                        double perpY = offsetY - along * axisHatY;
+                        Cxd symmetryBias = {
+                            -perpX * (double)params.symmetry_tension * 0.25,
+                            -perpY * (double)params.symmetry_tension * 0.25};
+                        Cxd curvatureBias = {0.0, 0.0};
+                        double radialLen = sqrt(offsetX * offsetX + offsetY * offsetY);
+                        if (radialLen > 1.0e-30) {
+                            double curvatureScale = 0.20 * (double)params.field_curvature * axisLen;
+                            curvatureBias = {
+                                (-offsetY / radialLen) * curvatureScale,
+                                (offsetX / radialLen) * curvatureScale};
+                        }
+                        balanceVoidBias = cxd_add(inwardBias, cxd_add(symmetryBias, curvatureBias));
+                    }
+                }
+
                 double damp = dampD / (1.0 + stepMag);
                 Cxd zNext = {
-                    zd.x - composedStep.x * damp + kick.x + pull.x + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
-                    zd.y - composedStep.y * damp + kick.y + pull.y + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
+                    zd.x - composedStep.x * damp + kick.x + pull.x + balanceVoidBias.x * damp + pConstD.x * zPrevD.x - pConstD.y * zPrevD.y,
+                    zd.y - composedStep.y * damp + kick.y + pull.y + balanceVoidBias.y * damp + pConstD.x * zPrevD.y + pConstD.y * zPrevD.x
                 };
                 zPrevD = zd;
                 zd = zNext;
@@ -1262,9 +1306,65 @@
                     }
                 }
 
+                Cx balanceVoidBias = {0.0f, 0.0f};
+                if (canonicalExplainoAllUsesBalanceVoidBias && nRootsForPull >= 2) {
+                    int idxNearest = 0;
+                    int idxSecond = 1;
+                    float best1 = 1.0e30f;
+                    float best2 = 1.0e30f;
+                    for (int rootIndex = 0; rootIndex < nRootsForPull; ++rootIndex) {
+                        float dx = z.x - params.explaino_roots[rootIndex].x;
+                        float dy = z.y - params.explaino_roots[rootIndex].y;
+                        float d2 = dx * dx + dy * dy;
+                        if (d2 < best1) {
+                            best2 = best1;
+                            idxSecond = idxNearest;
+                            best1 = d2;
+                            idxNearest = rootIndex;
+                        } else if (d2 < best2) {
+                            best2 = d2;
+                            idxSecond = rootIndex;
+                        }
+                    }
+
+                    float rootAX = params.explaino_roots[idxNearest].x;
+                    float rootAY = params.explaino_roots[idxNearest].y;
+                    float rootBX = params.explaino_roots[idxSecond].x;
+                    float rootBY = params.explaino_roots[idxSecond].y;
+                    float midX = 0.5f * (rootAX + rootBX);
+                    float midY = 0.5f * (rootAY + rootBY);
+                    float axisX = rootBX - rootAX;
+                    float axisY = rootBY - rootAY;
+                    float axisLen = sqrtf(axisX * axisX + axisY * axisY);
+                    if (axisLen > 1.0e-20f) {
+                        float offsetX = z.x - midX;
+                        float offsetY = z.y - midY;
+                        Cx inwardBias = {
+                            (midX - z.x) * params.balance_void * 0.20f,
+                            (midY - z.y) * params.balance_void * 0.20f};
+                        float axisHatX = axisX / axisLen;
+                        float axisHatY = axisY / axisLen;
+                        float along = offsetX * axisHatX + offsetY * axisHatY;
+                        float perpX = offsetX - along * axisHatX;
+                        float perpY = offsetY - along * axisHatY;
+                        Cx symmetryBias = {
+                            -perpX * params.symmetry_tension * 0.25f,
+                            -perpY * params.symmetry_tension * 0.25f};
+                        Cx curvatureBias = {0.0f, 0.0f};
+                        float radialLen = sqrtf(offsetX * offsetX + offsetY * offsetY);
+                        if (radialLen > 1.0e-20f) {
+                            float curvatureScale = 0.20f * params.field_curvature * axisLen;
+                            curvatureBias = {
+                                (-offsetY / radialLen) * curvatureScale,
+                                (offsetX / radialLen) * curvatureScale};
+                        }
+                        balanceVoidBias = cx_add(inwardBias, cx_add(symmetryBias, curvatureBias));
+                    }
+                }
+
                 float damp = userDamp / (1.0f + stepMag);
                 Cx zNext = cx_add(
-                    cx_add(cx_add(cx_sub(z, cx_scale(composedStep, damp)), kick), pull),
+                    cx_add(cx_add(cx_add(cx_sub(z, cx_scale(composedStep, damp)), kick), pull), cx_scale(balanceVoidBias, damp)),
                     cx_mul(pConst, zPrev));
                 zPrev = z;
                 z = zNext;

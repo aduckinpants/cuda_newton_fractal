@@ -2,14 +2,140 @@
 
 #include "fractal_types.h"
 
+#include <string_view>
+
 #if defined(__CUDACC__)
 #define FRACTAL_FAMILY_RULES_HD __host__ __device__
 #else
 #define FRACTAL_FAMILY_RULES_HD
 #endif
 
+enum class ExplainoAxisParamSlot : int {
+    ripple_amplitude = 0,
+    splice_offset = 1,
+    vortex_strength = 2,
+    tension_strength = 3,
+    balance_void = 4,
+    symmetry_tension = 5,
+    field_curvature = 6,
+};
+
+struct ExplainoAxisDescriptor {
+    const char* axis_id;
+    const char* binding_path;
+    FractalType carrier_fractal_type;
+    float default_value;
+    ExplainoAxisParamSlot slot;
+};
+
+FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ExplainoCanonicalFractalType() {
+    return FractalType::explaino_all;
+}
+
+inline constexpr ExplainoAxisDescriptor kExplainoAxisRegistry[] = {
+    {"ripple_amplitude", "fractal.params.ripple_amplitude", FractalType::explaino_ripple, 0.15f, ExplainoAxisParamSlot::ripple_amplitude},
+    {"splice_offset", "fractal.params.splice_offset", FractalType::explaino_splice, 0.5f, ExplainoAxisParamSlot::splice_offset},
+    {"vortex_strength", "fractal.params.vortex_strength", FractalType::explaino_vortex, 0.3f, ExplainoAxisParamSlot::vortex_strength},
+    {"tension_strength", "fractal.params.tension_strength", FractalType::explaino_tension, 0.02f, ExplainoAxisParamSlot::tension_strength},
+    {"balance_void", "fractal.params.balance_void", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::balance_void},
+    {"symmetry_tension", "fractal.params.symmetry_tension", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::symmetry_tension},
+    {"field_curvature", "fractal.params.field_curvature", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::field_curvature},
+};
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoComposedAxisCarrier(FractalType fractalType) {
+    return fractalType == FractalType::explaino_ripple ||
+        fractalType == FractalType::explaino_splice ||
+        fractalType == FractalType::explaino_vortex ||
+        fractalType == FractalType::explaino_tension;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoComposedAxisPerturbation(const KernelParams& params) {
+    return params.ripple_amplitude != 0.0f ||
+        params.splice_offset != 0.0f ||
+        params.vortex_strength != 0.0f ||
+        params.tension_strength != 0.0f;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoBalanceVoidPerturbation(const KernelParams& params) {
+    return params.balance_void != 0.0f ||
+        params.symmetry_tension != 0.0f ||
+        params.field_curvature != 0.0f;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoRuntimeFractalType(
+    FractalType fractalType,
+    const KernelParams& params) {
+    if (fractalType == ExplainoCanonicalFractalType()) {
+        if (HasExplainoComposedAxisPerturbation(params)) {
+            return FractalType::explaino_ripple;
+        }
+        if (HasExplainoBalanceVoidPerturbation(params)) {
+            return FractalType::explaino_balance_void;
+        }
+        return FractalType::explaino;
+    }
+    if (IsExplainoComposedAxisCarrier(fractalType) && !HasExplainoComposedAxisPerturbation(params)) {
+        return FractalType::explaino;
+    }
+    if (fractalType == FractalType::explaino_balance_void && !HasExplainoBalanceVoidPerturbation(params)) {
+        return FractalType::explaino;
+    }
+    return fractalType;
+}
+
+inline const ExplainoAxisDescriptor* FindExplainoAxisDescriptor(std::string_view axisId) {
+    for (const auto& axis : kExplainoAxisRegistry) {
+        if (axisId == axis.axis_id) {
+            return &axis;
+        }
+    }
+    return nullptr;
+}
+
+inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot) {
+    switch (slot) {
+    case ExplainoAxisParamSlot::ripple_amplitude:
+        return &params.ripple_amplitude;
+    case ExplainoAxisParamSlot::splice_offset:
+        return &params.splice_offset;
+    case ExplainoAxisParamSlot::vortex_strength:
+        return &params.vortex_strength;
+    case ExplainoAxisParamSlot::tension_strength:
+        return &params.tension_strength;
+    case ExplainoAxisParamSlot::balance_void:
+        return &params.balance_void;
+    case ExplainoAxisParamSlot::symmetry_tension:
+        return &params.symmetry_tension;
+    case ExplainoAxisParamSlot::field_curvature:
+        return &params.field_curvature;
+    }
+    return nullptr;
+}
+
+inline void ResetExplainoAxisRegistryValues(KernelParams& params) {
+    for (const auto& axis : kExplainoAxisRegistry) {
+        float* value = ResolveExplainoAxisValue(params, axis.slot);
+        if (value) {
+            *value = 0.0f;
+        }
+    }
+}
+
+inline void ApplyExplainoAxisRegistryDefaults(FractalType fractalType, KernelParams& params) {
+    ResetExplainoAxisRegistryValues(params);
+    for (const auto& axis : kExplainoAxisRegistry) {
+        if (axis.carrier_fractal_type == fractalType) {
+            float* value = ResolveExplainoAxisValue(params, axis.slot);
+            if (value) {
+                *value = axis.default_value;
+            }
+        }
+    }
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fractalType) {
-    return fractalType == FractalType::explaino || fractalType == FractalType::explaino_y ||
+    return fractalType == ExplainoCanonicalFractalType() ||
+        fractalType == FractalType::explaino || fractalType == FractalType::explaino_y ||
         fractalType == FractalType::explaino_fp || fractalType == FractalType::explaino_nova ||
         fractalType == FractalType::explaino_halley || fractalType == FractalType::explaino_dual ||
         fractalType == FractalType::explaino_mult || fractalType == FractalType::explaino_phoenix ||
@@ -24,7 +150,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
-    return fractalType == FractalType::newton || fractalType == FractalType::explaino ||
+    return fractalType == FractalType::newton || fractalType == ExplainoCanonicalFractalType() ||
+        fractalType == FractalType::explaino ||
         fractalType == FractalType::explaino_y || fractalType == FractalType::explaino_fp ||
         fractalType == FractalType::explaino_halley || fractalType == FractalType::explaino_dual ||
         fractalType == FractalType::explaino_mult || fractalType == FractalType::explaino_phoenix ||

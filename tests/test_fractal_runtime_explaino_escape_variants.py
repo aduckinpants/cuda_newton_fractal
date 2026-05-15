@@ -602,6 +602,102 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
 
 
 
+def test_explaino_all_neutral_defaults_match_explaino_published_runtime() -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino-all runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    explaino_all_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_all",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    explaino_all_state = explaino_all_capture["state"]
+    assert explaino_all_state["fractal_type"] == "explaino_all"
+    explaino_all_params = explaino_all_state["params"]
+    assert isinstance(explaino_all_params, dict)
+    assert explaino_all_params["ripple_amplitude"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_params["splice_offset"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_params["vortex_strength"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_params["tension_strength"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_params["balance_void"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_params["symmetry_tension"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_params["field_curvature"] == pytest.approx(0.0, abs=1e-6)
+    assert explaino_all_capture["frame_hash"] == explaino_capture["frame_hash"], (
+        "expected Explaino-all neutral defaults to collapse exactly to the published Explaino frame"
+    )
+
+
+def test_explaino_all_registry_axes_round_trip_and_change_published_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino-all runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_all",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    perturbed_state = json.loads(json.dumps(neutral_capture["state"]))
+    perturbed_params = perturbed_state["params"]
+    assert isinstance(perturbed_params, dict)
+    perturbed_params.update(
+        {
+            "ripple_amplitude": 0.15,
+            "balance_void": 0.35,
+            "symmetry_tension": -0.2,
+            "field_curvature": 0.25,
+        }
+    )
+
+    perturbed_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_all_perturbed", perturbed_state)),
+        "--capture-diagnostic",
+    )
+
+    reloaded_state = perturbed_capture["state"]
+    assert reloaded_state["fractal_type"] == "explaino_all"
+    reloaded_params = reloaded_state["params"]
+    assert isinstance(reloaded_params, dict)
+    assert reloaded_params["ripple_amplitude"] == pytest.approx(0.15, abs=1e-6)
+    assert reloaded_params["splice_offset"] == pytest.approx(0.0, abs=1e-6)
+    assert reloaded_params["vortex_strength"] == pytest.approx(0.0, abs=1e-6)
+    assert reloaded_params["tension_strength"] == pytest.approx(0.0, abs=1e-6)
+    assert reloaded_params["balance_void"] == pytest.approx(0.35, abs=1e-6)
+    assert reloaded_params["symmetry_tension"] == pytest.approx(-0.2, abs=1e-6)
+    assert reloaded_params["field_curvature"] == pytest.approx(0.25, abs=1e-6)
+    assert perturbed_capture["frame_hash"] != neutral_capture["frame_hash"], (
+        "expected Explaino-all registry-axis edits to change the published runtime frame"
+    )
+    assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) > 0.01, (
+        "expected Explaino-all registry-axis edits to produce a measurable published-frame delta"
+    )
+
+
 def test_explaino_balance_void_neutral_defaults_match_explaino_published_runtime() -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino BalanceVoid runtime regression is Windows-only")
