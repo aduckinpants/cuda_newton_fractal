@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_explaino_dual_seed_multiseed_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_PHASED_PLAN.md"
+  ],
+  "required_operator_inputs": [
+    "treat this as a docs-only staging slice for the next Explaino dual-seed and multi-seed deferred-class lane rather than as implementation work",
+    "write one reusable launch-anchor surface that future prompts can point at instead of restating the whole dual-seed and multi-seed doctrine inline",
+    "write the bounded staged slice order explicitly while keeping later per-session kickoff prompts and contracts flexible",
+    "do not pre-bake future implementation contracts or claim explaino_seed_b or explaino_mix shipped from this slice"
+  ],
+  "forbidden_operator_prompts": [
+    "claim dual-seed or multi-seed promotion is shipped or already active runtime work from this staging slice",
+    "treat the resolved couplings bucket as if it reopened under this staging slice",
+    "hard-code every future agent kickoff so tightly that later sessions cannot adapt to live repo state",
+    "open structural modifiers, historical archive compatibility, or unrelated family-track work in this staging slice"
+  ],
+  "required_defaults": {
+    "dual_seed_launch_anchor_exists": "required",
+    "dual_seed_slice_map_exists": "required",
+    "future_kickoff_flexibility_preserved": "required",
+    "restart_authority_links_updated_minimally": "required"
+  },
+  "forbidden_defaults": {
+    "dual_seed_claimed_shipped": "forbidden",
+    "future_implementation_contracts_prebaked": "forbidden",
+    "resolved_couplings_bucket_reopened": "forbidden",
+    "structural_modifier_bucket_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_contract_schema_valid",
+      "description": "The Explaino dual-seed and multi-seed staging contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_plan_sync_ok",
+      "description": "The Explaino dual-seed and multi-seed staging plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_hostile_audit_ok",
+      "description": "The Explaino dual-seed and multi-seed staging hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

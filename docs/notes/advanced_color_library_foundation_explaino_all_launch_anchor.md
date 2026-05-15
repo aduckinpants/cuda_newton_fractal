@@ -74,20 +74,18 @@ These are not simple neutral-at-zero deformation axes; they introduce secondary 
 
 These affect deeper family construction or root-pack structure rather than the current bounded neutral-axis deformation family.
 
-3. Legacy variant-specific couplings
+Resolved deferred-class outcome:
 
-- `momentum_beta`
-- `joy_coupling`
-- `fold_coupling`
-- `bell_coupling`
-
-These may become canonicalizable later, but they are not part of the current seven-axis `Explaino-all` registry by default.
+- the legacy variant-specific couplings bucket closed separately in `phase8n`
+- `momentum_beta` remains a different inertial-memory ownership model
+- `joy_coupling`, `fold_coupling`, and `bell_coupling` remain a different phoenix-step ownership model
+- none of those four couplings were promoted into the canonical seven-axis `Explaino-all` registry
 
 Rule:
 
 - do not auto-expose the deferred parameter classes under `Explaino-all` just because they already exist in `KernelParams`
 - do not treat their absence from the current `Explaino-all` control surface as a slice-1 regression
-- if one of these groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
+- if one of the remaining groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
 
 ## Required Owner Seams
 
