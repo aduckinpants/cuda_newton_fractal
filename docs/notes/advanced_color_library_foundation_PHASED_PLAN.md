@@ -205,7 +205,7 @@ The controlling product risk is now overclaim after `balance_void_grade`, not mi
 
 Resume from `docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md`, `docs/notes/advanced_color_feature_restart_inventory.md`, the phase8g balance/void owner-proof plan, and the latest closed advanced-color checkpoints through `0e35f7a`, not from older Palette-next, weighted-blend-next, or pre-closeout `tone_map_finish` / `grade.glow` text. The phase8c tooling slice is closed and its command ladder is now reusable proof infrastructure, and `balance_void_grade` is no longer deferred inventory. Choose explicitly from the matrix:
 1. Foundation closure with explicit later family-track deferrals if the generic core boundary is accepted.
-2. Later family-track work only if it is explicitly chosen as the next bounded slice.
+2. Later family-track work only if it is explicitly chosen as the next bounded slice. For `Explaino-all`, start from the staged kickoff surfaces in `docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md` and `docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md` instead of rebuilding the slice map from chat.
 3. Historical archive compatibility only if it is explicitly reclassified back into active sprint work.
 
 Do not claim later family-track work or foundation closure as shipped unless a later checked-in contract and proof ledger replaces this boundary with truthful closure or explicit deferred state.
