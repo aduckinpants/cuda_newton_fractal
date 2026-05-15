@@ -1,12 +1,13 @@
 # Explaino Dual-Seed / Multi-Seed Launch Anchor
 
-Use this file as the first checked-in authority surface for the next deferred-class `Explaino-all` extension lane covering `explaino_seed_b` and `explaino_mix`.
+Use this file as the checked-in authority surface for the closed dual-seed / multi-seed deferred-class packet covering `explaino_seed_b` and `explaino_mix`.
 
 Purpose:
 
 - keep future prompts short without making them underspecified
 - force kickoff through checked-in repo authority instead of chat reconstruction
 - preserve the bounded dual-seed / multi-seed scope fence even if the exact kickoff wording changes later
+- preserve the closed dual-seed ownership answer without leaving this packet misadvertised as the next default lane after phase8p
 
 ## Non-Negotiable Identity Rules
 
@@ -144,8 +145,10 @@ Every future dual-seed / multi-seed slice must re-read its active phased plan on
 
 ## Start From
 
+Use this packet when dual-seed / multi-seed follow-up is explicitly reopened or when the closed phase8p answer needs audit context. It is not the default next Explaino-family lane after phase8p; that routing now belongs to the structural / root-pack packet.
+
 - [advanced_color_library_foundation_explaino_all_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md)
-- [advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_PHASED_PLAN.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 - [advanced_color_feature_restart_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_feature_restart_inventory.md)
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)

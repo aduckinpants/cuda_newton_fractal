@@ -58,33 +58,30 @@ The current `Explaino-all` canonical axis family is intentionally limited to:
 
 Future sessions must not treat every historical Explaino variant parameter as an accidental omission from `Explaino-all`.
 
-The following groups are currently deferred for explicit later classification:
+Resolved deferred-class outcomes:
 
-1. Dual-seed / multi-seed structure
+- the dual-seed / multi-seed bucket closed separately in `phase8p`
+- `explaino_seed_b` and `explaino_mix` remain a different dual-seed ownership model carried by `explaino_dual`
+- neither dual-seed parameter was promoted into the canonical seven-axis `Explaino-all` registry
+- the legacy variant-specific couplings bucket closed separately in `phase8n`
+- `momentum_beta` remains a different inertial-memory ownership model
+- `joy_coupling`, `fold_coupling`, and `bell_coupling` remain a different phoenix-step ownership model
+- none of those four couplings were promoted into the canonical seven-axis `Explaino-all` registry
 
-- `explaino_seed_b`
-- `explaino_mix`
+The current unresolved deferred group is:
 
-These are not simple neutral-at-zero deformation axes; they introduce secondary seed-surface and blend semantics.
-
-2. Structural / root-pack modifiers
+1. Structural / root-pack modifiers
 
 - `phoenix_p_real`
 - `explaino_cluster_radius`
 
 These affect deeper family construction or root-pack structure rather than the current bounded neutral-axis deformation family.
 
-Resolved deferred-class outcome:
-
-- the legacy variant-specific couplings bucket closed separately in `phase8n`
-- `momentum_beta` remains a different inertial-memory ownership model
-- `joy_coupling`, `fold_coupling`, and `bell_coupling` remain a different phoenix-step ownership model
-- none of those four couplings were promoted into the canonical seven-axis `Explaino-all` registry
-
 Rule:
 
 - do not auto-expose the deferred parameter classes under `Explaino-all` just because they already exist in `KernelParams`
 - do not treat their absence from the current `Explaino-all` control surface as a slice-1 regression
+- if structural / root-pack work is chosen next after `phase8p`, start from `docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md` plus `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
 - if one of the remaining groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
 
 ## Required Owner Seams
@@ -158,6 +155,8 @@ Every future `Explaino-all` slice must re-read its active phased plan on the com
 ## Start From
 
 - [advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md)
+- [advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)
 - [advanced_color_feature_restart_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_feature_restart_inventory.md)
 - [advanced_color_library_foundation_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_PHASED_PLAN.md)

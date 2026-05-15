@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the repo now carries a closed docs-only staging slice for the next deferred `Explaino-all` extension lane covering `explaino_seed_b` and `explaino_mix`. This slice does not ship dual-seed or multi-seed behavior; it writes down the bounded ownership questions, the staged execution order, and the reusable launch-anchor surface that future implementation prompts can point at instead of reconstructing the lane from chat.
+Complete - the repo now carries a closed docs-only staging slice that pre-staged the then-next deferred `Explaino-all` extension lane covering `explaino_seed_b` and `explaino_mix`. This slice does not ship dual-seed or multi-seed behavior; it writes down the bounded ownership questions, the staged execution order, and the reusable launch-anchor surface that future implementation prompts could point at instead of reconstructing the lane from chat. After `phase8p` closed the dual-seed / multi-seed bucket, this plan remains historical packet context rather than the default next-lane routing surface.
 
 ## Phase Checklist
 
@@ -130,9 +130,9 @@ That file is the reusable entry surface for:
 ## Audit Findings
 
 - [x] Real staging gap fixed: after phase8n resolved the couplings bucket, the repo still lacked a checked-in launch packet for the chosen next deferred class `explaino_seed_b` / `explaino_mix`.
-- [x] Real ordering clarified: dual-seed / multi-seed is now the next bounded deferred-class lane, while structural / root-pack modifiers remain later and more architecture-sensitive.
+- [x] Real ordering clarified at staging time: dual-seed / multi-seed was the next bounded deferred-class lane, while structural / root-pack modifiers remained later and more architecture-sensitive until a later slice either closed dual-seed or re-ordered the packet truthfully.
 - [x] Flexibility preserved: the staged packet binds the always-there deferred-class doctrine and slice order, but it does not pre-bake future implementation contracts or claim promotion already happened.
-- [x] Clean re-read evidence: after docs-only validation, the phase8o staged packet still reads truthfully on reread. The main Explaino-all launch anchor now records the resolved couplings outcome instead of leaving that bucket falsely deferred, the new dual-seed launch anchor keeps the next lane bounded to `explaino_seed_b` / `explaino_mix`, and the restart-facing links point future prompts at the new packet without reopening structural modifiers or generic-core work.
+- [x] Clean re-read evidence: after docs-only validation, the phase8o staged packet still read truthfully on reread for its then-current stop point. The main Explaino-all launch anchor recorded the resolved couplings outcome instead of leaving that bucket falsely deferred, the new dual-seed launch anchor kept the then-next lane bounded to `explaino_seed_b` / `explaino_mix`, and the restart-facing links pointed future prompts at the new packet without reopening structural modifiers or generic-core work.
 
 ## Notes
 
@@ -143,7 +143,7 @@ That file is the reusable entry surface for:
 
 ## Resume Point
 
-Closed. If the next Explaino-family extension lane is chosen now, start from [advanced_color_library_foundation_explaino_dual_seed_multiseed_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_dual_seed_multiseed_launch_anchor.md) and this staged slice map, then open the first real implementation slice for dual-seed / multi-seed classification + ownership answer.
+Closed. This packet is no longer the default next Explaino-family extension lane after `phase8p` closed the dual-seed / multi-seed bucket. Use it only for historical staging context or if dual-seed follow-up is explicitly reopened; otherwise start from [advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md) and [advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md).
 
 ## Action Hostile Review
 

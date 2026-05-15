@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_explaino_dual_seed_multiseed_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_phase8o_explaino_dual_seed_multiseed_staging_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md"
+  ],
+  "required_operator_inputs": [
+    "treat this as a docs-only staging slice for the next Explaino structural/root-pack deferred-class lane rather than as implementation work",
+    "write one reusable launch-anchor surface that future prompts can point at instead of restating the whole structural/root-pack doctrine inline",
+    "write the bounded staged slice order explicitly while keeping later per-session kickoff prompts and contracts flexible",
+    "repair the stale restart-facing routing after phase8p so future Explaino-family prompts no longer start from the already-closed dual-seed packet"
+  ],
+  "forbidden_operator_prompts": [
+    "claim phoenix_p_real or explaino_cluster_radius is shipped or already active canonical Explaino-all runtime work from this staging slice",
+    "leave future restart-facing authority still routing the next lane through phase8o or phase8p",
+    "hard-code every future structural/root-pack kickoff so tightly that later sessions cannot adapt to live repo state",
+    "open dual-seed implementation, resolved couplings, generic advanced-color core work, or historical archive compatibility in this staging slice"
+  ],
+  "required_defaults": {
+    "structural_root_pack_launch_anchor_exists": "required",
+    "structural_root_pack_slice_map_exists": "required",
+    "future_kickoff_flexibility_preserved": "required",
+    "restart_authority_links_updated_minimally": "required",
+    "dual_seed_no_longer_routed_as_next_lane": "required"
+  },
+  "forbidden_defaults": {
+    "structural_root_pack_claimed_shipped": "forbidden",
+    "dual_seed_bucket_still_routed_as_next_lane": "forbidden",
+    "future_implementation_contracts_prebaked": "forbidden",
+    "runtime_or_code_implementation_in_this_slice": "forbidden",
+    "resolved_couplings_bucket_reopened": "forbidden",
+    "generic_core_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_contract_schema_valid",
+      "description": "The Explaino structural/root-pack staging contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_plan_sync_ok",
+      "description": "The Explaino structural/root-pack staging plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_hostile_audit_ok",
+      "description": "The Explaino structural/root-pack staging hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
