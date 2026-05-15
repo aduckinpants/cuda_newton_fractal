@@ -59,6 +59,29 @@ struct ExplainoCouplingDescriptor {
     bool requires_root_pack_modifier;
 };
 
+enum class ExplainoDualSeedOwnership : int {
+    canonical_axis = 0,
+    legacy_only = 1,
+    different_ownership_model = 2,
+};
+
+enum class ExplainoDualSeedModel : int {
+    secondary_seed_surface = 0,
+    blend_gate = 1,
+};
+
+struct ExplainoDualSeedDescriptor {
+    const char* param_id;
+    const char* binding_path;
+    FractalType carrier_fractal_type;
+    double default_value;
+    double neutral_value;
+    ExplainoDualSeedOwnership ownership;
+    ExplainoDualSeedModel model;
+    bool zero_collapses_to_baseline;
+    bool default_collapses_to_baseline;
+};
+
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ExplainoCanonicalFractalType() {
     return FractalType::explaino_all;
 }
@@ -162,6 +185,11 @@ inline constexpr ExplainoCouplingDescriptor kExplainoCouplingRegistry[] = {
     {"bell_coupling", "fractal.params.bell_coupling", FractalType::explaino_bell, 0.5f, 0.0f, ExplainoCouplingParamSlot::bell_coupling, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
 };
 
+inline constexpr ExplainoDualSeedDescriptor kExplainoDualSeedRegistry[] = {
+    {"explaino_seed_b", "fractal.params.explaino_seed_b", FractalType::explaino_dual, 1.0, 0.0, ExplainoDualSeedOwnership::different_ownership_model, ExplainoDualSeedModel::secondary_seed_surface, false, false},
+    {"explaino_mix", "fractal.params.explaino_mix", FractalType::explaino_dual, 0.5, 0.0, ExplainoDualSeedOwnership::different_ownership_model, ExplainoDualSeedModel::blend_gate, true, false},
+};
+
 inline constexpr const ExplainoAxisDescriptor* FindExplainoSingleAxisProjectionDescriptor(FractalType fractalType) {
     if (!IsExplainoSingleAxisProjectionSelector(fractalType)) {
         return nullptr;
@@ -243,6 +271,24 @@ inline const ExplainoCouplingDescriptor* FindExplainoCouplingDescriptorByBinding
     for (const auto& coupling : kExplainoCouplingRegistry) {
         if (bindingPath == coupling.binding_path) {
             return &coupling;
+        }
+    }
+    return nullptr;
+}
+
+inline const ExplainoDualSeedDescriptor* FindExplainoDualSeedDescriptor(std::string_view paramId) {
+    for (const auto& dualSeed : kExplainoDualSeedRegistry) {
+        if (paramId == dualSeed.param_id) {
+            return &dualSeed;
+        }
+    }
+    return nullptr;
+}
+
+inline const ExplainoDualSeedDescriptor* FindExplainoDualSeedDescriptorByBindingPath(std::string_view bindingPath) {
+    for (const auto& dualSeed : kExplainoDualSeedRegistry) {
+        if (bindingPath == dualSeed.binding_path) {
+            return &dualSeed;
         }
     }
     return nullptr;

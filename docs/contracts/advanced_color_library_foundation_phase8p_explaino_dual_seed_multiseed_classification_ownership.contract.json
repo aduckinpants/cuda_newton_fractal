@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_explaino_sidecar_schema_contract.cpp",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_explaino_runtime_walk.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as one bounded deferred-class slice for explaino_seed_b and explaino_mix only",
+    "classify explaino_seed_b and explaino_mix explicitly as canonicalizable now, legacy-only, or a different ownership model based on current repo proof rather than analogy",
+    "promote only the parameter or parameters whose runtime identity, neutral or default collapse, persistence, reset, and viewer or runtime proof support canonical Explaino-all ownership",
+    "keep structural or root-pack modifiers, resolved couplings, generic advanced-color core work, and historical archive compatibility out of scope unless one of those classes is proven to be a real classification blocker"
+  ],
+  "forbidden_operator_prompts": [
+    "auto-promote explaino_seed_b or explaino_mix because the controls already exist or because explaino_dual already renders",
+    "treat hidden legacy selector authority or helper-only proof as acceptable evidence for canonicalization",
+    "widen the slice into phoenix_p_real, explaino_cluster_radius, momentum_beta, joy_coupling, fold_coupling, bell_coupling, cleanup-only work, or unrelated viewer-host workflow repair",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "explicit_ownership_answer_for_seed_b_and_mix_required": "required",
+    "runtime_effect_or_truthful_non_effect_answer_required": "required",
+    "zero_or_default_collapse_proof_required": "required",
+    "legacy_only_or_different_model_fence_required_for_nonpromoted_params": "required",
+    "structural_modifier_bucket_stays_out_of_scope": "required",
+    "phase8j_phase8k_phase8l_phase8m_phase8n_preserved": "required",
+    "viewer_first_runtime_proof_required_for_any_promoted_dual_seed_behavior": "required"
+  },
+  "forbidden_defaults": {
+    "auto_promote_dual_seed_bucket": "forbidden",
+    "structural_or_root_pack_promotion_primary_scope": "forbidden",
+    "resolved_couplings_reopened": "forbidden",
+    "cleanup_only_primary_scope": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_contract_schema_valid",
+      "description": "The bounded dual-seed and multi-seed contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_plan_sync_ok",
+      "description": "The bounded dual-seed and multi-seed phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_hostile_audit_ok",
+      "description": "The bounded dual-seed and multi-seed hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8p_explaino_dual_seed_multiseed_classification_ownership_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

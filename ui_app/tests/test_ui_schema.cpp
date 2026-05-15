@@ -436,6 +436,7 @@ int main() {
         bool foundFoldCouplingUiRange = false;
         bool foundBellCouplingUiRange = false;
         bool foundDeferredCouplingSchemaMatches[sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0])] = {};
+        bool foundDualSeedSchemaMatches[sizeof(kExplainoDualSeedRegistry) / sizeof(kExplainoDualSeedRegistry[0])] = {};
         bool foundRippleAmplitudeUiRange = false;
         bool foundSpliceOffsetUiRange = false;
         bool foundVortexStrengthUiRange = false;
@@ -627,6 +628,25 @@ int main() {
                     foundBellCouplingUiRange = true;
                 }
                 if (ctrl.has_binding) {
+                    const ExplainoDualSeedDescriptor* dualSeed = FindExplainoDualSeedDescriptorByBindingPath(ctrl.binding.path);
+                    if (dualSeed) {
+                        const std::size_t dualIndex = static_cast<std::size_t>(dualSeed - kExplainoDualSeedRegistry);
+                        const char* carrierId = FractalTypeId(dualSeed->carrier_fractal_type);
+                        if (dualIndex >= (sizeof(foundDualSeedSchemaMatches) / sizeof(foundDualSeedSchemaMatches[0])) ||
+                            foundDualSeedSchemaMatches[dualIndex]) {
+                            std::cerr << "Main schema duplicated a deferred Explaino dual-seed control instead of deriving one owner per parameter\n";
+                            return 1;
+                        }
+                        if (ctrl.id != dualSeed->param_id ||
+                            !ctrl.has_visible_if || ctrl.visible_if.op != "eq" ||
+                            ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                            !carrierId || ctrl.visible_if.value != carrierId ||
+                            VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
+                            std::cerr << "Main schema deferred Explaino dual-seed controls should stay fenced to explaino_dual until canonical proof lands\n";
+                            return 1;
+                        }
+                        foundDualSeedSchemaMatches[dualIndex] = true;
+                    }
                     const ExplainoCouplingDescriptor* coupling = FindExplainoCouplingDescriptorByBindingPath(ctrl.binding.path);
                     if (coupling) {
                         const std::size_t slotIndex = static_cast<std::size_t>(coupling->slot);
@@ -862,6 +882,12 @@ int main() {
         for (bool foundDeferredCouplingSchema : foundDeferredCouplingSchemaMatches) {
             if (!foundDeferredCouplingSchema) {
                 std::cerr << "Main schema must expose every deferred Explaino coupling through one explicit legacy-only control fence\n";
+                return 1;
+            }
+        }
+        for (bool foundDeferredDualSeedSchema : foundDualSeedSchemaMatches) {
+            if (!foundDeferredDualSeedSchema) {
+                std::cerr << "Main schema must expose every deferred Explaino dual-seed control through one explicit explaino_dual fence\n";
                 return 1;
             }
         }

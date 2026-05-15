@@ -704,6 +704,38 @@ int main() {
         }
     }
 
+    {
+        ViewState viewExplaino{};
+        ViewState viewCanonical{};
+        KernelParams paramsExplaino{};
+        KernelParams paramsCanonical{};
+
+        viewExplaino.fractal_type = FractalType::explaino;
+        viewCanonical.fractal_type = FractalType::explaino_all;
+
+        ExplainoSeedSetCombined(viewExplaino, paramsExplaino, 2.25);
+        ExplainoSeedSetCombined(viewCanonical, paramsCanonical, 2.25);
+        paramsCanonical.explaino_seed_b = 9.0;
+        paramsCanonical.explaino_mix = 1.0f;
+
+        UpdateExplainoPolynomial(viewExplaino, paramsExplaino, nullptr);
+        UpdateExplainoPolynomial(viewCanonical, paramsCanonical, nullptr);
+
+        for (int rootIndex = 0; rootIndex < 4; ++rootIndex) {
+            if (!NearlyEqual(paramsCanonical.explaino_roots[rootIndex].x, paramsExplaino.explaino_roots[rootIndex].x, 1e-6f) ||
+                !NearlyEqual(paramsCanonical.explaino_roots[rootIndex].y, paramsExplaino.explaino_roots[rootIndex].y, 1e-6f)) {
+                std::cerr << "Explaino-all should ignore deferred dual-seed params until a separate ownership model says otherwise\n";
+                return 1;
+            }
+        }
+        for (int coeffIndex = 0; coeffIndex < 5; ++coeffIndex) {
+            if (!NearlyEqual(paramsCanonical.poly_coeffs[coeffIndex], paramsExplaino.poly_coeffs[coeffIndex], 1e-6f)) {
+                std::cerr << "Explaino-all should preserve the canonical quartic when deferred dual-seed params are changed off-carrier\n";
+                return 1;
+            }
+        }
+    }
+
     // Explaino-Halley must get preset defaults (custom poly, basin coloring)
     {
         ViewState view{};

@@ -741,6 +741,90 @@ def test_explaino_balance_void_neutral_defaults_match_explaino_published_runtime
     )
 
 
+def test_explaino_dual_seed_runtime_behavior_stays_outside_canonical_explaino_all(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino dual-seed runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_capture = _capture_explaino_runtime_baseline(exe_path)
+    dual_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_dual",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    dual_state = dual_capture["state"]
+    dual_params = dual_state["params"]
+    assert dual_state["fractal_type"] == "explaino_dual"
+    assert isinstance(dual_params, dict)
+    assert dual_params["explaino_seed_b"] == pytest.approx(1.0, abs=1e-6)
+    assert dual_params["explaino_mix"] == pytest.approx(0.5, abs=1e-6)
+    assert dual_capture["frame_hash"] != explaino_capture["frame_hash"], (
+        "expected explaino_dual defaults to stay outside the canonical Explaino frame"
+    )
+    assert _mean_absolute_frame_delta(explaino_capture["frame_bytes"], dual_capture["frame_bytes"]) > 0.01, (
+        "expected explaino_dual defaults to produce a measurable published-frame delta"
+    )
+
+    neutral_dual_state = json.loads(json.dumps(dual_state))
+    neutral_dual_params = neutral_dual_state["params"]
+    assert isinstance(neutral_dual_params, dict)
+    neutral_dual_params["explaino_seed_b"] = 9.0
+    neutral_dual_params["explaino_mix"] = 0.0
+    neutral_dual_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "neutral_dual", neutral_dual_state)),
+        "--capture-diagnostic",
+    )
+    assert neutral_dual_capture["state"]["fractal_type"] == "explaino_dual"
+    assert neutral_dual_capture["frame_hash"] == explaino_capture["frame_hash"], (
+        "expected explaino_dual mix=0 to collapse back to the canonical Explaino frame even when seed_b changes"
+    )
+
+    active_dual_state = json.loads(json.dumps(dual_state))
+    active_dual_params = active_dual_state["params"]
+    assert isinstance(active_dual_params, dict)
+    active_dual_params["explaino_seed_b"] = 9.0
+    active_dual_params["explaino_mix"] = 1.0
+    active_dual_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "active_dual", active_dual_state)),
+        "--capture-diagnostic",
+    )
+    assert active_dual_capture["state"]["params"]["explaino_seed_b"] == pytest.approx(9.0, abs=1e-6)
+    assert active_dual_capture["state"]["params"]["explaino_mix"] == pytest.approx(1.0, abs=1e-6)
+    assert active_dual_capture["frame_hash"] != neutral_dual_capture["frame_hash"], (
+        "expected explaino_dual secondary-seed activation to remain runtime-real"
+    )
+    assert _mean_absolute_frame_delta(neutral_dual_capture["frame_bytes"], active_dual_capture["frame_bytes"]) > 0.01, (
+        "expected explaino_dual secondary-seed activation to change the published runtime frame"
+    )
+
+    canonical_state = json.loads(json.dumps(explaino_capture["state"]))
+    canonical_params = canonical_state["params"]
+    assert isinstance(canonical_params, dict)
+    canonical_state["fractal_type"] = "explaino_all"
+    canonical_params["explaino_seed_b"] = 9.0
+    canonical_params["explaino_mix"] = 1.0
+    canonical_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "canonical_dual_params", canonical_state)),
+        "--capture-diagnostic",
+    )
+    assert canonical_capture["state"]["fractal_type"] == "explaino_all"
+    assert canonical_capture["frame_hash"] == explaino_capture["frame_hash"], (
+        "expected explaino_all to ignore deferred dual-seed params until they gain explicit canonical ownership"
+    )
+
+
 @pytest.mark.parametrize(
     ("fractal_type", "coupling_param", "default_value", "neutral_matches_explaino"),
     [

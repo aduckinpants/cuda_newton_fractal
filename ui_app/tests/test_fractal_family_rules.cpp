@@ -416,6 +416,82 @@ int main() {
     }
 
     {
+        struct ExpectedDualSeedParam {
+            const char* param_id;
+            const char* binding_path;
+            FractalType carrier_fractal_type;
+            double default_value;
+            double neutral_value;
+            ExplainoDualSeedOwnership ownership;
+            ExplainoDualSeedModel model;
+            bool zero_collapses_to_baseline;
+            bool default_collapses_to_baseline;
+        };
+        constexpr ExpectedDualSeedParam kExpectedDualSeedParams[] = {
+            {"explaino_seed_b", "fractal.params.explaino_seed_b", FractalType::explaino_dual, 1.0, 0.0, ExplainoDualSeedOwnership::different_ownership_model, ExplainoDualSeedModel::secondary_seed_surface, false, false},
+            {"explaino_mix", "fractal.params.explaino_mix", FractalType::explaino_dual, 0.5, 0.0, ExplainoDualSeedOwnership::different_ownership_model, ExplainoDualSeedModel::blend_gate, true, false},
+        };
+        if ((sizeof(kExplainoDualSeedRegistry) / sizeof(kExplainoDualSeedRegistry[0])) !=
+            (sizeof(kExpectedDualSeedParams) / sizeof(kExpectedDualSeedParams[0]))) {
+            std::cerr << "Deferred Explaino dual-seed controls should carry one explicit checked-in ownership registry\n";
+            return 1;
+        }
+        const ExplainoSelectorDescriptor* dualCarrier = FindExplainoSelectorDescriptor(FractalType::explaino_dual);
+        if (!dualCarrier || dualCarrier->role != ExplainoSelectorRole::legacy_family_nonprojection ||
+            ResolveExplainoPublicFractalType(FractalType::explaino_dual) != FractalType::explaino_dual) {
+            std::cerr << "Explaino dual-seed ownership should stay tied to the explaino_dual carrier until canonical proof says otherwise\n";
+            return 1;
+        }
+        for (std::size_t index = 0; index < (sizeof(kExpectedDualSeedParams) / sizeof(kExpectedDualSeedParams[0])); ++index) {
+            const auto& dualSeed = kExplainoDualSeedRegistry[index];
+            if (std::string_view(dualSeed.param_id) != kExpectedDualSeedParams[index].param_id ||
+                std::string_view(dualSeed.binding_path) != kExpectedDualSeedParams[index].binding_path ||
+                dualSeed.carrier_fractal_type != kExpectedDualSeedParams[index].carrier_fractal_type ||
+                dualSeed.default_value != kExpectedDualSeedParams[index].default_value ||
+                dualSeed.neutral_value != kExpectedDualSeedParams[index].neutral_value ||
+                dualSeed.ownership != kExpectedDualSeedParams[index].ownership ||
+                dualSeed.model != kExpectedDualSeedParams[index].model ||
+                dualSeed.zero_collapses_to_baseline != kExpectedDualSeedParams[index].zero_collapses_to_baseline ||
+                dualSeed.default_collapses_to_baseline != kExpectedDualSeedParams[index].default_collapses_to_baseline) {
+                std::cerr << "Deferred Explaino dual-seed registry entry " << index << " drifted from the bounded ownership answer\n";
+                return 1;
+            }
+            const ExplainoDualSeedDescriptor* byParam = FindExplainoDualSeedDescriptor(dualSeed.param_id);
+            const ExplainoDualSeedDescriptor* byBinding = FindExplainoDualSeedDescriptorByBindingPath(dualSeed.binding_path);
+            if (byParam != &dualSeed || byBinding != &dualSeed) {
+                std::cerr << "Deferred Explaino dual-seed ownership should resolve through one checked-in authority surface\n";
+                return 1;
+            }
+        }
+        for (const char* outOfScopeParamId : {
+                "phoenix_p_real",
+                "explaino_cluster_radius",
+                "momentum_beta",
+                "joy_coupling",
+                "fold_coupling",
+                "bell_coupling",
+            }) {
+            if (FindExplainoDualSeedDescriptor(outOfScopeParamId) != nullptr) {
+                std::cerr << "Deferred Explaino dual-seed ownership must stay bounded and leave structural modifiers plus resolved couplings out of scope\n";
+                return 1;
+            }
+        }
+        for (const char* outOfScopeBindingPath : {
+                "fractal.params.phoenix_p_real",
+                "fractal.params.explaino_cluster_radius",
+                "fractal.params.momentum_beta",
+                "fractal.params.joy_coupling",
+                "fractal.params.fold_coupling",
+                "fractal.params.bell_coupling",
+            }) {
+            if (FindExplainoDualSeedDescriptorByBindingPath(outOfScopeBindingPath) != nullptr) {
+                std::cerr << "Deferred Explaino dual-seed binding-path ownership must stay bounded and leave other deferred classes out of scope\n";
+                return 1;
+            }
+        }
+    }
+
+    {
         if (!IsExplainoFamily(FractalType::explaino_dual)) {
             std::cerr << "Explaino-DualSeed should be in the Explaino family\n";
             return 1;
