@@ -282,6 +282,44 @@ int main() {
     }
 
     {
+        ViewState composedView{};
+        KernelParams composedParams{};
+        RenderSettings composedRender{};
+        LensSettings composedLens{};
+        bool composedDirty = false;
+
+        composedView.fractal_type = FractalType::explaino_vortex;
+        composedParams.balance_void = 0.4f;
+        composedParams.symmetry_tension = -0.3f;
+        composedParams.field_curvature = 0.25f;
+        composedParams.ripple_amplitude = 0.15f;
+        composedParams.splice_offset = 0.5f;
+        composedParams.vortex_strength = 0.75f;
+        composedParams.tension_strength = 0.02f;
+
+        ResetRuntimeStateForCurrentFractal(composedView, composedParams, composedRender, composedLens, &composedDirty);
+
+        if (!composedDirty) {
+            std::cerr << "Legacy Explaino composed reset should mark dirty\n";
+            return 1;
+        }
+        if (composedView.fractal_type != FractalType::explaino_all) {
+            std::cerr << "Legacy Explaino composed reset should canonicalize to explaino_all before restoring the preset vector\n";
+            return 1;
+        }
+        if (!NearlyEqual(composedParams.ripple_amplitude, 0.0f) ||
+            !NearlyEqual(composedParams.splice_offset, 0.0f) ||
+            !NearlyEqual(composedParams.vortex_strength, 0.3f) ||
+            !NearlyEqual(composedParams.tension_strength, 0.0f) ||
+            !NearlyEqual(composedParams.balance_void, 0.0f) ||
+            !NearlyEqual(composedParams.symmetry_tension, 0.0f) ||
+            !NearlyEqual(composedParams.field_curvature, 0.0f)) {
+            std::cerr << "Legacy Explaino composed reset should restore the canonical explaino_all vortex preset vector\n";
+            return 1;
+        }
+    }
+
+    {
         ViewState balanceVoidView{};
         KernelParams balanceVoidParams{};
         RenderSettings balanceVoidRender{};
@@ -303,21 +341,21 @@ int main() {
             std::cerr << "ExplainO-BalanceVoid reset should mark dirty\n";
             return 1;
         }
-        if (balanceVoidView.fractal_type != FractalType::explaino_balance_void) {
-            std::cerr << "ExplainO-BalanceVoid reset should preserve the selected family identity while restoring neutral defaults\n";
+        if (balanceVoidView.fractal_type != FractalType::explaino_all) {
+            std::cerr << "ExplainO-BalanceVoid reset should canonicalize to explaino_all instead of preserving a legacy public selector identity\n";
             return 1;
         }
         if (!NearlyEqual(balanceVoidParams.balance_void, 0.0f) ||
             !NearlyEqual(balanceVoidParams.symmetry_tension, 0.0f) ||
             !NearlyEqual(balanceVoidParams.field_curvature, 0.0f)) {
-            std::cerr << "ExplainO-BalanceVoid reset should restore the dedicated family axes to the neutral Explaino collapse point\n";
+            std::cerr << "ExplainO-BalanceVoid reset should preserve the dedicated canonical axes at the neutral collapse point\n";
             return 1;
         }
         if (!NearlyEqual(balanceVoidParams.ripple_amplitude, 0.0f) ||
             !NearlyEqual(balanceVoidParams.splice_offset, 0.0f) ||
             !NearlyEqual(balanceVoidParams.vortex_strength, 0.0f) ||
             !NearlyEqual(balanceVoidParams.tension_strength, 0.0f)) {
-            std::cerr << "ExplainO-BalanceVoid reset should clear unrelated composed-variant axes instead of widening into Explaino-all\n";
+            std::cerr << "ExplainO-BalanceVoid reset should clear unrelated composed-variant axes without widening into deferred classes\n";
             return 1;
         }
     }

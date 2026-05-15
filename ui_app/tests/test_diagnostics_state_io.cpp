@@ -1674,8 +1674,8 @@ int main() {
             return 1;
         }
 
-        if (view.fractal_type != FractalType::explaino_vortex) {
-            std::cerr << "Composed variant fractal_type should round-trip\n";
+        if (view.fractal_type != FractalType::explaino_all) {
+            std::cerr << "Composed variant diagnostics state should project to canonical explaino_all fractal_type\n";
             return 1;
         }
         if (!NearlyEqual(params.ripple_amplitude, 0.0f, 1.0e-6) ||
@@ -1769,8 +1769,8 @@ int main() {
             return 1;
         }
 
-        if (view.fractal_type != FractalType::explaino_balance_void) {
-            std::cerr << "ExplainO-BalanceVoid fractal_type should round-trip through diagnostics state loading\n";
+        if (view.fractal_type != FractalType::explaino_all) {
+            std::cerr << "ExplainO-BalanceVoid diagnostics state should project to canonical explaino_all fractal_type\n";
             return 1;
         }
         if (!NearlyEqual(params.balance_void, 0.42f, 1.0e-6) ||

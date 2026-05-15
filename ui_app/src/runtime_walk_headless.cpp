@@ -690,7 +690,7 @@ int RunRuntimeWalkRequest(const std::string& exeDir,
         report << "      \"tick\": " << tickIndex << ",\n";
         report << "      \"t\": " << t << ",\n";
         report << "      \"state\": {\n";
-        report << "        \"fractal_type\": \"" << FractalTypeId(tickView.fractal_type) << "\",\n";
+        report << "        \"fractal_type\": \"" << FractalTypeId(ResolveExplainoPublicFractalType(tickView.fractal_type)) << "\",\n";
         report << "        \"center_hp_x\": " << tickView.center_hp_x << ",\n";
         report << "        \"center_hp_y\": " << tickView.center_hp_y << ",\n";
         report << "        \"log2_zoom\": " << tickView.log2_zoom << ",\n";

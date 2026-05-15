@@ -94,6 +94,21 @@ int main() {
             std::cerr << "Explaino-all should be the canonical Explaino family identity\n";
             return 1;
         }
+        if (!IsExplainoLegacyProjectionSelector(FractalType::explaino_ripple) ||
+            !IsExplainoLegacyProjectionSelector(FractalType::explaino_splice) ||
+            !IsExplainoLegacyProjectionSelector(FractalType::explaino_vortex) ||
+            !IsExplainoLegacyProjectionSelector(FractalType::explaino_tension) ||
+            !IsExplainoLegacyProjectionSelector(FractalType::explaino_balance_void) ||
+            IsExplainoLegacyProjectionSelector(FractalType::explaino_dual)) {
+            std::cerr << "Explaino-all slice 2 should fence projection selectors to the seven-axis legacy family only\n";
+            return 1;
+        }
+        if (ResolveExplainoPublicFractalType(FractalType::explaino_ripple) != FractalType::explaino_all ||
+            ResolveExplainoPublicFractalType(FractalType::explaino_balance_void) != FractalType::explaino_all ||
+            ResolveExplainoPublicFractalType(FractalType::explaino_dual) != FractalType::explaino_dual) {
+            std::cerr << "Explaino-all slice 2 should project only the legacy seven-axis selectors back to the canonical explaino_all public identity\n";
+            return 1;
+        }
         struct ExpectedAxis {
             const char* axis_id;
             const char* binding_path;

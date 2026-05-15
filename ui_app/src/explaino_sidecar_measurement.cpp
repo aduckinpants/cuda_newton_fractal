@@ -1,6 +1,7 @@
 #include "explaino_sidecar_measurement.h"
 
 #include "explaino_seed.h"
+#include "fractal_family_rules.h"
 #include "fractal_derived_fields.h"
 #include "fractal_runtime_validation.h"
 #include "view_hp_sync.h"
@@ -80,6 +81,13 @@ void EnsureViewHpInitialized(ViewState* ioView) {
     if (hpInvalid || hpLooksUnset) {
         SyncViewHpFromUi(*ioView);
     }
+}
+
+void CanonicalizeExplainoProjectionType(ViewState* ioView) {
+    if (!ioView) {
+        return;
+    }
+    ioView->fractal_type = ResolveExplainoPublicFractalType(ioView->fractal_type);
 }
 
 bool ReadNumericValue(const BindingContext& ctx,
@@ -349,6 +357,7 @@ bool BuildSidecarMeasurementBatch(
     baselineState.params = *ctx.params;
     baselineState.render = *ctx.render;
     if (ctx.lens) baselineState.lens = *ctx.lens;
+    CanonicalizeExplainoProjectionType(&baselineState.view);
     EnsureViewHpInitialized(&baselineState.view);
     RefreshDerivedState(&baselineState);
 

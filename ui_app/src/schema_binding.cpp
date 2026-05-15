@@ -425,7 +425,7 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
         return EnumIdOrEmpty(ColorGradingPresetId(params->color_pipeline.grading));
     }
     if (view && path == "fractal.view.fractal_type") {
-        return EnumIdOrEmpty(FractalTypeId(view->fractal_type));
+        return EnumIdOrEmpty(FractalTypeId(ResolveExplainoPublicFractalType(view->fractal_type)));
     }
     if (view && path == "fractal.view.camera_behavior") {
         return EnumIdOrEmpty(CameraBehaviorId(view->camera_behavior));
@@ -486,7 +486,15 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
             [grading](const ColorPipelineSelection& pipeline) { return pipeline.grading == grading; });
     }
     if (view && path == "fractal.view.fractal_type") {
-        return ParseAndAssignEnumId(id, &view->fractal_type, TryParseFractalTypeId);
+        FractalType fractalType = view->fractal_type;
+        if (!TryParseFractalTypeId(id, &fractalType)) {
+            return false;
+        }
+        view->fractal_type = fractalType;
+        if (params && (fractalType == ExplainoCanonicalFractalType() || IsExplainoLegacyProjectionSelector(fractalType))) {
+            ApplyExplainoAxisRegistryDefaults(fractalType, *params);
+        }
+        return true;
     }
     if (view && path == "fractal.view.camera_behavior") {
         return ParseAndAssignEnumId(id, &view->camera_behavior, TryParseCameraBehaviorId);

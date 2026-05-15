@@ -10,6 +10,12 @@ void ResetRuntimeStateForCurrentFractal(
     RenderSettings& render,
     LensSettings& lens,
     bool* ioDirty) {
+    const FractalType selectedFractalType = view.fractal_type;
+    const bool canonicalizeLegacyProjection = IsExplainoLegacyProjectionSelector(selectedFractalType);
+    if (canonicalizeLegacyProjection) {
+        view.fractal_type = ExplainoCanonicalFractalType();
+    }
+
     view.auto_refresh = false;
     view.camera_behavior = CameraBehavior::complexity;
     view.auto_dive = false;
@@ -39,6 +45,9 @@ void ResetRuntimeStateForCurrentFractal(
     params.tension_strength = 0.0f;
     params.momentum_beta = 0.0f;
     ApplyFractalPresetDefaults(view, params, ioDirty);
+    if (canonicalizeLegacyProjection) {
+        ApplyExplainoAxisRegistryDefaults(selectedFractalType, params);
+    }
     params.color_source_stack_count = 0;
     for (ColorPipelineSourceStackEntry& sourceEntry : params.color_source_stack) {
         sourceEntry = {};

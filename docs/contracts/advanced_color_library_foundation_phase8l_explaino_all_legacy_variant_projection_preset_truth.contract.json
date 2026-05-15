@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_PHASED_PLAN.md",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_CLOSURE_MATRIX.md",
+    "docs/notes/advanced_color_library_foundation_oracle_and_inventory.md",
+    "docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8j_explaino_all_canonical_identity_axis_registry_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8k_explaino_all_sidecar_support_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/explaino_sidecar_measurement.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_explaino_sidecar_measurement.cpp",
+    "ui_app/tests/test_explaino_zero_axis_equivalence.cu",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as Explaino-all slice 2 only: legacy variant projection plus preset truth for the current canonical seven-axis family",
+    "make explaino_ripple, explaino_splice, explaino_vortex, explaino_tension, and explaino_balance_void project truthfully to canonical explaino_all axis state",
+    "keep old variant ids as compatibility selectors or preset shorthand, not as independent implementation authorities",
+    "prove runtime, persistence, diagnostics, and reset truth agree while keeping deferred parameter classes out of scope unless a real blocker proves otherwise"
+  ],
+  "forbidden_operator_prompts": [
+    "claim legacy projection is done if labels merely point at explaino_all while state, diagnostics, reset, or runtime still preserve a second hidden selector authority",
+    "widen the slice into deferred parameter-class promotion, slice 3 enforcement guardrails, cleanup-only work, generic advanced-color core work, or historical archive compatibility",
+    "treat one helper mapping or one runtime witness as sufficient proof for preset truth across persistence, diagnostics, and reset seams",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "legacy_selector_projection_truth_required": "required",
+    "canonical_explaino_all_state_authority_required": "required",
+    "runtime_persistence_reset_diagnostics_agreement_required": "required",
+    "deferred_parameter_classes_remain_out_of_scope": "required",
+    "slice1_canonical_identity_preserved": "required",
+    "phase8k_sidecar_support_preserved": "required",
+    "viewer_first_runtime_proof_required": "required"
+  },
+  "forbidden_defaults": {
+    "slice3_enforcement_primary_scope": "forbidden",
+    "deferred_parameter_class_promotion_primary_scope": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "cleanup_only_primary_scope": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_contract_schema_valid",
+      "description": "The Explaino-all slice-2 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_plan_sync_ok",
+      "description": "The Explaino-all slice-2 phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_hostile_audit_ok",
+      "description": "The Explaino-all slice-2 hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8l_explaino_all_legacy_variant_projection_preset_truth_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

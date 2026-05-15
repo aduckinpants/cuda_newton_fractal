@@ -579,7 +579,7 @@ std::string BuildStateJson(
     js << std::setprecision(std::numeric_limits<double>::max_digits10);
     js << "{\n";
     js << "  \"state_version\": 3,\n";
-    js << "  \"fractal_type\": \"" << CaptureFractalTypeId(view.fractal_type) << "\",\n";
+    js << "  \"fractal_type\": \"" << CaptureFractalTypeId(ResolveExplainoPublicFractalType(view.fractal_type)) << "\",\n";
     js << "  \"view\": {\n";
     js << "    \"center_x\": " << static_cast<double>(view.center.x) << ",\n";
     js << "    \"center_y\": " << static_cast<double>(view.center.y) << ",\n";

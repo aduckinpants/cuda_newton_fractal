@@ -32,6 +32,20 @@ FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ExplainoCanonicalFractalTyp
     return FractalType::explaino_all;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoLegacyProjectionSelector(FractalType fractalType) {
+    return fractalType == FractalType::explaino_ripple ||
+        fractalType == FractalType::explaino_splice ||
+        fractalType == FractalType::explaino_vortex ||
+        fractalType == FractalType::explaino_tension ||
+        fractalType == FractalType::explaino_balance_void;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoPublicFractalType(FractalType fractalType) {
+    return IsExplainoLegacyProjectionSelector(fractalType)
+        ? ExplainoCanonicalFractalType()
+        : fractalType;
+}
+
 inline constexpr ExplainoAxisDescriptor kExplainoAxisRegistry[] = {
     {"ripple_amplitude", "fractal.params.ripple_amplitude", FractalType::explaino_ripple, 0.15f, ExplainoAxisParamSlot::ripple_amplitude},
     {"splice_offset", "fractal.params.splice_offset", FractalType::explaino_splice, 0.5f, ExplainoAxisParamSlot::splice_offset},

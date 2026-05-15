@@ -554,7 +554,7 @@ def test_explaino_composed_variants_render_distinct_default_frames() -> None:
             "240",
         )
         state = capture["state"]
-        assert state["fractal_type"] == variant
+        assert state["fractal_type"] == "explaino_all"
         for param_name, expected_value in expected_params.items():
             assert state["params"][param_name] == pytest.approx(expected_value, abs=1e-6)
         hashes[variant] = str(capture["frame_hash"])
@@ -589,7 +589,8 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
 
     initial_state = initial_capture["state"]
     reloaded_state = reloaded_capture["state"]
-    assert reloaded_state["fractal_type"] == "explaino_vortex"
+    assert initial_state["fractal_type"] == "explaino_all"
+    assert reloaded_state["fractal_type"] == "explaino_all"
     assert reloaded_state["params"]["vortex_strength"] == pytest.approx(0.3, abs=1e-6)
     assert reloaded_state["params"]["ripple_amplitude"] == pytest.approx(0.0, abs=1e-6)
     assert "sidecar_orientation" in initial_state
@@ -725,7 +726,7 @@ def test_explaino_balance_void_neutral_defaults_match_explaino_published_runtime
     )
 
     balance_void_state = balance_void_capture["state"]
-    assert balance_void_state["fractal_type"] == "explaino_balance_void"
+    assert balance_void_state["fractal_type"] == "explaino_all"
     balance_void_params = balance_void_state["params"]
     assert isinstance(balance_void_params, dict)
     assert balance_void_params["balance_void"] == pytest.approx(0.0, abs=1e-6)
@@ -775,7 +776,7 @@ def test_explaino_balance_void_state_round_trips_and_changes_published_runtime_f
     )
 
     reloaded_state = perturbed_capture["state"]
-    assert reloaded_state["fractal_type"] == "explaino_balance_void"
+    assert reloaded_state["fractal_type"] == "explaino_all"
     reloaded_params = reloaded_state["params"]
     assert isinstance(reloaded_params, dict)
     assert reloaded_params["balance_void"] == pytest.approx(0.35, abs=1e-6)

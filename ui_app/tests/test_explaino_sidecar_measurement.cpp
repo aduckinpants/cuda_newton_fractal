@@ -115,6 +115,32 @@ EngineFunctionCatalog BuildDerivedStateCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildProjectionParityCatalog() {
+    EngineFunctionCatalog catalog;
+
+    FunctionDescriptor fractalSample;
+    fractalSample.id = "fractal.sample";
+    fractalSample.name = "Fractal Sample";
+
+    FunctionParamDescriptor fractalType;
+    fractalType.path = "fractal.view.fractal_type";
+    fractalType.type = "enum";
+    fractalType.label = "Fractal Type";
+    fractalType.required = true;
+    fractalType.options.push_back({"explaino_all", "Explaino-all"});
+    fractalSample.parameters.push_back(fractalType);
+
+    FunctionParamDescriptor vortex = MakeParam("fractal.params.vortex_strength", "float", "Vortex Strength", 0.0, 1.0, 0.05);
+    vortex.has_applicable_when = true;
+    vortex.applicable_when.op = "eq";
+    vortex.applicable_when.path = "fractal.view.fractal_type";
+    vortex.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(vortex);
+
+    catalog.functions.push_back(fractalSample);
+    return catalog;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -196,6 +222,39 @@ public:
             sample.residual = static_cast<float>(std::fabs(static_cast<double>(params.poly_coeffs[1])) + std::fabs(static_cast<double>(params.explaino_roots[0].y)));
             sample.converged = params.explaino_root_count > 0;
             sample.escaped = false;
+            outResults->push_back(sample);
+        }
+        return true;
+    }
+};
+
+class ProjectionCarrierHost : public SidecarMeasurementHost {
+public:
+    bool Sample(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams& params,
+        const RenderSettings&,
+        std::vector<FractalSampleResult>* outResults,
+        std::string* outError) const override {
+        if (!outResults) {
+            if (outError) *outError = "outResults is null";
+            return false;
+        }
+
+        const double carrierGain = view.fractal_type == FractalType::explaino_all ? 1.0 : 1.75;
+        outResults->clear();
+        outResults->reserve(coords.size());
+        for (const Double2& coord : coords) {
+            const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
+            const double signal = static_cast<double>(params.vortex_strength) * carrierGain;
+
+            FractalSampleResult sample{};
+            sample.iterations = static_cast<int>(std::lround(20.0 + signal * 400.0 + coordSpan * 10.0));
+            sample.final_z_x = static_cast<float>(coord.x);
+            sample.final_z_y = static_cast<float>(coord.y);
+            sample.residual = static_cast<float>(1.0 + signal + coordSpan * carrierGain);
+            sample.converged = signal < 0.45;
+            sample.escaped = !sample.converged && coordSpan > 0.05;
             outResults->push_back(sample);
         }
         return true;
@@ -340,6 +399,61 @@ int main() {
         }
         if (batch.rows[0].information_gain_estimate <= 0.0) {
             std::cerr << "Expected explaino_seed measurement to refresh derived polynomial state\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState legacyView{};
+        KernelParams legacyParams{};
+        RenderSettings legacyRender{};
+        LensSettings legacyLens{};
+        legacyView.fractal_type = FractalType::explaino_vortex;
+        legacyView.zoom = 10.0f;
+        legacyParams.vortex_strength = 0.3f;
+        BindingContext legacyCtx = MakeBindingContext(&legacyView, &legacyParams, &legacyRender, &legacyLens);
+
+        ViewState canonicalView{};
+        KernelParams canonicalParams{};
+        RenderSettings canonicalRender{};
+        LensSettings canonicalLens{};
+        canonicalView.fractal_type = FractalType::explaino_all;
+        canonicalView.zoom = 10.0f;
+        canonicalParams.vortex_strength = 0.3f;
+        BindingContext canonicalCtx = MakeBindingContext(&canonicalView, &canonicalParams, &canonicalRender, &canonicalLens);
+
+        const EngineFunctionCatalog projectionCatalog = BuildProjectionParityCatalog();
+        SidecarHypothesisSpace legacySpace{};
+        SidecarHypothesisSpace canonicalSpace{};
+        std::string error;
+        if (!BuildSidecarHypothesisSpace(projectionCatalog, "fractal.sample", legacyCtx, &legacySpace, &error) ||
+            !BuildSidecarHypothesisSpace(projectionCatalog, "fractal.sample", canonicalCtx, &canonicalSpace, &error)) {
+            std::cerr << "Expected projection-parity hypothesis spaces to build: " << error << "\n";
+            return 1;
+        }
+
+        ProjectionCarrierHost host;
+        SidecarMeasurementBatch legacyBatch;
+        SidecarMeasurementBatch canonicalBatch;
+        if (!BuildSidecarMeasurementBatch(legacySpace, legacyCtx, host, &legacyBatch, &error) ||
+            !BuildSidecarMeasurementBatch(canonicalSpace, canonicalCtx, host, &canonicalBatch, &error)) {
+            std::cerr << "Expected projection-parity measurement batches to build: " << error << "\n";
+            return 1;
+        }
+
+        if (legacyBatch.rows.size() != 1 || canonicalBatch.rows.size() != 1 ||
+            legacyBatch.rows[0].path != "fractal.params.vortex_strength" ||
+            canonicalBatch.rows[0].path != "fractal.params.vortex_strength") {
+            std::cerr << "Expected projection-parity catalog to expose only the canonical vortex axis measurement row\n";
+            return 1;
+        }
+        if (!NearlyEqual(legacyBatch.total_information_gain_estimate, canonicalBatch.total_information_gain_estimate) ||
+            !NearlyEqual(legacyBatch.explored_fraction, canonicalBatch.explored_fraction) ||
+            !NearlyEqual(legacyBatch.mean_decode_stability, canonicalBatch.mean_decode_stability) ||
+            !NearlyEqual(legacyBatch.rows[0].information_gain_estimate, canonicalBatch.rows[0].information_gain_estimate) ||
+            !NearlyEqual(legacyBatch.rows[0].minus_variant.mean_iterations, canonicalBatch.rows[0].minus_variant.mean_iterations) ||
+            !NearlyEqual(legacyBatch.rows[0].plus_variant.mean_iterations, canonicalBatch.rows[0].plus_variant.mean_iterations)) {
+            std::cerr << "Expected legacy explaino_vortex sidecar measurement sweeps to canonicalize to explaino_all instead of preserving a separate raw carrier authority\n";
             return 1;
         }
     }

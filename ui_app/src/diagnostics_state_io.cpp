@@ -1767,6 +1767,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "Unknown fractal_type: " + fractalTypeId;
         return false;
     }
+    if (IsExplainoLegacyProjectionSelector(nextView.fractal_type)) {
+        nextView.fractal_type = ExplainoCanonicalFractalType();
+    }
 
     const json_min::Value* viewObject = nullptr;
     const json_min::Value* paramsObject = nullptr;
