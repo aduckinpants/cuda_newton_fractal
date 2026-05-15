@@ -1,4 +1,5 @@
 #include "../src/color_pipeline_core.h"
+#include "../src/fractal_family_rules.h"
 #include "../src/runtime_reset.h"
 
 #include <iostream>
@@ -357,6 +358,68 @@ int main() {
             !NearlyEqual(balanceVoidParams.tension_strength, 0.0f)) {
             std::cerr << "ExplainO-BalanceVoid reset should clear unrelated composed-variant axes without widening into deferred classes\n";
             return 1;
+        }
+    }
+
+    {
+        for (const auto& coupling : kExplainoCouplingRegistry) {
+            ViewState couplingView{};
+            KernelParams couplingParams{};
+            RenderSettings couplingRender{};
+            LensSettings couplingLens{};
+            bool couplingDirty = false;
+
+            couplingView.fractal_type = coupling.carrier_fractal_type;
+            couplingParams.momentum_beta = 0.8f;
+            couplingParams.joy_coupling = 0.9f;
+            couplingParams.fold_coupling = 0.7f;
+            couplingParams.bell_coupling = 0.6f;
+            couplingParams.ripple_amplitude = 0.15f;
+            couplingParams.splice_offset = 0.5f;
+            couplingParams.vortex_strength = 0.3f;
+            couplingParams.tension_strength = 0.02f;
+            couplingParams.balance_void = 0.4f;
+            couplingParams.symmetry_tension = -0.3f;
+            couplingParams.field_curvature = 0.25f;
+            couplingParams.phoenix_p_real = 0.5667f;
+            couplingParams.explaino_seed_b = 7.0;
+            couplingParams.explaino_mix = 0.9f;
+            couplingParams.explaino_cluster_radius = 0.8f;
+
+            ResetRuntimeStateForCurrentFractal(couplingView, couplingParams, couplingRender, couplingLens, &couplingDirty);
+
+            if (!couplingDirty) {
+                std::cerr << "Deferred Explaino coupling reset should mark dirty for every legacy carrier\n";
+                return 1;
+            }
+            if (couplingView.fractal_type != coupling.carrier_fractal_type) {
+                std::cerr << "Deferred Explaino coupling reset should preserve the owning legacy selector identity instead of canonicalizing it\n";
+                return 1;
+            }
+            for (const auto& expectedCoupling : kExplainoCouplingRegistry) {
+                const float* value = ResolveExplainoCouplingValue(static_cast<const KernelParams&>(couplingParams), expectedCoupling.slot);
+                const float expected = expectedCoupling.carrier_fractal_type == coupling.carrier_fractal_type
+                    ? expectedCoupling.default_value
+                    : expectedCoupling.neutral_value;
+                if (!value || !NearlyEqual(*value, expected)) {
+                    std::cerr << "Deferred Explaino coupling reset should restore only the owning coupling default\n";
+                    return 1;
+                }
+            }
+            for (const auto& axis : kExplainoAxisRegistry) {
+                const float* axisValue = ResolveExplainoAxisValue(static_cast<const KernelParams&>(couplingParams), axis.slot);
+                if (!axisValue || !NearlyEqual(*axisValue, 0.0f)) {
+                    std::cerr << "Deferred Explaino coupling reset should keep the canonical Explaino-all axis registry neutral\n";
+                    return 1;
+                }
+            }
+            if (!NearlyEqual(couplingParams.phoenix_p_real, 0.0f) ||
+                !NearlyEqual(static_cast<float>(couplingParams.explaino_seed_b), 1.0f) ||
+                !NearlyEqual(couplingParams.explaino_mix, 0.5f) ||
+                !NearlyEqual(couplingParams.explaino_cluster_radius, 0.0f)) {
+                std::cerr << "Deferred Explaino coupling reset must not auto-promote the other deferred parameter classes\n";
+                return 1;
+            }
         }
     }
 

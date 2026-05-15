@@ -104,6 +104,30 @@ bool RunExplainoPointProbe(const std::string& requestId,
     return RunFractalProbeRequest(request, "probe.exe", outResponse, outError);
 }
 
+bool RunExplainoLegacyCouplingProbe(const std::string& requestId,
+    const char* fractalType,
+    double momentumBeta,
+    double joyCoupling,
+    double foldCoupling,
+    double bellCoupling,
+    FractalProbeResponse* outResponse,
+    std::string* outError) {
+    FractalProbeRequest request{};
+    request.request_version = 1;
+    request.request_id = requestId;
+    request.function_id = "fractal.sample";
+    request.mode = FractalProbeMode::point_set;
+    request.overrides.push_back({"fractal.view.fractal_type", FractalProbeScalar::String(fractalType)});
+    request.overrides.push_back({"fractal.params.momentum_beta", FractalProbeScalar::Number(momentumBeta)});
+    request.overrides.push_back({"fractal.params.joy_coupling", FractalProbeScalar::Number(joyCoupling)});
+    request.overrides.push_back({"fractal.params.fold_coupling", FractalProbeScalar::Number(foldCoupling)});
+    request.overrides.push_back({"fractal.params.bell_coupling", FractalProbeScalar::Number(bellCoupling)});
+    request.points.push_back({0.125, 0.0});
+    request.points.push_back({0.25, 0.0});
+    request.points.push_back({-0.125, 0.125});
+    return RunFractalProbeRequest(request, "probe.exe", outResponse, outError);
+}
+
 } // namespace
 
 int main() {
@@ -601,6 +625,23 @@ int main() {
             return 1;
         }
         if (!CompareProbeResponses(expectedResponse, actualResponse, "probe plain explaino latent params")) {
+            return 1;
+        }
+    }
+
+    {
+        FractalProbeResponse expectedResponse{};
+        FractalProbeResponse actualResponse{};
+        std::string error;
+        if (!RunExplainoLegacyCouplingProbe("probe-inertial-neutral-expected", "explaino", 0.0, 0.0, 0.0, 0.0, &expectedResponse, &error)) {
+            std::cerr << "Expected neutral explaino probe to run for inertial collapse proof: " << error << "\n";
+            return 1;
+        }
+        if (!RunExplainoLegacyCouplingProbe("probe-inertial-neutral-actual", "explaino_inertial", 0.0, 0.0, 0.0, 0.0, &actualResponse, &error)) {
+            std::cerr << "Expected neutral explaino_inertial probe to run: " << error << "\n";
+            return 1;
+        }
+        if (!CompareProbeResponses(expectedResponse, actualResponse, "probe explaino_inertial neutral collapse")) {
             return 1;
         }
     }

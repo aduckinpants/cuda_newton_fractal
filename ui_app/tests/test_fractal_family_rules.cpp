@@ -193,6 +193,83 @@ int main() {
     }
 
     {
+        struct ExpectedCoupling {
+            const char* param_id;
+            const char* binding_path;
+            FractalType carrier_fractal_type;
+            float default_value;
+            ExplainoCouplingOwnership ownership;
+            ExplainoCouplingModel model;
+            bool zero_collapses_to_baseline;
+            bool requires_root_pack_modifier;
+        };
+        constexpr ExpectedCoupling kExpectedCouplings[] = {
+            {"momentum_beta", "fractal.params.momentum_beta", FractalType::explaino_inertial, 0.15f, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::inertial_memory, true, false},
+            {"joy_coupling", "fractal.params.joy_coupling", FractalType::explaino_joy, 0.3f, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
+            {"fold_coupling", "fractal.params.fold_coupling", FractalType::explaino_fold, 0.5f, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
+            {"bell_coupling", "fractal.params.bell_coupling", FractalType::explaino_bell, 0.5f, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
+        };
+        if ((sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0])) !=
+            (sizeof(kExpectedCouplings) / sizeof(kExpectedCouplings[0]))) {
+            std::cerr << "Deferred Explaino couplings should carry one explicit checked-in ownership registry\n";
+            return 1;
+        }
+        KernelParams couplingParams{};
+        std::size_t phoenixCouplingCount = 0;
+        for (std::size_t index = 0; index < (sizeof(kExpectedCouplings) / sizeof(kExpectedCouplings[0])); ++index) {
+            const auto& coupling = kExplainoCouplingRegistry[index];
+            if (std::string_view(coupling.param_id) != kExpectedCouplings[index].param_id ||
+                std::string_view(coupling.binding_path) != kExpectedCouplings[index].binding_path ||
+                coupling.carrier_fractal_type != kExpectedCouplings[index].carrier_fractal_type ||
+                coupling.default_value != kExpectedCouplings[index].default_value ||
+                coupling.neutral_value != 0.0f ||
+                coupling.ownership != kExpectedCouplings[index].ownership ||
+                coupling.model != kExpectedCouplings[index].model ||
+                coupling.zero_collapses_to_baseline != kExpectedCouplings[index].zero_collapses_to_baseline ||
+                coupling.requires_root_pack_modifier != kExpectedCouplings[index].requires_root_pack_modifier) {
+                std::cerr << "Deferred Explaino coupling registry entry " << index << " drifted from the bounded ownership answer\n";
+                return 1;
+            }
+            const ExplainoCouplingDescriptor* byParam = FindExplainoCouplingDescriptor(coupling.param_id);
+            const ExplainoCouplingDescriptor* byBinding = FindExplainoCouplingDescriptorByBindingPath(coupling.binding_path);
+            const ExplainoCouplingDescriptor* byCarrier = FindExplainoCouplingDescriptor(coupling.carrier_fractal_type);
+            const ExplainoSelectorDescriptor* carrierSelector = FindExplainoSelectorDescriptor(coupling.carrier_fractal_type);
+            if (byParam != &coupling || byBinding != &coupling || byCarrier != &coupling ||
+                !carrierSelector || carrierSelector->role != ExplainoSelectorRole::legacy_family_nonprojection ||
+                ResolveExplainoPublicFractalType(coupling.carrier_fractal_type) != coupling.carrier_fractal_type) {
+                std::cerr << "Deferred Explaino couplings should stay legacy-family carriers with one canonical ownership table\n";
+                return 1;
+            }
+            float* value = ResolveExplainoCouplingValue(couplingParams, coupling.slot);
+            if (!value) {
+                std::cerr << "Deferred Explaino coupling registry should resolve every KernelParams slot\n";
+                return 1;
+            }
+            *value = coupling.default_value;
+            const float* constValue = ResolveExplainoCouplingValue(static_cast<const KernelParams&>(couplingParams), coupling.slot);
+            if (!constValue || *constValue != coupling.default_value) {
+                std::cerr << "Deferred Explaino coupling registry should expose both mutable and const KernelParams slot access\n";
+                return 1;
+            }
+            if (coupling.requires_root_pack_modifier) {
+                ++phoenixCouplingCount;
+            }
+        }
+        ResetExplainoCouplingRegistryValues(couplingParams);
+        for (const auto& coupling : kExplainoCouplingRegistry) {
+            const float* value = ResolveExplainoCouplingValue(static_cast<const KernelParams&>(couplingParams), coupling.slot);
+            if (!value || *value != 0.0f) {
+                std::cerr << "Deferred Explaino coupling reset should collapse every owned slot back to neutral zero\n";
+                return 1;
+            }
+        }
+        if (phoenixCouplingCount != 3u) {
+            std::cerr << "Deferred Explaino couplings should split into one inertial-memory entry plus three phoenix-step entries\n";
+            return 1;
+        }
+    }
+
+    {
         if (!IsExplainoFamily(FractalType::explaino_balance_void)) {
             std::cerr << "Explaino-BalanceVoid should stay in the Explaino family surface instead of existing only as generic grading intent\n";
             return 1;

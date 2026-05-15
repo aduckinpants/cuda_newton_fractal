@@ -28,6 +28,37 @@ struct ExplainoAxisDescriptor {
     ExplainoAxisParamSlot slot;
 };
 
+enum class ExplainoCouplingParamSlot : int {
+    momentum_beta = 0,
+    joy_coupling = 1,
+    fold_coupling = 2,
+    bell_coupling = 3,
+};
+
+enum class ExplainoCouplingOwnership : int {
+    canonical_axis = 0,
+    legacy_only = 1,
+    different_ownership_model = 2,
+};
+
+enum class ExplainoCouplingModel : int {
+    inertial_memory = 0,
+    phoenix_step_variant = 1,
+};
+
+struct ExplainoCouplingDescriptor {
+    const char* param_id;
+    const char* binding_path;
+    FractalType carrier_fractal_type;
+    float default_value;
+    float neutral_value;
+    ExplainoCouplingParamSlot slot;
+    ExplainoCouplingOwnership ownership;
+    ExplainoCouplingModel model;
+    bool zero_collapses_to_baseline;
+    bool requires_root_pack_modifier;
+};
+
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ExplainoCanonicalFractalType() {
     return FractalType::explaino_all;
 }
@@ -124,6 +155,13 @@ inline constexpr ExplainoAxisDescriptor kExplainoAxisRegistry[] = {
     {"field_curvature", "fractal.params.field_curvature", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::field_curvature},
 };
 
+inline constexpr ExplainoCouplingDescriptor kExplainoCouplingRegistry[] = {
+    {"momentum_beta", "fractal.params.momentum_beta", FractalType::explaino_inertial, 0.15f, 0.0f, ExplainoCouplingParamSlot::momentum_beta, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::inertial_memory, true, false},
+    {"joy_coupling", "fractal.params.joy_coupling", FractalType::explaino_joy, 0.3f, 0.0f, ExplainoCouplingParamSlot::joy_coupling, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
+    {"fold_coupling", "fractal.params.fold_coupling", FractalType::explaino_fold, 0.5f, 0.0f, ExplainoCouplingParamSlot::fold_coupling, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
+    {"bell_coupling", "fractal.params.bell_coupling", FractalType::explaino_bell, 0.5f, 0.0f, ExplainoCouplingParamSlot::bell_coupling, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
+};
+
 inline constexpr const ExplainoAxisDescriptor* FindExplainoSingleAxisProjectionDescriptor(FractalType fractalType) {
     if (!IsExplainoSingleAxisProjectionSelector(fractalType)) {
         return nullptr;
@@ -183,6 +221,33 @@ inline const ExplainoAxisDescriptor* FindExplainoAxisDescriptor(std::string_view
     return nullptr;
 }
 
+inline constexpr const ExplainoCouplingDescriptor* FindExplainoCouplingDescriptor(FractalType fractalType) {
+    for (const auto& coupling : kExplainoCouplingRegistry) {
+        if (coupling.carrier_fractal_type == fractalType) {
+            return &coupling;
+        }
+    }
+    return nullptr;
+}
+
+inline const ExplainoCouplingDescriptor* FindExplainoCouplingDescriptor(std::string_view paramId) {
+    for (const auto& coupling : kExplainoCouplingRegistry) {
+        if (paramId == coupling.param_id) {
+            return &coupling;
+        }
+    }
+    return nullptr;
+}
+
+inline const ExplainoCouplingDescriptor* FindExplainoCouplingDescriptorByBindingPath(std::string_view bindingPath) {
+    for (const auto& coupling : kExplainoCouplingRegistry) {
+        if (bindingPath == coupling.binding_path) {
+            return &coupling;
+        }
+    }
+    return nullptr;
+}
+
 inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot) {
     switch (slot) {
     case ExplainoAxisParamSlot::ripple_amplitude:
@@ -223,6 +288,34 @@ inline const float* ResolveExplainoAxisValue(const KernelParams& params, Explain
     return nullptr;
 }
 
+inline float* ResolveExplainoCouplingValue(KernelParams& params, ExplainoCouplingParamSlot slot) {
+    switch (slot) {
+    case ExplainoCouplingParamSlot::momentum_beta:
+        return &params.momentum_beta;
+    case ExplainoCouplingParamSlot::joy_coupling:
+        return &params.joy_coupling;
+    case ExplainoCouplingParamSlot::fold_coupling:
+        return &params.fold_coupling;
+    case ExplainoCouplingParamSlot::bell_coupling:
+        return &params.bell_coupling;
+    }
+    return nullptr;
+}
+
+inline const float* ResolveExplainoCouplingValue(const KernelParams& params, ExplainoCouplingParamSlot slot) {
+    switch (slot) {
+    case ExplainoCouplingParamSlot::momentum_beta:
+        return &params.momentum_beta;
+    case ExplainoCouplingParamSlot::joy_coupling:
+        return &params.joy_coupling;
+    case ExplainoCouplingParamSlot::fold_coupling:
+        return &params.fold_coupling;
+    case ExplainoCouplingParamSlot::bell_coupling:
+        return &params.bell_coupling;
+    }
+    return nullptr;
+}
+
 inline void ResetExplainoAxisRegistryValues(KernelParams& params) {
     for (const auto& axis : kExplainoAxisRegistry) {
         float* value = ResolveExplainoAxisValue(params, axis.slot);
@@ -241,6 +334,27 @@ inline void ApplyExplainoAxisRegistryDefaults(FractalType fractalType, KernelPar
                 *value = axis.default_value;
             }
         }
+    }
+}
+
+inline void ResetExplainoCouplingRegistryValues(KernelParams& params) {
+    for (const auto& coupling : kExplainoCouplingRegistry) {
+        float* value = ResolveExplainoCouplingValue(params, coupling.slot);
+        if (value) {
+            *value = coupling.neutral_value;
+        }
+    }
+}
+
+inline void ApplyExplainoCouplingRegistryDefaults(FractalType fractalType, KernelParams& params) {
+    ResetExplainoCouplingRegistryValues(params);
+    const ExplainoCouplingDescriptor* coupling = FindExplainoCouplingDescriptor(fractalType);
+    if (!coupling) {
+        return;
+    }
+    float* value = ResolveExplainoCouplingValue(params, coupling->slot);
+    if (value) {
+        *value = coupling->default_value;
     }
 }
 

@@ -1,4 +1,5 @@
 #include "../src/explaino_sidecar_window.h"
+#include "../src/fractal_family_rules.h"
 #include "../src/function_descriptor.h"
 #include "../src/headless_modes.h"
 #include "../src/viewer_schema_load.h"
@@ -152,6 +153,19 @@ bool IsBaselineExplainoCommonPath(const std::string& path) {
         path == "fractal.params.explaino_root_spread";
 }
 
+bool ApplicableWhenMatchesFractalCarrierOnly(const FunctionParamDescriptor& param, FractalType fractalType) {
+    const ExplainoSelectorDescriptor* carrier = FindExplainoSelectorDescriptor(fractalType);
+    return carrier &&
+        param.has_applicable_when &&
+        param.applicable_when.op == "eq" &&
+        param.applicable_when.path == "fractal.view.fractal_type" &&
+        param.applicable_when.value == carrier->fractal_type_id;
+}
+
+bool IsExplainoDeferredCouplingBindingPath(const std::string& path) {
+    return FindExplainoCouplingDescriptorByBindingPath(path) != nullptr;
+}
+
 BindingContext BuildBindingContext(
     ViewState* view,
     KernelParams* params,
@@ -266,6 +280,19 @@ int main() {
             std::cerr << "Expected generic Explaino-family sidecar cost metadata to remain distinct from measured sensitivity reports\n";
             return 1;
         }
+        std::size_t deferredCouplingCatalogMatches = 0;
+        for (const auto& coupling : kExplainoCouplingRegistry) {
+            const FunctionParamDescriptor* param = FindParam(*fractalSample, coupling.binding_path);
+            if (!param || !ApplicableWhenMatchesFractalCarrierOnly(*param, coupling.carrier_fractal_type)) {
+                std::cerr << "Expected real viewer catalog to fence every deferred Explaino coupling to its owning legacy selector only\n";
+                return 1;
+            }
+            ++deferredCouplingCatalogMatches;
+        }
+        if (deferredCouplingCatalogMatches != (sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0]))) {
+            std::cerr << "Expected real viewer catalog to cover the full deferred Explaino coupling registry\n";
+            return 1;
+        }
     }
 
     {
@@ -352,6 +379,11 @@ int main() {
                       << state.error_message << "\n";
             return 1;
         }
+        if ((state.has_action_recommendation && IsExplainoDeferredCouplingBindingPath(state.action_recommendation.path)) ||
+            (state.controller_decision.should_mutate && IsExplainoDeferredCouplingBindingPath(state.controller_decision.path))) {
+            std::cerr << "Expected canonical explaino_all sidecar state to stay fenced away from deferred coupling-only controls\n";
+            return 1;
+        }
     }
 
     {
@@ -381,8 +413,13 @@ int main() {
                       << state.action_error_message << "\n";
             return 1;
         }
-        if (state.action_recommendation.path != "fractal.params.joy_coupling") {
-            std::cerr << "Expected real-schema Explaino Joy recommendation to target joy_coupling, got: "
+        const ExplainoCouplingDescriptor* joyDescriptor = FindExplainoCouplingDescriptor(FractalType::explaino_joy);
+        if (!joyDescriptor) {
+            std::cerr << "Expected deferred Explaino coupling registry to classify Explaino Joy before sidecar verification\n";
+            return 1;
+        }
+        if (state.action_recommendation.path != joyDescriptor->binding_path) {
+            std::cerr << "Expected real-schema Explaino Joy recommendation to target the registry-owned coupling path, got: "
                       << state.action_recommendation.path << "\n";
             return 1;
         }

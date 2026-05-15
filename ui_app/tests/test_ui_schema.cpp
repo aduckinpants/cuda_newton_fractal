@@ -435,6 +435,7 @@ int main() {
         bool foundJoyCouplingUiRange = false;
         bool foundFoldCouplingUiRange = false;
         bool foundBellCouplingUiRange = false;
+        bool foundDeferredCouplingSchemaMatches[sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0])] = {};
         bool foundRippleAmplitudeUiRange = false;
         bool foundSpliceOffsetUiRange = false;
         bool foundVortexStrengthUiRange = false;
@@ -624,6 +625,27 @@ int main() {
                 if (ctrl.id == "bell_coupling" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 1.0 && !ctrl.has_min && !ctrl.has_max) {
                     foundBellCouplingUiRange = true;
+                }
+                if (ctrl.has_binding) {
+                    const ExplainoCouplingDescriptor* coupling = FindExplainoCouplingDescriptorByBindingPath(ctrl.binding.path);
+                    if (coupling) {
+                        const std::size_t slotIndex = static_cast<std::size_t>(coupling->slot);
+                        const char* carrierId = FractalTypeId(coupling->carrier_fractal_type);
+                        if (slotIndex >= (sizeof(foundDeferredCouplingSchemaMatches) / sizeof(foundDeferredCouplingSchemaMatches[0])) ||
+                            foundDeferredCouplingSchemaMatches[slotIndex]) {
+                            std::cerr << "Main schema duplicated a deferred Explaino coupling control instead of deriving one owner per coupling\n";
+                            return 1;
+                        }
+                        if (ctrl.id != coupling->param_id ||
+                            !ctrl.has_visible_if || ctrl.visible_if.op != "eq" ||
+                            ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                            !carrierId || ctrl.visible_if.value != carrierId ||
+                            VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
+                            std::cerr << "Main schema deferred Explaino couplings should stay fenced to their owning legacy selector only\n";
+                            return 1;
+                        }
+                        foundDeferredCouplingSchemaMatches[slotIndex] = true;
+                    }
                 }
                 if (ctrl.id == "ripple_amplitude" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
                     ctrl.has_ui_max && ctrl.ui_max == 0.5 && !ctrl.has_min && !ctrl.has_max) {
@@ -836,6 +858,12 @@ int main() {
             explainoAllVisibleControlCount != explainoAllVisibleAxisCount + explainoAllVisibleNonAxisCount) {
             std::cerr << "Main schema Explaino-all visible control surface drifted outside the canonical axis registry and explicit non-axis allowlist\n";
             return 1;
+        }
+        for (bool foundDeferredCouplingSchema : foundDeferredCouplingSchemaMatches) {
+            if (!foundDeferredCouplingSchema) {
+                std::cerr << "Main schema must expose every deferred Explaino coupling through one explicit legacy-only control fence\n";
+                return 1;
+            }
         }
         if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";

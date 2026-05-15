@@ -532,6 +532,51 @@ int main() {
         }
     }
 
+    {
+        const FractalType couplingPresetCases[] = {
+            FractalType::explaino_all,
+            FractalType::explaino_inertial,
+            FractalType::explaino_joy,
+            FractalType::explaino_fold,
+            FractalType::explaino_bell,
+        };
+
+        for (FractalType fractalType : couplingPresetCases) {
+            ViewState view{};
+            KernelParams params{};
+            view.fractal_type = fractalType;
+
+            params.momentum_beta = 0.8f;
+            params.joy_coupling = 0.9f;
+            params.fold_coupling = 0.7f;
+            params.bell_coupling = 0.6f;
+            params.phoenix_p_real = 0.5667f;
+            params.explaino_seed_b = 9.0;
+            params.explaino_mix = 0.9f;
+            params.explaino_cluster_radius = 0.8f;
+
+            ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
+
+            for (const auto& coupling : kExplainoCouplingRegistry) {
+                const float* value = ResolveExplainoCouplingValue(static_cast<const KernelParams&>(params), coupling.slot);
+                const float expected = coupling.carrier_fractal_type == fractalType
+                    ? coupling.default_value
+                    : coupling.neutral_value;
+                if (!value || !NearlyEqual(*value, expected)) {
+                    std::cerr << "Deferred Explaino coupling presets should derive from one ownership registry instead of per-selector folklore\n";
+                    return 1;
+                }
+            }
+            if (!NearlyEqual(params.phoenix_p_real, 0.0f) ||
+                !NearlyEqual(static_cast<float>(params.explaino_seed_b), 1.0f) ||
+                !NearlyEqual(params.explaino_mix, 0.5f) ||
+                !NearlyEqual(params.explaino_cluster_radius, 0.0f)) {
+                    std::cerr << "Deferred Explaino coupling presets must not auto-promote the other deferred parameter classes\n";
+                    return 1;
+            }
+        }
+    }
+
     // Normalized-seed regression: the host polynomial update should depend on
     // the split combined seed surface (base + drift), not on raw fractional
     // writes into params.explaino_seed.

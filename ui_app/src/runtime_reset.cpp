@@ -43,7 +43,7 @@ void ResetRuntimeStateForCurrentFractal(
     params.splice_offset = 0.0f;
     params.vortex_strength = 0.0f;
     params.tension_strength = 0.0f;
-    params.momentum_beta = 0.0f;
+    ResetExplainoCouplingRegistryValues(params);
     ApplyFractalPresetDefaults(view, params, ioDirty);
     if (canonicalizeLegacyProjection) {
         ApplyExplainoAxisRegistryDefaults(selectedFractalType, params);

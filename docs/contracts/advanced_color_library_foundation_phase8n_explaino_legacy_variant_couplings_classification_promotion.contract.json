@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion.contract.json",
+    "docs/notes/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/function_descriptor.cpp",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_explaino_bell_continuity.cpp",
+    "ui_app/tests/test_explaino_fold_continuity.cpp",
+    "ui_app/tests/test_explaino_joy_continuity.cpp",
+    "ui_app/tests/test_explaino_sidecar_schema_contract.cpp",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_fractal_probe_coverage.cpp",
+    "ui_app/tests/test_function_descriptor.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_function_descriptor_cli.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as one bounded deferred-parameter-class slice for the legacy variant-specific couplings bucket only",
+    "classify momentum_beta, joy_coupling, fold_coupling, and bell_coupling explicitly as canonicalizable now, legacy-only, or a different ownership model based on current repo proof rather than analogy",
+    "promote only the couplings whose runtime identity, zero-default collapse, persistence, reset, and viewer or runtime truth prove they belong under canonical Explaino-all ownership",
+    "keep dual-seed or multi-seed structure, structural or root-pack modifiers, generic advanced-color core work, and historical archive compatibility out of scope unless one of those classes is proven to be a real classification blocker"
+  ],
+  "forbidden_operator_prompts": [
+    "auto-promote the whole couplings bucket because the controls already exist or because the selectors still render",
+    "treat hidden legacy runtime authority or selector-specific branch logic as acceptable evidence for canonicalization",
+    "widen the slice into explaino_seed_b, explaino_mix, phoenix_p_real, explaino_cluster_radius, cleanup-only work, or unrelated viewer-host workflow repair",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "explicit_ownership_answer_for_each_coupling_required": "required",
+    "zero_default_collapse_proof_required": "required",
+    "legacy_only_or_different_model_fence_required_for_nonpromoted_couplings": "required",
+    "other_deferred_parameter_classes_remain_out_of_scope": "required",
+    "slice1_slice2_slice3_preserved": "required",
+    "viewer_first_runtime_proof_required_for_any_promoted_coupling": "required"
+  },
+  "forbidden_defaults": {
+    "dual_seed_or_multi_seed_promotion_primary_scope": "forbidden",
+    "structural_or_root_pack_promotion_primary_scope": "forbidden",
+    "cleanup_only_primary_scope": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_contract_schema_valid",
+      "description": "The bounded deferred-class couplings contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_plan_sync_ok",
+      "description": "The bounded deferred-class couplings phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_hostile_audit_ok",
+      "description": "The bounded deferred-class couplings hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8n_explaino_legacy_variant_couplings_classification_promotion_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

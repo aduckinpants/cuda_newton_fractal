@@ -284,17 +284,11 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.explaino_warp_strength = 0.0f;
     params.explaino_cluster_radius = 0.0f;
     params.explaino_root_count = 0;
-    params.momentum_beta = 0.0f;
-    params.joy_coupling = 0.0f;
-    params.fold_coupling = 0.0f;
-    params.bell_coupling = 0.0f;
+    ApplyExplainoCouplingRegistryDefaults(fractalType, params);
     ApplyExplainoAxisRegistryDefaults(fractalType, params);
 
     if (fractalType == FractalType::explaino_phoenix) {
         params.phoenix_p_real = 0.12f;
-    }
-    if (fractalType == FractalType::explaino_inertial) {
-        params.momentum_beta = 0.15f;
     }
     if (fractalType == FractalType::explaino_rational) {
         params.explaino_cluster_radius = 0.1f;
@@ -304,15 +298,6 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     }
     if (fractalType == FractalType::explaino_rational_escape) {
         params.exposure = 1.2f;
-    }
-    if (fractalType == FractalType::explaino_joy) {
-        params.joy_coupling = 0.3f;
-    }
-    if (fractalType == FractalType::explaino_fold) {
-        params.fold_coupling = 0.5f;
-    }
-    if (fractalType == FractalType::explaino_bell) {
-        params.bell_coupling = 0.5f;
     }
 }
 

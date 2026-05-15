@@ -741,6 +741,112 @@ def test_explaino_balance_void_neutral_defaults_match_explaino_published_runtime
     )
 
 
+@pytest.mark.parametrize(
+    ("fractal_type", "coupling_param", "default_value", "neutral_matches_explaino"),
+    [
+        pytest.param("explaino_inertial", "momentum_beta", 0.15, True, id="inertial"),
+        pytest.param("explaino_joy", "joy_coupling", 0.3, False, id="joy"),
+        pytest.param("explaino_fold", "fold_coupling", 0.5, False, id="fold"),
+        pytest.param("explaino_bell", "bell_coupling", 0.5, False, id="bell"),
+    ],
+)
+def test_explaino_legacy_couplings_round_trip_and_neutral_collapse(
+    tmp_path: Path, fractal_type: str, coupling_param: str, default_value: float, neutral_matches_explaino: bool
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino deferred coupling runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    carrier_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        fractal_type,
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    carrier_state = carrier_capture["state"]
+    carrier_params = carrier_state["params"]
+    assert carrier_state["fractal_type"] == fractal_type
+    assert isinstance(carrier_params, dict)
+    for name in ("momentum_beta", "joy_coupling", "fold_coupling", "bell_coupling"):
+        expected = default_value if name == coupling_param else 0.0
+        assert carrier_params[name] == pytest.approx(expected, abs=1e-6)
+    for name in (
+        "ripple_amplitude",
+        "splice_offset",
+        "vortex_strength",
+        "tension_strength",
+        "balance_void",
+        "symmetry_tension",
+        "field_curvature",
+    ):
+        assert carrier_params[name] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_params["phoenix_p_real"] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_params["explaino_seed_b"] == pytest.approx(1.0, abs=1e-6)
+    assert carrier_params["explaino_mix"] == pytest.approx(0.5, abs=1e-6)
+    assert carrier_params["explaino_cluster_radius"] == pytest.approx(0.0, abs=1e-6)
+    assert carrier_capture["frame_hash"] != explaino_capture["frame_hash"], (
+        f"expected {fractal_type} default coupling to change the published runtime frame"
+    )
+    assert _mean_absolute_frame_delta(explaino_capture["frame_bytes"], carrier_capture["frame_bytes"]) > 0.0, (
+        f"expected {fractal_type} default coupling to produce a measurable published-frame delta"
+    )
+
+    reloaded_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"{fractal_type}_default", carrier_state)),
+        "--capture-diagnostic",
+    )
+    reloaded_state = reloaded_capture["state"]
+    reloaded_params = reloaded_state["params"]
+    assert reloaded_state["fractal_type"] == fractal_type
+    assert isinstance(reloaded_params, dict)
+    assert reloaded_params[coupling_param] == pytest.approx(default_value, abs=1e-6)
+    assert reloaded_capture["frame_hash"] == carrier_capture["frame_hash"]
+
+    neutral_state = json.loads(json.dumps(reloaded_state))
+    neutral_params = neutral_state["params"]
+    assert isinstance(neutral_params, dict)
+    neutral_params[coupling_param] = 0.0
+    neutral_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"{fractal_type}_neutral", neutral_state)),
+        "--capture-diagnostic",
+    )
+    neutral_runtime_state = neutral_capture["state"]
+    neutral_runtime_params = neutral_runtime_state["params"]
+    assert neutral_runtime_state["fractal_type"] == fractal_type
+    assert isinstance(neutral_runtime_params, dict)
+    assert neutral_runtime_params[coupling_param] == pytest.approx(0.0, abs=1e-6)
+    assert neutral_capture["frame_hash"] != carrier_capture["frame_hash"], (
+        f"expected {fractal_type} neutral coupling to keep changing the legacy runtime away from the default coupling state"
+    )
+    if neutral_matches_explaino:
+        assert neutral_capture["frame_hash"] == explaino_capture["frame_hash"], (
+            f"expected {fractal_type} neutral coupling collapse to match the published Explaino frame"
+        )
+    else:
+        assert neutral_capture["frame_hash"] != explaino_capture["frame_hash"], (
+            f"expected {fractal_type} neutral coupling to stay outside the canonical Explaino baseline"
+        )
+
+
 def test_explaino_balance_void_state_round_trips_and_changes_published_runtime_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino BalanceVoid runtime regression is Windows-only")
