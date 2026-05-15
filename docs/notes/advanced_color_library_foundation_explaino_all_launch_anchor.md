@@ -44,6 +44,51 @@ Follow this order unless live repo evidence proves a narrower truthful split is 
 Do not start with enforcement before the canonical identity exists.
 Do not start with cleanup before legacy projection truth exists.
 
+## Deferred Parameter Classes
+
+The current `Explaino-all` canonical axis family is intentionally limited to:
+
+- `ripple_amplitude`
+- `splice_offset`
+- `vortex_strength`
+- `tension_strength`
+- `balance_void`
+- `symmetry_tension`
+- `field_curvature`
+
+Future sessions must not treat every historical Explaino variant parameter as an accidental omission from `Explaino-all`.
+
+The following groups are currently deferred for explicit later classification:
+
+1. Dual-seed / multi-seed structure
+
+- `explaino_seed_b`
+- `explaino_mix`
+
+These are not simple neutral-at-zero deformation axes; they introduce secondary seed-surface and blend semantics.
+
+2. Structural / root-pack modifiers
+
+- `phoenix_p_real`
+- `explaino_cluster_radius`
+
+These affect deeper family construction or root-pack structure rather than the current bounded neutral-axis deformation family.
+
+3. Legacy variant-specific couplings
+
+- `momentum_beta`
+- `joy_coupling`
+- `fold_coupling`
+- `bell_coupling`
+
+These may become canonicalizable later, but they are not part of the current seven-axis `Explaino-all` registry by default.
+
+Rule:
+
+- do not auto-expose the deferred parameter classes under `Explaino-all` just because they already exist in `KernelParams`
+- do not treat their absence from the current `Explaino-all` control surface as a slice-1 regression
+- if one of these groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
+
 ## Required Owner Seams
 
 Every future `Explaino-all` kickoff must inspect and name the current ownership seams before mutation:
