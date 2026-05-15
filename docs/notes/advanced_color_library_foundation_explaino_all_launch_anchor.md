@@ -72,16 +72,21 @@ The current unresolved deferred group is:
 
 1. Structural / root-pack modifiers
 
-- `phoenix_p_real`
 - `explaino_cluster_radius`
 
 These affect deeper family construction or root-pack structure rather than the current bounded neutral-axis deformation family.
 
+Current meaning:
+
+- `phase8r` proved the shared structural/root-pack bucket does not stay unified
+- `phase8s` closed `phoenix_p_real` as a dedicated shared phoenix-step carrier fence outside canonical `explaino_all`
+- `explaino_cluster_radius` is the only remaining structural/root-pack parameter still unresolved on this head
+
 Rule:
 
-- do not auto-expose the deferred parameter classes under `Explaino-all` just because they already exist in `KernelParams`
-- do not treat their absence from the current `Explaino-all` control surface as a slice-1 regression
-- `phase8q` staged the structural / root-pack packet and `phase8r` closed the shared classification question, so any future structural / root-pack follow-up must start from `docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md` plus `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
+- do not auto-expose the remaining deferred parameter class under `Explaino-all` just because it already exists in `KernelParams`
+- do not treat the closed `phoenix_p_real` fence or the absence of `explaino_cluster_radius` from the current `Explaino-all` control surface as a slice-1 regression
+- if `explaino_cluster_radius` is chosen next, start from `docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md`, `docs/notes/advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
 - if one of the remaining groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
 
 ## Required Owner Seams
@@ -155,6 +160,7 @@ Every future `Explaino-all` slice must re-read its active phased plan on the com
 ## Start From
 
 - [advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8i_explaino_all_canonicalization_staging_PHASED_PLAN.md)
+- [advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md)
 - [advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md)
 - [advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md)
 - [advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md)

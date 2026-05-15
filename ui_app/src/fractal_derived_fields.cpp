@@ -286,6 +286,7 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     params.explaino_root_count = 0;
     ApplyExplainoCouplingRegistryDefaults(fractalType, params);
     ApplyExplainoAxisRegistryDefaults(fractalType, params);
+    ApplyPhoenixStepCarrierDefaults(fractalType, params);
     ApplyExplainoStructuralRegistryDefaults(fractalType, params);
     if (fractalType == FractalType::explaino_lambda) {
         params.exposure = 1.4f;
@@ -316,6 +317,7 @@ static void ApplyPhoenixPresetDefaults(FractalType fractalType, KernelParams& pa
     params.nova_alpha = 0.50f;
     params.phoenix_p_real = 0.0f;
     params.explaino_cluster_radius = 0.0f;
+    ApplyPhoenixStepCarrierDefaults(fractalType, params);
     ApplyExplainoStructuralRegistryDefaults(fractalType, params);
     params.phoenix_p_imag = 0.0f;
     ApplyDefaultColoringSelection(fractalType, params);

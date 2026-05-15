@@ -43,6 +43,7 @@ void ResetRuntimeStateForCurrentFractal(
     params.splice_offset = 0.0f;
     params.vortex_strength = 0.0f;
     params.tension_strength = 0.0f;
+    ResetPhoenixStepCarrierValues(params);
     ResetExplainoStructuralRegistryValues(params);
     ResetExplainoCouplingRegistryValues(params);
     ApplyFractalPresetDefaults(view, params, ioDirty);

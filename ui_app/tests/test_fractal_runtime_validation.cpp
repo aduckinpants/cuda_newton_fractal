@@ -112,6 +112,20 @@ int main() {
         ViewState view{};
         KernelParams params{};
         std::string error;
+        view.fractal_type = FractalType::explaino_joy;
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.phoenix_p_real = 1.5f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "phoenix_p_real/imag must be in [-1,1]") {
+            std::cerr << "Expected the zero-default Explaino phoenix-step carriers to share the Phoenix memory-term domain contract\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
         view.fractal_type = FractalType::explaino_rational;
         params.coloring_mode = ColoringMode::joy_basins;
         params.explaino_cluster_radius = -0.1f;

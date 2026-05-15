@@ -424,9 +424,112 @@ int main() {
     }
 
     {
+        for (const FractalType phoenixViewType : {
+                FractalType::phoenix,
+                FractalType::explaino_phoenix,
+                FractalType::explaino_joy,
+                FractalType::explaino_fold,
+                FractalType::explaino_bell,
+            }) {
+            ViewState phoenixView{};
+            KernelParams phoenixParams{};
+            RenderSettings phoenixRender{};
+            LensSettings phoenixLens{};
+            bool phoenixDirty = false;
+
+            phoenixView.fractal_type = phoenixViewType;
+            phoenixParams.phoenix_p_real = 0.5667f;
+            phoenixParams.explaino_cluster_radius = 0.8f;
+            phoenixParams.momentum_beta = 0.8f;
+            phoenixParams.joy_coupling = 0.9f;
+            phoenixParams.fold_coupling = 0.7f;
+            phoenixParams.bell_coupling = 0.6f;
+            phoenixParams.explaino_seed_b = 7.0;
+            phoenixParams.explaino_mix = 0.9f;
+
+            ResetRuntimeStateForCurrentFractal(phoenixView, phoenixParams, phoenixRender, phoenixLens, &phoenixDirty);
+
+            if (!phoenixDirty || phoenixView.fractal_type != phoenixViewType) {
+                std::cerr << "phoenix_p_real follow-up reset should preserve the owning phoenix-step carrier identity and mark dirty\n";
+                return 1;
+            }
+            const PhoenixStepCarrierSelectorDescriptor* phoenixCarrier = FindPhoenixStepCarrierSelectorDescriptor(phoenixViewType);
+            const float expectedPhoenix = phoenixCarrier
+                ? static_cast<float>(phoenixCarrier->default_value)
+                : 0.0f;
+            const ExplainoCouplingDescriptor* coupling = FindExplainoCouplingDescriptor(phoenixViewType);
+            const float expectedMomentum = coupling && coupling->slot == ExplainoCouplingParamSlot::momentum_beta
+                ? coupling->default_value
+                : 0.0f;
+            const float expectedJoy = coupling && coupling->slot == ExplainoCouplingParamSlot::joy_coupling
+                ? coupling->default_value
+                : 0.0f;
+            const float expectedFold = coupling && coupling->slot == ExplainoCouplingParamSlot::fold_coupling
+                ? coupling->default_value
+                : 0.0f;
+            const float expectedBell = coupling && coupling->slot == ExplainoCouplingParamSlot::bell_coupling
+                ? coupling->default_value
+                : 0.0f;
+            if (!NearlyEqual(phoenixParams.phoenix_p_real, expectedPhoenix) ||
+                !NearlyEqual(phoenixParams.explaino_cluster_radius, 0.0f)) {
+                std::cerr << "phoenix_p_real follow-up reset should restore only the owning phoenix-step carrier default\n";
+                return 1;
+            }
+            if (!NearlyEqual(phoenixParams.momentum_beta, expectedMomentum) ||
+                !NearlyEqual(phoenixParams.joy_coupling, expectedJoy) ||
+                !NearlyEqual(phoenixParams.fold_coupling, expectedFold) ||
+                !NearlyEqual(phoenixParams.bell_coupling, expectedBell) ||
+                !NearlyEqual(static_cast<float>(phoenixParams.explaino_seed_b), 1.0f) ||
+                !NearlyEqual(phoenixParams.explaino_mix, 0.5f)) {
+                std::cerr << "phoenix_p_real follow-up reset must preserve the closed coupling defaults and must not auto-promote dual-seed params\n";
+                return 1;
+            }
+        }
+
+        for (const FractalType projectionViewType : {
+                FractalType::explaino_ripple,
+                FractalType::explaino_splice,
+                FractalType::explaino_vortex,
+                FractalType::explaino_tension,
+            }) {
+            ViewState projectionView{};
+            KernelParams projectionParams{};
+            RenderSettings projectionRender{};
+            LensSettings projectionLens{};
+            bool projectionDirty = false;
+
+            projectionView.fractal_type = projectionViewType;
+            projectionParams.phoenix_p_real = 0.5667f;
+            projectionParams.explaino_cluster_radius = 0.8f;
+            projectionParams.ripple_amplitude = 0.41f;
+            projectionParams.splice_offset = 0.61f;
+            projectionParams.vortex_strength = 0.71f;
+            projectionParams.tension_strength = 0.81f;
+
+            ResetRuntimeStateForCurrentFractal(projectionView, projectionParams, projectionRender, projectionLens, &projectionDirty);
+
+            if (!projectionDirty || projectionView.fractal_type != ExplainoCanonicalFractalType()) {
+                std::cerr << "Phoenix-step projection carriers should still canonicalize their public selector to explaino_all on reset\n";
+                return 1;
+            }
+            const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(projectionViewType);
+            if (!axis) {
+                std::cerr << "Expected projection carrier to resolve through the closed Explaino axis registry\n";
+                return 1;
+            }
+            const float* axisValue = ResolveExplainoAxisValue(static_cast<const KernelParams&>(projectionParams), axis->slot);
+            if (!axisValue || !NearlyEqual(*axisValue, axis->default_value) ||
+                !NearlyEqual(projectionParams.phoenix_p_real, 0.0f) ||
+                !NearlyEqual(projectionParams.explaino_cluster_radius, 0.0f) ||
+                !NearlyEqual(static_cast<float>(projectionParams.explaino_seed_b), 1.0f) ||
+                !NearlyEqual(projectionParams.explaino_mix, 0.5f)) {
+                std::cerr << "Phoenix-step projection carriers should keep the axis reset answer while leaving phoenix_p_real fenced off the canonical reset path\n";
+                return 1;
+            }
+        }
+
         for (const FractalType structuralViewType : {
                 FractalType::explaino_all,
-                FractalType::explaino_phoenix,
                 FractalType::explaino_mult,
                 FractalType::explaino_rational,
             }) {
@@ -449,19 +552,16 @@ int main() {
             ResetRuntimeStateForCurrentFractal(structuralView, structuralParams, structuralRender, structuralLens, &structuralDirty);
 
             if (!structuralDirty || structuralView.fractal_type != structuralViewType) {
-                std::cerr << "Deferred Explaino structural reset should preserve the owning carrier identity and mark dirty\n";
+                std::cerr << "Structural/root-pack reset should preserve the owning carrier identity and mark dirty in the phoenix_p_real follow-up\n";
                 return 1;
             }
             const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(structuralViewType);
-            const float expectedPhoenix = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::phoenix_p_real
+            const float expectedCluster = structuralCarrier
                 ? static_cast<float>(structuralCarrier->default_value)
                 : 0.0f;
-            const float expectedCluster = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::explaino_cluster_radius
-                ? static_cast<float>(structuralCarrier->default_value)
-                : 0.0f;
-            if (!NearlyEqual(structuralParams.phoenix_p_real, expectedPhoenix) ||
+            if (!NearlyEqual(structuralParams.phoenix_p_real, 0.0f) ||
                 !NearlyEqual(structuralParams.explaino_cluster_radius, expectedCluster)) {
-                std::cerr << "Deferred Explaino structural reset should restore only the owning structural carrier default\n";
+                std::cerr << "Structural/root-pack reset should no longer restore phoenix_p_real defaults\n";
                 return 1;
             }
             if (!NearlyEqual(structuralParams.momentum_beta, 0.0f) ||
@@ -470,7 +570,7 @@ int main() {
                 !NearlyEqual(structuralParams.bell_coupling, 0.0f) ||
                 !NearlyEqual(static_cast<float>(structuralParams.explaino_seed_b), 1.0f) ||
                 !NearlyEqual(structuralParams.explaino_mix, 0.5f)) {
-                std::cerr << "Deferred Explaino structural reset must not auto-promote resolved couplings or dual-seed params\n";
+                std::cerr << "The phoenix_p_real follow-up must leave resolved couplings and dual-seed params untouched during structural reset\n";
                 return 1;
             }
         }

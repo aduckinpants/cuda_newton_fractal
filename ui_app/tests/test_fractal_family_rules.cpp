@@ -270,6 +270,110 @@ int main() {
     }
 
     {
+        struct ExpectedPhoenixCarrierParam {
+            const char* param_id;
+            const char* binding_path;
+            PhoenixStepCarrierParamSlot slot;
+            PhoenixStepCarrierOwnership ownership;
+            PhoenixStepCarrierModel model;
+            bool shared_with_explaino_legacy_selectors;
+            bool zero_is_noncanonical_carrier_neutral;
+        };
+        constexpr ExpectedPhoenixCarrierParam kExpectedPhoenixCarrierParams[] = {
+            {"phoenix_p_real", "fractal.params.phoenix_p_real", PhoenixStepCarrierParamSlot::phoenix_p_real, PhoenixStepCarrierOwnership::different_ownership_model, PhoenixStepCarrierModel::shared_memory_term, true, true},
+        };
+        if ((sizeof(kPhoenixStepCarrierRegistry) / sizeof(kPhoenixStepCarrierRegistry[0])) !=
+            (sizeof(kExpectedPhoenixCarrierParams) / sizeof(kExpectedPhoenixCarrierParams[0]))) {
+            std::cerr << "phoenix_p_real follow-up should expose one explicit shared phoenix-step carrier ownership registry\n";
+            return 1;
+        }
+        for (std::size_t index = 0; index < (sizeof(kExpectedPhoenixCarrierParams) / sizeof(kExpectedPhoenixCarrierParams[0])); ++index) {
+            const auto& carrierParam = kPhoenixStepCarrierRegistry[index];
+            if (std::string_view(carrierParam.param_id) != kExpectedPhoenixCarrierParams[index].param_id ||
+                std::string_view(carrierParam.binding_path) != kExpectedPhoenixCarrierParams[index].binding_path ||
+                carrierParam.slot != kExpectedPhoenixCarrierParams[index].slot ||
+                carrierParam.ownership != kExpectedPhoenixCarrierParams[index].ownership ||
+                carrierParam.model != kExpectedPhoenixCarrierParams[index].model ||
+                carrierParam.shared_with_explaino_legacy_selectors != kExpectedPhoenixCarrierParams[index].shared_with_explaino_legacy_selectors ||
+                carrierParam.zero_is_noncanonical_carrier_neutral != kExpectedPhoenixCarrierParams[index].zero_is_noncanonical_carrier_neutral) {
+                std::cerr << "phoenix_p_real follow-up registry entry drifted from the bounded ownership answer\n";
+                return 1;
+            }
+            const PhoenixStepCarrierDescriptor* byParam = FindPhoenixStepCarrierDescriptor(carrierParam.param_id);
+            const PhoenixStepCarrierDescriptor* byBinding = FindPhoenixStepCarrierDescriptorByBindingPath(carrierParam.binding_path);
+            if (byParam != &carrierParam || byBinding != &carrierParam ||
+                FindExplainoStructuralDescriptor(carrierParam.param_id) != nullptr ||
+                FindExplainoAxisDescriptor(carrierParam.param_id) != nullptr ||
+                FindExplainoCouplingDescriptor(carrierParam.param_id) != nullptr ||
+                FindExplainoDualSeedDescriptor(carrierParam.param_id) != nullptr) {
+                std::cerr << "phoenix_p_real should resolve through one dedicated shared phoenix-step ownership surface only\n";
+                return 1;
+            }
+        }
+
+        struct ExpectedPhoenixCarrierSelector {
+            FractalType carrier_fractal_type;
+            PhoenixStepCarrierParamSlot slot;
+            double default_value;
+            double neutral_value;
+            PhoenixStepCarrierRuntimeRole runtime_role;
+            bool zero_collapses_to_baseline;
+            bool default_collapses_to_baseline;
+        };
+        constexpr ExpectedPhoenixCarrierSelector kExpectedPhoenixCarrierSelectors[] = {
+            {FractalType::phoenix, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.5667, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_phoenix, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.12, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_joy, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_fold, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_bell, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_ripple, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_splice, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_vortex, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+            {FractalType::explaino_tension, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
+        };
+        if ((sizeof(kPhoenixStepCarrierSelectorRegistry) / sizeof(kPhoenixStepCarrierSelectorRegistry[0])) !=
+            (sizeof(kExpectedPhoenixCarrierSelectors) / sizeof(kExpectedPhoenixCarrierSelectors[0]))) {
+            std::cerr << "phoenix_p_real follow-up should expose the explicit shared phoenix-step carrier selector map\n";
+            return 1;
+        }
+        KernelParams phoenixCarrierParams{};
+        for (std::size_t index = 0; index < (sizeof(kExpectedPhoenixCarrierSelectors) / sizeof(kExpectedPhoenixCarrierSelectors[0])); ++index) {
+            const auto& carrier = kPhoenixStepCarrierSelectorRegistry[index];
+            if (carrier.carrier_fractal_type != kExpectedPhoenixCarrierSelectors[index].carrier_fractal_type ||
+                carrier.slot != kExpectedPhoenixCarrierSelectors[index].slot ||
+                carrier.default_value != kExpectedPhoenixCarrierSelectors[index].default_value ||
+                carrier.neutral_value != kExpectedPhoenixCarrierSelectors[index].neutral_value ||
+                carrier.runtime_role != kExpectedPhoenixCarrierSelectors[index].runtime_role ||
+                carrier.zero_collapses_to_baseline != kExpectedPhoenixCarrierSelectors[index].zero_collapses_to_baseline ||
+                carrier.default_collapses_to_baseline != kExpectedPhoenixCarrierSelectors[index].default_collapses_to_baseline) {
+                std::cerr << "phoenix_p_real follow-up selector entry drifted from the bounded runtime-role answer\n";
+                return 1;
+            }
+            const PhoenixStepCarrierSelectorDescriptor* byCarrier = FindPhoenixStepCarrierSelectorDescriptor(carrier.carrier_fractal_type);
+            if (byCarrier != &carrier) {
+                std::cerr << "phoenix_p_real selectors should resolve through one explicit shared carrier map\n";
+                return 1;
+            }
+            float* value = ResolvePhoenixStepCarrierValue(phoenixCarrierParams, carrier.slot);
+            if (!value) {
+                std::cerr << "phoenix_p_real selector map should resolve the owned KernelParams slot\n";
+                return 1;
+            }
+            *value = static_cast<float>(carrier.default_value);
+            const float* constValue = ResolvePhoenixStepCarrierValue(static_cast<const KernelParams&>(phoenixCarrierParams), carrier.slot);
+            if (!constValue || *constValue != static_cast<float>(carrier.default_value) ||
+                FindExplainoStructuralCarrierDescriptor(carrier.carrier_fractal_type) != nullptr) {
+                std::cerr << "phoenix_p_real should no longer share the structural/root-pack carrier lookup\n";
+                return 1;
+            }
+        }
+        if (FindPhoenixStepCarrierSelectorDescriptor(FractalType::explaino_all) != nullptr ||
+            FindPhoenixStepCarrierSelectorDescriptor(FractalType::explaino) != nullptr ||
+            FindPhoenixStepCarrierSelectorDescriptor(FractalType::explaino_mult) != nullptr) {
+            std::cerr << "phoenix_p_real shared carrier ownership must stay off canonical Explaino and root-pack selectors\n";
+            return 1;
+        }
+
         struct ExpectedStructuralParam {
             const char* param_id;
             const char* binding_path;
@@ -280,12 +384,11 @@ int main() {
             bool requires_carrier_specific_zero_collapse;
         };
         constexpr ExpectedStructuralParam kExpectedStructuralParams[] = {
-            {"phoenix_p_real", "fractal.params.phoenix_p_real", ExplainoStructuralParamSlot::phoenix_p_real, ExplainoStructuralOwnership::different_ownership_model, ExplainoStructuralModel::shared_phoenix_step_memory_term, true, true},
             {"explaino_cluster_radius", "fractal.params.explaino_cluster_radius", ExplainoStructuralParamSlot::explaino_cluster_radius, ExplainoStructuralOwnership::different_ownership_model, ExplainoStructuralModel::root_pack_modifier, false, true},
         };
         if ((sizeof(kExplainoStructuralRegistry) / sizeof(kExplainoStructuralRegistry[0])) !=
             (sizeof(kExpectedStructuralParams) / sizeof(kExpectedStructuralParams[0]))) {
-            std::cerr << "Deferred Explaino structural and root-pack params should carry one explicit checked-in ownership registry\n";
+            std::cerr << "explaino_cluster_radius should remain the only structural/root-pack registry entry in the phoenix_p_real follow-up\n";
             return 1;
         }
         for (std::size_t index = 0; index < (sizeof(kExpectedStructuralParams) / sizeof(kExpectedStructuralParams[0])); ++index) {
@@ -297,20 +400,18 @@ int main() {
                 structural.model != kExpectedStructuralParams[index].model ||
                 structural.shared_with_non_explaino_carrier != kExpectedStructuralParams[index].shared_with_non_explaino_carrier ||
                 structural.requires_carrier_specific_zero_collapse != kExpectedStructuralParams[index].requires_carrier_specific_zero_collapse) {
-                std::cerr << "Deferred Explaino structural registry entry " << index << " drifted from the bounded ownership answer\n";
+                std::cerr << "Structural/root-pack registry entry drifted outside the bounded cluster-radius-only answer\n";
                 return 1;
             }
             const ExplainoStructuralDescriptor* byParam = FindExplainoStructuralDescriptor(structural.param_id);
             const ExplainoStructuralDescriptor* byBinding = FindExplainoStructuralDescriptorByBindingPath(structural.binding_path);
-            if (byParam != &structural || byBinding != &structural ||
-                FindExplainoAxisDescriptor(structural.param_id) != nullptr ||
-                FindExplainoCouplingDescriptor(structural.param_id) != nullptr ||
-                FindExplainoDualSeedDescriptor(structural.param_id) != nullptr) {
-                std::cerr << "Deferred Explaino structural params should resolve through one explicit non-canonical ownership surface only\n";
+            if (byParam != &structural || byBinding != &structural) {
+                std::cerr << "Structural/root-pack lookup should remain explicit for explaino_cluster_radius\n";
                 return 1;
             }
         }
         for (const char* outOfScopeParamId : {
+                "phoenix_p_real",
                 "ripple_amplitude",
                 "balance_void",
                 "momentum_beta",
@@ -321,7 +422,7 @@ int main() {
                 "explaino_mix",
             }) {
             if (FindExplainoStructuralDescriptor(outOfScopeParamId) != nullptr) {
-                std::cerr << "Deferred Explaino structural ownership must stay bounded and leave canonical axes, resolved couplings, and dual-seed params out of scope\n";
+                std::cerr << "Structural/root-pack ownership must stay bounded and leave phoenix_p_real plus the other deferred classes out of scope\n";
                 return 1;
             }
         }
@@ -336,26 +437,15 @@ int main() {
             bool default_collapses_to_baseline;
         };
         constexpr ExpectedStructuralCarrier kExpectedStructuralCarriers[] = {
-            {FractalType::phoenix, ExplainoStructuralParamSlot::phoenix_p_real, 0.5667, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_phoenix, ExplainoStructuralParamSlot::phoenix_p_real, 0.12, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_joy, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_fold, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_bell, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_ripple, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_splice, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_vortex, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
-            {FractalType::explaino_tension, ExplainoStructuralParamSlot::phoenix_p_real, 0.0, 0.0, ExplainoStructuralRuntimeRole::phoenix_step_memory_term, false, false},
             {FractalType::explaino_mult, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.0, 0.0, ExplainoStructuralRuntimeRole::multi_root_cluster_split, false, false},
             {FractalType::explaino_rational, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.1, 0.0, ExplainoStructuralRuntimeRole::rational_laurent_term, false, false},
         };
         if ((sizeof(kExplainoStructuralCarrierRegistry) / sizeof(kExplainoStructuralCarrierRegistry[0])) !=
             (sizeof(kExpectedStructuralCarriers) / sizeof(kExpectedStructuralCarriers[0]))) {
-            std::cerr << "Deferred Explaino structural ownership should carry one explicit carrier map across shared memory-term and root-pack seams\n";
+            std::cerr << "The structural/root-pack follow-up fence should leave only the explaino_cluster_radius carrier map behind\n";
             return 1;
         }
         KernelParams structuralParams{};
-        std::size_t phoenixStepCarrierCount = 0;
-        std::size_t rootPackCarrierCount = 0;
         for (std::size_t index = 0; index < (sizeof(kExpectedStructuralCarriers) / sizeof(kExpectedStructuralCarriers[0])); ++index) {
             const auto& carrier = kExplainoStructuralCarrierRegistry[index];
             if (carrier.carrier_fractal_type != kExpectedStructuralCarriers[index].carrier_fractal_type ||
@@ -365,35 +455,31 @@ int main() {
                 carrier.runtime_role != kExpectedStructuralCarriers[index].runtime_role ||
                 carrier.zero_collapses_to_baseline != kExpectedStructuralCarriers[index].zero_collapses_to_baseline ||
                 carrier.default_collapses_to_baseline != kExpectedStructuralCarriers[index].default_collapses_to_baseline) {
-                std::cerr << "Deferred Explaino structural carrier entry " << index << " drifted from the bounded runtime-role answer\n";
+                std::cerr << "Structural/root-pack carrier entry drifted from the bounded explaino_cluster_radius answer\n";
                 return 1;
             }
             const ExplainoStructuralCarrierDescriptor* byCarrier = FindExplainoStructuralCarrierDescriptor(carrier.carrier_fractal_type);
             if (byCarrier != &carrier) {
-                std::cerr << "Deferred Explaino structural carriers should resolve through one explicit carrier map\n";
+                std::cerr << "Structural/root-pack carriers should resolve through one explicit carrier map\n";
                 return 1;
             }
             float* value = ResolveExplainoStructuralValue(structuralParams, carrier.slot);
             if (!value) {
-                std::cerr << "Deferred Explaino structural carrier map should resolve every KernelParams slot\n";
+                std::cerr << "Structural/root-pack carrier map should resolve every owned KernelParams slot\n";
                 return 1;
             }
             *value = static_cast<float>(carrier.default_value);
             const float* constValue = ResolveExplainoStructuralValue(static_cast<const KernelParams&>(structuralParams), carrier.slot);
             if (!constValue || *constValue != static_cast<float>(carrier.default_value)) {
-                std::cerr << "Deferred Explaino structural carrier map should expose both mutable and const slot access\n";
+                std::cerr << "Structural/root-pack carrier map should expose both mutable and const slot access\n";
                 return 1;
             }
-            if (carrier.runtime_role == ExplainoStructuralRuntimeRole::phoenix_step_memory_term) {
-                ++phoenixStepCarrierCount;
-            } else {
-                ++rootPackCarrierCount;
-            }
         }
-        if (phoenixStepCarrierCount != 9u || rootPackCarrierCount != 2u ||
+        if (FindExplainoStructuralCarrierDescriptor(FractalType::phoenix) != nullptr ||
+            FindExplainoStructuralCarrierDescriptor(FractalType::explaino_phoenix) != nullptr ||
             FindExplainoStructuralCarrierDescriptor(FractalType::explaino_all) != nullptr ||
             FindExplainoStructuralCarrierDescriptor(FractalType::explaino) != nullptr) {
-            std::cerr << "Deferred Explaino structural ownership should stay off canonical Explaino and split between phoenix-step and root-pack carriers\n";
+            std::cerr << "Structural/root-pack ownership should stay off phoenix-step and canonical Explaino carriers in the phoenix_p_real follow-up\n";
             return 1;
         }
     }

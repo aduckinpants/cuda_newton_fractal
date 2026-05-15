@@ -826,6 +826,91 @@ def test_explaino_dual_seed_runtime_behavior_stays_outside_canonical_explaino_al
 
 
 @pytest.mark.parametrize(
+    ("fractal_type", "default_value", "active_value"),
+    [
+        pytest.param("phoenix", 0.5667, 0.35, id="phoenix"),
+        pytest.param("explaino_phoenix", 0.12, 0.35, id="explaino_phoenix"),
+        pytest.param("explaino_joy", 0.0, 0.35, id="explaino_joy"),
+    ],
+)
+def test_phoenix_p_real_shared_carrier_runtime_classification(
+    tmp_path: Path,
+    fractal_type: str,
+    default_value: float,
+    active_value: float,
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("phoenix_p_real shared-carrier runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    carrier_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        fractal_type,
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    carrier_state = carrier_capture["state"]
+    carrier_params = carrier_state["params"]
+    assert carrier_state["fractal_type"] == fractal_type
+    assert isinstance(carrier_params, dict)
+    assert carrier_params["phoenix_p_real"] == pytest.approx(default_value, abs=1e-6)
+    assert carrier_capture["frame_hash"] != explaino_capture["frame_hash"], (
+        f"expected {fractal_type} phoenix-step defaults to stay outside the canonical Explaino frame"
+    )
+    assert _mean_absolute_frame_delta(explaino_capture["frame_bytes"], carrier_capture["frame_bytes"]) > 0.0, (
+        f"expected {fractal_type} phoenix-step defaults to produce a measurable published-frame delta"
+    )
+
+    active_state = json.loads(json.dumps(carrier_state))
+    active_params = active_state["params"]
+    assert isinstance(active_params, dict)
+    active_params["phoenix_p_real"] = active_value
+    active_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"{fractal_type}_phoenix_active", active_state)),
+        "--capture-diagnostic",
+    )
+    assert active_capture["state"]["params"]["phoenix_p_real"] == pytest.approx(active_value, abs=1e-6)
+    assert active_capture["frame_hash"] != carrier_capture["frame_hash"], (
+        f"expected {fractal_type} phoenix-step activation to remain runtime-real"
+    )
+    assert _mean_absolute_frame_delta(carrier_capture["frame_bytes"], active_capture["frame_bytes"]) > 0.0, (
+        f"expected {fractal_type} phoenix-step activation to change the published runtime frame"
+    )
+
+    neutral_state = json.loads(json.dumps(active_capture["state"]))
+    neutral_params = neutral_state["params"]
+    assert isinstance(neutral_params, dict)
+    neutral_params["phoenix_p_real"] = 0.0
+    neutral_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"{fractal_type}_phoenix_neutral", neutral_state)),
+        "--capture-diagnostic",
+    )
+    assert neutral_capture["state"]["params"]["phoenix_p_real"] == pytest.approx(0.0, abs=1e-6)
+    assert neutral_capture["frame_hash"] != explaino_capture["frame_hash"], (
+        f"expected {fractal_type} neutral phoenix-step carrier state to stay outside canonical Explaino"
+    )
+
+
+@pytest.mark.parametrize(
     ("fractal_type", "structural_param", "default_value", "active_value", "neutral_matches_explaino"),
     [
         pytest.param("explaino_phoenix", "phoenix_p_real", 0.12, 0.35, False, id="phoenix"),

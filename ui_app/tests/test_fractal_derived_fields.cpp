@@ -664,9 +664,71 @@ int main() {
     }
 
     {
+        const FractalType phoenixCarrierPresetCases[] = {
+            FractalType::phoenix,
+            FractalType::explaino_phoenix,
+            FractalType::explaino_joy,
+            FractalType::explaino_fold,
+            FractalType::explaino_bell,
+            FractalType::explaino_ripple,
+            FractalType::explaino_splice,
+            FractalType::explaino_vortex,
+            FractalType::explaino_tension,
+        };
+
+        for (FractalType fractalType : phoenixCarrierPresetCases) {
+            ViewState view{};
+            KernelParams params{};
+            view.fractal_type = fractalType;
+
+            params.phoenix_p_real = 0.5667f;
+            params.momentum_beta = 0.8f;
+            params.joy_coupling = 0.9f;
+            params.fold_coupling = 0.7f;
+            params.bell_coupling = 0.6f;
+            params.explaino_seed_b = 9.0;
+            params.explaino_mix = 0.9f;
+            params.explaino_cluster_radius = 0.8f;
+
+            ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
+
+            const PhoenixStepCarrierSelectorDescriptor* phoenixCarrier = FindPhoenixStepCarrierSelectorDescriptor(fractalType);
+            const float expectedPhoenix = phoenixCarrier
+                ? static_cast<float>(phoenixCarrier->default_value)
+                : 0.0f;
+            const ExplainoCouplingDescriptor* coupling = FindExplainoCouplingDescriptor(fractalType);
+            const float expectedMomentum = coupling && coupling->slot == ExplainoCouplingParamSlot::momentum_beta
+                ? coupling->default_value
+                : (IsExplainoFamily(fractalType) ? 0.0f : 0.8f);
+            const float expectedJoy = coupling && coupling->slot == ExplainoCouplingParamSlot::joy_coupling
+                ? coupling->default_value
+                : (IsExplainoFamily(fractalType) ? 0.0f : 0.9f);
+            const float expectedFold = coupling && coupling->slot == ExplainoCouplingParamSlot::fold_coupling
+                ? coupling->default_value
+                : (IsExplainoFamily(fractalType) ? 0.0f : 0.7f);
+            const float expectedBell = coupling && coupling->slot == ExplainoCouplingParamSlot::bell_coupling
+                ? coupling->default_value
+                : (IsExplainoFamily(fractalType) ? 0.0f : 0.6f);
+            const float expectedSeedB = IsExplainoFamily(fractalType) ? 1.0f : 9.0f;
+            const float expectedMix = IsExplainoFamily(fractalType) ? 0.5f : 0.9f;
+            if (!NearlyEqual(params.phoenix_p_real, expectedPhoenix) ||
+                !NearlyEqual(params.explaino_cluster_radius, 0.0f)) {
+                std::cerr << "phoenix_p_real follow-up presets should derive from one shared phoenix-step carrier map instead of the mixed structural registry\n";
+                return 1;
+            }
+            if (!NearlyEqual(params.momentum_beta, expectedMomentum) ||
+                !NearlyEqual(params.joy_coupling, expectedJoy) ||
+                !NearlyEqual(params.fold_coupling, expectedFold) ||
+                !NearlyEqual(params.bell_coupling, expectedBell) ||
+                !NearlyEqual(static_cast<float>(params.explaino_seed_b), expectedSeedB) ||
+                !NearlyEqual(params.explaino_mix, expectedMix)) {
+                std::cerr << "phoenix_p_real follow-up presets must preserve the closed coupling defaults and must not auto-promote dual-seed params\n";
+                return 1;
+            }
+        }
+
         const FractalType structuralPresetCases[] = {
             FractalType::explaino_all,
-            FractalType::explaino_phoenix,
             FractalType::explaino_mult,
             FractalType::explaino_rational,
         };
@@ -688,15 +750,12 @@ int main() {
             ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
 
             const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(fractalType);
-            const float expectedPhoenix = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::phoenix_p_real
+            const float expectedCluster = structuralCarrier
                 ? static_cast<float>(structuralCarrier->default_value)
                 : 0.0f;
-            const float expectedCluster = structuralCarrier && structuralCarrier->slot == ExplainoStructuralParamSlot::explaino_cluster_radius
-                ? static_cast<float>(structuralCarrier->default_value)
-                : 0.0f;
-            if (!NearlyEqual(params.phoenix_p_real, expectedPhoenix) ||
+            if (!NearlyEqual(params.phoenix_p_real, 0.0f) ||
                 !NearlyEqual(params.explaino_cluster_radius, expectedCluster)) {
-                std::cerr << "Deferred Explaino structural presets should derive from one carrier map instead of per-selector folklore\n";
+                std::cerr << "The structural/root-pack registry should no longer own phoenix_p_real in the bounded follow-up\n";
                 return 1;
             }
             if (!NearlyEqual(params.momentum_beta, 0.0f) ||
@@ -705,7 +764,7 @@ int main() {
                 !NearlyEqual(params.bell_coupling, 0.0f) ||
                 !NearlyEqual(static_cast<float>(params.explaino_seed_b), 1.0f) ||
                 !NearlyEqual(params.explaino_mix, 0.5f)) {
-                std::cerr << "Deferred Explaino structural presets must not auto-promote resolved couplings or dual-seed params\n";
+                std::cerr << "The phoenix_p_real follow-up must leave resolved couplings and dual-seed params untouched\n";
                 return 1;
             }
         }

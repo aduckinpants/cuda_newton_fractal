@@ -1,6 +1,6 @@
 # Explaino Structural / Root-Pack Launch Anchor
 
-Use this file as the first checked-in authority surface for the next deferred-class `Explaino-all` extension lane covering the structural / root-pack modifier bucket `phoenix_p_real` and `explaino_cluster_radius`.
+Use this file as the checked-in authority surface for the structural / root-pack deferred-class packet covering `phoenix_p_real` and `explaino_cluster_radius`.
 
 Purpose:
 
@@ -48,24 +48,29 @@ Do not start with cleanup before a promoted path or explicit legacy fence exists
 Current closed result:
 
 - phase8r closed Slice A and proved the shared bucket does not stay unified
-- `phoenix_p_real` remains a shared phoenix-step memory-term carrier
+- phase8s closed the bounded `phoenix_p_real` follow-up as a dedicated shared phoenix-step memory-term carrier fence outside canonical `explaino_all`
+- `phoenix_p_real` no longer belongs on the shared structural/root-pack carrier map on the current head
 - `explaino_cluster_radius` remains a different root-pack carrier with divergent `explaino_mult` versus `explaino_rational` runtime roles
-- zero/default does not collapse any active carrier back to canonical Explaino
-- any future follow-up must split `phoenix_p_real` and `explaino_cluster_radius` into separate later work instead of reopening one shared classification slice
+- `0.0` for `phoenix_p_real` remains only a carrier-neutral memory-term state, not canonical Explaino collapse
+- any future structural/root-pack work on this head should treat `explaino_cluster_radius` as the remaining separate lane instead of reopening one shared classification slice or replaying `phoenix_p_real`
 
 ## Group Under Review
 
-The bounded deferred bucket for this packet is only:
+The historical deferred packet for this anchor is:
 
 - `phoenix_p_real`
 - `explaino_cluster_radius`
 
+Current unresolved follow-up on this head:
+
+- `explaino_cluster_radius`
+
 The key questions this lane must answer are:
 
-- whether `phoenix_p_real` is really a canonical Explaino structural axis or a shared phoenix-step memory-term carrier that still belongs to legacy Phoenix/Explaino-Phoenix style selectors
+- `phase8s` already answered `phoenix_p_real`: it stays outside canonical `explaino_all` as a dedicated shared phoenix-step memory-term carrier
 - whether `explaino_cluster_radius` is really a canonical Explaino axis or a root-pack/root-shape carrier currently owned by `explaino_mult` / `explaino_rational`
-- whether the two parameters share one ownership answer or require a split
-- whether zero/default behavior is a truthful canonical Explaino collapse, a structural no-op on a separate carrier, or something else entirely
+- whether any later structural/root-pack work can stay bounded to `explaino_cluster_radius` without replaying the closed `phoenix_p_real` carrier answer
+- whether zero/default behavior for `explaino_cluster_radius` is a truthful canonical Explaino collapse, a structural no-op on a separate carrier, or something else entirely
 
 ## Explicit Out-Of-Scope Buckets
 
@@ -138,15 +143,28 @@ Status:
 
 - closed in `phase8r`
 
-### Slice B - Promotion Only If Supported
+### Split Follow-Up - Phoenix P Real Ownership Fence
 
 Must prove:
 
-- any promoted parameter is runtime-real end to end
+- `phoenix_p_real` has one explicit owner surface outside canonical `explaino_all`
+- default/reset/runtime/state truth stays attached to the shared phoenix-step carrier surface
+- carrier-neutral `0.0` is not misreported as canonical Explaino collapse
+- no separate enforcement follow-up is required on the current head
+
+Status:
+
+- closed in `phase8s`
+
+### Later Cluster Follow-Up Only If Explicitly Chosen
+
+Must prove:
+
+- any `explaino_cluster_radius` follow-up stays bounded to that root-pack carrier lane
 - canonical or different-model default/neutral behavior remains truthful
 - legacy selectors do not preserve a second hidden implementation authority
 
-### Slice C - Enforcement Only If Needed
+### Enforcement Only If Needed Later
 
 Must prove:
 
@@ -160,6 +178,7 @@ Every future structural / root-pack slice must re-read its active phased plan on
 ## Start From
 
 - [advanced_color_library_foundation_explaino_all_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md)
+- [advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md)
 - [advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md)
 - [advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_phase8q_explaino_structural_root_pack_staging_PHASED_PLAN.md)
 - [advanced_color_library_foundation_oracle_and_inventory.md](/C:/code/cuda_newton_fractal_clone/docs/notes/advanced_color_library_foundation_oracle_and_inventory.md)

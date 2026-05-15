@@ -437,6 +437,7 @@ int main() {
         bool foundBellCouplingUiRange = false;
         bool foundDeferredCouplingSchemaMatches[sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0])] = {};
         bool foundDualSeedSchemaMatches[sizeof(kExplainoDualSeedRegistry) / sizeof(kExplainoDualSeedRegistry[0])] = {};
+        bool foundPhoenixCarrierSchemaMatches[sizeof(kPhoenixStepCarrierRegistry) / sizeof(kPhoenixStepCarrierRegistry[0])] = {};
         bool foundStructuralSchemaMatches[sizeof(kExplainoStructuralRegistry) / sizeof(kExplainoStructuralRegistry[0])] = {};
         bool foundRippleAmplitudeUiRange = false;
         bool foundSpliceOffsetUiRange = false;
@@ -666,6 +667,35 @@ int main() {
                             return 1;
                         }
                         foundDeferredCouplingSchemaMatches[slotIndex] = true;
+                    }
+                    const PhoenixStepCarrierDescriptor* phoenixCarrier = FindPhoenixStepCarrierDescriptorByBindingPath(ctrl.binding.path);
+                    if (phoenixCarrier) {
+                        const std::size_t slotIndex = static_cast<std::size_t>(phoenixCarrier->slot);
+                        if (slotIndex >= (sizeof(foundPhoenixCarrierSchemaMatches) / sizeof(foundPhoenixCarrierSchemaMatches[0])) ||
+                            foundPhoenixCarrierSchemaMatches[slotIndex]) {
+                            std::cerr << "Main schema duplicated a shared phoenix-step carrier control instead of deriving one owner per parameter\n";
+                            return 1;
+                        }
+                        std::size_t expectedCarrierCount = 0;
+                        for (const auto& carrier : kPhoenixStepCarrierSelectorRegistry) {
+                            if (carrier.slot == phoenixCarrier->slot) {
+                                const char* carrierId = FractalTypeId(carrier.carrier_fractal_type);
+                                if (!carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId)) {
+                                    std::cerr << "Main schema phoenix-step carrier controls should stay fenced to their explicit shared carrier selectors only\n";
+                                    return 1;
+                                }
+                                ++expectedCarrierCount;
+                            }
+                        }
+                        if (ctrl.id != phoenixCarrier->param_id ||
+                            !ctrl.has_visible_if || ctrl.visible_if.op != "in" ||
+                            ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                            VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
+                            CsvTokenCount(ctrl.visible_if.value) != expectedCarrierCount) {
+                            std::cerr << "Main schema phoenix-step carrier control should decode exactly to its explicit shared carrier map\n";
+                            return 1;
+                        }
+                        foundPhoenixCarrierSchemaMatches[slotIndex] = true;
                     }
                     const ExplainoStructuralDescriptor* structural = FindExplainoStructuralDescriptorByBindingPath(ctrl.binding.path);
                     if (structural) {
