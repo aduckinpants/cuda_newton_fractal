@@ -359,6 +359,64 @@
           }
         },
         {
+          "id": "counterfactual_pair_root_family",
+          "type": "combo",
+          "label": "Pair Root Family",
+          "help": "Choose the paired Newton family used by both the baseline and perturbed partner orbits.",
+          "value_type": "enum",
+          "default": "cubic_unit_roots",
+          "options": [
+            { "id": "cubic_unit_roots", "label": "Cubic Unit Roots" },
+            { "id": "quartic_unit_roots", "label": "Quartic Unit Roots" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_root_family" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_frame",
+          "type": "combo",
+          "label": "Perturbation Frame",
+          "help": "World Absolute keeps the partner offset fixed in the complex plane. View Relative scales the offset with the current zoom.",
+          "value_type": "enum",
+          "default": "world_absolute",
+          "options": [
+            { "id": "world_absolute", "label": "World Absolute" },
+            { "id": "view_relative", "label": "View Relative" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_frame" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_offset_x",
+          "type": "drag_float",
+          "label": "Partner Offset X",
+          "help": "Real-axis offset applied to the perturbed partner before the paired Newton evolution begins.",
+          "value_type": "float",
+          "ui_min": -1.0, "ui_max": 1.0, "step": 0.001, "default": 0.16,
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_offset_x" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_offset_y",
+          "type": "drag_float",
+          "label": "Partner Offset Y",
+          "help": "Imaginary-axis offset applied to the perturbed partner before the paired Newton evolution begins.",
+          "value_type": "float",
+          "ui_min": -1.0, "ui_max": 1.0, "step": 0.001, "default": 0.08,
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_offset_y" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_reconvergence_ratio",
+          "type": "drag_float",
+          "label": "Reconvergence Ratio",
+          "help": "Class 0 = same-root reconvergence when mean pair gap <= ratio * initial gap. Class 1 = same-basin drift above that ratio. Class 2 = basin swap. Class 3 = unstable.",
+          "value_type": "float",
+          "min": 0.0, "ui_min": 0.0, "ui_max": 4.0, "step": 0.01, "default": 0.6,
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_reconvergence_ratio" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+        },
+        {
           "id": "nova_alpha",
           "type": "slider_float",
           "label": "Nova Alpha",

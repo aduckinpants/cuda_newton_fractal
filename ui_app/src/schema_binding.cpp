@@ -64,6 +64,39 @@ double SafeCameraUiZoomFromLog2(double log2Zoom) {
     return LocalExp2(ClampDouble(log2Zoom, LocalLog2(1.0e-30), kMaxLog2Zoom));
 }
 
+bool TryResolveCounterfactualPairRootFamilyForPolyKindLocal(PolyKind kind, CounterfactualPairRootFamily* outFamily) {
+    if (kind == PolyKind::z3_minus_1) {
+        if (outFamily) *outFamily = CounterfactualPairRootFamily::cubic_unit_roots;
+        return true;
+    }
+    if (kind == PolyKind::z4_minus_1) {
+        if (outFamily) *outFamily = CounterfactualPairRootFamily::quartic_unit_roots;
+        return true;
+    }
+    return false;
+}
+
+void SyncCounterfactualPairRootFamilyPresetLocal(KernelParams& params) {
+    switch (params.counterfactual_pair_root_family) {
+    case CounterfactualPairRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 0.0f;
+        break;
+    case CounterfactualPairRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 0.0f;
+        params.poly_coeffs[4] = 1.0f;
+        break;
+    }
+}
+
 void SyncCameraUiMirrorFromHp(ViewState& view) {
     double zoom = SafeCameraUiZoomFromLog2(view.log2_zoom);
     zoom = ClampDouble(zoom, 1.0e-30, 1.0e30);
@@ -160,6 +193,118 @@ bool ApplySelectedColorPipeline(BindingContext* ctx, MatchFn match) {
 
     ctx->params->color_pipeline = nextPipeline;
     ctx->params->coloring_mode = nextMode;
+    return true;
+}
+
+bool SetCounterfactualPairPolyKind(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    PolyKind nextKind = ctx->params->poly_kind;
+    if (!ParseAndAssignEnumId(id, &nextKind, TryParsePolyKindId)) {
+        return false;
+    }
+    if (ctx->view && ctx->view->fractal_type == FractalType::counterfactual_pair) {
+        CounterfactualPairRootFamily nextFamily = ctx->params->counterfactual_pair_root_family;
+        if (!TryResolveCounterfactualPairRootFamilyForPolyKindLocal(nextKind, &nextFamily)) {
+            return false;
+        }
+        ctx->params->counterfactual_pair_root_family = nextFamily;
+    }
+    ctx->params->poly_kind = nextKind;
+    return true;
+}
+
+bool SetCounterfactualPairRootFamily(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    CounterfactualPairRootFamily nextFamily = ctx->params->counterfactual_pair_root_family;
+    if (!ParseAndAssignEnumId(id, &nextFamily, TryParseCounterfactualPairRootFamilyId)) {
+        return false;
+    }
+    ctx->params->counterfactual_pair_root_family = nextFamily;
+    SyncCounterfactualPairRootFamilyPresetLocal(*ctx->params);
+    return true;
+}
+
+bool SetCounterfactualPairFrame(BindingContext* ctx, const std::string& id) {
+    return ctx && ctx->params &&
+        ParseAndAssignEnumId(id, &ctx->params->counterfactual_pair_frame, TryParseCounterfactualPairFrameId);
+}
+
+bool SetColoringMode(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    ColoringMode mode = ColoringMode::root_basin;
+    if (!ParseAndAssignEnumId(id, &mode, TryParseColoringModeId)) {
+        return false;
+    }
+    if (!IsAllowedColoringModeForBinding(*ctx, mode)) {
+        return false;
+    }
+    ctx->params->coloring_mode = mode;
+    ctx->params->color_pipeline = ColorPipelineForLegacyMode(mode);
+    return true;
+}
+
+bool SetColorSignal(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    ColorSignal signal = ColorSignal::root_index;
+    if (!ParseAndAssignEnumId(id, &signal, TryParseColorSignalId)) {
+        return false;
+    }
+    return ApplySelectedColorPipeline(ctx,
+        [signal](const ColorPipelineSelection& pipeline) { return pipeline.signal == signal; });
+}
+
+bool SetColorPalette(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    ColorPalette palette = ColorPalette::root_classic;
+    if (!ParseAndAssignEnumId(id, &palette, TryParseColorPaletteId)) {
+        return false;
+    }
+    return ApplySelectedColorPipeline(ctx,
+        [palette](const ColorPipelineSelection& pipeline) { return pipeline.palette == palette; });
+}
+
+bool SetColorGrading(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    ColorGradingPreset grading = ColorGradingPreset::basin_default;
+    if (!ParseAndAssignEnumId(id, &grading, TryParseColorGradingPresetId)) {
+        return false;
+    }
+    return ApplySelectedColorPipeline(ctx,
+        [grading](const ColorPipelineSelection& pipeline) { return pipeline.grading == grading; });
+}
+
+bool SetFractalType(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->view) {
+        return false;
+    }
+
+    FractalType fractalType = ctx->view->fractal_type;
+    if (!TryParseFractalTypeId(id, &fractalType)) {
+        return false;
+    }
+    ctx->view->fractal_type = fractalType;
+    if (ctx->params &&
+        (fractalType == ExplainoCanonicalFractalType() || IsExplainoLegacyProjectionSelector(fractalType))) {
+        ApplyExplainoAxisRegistryDefaults(fractalType, *ctx->params);
+    }
     return true;
 }
 
@@ -406,6 +551,12 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.poly_kind") {
         return EnumIdOrEmpty(PolyKindId(params->poly_kind));
     }
+    if (params && path == "fractal.params.counterfactual_pair_root_family") {
+        return EnumIdOrEmpty(CounterfactualPairRootFamilyId(params->counterfactual_pair_root_family));
+    }
+    if (params && path == "fractal.params.counterfactual_pair_frame") {
+        return EnumIdOrEmpty(CounterfactualPairFrameId(params->counterfactual_pair_frame));
+    }
     if (params && path == "fractal.params.transcendental_func") {
         return EnumIdOrEmpty(TranscendentalFuncId(params->transcendental_func));
     }
@@ -441,7 +592,13 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
 
 bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (params && path == "fractal.params.poly_kind") {
-        return ParseAndAssignEnumId(id, &params->poly_kind, TryParsePolyKindId);
+        return SetCounterfactualPairPolyKind(this, id);
+    }
+    if (params && path == "fractal.params.counterfactual_pair_root_family") {
+        return SetCounterfactualPairRootFamily(this, id);
+    }
+    if (params && path == "fractal.params.counterfactual_pair_frame") {
+        return SetCounterfactualPairFrame(this, id);
     }
     if (params && path == "fractal.params.transcendental_func") {
         return ParseAndAssignEnumId(id, &params->transcendental_func, TryParseTranscendentalFuncId);
@@ -450,51 +607,19 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         return ParseAndAssignEnumId(id, &params->mcmullen_preset, TryParseMcMullenPresetId);
     }
     if (params && path == "fractal.params.coloring_mode") {
-        ColoringMode mode = ColoringMode::root_basin;
-        if (!ParseAndAssignEnumId(id, &mode, TryParseColoringModeId)) {
-            return false;
-        }
-        if (!IsAllowedColoringModeForBinding(*this, mode)) {
-            return false;
-        }
-        params->coloring_mode = mode;
-        params->color_pipeline = ColorPipelineForLegacyMode(mode);
-        return true;
+        return SetColoringMode(this, id);
     }
     if (params && path == "fractal.params.color_signal") {
-        ColorSignal signal = ColorSignal::root_index;
-        if (!ParseAndAssignEnumId(id, &signal, TryParseColorSignalId)) {
-            return false;
-        }
-        return ApplySelectedColorPipeline(this,
-            [signal](const ColorPipelineSelection& pipeline) { return pipeline.signal == signal; });
+        return SetColorSignal(this, id);
     }
     if (params && path == "fractal.params.color_palette") {
-        ColorPalette palette = ColorPalette::root_classic;
-        if (!ParseAndAssignEnumId(id, &palette, TryParseColorPaletteId)) {
-            return false;
-        }
-        return ApplySelectedColorPipeline(this,
-            [palette](const ColorPipelineSelection& pipeline) { return pipeline.palette == palette; });
+        return SetColorPalette(this, id);
     }
     if (params && path == "fractal.params.color_grading") {
-        ColorGradingPreset grading = ColorGradingPreset::basin_default;
-        if (!ParseAndAssignEnumId(id, &grading, TryParseColorGradingPresetId)) {
-            return false;
-        }
-        return ApplySelectedColorPipeline(this,
-            [grading](const ColorPipelineSelection& pipeline) { return pipeline.grading == grading; });
+        return SetColorGrading(this, id);
     }
     if (view && path == "fractal.view.fractal_type") {
-        FractalType fractalType = view->fractal_type;
-        if (!TryParseFractalTypeId(id, &fractalType)) {
-            return false;
-        }
-        view->fractal_type = fractalType;
-        if (params && (fractalType == ExplainoCanonicalFractalType() || IsExplainoLegacyProjectionSelector(fractalType))) {
-            ApplyExplainoAxisRegistryDefaults(fractalType, *params);
-        }
-        return true;
+        return SetFractalType(this, id);
     }
     if (view && path == "fractal.view.camera_behavior") {
         return ParseAndAssignEnumId(id, &view->camera_behavior, TryParseCameraBehaviorId);
@@ -621,6 +746,9 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
     }
     if (params) {
         if (path == "fractal.params.epsilon") { *outPtr = &params->epsilon; return true; }
+        if (path == "fractal.params.counterfactual_pair_offset_x") { *outPtr = &params->counterfactual_pair_offset_x; return true; }
+        if (path == "fractal.params.counterfactual_pair_offset_y") { *outPtr = &params->counterfactual_pair_offset_y; return true; }
+        if (path == "fractal.params.counterfactual_pair_reconvergence_ratio") { *outPtr = &params->counterfactual_pair_reconvergence_ratio; return true; }
         if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
         if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
         if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }

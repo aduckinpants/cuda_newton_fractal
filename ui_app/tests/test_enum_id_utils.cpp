@@ -47,6 +47,8 @@ static void TestConcreteEnumIdWrappers() {
     CameraBehavior cameraBehavior = CameraBehavior::manual;
     SampleTier sampleTier = SampleTier::fast;
     ColorPipelineShape shape = ColorPipelineShape::identity;
+    CounterfactualPairRootFamily rootFamily = CounterfactualPairRootFamily::cubic_unit_roots;
+    CounterfactualPairFrame pairFrame = CounterfactualPairFrame::world_absolute;
 
     Check(std::string_view(PolyKindId(PolyKind::z3_minus_1)) == "z3_minus_1",
         "TestConcreteEnumIdWrappers_PolyKindLookup");
@@ -87,6 +89,16 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_ColorPipelineShapeLookup");
     Check(TryParseColorPipelineShapeId("mirror_repeat", &shape) && shape == ColorPipelineShape::mirror_repeat,
         "TestConcreteEnumIdWrappers_ColorPipelineShapeParse");
+
+    Check(std::string_view(CounterfactualPairRootFamilyId(CounterfactualPairRootFamily::cubic_unit_roots)) == "cubic_unit_roots",
+        "TestConcreteEnumIdWrappers_CounterfactualPairRootFamilyLookup");
+    Check(TryParseCounterfactualPairRootFamilyId("quartic_unit_roots", &rootFamily) && rootFamily == CounterfactualPairRootFamily::quartic_unit_roots,
+        "TestConcreteEnumIdWrappers_CounterfactualPairRootFamilyParse");
+
+    Check(std::string_view(CounterfactualPairFrameId(CounterfactualPairFrame::world_absolute)) == "world_absolute",
+        "TestConcreteEnumIdWrappers_CounterfactualPairFrameLookup");
+    Check(TryParseCounterfactualPairFrameId("view_relative", &pairFrame) && pairFrame == CounterfactualPairFrame::view_relative,
+        "TestConcreteEnumIdWrappers_CounterfactualPairFrameParse");
 }
 
 int main() {

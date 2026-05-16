@@ -237,6 +237,16 @@ enum class FractalType : int {
     counterfactual_pair = 39,
 };
 
+enum class CounterfactualPairRootFamily : int {
+    cubic_unit_roots = 0,
+    quartic_unit_roots = 1,
+};
+
+enum class CounterfactualPairFrame : int {
+    world_absolute = 0,
+    view_relative = 1,
+};
+
 // --- Precision tier model (two-axis: backend x strategy) ---
 // Public presets (API / schema surface).
 enum class SampleTier : int {
@@ -341,6 +351,11 @@ struct KernelParams {
     float phoenix_p_imag{0.0f};
     PolyKind poly_kind{PolyKind::z3_minus_1};
     float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
+    CounterfactualPairRootFamily counterfactual_pair_root_family{CounterfactualPairRootFamily::cubic_unit_roots};
+    CounterfactualPairFrame counterfactual_pair_frame{CounterfactualPairFrame::world_absolute};
+    float counterfactual_pair_offset_x{0.16f};
+    float counterfactual_pair_offset_y{0.08f};
+    float counterfactual_pair_reconvergence_ratio{0.60f};
     int multibrot_power{3};
     float multibrot_power_float{3.0f};
     float lambda_real{2.9685855f};

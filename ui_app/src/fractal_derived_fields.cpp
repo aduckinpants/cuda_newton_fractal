@@ -137,6 +137,18 @@ void SetPolyPreset(KernelParams& params) {
     }
 }
 
+static void SyncCounterfactualPairRootFamilyPreset(KernelParams& params) {
+    switch (params.counterfactual_pair_root_family) {
+    case CounterfactualPairRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        break;
+    case CounterfactualPairRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        break;
+    }
+    SetPolyPreset(params);
+}
+
 static void MarkDirty(bool* ioDirty) {
     if (ioDirty) *ioDirty = true;
 }
@@ -213,8 +225,12 @@ static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams&
 static void ApplyCounterfactualPairPresetDefaults(KernelParams& params) {
     params.max_iter = 96;
     params.epsilon = 1e-6f;
-    params.poly_kind = PolyKind::z3_minus_1;
-    SetPolyPreset(params);
+    params.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::world_absolute;
+    params.counterfactual_pair_offset_x = 0.16f;
+    params.counterfactual_pair_offset_y = 0.08f;
+    params.counterfactual_pair_reconvergence_ratio = 0.60f;
+    SyncCounterfactualPairRootFamilyPreset(params);
     ApplyDefaultColoringSelection(FractalType::counterfactual_pair, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = 0.0f;

@@ -60,6 +60,14 @@ UISchemaBinding MakeBinding(const char* kind, const char* path) {
     return binding;
 }
 
+UISchemaPredicate MakeEqVisibleIf(const char* path, const char* value) {
+    UISchemaPredicate predicate;
+    predicate.op = "eq";
+    predicate.path = path;
+    predicate.value = value;
+    return predicate;
+}
+
 UISchemaControl MakeParamControl(
     const char* id,
     const char* type,
@@ -167,6 +175,89 @@ UISchemaControl MakeActionControl(const char* id, const char* label, const char*
     return control;
 }
 
+void SetVisibleForFractalType(UISchemaControl* control, const char* fractalTypeId) {
+    if (!control) {
+        return;
+    }
+    control->has_visible_if = true;
+    control->visible_if = MakeEqVisibleIf("fractal.view.fractal_type", fractalTypeId);
+}
+
+UISchemaControl BuildCounterfactualPairRootFamilyControl() {
+    UISchemaControl control = MakeParamControl(
+        "counterfactual_pair_root_family",
+        "combo",
+        "Pair Root Family",
+        "enum",
+        "fractal.params.counterfactual_pair_root_family",
+        json_min::Value{std::string("cubic_unit_roots")});
+    control.options = {
+        {"cubic_unit_roots", "Cubic Unit Roots", ""},
+        {"quartic_unit_roots", "Quartic Unit Roots", ""},
+    };
+    control.help = "Choose the paired Newton family used by both orbits.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildCounterfactualPairFrameControl() {
+    UISchemaControl control = MakeParamControl(
+        "counterfactual_pair_frame",
+        "combo",
+        "Perturbation Frame",
+        "enum",
+        "fractal.params.counterfactual_pair_frame",
+        json_min::Value{std::string("world_absolute")});
+    control.options = {
+        {"world_absolute", "World Absolute", ""},
+        {"view_relative", "View Relative", ""},
+    };
+    control.help = "World Absolute keeps the partner gap fixed in the complex plane. View Relative scales the gap with the current zoom.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildCounterfactualPairOffsetControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    double defaultValue) {
+    UISchemaControl control = MakeUiRangedParamControl(
+        id,
+        "drag_float",
+        label,
+        "float",
+        -1.0,
+        1.0,
+        0.001,
+        path,
+        json_min::Value{defaultValue});
+    SetVisibleForFractalType(&control, "counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildCounterfactualPairReconvergenceControl() {
+    UISchemaControl control = MakeSoftMinParamControl(
+        "counterfactual_pair_reconvergence_ratio",
+        "drag_float",
+        "Reconvergence Ratio",
+        "float",
+        0.0,
+        0.0,
+        4.0,
+        0.01,
+        "fractal.params.counterfactual_pair_reconvergence_ratio",
+        json_min::Value{0.60});
+    control.help =
+        "Class 0 = same-root reconvergence when mean pair gap stays under ratio * initial gap. "
+        "Class 1 = same-basin drift above that ratio. Class 2 = basin swap. Class 3 = unstable.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "counterfactual_pair");
+    return control;
+}
+
 std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
     std::vector<UISchemaOption> options;
     options.reserve(sizeof(kSafeModeFractalTypeOptionDefs) / sizeof(kSafeModeFractalTypeOptionDefs[0]));
@@ -221,6 +312,11 @@ UISchemaPanel BuildSafeModeFractalPanel() {
     panel.controls = {
         MakeSoftMinParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
         MakeRangedParamControl("exposure", "slider_float", "Exposure", "float", 0.1, 5.0, 0.01, "fractal.params.exposure", json_min::Value{1.0}),
+        BuildCounterfactualPairRootFamilyControl(),
+        BuildCounterfactualPairFrameControl(),
+        BuildCounterfactualPairOffsetControl("counterfactual_pair_offset_x", "Partner Offset X", "fractal.params.counterfactual_pair_offset_x", 0.16),
+        BuildCounterfactualPairOffsetControl("counterfactual_pair_offset_y", "Partner Offset Y", "fractal.params.counterfactual_pair_offset_y", 0.08),
+        BuildCounterfactualPairReconvergenceControl(),
     };
     return panel;
 }

@@ -35,6 +35,42 @@ static int gFail = 0;
 
 namespace {
 
+constexpr int kCounterfactualPairGridN = 25;
+
+void FillCounterfactualPairGrid(Double2 (&coords)[kCounterfactualPairGridN]) {
+    int next = 0;
+    for (int yi = -2; yi <= 2; ++yi) {
+        for (int xi = -2; xi <= 2; ++xi) {
+            coords[next++] = MakeDouble2(0.55 * static_cast<double>(xi), 0.55 * static_cast<double>(yi));
+        }
+    }
+}
+
+bool SampleCounterfactualPairGrid(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleResult (&results)[kCounterfactualPairGridN],
+    const char** outError) {
+    Double2 coords[kCounterfactualPairGridN];
+    FillCounterfactualPairGrid(coords);
+    return SampleFractalPoints(coords, kCounterfactualPairGridN, view, params, render, results, outError);
+}
+
+int DecodeCounterfactualPairClass(const FractalSampleResult& result) {
+    Float2 classPoint{result.final_z_x, result.final_z_y};
+    return NearestRootIndexUnitRoots(classPoint, 4);
+}
+
+bool SameCounterfactualPairResult(const FractalSampleResult& lhs, const FractalSampleResult& rhs) {
+    return lhs.iterations == rhs.iterations &&
+        lhs.converged == rhs.converged &&
+        lhs.escaped == rhs.escaped &&
+        std::fabs(lhs.final_z_x - rhs.final_z_x) < 1.0e-6f &&
+        std::fabs(lhs.final_z_y - rhs.final_z_y) < 1.0e-6f &&
+        std::fabs(lhs.residual - rhs.residual) < 1.0e-6f;
+}
+
 // Build default state for a fractal type.
 void MakeDefaults(FractalType ft, ViewState& view, KernelParams& params, RenderSettings& render) {
     view = {};
@@ -194,19 +230,9 @@ void TestCounterfactualPairProducesExplicitPairClasses() {
     RenderSettings render{};
     MakeDefaults(FractalType::counterfactual_pair, view, params, render);
     params.max_iter = 96;
-
-    const int N = 25;
-    Double2 coords[N];
-    int next = 0;
-    for (int yi = -2; yi <= 2; ++yi) {
-        for (int xi = -2; xi <= 2; ++xi) {
-            coords[next++] = MakeDouble2(0.55 * static_cast<double>(xi), 0.55 * static_cast<double>(yi));
-        }
-    }
-
-    FractalSampleResult results[N]{};
+    FractalSampleResult results[kCounterfactualPairGridN]{};
     const char* error = nullptr;
-    bool ok = SampleFractalPoints(coords, N, view, params, render, results, &error);
+    bool ok = SampleCounterfactualPairGrid(view, params, render, results, &error);
     CHECK("counterfactual pair batch ok", ok);
     if (!ok) {
         std::cerr << "    error: " << (error ? error : "unknown") << "\n";
@@ -216,12 +242,11 @@ void TestCounterfactualPairProducesExplicitPairClasses() {
     bool sawClass[4] = {false, false, false, false};
     bool sawUnstable = false;
     int distinctClasses = 0;
-    for (int i = 0; i < N; ++i) {
+    for (int i = 0; i < kCounterfactualPairGridN; ++i) {
         CHECK("counterfactual pair final_z finite", std::isfinite(results[i].final_z_x) && std::isfinite(results[i].final_z_y));
         CHECK("counterfactual pair residual finite", std::isfinite(results[i].residual));
         CHECK("counterfactual pair never escapes", !results[i].escaped);
-        Float2 classPoint{results[i].final_z_x, results[i].final_z_y};
-        const int classIndex = NearestRootIndexUnitRoots(classPoint, 4);
+        const int classIndex = DecodeCounterfactualPairClass(results[i]);
         const Double2 expectedRoot = UnitRootCoord((classIndex + 2) % 4, 4);
         const double dx = static_cast<double>(results[i].final_z_x) - expectedRoot.x;
         const double dy = static_cast<double>(results[i].final_z_y) - expectedRoot.y;
@@ -235,6 +260,135 @@ void TestCounterfactualPairProducesExplicitPairClasses() {
 
     CHECK("counterfactual pair exposes multiple explicit classes", distinctClasses >= 3);
     CHECK("counterfactual pair exposes an unstable class", sawUnstable);
+}
+
+void TestCounterfactualPairFrameModesAreExplicit() {
+    ViewState view{};
+    KernelParams worldParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::counterfactual_pair, view, worldParams, render);
+    worldParams.max_iter = 96;
+    view.log2_zoom = 4.0;
+    view.zoom = 16.0f;
+
+    KernelParams relativeParams = worldParams;
+    relativeParams.counterfactual_pair_frame = CounterfactualPairFrame::view_relative;
+
+    KernelParams scaledWorldParams = worldParams;
+    scaledWorldParams.counterfactual_pair_offset_x = worldParams.counterfactual_pair_offset_x * 0.125f;
+    scaledWorldParams.counterfactual_pair_offset_y = worldParams.counterfactual_pair_offset_y * 0.125f;
+
+    FractalSampleResult worldResults[kCounterfactualPairGridN]{};
+    FractalSampleResult relativeResults[kCounterfactualPairGridN]{};
+    FractalSampleResult scaledWorldResults[kCounterfactualPairGridN]{};
+    const char* error = nullptr;
+
+    CHECK("counterfactual pair world-absolute grid ok",
+        SampleCounterfactualPairGrid(view, worldParams, render, worldResults, &error));
+    CHECK("counterfactual pair view-relative grid ok",
+        SampleCounterfactualPairGrid(view, relativeParams, render, relativeResults, &error));
+    CHECK("counterfactual pair scaled-world grid ok",
+        SampleCounterfactualPairGrid(view, scaledWorldParams, render, scaledWorldResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    bool sawRelativeMatchScaledWorld = true;
+    bool sawRelativeDifferFromWorld = false;
+    for (int i = 0; i < kCounterfactualPairGridN; ++i) {
+        sawRelativeMatchScaledWorld = sawRelativeMatchScaledWorld &&
+            SameCounterfactualPairResult(relativeResults[i], scaledWorldResults[i]);
+        if (!SameCounterfactualPairResult(relativeResults[i], worldResults[i])) {
+            sawRelativeDifferFromWorld = true;
+        }
+    }
+
+    CHECK("counterfactual pair view-relative frame matches the equivalent scaled world-absolute gap",
+        sawRelativeMatchScaledWorld);
+    CHECK("counterfactual pair frame mode changes behavior at deep zoom",
+        sawRelativeDifferFromWorld);
+}
+
+void TestCounterfactualPairRootFamilyChangesRuntimeLane() {
+    ViewState view{};
+    KernelParams cubicParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::counterfactual_pair, view, cubicParams, render);
+    cubicParams.max_iter = 96;
+
+    KernelParams quarticParams = cubicParams;
+    quarticParams.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+    quarticParams.poly_kind = PolyKind::z4_minus_1;
+    quarticParams.poly_coeffs[0] = -1.0f;
+    quarticParams.poly_coeffs[1] = 0.0f;
+    quarticParams.poly_coeffs[2] = 0.0f;
+    quarticParams.poly_coeffs[3] = 0.0f;
+    quarticParams.poly_coeffs[4] = 1.0f;
+
+    FractalSampleResult cubicResults[kCounterfactualPairGridN]{};
+    FractalSampleResult quarticResults[kCounterfactualPairGridN]{};
+    const char* error = nullptr;
+
+    CHECK("counterfactual pair cubic grid ok",
+        SampleCounterfactualPairGrid(view, cubicParams, render, cubicResults, &error));
+    CHECK("counterfactual pair quartic grid ok",
+        SampleCounterfactualPairGrid(view, quarticParams, render, quarticResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    bool sawDifference = false;
+    for (int i = 0; i < kCounterfactualPairGridN; ++i) {
+        if (!SameCounterfactualPairResult(cubicResults[i], quarticResults[i])) {
+            sawDifference = true;
+        }
+    }
+
+    CHECK("counterfactual pair root family changes runtime output",
+        sawDifference);
+}
+
+void TestCounterfactualPairReconvergenceRatioControlsOnlyTheSameBasinSplit() {
+    ViewState view{};
+    KernelParams lowRatioParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::counterfactual_pair, view, lowRatioParams, render);
+    lowRatioParams.max_iter = 96;
+    lowRatioParams.counterfactual_pair_reconvergence_ratio = 0.0f;
+
+    KernelParams highRatioParams = lowRatioParams;
+    highRatioParams.counterfactual_pair_reconvergence_ratio = 10.0f;
+
+    FractalSampleResult lowResults[kCounterfactualPairGridN]{};
+    FractalSampleResult highResults[kCounterfactualPairGridN]{};
+    const char* error = nullptr;
+
+    CHECK("counterfactual pair low-ratio grid ok",
+        SampleCounterfactualPairGrid(view, lowRatioParams, render, lowResults, &error));
+    CHECK("counterfactual pair high-ratio grid ok",
+        SampleCounterfactualPairGrid(view, highRatioParams, render, highResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    bool sawRatioDrivenChange = false;
+    bool sawOnlySameBasinSplitChanges = true;
+    for (int i = 0; i < kCounterfactualPairGridN; ++i) {
+        const int lowClass = DecodeCounterfactualPairClass(lowResults[i]);
+        const int highClass = DecodeCounterfactualPairClass(highResults[i]);
+        if (lowClass != highClass) {
+            sawRatioDrivenChange = true;
+            const bool validSameBasinSplit =
+                (lowClass == 0 && highClass == 1) ||
+                (lowClass == 1 && highClass == 0);
+            sawOnlySameBasinSplitChanges = sawOnlySameBasinSplitChanges && validSameBasinSplit;
+        }
+    }
+
+    CHECK("counterfactual pair reconvergence ratio changes at least one classification",
+        sawRatioDrivenChange);
+    CHECK("counterfactual pair reconvergence ratio only changes the same-basin split",
+        sawOnlySameBasinSplitChanges);
 }
 
 // Test 4: Widened evidence projects back to legacy semantics.
@@ -354,6 +508,9 @@ int main() {
     TestBatchSample();
     TestAllFractalTypes();
     TestCounterfactualPairProducesExplicitPairClasses();
+    TestCounterfactualPairFrameModesAreExplicit();
+    TestCounterfactualPairRootFamilyChangesRuntimeLane();
+    TestCounterfactualPairReconvergenceRatioControlsOnlyTheSameBasinSplit();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

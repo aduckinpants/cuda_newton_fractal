@@ -119,6 +119,14 @@ int main() {
             std::cerr << "Expected poly kind enum round-trip to start at z3_minus_1\n";
             return 1;
         }
+        if (ctx.GetEnumId("fractal.params.counterfactual_pair_root_family") != "cubic_unit_roots") {
+            std::cerr << "Expected Counterfactual Pair root family enum round-trip to start at cubic_unit_roots\n";
+            return 1;
+        }
+        if (ctx.GetEnumId("fractal.params.counterfactual_pair_frame") != "world_absolute") {
+            std::cerr << "Expected Counterfactual Pair frame enum round-trip to start at world_absolute\n";
+            return 1;
+        }
         if (ctx.GetEnumId("fractal.view.fractal_type") != "explaino") {
             std::cerr << "Expected fractal type enum round-trip to start at explaino\n";
             return 1;
@@ -190,6 +198,30 @@ int main() {
         if (!ctx.SetEnumId("fractal.view.fractal_type", "counterfactual_pair") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "counterfactual_pair") {
             std::cerr << "Expected fractal type enum round-trip to accept counterfactual_pair\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.counterfactual_pair_root_family", "quartic_unit_roots") ||
+            ctx.GetEnumId("fractal.params.counterfactual_pair_root_family") != "quartic_unit_roots" ||
+            params.poly_kind != PolyKind::z4_minus_1 ||
+            !NearlyEqual(params.poly_coeffs[0], -1.0f) ||
+            !NearlyEqual(params.poly_coeffs[3], 0.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Expected Counterfactual Pair root family edits to own the shipped polynomial preset\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.counterfactual_pair_frame", "view_relative") ||
+            ctx.GetEnumId("fractal.params.counterfactual_pair_frame") != "view_relative") {
+            std::cerr << "Expected Counterfactual Pair frame enum round-trip to accept view_relative\n";
+            return 1;
+        }
+        float* pairOffsetX = nullptr;
+        float* pairOffsetY = nullptr;
+        float* pairReconvergenceRatio = nullptr;
+        if (!ctx.BindFloat("fractal.params.counterfactual_pair_offset_x", &pairOffsetX) || !pairOffsetX || !NearlyEqual(*pairOffsetX, 0.16f) ||
+            !ctx.BindFloat("fractal.params.counterfactual_pair_offset_y", &pairOffsetY) || !pairOffsetY || !NearlyEqual(*pairOffsetY, 0.08f) ||
+            !ctx.BindFloat("fractal.params.counterfactual_pair_reconvergence_ratio", &pairReconvergenceRatio) || !pairReconvergenceRatio ||
+            !NearlyEqual(*pairReconvergenceRatio, 0.60f)) {
+            std::cerr << "Expected Counterfactual Pair float controls to bind to the shipped gap and reconvergence params\n";
             return 1;
         }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_vortex") ||

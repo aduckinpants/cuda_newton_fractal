@@ -66,12 +66,23 @@
             converged = (pAbs < eps);
         }
     } else if (ft == FractalType::counterfactual_pair) {
-        const float pairCoeffs[5] = {-1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+        float pairCoeffs[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) {
+            pairCoeffs[k] = params.poly_coeffs[k];
+        }
+        const int pairRootCount = ResolvePolynomialRootCount(params.poly_kind);
         const double zoomScale = fmax(1.0e-300, exp2(view.log2_zoom));
-        const double pairOffsetX = 0.08 * (2.0 / zoomScale);
-        const double pairOffsetY = 0.04 * (2.0 / zoomScale);
+        const double rawPairOffsetX = isfinite(params.counterfactual_pair_offset_x) ? static_cast<double>(params.counterfactual_pair_offset_x) : 0.0;
+        const double rawPairOffsetY = isfinite(params.counterfactual_pair_offset_y) ? static_cast<double>(params.counterfactual_pair_offset_y) : 0.0;
+        const double pairOffsetScale = params.counterfactual_pair_frame == CounterfactualPairFrame::view_relative ? (2.0 / zoomScale) : 1.0;
+        const double pairOffsetX = rawPairOffsetX * pairOffsetScale;
+        const double pairOffsetY = rawPairOffsetY * pairOffsetScale;
         const double initialGap = sqrt(pairOffsetX * pairOffsetX + pairOffsetY * pairOffsetY);
-        const double sameRootDriftThreshold = initialGap * 0.60;
+        const double reconvergenceRatio = isfinite(params.counterfactual_pair_reconvergence_ratio)
+            ? fmax(0.0, static_cast<double>(params.counterfactual_pair_reconvergence_ratio))
+            : 0.0;
+        const double sameRootDriftThreshold = initialGap * reconvergenceRatio;
 
         int baselineIterations = maxIter;
         int partnerIterations = maxIter;
@@ -102,7 +113,7 @@
                         baselineConverged = true;
                         baselineIterations = step;
                         baselineTermination = TerminationKind::root_converged;
-                        baselineRoot = NearestRootIndexUnitRoots(baselineZ, 3);
+                        baselineRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(baselineZ, pairRootCount) : -1;
                     } else {
                         const double dAbs2 = cxd_abs2(dP);
                         if (dAbs2 < 1.0e-30) {
@@ -129,7 +140,7 @@
                         partnerConverged = true;
                         partnerIterations = step;
                         partnerTermination = TerminationKind::root_converged;
-                        partnerRoot = NearestRootIndexUnitRoots(partnerZ, 3);
+                        partnerRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(partnerZ, pairRootCount) : -1;
                     } else {
                         const double dAbs2 = cxd_abs2(dP);
                         if (dAbs2 < 1.0e-30) {
@@ -168,7 +179,7 @@
             }
 
             meanGap = gapSamples > 0 ? (gapSum / static_cast<double>(gapSamples)) : initialGap;
-            if (baselineConverged && partnerConverged) {
+            if (baselineConverged && partnerConverged && pairRootCount > 0) {
                 if (baselineRoot != partnerRoot) {
                     pairClass = 2;
                 } else {
@@ -193,7 +204,7 @@
                         baselineConverged = true;
                         baselineIterations = step;
                         baselineTermination = TerminationKind::root_converged;
-                        baselineRoot = NearestRootIndexUnitRoots(baselineZ, 3);
+                        baselineRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(baselineZ, pairRootCount) : -1;
                     } else {
                         const float dAbs2 = cx_abs2(dP);
                         if (dAbs2 < 1.0e-20f) {
@@ -220,7 +231,7 @@
                         partnerConverged = true;
                         partnerIterations = step;
                         partnerTermination = TerminationKind::root_converged;
-                        partnerRoot = NearestRootIndexUnitRoots(partnerZ, 3);
+                        partnerRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(partnerZ, pairRootCount) : -1;
                     } else {
                         const float dAbs2 = cx_abs2(dP);
                         if (dAbs2 < 1.0e-20f) {
@@ -259,7 +270,7 @@
             }
 
             meanGap = gapSamples > 0 ? (static_cast<double>(gapSum) / static_cast<double>(gapSamples)) : initialGap;
-            if (baselineConverged && partnerConverged) {
+            if (baselineConverged && partnerConverged && pairRootCount > 0) {
                 if (baselineRoot != partnerRoot) {
                     pairClass = 2;
                 } else {

@@ -113,6 +113,11 @@ void TestBundlePersistsCounterfactualPairFractalTypeId() {
     view.fractal_type = FractalType::counterfactual_pair;
     params.max_iter = 96;
     params.epsilon = 1.0e-6f;
+    params.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::view_relative;
+    params.counterfactual_pair_offset_x = 0.125f;
+    params.counterfactual_pair_offset_y = -0.0625f;
+    params.counterfactual_pair_reconvergence_ratio = 0.25f;
 
     const fs::path outputDir = FreshTempRoot("counterfactual_pair") / "diagnostics_bundle";
     std::vector<uint32_t> rgba{0xff112233u, 0xff445566u, 0xff778899u, 0xffaabbccu};
@@ -130,6 +135,16 @@ void TestBundlePersistsCounterfactualPairFractalTypeId() {
         "state persists counterfactual_pair fractal type id");
     Check(json.find("\"fractal_type\": \"unknown\"") == std::string::npos,
         "state export never falls back to unknown for counterfactual_pair");
+    Check(json.find("\"counterfactual_pair_root_family\": \"quartic_unit_roots\"") != std::string::npos,
+        "state persists Counterfactual Pair root family id");
+    Check(json.find("\"counterfactual_pair_frame\": \"view_relative\"") != std::string::npos,
+        "state persists Counterfactual Pair frame id");
+    Check(json.find("\"counterfactual_pair_offset_x\": 0.125") != std::string::npos,
+        "state persists Counterfactual Pair offset x");
+    Check(json.find("\"counterfactual_pair_offset_y\": -0.0625") != std::string::npos,
+        "state persists Counterfactual Pair offset y");
+    Check(json.find("\"counterfactual_pair_reconvergence_ratio\": 0.25") != std::string::npos,
+        "state persists Counterfactual Pair reconvergence ratio");
 }
 
 void TestRejectsMismatchedPixelCount() {

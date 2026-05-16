@@ -38,6 +38,16 @@ inline constexpr EnumIdPair<PolyKind> kPolyKindIds[] = {
     {PolyKind::custom, "custom"},
 };
 
+inline constexpr EnumIdPair<CounterfactualPairRootFamily> kCounterfactualPairRootFamilyIds[] = {
+    {CounterfactualPairRootFamily::cubic_unit_roots, "cubic_unit_roots"},
+    {CounterfactualPairRootFamily::quartic_unit_roots, "quartic_unit_roots"},
+};
+
+inline constexpr EnumIdPair<CounterfactualPairFrame> kCounterfactualPairFrameIds[] = {
+    {CounterfactualPairFrame::world_absolute, "world_absolute"},
+    {CounterfactualPairFrame::view_relative, "view_relative"},
+};
+
 inline constexpr EnumIdPair<TranscendentalFunc> kTranscendentalFuncIds[] = {
     {TranscendentalFunc::f_sin, "f_sin"},
     {TranscendentalFunc::f_exp_minus_1, "f_exp_minus_1"},
@@ -166,6 +176,22 @@ inline const char* PolyKindId(PolyKind value) {
 
 inline bool TryParsePolyKindId(std::string_view id, PolyKind* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kPolyKindIds, outValue);
+}
+
+inline const char* CounterfactualPairRootFamilyId(CounterfactualPairRootFamily value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kCounterfactualPairRootFamilyIds);
+}
+
+inline bool TryParseCounterfactualPairRootFamilyId(std::string_view id, CounterfactualPairRootFamily* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kCounterfactualPairRootFamilyIds, outValue);
+}
+
+inline const char* CounterfactualPairFrameId(CounterfactualPairFrame value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kCounterfactualPairFrameIds);
+}
+
+inline bool TryParseCounterfactualPairFrameId(std::string_view id, CounterfactualPairFrame* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kCounterfactualPairFrameIds, outValue);
 }
 
 inline const char* TranscendentalFuncId(TranscendentalFunc value) {

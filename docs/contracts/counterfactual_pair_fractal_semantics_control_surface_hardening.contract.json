@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "contract_id": "counterfactual_pair_fractal_semantics_control_surface_hardening",
+  "feature_id": "counterfactual_pair_fractal_hardening",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/counterfactual_pair_fractal_semantics_control_surface_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/counterfactual_pair_fractal_semantics_control_surface_hardening.contract.json",
+    "docs/notes/counterfactual_pair_fractal_semantics_control_surface_hardening_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_safe_mode_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_counterfactual_pair.py"
+  ],
+  "required_operator_inputs": [
+    "harden Counterfactual Pair into a real steerable fractal object rather than another existence-only lane",
+    "expose as many truthful Counterfactual Pair controls as the current bounded runtime supports without widening into Explaino or color-pipeline work",
+    "settle the perturbation-frame semantics explicitly and make the class model public and testable",
+    "preserve FractalSampleResult and SampleFractalPoints as the shipped legacy projection surfaces while closing only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, and machine receipts"
+  ],
+  "forbidden_operator_prompts": [
+    "claim Counterfactual Pair is hardened while the pair-frame and class semantics still live mostly in hidden sampler constants",
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the shipped legacy projection path",
+    "integrate Counterfactual Pair into Explaino patterns, color-pipeline work, meta-basin, operator-itinerary, DSL/program-space, renderer replacement, or a whole-engine generic refactor",
+    "close the slice without commit, machine receipts, hostile-audit proof, and a committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "counterfactual_pair_public_control_surface": "required",
+    "counterfactual_pair_frame_semantics_explicit": "required",
+    "counterfactual_pair_class_model_explicit": "required",
+    "legacy_projection_surface_preserved": "required",
+    "published_runtime_proof_exists": "required"
+  },
+  "forbidden_defaults": {
+    "hidden_sampler_only_semantics": "forbidden",
+    "explaino_layering_scope_drift": "forbidden",
+    "color_pipeline_scope_drift": "forbidden",
+    "samplefractalpoints_signature_replaced": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/counterfactual_pair_fractal_semantics_control_surface_hardening.contract.json --out-json artifacts/validation/counterfactual_pair_fractal_semantics_control_surface_hardening_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/counterfactual_pair_fractal_semantics_control_surface_hardening_PHASED_PLAN.md --out-json artifacts/validation/counterfactual_pair_fractal_semantics_control_surface_hardening_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "counterfactual_pair_fractal_semantics_control_surface_hardening_contract_schema_valid",
+      "description": "The Counterfactual Pair hardening contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/counterfactual_pair_fractal_semantics_control_surface_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "counterfactual_pair_fractal_semantics_control_surface_hardening_plan_sync_ok",
+      "description": "The Counterfactual Pair hardening phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "counterfactual_pair_fractal_semantics_control_surface_hardening_hostile_audit_ok",
+      "description": "The Counterfactual Pair hardening hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/counterfactual_pair_fractal_semantics_control_surface_hardening_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

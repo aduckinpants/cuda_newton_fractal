@@ -62,6 +62,10 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(FractalType::lambda_map) == 24, "FractalType lambda_map ordinal is stable");
     Check(static_cast<int>(FractalType::explaino_tension) == 36, "FractalType explaino_tension ordinal is stable");
     Check(static_cast<int>(FractalType::counterfactual_pair) == 39, "FractalType counterfactual_pair ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairRootFamily::cubic_unit_roots) == 0, "CounterfactualPairRootFamily cubic ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairFrame::view_relative) == 1, "CounterfactualPairFrame view-relative ordinal is stable");
     Check(static_cast<int>(SampleTier::tier_auto) == 0, "SampleTier auto ordinal is stable");
     Check(static_cast<int>(SampleTier::standard) == 2, "SampleTier standard ordinal is stable");
     Check(static_cast<int>(NumericBackend::float32) == 0, "NumericBackend float32 ordinal is stable");
@@ -175,6 +179,12 @@ void TestKernelParamsDefaults() {
         "KernelParams splice polynomial defaults are zeroed");
     Check(Near(params.vortex_strength, 0.0f) && Near(params.tension_strength, 0.0f),
         "KernelParams vortex and tension defaults are stable");
+    Check(params.counterfactual_pair_root_family == CounterfactualPairRootFamily::cubic_unit_roots, "KernelParams Counterfactual Pair root family defaults to cubic unit roots");
+    Check(params.counterfactual_pair_frame == CounterfactualPairFrame::world_absolute, "KernelParams Counterfactual Pair frame defaults to world-absolute");
+    Check(Near(params.counterfactual_pair_offset_x, 0.16f) && Near(params.counterfactual_pair_offset_y, 0.08f),
+        "KernelParams Counterfactual Pair offsets default to the shipped baseline gap");
+    Check(Near(params.counterfactual_pair_reconvergence_ratio, 0.60f),
+        "KernelParams Counterfactual Pair reconvergence ratio default is stable");
     Check(params.mcmullen_preset == McMullenPreset::z3_z3, "KernelParams McMullen preset defaults to z3_z3");
 }
 

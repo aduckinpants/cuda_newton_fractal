@@ -182,6 +182,110 @@ bool IsKnownExplainoAllVisibleBindingPath(std::string_view bindingPath) {
     return false;
 }
 
+bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
+    const UISchemaPanel* fractalPanel = FindPanelById(schema, "fractal");
+    if (!fractalPanel) {
+        std::cerr << "Main schema missing fractal panel for Counterfactual Pair control validation\n";
+        return false;
+    }
+
+    const UISchemaControl* rootFamily = FindControlById(*fractalPanel, "counterfactual_pair_root_family");
+    const UISchemaControl* frame = FindControlById(*fractalPanel, "counterfactual_pair_frame");
+    const UISchemaControl* offsetX = FindControlById(*fractalPanel, "counterfactual_pair_offset_x");
+    const UISchemaControl* offsetY = FindControlById(*fractalPanel, "counterfactual_pair_offset_y");
+    const UISchemaControl* reconvergenceRatio = FindControlById(*fractalPanel, "counterfactual_pair_reconvergence_ratio");
+    if (!rootFamily || !frame || !offsetX || !offsetY || !reconvergenceRatio) {
+        std::cerr << "Main schema is missing one or more Counterfactual Pair controls\n";
+        return false;
+    }
+
+    const bool rootFamilyOk =
+        rootFamily->has_binding &&
+        rootFamily->binding.path == "fractal.params.counterfactual_pair_root_family" &&
+        rootFamily->has_default &&
+        rootFamily->def.is_string() &&
+        rootFamily->def.as_string() == "cubic_unit_roots" &&
+        rootFamily->options.size() == 2 &&
+        rootFamily->has_visible_if &&
+        rootFamily->visible_if.op == "eq" &&
+        rootFamily->visible_if.path == "fractal.view.fractal_type" &&
+        rootFamily->visible_if.value == "counterfactual_pair";
+    if (!rootFamilyOk) {
+        std::cerr << "Main schema Counterfactual Pair root-family control drifted from the bounded owner seam\n";
+        return false;
+    }
+
+    const bool frameOk =
+        frame->has_binding &&
+        frame->binding.path == "fractal.params.counterfactual_pair_frame" &&
+        frame->has_default &&
+        frame->def.is_string() &&
+        frame->def.as_string() == "world_absolute" &&
+        frame->options.size() == 2 &&
+        frame->has_help &&
+        frame->help.find("World Absolute") != std::string::npos &&
+        frame->help.find("View Relative") != std::string::npos &&
+        frame->has_visible_if &&
+        frame->visible_if.op == "eq" &&
+        frame->visible_if.path == "fractal.view.fractal_type" &&
+        frame->visible_if.value == "counterfactual_pair";
+    if (!frameOk) {
+        std::cerr << "Main schema Counterfactual Pair frame control does not make the perturbation frame explicit\n";
+        return false;
+    }
+
+    const bool offsetXOk =
+        offsetX->has_binding &&
+        offsetX->binding.path == "fractal.params.counterfactual_pair_offset_x" &&
+        offsetX->has_default &&
+        offsetX->def.is_number() &&
+        offsetX->def.as_number() == 0.16 &&
+        offsetX->has_ui_min &&
+        offsetX->ui_min == -1.0 &&
+        offsetX->has_ui_max &&
+        offsetX->ui_max == 1.0 &&
+        offsetX->has_visible_if &&
+        offsetX->visible_if.value == "counterfactual_pair";
+    const bool offsetYOk =
+        offsetY->has_binding &&
+        offsetY->binding.path == "fractal.params.counterfactual_pair_offset_y" &&
+        offsetY->has_default &&
+        offsetY->def.is_number() &&
+        offsetY->def.as_number() == 0.08 &&
+        offsetY->has_ui_min &&
+        offsetY->ui_min == -1.0 &&
+        offsetY->has_ui_max &&
+        offsetY->ui_max == 1.0 &&
+        offsetY->has_visible_if &&
+        offsetY->visible_if.value == "counterfactual_pair";
+    if (!offsetXOk || !offsetYOk) {
+        std::cerr << "Main schema Counterfactual Pair offset controls drifted from the bounded partner-gap owner seam\n";
+        return false;
+    }
+
+    const bool reconvergenceOk =
+        reconvergenceRatio->has_binding &&
+        reconvergenceRatio->binding.path == "fractal.params.counterfactual_pair_reconvergence_ratio" &&
+        reconvergenceRatio->has_default &&
+        reconvergenceRatio->def.is_number() &&
+        reconvergenceRatio->def.as_number() == 0.6 &&
+        reconvergenceRatio->has_min &&
+        reconvergenceRatio->min == 0.0 &&
+        reconvergenceRatio->has_help &&
+        reconvergenceRatio->help.find("Class 0") != std::string::npos &&
+        reconvergenceRatio->help.find("Class 1") != std::string::npos &&
+        reconvergenceRatio->help.find("Class 2") != std::string::npos &&
+        reconvergenceRatio->help.find("Class 3") != std::string::npos &&
+        reconvergenceRatio->has_visible_if &&
+        reconvergenceRatio->visible_if.value == "counterfactual_pair";
+    if (!reconvergenceOk) {
+        std::cerr << "Main schema Counterfactual Pair reconvergence control does not expose the public class model truthfully\n";
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -457,6 +561,9 @@ int main() {
         }
         json_min::ParseResult pr2 = json_min::Parse(text);
         UISchemaLoadResult result = LoadUISchemaFromJson(pr2.value);
+        if (!ValidateCounterfactualPairControlSurface(result.schema)) {
+            return 1;
+        }
 
         for (const auto& panel : result.schema.panels) {
             for (const auto& ctrl : panel.controls) {
@@ -1011,7 +1118,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 2) {
+            fractalPanel->controls.size() != 7) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1049,6 +1156,43 @@ int main() {
         if (!captureFinding || captureFinding->type != "button" || !captureFinding->has_binding ||
             captureFinding->binding.kind != "action" || captureFinding->binding.path != "fractal.actions.capture_finding") {
             std::cerr << "Safe-mode schema did not bind capture_finding to the expected action path\n";
+            return 1;
+        }
+        const UISchemaControl* pairRootFamily = FindControlById(*fractalPanel, "counterfactual_pair_root_family");
+        const UISchemaControl* pairFrame = FindControlById(*fractalPanel, "counterfactual_pair_frame");
+        const UISchemaControl* pairOffsetX = FindControlById(*fractalPanel, "counterfactual_pair_offset_x");
+        const UISchemaControl* pairOffsetY = FindControlById(*fractalPanel, "counterfactual_pair_offset_y");
+        const UISchemaControl* pairReconvergenceRatio = FindControlById(*fractalPanel, "counterfactual_pair_reconvergence_ratio");
+        if (!pairRootFamily || !pairFrame || !pairOffsetX || !pairOffsetY || !pairReconvergenceRatio) {
+            std::cerr << "Safe-mode schema did not expose the Counterfactual Pair hardening controls\n";
+            return 1;
+        }
+        if (!pairRootFamily->has_binding || pairRootFamily->binding.path != "fractal.params.counterfactual_pair_root_family" ||
+            !pairRootFamily->has_default || !pairRootFamily->def.is_string() || pairRootFamily->def.as_string() != "cubic_unit_roots" ||
+            !pairRootFamily->has_visible_if || pairRootFamily->visible_if.value != "counterfactual_pair") {
+            std::cerr << "Safe-mode schema Counterfactual Pair root-family control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!pairFrame->has_binding || pairFrame->binding.path != "fractal.params.counterfactual_pair_frame" ||
+            !pairFrame->has_default || !pairFrame->def.is_string() || pairFrame->def.as_string() != "world_absolute" ||
+            !pairFrame->has_visible_if || pairFrame->visible_if.value != "counterfactual_pair") {
+            std::cerr << "Safe-mode schema Counterfactual Pair frame control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!pairOffsetX->has_binding || pairOffsetX->binding.path != "fractal.params.counterfactual_pair_offset_x" ||
+            !pairOffsetX->has_default || !pairOffsetX->def.is_number() || pairOffsetX->def.as_number() != 0.16 ||
+            !pairOffsetY->has_binding || pairOffsetY->binding.path != "fractal.params.counterfactual_pair_offset_y" ||
+            !pairOffsetY->has_default || !pairOffsetY->def.is_number() || pairOffsetY->def.as_number() != 0.08) {
+            std::cerr << "Safe-mode schema Counterfactual Pair offset controls drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!pairReconvergenceRatio->has_binding ||
+            pairReconvergenceRatio->binding.path != "fractal.params.counterfactual_pair_reconvergence_ratio" ||
+            !pairReconvergenceRatio->has_default || !pairReconvergenceRatio->def.is_number() ||
+            pairReconvergenceRatio->def.as_number() != 0.6 ||
+            !pairReconvergenceRatio->has_help ||
+            pairReconvergenceRatio->help.find("Class 3") == std::string::npos) {
+            std::cerr << "Safe-mode schema Counterfactual Pair reconvergence control did not expose the public class model\n";
             return 1;
         }
 

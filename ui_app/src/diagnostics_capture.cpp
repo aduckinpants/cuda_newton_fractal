@@ -160,6 +160,16 @@ const char* CaptureMcMullenPresetId(McMullenPreset preset) {
     return "unknown";
 }
 
+const char* CaptureCounterfactualPairRootFamilyId(CounterfactualPairRootFamily rootFamily) {
+    const char* id = ::CounterfactualPairRootFamilyId(rootFamily);
+    return (id && id[0] != '\0') ? id : "unknown";
+}
+
+const char* CaptureCounterfactualPairFrameId(CounterfactualPairFrame frame) {
+    const char* id = ::CounterfactualPairFrameId(frame);
+    return (id && id[0] != '\0') ? id : "unknown";
+}
+
 bool WriteTextFile(const std::filesystem::path& path, const std::string& text, std::string* outError) {
     std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!file) {
@@ -562,6 +572,11 @@ std::string BuildStateJson(
     js << "    \"epsilon\": " << static_cast<double>(params.epsilon) << ",\n";
     js << "    \"exposure\": " << static_cast<double>(params.exposure) << ",\n";
     js << "    \"poly_kind\": " << static_cast<int>(params.poly_kind) << ",\n";
+    js << "    \"counterfactual_pair_root_family\": \"" << CaptureCounterfactualPairRootFamilyId(params.counterfactual_pair_root_family) << "\",\n";
+    js << "    \"counterfactual_pair_frame\": \"" << CaptureCounterfactualPairFrameId(params.counterfactual_pair_frame) << "\",\n";
+    js << "    \"counterfactual_pair_offset_x\": " << static_cast<double>(params.counterfactual_pair_offset_x) << ",\n";
+    js << "    \"counterfactual_pair_offset_y\": " << static_cast<double>(params.counterfactual_pair_offset_y) << ",\n";
+    js << "    \"counterfactual_pair_reconvergence_ratio\": " << static_cast<double>(params.counterfactual_pair_reconvergence_ratio) << ",\n";
     if (hasLegacyColoringMirror) {
         js << "    \"coloring_mode\": \"" << CaptureColoringModeId(mirroredColoringMode) << "\",\n";
     }
