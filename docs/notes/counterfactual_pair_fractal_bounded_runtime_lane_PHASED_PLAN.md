@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - hostile audit, validation receipts, checkpoint closure, and the committed-head stale-plan gate on the repaired Counterfactual Pair green head.
+Closed - the Counterfactual Pair runtime lane, hostile-audit repairs, committed checkpoint, validation receipts, and the committed-head stale-plan gate are complete on the repaired green head.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in plan and contract, replace the closed sample-evidence stop-point lock, and prove the RED head still has no shipped Counterfactual Pair Fractal runtime lane beyond the existing sidecar witnesses.
 - [x] Phase 2 - land one bounded runtime-visible Counterfactual Pair Fractal with an explicit paired-state model and deterministic classification/render output while preserving `SampleFractalPoints(...)` and `FractalSampleResult`.
 - [x] Phase 3 - prove the repaired state through focused native contract/unit/kernel/schema rails plus focused runtime publish and published-runtime proof for the new visible fractal mode.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 4 - hostile audit, validation receipts, checkpoint closure, and the commit
 - [x] Keep the sample-evidence widening lane closed unless a tiny concrete seam repair is strictly required.
 - [x] Preserve `FractalSampleResult` and `SampleFractalPoints(...)` as the shipped legacy projection surfaces.
 - [x] Make the first paired-state model and classification output explicit enough that the result is a real runtime fractal lane, not a sidecar overlay or generic drift coloring.
-- [ ] Close only with commit, validation receipt, contract proof receipt, clean tree, and a committed-head stale-plan reread.
+- [x] Close only with commit, validation receipt, contract proof receipt, clean tree, and a committed-head stale-plan reread.
 
 ## Proof Ledger
 
