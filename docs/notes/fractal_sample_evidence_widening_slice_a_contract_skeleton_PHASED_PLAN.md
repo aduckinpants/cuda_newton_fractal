@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - slice A now has one bounded `FractalSampleEvidence` payload plus one explicit `BuildLegacySampleResult(...)` helper in `ui_app/src/fractal_sample_result.h`, legacy caller behavior remains unchanged, and the current stop point still defers widened host API plus first-consumer work.
+Complete - slice A closed on its own head with one bounded `FractalSampleEvidence` payload plus one explicit `BuildLegacySampleResult(...)` helper in `ui_app/src/fractal_sample_result.h` while legacy caller behavior stayed unchanged. Later slice B and slice C on this branch added the widened host API/default evidence path and the first paired-state/counterfactual consumer, so this plan is historical proof of the contract-skeleton stop point rather than the live branch status surface.
 
 ## Phase Checklist
 

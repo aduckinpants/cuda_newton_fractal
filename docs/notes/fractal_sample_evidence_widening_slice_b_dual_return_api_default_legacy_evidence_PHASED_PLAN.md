@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - slice B now has one widened host API plus default legacy-evidence kernel wiring, `SampleFractalPoints(...)` remains the shipped legacy projection path, the first widened consumer stays deferred, focused proofs and receipts are written, and this plan no longer carries stale pre-closeout text.
+Complete - slice B closed on its own head with one widened host API plus default legacy-evidence kernel wiring while `SampleFractalPoints(...)` remained the shipped legacy projection path. Later slice C on this branch landed the first paired-state/counterfactual widened consumer, so this plan is historical proof of the dual-return/API stop point rather than the live branch status surface.
 
 ## Phase Checklist
 
@@ -42,7 +42,7 @@ Complete - slice B now has one widened host API plus default legacy-evidence ker
 - [x] Pass 1 - re-prove the RED head had no widened host API beside `SampleFractalPoints(...)`, no widened default legacy-evidence emission in the sample kernel path, and no widened consumer.
 - [x] Pass 2 - hostile review found and repaired the first real test defect: the initial widened-kernel proof patch wrote a broken string literal and would have failed for the wrong reason.
 - [x] Pass 3 - hostile review found and repaired the second real doc-truth defect: the launch anchor still claimed the repo had no `SampleFractalEvidencePoints(...)` after the widened API landed.
-- [x] Pass 4 - clean re-read of the repaired state confirmed `SampleFractalPoints(...)` still stays the shipped legacy projection path, widened evidence projects back truthfully, slice C remains deferred, legacy callers still compile on the legacy surface, and no additional real defect was found.
+- [x] Pass 4 - clean re-read of the repaired slice-B head confirmed `SampleFractalPoints(...)` still stays the shipped legacy projection path, widened evidence projects back truthfully, slice C was still deferred on that head, legacy callers still compile on the legacy surface, and no additional real defect was found.
 - [x] Pass 5 - the mandatory stale-plan gate found and repaired lingering Phase 3 plus closeout `todo` text after the first receipt pass so the active plan now matches the actual closed state.
 
 ## Audit Findings
@@ -57,4 +57,4 @@ Complete - slice B now has one widened host API plus default legacy-evidence ker
 - Current single-orbit authority for shipped callers still lives in `ui_app/src/fractal_sample_result.h`, `ui_app/src/fractal_types.h`, `ui_app/src/fractal_sample_core.cu`, `ui_app/src/fractal_renderer.cu`, `ui_app/src/explaino_sidecar_cuda_sample_host.cpp`, `ui_app/src/explaino_sidecar_measurement.cpp`, and `ui_app/src/runtime_walk_field_slime.cpp`.
 - No current required caller already assumes richer evidence informally: sidecar measurement and runtime-walk aggregate only the legacy `FractalSampleResult` fields, the renderer still consumes the same legacy result directly for pixel coloring, and the sidecar host still passes against the unchanged `SampleFractalPoints(...)` surface.
 - The widened authority for this slice now lives in `ui_app/src/fractal_sample_result.h`, `ui_app/src/fractal_types.h`, and `ui_app/src/fractal_sample_core.cu`: one explicit widened host API plus one explicit legacy projection helper and adapter path.
-- Slice B stayed fully bounded without runtime publish or widened-consumer proof because no viewer-visible consumer behavior changed; slice C remains the first-consumer fence.
+- Slice B stayed fully bounded without runtime publish or widened-consumer proof because no viewer-visible consumer behavior changed; slice C later became the first-consumer proof on this branch.

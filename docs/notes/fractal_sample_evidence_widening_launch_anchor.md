@@ -52,7 +52,8 @@ Do not start with cleanup before the widened seam and first consumer are both re
 - The current repo keeps `FractalSampleResult` as the shipped legacy sample payload, and `SampleFractalPoints(...)` remains the shipped legacy projection API for existing callers.
 - `ui_app/src/fractal_sample_result.h` now carries one bounded `FractalSampleEvidence` payload plus one `BuildLegacySampleResult(...)` helper; the widened payload remains bounded to `sample_coord` plus nested `legacy_result`.
 - `ui_app/src/fractal_types.h` plus `ui_app/src/fractal_sample_core.cu` now expose `SampleFractalEvidencePoints(...)` as the widened host API and make `SampleFractalPoints(...)` a thin legacy projection adapter over default evidence-emitting sample-kernel output.
-- The current repo still has no real widened consumer yet.
+- The current repo now has one real widened consumer in the bounded sidecar paired-state/counterfactual lane: `ui_app/src/explaino_sidecar_measurement.cpp` reads `FractalSampleEvidence` through `SidecarMeasurementHost::SampleEvidence(...)` and records paired `minus_counterfactual` / `plus_counterfactual` witness metrics.
+- The first widened consumer still reuses the bounded slice-A/B payload only: no new evidence fields were needed beyond `sample_coord` plus nested `legacy_result`, and later projection-and-flow or `ExplainO-BalanceVoid` consumers remain deferred.
 - The repo already has a bounded adjacent pattern in `generic_sample_core.*`, which proves a second sample contract can exist without forcing a universal abstraction first.
 - The external prep packet under `D:\salt-output\explaino_novelty_analysis\20260511_152923_viewer_host_fractal_math_refresh_packet` is now translated into this checked-in packet so future sessions can start from repo authority instead of external notes alone.
 
@@ -67,7 +68,7 @@ The key questions this lane must answer are:
 - what exact evidence is needed beyond `FractalSampleResult`
 - whether that extra evidence is generic enough to justify its own bounded struct
 - how to preserve legacy callers truthfully while adding the widened seam
-- what the first real non-legacy consumer should be
+- whether the chosen first real non-legacy consumer is strong enough to justify any later widened-consumer work
 - whether the widened seam improves future extensibility without lying about generality
 
 ## Preferred First Consumer Order
@@ -171,7 +172,7 @@ Every future sample-evidence widening slice must re-read its active phased plan 
 
 ## Start Here
 
-Use this packet when opening the next engine lane from the current stop point:
+Use this packet when resuming or auditing from the current bounded stop point:
 
-- [fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md)
+- [fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md)
 - [fractal_sample_evidence_widening_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md)

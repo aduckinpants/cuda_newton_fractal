@@ -261,6 +261,63 @@ public:
     }
 };
 
+class EvidenceMeasurementHost : public SidecarMeasurementHost {
+public:
+    mutable int legacy_calls = 0;
+    bool mismatch_sample_coord = false;
+
+    bool Sample(const std::vector<Double2>&,
+        const ViewState&,
+        const KernelParams&,
+        const RenderSettings&,
+        std::vector<FractalSampleResult>*,
+        std::string* outError) const override {
+        ++legacy_calls;
+        if (outError) *outError = "legacy sample should not be used when widened evidence is supported";
+        return false;
+    }
+
+    bool SupportsWidenedEvidence() const override {
+        return true;
+    }
+
+    bool SampleEvidence(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams& params,
+        const RenderSettings& render,
+        std::vector<FractalSampleEvidence>* outEvidence,
+        std::string* outError) const override {
+        if (!outEvidence) {
+            if (outError) *outError = "outEvidence is null";
+            return false;
+        }
+
+        outEvidence->clear();
+        outEvidence->reserve(coords.size());
+        for (std::size_t index = 0; index < coords.size(); ++index) {
+            const Double2 coord = coords[index];
+            const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
+            const double mixSignal = static_cast<double>(params.explaino_mix) * 100.0;
+            const double epsilonSignal = static_cast<double>(params.epsilon) * 10000.0;
+            const double zoomSignal = coordSpan * 20.0;
+            const double renderSignal = static_cast<double>(render.device_id);
+
+            FractalSampleEvidence evidence{};
+            evidence.sample_coord = mismatch_sample_coord && index == 0u
+                ? Double2{coord.x + 0.25, coord.y}
+                : coord;
+            evidence.legacy_result.iterations = static_cast<int>(std::lround(10.0 + mixSignal + epsilonSignal + zoomSignal + renderSignal));
+            evidence.legacy_result.final_z_x = static_cast<float>(coord.x);
+            evidence.legacy_result.final_z_y = static_cast<float>(coord.y);
+            evidence.legacy_result.residual = static_cast<float>(1.0 + static_cast<double>(params.explaino_mix) + coordSpan + epsilonSignal * 0.1);
+            evidence.legacy_result.converged = params.explaino_mix >= 0.5f;
+            evidence.legacy_result.escaped = !evidence.legacy_result.converged && coordSpan > 0.05;
+            outEvidence->push_back(evidence);
+        }
+        return true;
+    }
+};
+
 } // namespace
 
 int main() {
@@ -454,6 +511,72 @@ int main() {
             !NearlyEqual(legacyBatch.rows[0].minus_variant.mean_iterations, canonicalBatch.rows[0].minus_variant.mean_iterations) ||
             !NearlyEqual(legacyBatch.rows[0].plus_variant.mean_iterations, canonicalBatch.rows[0].plus_variant.mean_iterations)) {
             std::cerr << "Expected legacy explaino_vortex sidecar measurement sweeps to canonicalize to explaino_all instead of preserving a separate raw carrier authority\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace space{};
+        std::string error;
+        if (!BuildSidecarHypothesisSpace(BuildCatalog(), "fractal.sample", ctx, &space, &error)) {
+            std::cerr << "Expected sidecar hypothesis space to build for widened-evidence measurement tests: " << error << "\n";
+            return 1;
+        }
+
+        EvidenceMeasurementHost host;
+        SidecarMeasurementBatch batch;
+        if (!BuildSidecarMeasurementBatch(space, ctx, host, &batch, &error)) {
+            std::cerr << "Expected widened-evidence measurement batch to build: " << error << "\n";
+            return 1;
+        }
+        if (host.legacy_calls != 0) {
+            std::cerr << "Expected widened sidecar measurement path to use widened evidence instead of falling back to legacy sampling\n";
+            return 1;
+        }
+        const SidecarMeasurementRow* mixRow = nullptr;
+        const SidecarMeasurementRow* zoomRow = nullptr;
+        for (const SidecarMeasurementRow& row : batch.rows) {
+            if (row.path == "fractal.params.explaino_mix") mixRow = &row;
+            if (row.path == "fractal.view.zoom") zoomRow = &row;
+        }
+        if (!mixRow || !zoomRow) {
+            std::cerr << "Expected widened measurement batch to keep both the explaino_mix and zoom rows\n";
+            return 1;
+        }
+        if (mixRow->minus_counterfactual.coordinate_count != batch.coordinate_count ||
+            mixRow->plus_counterfactual.coordinate_count != batch.coordinate_count) {
+            std::cerr << "Expected widened measurement rows to expose paired counterfactual witnesses for every sampled coordinate\n";
+            return 1;
+        }
+        if (!(mixRow->minus_counterfactual.mean_abs_residual_delta > 0.0) ||
+            !(mixRow->plus_counterfactual.mean_abs_iteration_delta > 0.0)) {
+            std::cerr << "Expected paired counterfactual witness metrics to react to widened evidence deltas\n";
+            return 1;
+        }
+        if (!(zoomRow->minus_counterfactual.mean_sample_coord_distance > 0.0) ||
+            !(zoomRow->plus_counterfactual.mean_sample_coord_distance > 0.0)) {
+            std::cerr << "Expected widened counterfactual witness to read sample_coord displacement for view-driven sweeps\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace space{};
+        std::string error;
+        if (!BuildSidecarHypothesisSpace(BuildCatalog(), "fractal.sample", ctx, &space, &error)) {
+            std::cerr << "Expected sidecar hypothesis space to build for coordinate-mismatch test: " << error << "\n";
+            return 1;
+        }
+
+        EvidenceMeasurementHost host;
+        host.mismatch_sample_coord = true;
+        SidecarMeasurementBatch batch;
+        if (BuildSidecarMeasurementBatch(space, ctx, host, &batch, &error)) {
+            std::cerr << "Expected widened measurement batch to fail when widened sample evidence does not preserve the requested sample_coord pairing\n";
+            return 1;
+        }
+        if (error.find("sample_coord") == std::string::npos) {
+            std::cerr << "Expected widened measurement mismatch error to mention sample_coord pairing\n";
             return 1;
         }
     }

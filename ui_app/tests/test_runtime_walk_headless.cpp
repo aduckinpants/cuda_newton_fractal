@@ -330,6 +330,20 @@ double SafeZoomFromLog2(double log2Zoom) {
     return std::pow(2.0, log2Zoom);
 }
 
+bool CudaSidecarMeasurementHost::SupportsWidenedEvidence() const {
+    return false;
+}
+
+bool CudaSidecarMeasurementHost::SampleEvidence(const std::vector<Double2>&,
+    const ViewState&,
+    const KernelParams&,
+    const RenderSettings&,
+    std::vector<FractalSampleEvidence>*,
+    std::string* outError) const {
+    if (outError) *outError = "stub sidecar measurement should not sample widened evidence in this test";
+    return false;
+}
+
 bool CudaSidecarMeasurementHost::Sample(const std::vector<Double2>&,
     const ViewState&,
     const KernelParams&,
