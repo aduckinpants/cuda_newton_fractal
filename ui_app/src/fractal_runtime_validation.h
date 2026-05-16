@@ -28,6 +28,9 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
     }
+    if (view.fractal_type == FractalType::projection_and_flow && params.poly_kind != PolyKind::z3_minus_1) {
+        return FailFractalRuntimeValidation("projection_and_flow requires poly_kind z3_minus_1", outError);
+    }
     if ((view.fractal_type == FractalType::lambda_map || view.fractal_type == FractalType::explaino_lambda) &&
         (!std::isfinite(params.lambda_real) || !std::isfinite(params.lambda_imag) ||
          std::fabs(params.lambda_real) > 4.0f || std::fabs(params.lambda_imag) > 4.0f)) {

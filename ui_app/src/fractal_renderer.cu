@@ -38,6 +38,10 @@ __device__ __forceinline__ int ResolveBasinRenderRootCount(FractalType ft, const
         if (outUseCustomRoots) *outUseCustomRoots = false;
         return 4;
     }
+    if (ft == FractalType::projection_and_flow) {
+        if (outUseCustomRoots) *outUseCustomRoots = false;
+        return 7;
+    }
     const int nRoots = ResolvePolynomialRootCount(params.poly_kind);
     const bool useCustomRoots = (nRoots == 0) && IsExplainoFamily(ft) && (params.explaino_root_count > 0);
     if (outUseCustomRoots) *outUseCustomRoots = useCustomRoots;
@@ -109,8 +113,9 @@ __global__ void kernel_render(
     bool converged = sample.converged;
     bool escaped = sample.escaped;
     FractalType ft = view.fractal_type;
-    const bool hasExplicitCounterfactualClass =
-        ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair;
+    const bool hasExplicitSyntheticClass =
+        ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair ||
+        ft == FractalType::projection_and_flow;
     int maxIter = max(1, params.max_iter);
 
 
@@ -126,7 +131,7 @@ __global__ void kernel_render(
     if (SupportsBasinColoring(ft)) {
         // Basin-coloring family branch (Newton + Explaino family).
         if (mode == ColoringMode::joy_basins) {
-            if (!converged && !hasExplicitCounterfactualClass) {
+            if (!converged && !hasExplicitSyntheticClass) {
                 // "Submerged" undertow: preserve faint structure, but keep it dark.
                 float t = (float)it / (float)maxIter;
                 float a = atan2f(z.y, z.x);
@@ -174,7 +179,7 @@ __global__ void kernel_render(
                 }
             }
         } else if (mode == ColoringMode::root_basin) {
-            if (!converged && !hasExplicitCounterfactualClass) {
+            if (!converged && !hasExplicitSyntheticClass) {
                 color = {0, 0, 0, 255};
             } else {
                 bool useCustomRoots = false;

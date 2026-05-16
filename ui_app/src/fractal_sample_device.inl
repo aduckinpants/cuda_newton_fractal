@@ -65,6 +65,110 @@
             }
             converged = (pAbs < eps);
         }
+    } else if (ft == FractalType::projection_and_flow) {
+        constexpr int kProjectionAndFlowRootCount = 3;
+        constexpr int kProjectionAndFlowClassCount = 7;
+        constexpr double kProjectionAndFlowPressureThreshold = 1.0;
+        float flowCoeffs[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) {
+            flowCoeffs[k] = params.poly_coeffs[k];
+        }
+        double projectionPressure = 0.0;
+        int rootIndex = -1;
+        terminationKind = TerminationKind::max_iterations;
+
+        if (useFP64) {
+            Cxd zd = coordD;
+            if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                zd = {0.0, 0.0};
+                terminationKind = TerminationKind::nonfinite;
+            } else {
+                for (; it < maxIter; ++it) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(flowCoeffs, zd, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(zd, kProjectionAndFlowRootCount);
+                        break;
+                    }
+                    const double dAbs2 = cxd_abs2(dP);
+                    if (dAbs2 < 1.0e-30) {
+                        break;
+                    }
+                    const Cxd freeZ = cxd_sub(zd, cxd_div(P, dP));
+                    if (!isfinite(freeZ.x) || !isfinite(freeZ.y)) {
+                        zd = {0.0, 0.0};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const double freeMag2 = cxd_abs2(freeZ);
+                    if (freeMag2 < 1.0e-30) {
+                        zd = {0.0, 0.0};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const double freeMag = sqrt(freeMag2);
+                    const Cxd projected{freeZ.x / freeMag, freeZ.y / freeMag};
+                    const double dx = projected.x - freeZ.x;
+                    const double dy = projected.y - freeZ.y;
+                    projectionPressure += sqrt(dx * dx + dy * dy);
+                    zd = projected;
+                }
+            }
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = coord;
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                terminationKind = TerminationKind::nonfinite;
+            } else {
+                for (; it < maxIter; ++it) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(flowCoeffs, z, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(z, kProjectionAndFlowRootCount);
+                        break;
+                    }
+                    const float dAbs2 = cx_abs2(dP);
+                    if (dAbs2 < 1.0e-20f) {
+                        break;
+                    }
+                    const Cx freeZ = cx_sub(z, cx_div(P, dP));
+                    if (!isfinite(freeZ.x) || !isfinite(freeZ.y)) {
+                        z = {0.0f, 0.0f};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const float freeMag2 = cx_abs2(freeZ);
+                    if (freeMag2 < 1.0e-20f) {
+                        z = {0.0f, 0.0f};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const float freeMag = sqrtf(freeMag2);
+                    const Cx projected{freeZ.x / freeMag, freeZ.y / freeMag};
+                    const float dx = projected.x - freeZ.x;
+                    const float dy = projected.y - freeZ.y;
+                    projectionPressure += static_cast<double>(sqrtf(dx * dx + dy * dy));
+                    z = projected;
+                }
+            }
+        }
+
+        int projectionClass = kProjectionAndFlowClassCount - 1;
+        if (converged && rootIndex >= 0 && rootIndex < kProjectionAndFlowRootCount) {
+            const int pressureBucket = projectionPressure >= kProjectionAndFlowPressureThreshold ? 1 : 0;
+            projectionClass = rootIndex * 2 + pressureBucket;
+        }
+        z = unit_root_k(projectionClass, kProjectionAndFlowClassCount);
+        pAbs = static_cast<float>(projectionPressure);
+        escaped = false;
     } else if (ft == FractalType::counterfactual_pair) {
         float pairCoeffs[5];
         #pragma unroll

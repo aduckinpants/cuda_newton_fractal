@@ -501,6 +501,7 @@ int main() {
         bool foundFractalTypeCommonGroup = false;
         bool foundFractalTypeRootFindingGroup = false;
         bool foundCounterfactualPairRootFindingGroup = false;
+        bool foundProjectionAndFlowRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
@@ -615,6 +616,7 @@ int main() {
                         }
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                         if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
+                        if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.group == "Explaino") {
                             ++explainoGroupOptionCount;
@@ -1043,7 +1045,8 @@ int main() {
             std::cerr << "Did not find Lambda real/imag controls in schema\n";
             return 1;
         }
-        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
+        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
+            !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup || !foundFractalTypeExplainoCounterfactualPairGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
@@ -1120,6 +1123,7 @@ int main() {
         bool foundFractalTypeCommonGroup = false;
         bool foundFractalTypeRootFindingGroup = false;
         bool foundCounterfactualPairRootFindingGroup = false;
+        bool foundProjectionAndFlowRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
@@ -1253,6 +1257,7 @@ int main() {
                         }
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                         if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
+                        if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.group == "Explaino") {
                             ++safeModeExplainoGroupOptionCount;
@@ -1319,7 +1324,8 @@ int main() {
             std::cerr << "Safe-mode schema did not expose the adaptive preview pacing controls with the expected defaults\n";
             return 1;
         }
-        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
+        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
+            !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup || !foundSafeModeExplainoCounterfactualPairGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;

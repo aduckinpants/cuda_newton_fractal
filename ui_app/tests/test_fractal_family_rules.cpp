@@ -75,6 +75,33 @@ int main() {
     }
 
     {
+        if (!SupportsBasinColoring(FractalType::projection_and_flow)) {
+            std::cerr << "Projection-and-Flow should support basin coloring\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::projection_and_flow)) {
+            std::cerr << "Projection-and-Flow should not be escape-time\n";
+            return 1;
+        }
+        if (IsExplainoFamily(FractalType::projection_and_flow)) {
+            std::cerr << "Projection-and-Flow should stay outside the Explaino family\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::projection_and_flow) != ColoringMode::root_basin) {
+            std::cerr << "Projection-and-Flow should default to root_basin\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::root_basin)) {
+            std::cerr << "Projection-and-Flow should allow root_basin coloring\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::joy_basins)) {
+            std::cerr << "Projection-and-Flow should allow joy_basins coloring\n";
+            return 1;
+        }
+    }
+
+    {
         if (!SupportsBasinColoring(FractalType::explaino_fp)) {
             std::cerr << "Explaino FP should support basin coloring\n";
             return 1;

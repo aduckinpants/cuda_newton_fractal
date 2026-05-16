@@ -236,6 +236,7 @@ enum class FractalType : int {
     explaino_all = 38,
     counterfactual_pair = 39,
     explaino_counterfactual_pair = 40,
+    projection_and_flow = 41,
 };
 
 enum class CounterfactualPairRootFamily : int {

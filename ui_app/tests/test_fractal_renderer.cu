@@ -151,6 +151,45 @@ void TestCounterfactualPairRenderProducesMultipleClassColors() {
     CleanupFractalCUDA();
 }
 
+void TestProjectionAndFlowRenderProducesMultipleClassColors() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::root_basin;
+    render.resolution = {16, 16};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(16 * 16, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Projection-and-Flow render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    bool sawDifferentPixel = false;
+    const uint32_t firstPixel = pixels.front();
+    for (uint32_t pixel : pixels) {
+        if (pixel != firstPixel) {
+            sawDifferentPixel = true;
+            break;
+        }
+    }
+    Check(sawDifferentPixel, "Projection-and-Flow render emits more than one explicit class color");
+
+    CleanupFractalCUDA();
+}
+
 } // namespace
 
 int main() {
@@ -159,6 +198,7 @@ int main() {
     TestInvalidResolutionFailsBeforeCudaAllocation();
     TestTinyRenderProducesPixelsMaskAndStats();
     TestCounterfactualPairRenderProducesMultipleClassColors();
+    TestProjectionAndFlowRenderProducesMultipleClassColors();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;

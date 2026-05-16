@@ -67,6 +67,10 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_FractalTypeExplainoCounterfactualPairLookup");
     Check(TryParseFractalTypeId("explaino_counterfactual_pair", &fractalType) && fractalType == FractalType::explaino_counterfactual_pair,
         "TestConcreteEnumIdWrappers_FractalTypeExplainoCounterfactualPairParse");
+    Check(std::string_view(FractalTypeId(FractalType::projection_and_flow)) == "projection_and_flow",
+        "TestConcreteEnumIdWrappers_FractalTypeProjectionAndFlowLookup");
+    Check(TryParseFractalTypeId("projection_and_flow", &fractalType) && fractalType == FractalType::projection_and_flow,
+        "TestConcreteEnumIdWrappers_FractalTypeProjectionAndFlowParse");
     Check(std::string_view(FractalTypeId(FractalType::explaino_lambda)) == "explaino_lambda",
         "TestConcreteEnumIdWrappers_FractalTypeLookup");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,

@@ -37,12 +37,22 @@ static int gFail = 0;
 namespace {
 
 constexpr int kCounterfactualPairGridN = 25;
+constexpr int kProjectionAndFlowGridN = 49;
 
 void FillCounterfactualPairGrid(Double2 (&coords)[kCounterfactualPairGridN]) {
     int next = 0;
     for (int yi = -2; yi <= 2; ++yi) {
         for (int xi = -2; xi <= 2; ++xi) {
             coords[next++] = MakeDouble2(0.55 * static_cast<double>(xi), 0.55 * static_cast<double>(yi));
+        }
+    }
+}
+
+void FillProjectionAndFlowGrid(Double2 (&coords)[kProjectionAndFlowGridN]) {
+    int next = 0;
+    for (int yi = -3; yi <= 3; ++yi) {
+        for (int xi = -3; xi <= 3; ++xi) {
+            coords[next++] = MakeDouble2(0.45 * static_cast<double>(xi), 0.45 * static_cast<double>(yi));
         }
     }
 }
@@ -58,9 +68,25 @@ bool SampleCounterfactualPairGrid(
     return SampleFractalPoints(coords, kCounterfactualPairGridN, view, params, render, results, outError);
 }
 
+bool SampleProjectionAndFlowGrid(
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleResult (&results)[kProjectionAndFlowGridN],
+    const char** outError) {
+    Double2 coords[kProjectionAndFlowGridN];
+    FillProjectionAndFlowGrid(coords);
+    return SampleFractalPoints(coords, kProjectionAndFlowGridN, view, params, render, results, outError);
+}
+
 int DecodeCounterfactualPairClass(const FractalSampleResult& result) {
     Float2 classPoint{result.final_z_x, result.final_z_y};
     return NearestRootIndexUnitRoots(classPoint, 4);
+}
+
+int DecodeProjectionAndFlowClass(const FractalSampleResult& result) {
+    Float2 classPoint{result.final_z_x, result.final_z_y};
+    return NearestRootIndexUnitRoots(classPoint, 7);
 }
 
 bool SameCounterfactualPairResult(const FractalSampleResult& lhs, const FractalSampleResult& rhs) {
@@ -93,9 +119,18 @@ void MakeDefaults(FractalType ft, ViewState& view, KernelParams& params, RenderS
     params.color_contrast = 1.0f;
 
     if (ft == FractalType::explaino_counterfactual_pair) {
-        bool dirty = false;
-        ApplyFractalPresetDefaults(view, params, &dirty);
-        UpdateExplainoPolynomial(view, params, &dirty);
+        params.max_iter = 96;
+        params.poly_kind = PolyKind::z3_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 0.0f;
+        params.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
+        params.counterfactual_pair_frame = CounterfactualPairFrame::world_absolute;
+        params.counterfactual_pair_offset_x = 0.16f;
+        params.counterfactual_pair_offset_y = 0.08f;
+        params.counterfactual_pair_reconvergence_ratio = 0.60f;
     }
 
     if (IsExplainoFamily(ft)) {
@@ -212,6 +247,7 @@ void TestAllFractalTypes() {
         {FractalType::explaino_tension, "explaino_tension"},
         {FractalType::counterfactual_pair, "counterfactual_pair"},
         {FractalType::explaino_counterfactual_pair, "explaino_counterfactual_pair"},
+        {FractalType::projection_and_flow, "projection_and_flow"},
     };
 
     Double2 coord = MakeDouble2(0.3, 0.4);
@@ -268,6 +304,69 @@ void TestCounterfactualPairProducesExplicitPairClasses() {
 
     CHECK("counterfactual pair exposes multiple explicit classes", distinctClasses >= 3);
     CHECK("counterfactual pair exposes an unstable class", sawUnstable);
+}
+
+void TestProjectionAndFlowProducesExplicitProjectedClasses() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::projection_and_flow, view, params, render);
+    params.max_iter = 96;
+
+    FractalSampleResult results[kProjectionAndFlowGridN]{};
+    const char* error = nullptr;
+    bool ok = SampleProjectionAndFlowGrid(view, params, render, results, &error);
+    CHECK("projection_and_flow batch ok", ok);
+    if (!ok) {
+        std::cerr << "    error: " << (error ? error : "unknown") << "\n";
+        return;
+    }
+
+    bool sawClass[7] = {false, false, false, false, false, false, false};
+    bool sawUnstable = false;
+    bool sawLowPressure = false;
+    bool sawHighPressure = false;
+    bool sawMultipleRootSectors = false;
+    int distinctClasses = 0;
+    bool sawRootSector[3] = {false, false, false};
+    for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
+        CHECK("projection_and_flow final_z finite", std::isfinite(results[i].final_z_x) && std::isfinite(results[i].final_z_y));
+        CHECK("projection_and_flow residual finite", std::isfinite(results[i].residual));
+        CHECK("projection_and_flow never escapes", !results[i].escaped);
+        const int classIndex = DecodeProjectionAndFlowClass(results[i]);
+        CHECK("projection_and_flow class index in range", classIndex >= 0 && classIndex < 7);
+        const Double2 expectedRoot = UnitRootCoord(classIndex, 7);
+        const double dx = static_cast<double>(results[i].final_z_x) - expectedRoot.x;
+        const double dy = static_cast<double>(results[i].final_z_y) - expectedRoot.y;
+        CHECK("projection_and_flow lands on synthetic projected class root", (dx * dx + dy * dy) < 1.0e-6);
+        if (!sawClass[classIndex]) {
+            sawClass[classIndex] = true;
+            ++distinctClasses;
+        }
+        if (classIndex == 6) {
+            sawUnstable = true;
+            continue;
+        }
+        const int rootSector = classIndex / 2;
+        const int pressureBucket = classIndex % 2;
+        if (pressureBucket == 0) {
+            CHECK("projection_and_flow low-pressure class stays below the explicit pressure threshold",
+                results[i].residual < 1.0f);
+        } else {
+            CHECK("projection_and_flow high-pressure class breaches the explicit pressure threshold",
+                results[i].residual >= 1.0f);
+        }
+        sawRootSector[rootSector] = true;
+        sawLowPressure = sawLowPressure || (pressureBucket == 0);
+        sawHighPressure = sawHighPressure || (pressureBucket == 1);
+    }
+
+    sawMultipleRootSectors =
+        (static_cast<int>(sawRootSector[0]) + static_cast<int>(sawRootSector[1]) + static_cast<int>(sawRootSector[2])) >= 2;
+    CHECK("projection_and_flow exposes multiple explicit projected classes", distinctClasses >= 4);
+    CHECK("projection_and_flow exposes multiple root sectors", sawMultipleRootSectors);
+    CHECK("projection_and_flow exposes both pressure buckets", sawLowPressure && sawHighPressure);
+    CHECK("projection_and_flow exposes an unstable class", sawUnstable);
 }
 
 void TestCounterfactualPairFrameModesAreExplicit() {
@@ -571,6 +670,7 @@ int main() {
     TestSinglePointNewton();
     TestBatchSample();
     TestAllFractalTypes();
+    TestProjectionAndFlowProducesExplicitProjectedClasses();
     TestCounterfactualPairProducesExplicitPairClasses();
     TestCounterfactualPairFrameModesAreExplicit();
     TestCounterfactualPairRootFamilyChangesRuntimeLane();

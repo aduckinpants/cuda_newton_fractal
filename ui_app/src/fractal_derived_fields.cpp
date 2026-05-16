@@ -82,6 +82,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         center = {0.36f, -0.1f};
         zoom = 2.8f;
         break;
+    case FractalType::projection_and_flow:
     case FractalType::counterfactual_pair:
     case FractalType::explaino_counterfactual_pair:
         center = {0.0f, 0.0f};
@@ -233,6 +234,17 @@ static void ApplyCounterfactualPairPresetDefaults(KernelParams& params) {
     params.counterfactual_pair_reconvergence_ratio = 0.60f;
     SyncCounterfactualPairRootFamilyPreset(params);
     ApplyDefaultColoringSelection(FractalType::counterfactual_pair, params);
+    params.exposure = 1.0f;
+    params.phoenix_p_real = 0.0f;
+    params.phoenix_p_imag = 0.0f;
+}
+
+static void ApplyProjectionAndFlowPresetDefaults(KernelParams& params) {
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.poly_kind = PolyKind::z3_minus_1;
+    SetPolyPreset(params);
+    ApplyDefaultColoringSelection(FractalType::projection_and_flow, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = 0.0f;
     params.phoenix_p_imag = 0.0f;
@@ -395,6 +407,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     case FractalType::newton:
     case FractalType::nova:
         ApplyNewtonLikePresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::projection_and_flow:
+        ApplyProjectionAndFlowPresetDefaults(params);
         break;
     case FractalType::counterfactual_pair:
         ApplyCounterfactualPairPresetDefaults(params);

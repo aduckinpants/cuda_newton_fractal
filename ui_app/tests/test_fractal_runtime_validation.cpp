@@ -176,6 +176,20 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.poly_kind = PolyKind::z4_minus_1;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "projection_and_flow requires poly_kind z3_minus_1") {
+            std::cerr << "Expected Projection-and-Flow validation to fence the first lane to cubic z^3-1\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_fractal_runtime_validation: all passed\n";
     return 0;
 }

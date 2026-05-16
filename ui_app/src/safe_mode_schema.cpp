@@ -19,6 +19,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"phoenix", "Phoenix", "Common"},
     {"newton", "Newton", "Root-Finding"},
     {"halley", "Halley", "Root-Finding"},
+    {"projection_and_flow", "Projection and Flow", "Root-Finding"},
     {"counterfactual_pair", "Counterfactual Pair", "Root-Finding"},
     {"multibrot", "Multibrot", "Escape-Time"},
     {"spider", "Spider", "Escape-Time"},

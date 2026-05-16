@@ -195,6 +195,11 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to accept lambda\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "projection_and_flow") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "projection_and_flow") {
+            std::cerr << "Expected fractal type enum round-trip to accept projection_and_flow\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "counterfactual_pair") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "counterfactual_pair") {
             std::cerr << "Expected fractal type enum round-trip to accept counterfactual_pair\n";

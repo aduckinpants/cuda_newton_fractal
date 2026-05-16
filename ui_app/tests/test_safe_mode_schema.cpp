@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <string>
+#include <string_view>
 
 static int g_passed = 0;
 static int g_failed = 0;
@@ -39,6 +40,22 @@ static bool IsExpectedActionButton(const UISchemaPanel& panel, const char* id, c
         control->binding.path == bindingPath;
 }
 
+static bool ContainsCsvToken(std::string_view csv, std::string_view token) {
+    std::size_t start = 0;
+    while (start <= csv.size()) {
+        const std::size_t comma = csv.find(',', start);
+        const std::size_t end = (comma == std::string_view::npos) ? csv.size() : comma;
+        if (csv.substr(start, end - start) == token) {
+            return true;
+        }
+        if (comma == std::string_view::npos) {
+            break;
+        }
+        start = comma + 1;
+    }
+    return false;
+}
+
 static bool IsCounterfactualPairVisibleControl(const UISchemaControl* control, const char* bindingPath) {
     return control &&
         control->has_binding &&
@@ -48,6 +65,18 @@ static bool IsCounterfactualPairVisibleControl(const UISchemaControl* control, c
         control->visible_if.op == "eq" &&
         control->visible_if.path == "fractal.view.fractal_type" &&
         control->visible_if.value == "counterfactual_pair";
+}
+
+static bool IsCounterfactualPairCarrierVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "in" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        ContainsCsvToken(control->visible_if.value, "counterfactual_pair") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_counterfactual_pair");
 }
 
 static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
@@ -84,6 +113,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
     bool foundFractalTypeCommonGroup = false;
     bool foundFractalTypeRootFindingGroup = false;
     bool foundCounterfactualPairRootFindingGroup = false;
+    bool foundProjectionAndFlowRootFindingGroup = false;
     bool foundFractalTypeEscapeTimeGroup = false;
     bool foundFractalTypeExplainoGroup = false;
     bool foundFractalTypeDefaultExplainoAll = false;
@@ -99,6 +129,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
                     if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
                     if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
                     if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
+                    if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                     if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                     if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                 }
@@ -125,6 +156,8 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
         "TestSafeModeSchemaKeepsGroupedDefaults_RootFindingGroup");
     Check(foundCounterfactualPairRootFindingGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_CounterfactualPairRootFindingGroup");
+    Check(foundProjectionAndFlowRootFindingGroup,
+        "TestSafeModeSchemaKeepsGroupedDefaults_ProjectionAndFlowRootFindingGroup");
     Check(foundFractalTypeEscapeTimeGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_EscapeTimeGroup");
     Check(foundFractalTypeExplainoGroup,
@@ -153,17 +186,17 @@ static void TestSafeModeSchemaExposesCounterfactualPairControls() {
             rootFamily->has_default && rootFamily->def.is_string() && rootFamily->def.as_string() == "cubic_unit_roots" &&
             rootFamily->options.size() == 2,
         "TestSafeModeSchemaExposesCounterfactualPairControls_RootFamily");
-    Check(IsCounterfactualPairVisibleControl(frame, "fractal.params.counterfactual_pair_frame") &&
+    Check(IsCounterfactualPairCarrierVisibleControl(frame, "fractal.params.counterfactual_pair_frame") &&
             frame->has_default && frame->def.is_string() && frame->def.as_string() == "world_absolute" &&
             frame->options.size() == 2,
         "TestSafeModeSchemaExposesCounterfactualPairControls_Frame");
-    Check(IsCounterfactualPairVisibleControl(offsetX, "fractal.params.counterfactual_pair_offset_x") &&
+    Check(IsCounterfactualPairCarrierVisibleControl(offsetX, "fractal.params.counterfactual_pair_offset_x") &&
             offsetX->has_default && offsetX->def.is_number() && offsetX->def.as_number() == 0.16,
         "TestSafeModeSchemaExposesCounterfactualPairControls_OffsetX");
-    Check(IsCounterfactualPairVisibleControl(offsetY, "fractal.params.counterfactual_pair_offset_y") &&
+    Check(IsCounterfactualPairCarrierVisibleControl(offsetY, "fractal.params.counterfactual_pair_offset_y") &&
             offsetY->has_default && offsetY->def.is_number() && offsetY->def.as_number() == 0.08,
         "TestSafeModeSchemaExposesCounterfactualPairControls_OffsetY");
-    Check(IsCounterfactualPairVisibleControl(reconvergenceRatio, "fractal.params.counterfactual_pair_reconvergence_ratio") &&
+    Check(IsCounterfactualPairCarrierVisibleControl(reconvergenceRatio, "fractal.params.counterfactual_pair_reconvergence_ratio") &&
             reconvergenceRatio->has_default && reconvergenceRatio->def.is_number() && reconvergenceRatio->def.as_number() == 0.60 &&
             reconvergenceRatio->has_help && reconvergenceRatio->help.find("Class 2") != std::string::npos,
         "TestSafeModeSchemaExposesCounterfactualPairControls_ReconvergenceRatio");
