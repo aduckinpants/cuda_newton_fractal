@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the repo now carries a closed docs-only staging slice for the bounded engine lane that widens the fractal sample evidence contract without pretending to genericize the whole runtime. This slice does not implement `FractalSampleEvidence`; it translates the external prep packet into checked-in repo authority, writes the reusable launch-anchor surface, and stages the bounded implementation order so future sessions can start from the repo instead of chat or external notes alone.
+Complete - the repo now carries a closed docs-only staging slice for the bounded engine lane that widens the fractal sample evidence contract without pretending to genericize the whole runtime. This slice did not implement `FractalSampleEvidence` on its own head; it translated the external prep packet into checked-in repo authority, wrote the reusable launch-anchor surface, and staged the bounded implementation order so later sessions could start from the repo instead of chat or external notes alone. Slice A later landed on this branch, so this staging doc is now historical kickoff doctrine plus slice-order authority rather than the current implementation status surface.
 
 ## Phase Checklist
 
@@ -20,7 +20,7 @@ Complete - the repo now carries a closed docs-only staging slice for the bounded
 
 ## Presumption Loop
 
-The controlling risk is fake architecture progress through a broad refactor story. The final answer on this head is a bounded docs-only sample-evidence packet: the repo now has one checked-in launch anchor and one staged slice map for widening the sample evidence seam while preserving the current single-orbit contract as the shipped legacy projection.
+The controlling risk is fake architecture progress through a broad refactor story. The final answer on the staging head was a bounded docs-only sample-evidence packet: the repo gained one checked-in launch anchor and one staged slice map for widening the sample evidence seam while preserving the then-current single-orbit contract as the shipped legacy projection.
 
 The staged sample-evidence packet now fixes one checked-in slice order:
 
@@ -35,10 +35,10 @@ This staging slice also preserves kickoff flexibility: the first widened consume
 ## Presumption Evidence
 
 - Bootstrap and repo reread on 2026-05-16 proved branch=`feature/fractal-sample-evidence-widening`, `HEAD=35bd22b`, and a clean tree after the closed Explaino-family stack was merged to `master` and a new branch was cut.
-- A repo search before mutation proved the current repo still has only `FractalSampleResult` as the checked-in fractal sample payload and still lacks any checked-in `FractalSampleEvidence`, `SampleFractalEvidencePoints(...)`, or `BuildLegacySampleResult(...)` helper.
-- `ui_app/src/fractal_sample_result.h`, `ui_app/src/fractal_sample_core.cu`, and `ui_app/src/fractal_sample_device.inl` still prove the current sampling seam is single-orbit-shaped.
-- `ui_app/src/generic_sample_core.h` and `ui_app/src/generic_sample_core.cu` prove the codebase already tolerates a second bounded sample contract without requiring a universal abstraction first.
-- The external prep packet already exists in `D:\salt-output\explaino_novelty_analysis\20260511_152923_viewer_host_fractal_math_refresh_packet\07_SAMPLE_EVIDENCE_WIDENING_PLAN.md` and `08_SAMPLE_EVIDENCE_IMPLEMENTATION_CHECKLIST.md`, but before this slice the repo had no checked-in equivalent restart-safe packet.
+- A repo search before the staging mutation on head `35bd22b` proved the repo then had only `FractalSampleResult` as the checked-in fractal sample payload and lacked any checked-in `FractalSampleEvidence`, `SampleFractalEvidencePoints(...)`, or `BuildLegacySampleResult(...)` helper.
+- `ui_app/src/fractal_sample_result.h`, `ui_app/src/fractal_sample_core.cu`, and `ui_app/src/fractal_sample_device.inl` proved the staging head sampling seam was single-orbit-shaped.
+- `ui_app/src/generic_sample_core.h` and `ui_app/src/generic_sample_core.cu` proved the codebase already tolerated a second bounded sample contract without requiring a universal abstraction first.
+- The external prep packet already existed in `D:\salt-output\explaino_novelty_analysis\20260511_152923_viewer_host_fractal_math_refresh_packet\07_SAMPLE_EVIDENCE_WIDENING_PLAN.md` and `08_SAMPLE_EVIDENCE_IMPLEMENTATION_CHECKLIST.md`, but before this staging slice the repo had no checked-in equivalent restart-safe packet.
 
 ## Slice Map
 
@@ -118,11 +118,12 @@ That file is the reusable entry surface for:
 
 ## Proof Ledger
 
-- RED 1 landed truthfully: the repo had no checked-in sample-evidence widening launch packet on this head before this slice.
-- RED 2 landed truthfully: the repo still lacked any checked-in widened evidence payload or widened sample API, so the engine lane was still only external planning.
+- RED 1 landed truthfully on the staging head: the repo had no checked-in sample-evidence widening launch packet before this slice.
+- RED 2 landed truthfully on the staging head: the repo still lacked any checked-in widened evidence payload or widened sample API, so the engine lane was still only external planning.
 - `docs/notes/fractal_sample_evidence_widening_launch_anchor.md`, `docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md`, and `docs/contracts/fractal_sample_evidence_widening_staging.contract.json` now exist as the checked-in sample-evidence widening packet.
 - The packet keeps `FractalSampleResult` and `SampleFractalPoints(...)` explicit as the shipped legacy projection authority while staging the later widened seam.
 - The packet keeps the first consumer bounded to paired-state/counterfactual or projection-and-flow and explicitly fences off meta-basin, operator-itinerary, and DSL/program-space work from the first implementation slice.
+- Current repo note: slice A later landed `FractalSampleEvidence` plus `BuildLegacySampleResult(...)` while still deferring widened host API and first-consumer work; use the launch anchor plus the slice-A plan for live implementation truth.
 
 ## Hostile Audit
 
@@ -172,7 +173,7 @@ That file is the reusable entry surface for:
 
 ## Resume Point
 
-Closed. If the next engine lane is chosen now, start from [fractal_sample_evidence_widening_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_launch_anchor.md) and this staged slice map instead of rebuilding the seam from external notes or chat.
+Closed. Historical staging only. The next engine lane should start from [fractal_sample_evidence_widening_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_launch_anchor.md) plus [fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md); use this staged slice map only for the original ordering and scope fence.
 
 ## Action Hostile Review
 

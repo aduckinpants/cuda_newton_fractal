@@ -49,8 +49,9 @@ Do not start with cleanup before the widened seam and first consumer are both re
 
 ## Current Lane Status
 
-- The current repo still has only `FractalSampleResult` as the checked-in fractal sample payload.
-- The current repo still has no checked-in `FractalSampleEvidence`, `SampleFractalEvidencePoints(...)`, or `BuildLegacySampleResult(...)` projection helper.
+- The current repo keeps `FractalSampleResult` as the shipped legacy sample payload and `SampleFractalPoints(...)` as the current legacy sample API.
+- `ui_app/src/fractal_sample_result.h` now carries one bounded `FractalSampleEvidence` payload plus one `BuildLegacySampleResult(...)` helper; slice A keeps that widened payload bounded to `sample_coord` plus nested `legacy_result`.
+- The current repo still has no checked-in `SampleFractalEvidencePoints(...)` widened host API and still has no real widened consumer yet.
 - The repo already has a bounded adjacent pattern in `generic_sample_core.*`, which proves a second sample contract can exist without forcing a universal abstraction first.
 - The external prep packet under `D:\salt-output\explaino_novelty_analysis\20260511_152923_viewer_host_fractal_math_refresh_packet` is now translated into this checked-in packet so future sessions can start from repo authority instead of external notes alone.
 
@@ -141,6 +142,12 @@ Must prove:
 - one explicit legacy projection helper exists
 - no current caller behavior drift is claimed yet
 
+Current bounded implementation on this head:
+
+- `FractalSampleEvidence` adds only `sample_coord` beside nested `legacy_result`
+- `BuildLegacySampleResult(...)` returns the unchanged legacy projection surface
+- `SampleFractalPoints(...)` remains the only shipped sample API
+
 ### Slice B - Dual-Return API
 
 Must prove:
@@ -165,5 +172,5 @@ Every future sample-evidence widening slice must re-read its active phased plan 
 
 Use this packet when opening the next engine lane from the current stop point:
 
+- [fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md)
 - [fractal_sample_evidence_widening_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md)
-
