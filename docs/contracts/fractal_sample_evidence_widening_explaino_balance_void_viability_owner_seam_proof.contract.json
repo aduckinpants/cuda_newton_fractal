@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "contract_id": "fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof",
+  "feature_id": "fractal_sample_evidence_widening",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof.contract.json",
+    "docs/notes/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_PHASED_PLAN.md",
+    "docs/notes/fractal_sample_evidence_widening_launch_anchor.md",
+    "docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md",
+    "docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md",
+    "docs/notes/fractal_sample_evidence_widening_projection_and_flow_witness_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/explaino_sidecar_model.cpp",
+    "ui_app/src/explaino_sidecar_window.cpp",
+    "ui_app/%OBJROOT%",
+    "ui_app/tests/test_explaino_sidecar_measurement.cpp",
+    "ui_app/tests/test_explaino_sidecar_window.cpp"
+  ],
+  "required_operator_inputs": [
+    "prove whether ExplainO-BalanceVoid is or is not the next truthful bounded widened-consumer lane after projection-and-flow",
+    "identify the exact owner seam that would consume widened evidence if that lane is real, or prove the lane stops here without a further bounded consumer on this branch",
+    "preserve FractalSampleResult and SampleFractalPoints as the shipped legacy projection surfaces",
+    "prove whether the existing widened payload is sufficient or whether richer evidence would actually be required before any BalanceVoid promotion claim"
+  ],
+  "forbidden_operator_prompts": [
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the legacy projection path",
+    "claim ExplainO-BalanceVoid is the next widened consumer without repo-grounded owner-seam proof",
+    "widen into generic advanced-color, broad Explaino-family work, renderer replacement, or a whole-engine abstraction rewrite",
+    "close the slice without machine receipts, hostile-audit proof, and the committed-head stale-plan gate cleared"
+  ],
+  "required_defaults": {
+    "balance_void_owner_seam_answer_explicit": "required",
+    "samplefractalpoints_legacy_projection_preserved": "required",
+    "fractal_sample_result_legacy_surface_preserved": "required",
+    "current_widened_payload_status_proved": "required",
+    "generic_advanced_color_out_of_scope": "required",
+    "generic_engine_refactor_out_of_scope": "required"
+  },
+  "forbidden_defaults": {
+    "samplefractalpoints_removed_or_signature_replaced": "forbidden",
+    "fractal_sample_result_replaced": "forbidden",
+    "speculative_evidence_field_growth": "forbidden",
+    "balance_void_promotion_without_owner_proof": "forbidden",
+    "generic_advanced_color_reopened": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "renderer_replacement": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof.contract.json --out-json artifacts/validation/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_PHASED_PLAN.md --out-json artifacts/validation/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_contract_schema_valid",
+      "description": "The BalanceVoid viability / owner-seam proof contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_plan_sync_ok",
+      "description": "The BalanceVoid viability / owner-seam proof plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_hostile_audit_ok",
+      "description": "The BalanceVoid viability / owner-seam hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_explaino_balance_void_viability_owner_seam_proof_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

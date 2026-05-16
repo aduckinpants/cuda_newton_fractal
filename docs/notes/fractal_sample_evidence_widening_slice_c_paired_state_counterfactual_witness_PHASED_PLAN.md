@@ -2,13 +2,14 @@
 
 ## Current Phase
 
-Complete - slice C now has one real paired-state/counterfactual widened consumer, the hostile-audit defects are repaired, the restart-facing docs are truth-repaired, the focused touched-seam proofs are green, and this plan is the final closed-state surface for the checkpoint head. Machine receipts for this head are written after the commit rather than into the plan text itself.
+Complete - slice C now has one real paired-state/counterfactual widened consumer, the hostile-audit defects are repaired, the restart-facing docs are truth-repaired, the focused touched-seam proofs are green, and this plan is the final closed-state surface for the checkpoint head. Later branch work also closed slice D and the post-projection `ExplainO-BalanceVoid` viability answer, which ended as a stop-here / non-promotion proof rather than a further widened consumer on this branch. Machine receipts for this head are written after the commit rather than into the plan text itself.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in slice-C plan and contract, replace the closed slice-B lock, and re-prove the RED head still has no real widened consumer while the sidecar and runtime-walk seams remain legacy-only.
 - [x] Phase 2 - land one real widened consumer in the bounded sidecar paired-state or counterfactual lane while preserving `SampleFractalPoints(...)` and current legacy caller semantics.
 - [x] Phase 3 - run the narrow validation ladder, complete hostile audit, checkpoint, write receipts, repair any stale closeout text, and leave the repo clean.
+- [x] Historical truth repair - later branch work now records that projection-and-flow landed and the remaining BalanceVoid lane closed as stop-here / non-promotion rather than staying deferred.
 
 ## Explicit User Asks
 
@@ -56,7 +57,7 @@ Complete - slice C now has one real paired-state/counterfactual widened consumer
 
 - [x] Real continuity defect fixed: the restart-facing launch/staging packet plus the closed slice-A/B plan headers still claimed the live branch had no first widened consumer or still treated that consumer as deferred. Those authority surfaces now name the bounded sidecar paired-state/counterfactual consumer truthfully.
 - [x] Real caller-compatibility defect fixed: `ui_app/tests/test_runtime_walk_headless.cpp` supplied only the old `CudaSidecarMeasurementHost::Sample(...)` stub, so the broader helper build started failing at link time after slice C added widened virtuals. The test now stubs `SupportsWidenedEvidence()` and `SampleEvidence(...)` explicitly and the repaired helper build passes that caller again.
-- [x] Clean re-read evidence: the first widened consumer is real and callable, the chosen fields remain bounded to `sample_coord + legacy_result`, `SampleFractalPoints(...)` and `FractalSampleResult` remain the shipped legacy projection surfaces, projection-and-flow and `ExplainO-BalanceVoid` remain deferred, and no additional real defect was found.
+- [x] Clean re-read evidence: the first widened consumer is real and callable, the chosen fields remain bounded to `sample_coord + legacy_result`, `SampleFractalPoints(...)` and `FractalSampleResult` remain the shipped legacy projection surfaces, later branch work landed projection-and-flow and then closed the remaining BalanceVoid lane as stop-here / non-promotion, and no additional real defect was found.
 
 ## Notes
 

@@ -140,6 +140,60 @@ public:
     }
 };
 
+class FakeBalanceVoidEvidenceHost : public SidecarMeasurementHost {
+public:
+    mutable int legacy_calls = 0;
+
+    bool Sample(const std::vector<Double2>&,
+        const ViewState&,
+        const KernelParams&,
+        const RenderSettings&,
+        std::vector<FractalSampleResult>*,
+        std::string* outError) const override {
+        ++legacy_calls;
+        if (outError) *outError = "legacy sample should stay unused when BalanceVoid widened evidence is available";
+        return false;
+    }
+
+    bool SupportsWidenedEvidence() const override {
+        return true;
+    }
+
+    bool SampleEvidence(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams& params,
+        const RenderSettings& render,
+        std::vector<FractalSampleEvidence>* outEvidence,
+        std::string* outError) const override {
+        if (!outEvidence) {
+            if (outError) *outError = "outEvidence is null";
+            return false;
+        }
+
+        outEvidence->clear();
+        outEvidence->reserve(coords.size());
+        for (const Double2& coord : coords) {
+            const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
+            const double balanceSignal = static_cast<double>(params.balance_void) * 8.0;
+            const double tensionSignal = static_cast<double>(params.symmetry_tension) * 11.0;
+            const double curvatureSignal = static_cast<double>(params.field_curvature) * 13.0;
+            const double renderSignal = static_cast<double>(render.device_id);
+            const double legacySignal = balanceSignal + tensionSignal + curvatureSignal;
+
+            FractalSampleEvidence evidence{};
+            evidence.sample_coord = coord;
+            evidence.legacy_result.iterations = static_cast<int>(std::lround(30.0 + legacySignal + coordSpan * 40.0 + renderSignal));
+            evidence.legacy_result.final_z_x = static_cast<float>(coord.x);
+            evidence.legacy_result.final_z_y = static_cast<float>(coord.y);
+            evidence.legacy_result.residual = static_cast<float>(1.0 + std::fabs(legacySignal) * 0.1 + coordSpan * 0.5);
+            evidence.legacy_result.converged = legacySignal >= 0.0;
+            evidence.legacy_result.escaped = !evidence.legacy_result.converged && coordSpan > 0.05;
+            outEvidence->push_back(evidence);
+        }
+        return true;
+    }
+};
+
 
 FunctionParamDescriptor MakeParam(
     const char* path,
@@ -224,6 +278,45 @@ EngineFunctionCatalog BuildZoomOnlyCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildBalanceVoidCatalog() {
+    EngineFunctionCatalog catalog;
+
+    FunctionDescriptor fractalSample;
+    fractalSample.id = "fractal.sample";
+
+    FunctionParamDescriptor fractalType;
+    fractalType.path = "fractal.view.fractal_type";
+    fractalType.type = "enum";
+    fractalType.label = "Fractal Type";
+    fractalType.required = true;
+    fractalType.options.push_back({"explaino_all", "Explaino-all"});
+    fractalSample.parameters.push_back(fractalType);
+
+    FunctionParamDescriptor balanceVoid = MakeParam("fractal.params.balance_void", "float", "Balance Void", -1.0, 1.0, 0.0);
+    balanceVoid.has_applicable_when = true;
+    balanceVoid.applicable_when.op = "eq";
+    balanceVoid.applicable_when.path = "fractal.view.fractal_type";
+    balanceVoid.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(balanceVoid);
+
+    FunctionParamDescriptor symmetryTension = MakeParam("fractal.params.symmetry_tension", "float", "Symmetry Tension", -1.0, 1.0, 0.0);
+    symmetryTension.has_applicable_when = true;
+    symmetryTension.applicable_when.op = "eq";
+    symmetryTension.applicable_when.path = "fractal.view.fractal_type";
+    symmetryTension.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(symmetryTension);
+
+    FunctionParamDescriptor fieldCurvature = MakeParam("fractal.params.field_curvature", "float", "Field Curvature", -1.0, 1.0, 0.0);
+    fieldCurvature.has_applicable_when = true;
+    fieldCurvature.applicable_when.op = "eq";
+    fieldCurvature.applicable_when.path = "fractal.view.fractal_type";
+    fieldCurvature.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(fieldCurvature);
+
+    catalog.functions.push_back(fractalSample);
+    return catalog;
+}
+
 EngineFunctionCatalog BuildDuplicateMeasurementCatalog() {
     EngineFunctionCatalog catalog = BuildCatalog();
     FunctionParamDescriptor duplicate = MakeParam("fractal.params.explaino_mix", "float", "Mix Duplicate", 0.0, 1.0, 0.5);
@@ -294,6 +387,39 @@ BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderS
     ctx.render = render;
     ctx.lens = lens;
     return ctx;
+}
+
+const ExplainoSidecarWindowRow* FindWindowRowByPath(
+    const std::vector<ExplainoSidecarWindowRow>& rows,
+    const char* path) {
+    for (const ExplainoSidecarWindowRow& row : rows) {
+        if (row.path == path) {
+            return &row;
+        }
+    }
+    return nullptr;
+}
+
+const SidecarMeasurementRow* FindMeasurementRowByPath(
+    const SidecarMeasurementBatch& batch,
+    const char* path) {
+    for (const SidecarMeasurementRow& row : batch.rows) {
+        if (row.path == path) {
+            return &row;
+        }
+    }
+    return nullptr;
+}
+
+const SidecarLensProjectionRow* FindLensRowByPath(
+    const SidecarLensProjection& projection,
+    const char* path) {
+    for (const SidecarLensProjectionRow& row : projection.rows) {
+        if (row.path == path) {
+            return &row;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace
@@ -549,6 +675,81 @@ int main() {
             state.lens.rows[0].active_max - state.lens.rows[0].current_value)) {
             std::cerr << "Expected widened projection-flow sidecar window state to bias the active zone toward the stronger minus-direction flow witness\n";
             return 1;
+        }
+    }
+
+    {
+        ViewState balanceVoidView{};
+        KernelParams balanceVoidParams{};
+        RenderSettings balanceVoidRender{};
+        LensSettings balanceVoidLens{};
+        balanceVoidView.fractal_type = FractalType::explaino_balance_void;
+        balanceVoidView.zoom = 10.0f;
+        balanceVoidParams.balance_void = 0.4f;
+        balanceVoidParams.symmetry_tension = -0.3f;
+        balanceVoidParams.field_curvature = 0.25f;
+        BindingContext balanceVoidCtx = MakeBindingContext(
+            &balanceVoidView,
+            &balanceVoidParams,
+            &balanceVoidRender,
+            &balanceVoidLens);
+
+        FakeBalanceVoidEvidenceHost host;
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildBalanceVoidCatalog(), balanceVoidCtx, &host, &state, &error)) {
+            std::cerr << "Expected BalanceVoid widened sidecar window state to build on the existing generic explaino_all seam: "
+                      << error << "\n";
+            return 1;
+        }
+        if (host.legacy_calls != 0) {
+            std::cerr << "Expected BalanceVoid widened sidecar window state to avoid the legacy sample host\n";
+            return 1;
+        }
+        if (state.fractal_type_id != "explaino_all") {
+            std::cerr << "Expected legacy explaino_balance_void sidecar state to canonicalize onto the generic explaino_all owner seam, got: "
+                      << state.fractal_type_id << "\n";
+            return 1;
+        }
+        if (state.rows.size() != 4) {
+            std::cerr << "Expected BalanceVoid widened sidecar window state to expose the canonical fractal selector plus three dedicated BalanceVoid rows\n";
+            return 1;
+        }
+        if (!FindWindowRowByPath(state.rows, "fractal.view.fractal_type")) {
+            std::cerr << "Expected BalanceVoid widened sidecar state to keep the canonical fractal selector explicit\n";
+            return 1;
+        }
+        if (state.measurement.rows.size() != 3 || state.lens.rows.size() != 3 || state.budget.rows.size() != 3) {
+            std::cerr << "Expected BalanceVoid widened sidecar window state to keep the three dedicated BalanceVoid axes on the generic measured, budget, and lens surfaces\n";
+            return 1;
+        }
+
+        const char* expectedPaths[] = {
+            "fractal.params.balance_void",
+            "fractal.params.symmetry_tension",
+            "fractal.params.field_curvature",
+        };
+        for (const char* path : expectedPaths) {
+            const SidecarMeasurementRow* measurementRow = FindMeasurementRowByPath(state.measurement, path);
+            const SidecarLensProjectionRow* lensRow = FindLensRowByPath(state.lens, path);
+            if (!measurementRow || !lensRow) {
+                std::cerr << "Expected BalanceVoid widened sidecar state to keep path " << path << " on the generic measurement and lens surfaces\n";
+                return 1;
+            }
+            if (!NearlyEqual(measurementRow->minus_counterfactual.mean_sample_coord_distance, 0.0) ||
+                !NearlyEqual(measurementRow->plus_counterfactual.mean_sample_coord_distance, 0.0)) {
+                std::cerr << "Expected BalanceVoid widened sidecar window proof to react through legacy-result deltas instead of projection-flow coordinate motion for path " << path << "\n";
+                return 1;
+            }
+            if (!(measurementRow->information_gain_estimate > 0.0) || lensRow->guidance.empty()) {
+                std::cerr << "Expected existing widened payload to keep a non-zero generic window-side signal for BalanceVoid path " << path << "\n";
+                return 1;
+            }
+            if (!NearlyEqual(lensRow->projection_flow_bias, 0.0) ||
+                !NearlyEqual(lensRow->projection_flow_confidence, 0.0)) {
+                std::cerr << "Expected BalanceVoid widened sidecar window state to stay off the projection-flow witness lane for path " << path << "\n";
+                return 1;
+            }
         }
     }
 

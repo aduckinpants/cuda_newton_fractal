@@ -2,13 +2,14 @@
 
 ## Current Phase
 
-Complete - the bounded projection-and-flow consumer is landed on the sidecar lens/window path, the restart-facing docs are truth-repaired, the hostile reread found and repaired two real proof defects, the focused validators and touched-seam proofs are green, and this plan is the final closed-state surface for the checkpoint head. Machine receipts for this head are written after the commit rather than into the plan text itself.
+Complete - the bounded projection-and-flow consumer is landed on the sidecar lens/window path, the restart-facing docs are truth-repaired, the hostile reread found and repaired two real proof defects, the focused validators and touched-seam proofs are green, and this plan is the final closed-state surface for the checkpoint head. Later branch work also closed the remaining post-projection `ExplainO-BalanceVoid` question as stop-here / non-promotion rather than promoting another widened consumer on this branch. Machine receipts for this head are written after the commit rather than into the plan text itself.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in projection-and-flow plan and contract, replace the closed slice-C lock, and re-prove the RED head still has no real bounded projection-and-flow consumer while the sidecar lens/window path remains aggregate-only.
 - [x] Phase 2 - land one real bounded projection-and-flow consumer in the sidecar lens/window lane using only justified widened evidence while preserving `SampleFractalPoints(...)`, `FractalSampleResult`, and current legacy caller behavior.
 - [x] Phase 3 - run the narrow validation ladder, complete hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean.
+- [x] Historical truth repair - later branch work now records that the remaining BalanceVoid lane closed as stop-here / non-promotion rather than staying deferred.
 
 ## Explicit User Asks
 
@@ -53,4 +54,4 @@ Complete - the bounded projection-and-flow consumer is landed on the sidecar len
 
 - [x] Real scope defect fixed: the first GREEN draft tried to mix residual, iteration, and flip deltas into the projection-flow score without proof that the projection lane needed them. The repaired lens now uses only widened sample-coordinate displacement, which is the narrowest justified flow signal for this slice.
 - [x] Real proof-fixture defect fixed: the first zoom-only window witness swept too broad a zoom range and failed to isolate the intended near-baseline directional proof. The repaired fixture now constrains the zoom surface to `9.0..11.0`, which keeps the live minus/plus flow witness truthful and discriminating.
-- [x] Clean re-read evidence: the repo now has one second real bounded projection-and-flow consumer in the sidecar lens/window lane, no new evidence fields were added beyond `sample_coord + legacy_result`, `SampleFractalPoints(...)` and `FractalSampleResult` remain the shipped legacy projection surfaces, and `ExplainO-BalanceVoid` plus broader engine work remain deferred.
+- [x] Clean re-read evidence: the repo now has one second real bounded projection-and-flow consumer in the sidecar lens/window lane, no new evidence fields were added beyond `sample_coord + legacy_result`, `SampleFractalPoints(...)` and `FractalSampleResult` remain the shipped legacy projection surfaces, and later branch work closed the remaining BalanceVoid lane as stop-here / non-promotion while broader engine work remains deferred.
