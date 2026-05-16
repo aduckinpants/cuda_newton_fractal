@@ -235,6 +235,7 @@ enum class FractalType : int {
     explaino_balance_void = 37,
     explaino_all = 38,
     counterfactual_pair = 39,
+    explaino_counterfactual_pair = 40,
 };
 
 enum class CounterfactualPairRootFamily : int {

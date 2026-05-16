@@ -1970,14 +1970,14 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "poly_kind must be custom for fractal_type " + fractalTypeId;
         return false;
     }
-    if (nextView.fractal_type == FractalType::counterfactual_pair &&
+    if (hasCounterfactualPairRootFamilyId) {
+        if (!ParseCounterfactualPairRootFamily(counterfactualPairRootFamilyId, &nextParams.counterfactual_pair_root_family)) {
+            if (outError) *outError = "Unknown counterfactual_pair_root_family: " + counterfactualPairRootFamilyId;
+            return false;
+        }
+    } else if (nextView.fractal_type == FractalType::counterfactual_pair &&
         !TryResolveCounterfactualPairRootFamilyForPolyKindLocal(nextParams.poly_kind, &nextParams.counterfactual_pair_root_family)) {
         if (outError) *outError = "counterfactual_pair requires a supported root-family polynomial preset";
-        return false;
-    }
-    if (hasCounterfactualPairRootFamilyId &&
-        !ParseCounterfactualPairRootFamily(counterfactualPairRootFamilyId, &nextParams.counterfactual_pair_root_family)) {
-        if (outError) *outError = "Unknown counterfactual_pair_root_family: " + counterfactualPairRootFamilyId;
         return false;
     }
     if (hasCounterfactualPairFrameId &&

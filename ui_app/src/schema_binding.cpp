@@ -226,7 +226,9 @@ bool SetCounterfactualPairRootFamily(BindingContext* ctx, const std::string& id)
         return false;
     }
     ctx->params->counterfactual_pair_root_family = nextFamily;
-    SyncCounterfactualPairRootFamilyPresetLocal(*ctx->params);
+    if (ctx->view && ctx->view->fractal_type == FractalType::counterfactual_pair) {
+        SyncCounterfactualPairRootFamilyPresetLocal(*ctx->params);
+    }
     return true;
 }
 

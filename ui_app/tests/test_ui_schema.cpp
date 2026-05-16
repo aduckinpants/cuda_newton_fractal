@@ -226,9 +226,11 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
         frame->help.find("World Absolute") != std::string::npos &&
         frame->help.find("View Relative") != std::string::npos &&
         frame->has_visible_if &&
-        frame->visible_if.op == "eq" &&
+        frame->visible_if.op == "in" &&
         frame->visible_if.path == "fractal.view.fractal_type" &&
-        frame->visible_if.value == "counterfactual_pair";
+        VisibleIfIncludesFractalType(*frame, "counterfactual_pair") &&
+        VisibleIfIncludesFractalType(*frame, "explaino_counterfactual_pair") &&
+        CsvTokenCount(frame->visible_if.value) == 2u;
     if (!frameOk) {
         std::cerr << "Main schema Counterfactual Pair frame control does not make the perturbation frame explicit\n";
         return false;
@@ -245,7 +247,11 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
         offsetX->has_ui_max &&
         offsetX->ui_max == 1.0 &&
         offsetX->has_visible_if &&
-        offsetX->visible_if.value == "counterfactual_pair";
+        offsetX->visible_if.op == "in" &&
+        offsetX->visible_if.path == "fractal.view.fractal_type" &&
+        VisibleIfIncludesFractalType(*offsetX, "counterfactual_pair") &&
+        VisibleIfIncludesFractalType(*offsetX, "explaino_counterfactual_pair") &&
+        CsvTokenCount(offsetX->visible_if.value) == 2u;
     const bool offsetYOk =
         offsetY->has_binding &&
         offsetY->binding.path == "fractal.params.counterfactual_pair_offset_y" &&
@@ -257,7 +263,11 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
         offsetY->has_ui_max &&
         offsetY->ui_max == 1.0 &&
         offsetY->has_visible_if &&
-        offsetY->visible_if.value == "counterfactual_pair";
+        offsetY->visible_if.op == "in" &&
+        offsetY->visible_if.path == "fractal.view.fractal_type" &&
+        VisibleIfIncludesFractalType(*offsetY, "counterfactual_pair") &&
+        VisibleIfIncludesFractalType(*offsetY, "explaino_counterfactual_pair") &&
+        CsvTokenCount(offsetY->visible_if.value) == 2u;
     if (!offsetXOk || !offsetYOk) {
         std::cerr << "Main schema Counterfactual Pair offset controls drifted from the bounded partner-gap owner seam\n";
         return false;
@@ -277,7 +287,11 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
         reconvergenceRatio->help.find("Class 2") != std::string::npos &&
         reconvergenceRatio->help.find("Class 3") != std::string::npos &&
         reconvergenceRatio->has_visible_if &&
-        reconvergenceRatio->visible_if.value == "counterfactual_pair";
+        reconvergenceRatio->visible_if.op == "in" &&
+        reconvergenceRatio->visible_if.path == "fractal.view.fractal_type" &&
+        VisibleIfIncludesFractalType(*reconvergenceRatio, "counterfactual_pair") &&
+        VisibleIfIncludesFractalType(*reconvergenceRatio, "explaino_counterfactual_pair") &&
+        CsvTokenCount(reconvergenceRatio->visible_if.value) == 2u;
     if (!reconvergenceOk) {
         std::cerr << "Main schema Counterfactual Pair reconvergence control does not expose the public class model truthfully\n";
         return false;
@@ -490,6 +504,8 @@ int main() {
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
+        bool foundSafeModeExplainoCounterfactualPairGroup = false;
+        bool foundFractalTypeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
@@ -497,7 +513,9 @@ int main() {
         bool foundFractalTypeDefaultExplainoAll = false;
         bool foundEpsilonVisibleForExplainoAll = false;
         bool foundEpsilonVisibleForCounterfactualPair = false;
+        bool foundEpsilonVisibleForExplainoCounterfactualPair = false;
         bool foundExplainoSeedVisibleForExplainoAll = false;
+        bool foundExplainoSeedVisibleForExplainoCounterfactualPair = false;
         bool foundRippleAmplitudeVisibleForExplainoAll = false;
         bool foundSpliceOffsetVisibleForExplainoAll = false;
         bool foundVortexStrengthVisibleForExplainoAll = false;
@@ -608,6 +626,7 @@ int main() {
                         }
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
+                        if (option.id == "explaino_counterfactual_pair" && option.group == "Explaino") foundFractalTypeExplainoCounterfactualPairGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
                             foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
                         }
@@ -847,8 +866,14 @@ int main() {
                 if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "counterfactual_pair")) {
                     foundEpsilonVisibleForCounterfactualPair = true;
                 }
+                if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "explaino_counterfactual_pair")) {
+                    foundEpsilonVisibleForExplainoCounterfactualPair = true;
+                }
                 if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundExplainoSeedVisibleForExplainoAll = true;
+                }
+                if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_counterfactual_pair")) {
+                    foundExplainoSeedVisibleForExplainoCounterfactualPair = true;
                 }
                 if (ctrl.id == "ripple_amplitude" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundRippleAmplitudeVisibleForExplainoAll = true;
@@ -1019,7 +1044,7 @@ int main() {
             return 1;
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup) {
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup || !foundFractalTypeExplainoCounterfactualPairGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
         }
@@ -1035,7 +1060,9 @@ int main() {
             std::cerr << "Did not find Explaino-all as the canonical startup fractal default in schema\n";
             return 1;
         }
-        if (!foundEpsilonVisibleForExplainoAll || !foundEpsilonVisibleForCounterfactualPair || !foundExplainoSeedVisibleForExplainoAll) {
+        if (!foundEpsilonVisibleForExplainoAll || !foundEpsilonVisibleForCounterfactualPair ||
+            !foundEpsilonVisibleForExplainoCounterfactualPair || !foundExplainoSeedVisibleForExplainoAll ||
+            !foundExplainoSeedVisibleForExplainoCounterfactualPair) {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }
@@ -1096,6 +1123,7 @@ int main() {
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
+        bool foundSafeModeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
@@ -1175,14 +1203,22 @@ int main() {
         }
         if (!pairFrame->has_binding || pairFrame->binding.path != "fractal.params.counterfactual_pair_frame" ||
             !pairFrame->has_default || !pairFrame->def.is_string() || pairFrame->def.as_string() != "world_absolute" ||
-            !pairFrame->has_visible_if || pairFrame->visible_if.value != "counterfactual_pair") {
+            !pairFrame->has_visible_if || pairFrame->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*pairFrame, "counterfactual_pair") ||
+            !VisibleIfIncludesFractalType(*pairFrame, "explaino_counterfactual_pair")) {
             std::cerr << "Safe-mode schema Counterfactual Pair frame control drifted from the bounded owner seam\n";
             return 1;
         }
         if (!pairOffsetX->has_binding || pairOffsetX->binding.path != "fractal.params.counterfactual_pair_offset_x" ||
             !pairOffsetX->has_default || !pairOffsetX->def.is_number() || pairOffsetX->def.as_number() != 0.16 ||
+            !pairOffsetX->has_visible_if || pairOffsetX->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*pairOffsetX, "counterfactual_pair") ||
+            !VisibleIfIncludesFractalType(*pairOffsetX, "explaino_counterfactual_pair") ||
             !pairOffsetY->has_binding || pairOffsetY->binding.path != "fractal.params.counterfactual_pair_offset_y" ||
-            !pairOffsetY->has_default || !pairOffsetY->def.is_number() || pairOffsetY->def.as_number() != 0.08) {
+            !pairOffsetY->has_default || !pairOffsetY->def.is_number() || pairOffsetY->def.as_number() != 0.08 ||
+            !pairOffsetY->has_visible_if || pairOffsetY->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*pairOffsetY, "counterfactual_pair") ||
+            !VisibleIfIncludesFractalType(*pairOffsetY, "explaino_counterfactual_pair")) {
             std::cerr << "Safe-mode schema Counterfactual Pair offset controls drifted from the bounded owner seam\n";
             return 1;
         }
@@ -1191,7 +1227,10 @@ int main() {
             !pairReconvergenceRatio->has_default || !pairReconvergenceRatio->def.is_number() ||
             pairReconvergenceRatio->def.as_number() != 0.6 ||
             !pairReconvergenceRatio->has_help ||
-            pairReconvergenceRatio->help.find("Class 3") == std::string::npos) {
+            pairReconvergenceRatio->help.find("Class 3") == std::string::npos ||
+            !pairReconvergenceRatio->has_visible_if || pairReconvergenceRatio->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*pairReconvergenceRatio, "counterfactual_pair") ||
+            !VisibleIfIncludesFractalType(*pairReconvergenceRatio, "explaino_counterfactual_pair")) {
             std::cerr << "Safe-mode schema Counterfactual Pair reconvergence control did not expose the public class model\n";
             return 1;
         }
@@ -1225,6 +1264,7 @@ int main() {
                         }
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
+                        if (option.id == "explaino_counterfactual_pair" && option.group == "Explaino") foundSafeModeExplainoCounterfactualPairGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
                             foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
                         }
@@ -1280,7 +1320,7 @@ int main() {
             return 1;
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup) {
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup || !foundSafeModeExplainoCounterfactualPairGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;
         }

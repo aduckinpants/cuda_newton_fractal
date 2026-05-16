@@ -34,7 +34,7 @@ __device__ FractalSampleResult fractal_sample_device(
 }
 
 __device__ __forceinline__ int ResolveBasinRenderRootCount(FractalType ft, const KernelParams& params, bool* outUseCustomRoots) {
-    if (ft == FractalType::counterfactual_pair) {
+    if (ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair) {
         if (outUseCustomRoots) *outUseCustomRoots = false;
         return 4;
     }
@@ -109,7 +109,8 @@ __global__ void kernel_render(
     bool converged = sample.converged;
     bool escaped = sample.escaped;
     FractalType ft = view.fractal_type;
-    const bool hasExplicitCounterfactualClass = ft == FractalType::counterfactual_pair;
+    const bool hasExplicitCounterfactualClass =
+        ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair;
     int maxIter = max(1, params.max_iter);
 
 

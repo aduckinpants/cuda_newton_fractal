@@ -83,6 +83,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         zoom = 2.8f;
         break;
     case FractalType::counterfactual_pair:
+    case FractalType::explaino_counterfactual_pair:
         center = {0.0f, 0.0f};
         zoom = 1.0f;
         break;
@@ -263,6 +264,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
+    case FractalType::explaino_counterfactual_pair:
         return true;
     default:
         return false;
@@ -289,6 +291,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
+    case FractalType::explaino_counterfactual_pair:
         return 500;
     case FractalType::explaino_nova:
         return 300;
@@ -325,6 +328,17 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     if (fractalType == FractalType::explaino_rational_escape) {
         params.exposure = 1.2f;
     }
+}
+
+static void ApplyExplainoCounterfactualPairPresetDefaults(KernelParams& params) {
+    ApplyExplainoPresetDefaults(FractalType::explaino_counterfactual_pair, params);
+    params.max_iter = 96;
+    params.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::world_absolute;
+    params.counterfactual_pair_offset_x = 0.16f;
+    params.counterfactual_pair_offset_y = 0.08f;
+    params.counterfactual_pair_reconvergence_ratio = 0.60f;
+    ApplyDefaultColoringSelection(FractalType::explaino_counterfactual_pair, params);
 }
 
 static void ApplyEscapeTimePresetDefaults(FractalType fractalType, KernelParams& params, int maxIter, float exposure) {
@@ -384,6 +398,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         break;
     case FractalType::counterfactual_pair:
         ApplyCounterfactualPairPresetDefaults(params);
+        break;
+    case FractalType::explaino_counterfactual_pair:
+        ApplyExplainoCounterfactualPairPresetDefaults(params);
         break;
     case FractalType::multicorn:
         ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);

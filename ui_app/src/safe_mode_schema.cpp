@@ -51,6 +51,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"explaino_vortex", "Explaino Vortex", "Explaino"},
     {"explaino_tension", "Explaino Tension", "Explaino"},
     {"explaino_balance_void", "Explaino BalanceVoid", "Explaino"},
+    {"explaino_counterfactual_pair", "Explaino Counterfactual Pair", "Explaino"},
 };
 
 UISchemaBinding MakeBinding(const char* kind, const char* path) {
@@ -63,6 +64,14 @@ UISchemaBinding MakeBinding(const char* kind, const char* path) {
 UISchemaPredicate MakeEqVisibleIf(const char* path, const char* value) {
     UISchemaPredicate predicate;
     predicate.op = "eq";
+    predicate.path = path;
+    predicate.value = value;
+    return predicate;
+}
+
+UISchemaPredicate MakeInVisibleIf(const char* path, const char* value) {
+    UISchemaPredicate predicate;
+    predicate.op = "in";
     predicate.path = path;
     predicate.value = value;
     return predicate;
@@ -183,6 +192,14 @@ void SetVisibleForFractalType(UISchemaControl* control, const char* fractalTypeI
     control->visible_if = MakeEqVisibleIf("fractal.view.fractal_type", fractalTypeId);
 }
 
+void SetVisibleForFractalTypes(UISchemaControl* control, const char* fractalTypeIds) {
+    if (!control) {
+        return;
+    }
+    control->has_visible_if = true;
+    control->visible_if = MakeInVisibleIf("fractal.view.fractal_type", fractalTypeIds);
+}
+
 UISchemaControl BuildCounterfactualPairRootFamilyControl() {
     UISchemaControl control = MakeParamControl(
         "counterfactual_pair_root_family",
@@ -215,7 +232,7 @@ UISchemaControl BuildCounterfactualPairFrameControl() {
     };
     control.help = "World Absolute keeps the partner gap fixed in the complex plane. View Relative scales the gap with the current zoom.";
     control.has_help = true;
-    SetVisibleForFractalType(&control, "counterfactual_pair");
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
     return control;
 }
 
@@ -234,7 +251,7 @@ UISchemaControl BuildCounterfactualPairOffsetControl(
         0.001,
         path,
         json_min::Value{defaultValue});
-    SetVisibleForFractalType(&control, "counterfactual_pair");
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
     return control;
 }
 
@@ -254,7 +271,7 @@ UISchemaControl BuildCounterfactualPairReconvergenceControl() {
         "Class 0 = same-root reconvergence when mean pair gap stays under ratio * initial gap. "
         "Class 1 = same-basin drift above that ratio. Class 2 = basin swap. Class 3 = unstable.";
     control.has_help = true;
-    SetVisibleForFractalType(&control, "counterfactual_pair");
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
     return control;
 }
 

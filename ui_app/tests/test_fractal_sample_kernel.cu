@@ -13,6 +13,7 @@
 #include "../src/fractal_types.h"
 #include "../src/fractal_sample_result.h"
 #include "../src/fractal_family_rules.h"
+#include "../src/fractal_derived_fields.h"
 #include "../src/basin_coloring.h"
 
 #include <cstdint>
@@ -90,6 +91,12 @@ void MakeDefaults(FractalType ft, ViewState& view, KernelParams& params, RenderS
     params.color_tint_b = 1.0f;
     params.color_saturation = 1.0f;
     params.color_contrast = 1.0f;
+
+    if (ft == FractalType::explaino_counterfactual_pair) {
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+    }
 
     if (IsExplainoFamily(ft)) {
         params.explaino_damping = 1.0f;
@@ -204,6 +211,7 @@ void TestAllFractalTypes() {
         {FractalType::explaino_vortex, "explaino_vortex"},
         {FractalType::explaino_tension, "explaino_tension"},
         {FractalType::counterfactual_pair, "counterfactual_pair"},
+        {FractalType::explaino_counterfactual_pair, "explaino_counterfactual_pair"},
     };
 
     Double2 coord = MakeDouble2(0.3, 0.4);
@@ -391,6 +399,62 @@ void TestCounterfactualPairReconvergenceRatioControlsOnlyTheSameBasinSplit() {
         sawOnlySameBasinSplitChanges);
 }
 
+void TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls() {
+    ViewState standaloneView{};
+    KernelParams standaloneParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::counterfactual_pair, standaloneView, standaloneParams, render);
+    standaloneParams.max_iter = 96;
+
+    ViewState explainoView{};
+    KernelParams explainoParams{};
+    MakeDefaults(FractalType::explaino_counterfactual_pair, explainoView, explainoParams, render);
+
+    ViewState activeExplainoView = explainoView;
+    KernelParams activeExplainoParams = explainoParams;
+    activeExplainoView.explaino_phase = 1.0f;
+    activeExplainoParams.explaino_warp_strength = 0.4f;
+
+    FractalSampleResult standaloneResults[kCounterfactualPairGridN]{};
+    FractalSampleResult explainoResults[kCounterfactualPairGridN]{};
+    FractalSampleResult activeExplainoResults[kCounterfactualPairGridN]{};
+    const char* error = nullptr;
+
+    CHECK("standalone counterfactual pair grid ok",
+        SampleCounterfactualPairGrid(standaloneView, standaloneParams, render, standaloneResults, &error));
+    CHECK("explaino counterfactual pair grid ok",
+        SampleCounterfactualPairGrid(explainoView, explainoParams, render, explainoResults, &error));
+    CHECK("active explaino counterfactual pair grid ok",
+        SampleCounterfactualPairGrid(activeExplainoView, activeExplainoParams, render, activeExplainoResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    bool sawStandaloneDifference = false;
+    bool sawExplainoControlDifference = false;
+    for (int i = 0; i < kCounterfactualPairGridN; ++i) {
+        CHECK("explaino counterfactual pair final_z finite", std::isfinite(explainoResults[i].final_z_x) && std::isfinite(explainoResults[i].final_z_y));
+        CHECK("explaino counterfactual pair residual finite", std::isfinite(explainoResults[i].residual));
+        CHECK("explaino counterfactual pair never escapes", !explainoResults[i].escaped);
+        const int classIndex = DecodeCounterfactualPairClass(explainoResults[i]);
+        const Double2 expectedRoot = UnitRootCoord((classIndex + 2) % 4, 4);
+        const double dx = static_cast<double>(explainoResults[i].final_z_x) - expectedRoot.x;
+        const double dy = static_cast<double>(explainoResults[i].final_z_y) - expectedRoot.y;
+        CHECK("explaino counterfactual pair lands on synthetic class root", (dx * dx + dy * dy) < 1.0e-6);
+        if (!SameCounterfactualPairResult(standaloneResults[i], explainoResults[i])) {
+            sawStandaloneDifference = true;
+        }
+        if (!SameCounterfactualPairResult(explainoResults[i], activeExplainoResults[i])) {
+            sawExplainoControlDifference = true;
+        }
+    }
+
+    CHECK("explaino counterfactual pair stays distinct from standalone counterfactual pair",
+        sawStandaloneDifference);
+    CHECK("explaino counterfactual pair reads Explaino-owned controls",
+        sawExplainoControlDifference);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -511,6 +575,7 @@ int main() {
     TestCounterfactualPairFrameModesAreExplicit();
     TestCounterfactualPairRootFamilyChangesRuntimeLane();
     TestCounterfactualPairReconvergenceRatioControlsOnlyTheSameBasinSplit();
+    TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

@@ -147,6 +147,52 @@ void TestBundlePersistsCounterfactualPairFractalTypeId() {
         "state persists Counterfactual Pair reconvergence ratio");
 }
 
+void TestBundlePersistsExplainoCounterfactualPairFractalTypeId() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::explaino_counterfactual_pair;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.poly_kind = PolyKind::custom;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::view_relative;
+    params.counterfactual_pair_offset_x = 0.1875f;
+    params.counterfactual_pair_offset_y = -0.09375f;
+    params.counterfactual_pair_reconvergence_ratio = 0.4f;
+    params.explaino_seed = 3.5;
+    params.explaino_warp_strength = 0.25f;
+    params.explaino_damping = 0.75f;
+    params.explaino_root_count = 4;
+    params.explaino_roots[0] = {0.5f, 0.0f};
+    params.explaino_roots[1] = {0.0f, 0.5f};
+    params.explaino_roots[2] = {-0.5f, 0.0f};
+    params.explaino_roots[3] = {0.0f, -0.5f};
+
+    const fs::path outputDir = FreshTempRoot("explaino_counterfactual_pair") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff224466u, 0xff335577u, 0xff446688u, 0xff557799u};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for explaino_counterfactual_pair state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"explaino_counterfactual_pair\"") != std::string::npos,
+        "state persists explaino_counterfactual_pair fractal type id");
+    Check(json.find("\"fractal_type\": \"unknown\"") == std::string::npos,
+        "state export never falls back to unknown for explaino_counterfactual_pair");
+    Check(json.find("\"counterfactual_pair_frame\": \"view_relative\"") != std::string::npos,
+        "state persists shared Counterfactual Pair frame for explaino_counterfactual_pair");
+    Check(json.find("\"explaino_seed\": 3.5") != std::string::npos &&
+        json.find("\"explaino_warp_strength\": 0.25") != std::string::npos,
+        "state persists Explaino-owned controls for explaino_counterfactual_pair");
+}
+
 void TestRejectsMismatchedPixelCount() {
     ViewState view{};
     KernelParams params{};
@@ -222,6 +268,7 @@ void TestLastBundleAndSidecarOverloads() {
 int main() {
     TestBundleWritesFrameAndState();
     TestBundlePersistsCounterfactualPairFractalTypeId();
+    TestBundlePersistsExplainoCounterfactualPairFractalTypeId();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
 

@@ -472,6 +472,133 @@ def test_explaino_lambda_cli_overrides_survive_headless_capture() -> None:
     assert state["params"]["coloring_mode"] == "smooth_escape"
 
 
+
+def test_explaino_counterfactual_pair_loaded_state_has_explicit_runtime_identity(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Counterfactual Pair runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_counterfactual_pair",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    explaino_pair_state = json.loads(json.dumps(baseline_capture["state"]))
+    explaino_pair_state["fractal_type"] = "explaino_counterfactual_pair"
+    explaino_pair_state["view"]["explaino_phase"] = 1.0
+    explaino_pair_state["params"].update(
+        {
+            "counterfactual_pair_frame": "view_relative",
+            "counterfactual_pair_offset_x": 0.125,
+            "counterfactual_pair_offset_y": -0.0625,
+            "counterfactual_pair_reconvergence_ratio": 0.4,
+            "explaino_seed": 3.5,
+            "explaino_warp_strength": 0.25,
+            "explaino_damping": 0.75,
+        }
+    )
+
+    explaino_pair_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_counterfactual_pair", explaino_pair_state)),
+        "--capture-diagnostic",
+    )
+
+    standalone_state = json.loads(json.dumps(explaino_pair_state))
+    standalone_state["fractal_type"] = "counterfactual_pair"
+    standalone_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "standalone_counterfactual_pair", standalone_state)),
+        "--capture-diagnostic",
+    )
+
+    explaino_all_state = json.loads(json.dumps(explaino_pair_state))
+    explaino_all_state["fractal_type"] = "explaino_all"
+    explaino_all_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_all", explaino_all_state)),
+        "--capture-diagnostic",
+    )
+
+    state = explaino_pair_capture["state"]
+    params = state["params"]
+    view = state["view"]
+    assert state["fractal_type"] == "explaino_counterfactual_pair"
+    assert params["counterfactual_pair_frame"] == "view_relative"
+    assert params["counterfactual_pair_offset_x"] == pytest.approx(0.125)
+    assert params["counterfactual_pair_offset_y"] == pytest.approx(-0.0625)
+    assert params["counterfactual_pair_reconvergence_ratio"] == pytest.approx(0.4)
+    assert params["explaino_seed"] == pytest.approx(3.0)
+    assert params["explaino_warp_strength"] == pytest.approx(0.25)
+    assert params["explaino_damping"] == pytest.approx(0.75)
+    assert view["explaino_phase"] == pytest.approx(1.0)
+    assert view["explaino_seed_drift"] == pytest.approx(0.5)
+    assert explaino_pair_capture["frame_hash"] != standalone_capture["frame_hash"]
+    assert explaino_pair_capture["frame_hash"] != explaino_all_capture["frame_hash"]
+
+
+def test_explaino_counterfactual_pair_capture_round_trips_shared_and_explaino_controls(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Counterfactual Pair runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_counterfactual_pair",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    mutated_state = json.loads(json.dumps(baseline_capture["state"]))
+    mutated_state["view"]["explaino_phase"] = 0.75
+    mutated_state["params"].update(
+        {
+            "counterfactual_pair_frame": "view_relative",
+            "counterfactual_pair_offset_x": 0.2,
+            "counterfactual_pair_offset_y": 0.05,
+            "counterfactual_pair_reconvergence_ratio": 0.2,
+            "explaino_seed": 2.25,
+            "explaino_warp_strength": 0.4,
+            "explaino_damping": 0.5,
+        }
+    )
+
+    mutated_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "mutated_explaino_counterfactual_pair", mutated_state)),
+        "--capture-diagnostic",
+    )
+
+    captured_state = mutated_capture["state"]
+    captured_params = captured_state["params"]
+    captured_view = captured_state["view"]
+    assert captured_state["fractal_type"] == "explaino_counterfactual_pair"
+    assert captured_params["counterfactual_pair_frame"] == "view_relative"
+    assert captured_params["counterfactual_pair_offset_x"] == pytest.approx(0.2)
+    assert captured_params["counterfactual_pair_offset_y"] == pytest.approx(0.05)
+    assert captured_params["counterfactual_pair_reconvergence_ratio"] == pytest.approx(0.2)
+    assert captured_params["explaino_seed"] == pytest.approx(2.0)
+    assert captured_params["explaino_warp_strength"] == pytest.approx(0.4)
+    assert captured_params["explaino_damping"] == pytest.approx(0.5)
+    assert captured_view["explaino_phase"] == pytest.approx(0.75)
+    assert captured_view["explaino_seed_drift"] == pytest.approx(0.25)
+    assert mutated_capture["frame_hash"] != baseline_capture["frame_hash"]
+
+
 def test_explaino_rational_escape_cli_overrides_survive_headless_capture() -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-Rational-Escape runtime regression is Windows-only")

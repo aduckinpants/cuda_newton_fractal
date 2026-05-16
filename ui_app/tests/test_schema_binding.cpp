@@ -200,6 +200,16 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to accept counterfactual_pair\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_counterfactual_pair") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_counterfactual_pair") {
+            std::cerr << "Expected fractal type enum round-trip to preserve explaino_counterfactual_pair as an explicit Explaino carrier\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "counterfactual_pair") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "counterfactual_pair") {
+            std::cerr << "Expected schema binding to switch back to counterfactual_pair before exercising the standalone root-family owner seam\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.params.counterfactual_pair_root_family", "quartic_unit_roots") ||
             ctx.GetEnumId("fractal.params.counterfactual_pair_root_family") != "quartic_unit_roots" ||
             params.poly_kind != PolyKind::z4_minus_1 ||

@@ -206,6 +206,7 @@ inline constexpr ExplainoSelectorDescriptor kExplainoSelectorRegistry[] = {
     {FractalType::explaino_vortex, "explaino_vortex", ExplainoSelectorRole::legacy_projection_single_axis},
     {FractalType::explaino_tension, "explaino_tension", ExplainoSelectorRole::legacy_projection_single_axis},
     {FractalType::explaino_balance_void, "explaino_balance_void", ExplainoSelectorRole::legacy_projection_multi_axis},
+    {FractalType::explaino_counterfactual_pair, "explaino_counterfactual_pair", ExplainoSelectorRole::legacy_family_nonprojection},
 };
 
 inline constexpr const ExplainoSelectorDescriptor* FindExplainoSelectorDescriptor(FractalType fractalType) {
@@ -664,6 +665,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
+    case FractalType::explaino_counterfactual_pair:
         return true;
     default:
         return false;
@@ -671,7 +673,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
-    return fractalType == FractalType::newton || fractalType == FractalType::counterfactual_pair || fractalType == ExplainoCanonicalFractalType() ||
+    return fractalType == FractalType::newton || fractalType == FractalType::counterfactual_pair ||
+        fractalType == FractalType::explaino_counterfactual_pair || fractalType == ExplainoCanonicalFractalType() ||
         fractalType == FractalType::explaino ||
         fractalType == FractalType::explaino_y || fractalType == FractalType::explaino_fp ||
         fractalType == FractalType::explaino_halley || fractalType == FractalType::explaino_dual ||
@@ -711,7 +714,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(Fr
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr ColoringMode DefaultColoringModeForFractal(FractalType fractalType) {
-    if (fractalType == FractalType::counterfactual_pair) {
+    if (fractalType == FractalType::counterfactual_pair || fractalType == FractalType::explaino_counterfactual_pair) {
         return ColoringMode::root_basin;
     }
     return SupportsBasinColoring(fractalType) ? ColoringMode::joy_basins : ColoringMode::smooth_escape;

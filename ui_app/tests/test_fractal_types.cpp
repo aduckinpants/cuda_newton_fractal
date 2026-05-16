@@ -62,6 +62,8 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(FractalType::lambda_map) == 24, "FractalType lambda_map ordinal is stable");
     Check(static_cast<int>(FractalType::explaino_tension) == 36, "FractalType explaino_tension ordinal is stable");
     Check(static_cast<int>(FractalType::counterfactual_pair) == 39, "FractalType counterfactual_pair ordinal is stable");
+    Check(static_cast<int>(FractalType::explaino_counterfactual_pair) == 40,
+        "FractalType explaino_counterfactual_pair ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::cubic_unit_roots) == 0, "CounterfactualPairRootFamily cubic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");
