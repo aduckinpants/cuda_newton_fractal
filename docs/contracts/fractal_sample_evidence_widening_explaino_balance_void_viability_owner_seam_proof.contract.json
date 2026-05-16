@@ -14,7 +14,6 @@
     "HANDOFF_LOG.md",
     "ui_app/src/explaino_sidecar_model.cpp",
     "ui_app/src/explaino_sidecar_window.cpp",
-    "ui_app/%OBJROOT%",
     "ui_app/tests/test_explaino_sidecar_measurement.cpp",
     "ui_app/tests/test_explaino_sidecar_window.cpp"
   ],

@@ -2,13 +2,14 @@
 
 ## Current Phase
 
-Complete - the repo now has an explicit post-projection answer for `ExplainO-BalanceVoid`: the existing generic `explaino_all` sidecar measurement and window seams already consume the canonical BalanceVoid parameter rows on the bounded slice-A/B payload, no distinct BalanceVoid-specific widened owner seam or richer emitted evidence requirement is proved, the restart-facing docs are truth-repaired, the hostile reread found and repaired real proof defects in the compile rail and first draft test boundaries, and this plan is the final closed-state surface for the checkpoint head. Machine receipts for this head are written after the commit rather than into the plan text itself.
+Complete - the repo now has an explicit post-projection answer for `ExplainO-BalanceVoid`: the existing generic `explaino_all` sidecar measurement and window seams already consume the canonical BalanceVoid parameter rows on the bounded slice-A/B payload, no distinct BalanceVoid-specific widened owner seam or richer emitted evidence requirement is proved, the restart-facing docs are truth-repaired, the hostile reread found and repaired real proof defects in the compile rail, first draft test boundaries, and stale post-cleanup contract scope, and this plan is the final closed-state surface for the checkpoint head. Machine receipts for this head are written after the commit rather than into the plan text itself.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in viability plan and contract, replace the closed projection-and-flow lock, and prove the RED head still has no real bounded ExplainO-BalanceVoid widened-consumer seam beyond the already-landed generic sidecar consumers.
 - [x] Phase 2 - land the narrowest truthful owner-seam answer: either one real bounded BalanceVoid widened consumer if repo proof forces it, or a bounded stop-here / non-promotion proof that closes the sample-evidence widening lane without speculative field growth.
 - [x] Phase 3 - run the narrow validation ladder, complete hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean.
+- [x] Post-commit truth repair - remove the deleted `%OBJROOT%` cleanup path from the active contract scope so machine contract-proof validation can certify the committed head.
 
 ## Explicit User Asks
 
@@ -35,13 +36,14 @@ Complete - the repo now has an explicit post-projection answer for `ExplainO-Bal
 - Exact owner-seam answer on this branch: no distinct `ExplainO-BalanceVoid` widened consumer was promoted because the existing generic `ui_app/src/explaino_sidecar_measurement.cpp` and `ui_app/src/explaino_sidecar_window.cpp` seams already consume the canonical BalanceVoid parameter rows without richer emitted evidence. The sample-evidence widening lane therefore stops here on this branch unless a future repo-grounded owner seam emerges.
 - Real proof-rail defect found and repaired before closure: the first direct compile invocations reused an untrustworthy repo-root / literal-`%OBJROOT%` rail that produced stale binaries. The truthful narrow validation rail is the fresh exact-source-set probe executables `D:\salt-fractal\cuda_newton_fractal_clone\build_tests\test_explaino_sidecar_measurement_balancevoid_probe.exe` and `D:\salt-fractal\cuda_newton_fractal_clone\build_tests\twbv2.exe`, which both rebuild from the touched sources and execute green on the repaired state.
 - Restart-facing truth repair landed in `docs/notes/fractal_sample_evidence_widening_launch_anchor.md`, `docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md`, `docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md`, and `docs/notes/fractal_sample_evidence_widening_projection_and_flow_witness_PHASED_PLAN.md`: those authority surfaces now describe the final stop-here / non-promotion answer instead of leaving `ExplainO-BalanceVoid` as a deferred next lane.
+- Post-commit receipt gate defect found and repaired before final closure: the first contract-proof receipt attempt failed because the active contract still listed the deleted cleanup path `ui_app/%OBJROOT%` in `allowed_mutation_scope`. The repaired contract now scopes only live files, and the contract was re-locked before the final receipt pass.
 - This slice stays bounded without runtime publish or broader viewer proof: the chosen owner-seam answer is fully discriminated by focused measurement and window-side headless tests, and no runtime-visible consumer changed on this branch.
 
 ## Hostile Audit
 
 - Status: complete
 - Required posture: assume the BalanceVoid lane is being asserted without owner proof, the stop-here story is hand-waving over a real missing consumer, `SampleFractalPoints(...)` got displaced accidentally, the widened payload needs richer fields that were ignored, or the closeout will stop with stale plan text unless proof disproves each failure mode.
-- Current hostile result: three real proof defects were found and repaired during the slice, and the clean reread of the repaired state did not find an additional real defect.
+- Current hostile result: four real proof defects were found and repaired during the slice, and the clean reread of the repaired state did not find an additional real defect.
 
 ## Audit Passes
 
@@ -49,10 +51,12 @@ Complete - the repo now has an explicit post-projection answer for `ExplainO-Bal
 - [x] Pass 2 - prove whether the existing widened payload is sufficient for any candidate BalanceVoid owner seam, or prove the lane stops here without a further bounded consumer.
 - [x] Pass 3 - hostile reread the landed diff for scope drift, speculative field growth, legacy-path replacement, and stale restart-facing docs.
 - [x] Pass 4 - rerun the repaired focused proofs, re-read the repaired state, and confirm no additional real defect before checkpoint closure.
+- [x] Pass 5 - rerun the receipt gate after the checkpoint commit, repair the stale deleted-path contract scope, and revalidate the corrected committed head before final closeout.
 
 ## Audit Findings
 
 - [x] Real proof-rail defect fixed: the first direct compile commands could claim green from stale binaries because they reused a repo-root / literal-`%OBJROOT%` rail. The repaired proof ladder now uses fresh exact-source-set probe executables, which rebuild the touched measurement and window seams from the correct `ui_app` working directory.
 - [x] Real boundary defect fixed: the first measurement parity witness overclaimed the sidecar hypothesis-space size by forgetting that the required canonical fractal-type selector stays explicit beside the three BalanceVoid axes. The repaired test now proves the correct four-entry surface and three measured rows.
 - [x] Real window-proof defect fixed: the first window witness over-demanded a specific per-direction delta polarity that the measurement seam already proved and that was not necessary to answer the owner-seam question. The repaired window witness now proves the tighter claim: the canonical BalanceVoid rows survive onto the generic window/lens seam with non-zero signal, zero projection-flow bias, and no legacy sample fallback.
+- [x] Real contract-scope defect fixed: after the first checkpoint commit, machine contract-proof validation failed because the active contract still listed the deleted cleanup path `ui_app/%OBJROOT%`. The repaired contract removes that stale path, re-locks the active scope, and allows receipts to certify the actual committed head.
 - [x] Clean re-read evidence: no production owner seam beyond the existing generic explaino-all sidecar consumers required richer emitted evidence, `SampleFractalPoints(...)` and `FractalSampleResult` remain the shipped legacy projection surfaces, generic advanced-color and whole-engine work remained out of scope, and the truthful branch answer is stop-here / non-promotion rather than a new BalanceVoid widened consumer.
