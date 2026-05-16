@@ -141,6 +141,7 @@ inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::explaino_vortex, "explaino_vortex"},
     {FractalType::explaino_tension, "explaino_tension"},
     {FractalType::explaino_balance_void, "explaino_balance_void"},
+    {FractalType::counterfactual_pair, "counterfactual_pair"},
 };
 
 inline constexpr EnumIdPair<CameraBehavior> kCameraBehaviorIds[] = {

@@ -382,6 +382,7 @@ int main() {
         bool foundLambdaImag = false;
         bool foundFractalTypeCommonGroup = false;
         bool foundFractalTypeRootFindingGroup = false;
+        bool foundCounterfactualPairRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
@@ -391,6 +392,7 @@ int main() {
         bool foundPerpendicularShipEscapeTimeGroup = false;
         bool foundFractalTypeDefaultExplainoAll = false;
         bool foundEpsilonVisibleForExplainoAll = false;
+        bool foundEpsilonVisibleForCounterfactualPair = false;
         bool foundExplainoSeedVisibleForExplainoAll = false;
         bool foundRippleAmplitudeVisibleForExplainoAll = false;
         bool foundSpliceOffsetVisibleForExplainoAll = false;
@@ -487,6 +489,7 @@ int main() {
                             }
                         }
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
+                        if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.group == "Explaino") {
                             ++explainoGroupOptionCount;
@@ -734,6 +737,9 @@ int main() {
                 if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundEpsilonVisibleForExplainoAll = true;
                 }
+                if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "counterfactual_pair")) {
+                    foundEpsilonVisibleForCounterfactualPair = true;
+                }
                 if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundExplainoSeedVisibleForExplainoAll = true;
                 }
@@ -905,7 +911,7 @@ int main() {
             std::cerr << "Did not find Lambda real/imag controls in schema\n";
             return 1;
         }
-        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
+        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
@@ -922,7 +928,7 @@ int main() {
             std::cerr << "Did not find Explaino-all as the canonical startup fractal default in schema\n";
             return 1;
         }
-        if (!foundEpsilonVisibleForExplainoAll || !foundExplainoSeedVisibleForExplainoAll) {
+        if (!foundEpsilonVisibleForExplainoAll || !foundEpsilonVisibleForCounterfactualPair || !foundExplainoSeedVisibleForExplainoAll) {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }
@@ -979,6 +985,7 @@ int main() {
         bool foundRenderHeightDefault = false;
         bool foundFractalTypeCommonGroup = false;
         bool foundFractalTypeRootFindingGroup = false;
+        bool foundCounterfactualPairRootFindingGroup = false;
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
@@ -1062,6 +1069,7 @@ int main() {
                             }
                         }
                         if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
+                        if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
                         if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                         if (option.group == "Explaino") {
                             ++safeModeExplainoGroupOptionCount;
@@ -1127,7 +1135,7 @@ int main() {
             std::cerr << "Safe-mode schema did not expose the adaptive preview pacing controls with the expected defaults\n";
             return 1;
         }
-        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
+        if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;

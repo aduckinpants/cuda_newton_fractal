@@ -23,6 +23,7 @@
             { "id": "phoenix", "label": "Phoenix", "group": "Common" },
             { "id": "newton", "label": "Newton", "group": "Root-Finding" },
             { "id": "halley", "label": "Halley", "group": "Root-Finding" },
+            { "id": "counterfactual_pair", "label": "Counterfactual Pair", "group": "Root-Finding" },
             { "id": "multibrot", "label": "Multibrot", "group": "Escape-Time" },
             { "id": "spider", "label": "Spider", "group": "Escape-Time" },
             { "id": "celtic_mandelbrot", "label": "Celtic Mandelbrot", "group": "Escape-Time" },
@@ -354,7 +355,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,halley"
+            "value": "newton,nova,counterfactual_pair,explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,halley"
           }
         },
         {

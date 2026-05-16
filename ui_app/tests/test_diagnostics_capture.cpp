@@ -104,6 +104,34 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"coloring_mode\": \"joy_basins\"") != std::string::npos, "state derives legacy coloring mirror from coherent root-basin pair");
 }
 
+void TestBundlePersistsCounterfactualPairFractalTypeId() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::counterfactual_pair;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+
+    const fs::path outputDir = FreshTempRoot("counterfactual_pair") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff112233u, 0xff445566u, 0xff778899u, 0xffaabbccu};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for counterfactual pair state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"counterfactual_pair\"") != std::string::npos,
+        "state persists counterfactual_pair fractal type id");
+    Check(json.find("\"fractal_type\": \"unknown\"") == std::string::npos,
+        "state export never falls back to unknown for counterfactual_pair");
+}
+
 void TestRejectsMismatchedPixelCount() {
     ViewState view{};
     KernelParams params{};
@@ -178,6 +206,7 @@ void TestLastBundleAndSidecarOverloads() {
 
 int main() {
     TestBundleWritesFrameAndState();
+    TestBundlePersistsCounterfactualPairFractalTypeId();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
 

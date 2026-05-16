@@ -671,7 +671,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
-    return fractalType == FractalType::newton || fractalType == ExplainoCanonicalFractalType() ||
+    return fractalType == FractalType::newton || fractalType == FractalType::counterfactual_pair || fractalType == ExplainoCanonicalFractalType() ||
         fractalType == FractalType::explaino ||
         fractalType == FractalType::explaino_y || fractalType == FractalType::explaino_fp ||
         fractalType == FractalType::explaino_halley || fractalType == FractalType::explaino_dual ||
@@ -711,6 +711,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(Fr
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr ColoringMode DefaultColoringModeForFractal(FractalType fractalType) {
+    if (fractalType == FractalType::counterfactual_pair) {
+        return ColoringMode::root_basin;
+    }
     return SupportsBasinColoring(fractalType) ? ColoringMode::joy_basins : ColoringMode::smooth_escape;
 }
 

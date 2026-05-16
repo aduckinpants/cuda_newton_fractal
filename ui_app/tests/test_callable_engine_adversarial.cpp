@@ -92,7 +92,7 @@ int main() {
         ftControl.binding.kind = "param";
         ftControl.binding.path = "fractal.view.fractal_type";
         // Add every FractalType as an option
-        for (int i = 0; i <= 36; ++i) {
+        for (int i = 0; i <= static_cast<int>(FractalType::counterfactual_pair); ++i) {
             const FractalType ft = static_cast<FractalType>(i);
             const char* tid = FractalTypeId(ft);
             if (tid && tid[0] != '\0') {

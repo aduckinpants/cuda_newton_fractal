@@ -82,6 +82,10 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         center = {0.36f, -0.1f};
         zoom = 2.8f;
         break;
+    case FractalType::counterfactual_pair:
+        center = {0.0f, 0.0f};
+        zoom = 1.0f;
+        break;
     case FractalType::newton:
     case FractalType::nova:
     case FractalType::explaino_all:
@@ -203,6 +207,17 @@ static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams&
     ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = -0.50f;
+    params.phoenix_p_imag = 0.0f;
+}
+
+static void ApplyCounterfactualPairPresetDefaults(KernelParams& params) {
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.poly_kind = PolyKind::z3_minus_1;
+    SetPolyPreset(params);
+    ApplyDefaultColoringSelection(FractalType::counterfactual_pair, params);
+    params.exposure = 1.0f;
+    params.phoenix_p_real = 0.0f;
     params.phoenix_p_imag = 0.0f;
 }
 
@@ -350,6 +365,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     case FractalType::newton:
     case FractalType::nova:
         ApplyNewtonLikePresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::counterfactual_pair:
+        ApplyCounterfactualPairPresetDefaults(params);
         break;
     case FractalType::multicorn:
         ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);

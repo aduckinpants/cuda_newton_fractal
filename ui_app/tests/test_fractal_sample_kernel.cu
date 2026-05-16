@@ -13,6 +13,7 @@
 #include "../src/fractal_types.h"
 #include "../src/fractal_sample_result.h"
 #include "../src/fractal_family_rules.h"
+#include "../src/basin_coloring.h"
 
 #include <cstdint>
 #include <cmath>
@@ -166,6 +167,7 @@ void TestAllFractalTypes() {
         {FractalType::explaino_splice, "explaino_splice"},
         {FractalType::explaino_vortex, "explaino_vortex"},
         {FractalType::explaino_tension, "explaino_tension"},
+        {FractalType::counterfactual_pair, "counterfactual_pair"},
     };
 
     Double2 coord = MakeDouble2(0.3, 0.4);
@@ -184,6 +186,55 @@ void TestAllFractalTypes() {
         }
         CHECK(tc.name, ok);
     }
+}
+
+void TestCounterfactualPairProducesExplicitPairClasses() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::counterfactual_pair, view, params, render);
+    params.max_iter = 96;
+
+    const int N = 25;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -2; yi <= 2; ++yi) {
+        for (int xi = -2; xi <= 2; ++xi) {
+            coords[next++] = MakeDouble2(0.55 * static_cast<double>(xi), 0.55 * static_cast<double>(yi));
+        }
+    }
+
+    FractalSampleResult results[N]{};
+    const char* error = nullptr;
+    bool ok = SampleFractalPoints(coords, N, view, params, render, results, &error);
+    CHECK("counterfactual pair batch ok", ok);
+    if (!ok) {
+        std::cerr << "    error: " << (error ? error : "unknown") << "\n";
+        return;
+    }
+
+    bool sawClass[4] = {false, false, false, false};
+    bool sawUnstable = false;
+    int distinctClasses = 0;
+    for (int i = 0; i < N; ++i) {
+        CHECK("counterfactual pair final_z finite", std::isfinite(results[i].final_z_x) && std::isfinite(results[i].final_z_y));
+        CHECK("counterfactual pair residual finite", std::isfinite(results[i].residual));
+        CHECK("counterfactual pair never escapes", !results[i].escaped);
+        Float2 classPoint{results[i].final_z_x, results[i].final_z_y};
+        const int classIndex = NearestRootIndexUnitRoots(classPoint, 4);
+        const Double2 expectedRoot = UnitRootCoord((classIndex + 2) % 4, 4);
+        const double dx = static_cast<double>(results[i].final_z_x) - expectedRoot.x;
+        const double dy = static_cast<double>(results[i].final_z_y) - expectedRoot.y;
+        CHECK("counterfactual pair lands on synthetic class root", (dx * dx + dy * dy) < 1.0e-6);
+        if (!sawClass[classIndex]) {
+            sawClass[classIndex] = true;
+            ++distinctClasses;
+        }
+        sawUnstable = sawUnstable || !results[i].converged;
+    }
+
+    CHECK("counterfactual pair exposes multiple explicit classes", distinctClasses >= 3);
+    CHECK("counterfactual pair exposes an unstable class", sawUnstable);
 }
 
 // Test 4: Widened evidence projects back to legacy semantics.
@@ -302,6 +353,7 @@ int main() {
     TestSinglePointNewton();
     TestBatchSample();
     TestAllFractalTypes();
+    TestCounterfactualPairProducesExplicitPairClasses();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

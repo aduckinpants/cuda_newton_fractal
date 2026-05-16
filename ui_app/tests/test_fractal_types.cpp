@@ -61,6 +61,7 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(FractalType::explaino) == 7, "FractalType explaino ordinal is stable");
     Check(static_cast<int>(FractalType::lambda_map) == 24, "FractalType lambda_map ordinal is stable");
     Check(static_cast<int>(FractalType::explaino_tension) == 36, "FractalType explaino_tension ordinal is stable");
+    Check(static_cast<int>(FractalType::counterfactual_pair) == 39, "FractalType counterfactual_pair ordinal is stable");
     Check(static_cast<int>(SampleTier::tier_auto) == 0, "SampleTier auto ordinal is stable");
     Check(static_cast<int>(SampleTier::standard) == 2, "SampleTier standard ordinal is stable");
     Check(static_cast<int>(NumericBackend::float32) == 0, "NumericBackend float32 ordinal is stable");

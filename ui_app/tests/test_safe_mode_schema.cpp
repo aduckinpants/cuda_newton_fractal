@@ -71,20 +71,22 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
     bool foundRenderHeightDefault = false;
     bool foundFractalTypeCommonGroup = false;
     bool foundFractalTypeRootFindingGroup = false;
+    bool foundCounterfactualPairRootFindingGroup = false;
     bool foundFractalTypeEscapeTimeGroup = false;
     bool foundFractalTypeExplainoGroup = false;
-    bool foundFractalTypeDefaultExplaino = false;
+    bool foundFractalTypeDefaultExplainoAll = false;
     bool foundContinuousRenderDefaultFalse = false;
 
     for (const auto& panel : safeMode.panels) {
         for (const auto& ctrl : panel.controls) {
             if (ctrl.id == "fractal_type") {
-                if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino") {
-                    foundFractalTypeDefaultExplaino = true;
+                if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
+                    foundFractalTypeDefaultExplainoAll = true;
                 }
                 for (const auto& option : ctrl.options) {
                     if (option.id == "explaino" && option.group == "Common") foundFractalTypeCommonGroup = true;
                     if (option.id == "newton" && option.group == "Root-Finding") foundFractalTypeRootFindingGroup = true;
+                    if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
                     if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                     if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                 }
@@ -109,12 +111,14 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
         "TestSafeModeSchemaKeepsGroupedDefaults_CommonFractalGroup");
     Check(foundFractalTypeRootFindingGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_RootFindingGroup");
+    Check(foundCounterfactualPairRootFindingGroup,
+        "TestSafeModeSchemaKeepsGroupedDefaults_CounterfactualPairRootFindingGroup");
     Check(foundFractalTypeEscapeTimeGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_EscapeTimeGroup");
     Check(foundFractalTypeExplainoGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_ExplainoGroup");
-    Check(foundFractalTypeDefaultExplaino,
-        "TestSafeModeSchemaKeepsGroupedDefaults_DefaultExplaino");
+    Check(foundFractalTypeDefaultExplainoAll,
+        "TestSafeModeSchemaKeepsGroupedDefaults_DefaultExplainoAll");
     Check(foundContinuousRenderDefaultFalse,
         "TestSafeModeSchemaKeepsGroupedDefaults_ContinuousRenderDisabled");
 }

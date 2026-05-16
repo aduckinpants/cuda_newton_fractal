@@ -9,6 +9,9 @@
     float pAbs = 0.0f;
     bool converged = false;
     bool escaped = false;
+    TerminationKind terminationKind = TerminationKind::none;
+    bool hasFarFieldDelta = false;
+    float farFieldDelta = 0.0f;
 
     Cx z{0.0f, 0.0f};
     Cx cConst{0.0f, 0.0f};
@@ -62,6 +65,217 @@
             }
             converged = (pAbs < eps);
         }
+    } else if (ft == FractalType::counterfactual_pair) {
+        const float pairCoeffs[5] = {-1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+        const double zoomScale = fmax(1.0e-300, exp2(view.log2_zoom));
+        const double pairOffsetX = 0.08 * (2.0 / zoomScale);
+        const double pairOffsetY = 0.04 * (2.0 / zoomScale);
+        const double initialGap = sqrt(pairOffsetX * pairOffsetX + pairOffsetY * pairOffsetY);
+        const double sameRootDriftThreshold = initialGap * 0.60;
+
+        int baselineIterations = maxIter;
+        int partnerIterations = maxIter;
+        bool baselineConverged = false;
+        bool partnerConverged = false;
+        int baselineRoot = -1;
+        int partnerRoot = -1;
+        TerminationKind baselineTermination = TerminationKind::max_iterations;
+        TerminationKind partnerTermination = TerminationKind::max_iterations;
+        double meanGap = initialGap;
+        int pairClass = 3;
+
+        if (useFP64) {
+            Cxd baselineZ = coordD;
+            Cxd partnerZ = {coordD.x + pairOffsetX, coordD.y + pairOffsetY};
+            bool baselineDone = false;
+            bool partnerDone = false;
+            double gapSum = 0.0;
+            int gapSamples = 0;
+
+            for (int step = 0; step < maxIter; ++step) {
+                if (!baselineDone) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(pairCoeffs, baselineZ, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        baselineDone = true;
+                        baselineConverged = true;
+                        baselineIterations = step;
+                        baselineTermination = TerminationKind::root_converged;
+                        baselineRoot = NearestRootIndexUnitRoots(baselineZ, 3);
+                    } else {
+                        const double dAbs2 = cxd_abs2(dP);
+                        if (dAbs2 < 1.0e-30) {
+                            baselineDone = true;
+                            baselineIterations = step;
+                            baselineTermination = TerminationKind::max_iterations;
+                        } else {
+                            baselineZ = cxd_sub(baselineZ, cxd_div(P, dP));
+                            if (!isfinite(baselineZ.x) || !isfinite(baselineZ.y)) {
+                                baselineZ = {0.0, 0.0};
+                                baselineDone = true;
+                                baselineIterations = step + 1;
+                                baselineTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+                if (!partnerDone) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(pairCoeffs, partnerZ, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        partnerDone = true;
+                        partnerConverged = true;
+                        partnerIterations = step;
+                        partnerTermination = TerminationKind::root_converged;
+                        partnerRoot = NearestRootIndexUnitRoots(partnerZ, 3);
+                    } else {
+                        const double dAbs2 = cxd_abs2(dP);
+                        if (dAbs2 < 1.0e-30) {
+                            partnerDone = true;
+                            partnerIterations = step;
+                            partnerTermination = TerminationKind::max_iterations;
+                        } else {
+                            partnerZ = cxd_sub(partnerZ, cxd_div(P, dP));
+                            if (!isfinite(partnerZ.x) || !isfinite(partnerZ.y)) {
+                                partnerZ = {0.0, 0.0};
+                                partnerDone = true;
+                                partnerIterations = step + 1;
+                                partnerTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+
+                const double dx = baselineZ.x - partnerZ.x;
+                const double dy = baselineZ.y - partnerZ.y;
+                gapSum += sqrt(dx * dx + dy * dy);
+                ++gapSamples;
+
+                if (baselineDone && partnerDone) {
+                    break;
+                }
+            }
+
+            if (!baselineDone) {
+                baselineIterations = maxIter;
+                baselineTermination = TerminationKind::max_iterations;
+            }
+            if (!partnerDone) {
+                partnerIterations = maxIter;
+                partnerTermination = TerminationKind::max_iterations;
+            }
+
+            meanGap = gapSamples > 0 ? (gapSum / static_cast<double>(gapSamples)) : initialGap;
+            if (baselineConverged && partnerConverged) {
+                if (baselineRoot != partnerRoot) {
+                    pairClass = 2;
+                } else {
+                    pairClass = meanGap <= sameRootDriftThreshold ? 0 : 1;
+                }
+            }
+        } else {
+            Cx baselineZ = coord;
+            Cx partnerZ{coord.x + static_cast<float>(pairOffsetX), coord.y + static_cast<float>(pairOffsetY)};
+            bool baselineDone = false;
+            bool partnerDone = false;
+            float gapSum = 0.0f;
+            int gapSamples = 0;
+
+            for (int step = 0; step < maxIter; ++step) {
+                if (!baselineDone) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(pairCoeffs, baselineZ, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        baselineDone = true;
+                        baselineConverged = true;
+                        baselineIterations = step;
+                        baselineTermination = TerminationKind::root_converged;
+                        baselineRoot = NearestRootIndexUnitRoots(baselineZ, 3);
+                    } else {
+                        const float dAbs2 = cx_abs2(dP);
+                        if (dAbs2 < 1.0e-20f) {
+                            baselineDone = true;
+                            baselineIterations = step;
+                            baselineTermination = TerminationKind::max_iterations;
+                        } else {
+                            baselineZ = cx_sub(baselineZ, cx_div(P, dP));
+                            if (!isfinite(baselineZ.x) || !isfinite(baselineZ.y)) {
+                                baselineZ = {0.0f, 0.0f};
+                                baselineDone = true;
+                                baselineIterations = step + 1;
+                                baselineTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+                if (!partnerDone) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(pairCoeffs, partnerZ, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        partnerDone = true;
+                        partnerConverged = true;
+                        partnerIterations = step;
+                        partnerTermination = TerminationKind::root_converged;
+                        partnerRoot = NearestRootIndexUnitRoots(partnerZ, 3);
+                    } else {
+                        const float dAbs2 = cx_abs2(dP);
+                        if (dAbs2 < 1.0e-20f) {
+                            partnerDone = true;
+                            partnerIterations = step;
+                            partnerTermination = TerminationKind::max_iterations;
+                        } else {
+                            partnerZ = cx_sub(partnerZ, cx_div(P, dP));
+                            if (!isfinite(partnerZ.x) || !isfinite(partnerZ.y)) {
+                                partnerZ = {0.0f, 0.0f};
+                                partnerDone = true;
+                                partnerIterations = step + 1;
+                                partnerTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+
+                const float dx = baselineZ.x - partnerZ.x;
+                const float dy = baselineZ.y - partnerZ.y;
+                gapSum += sqrtf(dx * dx + dy * dy);
+                ++gapSamples;
+
+                if (baselineDone && partnerDone) {
+                    break;
+                }
+            }
+
+            if (!baselineDone) {
+                baselineIterations = maxIter;
+                baselineTermination = TerminationKind::max_iterations;
+            }
+            if (!partnerDone) {
+                partnerIterations = maxIter;
+                partnerTermination = TerminationKind::max_iterations;
+            }
+
+            meanGap = gapSamples > 0 ? (static_cast<double>(gapSum) / static_cast<double>(gapSamples)) : initialGap;
+            if (baselineConverged && partnerConverged) {
+                if (baselineRoot != partnerRoot) {
+                    pairClass = 2;
+                } else {
+                    pairClass = meanGap <= sameRootDriftThreshold ? 0 : 1;
+                }
+            }
+        }
+
+        const Cx classRoot = unit_root_k((pairClass + 2) % 4, 4);
+        z = classRoot;
+        pAbs = static_cast<float>(meanGap);
+        it = max(baselineIterations, partnerIterations);
+        converged = pairClass != 3;
+        escaped = false;
+        terminationKind = converged ? TerminationKind::root_converged
+            : (baselineTermination != TerminationKind::root_converged ? baselineTermination : partnerTermination);
     } else if (ft == FractalType::explaino || ft == FractalType::explaino_dual || ft == FractalType::explaino_mult) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
@@ -2436,4 +2650,7 @@
     result.residual = pAbs;
     result.converged = converged;
     result.escaped = escaped;
+    result.termination_kind = terminationKind;
+    result.has_far_field_delta = hasFarFieldDelta;
+    result.far_field_delta = farFieldDelta;
     return result;
