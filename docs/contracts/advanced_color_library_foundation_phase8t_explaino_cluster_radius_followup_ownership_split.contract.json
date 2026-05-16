@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "contract_id": "advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split",
+  "feature_id": "advanced_color_library_foundation",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split.contract.json",
+    "docs/notes/advanced_color_feature_restart_inventory.md",
+    "docs/notes/advanced_color_library_foundation_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_explaino_all_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md",
+    "docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md",
+    "docs/notes/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_PHASED_PLAN.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_reset.cpp",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_probe.cpp",
+    "ui_app/tests/test_fractal_runtime_validation.cpp",
+    "ui_app/tests/test_runtime_reset.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_explaino_runtime_walk.py",
+    "HANDOFF_LOG.md",
+    "docs/handoffs/archive"
+  ],
+  "required_operator_inputs": [
+    "treat this as one bounded explaino_cluster_radius follow-up slice after phase8r and phase8s rather than a replay of the shared structural/root-pack bucket",
+    "prove whether explaino_cluster_radius should close as stronger explicit non-promotion fencing, as a narrower refined ownership surface that still stays outside canonical explaino_all, or as an immediate split between explaino_mult and explaino_rational based on selector, runtime, default, reset, diagnostics, and published-runtime proof",
+    "keep phoenix_p_real, dual-seed or multi-seed structure, resolved couplings, generic advanced-color core work, and historical archive compatibility out of scope unless one of them is proven to be a real blocker",
+    "close only with hostile review, checkpoint commit, validation receipt, contract proof receipt, clean tree, and committed-head stale-plan reread"
+  ],
+  "forbidden_operator_prompts": [
+    "treat phase8r classification as if it already settled the explaino_cluster_radius follow-up answer",
+    "force explaino_mult and explaino_rational into one shared ownership answer because they still share one parameter id",
+    "widen the slice into phoenix_p_real, generic Explaino-all promotion, dual-seed or multi-seed follow-up, resolved couplings, cleanup-only work, or unrelated viewer-host workflow repair",
+    "close without commit plus validation receipt plus contract proof receipt plus committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "explicit_followup_answer_for_explaino_cluster_radius_required": "required",
+    "divergent_mult_vs_rational_truth_required": "required",
+    "default_reset_state_truth_required": "required",
+    "immediate_split_required_if_proof_demands_it": "required",
+    "non_promotion_or_refined_ownership_fence_required": "required",
+    "phoenix_dualseed_and_couplings_stay_out_of_scope": "required",
+    "slice1_slice2_slice3_phase8n_phase8p_phase8r_phase8s_preserved": "required"
+  },
+  "forbidden_defaults": {
+    "phoenix_reopened": "forbidden",
+    "canonical_explaino_promotion_primary_scope": "forbidden",
+    "dual_seed_or_multi_seed_reopened": "forbidden",
+    "resolved_couplings_reopened": "forbidden",
+    "cleanup_only_primary_scope": "forbidden",
+    "generic_advanced_color_core_reopened": "forbidden",
+    "historical_archive_compatibility_reopened": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split.contract.json --out-json artifacts/validation/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_PHASED_PLAN.md --out-json artifacts/validation/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_contract_schema_valid",
+      "description": "The bounded explaino_cluster_radius follow-up contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_plan_sync_ok",
+      "description": "The bounded explaino_cluster_radius follow-up phased plan stays synchronized during the slice",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_hostile_audit_ok",
+      "description": "The bounded explaino_cluster_radius follow-up hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

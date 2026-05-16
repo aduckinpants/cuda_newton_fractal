@@ -50,9 +50,9 @@ Current closed result:
 - phase8r closed Slice A and proved the shared bucket does not stay unified
 - phase8s closed the bounded `phoenix_p_real` follow-up as a dedicated shared phoenix-step memory-term carrier fence outside canonical `explaino_all`
 - `phoenix_p_real` no longer belongs on the shared structural/root-pack carrier map on the current head
-- `explaino_cluster_radius` remains a different root-pack carrier with divergent `explaino_mult` versus `explaino_rational` runtime roles
+- phase8t closed `explaino_cluster_radius` as a dedicated split-selector surface with divergent `explaino_mult` versus `explaino_rational` runtime roles
 - `0.0` for `phoenix_p_real` remains only a carrier-neutral memory-term state, not canonical Explaino collapse
-- any future structural/root-pack work on this head should treat `explaino_cluster_radius` as the remaining separate lane instead of reopening one shared classification slice or replaying `phoenix_p_real`
+- any future structural/root-pack work on this head should choose one explicit split lane instead of reopening one shared classification slice, replaying `phoenix_p_real`, or reopening a unified `explaino_cluster_radius` lane
 
 ## Group Under Review
 
@@ -61,16 +61,17 @@ The historical deferred packet for this anchor is:
 - `phoenix_p_real`
 - `explaino_cluster_radius`
 
-Current unresolved follow-up on this head:
+Current split follow-up options on this head:
 
-- `explaino_cluster_radius`
+- `explaino_mult` root-shape work for `explaino_cluster_radius`
+- `explaino_rational` Laurent-term work for `explaino_cluster_radius`
 
 The key questions this lane must answer are:
 
 - `phase8s` already answered `phoenix_p_real`: it stays outside canonical `explaino_all` as a dedicated shared phoenix-step memory-term carrier
-- whether `explaino_cluster_radius` is really a canonical Explaino axis or a root-pack/root-shape carrier currently owned by `explaino_mult` / `explaino_rational`
-- whether any later structural/root-pack work can stay bounded to `explaino_cluster_radius` without replaying the closed `phoenix_p_real` carrier answer
-- whether zero/default behavior for `explaino_cluster_radius` is a truthful canonical Explaino collapse, a structural no-op on a separate carrier, or something else entirely
+- `phase8t` already answered the shared `explaino_cluster_radius` question: it stays outside canonical `explaino_all` as a dedicated split-selector surface and cannot truthfully continue as one unified later lane
+- whether one later split lane should target only `explaino_mult` root-shape behavior or only `explaino_rational` Laurent-term behavior
+- whether any later split lane should stop at non-promotion truth or needs a narrower owner refinement on top of the phase8t fence
 
 ## Explicit Out-Of-Scope Buckets
 

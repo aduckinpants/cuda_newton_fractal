@@ -438,7 +438,7 @@ int main() {
         bool foundDeferredCouplingSchemaMatches[sizeof(kExplainoCouplingRegistry) / sizeof(kExplainoCouplingRegistry[0])] = {};
         bool foundDualSeedSchemaMatches[sizeof(kExplainoDualSeedRegistry) / sizeof(kExplainoDualSeedRegistry[0])] = {};
         bool foundPhoenixCarrierSchemaMatches[sizeof(kPhoenixStepCarrierRegistry) / sizeof(kPhoenixStepCarrierRegistry[0])] = {};
-        bool foundStructuralSchemaMatches[sizeof(kExplainoStructuralRegistry) / sizeof(kExplainoStructuralRegistry[0])] = {};
+        bool foundClusterRadiusSchemaMatches[sizeof(kExplainoClusterRadiusRegistry) / sizeof(kExplainoClusterRadiusRegistry[0])] = {};
         bool foundRippleAmplitudeUiRange = false;
         bool foundSpliceOffsetUiRange = false;
         bool foundVortexStrengthUiRange = false;
@@ -697,34 +697,34 @@ int main() {
                         }
                         foundPhoenixCarrierSchemaMatches[slotIndex] = true;
                     }
-                    const ExplainoStructuralDescriptor* structural = FindExplainoStructuralDescriptorByBindingPath(ctrl.binding.path);
-                    if (structural) {
-                        const std::size_t slotIndex = static_cast<std::size_t>(structural->slot);
-                        if (slotIndex >= (sizeof(foundStructuralSchemaMatches) / sizeof(foundStructuralSchemaMatches[0])) ||
-                            foundStructuralSchemaMatches[slotIndex]) {
-                            std::cerr << "Main schema duplicated a deferred Explaino structural/root-pack control instead of deriving one owner per parameter\n";
+                    const ExplainoClusterRadiusDescriptor* clusterRadius = FindExplainoClusterRadiusDescriptorByBindingPath(ctrl.binding.path);
+                    if (clusterRadius) {
+                        const std::size_t slotIndex = static_cast<std::size_t>(clusterRadius->slot);
+                        if (slotIndex >= (sizeof(foundClusterRadiusSchemaMatches) / sizeof(foundClusterRadiusSchemaMatches[0])) ||
+                            foundClusterRadiusSchemaMatches[slotIndex]) {
+                            std::cerr << "Main schema duplicated the deferred explaino_cluster_radius control instead of deriving one owner per parameter\n";
                             return 1;
                         }
                         std::size_t expectedCarrierCount = 0;
-                        for (const auto& carrier : kExplainoStructuralCarrierRegistry) {
-                            if (carrier.slot == structural->slot) {
+                        for (const auto& carrier : kExplainoClusterRadiusSelectorRegistry) {
+                            if (carrier.slot == clusterRadius->slot) {
                                 const char* carrierId = FractalTypeId(carrier.carrier_fractal_type);
                                 if (!carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId)) {
-                                    std::cerr << "Main schema deferred Explaino structural/root-pack controls should stay fenced to their owning carrier selectors only\n";
+                                    std::cerr << "Main schema explaino_cluster_radius control should stay fenced to its explicit split selectors only\n";
                                     return 1;
                                 }
                                 ++expectedCarrierCount;
                             }
                         }
-                        if (ctrl.id != structural->param_id ||
+                        if (ctrl.id != clusterRadius->param_id ||
                             !ctrl.has_visible_if || ctrl.visible_if.op != "in" ||
                             ctrl.visible_if.path != "fractal.view.fractal_type" ||
                             VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
                             CsvTokenCount(ctrl.visible_if.value) != expectedCarrierCount) {
-                            std::cerr << "Main schema deferred Explaino structural/root-pack controls should decode exactly to their explicit carrier map\n";
+                            std::cerr << "Main schema explaino_cluster_radius control should decode exactly to its explicit split selector map\n";
                             return 1;
                         }
-                        foundStructuralSchemaMatches[slotIndex] = true;
+                        foundClusterRadiusSchemaMatches[slotIndex] = true;
                     }
                 }
                 if (ctrl.id == "ripple_amplitude" && ctrl.has_ui_min && ctrl.ui_min == 0.0 &&
@@ -951,9 +951,9 @@ int main() {
                 return 1;
             }
         }
-        for (bool foundStructuralSchema : foundStructuralSchemaMatches) {
-            if (!foundStructuralSchema) {
-                std::cerr << "Main schema must expose every deferred Explaino structural/root-pack control through one explicit carrier fence\n";
+        for (bool foundClusterRadiusSchema : foundClusterRadiusSchemaMatches) {
+            if (!foundClusterRadiusSchema) {
+                std::cerr << "Main schema must expose explaino_cluster_radius through one explicit split-selector fence\n";
                 return 1;
             }
         }

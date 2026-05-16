@@ -120,41 +120,45 @@ struct PhoenixStepCarrierSelectorDescriptor {
     bool default_collapses_to_baseline;
 };
 
-enum class ExplainoStructuralParamSlot : int {
+enum class ExplainoClusterRadiusParamSlot : int {
     explaino_cluster_radius = 0,
 };
 
-enum class ExplainoStructuralOwnership : int {
-    canonical_axis = 0,
-    legacy_only = 1,
-    different_ownership_model = 2,
+enum class ExplainoClusterRadiusOwnership : int {
+    different_ownership_model = 0,
 };
 
-enum class ExplainoStructuralModel : int {
-    root_pack_modifier = 0,
+enum class ExplainoClusterRadiusModel : int {
+    split_selector_followup = 0,
 };
 
-enum class ExplainoStructuralRuntimeRole : int {
+enum class ExplainoClusterRadiusRuntimeRole : int {
     multi_root_cluster_split = 0,
     rational_laurent_term = 1,
 };
 
-struct ExplainoStructuralDescriptor {
-    const char* param_id;
-    const char* binding_path;
-    ExplainoStructuralParamSlot slot;
-    ExplainoStructuralOwnership ownership;
-    ExplainoStructuralModel model;
-    bool shared_with_non_explaino_carrier;
-    bool requires_carrier_specific_zero_collapse;
+enum class ExplainoClusterRadiusFollowUpLane : int {
+    explaino_mult_root_shape = 0,
+    explaino_rational_laurent = 1,
 };
 
-struct ExplainoStructuralCarrierDescriptor {
+struct ExplainoClusterRadiusDescriptor {
+    const char* param_id;
+    const char* binding_path;
+    ExplainoClusterRadiusParamSlot slot;
+    ExplainoClusterRadiusOwnership ownership;
+    ExplainoClusterRadiusModel model;
+    bool shared_with_multiple_legacy_selectors;
+    bool requires_immediate_lane_split;
+};
+
+struct ExplainoClusterRadiusSelectorDescriptor {
     FractalType carrier_fractal_type;
-    ExplainoStructuralParamSlot slot;
+    ExplainoClusterRadiusParamSlot slot;
     double default_value;
     double neutral_value;
-    ExplainoStructuralRuntimeRole runtime_role;
+    ExplainoClusterRadiusRuntimeRole runtime_role;
+    ExplainoClusterRadiusFollowUpLane followup_lane;
     bool zero_collapses_to_baseline;
     bool default_collapses_to_baseline;
 };
@@ -283,13 +287,13 @@ inline constexpr PhoenixStepCarrierSelectorDescriptor kPhoenixStepCarrierSelecto
     {FractalType::explaino_tension, PhoenixStepCarrierParamSlot::phoenix_p_real, 0.0, 0.0, PhoenixStepCarrierRuntimeRole::phoenix_step_memory_term, false, false},
 };
 
-inline constexpr ExplainoStructuralDescriptor kExplainoStructuralRegistry[] = {
-    {"explaino_cluster_radius", "fractal.params.explaino_cluster_radius", ExplainoStructuralParamSlot::explaino_cluster_radius, ExplainoStructuralOwnership::different_ownership_model, ExplainoStructuralModel::root_pack_modifier, false, true},
+inline constexpr ExplainoClusterRadiusDescriptor kExplainoClusterRadiusRegistry[] = {
+    {"explaino_cluster_radius", "fractal.params.explaino_cluster_radius", ExplainoClusterRadiusParamSlot::explaino_cluster_radius, ExplainoClusterRadiusOwnership::different_ownership_model, ExplainoClusterRadiusModel::split_selector_followup, true, true},
 };
 
-inline constexpr ExplainoStructuralCarrierDescriptor kExplainoStructuralCarrierRegistry[] = {
-    {FractalType::explaino_mult, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.0, 0.0, ExplainoStructuralRuntimeRole::multi_root_cluster_split, false, false},
-    {FractalType::explaino_rational, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.1, 0.0, ExplainoStructuralRuntimeRole::rational_laurent_term, false, false},
+inline constexpr ExplainoClusterRadiusSelectorDescriptor kExplainoClusterRadiusSelectorRegistry[] = {
+    {FractalType::explaino_mult, ExplainoClusterRadiusParamSlot::explaino_cluster_radius, 0.0, 0.0, ExplainoClusterRadiusRuntimeRole::multi_root_cluster_split, ExplainoClusterRadiusFollowUpLane::explaino_mult_root_shape, false, false},
+    {FractalType::explaino_rational, ExplainoClusterRadiusParamSlot::explaino_cluster_radius, 0.1, 0.0, ExplainoClusterRadiusRuntimeRole::rational_laurent_term, ExplainoClusterRadiusFollowUpLane::explaino_rational_laurent, false, false},
 };
 
 inline constexpr const ExplainoAxisDescriptor* FindExplainoSingleAxisProjectionDescriptor(FractalType fractalType) {
@@ -423,28 +427,28 @@ inline constexpr const PhoenixStepCarrierSelectorDescriptor* FindPhoenixStepCarr
     return nullptr;
 }
 
-inline const ExplainoStructuralDescriptor* FindExplainoStructuralDescriptor(std::string_view paramId) {
-    for (const auto& structural : kExplainoStructuralRegistry) {
-        if (paramId == structural.param_id) {
-            return &structural;
+inline const ExplainoClusterRadiusDescriptor* FindExplainoClusterRadiusDescriptor(std::string_view paramId) {
+    for (const auto& clusterRadius : kExplainoClusterRadiusRegistry) {
+        if (paramId == clusterRadius.param_id) {
+            return &clusterRadius;
         }
     }
     return nullptr;
 }
 
-inline const ExplainoStructuralDescriptor* FindExplainoStructuralDescriptorByBindingPath(std::string_view bindingPath) {
-    for (const auto& structural : kExplainoStructuralRegistry) {
-        if (bindingPath == structural.binding_path) {
-            return &structural;
+inline const ExplainoClusterRadiusDescriptor* FindExplainoClusterRadiusDescriptorByBindingPath(std::string_view bindingPath) {
+    for (const auto& clusterRadius : kExplainoClusterRadiusRegistry) {
+        if (bindingPath == clusterRadius.binding_path) {
+            return &clusterRadius;
         }
     }
     return nullptr;
 }
 
-inline constexpr const ExplainoStructuralCarrierDescriptor* FindExplainoStructuralCarrierDescriptor(FractalType fractalType) {
-    for (const auto& carrier : kExplainoStructuralCarrierRegistry) {
-        if (carrier.carrier_fractal_type == fractalType) {
-            return &carrier;
+inline constexpr const ExplainoClusterRadiusSelectorDescriptor* FindExplainoClusterRadiusSelectorDescriptor(FractalType fractalType) {
+    for (const auto& selector : kExplainoClusterRadiusSelectorRegistry) {
+        if (selector.carrier_fractal_type == fractalType) {
+            return &selector;
         }
     }
     return nullptr;
@@ -534,17 +538,17 @@ inline const float* ResolvePhoenixStepCarrierValue(const KernelParams& params, P
     return nullptr;
 }
 
-inline float* ResolveExplainoStructuralValue(KernelParams& params, ExplainoStructuralParamSlot slot) {
+inline float* ResolveExplainoClusterRadiusValue(KernelParams& params, ExplainoClusterRadiusParamSlot slot) {
     switch (slot) {
-    case ExplainoStructuralParamSlot::explaino_cluster_radius:
+    case ExplainoClusterRadiusParamSlot::explaino_cluster_radius:
         return &params.explaino_cluster_radius;
     }
     return nullptr;
 }
 
-inline const float* ResolveExplainoStructuralValue(const KernelParams& params, ExplainoStructuralParamSlot slot) {
+inline const float* ResolveExplainoClusterRadiusValue(const KernelParams& params, ExplainoClusterRadiusParamSlot slot) {
     switch (slot) {
-    case ExplainoStructuralParamSlot::explaino_cluster_radius:
+    case ExplainoClusterRadiusParamSlot::explaino_cluster_radius:
         return &params.explaino_cluster_radius;
     }
     return nullptr;
@@ -613,24 +617,24 @@ inline void ApplyPhoenixStepCarrierDefaults(FractalType fractalType, KernelParam
     }
 }
 
-inline void ResetExplainoStructuralRegistryValues(KernelParams& params) {
-    for (const auto& structural : kExplainoStructuralRegistry) {
-        float* value = ResolveExplainoStructuralValue(params, structural.slot);
+inline void ResetExplainoClusterRadiusValues(KernelParams& params) {
+    for (const auto& clusterRadius : kExplainoClusterRadiusRegistry) {
+        float* value = ResolveExplainoClusterRadiusValue(params, clusterRadius.slot);
         if (value) {
             *value = 0.0f;
         }
     }
 }
 
-inline void ApplyExplainoStructuralRegistryDefaults(FractalType fractalType, KernelParams& params) {
-    ResetExplainoStructuralRegistryValues(params);
-    const ExplainoStructuralCarrierDescriptor* carrier = FindExplainoStructuralCarrierDescriptor(fractalType);
-    if (!carrier) {
+inline void ApplyExplainoClusterRadiusDefaults(FractalType fractalType, KernelParams& params) {
+    ResetExplainoClusterRadiusValues(params);
+    const ExplainoClusterRadiusSelectorDescriptor* selector = FindExplainoClusterRadiusSelectorDescriptor(fractalType);
+    if (!selector) {
         return;
     }
-    float* value = ResolveExplainoStructuralValue(params, carrier->slot);
+    float* value = ResolveExplainoClusterRadiusValue(params, selector->slot);
     if (value) {
-        *value = static_cast<float>(carrier->default_value);
+        *value = static_cast<float>(selector->default_value);
     }
 }
 

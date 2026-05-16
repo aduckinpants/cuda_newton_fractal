@@ -302,7 +302,7 @@ int main() {
             const PhoenixStepCarrierDescriptor* byParam = FindPhoenixStepCarrierDescriptor(carrierParam.param_id);
             const PhoenixStepCarrierDescriptor* byBinding = FindPhoenixStepCarrierDescriptorByBindingPath(carrierParam.binding_path);
             if (byParam != &carrierParam || byBinding != &carrierParam ||
-                FindExplainoStructuralDescriptor(carrierParam.param_id) != nullptr ||
+                FindExplainoClusterRadiusDescriptor(carrierParam.param_id) != nullptr ||
                 FindExplainoAxisDescriptor(carrierParam.param_id) != nullptr ||
                 FindExplainoCouplingDescriptor(carrierParam.param_id) != nullptr ||
                 FindExplainoDualSeedDescriptor(carrierParam.param_id) != nullptr) {
@@ -362,7 +362,7 @@ int main() {
             *value = static_cast<float>(carrier.default_value);
             const float* constValue = ResolvePhoenixStepCarrierValue(static_cast<const KernelParams&>(phoenixCarrierParams), carrier.slot);
             if (!constValue || *constValue != static_cast<float>(carrier.default_value) ||
-                FindExplainoStructuralCarrierDescriptor(carrier.carrier_fractal_type) != nullptr) {
+                FindExplainoClusterRadiusSelectorDescriptor(carrier.carrier_fractal_type) != nullptr) {
                 std::cerr << "phoenix_p_real should no longer share the structural/root-pack carrier lookup\n";
                 return 1;
             }
@@ -374,39 +374,39 @@ int main() {
             return 1;
         }
 
-        struct ExpectedStructuralParam {
+        struct ExpectedClusterRadiusParam {
             const char* param_id;
             const char* binding_path;
-            ExplainoStructuralParamSlot slot;
-            ExplainoStructuralOwnership ownership;
-            ExplainoStructuralModel model;
-            bool shared_with_non_explaino_carrier;
-            bool requires_carrier_specific_zero_collapse;
+            ExplainoClusterRadiusParamSlot slot;
+            ExplainoClusterRadiusOwnership ownership;
+            ExplainoClusterRadiusModel model;
+            bool shared_with_multiple_legacy_selectors;
+            bool requires_immediate_lane_split;
         };
-        constexpr ExpectedStructuralParam kExpectedStructuralParams[] = {
-            {"explaino_cluster_radius", "fractal.params.explaino_cluster_radius", ExplainoStructuralParamSlot::explaino_cluster_radius, ExplainoStructuralOwnership::different_ownership_model, ExplainoStructuralModel::root_pack_modifier, false, true},
+        constexpr ExpectedClusterRadiusParam kExpectedClusterRadiusParams[] = {
+            {"explaino_cluster_radius", "fractal.params.explaino_cluster_radius", ExplainoClusterRadiusParamSlot::explaino_cluster_radius, ExplainoClusterRadiusOwnership::different_ownership_model, ExplainoClusterRadiusModel::split_selector_followup, true, true},
         };
-        if ((sizeof(kExplainoStructuralRegistry) / sizeof(kExplainoStructuralRegistry[0])) !=
-            (sizeof(kExpectedStructuralParams) / sizeof(kExpectedStructuralParams[0]))) {
-            std::cerr << "explaino_cluster_radius should remain the only structural/root-pack registry entry in the phoenix_p_real follow-up\n";
+        if ((sizeof(kExplainoClusterRadiusRegistry) / sizeof(kExplainoClusterRadiusRegistry[0])) !=
+            (sizeof(kExpectedClusterRadiusParams) / sizeof(kExpectedClusterRadiusParams[0]))) {
+            std::cerr << "explaino_cluster_radius follow-up should expose one dedicated split-lane ownership registry\n";
             return 1;
         }
-        for (std::size_t index = 0; index < (sizeof(kExpectedStructuralParams) / sizeof(kExpectedStructuralParams[0])); ++index) {
-            const auto& structural = kExplainoStructuralRegistry[index];
-            if (std::string_view(structural.param_id) != kExpectedStructuralParams[index].param_id ||
-                std::string_view(structural.binding_path) != kExpectedStructuralParams[index].binding_path ||
-                structural.slot != kExpectedStructuralParams[index].slot ||
-                structural.ownership != kExpectedStructuralParams[index].ownership ||
-                structural.model != kExpectedStructuralParams[index].model ||
-                structural.shared_with_non_explaino_carrier != kExpectedStructuralParams[index].shared_with_non_explaino_carrier ||
-                structural.requires_carrier_specific_zero_collapse != kExpectedStructuralParams[index].requires_carrier_specific_zero_collapse) {
-                std::cerr << "Structural/root-pack registry entry drifted outside the bounded cluster-radius-only answer\n";
+        for (std::size_t index = 0; index < (sizeof(kExpectedClusterRadiusParams) / sizeof(kExpectedClusterRadiusParams[0])); ++index) {
+            const auto& clusterRadius = kExplainoClusterRadiusRegistry[index];
+            if (std::string_view(clusterRadius.param_id) != kExpectedClusterRadiusParams[index].param_id ||
+                std::string_view(clusterRadius.binding_path) != kExpectedClusterRadiusParams[index].binding_path ||
+                clusterRadius.slot != kExpectedClusterRadiusParams[index].slot ||
+                clusterRadius.ownership != kExpectedClusterRadiusParams[index].ownership ||
+                clusterRadius.model != kExpectedClusterRadiusParams[index].model ||
+                clusterRadius.shared_with_multiple_legacy_selectors != kExpectedClusterRadiusParams[index].shared_with_multiple_legacy_selectors ||
+                clusterRadius.requires_immediate_lane_split != kExpectedClusterRadiusParams[index].requires_immediate_lane_split) {
+                std::cerr << "Cluster-radius follow-up registry entry drifted outside the bounded split-lane answer\n";
                 return 1;
             }
-            const ExplainoStructuralDescriptor* byParam = FindExplainoStructuralDescriptor(structural.param_id);
-            const ExplainoStructuralDescriptor* byBinding = FindExplainoStructuralDescriptorByBindingPath(structural.binding_path);
-            if (byParam != &structural || byBinding != &structural) {
-                std::cerr << "Structural/root-pack lookup should remain explicit for explaino_cluster_radius\n";
+            const ExplainoClusterRadiusDescriptor* byParam = FindExplainoClusterRadiusDescriptor(clusterRadius.param_id);
+            const ExplainoClusterRadiusDescriptor* byBinding = FindExplainoClusterRadiusDescriptorByBindingPath(clusterRadius.binding_path);
+            if (byParam != &clusterRadius || byBinding != &clusterRadius) {
+                std::cerr << "Cluster-radius follow-up lookup should stay explicit on one dedicated ownership surface\n";
                 return 1;
             }
         }
@@ -421,65 +421,67 @@ int main() {
                 "explaino_seed_b",
                 "explaino_mix",
             }) {
-            if (FindExplainoStructuralDescriptor(outOfScopeParamId) != nullptr) {
-                std::cerr << "Structural/root-pack ownership must stay bounded and leave phoenix_p_real plus the other deferred classes out of scope\n";
+            if (FindExplainoClusterRadiusDescriptor(outOfScopeParamId) != nullptr) {
+                std::cerr << "Cluster-radius follow-up ownership must stay bounded and leave phoenix_p_real plus the other deferred classes out of scope\n";
                 return 1;
             }
         }
 
-        struct ExpectedStructuralCarrier {
+        struct ExpectedClusterRadiusSelector {
             FractalType carrier_fractal_type;
-            ExplainoStructuralParamSlot slot;
+            ExplainoClusterRadiusParamSlot slot;
             double default_value;
             double neutral_value;
-            ExplainoStructuralRuntimeRole runtime_role;
+            ExplainoClusterRadiusRuntimeRole runtime_role;
+            ExplainoClusterRadiusFollowUpLane followup_lane;
             bool zero_collapses_to_baseline;
             bool default_collapses_to_baseline;
         };
-        constexpr ExpectedStructuralCarrier kExpectedStructuralCarriers[] = {
-            {FractalType::explaino_mult, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.0, 0.0, ExplainoStructuralRuntimeRole::multi_root_cluster_split, false, false},
-            {FractalType::explaino_rational, ExplainoStructuralParamSlot::explaino_cluster_radius, 0.1, 0.0, ExplainoStructuralRuntimeRole::rational_laurent_term, false, false},
+        constexpr ExpectedClusterRadiusSelector kExpectedClusterRadiusSelectors[] = {
+            {FractalType::explaino_mult, ExplainoClusterRadiusParamSlot::explaino_cluster_radius, 0.0, 0.0, ExplainoClusterRadiusRuntimeRole::multi_root_cluster_split, ExplainoClusterRadiusFollowUpLane::explaino_mult_root_shape, false, false},
+            {FractalType::explaino_rational, ExplainoClusterRadiusParamSlot::explaino_cluster_radius, 0.1, 0.0, ExplainoClusterRadiusRuntimeRole::rational_laurent_term, ExplainoClusterRadiusFollowUpLane::explaino_rational_laurent, false, false},
         };
-        if ((sizeof(kExplainoStructuralCarrierRegistry) / sizeof(kExplainoStructuralCarrierRegistry[0])) !=
-            (sizeof(kExpectedStructuralCarriers) / sizeof(kExpectedStructuralCarriers[0]))) {
-            std::cerr << "The structural/root-pack follow-up fence should leave only the explaino_cluster_radius carrier map behind\n";
+        if ((sizeof(kExplainoClusterRadiusSelectorRegistry) / sizeof(kExplainoClusterRadiusSelectorRegistry[0])) !=
+            (sizeof(kExpectedClusterRadiusSelectors) / sizeof(kExpectedClusterRadiusSelectors[0]))) {
+            std::cerr << "The cluster-radius follow-up should expose an explicit split selector map for explaino_mult and explaino_rational\n";
             return 1;
         }
         KernelParams structuralParams{};
-        for (std::size_t index = 0; index < (sizeof(kExpectedStructuralCarriers) / sizeof(kExpectedStructuralCarriers[0])); ++index) {
-            const auto& carrier = kExplainoStructuralCarrierRegistry[index];
-            if (carrier.carrier_fractal_type != kExpectedStructuralCarriers[index].carrier_fractal_type ||
-                carrier.slot != kExpectedStructuralCarriers[index].slot ||
-                carrier.default_value != kExpectedStructuralCarriers[index].default_value ||
-                carrier.neutral_value != kExpectedStructuralCarriers[index].neutral_value ||
-                carrier.runtime_role != kExpectedStructuralCarriers[index].runtime_role ||
-                carrier.zero_collapses_to_baseline != kExpectedStructuralCarriers[index].zero_collapses_to_baseline ||
-                carrier.default_collapses_to_baseline != kExpectedStructuralCarriers[index].default_collapses_to_baseline) {
-                std::cerr << "Structural/root-pack carrier entry drifted from the bounded explaino_cluster_radius answer\n";
+        for (std::size_t index = 0; index < (sizeof(kExpectedClusterRadiusSelectors) / sizeof(kExpectedClusterRadiusSelectors[0])); ++index) {
+            const auto& selector = kExplainoClusterRadiusSelectorRegistry[index];
+            if (selector.carrier_fractal_type != kExpectedClusterRadiusSelectors[index].carrier_fractal_type ||
+                selector.slot != kExpectedClusterRadiusSelectors[index].slot ||
+                selector.default_value != kExpectedClusterRadiusSelectors[index].default_value ||
+                selector.neutral_value != kExpectedClusterRadiusSelectors[index].neutral_value ||
+                selector.runtime_role != kExpectedClusterRadiusSelectors[index].runtime_role ||
+                selector.followup_lane != kExpectedClusterRadiusSelectors[index].followup_lane ||
+                selector.zero_collapses_to_baseline != kExpectedClusterRadiusSelectors[index].zero_collapses_to_baseline ||
+                selector.default_collapses_to_baseline != kExpectedClusterRadiusSelectors[index].default_collapses_to_baseline) {
+                std::cerr << "Cluster-radius selector entry drifted from the bounded split follow-up answer\n";
                 return 1;
             }
-            const ExplainoStructuralCarrierDescriptor* byCarrier = FindExplainoStructuralCarrierDescriptor(carrier.carrier_fractal_type);
-            if (byCarrier != &carrier) {
-                std::cerr << "Structural/root-pack carriers should resolve through one explicit carrier map\n";
+            const ExplainoClusterRadiusSelectorDescriptor* byCarrier = FindExplainoClusterRadiusSelectorDescriptor(selector.carrier_fractal_type);
+            if (byCarrier != &selector) {
+                std::cerr << "Cluster-radius carriers should resolve through one explicit split selector map\n";
                 return 1;
             }
-            float* value = ResolveExplainoStructuralValue(structuralParams, carrier.slot);
+            float* value = ResolveExplainoClusterRadiusValue(structuralParams, selector.slot);
             if (!value) {
-                std::cerr << "Structural/root-pack carrier map should resolve every owned KernelParams slot\n";
+                std::cerr << "Cluster-radius selector map should resolve the owned KernelParams slot\n";
                 return 1;
             }
-            *value = static_cast<float>(carrier.default_value);
-            const float* constValue = ResolveExplainoStructuralValue(static_cast<const KernelParams&>(structuralParams), carrier.slot);
-            if (!constValue || *constValue != static_cast<float>(carrier.default_value)) {
-                std::cerr << "Structural/root-pack carrier map should expose both mutable and const slot access\n";
+            *value = static_cast<float>(selector.default_value);
+            const float* constValue = ResolveExplainoClusterRadiusValue(static_cast<const KernelParams&>(structuralParams), selector.slot);
+            if (!constValue || *constValue != static_cast<float>(selector.default_value)) {
+                std::cerr << "Cluster-radius selector map should expose both mutable and const slot access\n";
                 return 1;
             }
         }
-        if (FindExplainoStructuralCarrierDescriptor(FractalType::phoenix) != nullptr ||
-            FindExplainoStructuralCarrierDescriptor(FractalType::explaino_phoenix) != nullptr ||
-            FindExplainoStructuralCarrierDescriptor(FractalType::explaino_all) != nullptr ||
-            FindExplainoStructuralCarrierDescriptor(FractalType::explaino) != nullptr) {
-            std::cerr << "Structural/root-pack ownership should stay off phoenix-step and canonical Explaino carriers in the phoenix_p_real follow-up\n";
+        if (FindExplainoClusterRadiusSelectorDescriptor(FractalType::phoenix) != nullptr ||
+            FindExplainoClusterRadiusSelectorDescriptor(FractalType::explaino_phoenix) != nullptr ||
+            FindExplainoClusterRadiusSelectorDescriptor(FractalType::explaino_all) != nullptr ||
+            FindExplainoClusterRadiusSelectorDescriptor(FractalType::explaino) != nullptr) {
+            std::cerr << "Cluster-radius ownership should stay off phoenix-step and canonical Explaino carriers in the bounded follow-up\n";
             return 1;
         }
     }

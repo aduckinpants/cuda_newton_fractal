@@ -749,13 +749,13 @@ int main() {
 
             ApplyFractalDerivedFieldsAndSyncHp(view, params, nullptr, false, 0.0);
 
-            const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(fractalType);
+            const ExplainoClusterRadiusSelectorDescriptor* structuralCarrier = FindExplainoClusterRadiusSelectorDescriptor(fractalType);
             const float expectedCluster = structuralCarrier
                 ? static_cast<float>(structuralCarrier->default_value)
                 : 0.0f;
             if (!NearlyEqual(params.phoenix_p_real, 0.0f) ||
                 !NearlyEqual(params.explaino_cluster_radius, expectedCluster)) {
-                std::cerr << "The structural/root-pack registry should no longer own phoenix_p_real in the bounded follow-up\n";
+                std::cerr << "The cluster-radius split selector map should own the cluster defaults without reviving phoenix_p_real authority\n";
                 return 1;
             }
             if (!NearlyEqual(params.momentum_beta, 0.0f) ||

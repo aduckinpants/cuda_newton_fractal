@@ -555,13 +555,13 @@ int main() {
                 std::cerr << "Structural/root-pack reset should preserve the owning carrier identity and mark dirty in the phoenix_p_real follow-up\n";
                 return 1;
             }
-            const ExplainoStructuralCarrierDescriptor* structuralCarrier = FindExplainoStructuralCarrierDescriptor(structuralViewType);
+            const ExplainoClusterRadiusSelectorDescriptor* structuralCarrier = FindExplainoClusterRadiusSelectorDescriptor(structuralViewType);
             const float expectedCluster = structuralCarrier
                 ? static_cast<float>(structuralCarrier->default_value)
                 : 0.0f;
             if (!NearlyEqual(structuralParams.phoenix_p_real, 0.0f) ||
                 !NearlyEqual(structuralParams.explaino_cluster_radius, expectedCluster)) {
-                std::cerr << "Structural/root-pack reset should no longer restore phoenix_p_real defaults\n";
+                std::cerr << "Cluster-radius reset should restore only the split selector defaults and keep phoenix_p_real out of scope\n";
                 return 1;
             }
             if (!NearlyEqual(structuralParams.momentum_beta, 0.0f) ||

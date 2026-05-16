@@ -29,7 +29,7 @@ The controlling risk for phase8s was fake completion by restating phase8r. The f
 - Mandatory authority reread re-proved that phase8q is closed staging, phase8r settled only the shared classification question, phase8p settled the dual-seed bucket separately, and phase8n settled the resolved couplings bucket separately.
 - Current code search before mutation proved `phoenix_p_real` still lived inside `kExplainoStructuralRegistry` and `kExplainoStructuralCarrierRegistry` even though one owning carrier is plain `phoenix`, which proved the final follow-up answer was still missing.
 - RED landed truthfully: `artifacts/phase8s_red_native.log` captured the focused compile failure on missing `PhoenixStepCarrierSelectorDescriptor` and `FindPhoenixStepCarrierSelectorDescriptor`, proving the repo still lacked a dedicated `phoenix_p_real` follow-up ownership surface before implementation.
-- `ui_app/src/fractal_family_rules.h` now owns one dedicated phoenix-step carrier registry plus selector map for `phoenix_p_real`, while `kExplainoStructuralRegistry` and `kExplainoStructuralCarrierRegistry` now carry only `explaino_cluster_radius`.
+- `ui_app/src/fractal_family_rules.h` now owns one dedicated phoenix-step carrier registry plus selector map for `phoenix_p_real`. On the current head, `phase8t` has also replaced the residual `explaino_cluster_radius` structural map with dedicated `ExplainoClusterRadius*` split-selector authority.
 - `ui_app/src/fractal_derived_fields.cpp`, `ui_app/src/runtime_reset.cpp`, and `ui_app/src/fractal_runtime_validation.h` now route `phoenix_p_real` defaults, reset truth, and runtime-domain validation through `ApplyPhoenixStepCarrierDefaults(...)`, `ResetPhoenixStepCarrierValues(...)`, and `FindPhoenixStepCarrierSelectorDescriptor(...)` instead of the old structural/root-pack carrier map.
 - Focused native witnesses are green from `D:/salt-fractal/cuda_newton_fractal_clone/build_tests`: `test_fractal_family_rules.exe`, `test_ui_schema.exe`, `test_fractal_derived_fields.exe`, `test_runtime_reset.exe`, `test_fractal_runtime_validation.exe`, `test_schema_binding.exe`, `test_diagnostics_state_io.exe`, and `test_fractal_probe.exe`.
 - `py -3.14 tools/viewer_host_run_logged_command.py --label phase8s-runtime-publish --log artifacts/phase8s_runtime_publish.log -- ui_app/build_vsdevcmd.cmd` republished the current runtime successfully to `D:/salt-fractal/cuda_newton_fractal_clone/runtime/fractal_ui.exe`.
@@ -82,7 +82,7 @@ The controlling risk for phase8s was fake completion by restating phase8r. The f
 
 ## Closeout State
 
-Any later structural/root-pack work on this head should target `explaino_cluster_radius` explicitly instead of reopening `phoenix_p_real`. Any future `phoenix_p_real` work would be drift or regression work against this dedicated carrier surface, not a fresh canonical `Explaino-all` promotion or shared-bucket replay.
+Any later structural/root-pack work on this head should choose one explicit `explaino_mult` root-shape or `explaino_rational` Laurent lane instead of reopening `phoenix_p_real` or a unified `explaino_cluster_radius` slice. Any future `phoenix_p_real` work would be drift or regression work against this dedicated carrier surface, not a fresh canonical `Explaino-all` promotion or shared-bucket replay.
 
 ## Action Hostile Review
 

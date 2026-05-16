@@ -46,7 +46,7 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("phoenix_p_real/imag must be in [-1,1]", outError);
         }
     }
-    if (FindExplainoStructuralCarrierDescriptor(view.fractal_type) != nullptr) {
+    if (FindExplainoClusterRadiusSelectorDescriptor(view.fractal_type) != nullptr) {
         if (!std::isfinite(params.explaino_cluster_radius) ||
             params.explaino_cluster_radius < 0.0f ||
             params.explaino_cluster_radius > 2.0f) {

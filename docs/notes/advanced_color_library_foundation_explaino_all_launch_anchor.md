@@ -68,11 +68,12 @@ Resolved deferred-class outcomes:
 - `joy_coupling`, `fold_coupling`, and `bell_coupling` remain a different phoenix-step ownership model
 - none of those four couplings were promoted into the canonical seven-axis `Explaino-all` registry
 
-The current unresolved deferred group is:
+The current deferred split group is:
 
 1. Structural / root-pack modifiers
 
-- `explaino_cluster_radius`
+- `explaino_mult` root-shape follow-up for `explaino_cluster_radius`
+- `explaino_rational` Laurent follow-up for `explaino_cluster_radius`
 
 These affect deeper family construction or root-pack structure rather than the current bounded neutral-axis deformation family.
 
@@ -80,13 +81,14 @@ Current meaning:
 
 - `phase8r` proved the shared structural/root-pack bucket does not stay unified
 - `phase8s` closed `phoenix_p_real` as a dedicated shared phoenix-step carrier fence outside canonical `explaino_all`
-- `explaino_cluster_radius` is the only remaining structural/root-pack parameter still unresolved on this head
+- `phase8t` closed `explaino_cluster_radius` as a dedicated split-selector surface outside canonical `explaino_all`
+- no single structural/root-pack parameter remains unresolved on this head; any later work must choose one explicit split lane instead of reopening a unified `explaino_cluster_radius` slice
 
 Rule:
 
 - do not auto-expose the remaining deferred parameter class under `Explaino-all` just because it already exists in `KernelParams`
 - do not treat the closed `phoenix_p_real` fence or the absence of `explaino_cluster_radius` from the current `Explaino-all` control surface as a slice-1 regression
-- if `explaino_cluster_radius` is chosen next, start from `docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md`, `docs/notes/advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`
+- if structural/root-pack work is chosen next, start from `docs/notes/advanced_color_library_foundation_phase8r_explaino_structural_root_pack_classification_owner_map_PHASED_PLAN.md`, `docs/notes/advanced_color_library_foundation_phase8s_explaino_phoenix_p_real_followup_ownership_fence_PHASED_PLAN.md`, `docs/notes/advanced_color_library_foundation_phase8t_explaino_cluster_radius_followup_ownership_split_PHASED_PLAN.md`, and `docs/notes/advanced_color_library_foundation_explaino_structural_root_pack_launch_anchor.md`, then choose only one split lane: `explaino_mult` root-shape or `explaino_rational` Laurent
 - if one of the remaining groups is chosen next, open a bounded classification/promotion slice and prove whether it belongs inside the canonical `Explaino-all` family, remains legacy-only, or needs a different ownership model
 
 ## Required Owner Seams

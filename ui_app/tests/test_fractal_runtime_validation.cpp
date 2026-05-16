@@ -126,12 +126,26 @@ int main() {
         ViewState view{};
         KernelParams params{};
         std::string error;
+        view.fractal_type = FractalType::explaino_mult;
+        params.coloring_mode = ColoringMode::joy_basins;
+        params.explaino_cluster_radius = -0.1f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "explaino_cluster_radius must be finite and in [0,2]") {
+            std::cerr << "Expected Explaino-Mult to enforce the explicit cluster-radius split selector domain contract\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
         view.fractal_type = FractalType::explaino_rational;
         params.coloring_mode = ColoringMode::joy_basins;
         params.explaino_cluster_radius = -0.1f;
         if (ValidateFractalRuntimeState(view, params, &error) ||
             error != "explaino_cluster_radius must be finite and in [0,2]") {
-            std::cerr << "Expected Explaino structural root-pack carriers to enforce the shared cluster-radius domain contract\n";
+            std::cerr << "Expected Explaino-Rational to enforce the explicit cluster-radius split selector domain contract\n";
             return 1;
         }
     }
