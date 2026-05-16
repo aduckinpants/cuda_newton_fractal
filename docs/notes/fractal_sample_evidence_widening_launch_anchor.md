@@ -42,10 +42,11 @@ Follow this order unless live repo evidence proves a narrower truthful split is 
 1. contract skeleton plus legacy projection helper
 2. dual-return API plus device/kernel default legacy evidence wiring
 3. one real widened consumer proof
-4. optional cleanup or enforcement only if the first three slices leave truthful residual debt
+4. bounded projection-and-flow witness
+5. optional cleanup or enforcement only if the earlier slices leave truthful residual debt or live code later proves `ExplainO-BalanceVoid` is the next bounded consumer
 
 Do not start with the widened consumer before the widened evidence seam exists.
-Do not start with cleanup before the widened seam and first consumer are both real.
+Do not start with cleanup before the widened seam and the bounded widened-consumer lanes are both real.
 
 ## Current Lane Status
 
@@ -53,7 +54,8 @@ Do not start with cleanup before the widened seam and first consumer are both re
 - `ui_app/src/fractal_sample_result.h` now carries one bounded `FractalSampleEvidence` payload plus one `BuildLegacySampleResult(...)` helper; the widened payload remains bounded to `sample_coord` plus nested `legacy_result`.
 - `ui_app/src/fractal_types.h` plus `ui_app/src/fractal_sample_core.cu` now expose `SampleFractalEvidencePoints(...)` as the widened host API and make `SampleFractalPoints(...)` a thin legacy projection adapter over default evidence-emitting sample-kernel output.
 - The current repo now has one real widened consumer in the bounded sidecar paired-state/counterfactual lane: `ui_app/src/explaino_sidecar_measurement.cpp` reads `FractalSampleEvidence` through `SidecarMeasurementHost::SampleEvidence(...)` and records paired `minus_counterfactual` / `plus_counterfactual` witness metrics.
-- The first widened consumer still reuses the bounded slice-A/B payload only: no new evidence fields were needed beyond `sample_coord` plus nested `legacy_result`, and later projection-and-flow or `ExplainO-BalanceVoid` consumers remain deferred.
+- The current repo now has a second real widened consumer in the bounded sidecar projection-and-flow lane: `ui_app/src/explaino_sidecar_lens.cpp` and `ui_app/src/explaino_sidecar_window.cpp` consume the paired counterfactual witness through `projection_flow_bias` to drive live lens guidance and active-zone asymmetry on the window state path.
+- The widened consumers still reuse the bounded slice-A/B payload only: no new evidence fields were needed beyond `sample_coord` plus nested `legacy_result`, and `ExplainO-BalanceVoid` remains deferred.
 - The repo already has a bounded adjacent pattern in `generic_sample_core.*`, which proves a second sample contract can exist without forcing a universal abstraction first.
 - The external prep packet under `D:\salt-output\explaino_novelty_analysis\20260511_152923_viewer_host_fractal_math_refresh_packet` is now translated into this checked-in packet so future sessions can start from repo authority instead of external notes alone.
 
@@ -71,12 +73,12 @@ The key questions this lane must answer are:
 - whether the chosen first real non-legacy consumer is strong enough to justify any later widened-consumer work
 - whether the widened seam improves future extensibility without lying about generality
 
-## Preferred First Consumer Order
+## Preferred Consumer Order
 
-The first widened consumer should be chosen in this order unless live repo evidence proves otherwise:
+The widened consumers should be chosen in this order unless live repo evidence proves otherwise:
 
-1. bounded paired-state / counterfactual witness
-2. bounded projection-and-flow witness
+1. bounded paired-state / counterfactual witness - landed
+2. bounded projection-and-flow witness - landed
 3. `ExplainO-BalanceVoid` only if the live code genuinely needs richer emitted evidence
 
 Do not jump directly to:
@@ -166,6 +168,14 @@ Must prove:
 - the chosen evidence fields are justified by actual use
 - legacy render/runtime equivalence stays intact
 
+### Slice D - Projection And Flow
+
+Must prove:
+
+- one second real bounded consumer reads the existing widened evidence meaningfully on a downstream projection surface
+- the chosen projection-and-flow signal is justified by actual live use rather than speculative field growth
+- `SampleFractalPoints(...)` and `FractalSampleResult` remain the shipped legacy projection surfaces
+
 ## Post-Closeout Gate
 
 Every future sample-evidence widening slice must re-read its active phased plan on the committed head and fail closed if the plan still contains stale pre-closeout language or untruthful open asks.
@@ -174,5 +184,5 @@ Every future sample-evidence widening slice must re-read its active phased plan 
 
 Use this packet when resuming or auditing from the current bounded stop point:
 
-- [fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md)
+- [fractal_sample_evidence_widening_projection_and_flow_witness_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_projection_and_flow_witness_PHASED_PLAN.md)
 - [fractal_sample_evidence_widening_staging_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md)

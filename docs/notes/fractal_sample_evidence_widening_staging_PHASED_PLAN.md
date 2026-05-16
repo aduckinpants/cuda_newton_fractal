@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the repo now carries a closed docs-only staging slice for the bounded engine lane that widens the fractal sample evidence contract without pretending to genericize the whole runtime. This slice did not implement `FractalSampleEvidence` on its own head; it translated the external prep packet into checked-in repo authority, wrote the reusable launch-anchor surface, and staged the bounded implementation order so later sessions could start from the repo instead of chat or external notes alone. Slices A, B, and C later landed on this branch, so this staging doc is now historical kickoff doctrine plus slice-order authority rather than the current implementation status surface. The live repo now carries `FractalSampleEvidence`, `BuildLegacySampleResult(...)`, `SampleFractalEvidencePoints(...)`, and one real paired-state/counterfactual widened consumer in the sidecar measurement lane while later consumer lanes remain deferred.
+Complete - the repo now carries a closed docs-only staging slice for the bounded engine lane that widens the fractal sample evidence contract without pretending to genericize the whole runtime. This slice did not implement `FractalSampleEvidence` on its own head; it translated the external prep packet into checked-in repo authority, wrote the reusable launch-anchor surface, and staged the bounded implementation order so later sessions could start from the repo instead of chat or external notes alone. Slices A, B, C, and the bounded projection-and-flow follow-up later landed on this branch, so this staging doc is now historical kickoff doctrine plus slice-order authority rather than the current implementation status surface. The live repo now carries `FractalSampleEvidence`, `BuildLegacySampleResult(...)`, `SampleFractalEvidencePoints(...)`, one real paired-state/counterfactual widened consumer in the sidecar measurement lane, and one real projection-and-flow widened consumer in the sidecar lens/window lane while `ExplainO-BalanceVoid` remains deferred.
 
 ## Phase Checklist
 
@@ -30,7 +30,7 @@ The staged sample-evidence packet now fixes one checked-in slice order:
 
 An optional cleanup or enforcement slice exists only if the earlier slices leave truthful residual debt that cannot be absorbed in-slice.
 
-This staging slice preserved kickoff flexibility until the live repo proved the first widened consumer. The current branch now chooses the paired-state/counterfactual sidecar lane first, and the packet still fences projection-and-flow, `ExplainO-BalanceVoid`, meta-basin, and DSL-style work out of that first-consumer proof.
+This staging slice preserved kickoff flexibility until the live repo proved the first widened consumers. The current branch now closed the paired-state/counterfactual sidecar lane first and the bounded projection-and-flow lens/window lane second, and the packet still fences `ExplainO-BalanceVoid`, meta-basin, and DSL-style work out of those bounded proofs.
 
 ## Presumption Evidence
 
@@ -98,6 +98,24 @@ Must not do:
 - no multi-consumer grab bag
 - no jump directly to meta-basin, operator-itinerary, or DSL/program-space work
 
+### Slice D - Projection And Flow
+
+Goal:
+
+- land one bounded second widened consumer on a downstream projection surface
+- prove the existing widened payload is enough to drive a real projection-and-flow witness
+
+Must prove:
+
+- one second real widened consumer reads the existing widened evidence meaningfully
+- legacy projection semantics still hold
+- no speculative evidence field growth was needed
+
+Must not do:
+
+- no jump directly to `ExplainO-BalanceVoid`
+- no whole-engine abstraction rewrite
+
 ### Optional Cleanup
 
 Only open this if slices A-C leave truthful residual debris too risky to absorb inside the bounded implementation slice.
@@ -122,8 +140,8 @@ That file is the reusable entry surface for:
 - RED 2 landed truthfully on the staging head: the repo still lacked any checked-in widened evidence payload or widened sample API, so the engine lane was still only external planning.
 - `docs/notes/fractal_sample_evidence_widening_launch_anchor.md`, `docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md`, and `docs/contracts/fractal_sample_evidence_widening_staging.contract.json` now exist as the checked-in sample-evidence widening packet.
 - The packet keeps `FractalSampleResult` and `SampleFractalPoints(...)` explicit as the shipped legacy projection authority while staging the later widened seam.
-- The packet keeps the first consumer bounded to paired-state/counterfactual or projection-and-flow and explicitly fences off meta-basin, operator-itinerary, and DSL/program-space work from the first implementation slice.
-- Current repo note: slices A, B, and C later landed the bounded payload/helper, the widened host API/default evidence path, and the paired-state/counterfactual first consumer; use the launch anchor plus the slice-C plan for live implementation truth.
+- The packet keeps the widened-consumer follow-ups bounded to paired-state/counterfactual, then projection-and-flow, and explicitly fences off meta-basin, operator-itinerary, DSL/program-space, and `ExplainO-BalanceVoid` work from those implementation slices.
+- Current repo note: slices A, B, C, and the bounded projection-and-flow follow-up later landed the bounded payload/helper, the widened host API/default evidence path, the paired-state/counterfactual first consumer, and the lens/window projection-flow consumer; use the launch anchor plus the active projection-and-flow plan for live implementation truth.
 
 ## Hostile Audit
 
@@ -173,7 +191,7 @@ That file is the reusable entry surface for:
 
 ## Resume Point
 
-Closed. Historical staging only. The live restart surface is now [fractal_sample_evidence_widening_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_launch_anchor.md) plus [fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md); use this staged slice map only for the original ordering and scope fence.
+Closed. Historical staging only. The live restart surface is now [fractal_sample_evidence_widening_launch_anchor.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_launch_anchor.md) plus [fractal_sample_evidence_widening_projection_and_flow_witness_PHASED_PLAN.md](/C:/code/cuda_newton_fractal_clone/docs/notes/fractal_sample_evidence_widening_projection_and_flow_witness_PHASED_PLAN.md); use this staged slice map only for the original ordering and scope fence.
 
 ## Action Hostile Review
 

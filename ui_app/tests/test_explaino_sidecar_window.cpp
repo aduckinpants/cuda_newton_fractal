@@ -92,6 +92,54 @@ public:
     }
 };
 
+class FakeProjectionFlowEvidenceHost : public SidecarMeasurementHost {
+public:
+    mutable int legacy_calls = 0;
+
+    bool Sample(const std::vector<Double2>&,
+        const ViewState&,
+        const KernelParams&,
+        const RenderSettings&,
+        std::vector<FractalSampleResult>*,
+        std::string* outError) const override {
+        ++legacy_calls;
+        if (outError) *outError = "legacy sample should stay unused when projection-flow widened evidence is available";
+        return false;
+    }
+
+    bool SupportsWidenedEvidence() const override {
+        return true;
+    }
+
+    bool SampleEvidence(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams&,
+        const RenderSettings&,
+        std::vector<FractalSampleEvidence>* outEvidence,
+        std::string* outError) const override {
+        if (!outEvidence) {
+            if (outError) *outError = "outEvidence is null";
+            return false;
+        }
+
+        const double zoomDelta = std::fabs(static_cast<double>(view.zoom) - 10.0);
+        outEvidence->clear();
+        outEvidence->reserve(coords.size());
+        for (const Double2& coord : coords) {
+            FractalSampleEvidence evidence{};
+            evidence.sample_coord = coord;
+            evidence.legacy_result.iterations = static_cast<int>(std::lround(20.0 + zoomDelta * 100.0));
+            evidence.legacy_result.final_z_x = static_cast<float>(coord.x);
+            evidence.legacy_result.final_z_y = static_cast<float>(coord.y);
+            evidence.legacy_result.residual = static_cast<float>(1.0 + zoomDelta);
+            evidence.legacy_result.converged = zoomDelta < 0.5;
+            evidence.legacy_result.escaped = false;
+            outEvidence->push_back(evidence);
+        }
+        return true;
+    }
+};
+
 
 FunctionParamDescriptor MakeParam(
     const char* path,
@@ -152,6 +200,27 @@ EngineFunctionCatalog BuildBrokenCatalog() {
     broken.applicable_when.path = "fractal.view.not_real";
     broken.applicable_when.value = "explaino";
     catalog.functions[0].parameters.push_back(broken);
+    return catalog;
+}
+
+EngineFunctionCatalog BuildZoomOnlyCatalog() {
+    EngineFunctionCatalog catalog;
+
+    FunctionDescriptor fractalSample;
+    fractalSample.id = "fractal.sample";
+
+    FunctionParamDescriptor fractalType;
+    fractalType.path = "fractal.view.fractal_type";
+    fractalType.type = "enum";
+    fractalType.label = "Fractal Type";
+    fractalType.required = true;
+    fractalType.options.push_back({"explaino", "Explaino"});
+    fractalSample.parameters.push_back(fractalType);
+
+    FunctionParamDescriptor zoom = MakeParam("fractal.view.zoom", "float", "Zoom", 9.0, 11.0, 10.0);
+    fractalSample.parameters.push_back(zoom);
+
+    catalog.functions.push_back(fractalSample);
     return catalog;
 }
 
@@ -448,6 +517,37 @@ int main() {
         }
         if (!state.trace_error_message.empty() || !state.trace.steps.empty()) {
             std::cerr << "Expected disabled controller policy to leave the slime trace empty with no error\n";
+            return 1;
+        }
+    }
+
+    {
+        FakeProjectionFlowEvidenceHost host;
+        ExplainoSidecarWindowState state;
+        std::string error;
+        if (!BuildExplainoSidecarWindowState(BuildZoomOnlyCatalog(), ctx, &host, &state, &error)) {
+            std::cerr << "Expected widened projection-flow sidecar window state to build: " << error << "\n";
+            return 1;
+        }
+        if (host.legacy_calls != 0) {
+            std::cerr << "Expected widened projection-flow sidecar window path to avoid the legacy sample host\n";
+            return 1;
+        }
+        if (state.measurement.rows.size() != 1 || state.lens.rows.size() != 1) {
+            std::cerr << "Expected zoom-only widened projection-flow sidecar state to expose exactly one measured and projected row\n";
+            return 1;
+        }
+        if (!(state.lens.rows[0].projection_flow_bias < 0.0)) {
+            std::cerr << "Expected widened projection-flow sidecar window state to expose a negative zoom flow bias from the stronger minus-direction coordinate displacement\n";
+            return 1;
+        }
+        if (state.lens.rows[0].guidance.find('-') == std::string::npos) {
+            std::cerr << "Expected widened projection-flow sidecar window state to turn the live lens guidance toward the stronger minus-direction flow witness\n";
+            return 1;
+        }
+        if (!(state.lens.rows[0].current_value - state.lens.rows[0].active_min >
+            state.lens.rows[0].active_max - state.lens.rows[0].current_value)) {
+            std::cerr << "Expected widened projection-flow sidecar window state to bias the active zone toward the stronger minus-direction flow witness\n";
             return 1;
         }
     }

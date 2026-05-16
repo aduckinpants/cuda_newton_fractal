@@ -31,13 +31,35 @@ double ComputeAggregateDelta(
     return score;
 }
 
+double ComputeCounterfactualFlowScore(const SidecarCounterfactualWitness& witness) {
+    if (witness.coordinate_count <= 0) {
+        return 0.0;
+    }
+    return witness.mean_sample_coord_distance;
+}
+
+double ComputeProjectionFlowBias(const SidecarMeasurementRow& row, double* outConfidence) {
+    const double minusScore = ComputeCounterfactualFlowScore(row.minus_counterfactual);
+    const double plusScore = ComputeCounterfactualFlowScore(row.plus_counterfactual);
+    const double totalScore = minusScore + plusScore;
+    if (outConfidence) {
+        *outConfidence = totalScore <= kGainEpsilon ? 0.0 : ClampUnit(totalScore / (1.0 + totalScore));
+    }
+    if (!(totalScore > kGainEpsilon)) {
+        return 0.0;
+    }
+    return std::max(-1.0, std::min(1.0, (plusScore - minusScore) / totalScore));
+}
+
 bool IsLensNumericType(const std::string& type) {
     return type == "float" || type == "double" || type == "int";
 }
 
-std::string DirectionTag(double minusDelta, double plusDelta) {
+std::string DirectionTag(double minusDelta, double plusDelta, double projectionFlowBias) {
     if (plusDelta > minusDelta + kGainEpsilon) return "+";
     if (minusDelta > plusDelta + kGainEpsilon) return "-";
+    if (projectionFlowBias > kGainEpsilon) return "+";
+    if (projectionFlowBias < -kGainEpsilon) return "-";
     return "=";
 }
 
@@ -45,10 +67,11 @@ std::string BuildGuidance(double totalDelta,
     double posteriorUncertainty,
     double decodeStability,
     double minusDelta,
-    double plusDelta) {
+    double plusDelta,
+    double projectionFlowBias) {
     if (!(totalDelta > kGainEpsilon)) return "dead zone";
 
-    const std::string direction = DirectionTag(minusDelta, plusDelta);
+    const std::string direction = DirectionTag(minusDelta, plusDelta, projectionFlowBias);
     if (decodeStability < 0.5) return "unstable " + direction;
     if (posteriorUncertainty >= 0.5) return "explore " + direction;
     return "refine " + direction;
@@ -160,9 +183,16 @@ bool BuildSidecarLensProjection(
         row.current_value = measurementRow.current_value;
         row.information_gradient = measurementRow.information_gradient;
         row.information_curvature = measurementRow.information_curvature;
+        row.projection_flow_bias = ComputeProjectionFlowBias(measurementRow, &row.projection_flow_confidence);
         row.posterior_uncertainty = ClampUnit(budgetRow.posterior_uncertainty);
         row.decode_stability = ClampUnit(measurementRow.decode_stability);
-        row.guidance = BuildGuidance(totalDelta, row.posterior_uncertainty, row.decode_stability, minusDelta, plusDelta);
+        row.guidance = BuildGuidance(
+            totalDelta,
+            row.posterior_uncertainty,
+            row.decode_stability,
+            minusDelta,
+            plusDelta,
+            row.projection_flow_bias);
 
         if (!(totalDelta > kGainEpsilon)) {
             row.inactive = true;
@@ -174,8 +204,9 @@ bool BuildSidecarLensProjection(
             const double uncertaintyScale = 0.5 + 0.5 * row.posterior_uncertainty;
             const double gainScale = 0.75 + 0.25 * normalizedGain;
             const double baseSpan = measurementRow.step_value * gainScale * uncertaintyScale * stabilityScale;
-            const double minusWeight = 0.5 + (minusDelta / totalDelta);
-            const double plusWeight = 0.5 + (plusDelta / totalDelta);
+            const double flowAdjust = 0.25 * row.projection_flow_bias * row.projection_flow_confidence;
+            const double minusWeight = std::max(0.25, 0.5 + (minusDelta / totalDelta) - flowAdjust);
+            const double plusWeight = std::max(0.25, 0.5 + (plusDelta / totalDelta) + flowAdjust);
 
             row.active_min = ClampToSurface(surface, measurementRow.current_value - baseSpan * minusWeight);
             row.active_max = ClampToSurface(surface, measurementRow.current_value + baseSpan * plusWeight);
