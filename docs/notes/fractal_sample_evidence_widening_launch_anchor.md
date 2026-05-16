@@ -49,9 +49,10 @@ Do not start with cleanup before the widened seam and first consumer are both re
 
 ## Current Lane Status
 
-- The current repo keeps `FractalSampleResult` as the shipped legacy sample payload and `SampleFractalPoints(...)` as the current legacy sample API.
-- `ui_app/src/fractal_sample_result.h` now carries one bounded `FractalSampleEvidence` payload plus one `BuildLegacySampleResult(...)` helper; slice A keeps that widened payload bounded to `sample_coord` plus nested `legacy_result`.
-- The current repo still has no checked-in `SampleFractalEvidencePoints(...)` widened host API and still has no real widened consumer yet.
+- The current repo keeps `FractalSampleResult` as the shipped legacy sample payload, and `SampleFractalPoints(...)` remains the shipped legacy projection API for existing callers.
+- `ui_app/src/fractal_sample_result.h` now carries one bounded `FractalSampleEvidence` payload plus one `BuildLegacySampleResult(...)` helper; the widened payload remains bounded to `sample_coord` plus nested `legacy_result`.
+- `ui_app/src/fractal_types.h` plus `ui_app/src/fractal_sample_core.cu` now expose `SampleFractalEvidencePoints(...)` as the widened host API and make `SampleFractalPoints(...)` a thin legacy projection adapter over default evidence-emitting sample-kernel output.
+- The current repo still has no real widened consumer yet.
 - The repo already has a bounded adjacent pattern in `generic_sample_core.*`, which proves a second sample contract can exist without forcing a universal abstraction first.
 - The external prep packet under `D:\salt-output\explaino_novelty_analysis\20260511_152923_viewer_host_fractal_math_refresh_packet` is now translated into this checked-in packet so future sessions can start from repo authority instead of external notes alone.
 

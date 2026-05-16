@@ -468,9 +468,20 @@ bool RenderFractalCUDA(
 
 // K2: Sample arbitrary complex-plane coordinates without pixel mapping or coloring.
 // coords: host array of complex-plane points (Double2: .x = Re, .y = Im).
-// outResults: host array of FractalSampleResult (caller-allocated, length numPoints).
+// outEvidence: host array of FractalSampleEvidence (caller-allocated, length numPoints).
 // Returns false on error; *outError will be set.
+struct FractalSampleEvidence;
 struct FractalSampleResult;
+bool SampleFractalEvidencePoints(
+    const Double2* coords,
+    int numPoints,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleEvidence* outEvidence,
+    const char** outError);
+
+// Legacy projection path preserved for existing callers.
 bool SampleFractalPoints(
     const Double2* coords,
     int numPoints,

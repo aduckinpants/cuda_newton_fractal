@@ -186,7 +186,54 @@ void TestAllFractalTypes() {
     }
 }
 
-// Test 4: Cross-validate against RenderFractalCUDA.
+// Test 4: Widened evidence projects back to legacy semantics.
+void TestWidenedEvidenceProjectsToLegacyResults() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::newton, view, params, render);
+
+    const int N = 3;
+    Double2 coords[N] = {
+        MakeDouble2(0.5, 0.5),
+        MakeDouble2(-0.25, 0.75),
+        MakeDouble2(0.125, -0.625),
+    };
+    FractalSampleEvidence evidence[N]{};
+    FractalSampleResult legacy[N]{};
+    const char* error = nullptr;
+
+    bool widenedOk = SampleFractalEvidencePoints(coords, N, view, params, render, evidence, &error);
+    CHECK("widened evidence batch ok", widenedOk);
+    if (!widenedOk) {
+        std::cerr << "    error: " << (error ? error : "unknown") << "\n";
+        return;
+    }
+
+    bool legacyOk = SampleFractalPoints(coords, N, view, params, render, legacy, &error);
+    CHECK("legacy projection batch ok", legacyOk);
+    if (!legacyOk) {
+        std::cerr << "    error: " << (error ? error : "unknown") << "\n";
+        return;
+    }
+
+    for (int i = 0; i < N; ++i) {
+        CHECK("widened sample coord x preserved", evidence[i].sample_coord.x == coords[i].x);
+        CHECK("widened sample coord y preserved", evidence[i].sample_coord.y == coords[i].y);
+        const FractalSampleResult projected = BuildLegacySampleResult(evidence[i]);
+        CHECK("projected iterations match legacy", projected.iterations == legacy[i].iterations);
+        CHECK("projected final_z_x match legacy", projected.final_z_x == legacy[i].final_z_x);
+        CHECK("projected final_z_y match legacy", projected.final_z_y == legacy[i].final_z_y);
+        CHECK("projected residual match legacy", projected.residual == legacy[i].residual);
+        CHECK("projected converged match legacy", projected.converged == legacy[i].converged);
+        CHECK("projected escaped match legacy", projected.escaped == legacy[i].escaped);
+        CHECK("projected termination kind match legacy", projected.termination_kind == legacy[i].termination_kind);
+        CHECK("projected far-field flag match legacy", projected.has_far_field_delta == legacy[i].has_far_field_delta);
+        CHECK("projected far-field delta match legacy", projected.far_field_delta == legacy[i].far_field_delta);
+    }
+}
+
+// Test 5: Cross-validate against RenderFractalCUDA.
 // Render a 1x1 pixel centered at (0.5, 0.5) using both paths.
 // The iteration count should match exactly.
 void TestCrossValidation() {
@@ -255,6 +302,7 @@ int main() {
     TestSinglePointNewton();
     TestBatchSample();
     TestAllFractalTypes();
+    TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();
 

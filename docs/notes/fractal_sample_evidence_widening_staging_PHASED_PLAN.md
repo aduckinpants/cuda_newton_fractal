@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - the repo now carries a closed docs-only staging slice for the bounded engine lane that widens the fractal sample evidence contract without pretending to genericize the whole runtime. This slice did not implement `FractalSampleEvidence` on its own head; it translated the external prep packet into checked-in repo authority, wrote the reusable launch-anchor surface, and staged the bounded implementation order so later sessions could start from the repo instead of chat or external notes alone. Slice A later landed on this branch, so this staging doc is now historical kickoff doctrine plus slice-order authority rather than the current implementation status surface.
+Complete - the repo now carries a closed docs-only staging slice for the bounded engine lane that widens the fractal sample evidence contract without pretending to genericize the whole runtime. This slice did not implement `FractalSampleEvidence` on its own head; it translated the external prep packet into checked-in repo authority, wrote the reusable launch-anchor surface, and staged the bounded implementation order so later sessions could start from the repo instead of chat or external notes alone. Slice A and slice B later landed on this branch, so this staging doc is now historical kickoff doctrine plus slice-order authority rather than the current implementation status surface. The live repo now carries `FractalSampleEvidence`, `BuildLegacySampleResult(...)`, and `SampleFractalEvidencePoints(...)`, while the first widened consumer remains deferred.
 
 ## Phase Checklist
 

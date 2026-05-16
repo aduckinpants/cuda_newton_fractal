@@ -89,6 +89,55 @@ void TestRuntimeValidationBeforeCudaWork() {
     Check("invalid runtime state returns validation error", error && std::strcmp(error, "max_iter must be > 0") == 0);
 }
 
+void TestWidenedZeroPointNoop() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(&view, &params, &render);
+    params.max_iter = 0;
+
+    const char* error = "stale";
+    const bool ok = SampleFractalEvidencePoints(nullptr, 0, view, params, render, nullptr, &error);
+    Check("widened zero points succeed without coords or output", ok);
+    Check("widened zero points clear stale error", error == nullptr);
+}
+
+void TestWidenedNullInputGuards() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(&view, &params, &render);
+
+    Double2 coord{0.0, 0.0};
+    FractalSampleEvidence evidence{};
+    const char* error = nullptr;
+
+    bool ok = SampleFractalEvidencePoints(nullptr, 1, view, params, render, &evidence, &error);
+    Check("widened null coords fail", !ok);
+    Check("widened null coords report owner error", error && std::strcmp(error, "coords is null") == 0);
+
+    error = nullptr;
+    ok = SampleFractalEvidencePoints(&coord, 1, view, params, render, nullptr, &error);
+    Check("widened null output fails", !ok);
+    Check("widened null output reports owner error", error && std::strcmp(error, "outEvidence is null") == 0);
+}
+
+void TestWidenedRuntimeValidationBeforeCudaWork() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(&view, &params, &render);
+    params.max_iter = 0;
+
+    Double2 coord{0.0, 0.0};
+    FractalSampleEvidence evidence{};
+    const char* error = nullptr;
+    const bool ok = SampleFractalEvidencePoints(&coord, 1, view, params, render, &evidence, &error);
+
+    Check("widened invalid runtime state fails before sampling", !ok);
+    Check("widened invalid runtime state returns validation error", error && std::strcmp(error, "max_iter must be > 0") == 0);
+}
+
 void TestCleanupIsIdempotent() {
     CleanupFractalSampleCore();
     CleanupFractalSampleCore();
@@ -101,6 +150,9 @@ int main() {
     TestZeroPointNoop();
     TestNullInputGuards();
     TestRuntimeValidationBeforeCudaWork();
+    TestWidenedZeroPointNoop();
+    TestWidenedNullInputGuards();
+    TestWidenedRuntimeValidationBeforeCudaWork();
     TestCleanupIsIdempotent();
 
     std::cout << "test_fractal_sample_core: passed=" << g_passed << " failed=" << g_failed << "\n";

@@ -103,6 +103,19 @@ void TestLegacyProjectionHelperRoundTrip() {
     Check(projected.far_field_delta == 2.5f, "TestLegacyProjectionHelperRoundTrip_FarFieldDelta");
 }
 
+void TestSampleFractalEvidencePointsSurfaceExists() {
+    using EvidenceFn = bool (*)(
+        const Double2*,
+        int,
+        const ViewState&,
+        const KernelParams&,
+        const RenderSettings&,
+        FractalSampleEvidence*,
+        const char**);
+    Check(std::is_same_v<decltype(&SampleFractalEvidencePoints), EvidenceFn>,
+        "TestSampleFractalEvidencePointsSurfaceExists_Signature");
+}
+
 void TestSampleFractalPointsStaysLegacyProjectionSurface() {
     using SampleFn = bool (*)(
         const Double2*,
@@ -128,6 +141,7 @@ int main() {
     TestFieldRoundTrip();
     TestWidenedEvidenceDefaults();
     TestLegacyProjectionHelperRoundTrip();
+    TestSampleFractalEvidencePointsSurfaceExists();
     TestSampleFractalPointsStaysLegacyProjectionSurface();
     TestCompactLayoutExpectation();
 

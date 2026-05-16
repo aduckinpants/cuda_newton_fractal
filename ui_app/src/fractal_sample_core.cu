@@ -1,5 +1,5 @@
 // fractal_sample_core.cu — Standalone CUDA compilation unit for the sample path.
-// Contains: fractal_sample_device(), fractal_sample_kernel<<<>>>(), SampleFractalPoints().
+// Contains: fractal_sample_device(), fractal_sample_kernel<<<>>>(), SampleFractalEvidencePoints(), SampleFractalPoints().
 // Linkable independently from fractal_renderer.cu (no DX11 / ImGui / framebuffer deps).
 
 #include "fractal_types.h"
@@ -27,11 +27,21 @@ __device__ FractalSampleResult fractal_sample_device(
 #include "fractal_sample_device.inl"
 }
 
+__device__ FractalSampleEvidence fractal_sample_evidence_device(
+    Cx coord, Cxd coordD, ViewState view, KernelParams params,
+    RenderSettings render, const double2* refOrbit, int refLen, double2 refC0)
+{
+    FractalSampleEvidence evidence{};
+    evidence.sample_coord = {coordD.x, coordD.y};
+    evidence.legacy_result = fractal_sample_device(coord, coordD, view, params, render, refOrbit, refLen, refC0);
+    return evidence;
+}
+
 // K2: Thin launch wrapper — samples arbitrary complex-plane coordinates.
 __global__ void fractal_sample_kernel(
     const double2* coords,
     int numPoints,
-    FractalSampleResult* results,
+    FractalSampleEvidence* results,
     ViewState view,
     KernelParams params,
     RenderSettings render,
@@ -46,7 +56,7 @@ __global__ void fractal_sample_kernel(
     Cx coord{(float)c.x, (float)c.y};
     Cxd coordD{c.x, c.y};
 
-    results[idx] = fractal_sample_device(coord, coordD, view, params, render, refOrbit, refLen, refC0);
+    results[idx] = fractal_sample_evidence_device(coord, coordD, view, params, render, refOrbit, refLen, refC0);
 }
 
 // Self-contained reference orbit cache for the sample path.
@@ -84,13 +94,13 @@ bool ensure_sample_ref_orbit(int len, const char** outError) {
 
 } // namespace
 
-bool SampleFractalPoints(
+bool SampleFractalEvidencePoints(
     const Double2* coords,
     int numPoints,
     const ViewState& view,
     const KernelParams& params,
     const RenderSettings& render,
-    FractalSampleResult* outResults,
+    FractalSampleEvidence* outEvidence,
     const char** outError)
 {
     if (outError) *outError = nullptr;
@@ -102,8 +112,8 @@ bool SampleFractalPoints(
         if (outError) *outError = "coords is null";
         return false;
     }
-    if (!outResults) {
-        if (outError) *outError = "outResults is null";
+    if (!outEvidence) {
+        if (outError) *outError = "outEvidence is null";
         return false;
     }
 
@@ -146,9 +156,9 @@ bool SampleFractalPoints(
     // Allocate device buffers for coordinates and results.
     static_assert(sizeof(Double2) == sizeof(double2), "Double2/double2 layout mismatch");
     double2* d_coords = nullptr;
-    FractalSampleResult* d_results = nullptr;
+    FractalSampleEvidence* d_results = nullptr;
     size_t coordBytes = (size_t)numPoints * sizeof(double2);
-    size_t resultBytes = (size_t)numPoints * sizeof(FractalSampleResult);
+    size_t resultBytes = (size_t)numPoints * sizeof(FractalSampleEvidence);
 
     if (cudaMalloc(&d_coords, coordBytes) != cudaSuccess) {
         if (outError) *outError = "cudaMalloc failed for sample coords";
@@ -194,7 +204,7 @@ bool SampleFractalPoints(
     cudaDeviceSynchronize();
 
     // Copy results back.
-    if (cudaMemcpy(outResults, d_results, resultBytes, cudaMemcpyDeviceToHost) != cudaSuccess) {
+    if (cudaMemcpy(outEvidence, d_results, resultBytes, cudaMemcpyDeviceToHost) != cudaSuccess) {
         cudaFree(d_coords);
         cudaFree(d_results);
         if (outError) *outError = "cudaMemcpy failed for sample results";
@@ -203,6 +213,38 @@ bool SampleFractalPoints(
 
     cudaFree(d_coords);
     cudaFree(d_results);
+    return true;
+}
+
+bool SampleFractalPoints(
+    const Double2* coords,
+    int numPoints,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleResult* outResults,
+    const char** outError)
+{
+    if (outError) *outError = nullptr;
+
+    if (numPoints <= 0) return true;
+    if (!coords) {
+        if (outError) *outError = "coords is null";
+        return false;
+    }
+    if (!outResults) {
+        if (outError) *outError = "outResults is null";
+        return false;
+    }
+
+    std::vector<FractalSampleEvidence> evidence(static_cast<size_t>(numPoints));
+    if (!SampleFractalEvidencePoints(coords, numPoints, view, params, render, evidence.data(), outError)) {
+        return false;
+    }
+
+    for (int index = 0; index < numPoints; ++index) {
+        outResults[index] = BuildLegacySampleResult(evidence[static_cast<size_t>(index)]);
+    }
     return true;
 }
 
