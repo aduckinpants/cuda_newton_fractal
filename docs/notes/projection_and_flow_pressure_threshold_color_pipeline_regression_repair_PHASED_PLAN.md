@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 in progress - the bounded Projection-and-Flow programmable pressure-threshold repair is landed and green on the focused native/runtime seams; hostile-audit closeout, validators, checkpoint/receipts, push, and the committed-head stale-plan gate remain.
+Complete - the bounded Projection-and-Flow programmable pressure-threshold repair is committed, receipted, pushed on `feature/fractal-sample-evidence-widening`, and the committed-head stale-plan reread is clean.
 
 ## Phase Checklist
 
 - [x] Phase 1 - replace the closed prior lock, prove the programmable pressure-threshold regression on the current head, and name the exact owner seam that dropped pressure-threshold authority from the public color path.
 - [x] Phase 2 - land one bounded Projection-and-Flow programmable color authority repair without reopening generic color-pipeline work, Explaino work, renderer replacement, or `SampleFractalPoints(...)` / `FractalSampleResult` changes.
 - [x] Phase 3 - prove the repaired state through focused native color/renderer proof, focused runtime publish, and published-runtime Projection-and-Flow threshold witnesses while preserving the shipped legacy sample surface.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, push `feature/fractal-sample-evidence-widening`, clear stale closeout text, restore any temporary preflight scope widening, and leave the repo clean on the committed head.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, push `feature/fractal-sample-evidence-widening`, clear stale closeout text, restore any temporary preflight scope widening, and leave the repo clean on the committed head.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 4 in progress - the bounded Projection-and-Flow programmable pressure-thre
 - [closed] Do not accept "one tiny slice works while other areas break" as a truthful stop-point; the public Projection-and-Flow product surface must stay coherent.
 - [closed] Keep this bounded to Projection-and-Flow programmable color authority rather than widening into generic color-pipeline expansion, Explaino integration, renderer replacement, or a broad engine refactor.
 - [closed] Preserve `FractalSampleResult` and `SampleFractalPoints(...)` as the shipped legacy sampling surfaces.
-- [open] Close only with focused native proof, runtime publish, published-runtime Projection-and-Flow proof, hostile audit, checkpoint commit, machine receipts, push, clean tree, and the committed-head stale-plan gate.
+- [closed] Close only with focused native proof, runtime publish, published-runtime Projection-and-Flow proof, hostile audit, checkpoint commit, machine receipts, push, clean tree, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -33,6 +33,7 @@ Phase 4 in progress - the bounded Projection-and-Flow programmable pressure-thre
 - Focused runtime publish and published-runtime proof are green on the repaired head: `artifacts/projection_flow_threshold_runtime_build_final.log` stages the active runtime, and `artifacts/projection_flow_threshold_runtime_green_final.log` passes `8/8` including the new threshold-differential runtime test.
 - Concrete repaired runtime witness now differs on the same public lane: at `projection_and_flow_target_radius=1.75` and the public smooth-escape tuple, threshold `0.25` hashes to `d68f582d4cdd7f508a1c068eea6e67e4df1d4655bc69033e9ffc7abd5ffa5871` while threshold `2.0` hashes to `8a338ce0cbfe6731697b6fdc551091e1397e0ab146fb71b431b24b669e43ee1d`.
 - The temporary preflight widening on the closed smooth-escape/perf contract has already been removed again; final closeout only needs the new slice surfaces plus the repaired code/test seams.
+- Closeout discipline is complete on the final committed head: the closing checkpoint chain carries fresh validation and contract-proof receipts, the branch is pushed, and this plan no longer leaves stale closeout chores behind.
 
 ## Hostile Audit
 
@@ -76,6 +77,7 @@ Phase 4 in progress - the bounded Projection-and-Flow programmable pressure-thre
   - `docs/notes/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_PHASED_PLAN.md`
   - `docs/contracts/projection_and_flow_smooth_escape_perf_regression_repair.contract.json` only to undo the temporary preflight widening before final closeout
 - Focused acceptance for this slice is the repaired Projection-and-Flow native/runtime seam set above rather than waiting indefinitely on the full `ui_app/build_tests_vsdevcmd.cmd` farm. The broad test build wrapper timed out twice after advancing well beyond the slice-owned seams; the targeted rebuilt executables and published-runtime proof are the truthful acceptance surface on this head.
+- Closeout discipline is complete on the final committed head; no further closeout chores remain in this plan.
 - Expected first REDs:
   1. the programmable `smooth_escape` Projection-and-Flow runtime stays hash-identical across materially different pressure-threshold values on the same radius lane
   2. the focused renderer seam reproduces the same threshold-dead programmable output
