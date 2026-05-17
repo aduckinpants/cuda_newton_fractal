@@ -83,6 +83,7 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         zoom = 2.8f;
         break;
     case FractalType::projection_and_flow:
+    case FractalType::explaino_projection_and_flow:
     case FractalType::counterfactual_pair:
     case FractalType::explaino_counterfactual_pair:
         center = {0.0f, 0.0f};
@@ -266,6 +267,21 @@ static void ApplyProjectionAndFlowPresetDefaults(KernelParams& params) {
     params.phoenix_p_imag = 0.0f;
 }
 
+static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& params);
+
+static void ApplyExplainoProjectionAndFlowPresetDefaults(KernelParams& params) {
+    ApplyExplainoPresetDefaults(FractalType::explaino_projection_and_flow, params);
+    params.max_iter = 96;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.projection_and_flow_target_radius = 1.0f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    params.explaino_warp_strength = 0.25f;
+    params.explaino_damping = 0.75f;
+    params.explaino_root_count = 0;
+    SyncProjectionAndFlowRootFamilyPreset(params);
+    ApplyDefaultColoringSelection(FractalType::explaino_projection_and_flow, params);
+}
+
 static bool IsExplainoPresetFractal(FractalType fractalType) {
     switch (fractalType) {
     case FractalType::explaino_all:
@@ -293,6 +309,7 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
     case FractalType::explaino_counterfactual_pair:
+    case FractalType::explaino_projection_and_flow:
         return true;
     default:
         return false;
@@ -432,6 +449,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         break;
     case FractalType::explaino_counterfactual_pair:
         ApplyExplainoCounterfactualPairPresetDefaults(params);
+        break;
+    case FractalType::explaino_projection_and_flow:
+        ApplyExplainoProjectionAndFlowPresetDefaults(params);
         break;
     case FractalType::multicorn:
         ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);
@@ -635,6 +655,14 @@ static bool IsExplainoComposedVariantType(FractalType fractalType) {
 void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool* ioDirty) {
     if (!IsExplainoFamily(view.fractal_type)) {
         params.explaino_root_count = 0;
+        return;
+    }
+
+    if (!UsesExplainoCustomPolynomialAuthority(view.fractal_type)) {
+        params.explaino_root_count = 0;
+        ClearPolynomialCoefficients(params.poly_coeffs_b);
+        SyncProjectionAndFlowRootFamilyPreset(params);
+        if (ioDirty) *ioDirty = true;
         return;
     }
 

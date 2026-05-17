@@ -214,6 +214,20 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to preserve explaino_counterfactual_pair as an explicit Explaino carrier\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_projection_and_flow") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_projection_and_flow") {
+            std::cerr << "Expected fractal type enum round-trip to preserve explaino_projection_and_flow as an explicit Explaino carrier\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.params.projection_and_flow_root_family", "quartic_unit_roots") ||
+            ctx.GetEnumId("fractal.params.projection_and_flow_root_family") != "quartic_unit_roots" ||
+            params.poly_kind != PolyKind::z4_minus_1 ||
+            !NearlyEqual(params.poly_coeffs[0], -1.0f) ||
+            !NearlyEqual(params.poly_coeffs[3], 0.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Expected explaino_projection_and_flow root family edits to preserve the shipped Projection-and-Flow polynomial preset\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "counterfactual_pair") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "counterfactual_pair") {
             std::cerr << "Expected schema binding to switch back to counterfactual_pair before exercising the standalone root-family owner seam\n";

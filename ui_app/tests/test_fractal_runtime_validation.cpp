@@ -237,6 +237,41 @@ int main() {
         ViewState view{};
         KernelParams params{};
         std::string error;
+        view.fractal_type = FractalType::explaino_projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.5f;
+        params.explaino_seed = 3.0;
+        params.explaino_warp_strength = 0.25f;
+        params.explaino_damping = 0.75f;
+        SetProjectionAndFlowQuarticPreset(params);
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Explaino Projection-and-Flow validation to accept the shared root-family hardening plus Explaino controls, got: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino_projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::custom;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "projection_and_flow root family and poly_kind must agree") {
+            std::cerr << "Expected Explaino Projection-and-Flow validation to reject falling back to the generic Explaino custom polynomial seam\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
         view.fractal_type = FractalType::projection_and_flow;
         params.coloring_mode = ColoringMode::root_basin;
         params.projection_and_flow_target_radius = 0.0f;

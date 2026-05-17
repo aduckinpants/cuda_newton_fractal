@@ -280,7 +280,7 @@ bool SetProjectionAndFlowRootFamily(BindingContext* ctx, const std::string& id) 
         return false;
     }
     ctx->params->projection_and_flow_root_family = nextFamily;
-    if (ctx->view && ctx->view->fractal_type == FractalType::projection_and_flow) {
+    if (ctx->view && IsProjectionAndFlowCarrier(ctx->view->fractal_type)) {
         SyncProjectionAndFlowRootFamilyPresetLocal(*ctx->params);
     }
     return true;

@@ -40,6 +40,7 @@ bool Check(bool condition, const char* file, int line, const char* msg) {
 // here too — or the completeness check at the end catches it.
 struct FractalProbeCase {
     const char* type_id;         // string ID used in overrides
+    const char* expected_runtime_type; // runtime-visible ID after any canonicalization
     bool is_basin;               // true if SupportsBasinColoring
     bool is_escape;              // true if escape-time family
     // Extra overrides needed for valid sampling (e.g. multibrot_power).
@@ -49,56 +50,59 @@ struct FractalProbeCase {
 std::vector<FractalProbeCase> AllProbeCases() {
     return {
         // Basin-coloring (Newton-family) types
-        {"newton", true, false, {}},
-        {"halley", true, false, {}},
-        {"explaino", true, false, {}},
-        {"explaino_all", true, false, {}},
-        {"explaino_y", true, false, {}},
-        {"explaino_fp", true, false, {}},
-        {"explaino_halley", true, false, {}},
-        {"explaino_dual", true, false, {}},
-        {"explaino_mult", true, false, {}},
-        {"explaino_phoenix", true, false, {}},
-        {"explaino_transcendental", true, false, {}},
-        {"explaino_inertial", true, false, {}},
-        {"explaino_rational", true, false, {}},
-        {"explaino_collatz", true, false, {}},
-        {"explaino_joy", true, false, {}},
-        {"explaino_fold", true, false, {}},
-        {"explaino_bell", true, false, {}},
-        {"explaino_ripple", true, false, {}},
-        {"explaino_splice", true, false, {}},
-        {"explaino_vortex", true, false, {}},
-        {"explaino_tension", true, false, {}},
-        {"explaino_balance_void", true, false, {}},
+        {"newton", "newton", true, false, {}},
+        {"halley", "halley", true, false, {}},
+        {"explaino", "explaino", true, false, {}},
+        {"explaino_all", "explaino_all", true, false, {}},
+        {"explaino_y", "explaino_y", true, false, {}},
+        {"explaino_fp", "explaino_fp", true, false, {}},
+        {"explaino_halley", "explaino_halley", true, false, {}},
+        {"explaino_dual", "explaino_dual", true, false, {}},
+        {"explaino_mult", "explaino_mult", true, false, {}},
+        {"explaino_phoenix", "explaino_phoenix", true, false, {}},
+        {"explaino_transcendental", "explaino_transcendental", true, false, {}},
+        {"explaino_inertial", "explaino_inertial", true, false, {}},
+        {"explaino_rational", "explaino_rational", true, false, {}},
+        {"explaino_collatz", "explaino_collatz", true, false, {}},
+        {"explaino_joy", "explaino_joy", true, false, {}},
+        {"explaino_fold", "explaino_fold", true, false, {}},
+        {"explaino_bell", "explaino_bell", true, false, {}},
+        {"explaino_projection_and_flow", "explaino_projection_and_flow", true, false, {}},
+        // These legacy Explaino projection selectors intentionally publish back
+        // through the generic explaino_all public runtime identity.
+        {"explaino_ripple", "explaino_all", true, false, {}},
+        {"explaino_splice", "explaino_all", true, false, {}},
+        {"explaino_vortex", "explaino_all", true, false, {}},
+        {"explaino_tension", "explaino_all", true, false, {}},
+        {"explaino_balance_void", "explaino_all", true, false, {}},
 
         // Escape-time types
-        {"mandelbrot", false, true, {}},
-        {"julia", false, true, {}},
-        {"burning_ship", false, true, {}},
-        {"multibrot", false, true, {
+        {"mandelbrot", "mandelbrot", false, true, {}},
+        {"julia", "julia", false, true, {}},
+        {"burning_ship", "burning_ship", false, true, {}},
+        {"multibrot", "multibrot", false, true, {
             {"fractal.params.multibrot_power_float", FractalProbeScalar::Number(3.0)},
         }},
-        {"phoenix", false, true, {}},
-        {"multicorn", false, true, {
+        {"phoenix", "phoenix", false, true, {}},
+        {"multicorn", "multicorn", false, true, {
             {"fractal.params.multibrot_power", FractalProbeScalar::Number(3.0)},
         }},
-        {"collatz", false, true, {}},
-        {"mcmullen", false, true, {}},
-        {"spider", false, true, {}},
-        {"celtic_mandelbrot", false, true, {}},
-        {"perpendicular_burning_ship", false, true, {}},
+        {"collatz", "collatz", false, true, {}},
+        {"mcmullen", "mcmullen", false, true, {}},
+        {"spider", "spider", false, true, {}},
+        {"celtic_mandelbrot", "celtic_mandelbrot", false, true, {}},
+        {"perpendicular_burning_ship", "perpendicular_burning_ship", false, true, {}},
 
         // Explaino escape-time hybrids
-        {"nova", false, true, {}},
-        {"explaino_nova", false, true, {}},
-        {"explaino_julia", false, true, {}},
-        {"lambda", false, true, {}},
-        {"explaino_lambda", false, true, {
+        {"nova", "nova", false, true, {}},
+        {"explaino_nova", "explaino_nova", false, true, {}},
+        {"explaino_julia", "explaino_julia", false, true, {}},
+        {"lambda", "lambda", false, true, {}},
+        {"explaino_lambda", "explaino_lambda", false, true, {
             {"fractal.params.lambda_real", FractalProbeScalar::Number(2.9685855)},
             {"fractal.params.lambda_imag", FractalProbeScalar::Number(-0.27446103)},
         }},
-        {"explaino_rational_escape", false, true, {}},
+        {"explaino_rational_escape", "explaino_rational_escape", false, true, {}},
     };
 }
 
@@ -123,8 +127,8 @@ bool TestPointSetSmokeForType(const FractalProbeCase& c) {
         (std::string("Probe should succeed for ") + c.type_id).c_str());
     ASSERT(response.ok,
         (std::string("Response ok for ") + c.type_id).c_str());
-    ASSERT(response.runtime.fractal_type == c.type_id,
-        (std::string("Runtime fractal_type should match for ") + c.type_id).c_str());
+    ASSERT(response.runtime.fractal_type == c.expected_runtime_type,
+        (std::string("Runtime fractal_type should match expected public id for ") + c.type_id).c_str());
     ASSERT(response.summary.sample_count == 2,
         (std::string("Should get 2 samples for ") + c.type_id).c_str());
     ASSERT(response.samples.size() == 2,

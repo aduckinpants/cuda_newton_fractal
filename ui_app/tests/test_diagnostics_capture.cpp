@@ -235,6 +235,55 @@ void TestBundlePersistsProjectionAndFlowHardeningControls() {
         "state persists Projection-and-Flow pressure threshold");
 }
 
+void TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::explaino_projection_and_flow;
+    view.explaino_phase = 1.0f;
+    view.explaino_seed_drift = 0.5f;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.poly_kind = PolyKind::z4_minus_1;
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[4] = 1.0f;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 0.5f;
+    params.explaino_seed = 3.0;
+    params.explaino_warp_strength = 0.25f;
+    params.explaino_damping = 0.75f;
+
+    const fs::path outputDir = FreshTempRoot("explaino_projection_and_flow") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff113355u, 0xff224466u, 0xff335577u, 0xff446688u};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for explaino_projection_and_flow state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"explaino_projection_and_flow\"") != std::string::npos,
+        "state persists explaino_projection_and_flow fractal type id");
+    Check(json.find("\"projection_and_flow_root_family\": \"quartic_unit_roots\"") != std::string::npos,
+        "state persists shared Projection-and-Flow root family for explaino_projection_and_flow");
+    Check(json.find("\"projection_and_flow_target_radius\": 1.75") != std::string::npos &&
+            json.find("\"projection_and_flow_pressure_threshold\": 0.5") != std::string::npos,
+        "state persists shared Projection-and-Flow controls for explaino_projection_and_flow");
+    Check(json.find("\"explaino_seed\": 3") != std::string::npos &&
+            json.find("\"explaino_warp_strength\": 0.25") != std::string::npos &&
+            json.find("\"explaino_damping\": 0.75") != std::string::npos,
+        "state persists Explaino-owned controls for explaino_projection_and_flow");
+}
+
 void TestRejectsMismatchedPixelCount() {
     ViewState view{};
     KernelParams params{};
@@ -312,6 +361,7 @@ int main() {
     TestBundlePersistsCounterfactualPairFractalTypeId();
     TestBundlePersistsExplainoCounterfactualPairFractalTypeId();
     TestBundlePersistsProjectionAndFlowHardeningControls();
+    TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
 

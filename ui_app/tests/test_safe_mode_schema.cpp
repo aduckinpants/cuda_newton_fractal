@@ -85,9 +85,10 @@ static bool IsProjectionAndFlowVisibleControl(const UISchemaControl* control, co
         control->binding.kind == "param" &&
         control->binding.path == bindingPath &&
         control->has_visible_if &&
-        control->visible_if.op == "eq" &&
+        control->visible_if.op == "in" &&
         control->visible_if.path == "fractal.view.fractal_type" &&
-        control->visible_if.value == "projection_and_flow";
+        ContainsCsvToken(control->visible_if.value, "projection_and_flow") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_projection_and_flow");
 }
 
 static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
@@ -127,6 +128,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
     bool foundProjectionAndFlowRootFindingGroup = false;
     bool foundFractalTypeEscapeTimeGroup = false;
     bool foundFractalTypeExplainoGroup = false;
+    bool foundExplainoProjectionAndFlowGroup = false;
     bool foundFractalTypeDefaultExplainoAll = false;
     bool foundContinuousRenderDefaultFalse = false;
 
@@ -143,6 +145,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
                     if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                     if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
                     if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
+                    if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundExplainoProjectionAndFlowGroup = true;
                 }
             }
             if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
@@ -173,6 +176,8 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
         "TestSafeModeSchemaKeepsGroupedDefaults_EscapeTimeGroup");
     Check(foundFractalTypeExplainoGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_ExplainoGroup");
+    Check(foundExplainoProjectionAndFlowGroup,
+        "TestSafeModeSchemaKeepsGroupedDefaults_ExplainoProjectionAndFlowGroup");
     Check(foundFractalTypeDefaultExplainoAll,
         "TestSafeModeSchemaKeepsGroupedDefaults_DefaultExplainoAll");
     Check(foundContinuousRenderDefaultFalse,

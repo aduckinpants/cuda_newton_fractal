@@ -53,6 +53,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"explaino_tension", "Explaino Tension", "Explaino"},
     {"explaino_balance_void", "Explaino BalanceVoid", "Explaino"},
     {"explaino_counterfactual_pair", "Explaino Counterfactual Pair", "Explaino"},
+    {"explaino_projection_and_flow", "Explaino Projection and Flow", "Explaino"},
 };
 
 UISchemaBinding MakeBinding(const char* kind, const char* path) {
@@ -290,7 +291,7 @@ UISchemaControl BuildProjectionAndFlowRootFamilyControl() {
     };
     control.help = "Choose whether the free Newton step chases the cubic or quartic unit-root family before every radial projection.";
     control.has_help = true;
-    SetVisibleForFractalType(&control, "projection_and_flow");
+    SetVisibleForFractalTypes(&control, "projection_and_flow,explaino_projection_and_flow");
     return control;
 }
 
@@ -308,7 +309,7 @@ UISchemaControl BuildProjectionAndFlowTargetRadiusControl() {
         json_min::Value{1.0});
     control.help = "After each free Newton step, project radially onto the circle |z| = radius. This is the explicit admissible manifold for Projection-and-Flow.";
     control.has_help = true;
-    SetVisibleForFractalType(&control, "projection_and_flow");
+    SetVisibleForFractalTypes(&control, "projection_and_flow,explaino_projection_and_flow");
     return control;
 }
 
@@ -327,7 +328,7 @@ UISchemaControl BuildProjectionAndFlowPressureThresholdControl() {
     control.help =
         "Classes 0..4N-1 = root sector x transient-pressure band, using the projected orbit's peak radial correction minus its settled correction. Band 0 stays below 25% of the threshold, Band 1 stays in [25%, 50%), Band 2 stays in [50%, 100%), Band 3 saturates at or above the threshold. Class 4N = unstable.";
     control.has_help = true;
-    SetVisibleForFractalType(&control, "projection_and_flow");
+    SetVisibleForFractalTypes(&control, "projection_and_flow,explaino_projection_and_flow");
     return control;
 }
 

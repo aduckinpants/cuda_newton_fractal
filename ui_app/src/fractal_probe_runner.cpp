@@ -1,5 +1,6 @@
 #include "fractal_probe_runner.h"
 
+#include "basin_coloring.h"
 #include "enum_id_utils.h"
 #include "explaino_seed.h"
 #include "explaino_seed_curve.h"
@@ -507,6 +508,129 @@ bool SamplePoint(const ProbeState& state,
             if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
         }
         SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, true);
+        return true;
+    }
+
+    if (IsProjectionAndFlowCarrier(ft)) {
+        const bool explainoProjectionAndFlow = ft == FractalType::explaino_projection_and_flow;
+        const int projectionRootCount =
+            params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+        const int projectionPressureBandCount = 4;
+        const int projectionClassCount = projectionRootCount * projectionPressureBandCount + 1;
+        const float projectionTargetRadius =
+            std::isfinite(params.projection_and_flow_target_radius)
+                ? std::max(1.0e-12f, params.projection_and_flow_target_radius)
+                : 1.0f;
+        const float projectionPressureThreshold =
+            std::isfinite(params.projection_and_flow_pressure_threshold)
+                ? std::max(0.0f, params.projection_and_flow_pressure_threshold)
+                : 0.0f;
+        const float explainoDamping =
+            std::isfinite(params.explaino_damping) ? std::max(0.0f, params.explaino_damping) : 1.0f;
+        float peakProjectionPressure = 0.0f;
+        float lastProjectionPressure = 0.0f;
+        bool sawProjectionPressure = false;
+        Cx lastProjected{0.0f, 0.0f};
+        bool hasProjectedPoint = false;
+        int rootIndex = -1;
+
+        z = explainoProjectionAndFlow
+            ? ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength)
+            : coord;
+        if (!IsFiniteCx(z)) {
+            status = FractalProbeSampleStatus::nonfinite;
+            SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, false);
+            return true;
+        }
+
+        for (; it < maxIter; ++it) {
+            Cx P, dP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, z, &P, &dP);
+            pAbs = CxAbs(P);
+            if (pAbs < eps) {
+                rootIndex = NearestRootIndexUnitRoots(z, projectionRootCount);
+                break;
+            }
+            if (CxAbs2(dP) < 1.0e-20f) {
+                break;
+            }
+
+            const Cx step = CxDiv(P, dP);
+            float damp = 1.0f;
+            if (explainoProjectionAndFlow) {
+                damp = explainoDamping / (1.0f + std::sqrt(std::max(0.0f, CxAbs2(step))));
+            }
+            const Cx freeZ = CxSub(z, CxScale(step, damp));
+            if (!IsFiniteCx(freeZ)) {
+                z = {0.0f, 0.0f};
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+
+            Cx freeP, freeDP;
+            PolyEvalRealCoeffsDeg4(params.poly_coeffs, freeZ, &freeP, &freeDP);
+            const float freeResidual = CxAbs(freeP);
+            if (freeResidual < eps) {
+                rootIndex = NearestRootIndexUnitRoots(freeZ, projectionRootCount);
+                z = freeZ;
+                break;
+            }
+
+            const float freeMag2 = CxAbs2(freeZ);
+            if (freeMag2 < 1.0e-20f) {
+                z = {0.0f, 0.0f};
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+
+            const float freeMag = std::sqrt(freeMag2);
+            const float projectionScale = projectionTargetRadius / freeMag;
+            const Cx projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
+            const float projectionPressure = std::fabs(freeMag - projectionTargetRadius);
+            peakProjectionPressure = std::max(peakProjectionPressure, projectionPressure);
+            lastProjectionPressure = projectionPressure;
+            sawProjectionPressure = true;
+            lastProjected = projected;
+            hasProjectedPoint = true;
+            z = projected;
+        }
+
+        if (status == FractalProbeSampleStatus::nonfinite) {
+            SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, false);
+            return true;
+        }
+
+        if (rootIndex < 0 && hasProjectedPoint) {
+            rootIndex = NearestRootIndexUnitRoots(lastProjected, projectionRootCount);
+        }
+
+        const float transientProjectionPressureExcess =
+            sawProjectionPressure ? std::max(0.0f, peakProjectionPressure - lastProjectionPressure) : 0.0f;
+        int projectionClass = projectionClassCount - 1;
+        if (rootIndex >= 0 && rootIndex < projectionRootCount) {
+            int pressureBand = 0;
+            if (projectionPressureThreshold <= 0.0f) {
+                pressureBand = transientProjectionPressureExcess > 0.0f ? (projectionPressureBandCount - 1) : 0;
+            } else {
+                const float normalizedTransientPressure =
+                    transientProjectionPressureExcess / projectionPressureThreshold;
+                if (normalizedTransientPressure >= 1.0f) {
+                    pressureBand = 3;
+                } else if (normalizedTransientPressure >= 0.5f) {
+                    pressureBand = 2;
+                } else if (normalizedTransientPressure >= 0.25f) {
+                    pressureBand = 1;
+                }
+            }
+            projectionClass = rootIndex * projectionPressureBandCount + pressureBand;
+        }
+
+        const int projectionClassRoot =
+            (projectionClass - ((projectionClassCount + 1) / 2) + projectionClassCount) % projectionClassCount;
+        z = UnitRoot(projectionClassRoot, projectionClassCount);
+        pAbs = transientProjectionPressureExcess;
+        status = FractalProbeSampleStatus::bounded;
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, true, params, false);
         return true;
     }
 

@@ -38,7 +38,7 @@ __device__ __forceinline__ int ResolveBasinRenderRootCount(FractalType ft, const
         if (outUseCustomRoots) *outUseCustomRoots = false;
         return 4;
     }
-    if (ft == FractalType::projection_and_flow) {
+    if (IsProjectionAndFlowCarrier(ft)) {
         if (outUseCustomRoots) *outUseCustomRoots = false;
         const int projectionRootCount =
             params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
@@ -117,7 +117,7 @@ __global__ void kernel_render(
     FractalType ft = view.fractal_type;
     const bool hasExplicitSyntheticClass =
         ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair ||
-        ft == FractalType::projection_and_flow;
+        IsProjectionAndFlowCarrier(ft);
     int maxIter = max(1, params.max_iter);
 
 
@@ -197,7 +197,7 @@ __global__ void kernel_render(
                 }
             }
         } else {
-            const bool programmableBasinColorable = converged || ft == FractalType::projection_and_flow;
+            const bool programmableBasinColorable = converged || IsProjectionAndFlowCarrier(ft);
             color = MakeProgrammableBasinColor<uchar4>(
                 ft,
                 programmableBasinColorable,

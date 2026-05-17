@@ -65,7 +65,8 @@
             }
             converged = (pAbs < eps);
         }
-    } else if (ft == FractalType::projection_and_flow) {
+    } else if (IsProjectionAndFlowCarrier(ft)) {
+        const bool explainoProjectionAndFlow = ft == FractalType::explaino_projection_and_flow;
         const int projectionRootCount =
             params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
         const int projectionPressureBandCount = 4;
@@ -91,9 +92,17 @@
         bool hasProjectedPoint = false;
         int rootIndex = -1;
         terminationKind = TerminationKind::max_iterations;
+        const float explainoPhase = view.explaino_phase;
+        const float explainoWarpStrength = params.explaino_warp_strength;
+        const float explainoDamping = isfinite(params.explaino_damping) ? fmaxf(0.0f, params.explaino_damping) : 1.0f;
+        const double explainoSeed = explainoProjectionAndFlow
+            ? LogisticAreaUToSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
+            : 0.0;
 
         if (useFP64) {
-            Cxd zd = coordD;
+            Cxd zd = explainoProjectionAndFlow
+                ? explaino_warp_start_d(coordD, explainoSeed, explainoPhase, explainoWarpStrength)
+                : coordD;
             if (!isfinite(zd.x) || !isfinite(zd.y)) {
                 zd = {0.0, 0.0};
                 terminationKind = TerminationKind::nonfinite;
@@ -112,7 +121,13 @@
                     if (dAbs2 < 1.0e-30) {
                         break;
                     }
-                    const Cxd freeZ = cxd_sub(zd, cxd_div(P, dP));
+                    const Cxd step = cxd_div(P, dP);
+                    double damp = 1.0;
+                    if (explainoProjectionAndFlow) {
+                        damp = static_cast<double>(explainoDamping) /
+                            (1.0 + sqrt(fmax(0.0, cxd_abs2(step))));
+                    }
+                    const Cxd freeZ = cxd_sub(zd, cxd_scale(step, damp));
                     if (!isfinite(freeZ.x) || !isfinite(freeZ.y)) {
                         zd = {0.0, 0.0};
                         terminationKind = TerminationKind::nonfinite;
@@ -147,7 +162,9 @@
             }
             z = {(float)zd.x, (float)zd.y};
         } else {
-            z = coord;
+            z = explainoProjectionAndFlow
+                ? explaino_warp_start(coord, explainoSeed, explainoPhase, explainoWarpStrength)
+                : coord;
             if (!isfinite(z.x) || !isfinite(z.y)) {
                 z = {0.0f, 0.0f};
                 terminationKind = TerminationKind::nonfinite;
@@ -166,7 +183,12 @@
                     if (dAbs2 < 1.0e-20f) {
                         break;
                     }
-                    const Cx freeZ = cx_sub(z, cx_div(P, dP));
+                    const Cx step = cx_div(P, dP);
+                    float damp = 1.0f;
+                    if (explainoProjectionAndFlow) {
+                        damp = explainoDamping / (1.0f + sqrtf(fmaxf(0.0f, cx_abs2(step))));
+                    }
+                    const Cx freeZ = cx_sub(z, cx_scale(step, damp));
                     if (!isfinite(freeZ.x) || !isfinite(freeZ.y)) {
                         z = {0.0f, 0.0f};
                         terminationKind = TerminationKind::nonfinite;

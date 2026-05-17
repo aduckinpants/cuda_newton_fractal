@@ -114,6 +114,27 @@ bool SameFractalSampleResult(const FractalSampleResult& lhs, const FractalSample
         std::fabs(lhs.far_field_delta - rhs.far_field_delta) < 1.0e-6f;
 }
 
+void SyncProjectionAndFlowRootFamilyPresetLocal(KernelParams& params) {
+    switch (params.projection_and_flow_root_family) {
+    case ProjectionAndFlowRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 0.0f;
+        break;
+    case ProjectionAndFlowRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 0.0f;
+        params.poly_coeffs[4] = 1.0f;
+        break;
+    }
+}
+
 // Build default state for a fractal type.
 void MakeDefaults(FractalType ft, ViewState& view, KernelParams& params, RenderSettings& render) {
     view = {};
@@ -698,6 +719,77 @@ void TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls() {
         sawExplainoControlDifference);
 }
 
+void TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls() {
+    ViewState standaloneView{};
+    KernelParams standaloneParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::projection_and_flow, standaloneView, standaloneParams, render);
+    standaloneParams.max_iter = 96;
+    standaloneParams.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    standaloneParams.projection_and_flow_target_radius = 1.75f;
+    standaloneParams.projection_and_flow_pressure_threshold = 0.5f;
+    SyncProjectionAndFlowRootFamilyPresetLocal(standaloneParams);
+
+    ViewState explainoView{};
+    KernelParams explainoParams{};
+    MakeDefaults(FractalType::explaino_projection_and_flow, explainoView, explainoParams, render);
+    explainoParams.max_iter = 96;
+    explainoParams.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    explainoParams.projection_and_flow_target_radius = 1.75f;
+    explainoParams.projection_and_flow_pressure_threshold = 0.5f;
+    SyncProjectionAndFlowRootFamilyPresetLocal(explainoParams);
+
+    ViewState activeExplainoView = explainoView;
+    KernelParams activeExplainoParams = explainoParams;
+    activeExplainoView.explaino_phase = 1.0f;
+    activeExplainoParams.explaino_warp_strength = 0.4f;
+
+    FractalSampleResult standaloneResults[kProjectionAndFlowGridN]{};
+    FractalSampleResult explainoResults[kProjectionAndFlowGridN]{};
+    FractalSampleResult activeExplainoResults[kProjectionAndFlowGridN]{};
+    const char* error = nullptr;
+
+    CHECK("standalone projection_and_flow grid ok",
+        SampleProjectionAndFlowGrid(standaloneView, standaloneParams, render, standaloneResults, &error));
+    CHECK("explaino projection_and_flow grid ok",
+        SampleProjectionAndFlowGrid(explainoView, explainoParams, render, explainoResults, &error));
+    CHECK("active explaino projection_and_flow grid ok",
+        SampleProjectionAndFlowGrid(activeExplainoView, activeExplainoParams, render, activeExplainoResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    constexpr int kProjectionAndFlowRootCount = 4;
+    constexpr int kProjectionAndFlowPressureBandCount = 4;
+    constexpr int kProjectionAndFlowClassCount = kProjectionAndFlowRootCount * kProjectionAndFlowPressureBandCount + 1;
+    bool sawStandaloneDifference = false;
+    bool sawExplainoControlDifference = false;
+    for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
+        CHECK("explaino projection_and_flow final_z finite", std::isfinite(explainoResults[i].final_z_x) && std::isfinite(explainoResults[i].final_z_y));
+        CHECK("explaino projection_and_flow residual finite", std::isfinite(explainoResults[i].residual));
+        CHECK("explaino projection_and_flow never escapes", !explainoResults[i].escaped);
+        const int classIndex = DecodeProjectionAndFlowClass(explainoResults[i], kProjectionAndFlowClassCount);
+        CHECK("explaino projection_and_flow class index in range", classIndex >= 0 && classIndex < kProjectionAndFlowClassCount);
+        const Double2 expectedRoot =
+            UnitRootCoord(CanonicalSyntheticUnitRootIndex(classIndex, kProjectionAndFlowClassCount),
+                kProjectionAndFlowClassCount);
+        const double dx = static_cast<double>(explainoResults[i].final_z_x) - expectedRoot.x;
+        const double dy = static_cast<double>(explainoResults[i].final_z_y) - expectedRoot.y;
+        CHECK("explaino projection_and_flow lands on synthetic class root", (dx * dx + dy * dy) < 1.0e-6);
+        if (!SameFractalSampleResult(standaloneResults[i], explainoResults[i])) {
+            sawStandaloneDifference = true;
+        }
+        if (!SameFractalSampleResult(explainoResults[i], activeExplainoResults[i])) {
+            sawExplainoControlDifference = true;
+        }
+    }
+
+    CHECK("explaino projection_and_flow stays distinct from standalone projection_and_flow",
+        sawStandaloneDifference);
+    CHECK("explaino projection_and_flow reads Explaino-owned controls",
+        sawExplainoControlDifference);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -822,6 +914,7 @@ int main() {
     TestCounterfactualPairRootFamilyChangesRuntimeLane();
     TestCounterfactualPairReconvergenceRatioControlsOnlyTheSameBasinSplit();
     TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls();
+    TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

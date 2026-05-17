@@ -599,6 +599,135 @@ def test_explaino_counterfactual_pair_capture_round_trips_shared_and_explaino_co
     assert mutated_capture["frame_hash"] != baseline_capture["frame_hash"]
 
 
+def test_explaino_projection_and_flow_loaded_state_has_explicit_runtime_identity(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "projection_and_flow",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    explaino_projection_flow_state = json.loads(json.dumps(baseline_capture["state"]))
+    explaino_projection_flow_state["fractal_type"] = "explaino_projection_and_flow"
+    explaino_projection_flow_state["view"]["explaino_phase"] = 1.0
+    explaino_projection_flow_state["params"].update(
+        {
+            "projection_and_flow_root_family": "quartic_unit_roots",
+            "projection_and_flow_target_radius": 1.75,
+            "projection_and_flow_pressure_threshold": 0.5,
+            "explaino_seed": 3.5,
+            "explaino_warp_strength": 0.25,
+            "explaino_damping": 0.75,
+        }
+    )
+
+    explaino_projection_flow_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_projection_and_flow", explaino_projection_flow_state)),
+        "--capture-diagnostic",
+    )
+
+    standalone_state = json.loads(json.dumps(explaino_projection_flow_state))
+    standalone_state["fractal_type"] = "projection_and_flow"
+    standalone_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "standalone_projection_and_flow", standalone_state)),
+        "--capture-diagnostic",
+    )
+
+    explaino_all_state = json.loads(json.dumps(explaino_projection_flow_state))
+    explaino_all_state["fractal_type"] = "explaino_all"
+    explaino_all_result = subprocess.run(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(_write_state_bundle(tmp_path / "explaino_all_projection_flow", explaino_all_state)),
+            "--capture-diagnostic",
+        ],
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert explaino_all_result.returncode != 0
+
+    state = explaino_projection_flow_capture["state"]
+    params = state["params"]
+    view = state["view"]
+    assert state["fractal_type"] == "explaino_projection_and_flow"
+    assert params["projection_and_flow_root_family"] == "quartic_unit_roots"
+    assert params["projection_and_flow_target_radius"] == pytest.approx(1.75)
+    assert params["projection_and_flow_pressure_threshold"] == pytest.approx(0.5)
+    assert params["explaino_seed"] == pytest.approx(3.0)
+    assert params["explaino_warp_strength"] == pytest.approx(0.25)
+    assert params["explaino_damping"] == pytest.approx(0.75)
+    assert view["explaino_phase"] == pytest.approx(1.0)
+    assert view["explaino_seed_drift"] == pytest.approx(0.5)
+    assert explaino_projection_flow_capture["frame_hash"] != standalone_capture["frame_hash"]
+
+
+def test_explaino_projection_and_flow_capture_round_trips_shared_and_explaino_controls(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "projection_and_flow",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    mutated_state = json.loads(json.dumps(baseline_capture["state"]))
+    mutated_state["fractal_type"] = "explaino_projection_and_flow"
+    mutated_state["view"]["explaino_phase"] = 0.75
+    mutated_state["params"].update(
+        {
+            "projection_and_flow_root_family": "quartic_unit_roots",
+            "projection_and_flow_target_radius": 1.75,
+            "projection_and_flow_pressure_threshold": 0.25,
+            "explaino_seed": 2.25,
+            "explaino_warp_strength": 0.4,
+            "explaino_damping": 0.5,
+        }
+    )
+
+    mutated_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "mutated_explaino_projection_and_flow", mutated_state)),
+        "--capture-diagnostic",
+    )
+
+    captured_state = mutated_capture["state"]
+    captured_params = captured_state["params"]
+    captured_view = captured_state["view"]
+    assert captured_state["fractal_type"] == "explaino_projection_and_flow"
+    assert captured_params["projection_and_flow_root_family"] == "quartic_unit_roots"
+    assert captured_params["projection_and_flow_target_radius"] == pytest.approx(1.75)
+    assert captured_params["projection_and_flow_pressure_threshold"] == pytest.approx(0.25)
+    assert captured_params["explaino_seed"] == pytest.approx(2.0)
+    assert captured_params["explaino_warp_strength"] == pytest.approx(0.4)
+    assert captured_params["explaino_damping"] == pytest.approx(0.5)
+    assert captured_view["explaino_phase"] == pytest.approx(0.75)
+    assert captured_view["explaino_seed_drift"] == pytest.approx(0.25)
+    assert mutated_capture["frame_hash"] != baseline_capture["frame_hash"]
+
+
 def test_explaino_rational_escape_cli_overrides_survive_headless_capture() -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-Rational-Escape runtime regression is Windows-only")

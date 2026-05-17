@@ -243,6 +243,43 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_projection_and_flow;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.5f;
+        params.explaino_warp_strength = 0.0f;
+        params.explaino_damping = 1.0f;
+        params.poly_kind = PolyKind::custom;
+        params.poly_coeffs[0] = 1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 1.0f;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Explaino Projection-and-Flow defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::cubic_unit_roots ||
+            !NearlyEqual(params.projection_and_flow_target_radius, 1.0f) ||
+            !NearlyEqual(params.projection_and_flow_pressure_threshold, 1.0f) ||
+            params.poly_kind != PolyKind::z3_minus_1 ||
+            !NearlyEqual(params.poly_coeffs[0], -1.0f) ||
+            !NearlyEqual(params.poly_coeffs[3], 1.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 0.0f) ||
+            !NearlyEqual(params.explaino_warp_strength, 0.25f) ||
+            !NearlyEqual(params.explaino_damping, 0.75f) ||
+            params.explaino_root_count != 0) {
+            std::cerr << "Explaino Projection-and-Flow defaults should preserve the shared Projection-and-Flow preset authority while adding explicit Explaino warp defaults\n";
+            return 1;
+        }
+    }
+
     // Explaino-Lambda defaults
     {
         ViewState view{};

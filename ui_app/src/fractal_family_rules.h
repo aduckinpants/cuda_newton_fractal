@@ -207,6 +207,7 @@ inline constexpr ExplainoSelectorDescriptor kExplainoSelectorRegistry[] = {
     {FractalType::explaino_tension, "explaino_tension", ExplainoSelectorRole::legacy_projection_single_axis},
     {FractalType::explaino_balance_void, "explaino_balance_void", ExplainoSelectorRole::legacy_projection_multi_axis},
     {FractalType::explaino_counterfactual_pair, "explaino_counterfactual_pair", ExplainoSelectorRole::legacy_family_nonprojection},
+    {FractalType::explaino_projection_and_flow, "explaino_projection_and_flow", ExplainoSelectorRole::legacy_family_nonprojection},
 };
 
 inline constexpr const ExplainoSelectorDescriptor* FindExplainoSelectorDescriptor(FractalType fractalType) {
@@ -666,15 +667,25 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
     case FractalType::explaino_counterfactual_pair:
+    case FractalType::explaino_projection_and_flow:
         return true;
     default:
         return false;
     }
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoCustomPolynomialAuthority(FractalType fractalType) {
+    return IsExplainoFamily(fractalType) && fractalType != FractalType::explaino_projection_and_flow;
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsProjectionAndFlowCarrier(FractalType fractalType) {
+    return fractalType == FractalType::projection_and_flow ||
+        fractalType == FractalType::explaino_projection_and_flow;
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr bool SupportsBasinColoring(FractalType fractalType) {
     return fractalType == FractalType::newton || fractalType == FractalType::counterfactual_pair ||
-        fractalType == FractalType::projection_and_flow ||
+        IsProjectionAndFlowCarrier(fractalType) ||
         fractalType == FractalType::explaino_counterfactual_pair || fractalType == ExplainoCanonicalFractalType() ||
         fractalType == FractalType::explaino ||
         fractalType == FractalType::explaino_y || fractalType == FractalType::explaino_fp ||
@@ -716,7 +727,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsColoringModeAllowedForFractal(Fr
 
 FRACTAL_FAMILY_RULES_HD inline constexpr ColoringMode DefaultColoringModeForFractal(FractalType fractalType) {
     if (fractalType == FractalType::counterfactual_pair || fractalType == FractalType::explaino_counterfactual_pair ||
-        fractalType == FractalType::projection_and_flow) {
+        IsProjectionAndFlowCarrier(fractalType)) {
         return ColoringMode::root_basin;
     }
     return SupportsBasinColoring(fractalType) ? ColoringMode::joy_basins : ColoringMode::smooth_escape;

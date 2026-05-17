@@ -53,7 +53,7 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
     }
-    if (view.fractal_type == FractalType::projection_and_flow) {
+    if (IsProjectionAndFlowCarrier(view.fractal_type)) {
         if (params.poly_kind != ProjectionAndFlowRequiredPolyKind(params.projection_and_flow_root_family)) {
             return FailFractalRuntimeValidation("projection_and_flow root family and poly_kind must agree", outError);
         }

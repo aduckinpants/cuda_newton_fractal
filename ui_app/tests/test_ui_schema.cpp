@@ -326,9 +326,10 @@ bool ValidateProjectionAndFlowControlSurface(const UISchema& schema) {
         rootFamily->help.find("cubic") != std::string::npos &&
         rootFamily->help.find("quartic") != std::string::npos &&
         rootFamily->has_visible_if &&
-        rootFamily->visible_if.op == "eq" &&
+        rootFamily->visible_if.op == "in" &&
         rootFamily->visible_if.path == "fractal.view.fractal_type" &&
-        rootFamily->visible_if.value == "projection_and_flow";
+        VisibleIfIncludesFractalType(*rootFamily, "projection_and_flow") &&
+        VisibleIfIncludesFractalType(*rootFamily, "explaino_projection_and_flow");
     if (!rootFamilyOk) {
         std::cerr << "Main schema Projection-and-Flow root-family control drifted from the bounded owner seam\n";
         return false;
@@ -349,9 +350,10 @@ bool ValidateProjectionAndFlowControlSurface(const UISchema& schema) {
         targetRadius->has_help &&
         targetRadius->help.find("|z| = radius") != std::string::npos &&
         targetRadius->has_visible_if &&
-        targetRadius->visible_if.op == "eq" &&
+        targetRadius->visible_if.op == "in" &&
         targetRadius->visible_if.path == "fractal.view.fractal_type" &&
-        targetRadius->visible_if.value == "projection_and_flow";
+        VisibleIfIncludesFractalType(*targetRadius, "projection_and_flow") &&
+        VisibleIfIncludesFractalType(*targetRadius, "explaino_projection_and_flow");
     if (!targetRadiusOk) {
         std::cerr << "Main schema Projection-and-Flow target-radius control does not make the projection manifold explicit\n";
         return false;
@@ -370,9 +372,10 @@ bool ValidateProjectionAndFlowControlSurface(const UISchema& schema) {
         pressureThreshold->help.find("Band 3") != std::string::npos &&
         pressureThreshold->help.find("unstable") != std::string::npos &&
         pressureThreshold->has_visible_if &&
-        pressureThreshold->visible_if.op == "eq" &&
+        pressureThreshold->visible_if.op == "in" &&
         pressureThreshold->visible_if.path == "fractal.view.fractal_type" &&
-        pressureThreshold->visible_if.value == "projection_and_flow";
+        VisibleIfIncludesFractalType(*pressureThreshold, "projection_and_flow") &&
+        VisibleIfIncludesFractalType(*pressureThreshold, "explaino_projection_and_flow");
     if (!pressureThresholdOk) {
         std::cerr << "Main schema Projection-and-Flow pressure control does not expose the public class split truthfully\n";
         return false;
@@ -586,6 +589,7 @@ int main() {
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
+        bool foundFractalTypeExplainoProjectionAndFlowGroup = false;
         bool foundSafeModeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoAllFirst = false;
@@ -596,8 +600,10 @@ int main() {
         bool foundEpsilonVisibleForExplainoAll = false;
         bool foundEpsilonVisibleForCounterfactualPair = false;
         bool foundEpsilonVisibleForExplainoCounterfactualPair = false;
+        bool foundEpsilonVisibleForExplainoProjectionAndFlow = false;
         bool foundExplainoSeedVisibleForExplainoAll = false;
         bool foundExplainoSeedVisibleForExplainoCounterfactualPair = false;
+        bool foundExplainoSeedVisibleForExplainoProjectionAndFlow = false;
         bool foundRippleAmplitudeVisibleForExplainoAll = false;
         bool foundSpliceOffsetVisibleForExplainoAll = false;
         bool foundVortexStrengthVisibleForExplainoAll = false;
@@ -712,6 +718,7 @@ int main() {
                         }
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
+                        if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundFractalTypeExplainoProjectionAndFlowGroup = true;
                         if (option.id == "explaino_counterfactual_pair" && option.group == "Explaino") foundFractalTypeExplainoCounterfactualPairGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
                             foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
@@ -955,11 +962,17 @@ int main() {
                 if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "explaino_counterfactual_pair")) {
                     foundEpsilonVisibleForExplainoCounterfactualPair = true;
                 }
+                if (ctrl.id == "epsilon" && VisibleIfIncludesFractalType(ctrl, "explaino_projection_and_flow")) {
+                    foundEpsilonVisibleForExplainoProjectionAndFlow = true;
+                }
                 if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundExplainoSeedVisibleForExplainoAll = true;
                 }
                 if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_counterfactual_pair")) {
                     foundExplainoSeedVisibleForExplainoCounterfactualPair = true;
+                }
+                if (ctrl.id == "explaino_seed" && VisibleIfIncludesFractalType(ctrl, "explaino_projection_and_flow")) {
+                    foundExplainoSeedVisibleForExplainoProjectionAndFlow = true;
                 }
                 if (ctrl.id == "ripple_amplitude" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundRippleAmplitudeVisibleForExplainoAll = true;
@@ -1131,7 +1144,8 @@ int main() {
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup || !foundFractalTypeExplainoCounterfactualPairGroup) {
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
+            !foundFractalTypeExplainoProjectionAndFlowGroup || !foundFractalTypeExplainoCounterfactualPairGroup) {
             std::cerr << "Did not find grouped fractal selector categories including the canonical Explaino-all entry in schema\n";
             return 1;
         }
@@ -1148,8 +1162,9 @@ int main() {
             return 1;
         }
         if (!foundEpsilonVisibleForExplainoAll || !foundEpsilonVisibleForCounterfactualPair ||
-            !foundEpsilonVisibleForExplainoCounterfactualPair || !foundExplainoSeedVisibleForExplainoAll ||
-            !foundExplainoSeedVisibleForExplainoCounterfactualPair) {
+            !foundEpsilonVisibleForExplainoCounterfactualPair || !foundEpsilonVisibleForExplainoProjectionAndFlow ||
+            !foundExplainoSeedVisibleForExplainoAll || !foundExplainoSeedVisibleForExplainoCounterfactualPair ||
+            !foundExplainoSeedVisibleForExplainoProjectionAndFlow) {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }
@@ -1211,6 +1226,7 @@ int main() {
         bool foundFractalTypeEscapeTimeGroup = false;
         bool foundFractalTypeExplainoGroup = false;
         bool foundFractalTypeExplainoAllGroup = false;
+        bool foundSafeModeExplainoProjectionAndFlowGroup = false;
         bool foundSafeModeExplainoCounterfactualPairGroup = false;
         bool foundFractalTypeExplainoAllFirst = false;
         bool foundSpiderEscapeTimeGroup = false;
@@ -1339,8 +1355,9 @@ int main() {
             projectionAndFlowRootFamily->help.find("cubic") == std::string::npos ||
             projectionAndFlowRootFamily->help.find("quartic") == std::string::npos ||
             !projectionAndFlowRootFamily->has_visible_if ||
-            projectionAndFlowRootFamily->visible_if.op != "eq" ||
-            projectionAndFlowRootFamily->visible_if.value != "projection_and_flow") {
+            projectionAndFlowRootFamily->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*projectionAndFlowRootFamily, "projection_and_flow") ||
+            !VisibleIfIncludesFractalType(*projectionAndFlowRootFamily, "explaino_projection_and_flow")) {
             std::cerr << "Safe-mode schema Projection-and-Flow root-family control drifted from the bounded owner seam\n";
             return 1;
         }
@@ -1354,8 +1371,9 @@ int main() {
             !projectionAndFlowTargetRadius->has_help ||
             projectionAndFlowTargetRadius->help.find("|z| = radius") == std::string::npos ||
             !projectionAndFlowTargetRadius->has_visible_if ||
-            projectionAndFlowTargetRadius->visible_if.op != "eq" ||
-            projectionAndFlowTargetRadius->visible_if.value != "projection_and_flow") {
+            projectionAndFlowTargetRadius->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*projectionAndFlowTargetRadius, "projection_and_flow") ||
+            !VisibleIfIncludesFractalType(*projectionAndFlowTargetRadius, "explaino_projection_and_flow")) {
             std::cerr << "Safe-mode schema Projection-and-Flow target-radius control did not make the projection manifold explicit\n";
             return 1;
         }
@@ -1371,8 +1389,9 @@ int main() {
             projectionAndFlowPressureThreshold->help.find("Band 3") == std::string::npos ||
             projectionAndFlowPressureThreshold->help.find("unstable") == std::string::npos ||
             !projectionAndFlowPressureThreshold->has_visible_if ||
-            projectionAndFlowPressureThreshold->visible_if.op != "eq" ||
-            projectionAndFlowPressureThreshold->visible_if.value != "projection_and_flow") {
+            projectionAndFlowPressureThreshold->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*projectionAndFlowPressureThreshold, "projection_and_flow") ||
+            !VisibleIfIncludesFractalType(*projectionAndFlowPressureThreshold, "explaino_projection_and_flow")) {
             std::cerr << "Safe-mode schema Projection-and-Flow pressure control did not expose the public class split truthfully\n";
             return 1;
         }
@@ -1407,6 +1426,7 @@ int main() {
                         }
                         if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                         if (option.id == "explaino_all" && option.group == "Explaino") foundFractalTypeExplainoAllGroup = true;
+                        if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundSafeModeExplainoProjectionAndFlowGroup = true;
                         if (option.id == "explaino_counterfactual_pair" && option.group == "Explaino") foundSafeModeExplainoCounterfactualPairGroup = true;
                         if (!foundFractalTypeExplainoAllFirst && option.group == "Explaino") {
                             foundFractalTypeExplainoAllFirst = option.id == "explaino_all";
@@ -1464,7 +1484,8 @@ int main() {
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
-            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup || !foundSafeModeExplainoCounterfactualPairGroup) {
+            !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
+            !foundSafeModeExplainoProjectionAndFlowGroup || !foundSafeModeExplainoCounterfactualPairGroup) {
             std::cerr << "Safe-mode schema did not expose grouped fractal selector categories including the canonical Explaino-all entry\n";
             return 1;
         }

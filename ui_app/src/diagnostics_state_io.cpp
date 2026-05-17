@@ -2013,7 +2013,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "Unknown poly_kind: " + std::to_string(rawPolyKind);
         return false;
     }
-    if (IsExplainoFamily(nextView.fractal_type) && nextParams.poly_kind != PolyKind::custom) {
+    if (UsesExplainoCustomPolynomialAuthority(nextView.fractal_type) && nextParams.poly_kind != PolyKind::custom) {
         if (outError) *outError = "poly_kind must be custom for fractal_type " + fractalTypeId;
         return false;
     }
@@ -2037,7 +2037,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
             if (outError) *outError = "Unknown projection_and_flow_root_family: " + projectionAndFlowRootFamilyId;
             return false;
         }
-    } else if (nextView.fractal_type == FractalType::projection_and_flow &&
+    } else if (IsProjectionAndFlowCarrier(nextView.fractal_type) &&
         !TryResolveProjectionAndFlowRootFamilyForPolyKindLocal(nextParams.poly_kind, &nextParams.projection_and_flow_root_family)) {
         if (outError) *outError = "projection_and_flow requires a supported root-family polynomial preset";
         return false;
@@ -2142,6 +2142,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         root = {0.0f, 0.0f};
     }
     if (!ParseOptionalExplainoRoots(*paramsObject, nextParams.explaino_root_count, &nextParams, nullptr, outError)) return false;
+    if (!UsesExplainoCustomPolynomialAuthority(nextView.fractal_type)) {
+        nextParams.explaino_root_count = 0;
+        for (Float2& root : nextParams.explaino_roots) {
+            root = {0.0f, 0.0f};
+        }
+    }
     nextParams.joy_coupling = static_cast<float>(joyCoupling);
     nextParams.fold_coupling = static_cast<float>(foldCoupling);
     nextParams.bell_coupling = static_cast<float>(bellCoupling);
@@ -2380,7 +2386,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (nextView.fractal_type == FractalType::counterfactual_pair) {
         SyncCounterfactualPairRootFamilyPresetLocal(&nextParams);
     }
-    if (nextView.fractal_type == FractalType::projection_and_flow) {
+    if (IsProjectionAndFlowCarrier(nextView.fractal_type)) {
         SyncProjectionAndFlowRootFamilyPresetLocal(&nextParams);
     }
 
