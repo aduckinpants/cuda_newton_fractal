@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 in progress - hostile audit is complete on the repaired state and the slice is waiting on checkpoint, receipts, the committed-head stale-plan gate, and final clean-tree closure.
+Closed on the committed head - the Explaino Projection-and-Flow carrier lane is checkpointed, receipted, hostile-audited, and stale-plan synced without reopening color-pipeline work, BalanceVoid, meta-basin, Operator-Itinerary, DSL/program-space, or legacy sample-surface mutation.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in plan and contract, replace the closed Projection-and-Flow pressure-threshold repair lock, and prove the RED head still has no shipped Explaino-pattern Projection-and-Flow selector/runtime lane or published-runtime witness.
 - [x] Phase 2 - land one bounded Explaino-pattern Projection-and-Flow runtime lane with explicit identity mapping, explicit shared-vs-Explaino control ownership, and preserved legacy sample surfaces.
 - [x] Phase 3 - prove the lane through focused schema/unit/kernel/native rails plus focused runtime publish and published-runtime Explaino-variant proof.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean on the committed head.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean on the committed head.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 4 in progress - hostile audit is complete on the repaired state and the sl
 - [x] Layer the steerable standalone Projection-and-Flow object into the Explaino pattern as a real runtime-visible lane, not just a renamed selector.
 - [x] Keep color-pipeline work, ExplainO-BalanceVoid, meta-basin, Operator-Itinerary, DSL/program-space, and broad engine refactor work out of scope.
 - [x] Preserve `FractalSampleResult` and `SampleFractalPoints(...)` as the shipped legacy projection surfaces.
-- [ ] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, and the committed-head stale-plan gate.
+- [x] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -37,6 +37,7 @@ Phase 4 in progress - hostile audit is complete on the repaired state and the sl
   runtime publish `ui_app\\build_vsdevcmd.cmd` via `artifacts/logs/projection_and_flow_explaino_variant_runtime_build.log`
   published-runtime Explaino Projection-and-Flow witnesses `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k projection_and_flow -q` via `artifacts/logs/projection_and_flow_explaino_variant_runtime_pytests_pf.log`
   published callable-surface witnesses `py -3.14 -m pytest tests/test_function_descriptor_cli.py tests/test_callable_engine_adversarial_cli.py -q` via `artifacts/logs/projection_and_flow_explaino_variant_runtime_pytests_callable.log`
+- Machine closeout proof now exists for the committed slice head: validation receipt `artifacts/hooks/viewer_host_validation_receipts/77c26a19c7c5698317b8524dab63aee5476fbacd.json` and contract proof receipt `artifacts/hooks/viewer_host_contract_proof_receipts/77c26a19c7c5698317b8524dab63aee5476fbacd.json` were written before this stale-plan follow-up commit.
 
 ## Hostile Audit
 
