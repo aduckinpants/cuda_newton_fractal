@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 in progress - the Projection-and-Flow public class model now uses `root sector x transient-pressure band`, the focused kernel/renderer/schema/runtime witnesses are green, and the remaining work is checkpoint/receipt closeout plus the stale-plan gate on the committed head.
+Phase 4 complete - the Projection-and-Flow public class model now uses `root sector x transient-pressure band`, the focused kernel/renderer/schema/runtime witnesses are green, and this plan now reflects the closed bounded stop-point without stale in-progress text.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in follow-up plan and contract, replace the closed non-unit-radius stopgap lock, and prove the current runtime still makes `projection_and_flow_target_radius` effectively meaningless away from `1.0`.
 - [x] Phase 2 - repair the bounded Projection-and-Flow public class semantics so the current runtime exposes truthful radius-sensitive structure without changing `SampleFractalPoints(...)`, `FractalSampleResult`, Explaino lanes, or the color pipeline.
 - [x] Phase 3 - prove the repaired state through focused kernel, renderer, schema/help, and published-runtime Projection-and-Flow witnesses.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean on the committed head.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean on the committed head.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 4 in progress - the Projection-and-Flow public class model now uses `root 
 - [resolved] Stop wasting time on fake closures and pay attention to the actual runtime-visible task.
 - [resolved] Keep this bounded to Projection-and-Flow semantics/class ownership rather than widening into Explaino work, color-pipeline work, or generic engine refactor.
 - [resolved] Preserve `SampleFractalPoints(...)` and `FractalSampleResult` as the shipped legacy sampling surfaces.
-- [open] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
+- [resolved] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -52,7 +52,7 @@ Phase 4 in progress - the Projection-and-Flow public class model now uses `root 
 
 - [x] Projection-and-Flow radius semantics were still broken after the prior stopgap: focused runtime proof showed non-unit radii still rendered only three public colors, and radii `1.25` and `1.75` even shared the same published frame hash under the old class model.
 - [x] The repaired public class model is still bounded and truthful: only the Projection-and-Flow sampler, renderer class-count seam, schema help text, and focused witnesses changed; `SampleFractalPoints(...)`, `FractalSampleResult`, Explaino lanes, and the color pipeline stayed untouched.
-- [x] No further slice-owned defect was found after the hostile reread, focused native/runtime reruns, quartic sanity check, and direct visual pass on the published `1.75` capture; remaining work is closure mechanics only.
+- [x] No further slice-owned defect was found after the hostile reread, focused native/runtime reruns, quartic sanity check, and direct visual pass on the published `1.75` capture; the final bounded stop-point is the repaired transient-pressure band class model with the stale closeout text removed.
 
 ## Action Hostile Review
 
