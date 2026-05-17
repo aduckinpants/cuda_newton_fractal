@@ -11,6 +11,23 @@ from tests.runtime_harness import (
 )
 
 
+def _bmp_unique_color_count(frame_bytes: bytes) -> int:
+    data_offset = int.from_bytes(frame_bytes[10:14], "little")
+    width = int.from_bytes(frame_bytes[18:22], "little", signed=True)
+    height = int.from_bytes(frame_bytes[22:26], "little", signed=True)
+    bits_per_pixel = int.from_bytes(frame_bytes[28:30], "little")
+    assert bits_per_pixel == 24
+    row_stride = ((abs(width) * 3 + 3) // 4) * 4
+    pixel_data = frame_bytes[data_offset:]
+    colors: set[bytes] = set()
+    for row in range(abs(height)):
+        row_base = row * row_stride
+        for col in range(abs(width)):
+            pixel_base = row_base + col * 3
+            colors.add(pixel_data[pixel_base : pixel_base + 3])
+    return len(colors)
+
+
 def test_projection_and_flow_headless_capture_is_runtime_visible() -> None:
     exe_path = _active_runtime_exe()
 
@@ -113,3 +130,32 @@ def test_projection_and_flow_loaded_state_reads_root_family_and_target_radius(tm
     assert radius_capture["state"]["params"]["projection_and_flow_pressure_threshold"] == pytest.approx(0.5)
     assert quartic_capture["frame_hash"] != baseline_capture["frame_hash"]
     assert radius_capture["frame_hash"] != baseline_capture["frame_hash"]
+
+
+@pytest.mark.parametrize("radius", [0.75, 1.75])
+def test_projection_and_flow_nonunit_radius_capture_still_has_multiple_render_classes(tmp_path, radius: float) -> None:
+    exe_path = _active_runtime_exe()
+
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "projection_and_flow",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    varied_state = copy.deepcopy(baseline_capture["state"])
+    varied_state["params"]["projection_and_flow_target_radius"] = radius
+
+    varied_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / f"radius_{radius}", varied_state)),
+        "--capture-diagnostic",
+    )
+
+    assert varied_capture["state"]["params"]["projection_and_flow_target_radius"] == pytest.approx(radius)
+    assert _bmp_unique_color_count(varied_capture["frame_bytes"]) > 1

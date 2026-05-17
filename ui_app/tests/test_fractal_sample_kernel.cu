@@ -384,6 +384,60 @@ void TestProjectionAndFlowProducesExplicitProjectedClasses() {
     CHECK("projection_and_flow exposes an unstable class", sawUnstable);
 }
 
+void TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::projection_and_flow, view, params, render);
+    params.max_iter = 96;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    params.poly_kind = PolyKind::z4_minus_1;
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[4] = 1.0f;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+
+    FractalSampleResult results[kProjectionAndFlowGridN]{};
+    const char* error = nullptr;
+    bool ok = SampleProjectionAndFlowGrid(view, params, render, results, &error);
+    CHECK("projection_and_flow nonunit-radius batch ok", ok);
+    if (!ok) {
+        std::cerr << "    error: " << (error ? error : "unknown") << "\n";
+        return;
+    }
+
+    constexpr int kProjectionAndFlowClassCount = 9;
+    bool sawClass[kProjectionAndFlowClassCount] = {false, false, false, false, false, false, false, false, false};
+    bool sawStableClass = false;
+    bool sawNonConvergedStableClass = false;
+    bool sawRootSector[4] = {false, false, false, false};
+    int distinctClasses = 0;
+    for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
+        const int classIndex = DecodeProjectionAndFlowClass(results[i], kProjectionAndFlowClassCount);
+        CHECK("projection_and_flow nonunit-radius class index in range", classIndex >= 0 && classIndex < kProjectionAndFlowClassCount);
+        if (!sawClass[classIndex]) {
+            sawClass[classIndex] = true;
+            ++distinctClasses;
+        }
+        if (classIndex == kProjectionAndFlowClassCount - 1) {
+            continue;
+        }
+        sawStableClass = true;
+        sawNonConvergedStableClass = sawNonConvergedStableClass || !results[i].converged;
+        sawRootSector[classIndex / 2] = true;
+    }
+
+    const bool sawMultipleRootSectors =
+        (static_cast<int>(sawRootSector[0]) + static_cast<int>(sawRootSector[1]) + static_cast<int>(sawRootSector[2]) + static_cast<int>(sawRootSector[3])) >= 2;
+    CHECK("projection_and_flow nonunit-radius still exposes stable classes", sawStableClass);
+    CHECK("projection_and_flow nonunit-radius stable classes do not require literal root convergence", sawNonConvergedStableClass);
+    CHECK("projection_and_flow nonunit-radius still exposes multiple explicit classes", distinctClasses >= 3);
+    CHECK("projection_and_flow nonunit-radius still exposes multiple root sectors", sawMultipleRootSectors);
+}
+
 void TestCounterfactualPairFrameModesAreExplicit() {
     ViewState view{};
     KernelParams worldParams{};
@@ -686,6 +740,7 @@ int main() {
     TestBatchSample();
     TestAllFractalTypes();
     TestProjectionAndFlowProducesExplicitProjectedClasses();
+    TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses();
     TestCounterfactualPairProducesExplicitPairClasses();
     TestCounterfactualPairFrameModesAreExplicit();
     TestCounterfactualPairRootFamilyChangesRuntimeLane();

@@ -132,6 +132,7 @@
                     const double projectionScale = projectionTargetRadius / freeMag;
                     const Cxd projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
                     projectionPressure += fabs(freeMag - projectionTargetRadius);
+                    rootIndex = NearestRootIndexUnitRoots(projected, projectionRootCount);
                     zd = projected;
                 }
             }
@@ -182,13 +183,14 @@
                     const float projectionScale = static_cast<float>(projectionTargetRadius) / freeMag;
                     const Cx projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
                     projectionPressure += static_cast<double>(fabsf(freeMag - static_cast<float>(projectionTargetRadius)));
+                    rootIndex = NearestRootIndexUnitRoots(projected, projectionRootCount);
                     z = projected;
                 }
             }
         }
 
         int projectionClass = projectionClassCount - 1;
-        if (converged && rootIndex >= 0 && rootIndex < projectionRootCount) {
+        if (rootIndex >= 0 && rootIndex < projectionRootCount) {
             const int pressureBucket = projectionPressure >= projectionPressureThreshold ? 1 : 0;
             projectionClass = rootIndex * 2 + pressureBucket;
         }
