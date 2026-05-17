@@ -446,7 +446,7 @@
           "id": "projection_and_flow_pressure_threshold",
           "type": "drag_float",
           "label": "Pressure Threshold",
-          "help": "Classes 0..2N-1 = root sector x pressure bucket, where bucket 0 stays below the cumulative radial-projection threshold and bucket 1 crosses it. Class 2N = unstable.",
+          "help": "Classes 0..4N-1 = root sector x transient-pressure band, using the projected orbit's peak radial correction minus its settled correction. Band 0 stays below 25% of the threshold, Band 1 stays in [25%, 50%), Band 2 stays in [50%, 100%), Band 3 saturates at or above the threshold. Class 4N = unstable.",
           "value_type": "float",
           "min": 0.0, "ui_min": 0.0, "ui_max": 8.0, "step": 0.01, "default": 1.0,
           "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_pressure_threshold" },

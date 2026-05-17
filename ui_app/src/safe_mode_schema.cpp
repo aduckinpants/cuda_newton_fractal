@@ -325,7 +325,7 @@ UISchemaControl BuildProjectionAndFlowPressureThresholdControl() {
         "fractal.params.projection_and_flow_pressure_threshold",
         json_min::Value{1.0});
     control.help =
-        "Classes 0..2N-1 = root sector x pressure bucket, where bucket 0 stays below the cumulative radial-projection threshold and bucket 1 crosses it. Class 2N = unstable.";
+        "Classes 0..4N-1 = root sector x transient-pressure band, using the projected orbit's peak radial correction minus its settled correction. Band 0 stays below 25% of the threshold, Band 1 stays in [25%, 50%), Band 2 stays in [50%, 100%), Band 3 saturates at or above the threshold. Class 4N = unstable.";
     control.has_help = true;
     SetVisibleForFractalType(&control, "projection_and_flow");
     return control;

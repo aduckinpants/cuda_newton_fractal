@@ -316,13 +316,13 @@ void TestProjectionAndFlowProducesExplicitProjectedClasses() {
     RenderSettings render{};
     MakeDefaults(FractalType::projection_and_flow, view, params, render);
     params.max_iter = 96;
-    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
-    params.poly_kind = PolyKind::z4_minus_1;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.poly_kind = PolyKind::z3_minus_1;
     params.poly_coeffs[0] = -1.0f;
     params.poly_coeffs[1] = 0.0f;
     params.poly_coeffs[2] = 0.0f;
-    params.poly_coeffs[3] = 0.0f;
-    params.poly_coeffs[4] = 1.0f;
+    params.poly_coeffs[3] = 1.0f;
+    params.poly_coeffs[4] = 0.0f;
     params.projection_and_flow_pressure_threshold = 1.0f;
 
     FractalSampleResult results[kProjectionAndFlowGridN]{};
@@ -334,14 +334,15 @@ void TestProjectionAndFlowProducesExplicitProjectedClasses() {
         return;
     }
 
-    constexpr int kProjectionAndFlowClassCount = 9;
-    bool sawClass[kProjectionAndFlowClassCount] = {false, false, false, false, false, false, false, false, false};
+    constexpr int kProjectionAndFlowRootCount = 3;
+    constexpr int kProjectionAndFlowPressureBandCount = 4;
+    constexpr int kProjectionAndFlowClassCount = kProjectionAndFlowRootCount * kProjectionAndFlowPressureBandCount + 1;
+    bool sawClass[kProjectionAndFlowClassCount] = {};
     bool sawUnstable = false;
-    bool sawLowPressure = false;
-    bool sawHighPressure = false;
+    bool sawPressureBand[kProjectionAndFlowPressureBandCount] = {false, false, false, false};
     bool sawMultipleRootSectors = false;
     int distinctClasses = 0;
-    bool sawRootSector[4] = {false, false, false, false};
+    bool sawRootSector[kProjectionAndFlowRootCount] = {false, false, false};
     for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
         CHECK("projection_and_flow final_z finite", std::isfinite(results[i].final_z_x) && std::isfinite(results[i].final_z_y));
         CHECK("projection_and_flow residual finite", std::isfinite(results[i].residual));
@@ -362,25 +363,34 @@ void TestProjectionAndFlowProducesExplicitProjectedClasses() {
             sawUnstable = true;
             continue;
         }
-        const int rootSector = classIndex / 2;
-        const int pressureBucket = classIndex % 2;
-        if (pressureBucket == 0) {
-            CHECK("projection_and_flow low-pressure class stays below the explicit pressure threshold",
+        const int rootSector = classIndex / kProjectionAndFlowPressureBandCount;
+        const int pressureBand = classIndex % kProjectionAndFlowPressureBandCount;
+        if (pressureBand == 0) {
+            CHECK("projection_and_flow transient-pressure band 0 stays below 25% of the explicit threshold",
+                results[i].residual < 0.25f * params.projection_and_flow_pressure_threshold);
+        } else if (pressureBand == 1) {
+            CHECK("projection_and_flow transient-pressure band 1 stays in [25%, 50%) of the explicit threshold",
+                results[i].residual >= 0.25f * params.projection_and_flow_pressure_threshold &&
+                results[i].residual < 0.5f * params.projection_and_flow_pressure_threshold);
+        } else if (pressureBand == 2) {
+            CHECK("projection_and_flow transient-pressure band 2 stays in [50%, 100%) of the explicit threshold",
+                results[i].residual >= 0.5f * params.projection_and_flow_pressure_threshold &&
                 results[i].residual < params.projection_and_flow_pressure_threshold);
         } else {
-            CHECK("projection_and_flow high-pressure class breaches the explicit pressure threshold",
+            CHECK("projection_and_flow transient-pressure band 3 saturates at or above the explicit threshold",
                 results[i].residual >= params.projection_and_flow_pressure_threshold);
         }
         sawRootSector[rootSector] = true;
-        sawLowPressure = sawLowPressure || (pressureBucket == 0);
-        sawHighPressure = sawHighPressure || (pressureBucket == 1);
+        sawPressureBand[pressureBand] = true;
     }
 
     sawMultipleRootSectors =
-        (static_cast<int>(sawRootSector[0]) + static_cast<int>(sawRootSector[1]) + static_cast<int>(sawRootSector[2]) + static_cast<int>(sawRootSector[3])) >= 2;
-    CHECK("projection_and_flow exposes multiple explicit projected classes", distinctClasses >= 4);
+        (static_cast<int>(sawRootSector[0]) + static_cast<int>(sawRootSector[1]) + static_cast<int>(sawRootSector[2])) >= 2;
+    CHECK("projection_and_flow exposes multiple explicit projected classes", distinctClasses >= 6);
     CHECK("projection_and_flow exposes multiple root sectors", sawMultipleRootSectors);
-    CHECK("projection_and_flow exposes both pressure buckets", sawLowPressure && sawHighPressure);
+    CHECK("projection_and_flow exposes multiple transient-pressure bands",
+        (static_cast<int>(sawPressureBand[0]) + static_cast<int>(sawPressureBand[1]) +
+         static_cast<int>(sawPressureBand[2]) + static_cast<int>(sawPressureBand[3])) >= 3);
     CHECK("projection_and_flow exposes an unstable class", sawUnstable);
 }
 
@@ -390,13 +400,13 @@ void TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses() {
     RenderSettings render{};
     MakeDefaults(FractalType::projection_and_flow, view, params, render);
     params.max_iter = 96;
-    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
-    params.poly_kind = PolyKind::z4_minus_1;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.poly_kind = PolyKind::z3_minus_1;
     params.poly_coeffs[0] = -1.0f;
     params.poly_coeffs[1] = 0.0f;
     params.poly_coeffs[2] = 0.0f;
-    params.poly_coeffs[3] = 0.0f;
-    params.poly_coeffs[4] = 1.0f;
+    params.poly_coeffs[3] = 1.0f;
+    params.poly_coeffs[4] = 0.0f;
     params.projection_and_flow_target_radius = 1.75f;
     params.projection_and_flow_pressure_threshold = 1.0f;
 
@@ -409,11 +419,14 @@ void TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses() {
         return;
     }
 
-    constexpr int kProjectionAndFlowClassCount = 9;
-    bool sawClass[kProjectionAndFlowClassCount] = {false, false, false, false, false, false, false, false, false};
+    constexpr int kProjectionAndFlowRootCount = 3;
+    constexpr int kProjectionAndFlowPressureBandCount = 4;
+    constexpr int kProjectionAndFlowClassCount = kProjectionAndFlowRootCount * kProjectionAndFlowPressureBandCount + 1;
+    bool sawClass[kProjectionAndFlowClassCount] = {};
     bool sawStableClass = false;
     bool sawNonConvergedStableClass = false;
-    bool sawRootSector[4] = {false, false, false, false};
+    bool sawRootSector[kProjectionAndFlowRootCount] = {false, false, false};
+    bool sawPressureBand[kProjectionAndFlowPressureBandCount] = {false, false, false, false};
     int distinctClasses = 0;
     for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
         const int classIndex = DecodeProjectionAndFlowClass(results[i], kProjectionAndFlowClassCount);
@@ -427,15 +440,20 @@ void TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses() {
         }
         sawStableClass = true;
         sawNonConvergedStableClass = sawNonConvergedStableClass || !results[i].converged;
-        sawRootSector[classIndex / 2] = true;
+        sawRootSector[classIndex / kProjectionAndFlowPressureBandCount] = true;
+        sawPressureBand[classIndex % kProjectionAndFlowPressureBandCount] = true;
     }
 
     const bool sawMultipleRootSectors =
-        (static_cast<int>(sawRootSector[0]) + static_cast<int>(sawRootSector[1]) + static_cast<int>(sawRootSector[2]) + static_cast<int>(sawRootSector[3])) >= 2;
+        (static_cast<int>(sawRootSector[0]) + static_cast<int>(sawRootSector[1]) + static_cast<int>(sawRootSector[2])) >= 2;
+    const bool sawMultiplePressureBands =
+        (static_cast<int>(sawPressureBand[0]) + static_cast<int>(sawPressureBand[1]) +
+         static_cast<int>(sawPressureBand[2]) + static_cast<int>(sawPressureBand[3])) >= 3;
     CHECK("projection_and_flow nonunit-radius still exposes stable classes", sawStableClass);
     CHECK("projection_and_flow nonunit-radius stable classes do not require literal root convergence", sawNonConvergedStableClass);
-    CHECK("projection_and_flow nonunit-radius still exposes multiple explicit classes", distinctClasses >= 3);
+    CHECK("projection_and_flow nonunit-radius still exposes multiple explicit classes", distinctClasses >= 6);
     CHECK("projection_and_flow nonunit-radius still exposes multiple root sectors", sawMultipleRootSectors);
+    CHECK("projection_and_flow nonunit-radius still exposes multiple transient-pressure bands", sawMultiplePressureBands);
 }
 
 void TestCounterfactualPairFrameModesAreExplicit() {

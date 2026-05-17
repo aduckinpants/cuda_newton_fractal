@@ -366,7 +366,8 @@ bool ValidateProjectionAndFlowControlSurface(const UISchema& schema) {
         pressureThreshold->has_min &&
         pressureThreshold->min == 0.0 &&
         pressureThreshold->has_help &&
-        pressureThreshold->help.find("root sector x pressure bucket") != std::string::npos &&
+        pressureThreshold->help.find("root sector x transient-pressure band") != std::string::npos &&
+        pressureThreshold->help.find("Band 3") != std::string::npos &&
         pressureThreshold->help.find("unstable") != std::string::npos &&
         pressureThreshold->has_visible_if &&
         pressureThreshold->visible_if.op == "eq" &&
@@ -1366,7 +1367,8 @@ int main() {
             !projectionAndFlowPressureThreshold->has_min ||
             projectionAndFlowPressureThreshold->min != 0.0 ||
             !projectionAndFlowPressureThreshold->has_help ||
-            projectionAndFlowPressureThreshold->help.find("root sector x pressure bucket") == std::string::npos ||
+            projectionAndFlowPressureThreshold->help.find("root sector x transient-pressure band") == std::string::npos ||
+            projectionAndFlowPressureThreshold->help.find("Band 3") == std::string::npos ||
             projectionAndFlowPressureThreshold->help.find("unstable") == std::string::npos ||
             !projectionAndFlowPressureThreshold->has_visible_if ||
             projectionAndFlowPressureThreshold->visible_if.op != "eq" ||

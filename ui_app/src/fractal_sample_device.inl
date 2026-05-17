@@ -68,7 +68,8 @@
     } else if (ft == FractalType::projection_and_flow) {
         const int projectionRootCount =
             params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
-        const int projectionClassCount = projectionRootCount * 2 + 1;
+        const int projectionPressureBandCount = 4;
+        const int projectionClassCount = projectionRootCount * projectionPressureBandCount + 1;
         const double projectionTargetRadius =
             isfinite(params.projection_and_flow_target_radius)
                 ? fmax(1.0e-12, static_cast<double>(params.projection_and_flow_target_radius))
@@ -82,7 +83,9 @@
         for (int k = 0; k < 5; ++k) {
             flowCoeffs[k] = params.poly_coeffs[k];
         }
-        double projectionPressure = 0.0;
+        double peakProjectionPressure = 0.0;
+        double lastProjectionPressure = 0.0;
+        bool sawProjectionPressure = false;
         int rootIndex = -1;
         terminationKind = TerminationKind::max_iterations;
 
@@ -131,7 +134,10 @@
                     const double freeMag = sqrt(freeMag2);
                     const double projectionScale = projectionTargetRadius / freeMag;
                     const Cxd projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
-                    projectionPressure += fabs(freeMag - projectionTargetRadius);
+                    const double projectionPressure = fabs(freeMag - projectionTargetRadius);
+                    peakProjectionPressure = fmax(peakProjectionPressure, projectionPressure);
+                    lastProjectionPressure = projectionPressure;
+                    sawProjectionPressure = true;
                     rootIndex = NearestRootIndexUnitRoots(projected, projectionRootCount);
                     zd = projected;
                 }
@@ -182,24 +188,43 @@
                     const float freeMag = sqrtf(freeMag2);
                     const float projectionScale = static_cast<float>(projectionTargetRadius) / freeMag;
                     const Cx projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
-                    projectionPressure += static_cast<double>(fabsf(freeMag - static_cast<float>(projectionTargetRadius)));
+                    const double projectionPressure =
+                        static_cast<double>(fabsf(freeMag - static_cast<float>(projectionTargetRadius)));
+                    peakProjectionPressure = fmax(peakProjectionPressure, projectionPressure);
+                    lastProjectionPressure = projectionPressure;
+                    sawProjectionPressure = true;
                     rootIndex = NearestRootIndexUnitRoots(projected, projectionRootCount);
                     z = projected;
                 }
             }
         }
 
+        const double transientProjectionPressureExcess =
+            sawProjectionPressure ? fmax(0.0, peakProjectionPressure - lastProjectionPressure) : 0.0;
         int projectionClass = projectionClassCount - 1;
         if (rootIndex >= 0 && rootIndex < projectionRootCount) {
-            const int pressureBucket = projectionPressure >= projectionPressureThreshold ? 1 : 0;
-            projectionClass = rootIndex * 2 + pressureBucket;
+            int pressureBand = 0;
+            if (projectionPressureThreshold <= 0.0) {
+                pressureBand = transientProjectionPressureExcess > 0.0 ? (projectionPressureBandCount - 1) : 0;
+            } else {
+                const double normalizedTransientPressure =
+                    transientProjectionPressureExcess / projectionPressureThreshold;
+                if (normalizedTransientPressure >= 1.0) {
+                    pressureBand = 3;
+                } else if (normalizedTransientPressure >= 0.5) {
+                    pressureBand = 2;
+                } else if (normalizedTransientPressure >= 0.25) {
+                    pressureBand = 1;
+                }
+            }
+            projectionClass = rootIndex * projectionPressureBandCount + pressureBand;
         }
         // Encode the synthetic class root in the inverse order expected by
         // NearestRootIndexUnitRoots(...) so the public class id round-trips.
         const int projectionClassRoot =
             (projectionClass - ((projectionClassCount + 1) / 2) + projectionClassCount) % projectionClassCount;
         z = unit_root_k(projectionClassRoot, projectionClassCount);
-        pAbs = static_cast<float>(projectionPressure);
+        pAbs = static_cast<float>(transientProjectionPressureExcess);
         escaped = false;
     } else if (ft == FractalType::counterfactual_pair) {
         float pairCoeffs[5];

@@ -42,7 +42,7 @@ __device__ __forceinline__ int ResolveBasinRenderRootCount(FractalType ft, const
         if (outUseCustomRoots) *outUseCustomRoots = false;
         const int projectionRootCount =
             params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
-        return projectionRootCount * 2 + 1;
+        return projectionRootCount * 4 + 1;
     }
     const int nRoots = ResolvePolynomialRootCount(params.poly_kind);
     const bool useCustomRoots = (nRoots == 0) && IsExplainoFamily(ft) && (params.explaino_root_count > 0);

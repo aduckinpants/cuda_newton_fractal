@@ -158,4 +158,33 @@ def test_projection_and_flow_nonunit_radius_capture_still_has_multiple_render_cl
     )
 
     assert varied_capture["state"]["params"]["projection_and_flow_target_radius"] == pytest.approx(radius)
-    assert _bmp_unique_color_count(varied_capture["frame_bytes"]) > 1
+    assert _bmp_unique_color_count(varied_capture["frame_bytes"]) >= 6
+
+
+def test_projection_and_flow_distinct_nonunit_radii_do_not_collapse_to_the_same_public_render(tmp_path) -> None:
+    exe_path = _active_runtime_exe()
+
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "projection_and_flow",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    variant_hashes: dict[float, str] = {}
+    for radius in (1.25, 1.75):
+        varied_state = copy.deepcopy(baseline_capture["state"])
+        varied_state["params"]["projection_and_flow_target_radius"] = radius
+        varied_capture = _run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(_write_state_bundle(tmp_path / f"radius_hash_{radius}", varied_state)),
+            "--capture-diagnostic",
+        )
+        variant_hashes[radius] = varied_capture["frame_hash"]
+
+    assert variant_hashes[1.25] != variant_hashes[1.75]

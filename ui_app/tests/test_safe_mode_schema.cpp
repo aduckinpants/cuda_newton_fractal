@@ -234,7 +234,9 @@ static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
         "TestSafeModeSchemaExposesProjectionAndFlowControls_TargetRadius");
     Check(IsProjectionAndFlowVisibleControl(pressureThreshold, "fractal.params.projection_and_flow_pressure_threshold") &&
             pressureThreshold->has_default && pressureThreshold->def.is_number() && pressureThreshold->def.as_number() == 1.0 &&
-            pressureThreshold->has_help && pressureThreshold->help.find("unstable") != std::string::npos,
+            pressureThreshold->has_help && pressureThreshold->help.find("transient-pressure band") != std::string::npos &&
+            pressureThreshold->help.find("Band 3") != std::string::npos &&
+            pressureThreshold->help.find("unstable") != std::string::npos,
         "TestSafeModeSchemaExposesProjectionAndFlowControls_PressureThreshold");
 }
 

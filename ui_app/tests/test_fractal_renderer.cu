@@ -23,6 +23,24 @@ bool ErrorContains(const char* error, const char* needle) {
     return error && std::strstr(error, needle) != nullptr;
 }
 
+int CountDistinctPixels(const std::vector<uint32_t>& pixels) {
+    std::vector<uint32_t> distinct;
+    distinct.reserve(pixels.size());
+    for (uint32_t pixel : pixels) {
+        bool seen = false;
+        for (uint32_t existing : distinct) {
+            if (existing == pixel) {
+                seen = true;
+                break;
+            }
+        }
+        if (!seen) {
+            distinct.push_back(pixel);
+        }
+    }
+    return static_cast<int>(distinct.size());
+}
+
 void TestNullOutputFailsBeforeCudaWork() {
     ViewState view{};
     KernelParams params{};
@@ -177,15 +195,40 @@ void TestProjectionAndFlowRenderProducesMultipleClassColors() {
         return;
     }
 
-    bool sawDifferentPixel = false;
-    const uint32_t firstPixel = pixels.front();
-    for (uint32_t pixel : pixels) {
-        if (pixel != firstPixel) {
-            sawDifferentPixel = true;
-            break;
-        }
+    Check(CountDistinctPixels(pixels) >= 6, "Projection-and-Flow unit-radius render emits several explicit class colors");
+
+    CleanupFractalCUDA();
+}
+
+void TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::root_basin;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(64 * 48, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Projection-and-Flow non-unit-radius render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
     }
-    Check(sawDifferentPixel, "Projection-and-Flow render emits more than one explicit class color");
+
+    Check(CountDistinctPixels(pixels) >= 6, "Projection-and-Flow non-unit-radius render does not collapse to only three public class colors");
 
     CleanupFractalCUDA();
 }
@@ -199,6 +242,7 @@ int main() {
     TestTinyRenderProducesPixelsMaskAndStats();
     TestCounterfactualPairRenderProducesMultipleClassColors();
     TestProjectionAndFlowRenderProducesMultipleClassColors();
+    TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;
