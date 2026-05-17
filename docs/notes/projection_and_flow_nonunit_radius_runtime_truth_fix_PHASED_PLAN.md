@@ -2,21 +2,21 @@
 
 ## Current Phase
 
-Phase 4 in progress - the focused kernel and published-runtime witnesses are green after re-owning Projection-and-Flow classes to the projected orbit, and the remaining work is hostile-audit closeout, checkpointing, receipts, and the stale-plan gate.
+Closed - the focused kernel seam, published-runtime pytest proof, contract validation, hostile-audit validation, machine receipts, and stale-plan gate are all complete for the bounded Projection-and-Flow non-unit radius truth fix.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in follow-up plan and contract, replace the closed hardening lock, and prove the current runtime collapses non-unit Projection-and-Flow radii into a useless single-class render.
 - [x] Phase 2 - repair the bounded Projection-and-Flow state/class semantics so non-unit radii still produce truthful explicit classes without replacing `SampleFractalPoints(...)` or widening into generic engine work.
 - [x] Phase 3 - prove the repaired state through focused native seam tests plus focused runtime publish and published-runtime Projection-and-Flow proof.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean on the committed head.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, clear stale closeout text, and leave the repo clean on the committed head.
 
 ## Explicit User Asks
 
 - [resolved] Fix the review-found defect where the Projection-and-Flow radius control only gives a useful rendered result at exactly `1.0`.
 - [resolved] Keep this bounded to Projection-and-Flow runtime truth rather than widening into Explaino, color-pipeline work, or a broad engine refactor.
 - [resolved] Preserve `FractalSampleResult` and `SampleFractalPoints(...)` as the shipped legacy projection surfaces.
-- [open] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
+- [resolved] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -28,6 +28,7 @@ Phase 4 in progress - the focused kernel and published-runtime witnesses are gre
 - GREEN sampler fix: Projection-and-Flow now assigns its public root-sector class from the last valid projected orbit state, not only from literal root convergence, so non-unit radii still produce explicit `root sector x pressure bucket` classes while `converged` remains reserved for actual polynomial-root convergence.
 - Focused native proof is green on the rebuilt `D:\salt-fractal\cuda_newton_fractal_clone\build_tests\test_fractal_sample_kernel.exe`: `passed=711 failed=0`, including the new non-unit-radius witness that requires stable explicit classes, multiple root sectors, and at least one stable sample with `converged == false`.
 - Focused runtime publish plus published-runtime proof are green: `ui_app/build_vsdevcmd.cmd` rebuilt the runtime, `pytest tests/test_fractal_runtime_projection_and_flow.py -q` passed `5/5`, and direct capture receipts now show `projection_and_flow_target_radius=0.75` and `1.75` both render three unique colors instead of collapsing to one.
+- Closure validation is complete on the committed head: `artifacts/validation/projection_and_flow_nonunit_radius_runtime_truth_fix_contract.json`, `artifacts/validation/viewer_host_assert_phased_plan_sync.json`, and `artifacts/validation/projection_and_flow_nonunit_radius_runtime_truth_fix_hostile_audit.json` are green, and machine validation plus contract-proof receipts have been written under `artifacts/hooks/viewer_host_validation_receipts/` and `artifacts/hooks/viewer_host_contract_proof_receipts/`.
 
 ## Hostile Audit
 
@@ -50,7 +51,7 @@ Phase 4 in progress - the focused kernel and published-runtime witnesses are gre
 
 - [x] Projection-and-Flow non-unit radii were genuinely broken: focused RED witnesses proved the published runtime and kernel both collapsed non-unit target radii into the synthetic unstable bucket, making the public radius control effectively useless outside `1.0`.
 - [x] The repaired sampler is still bounded and truthful: only `ui_app/src/fractal_sample_device.inl` changed runtime semantics, `SampleFractalPoints(...)` and `FractalSampleResult` stayed untouched, and the kernel witness now proves stable public classes can exist for non-unit radii without falsely claiming actual root convergence.
-- [x] No further slice-owned defect was found after rereading the bounded diff plus rerunning the focused kernel/runtime proofs; residual work is closure mechanics only.
+- [x] No further slice-owned defect was found after rereading the bounded diff plus rerunning the focused kernel/runtime proofs, and the final closeout mechanics were completed on the committed head.
 
 ## Action Hostile Review
 
