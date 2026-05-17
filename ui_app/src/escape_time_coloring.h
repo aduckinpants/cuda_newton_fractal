@@ -868,6 +868,14 @@ ESCAPE_TIME_COLOR_HD inline bool TryResolveColorPipelineRootSample(
     const KernelParams& params,
     int* outRootIndex,
     int* outRootCount) {
+    if (fractalType == FractalType::projection_and_flow) {
+        const int projectionRootCount =
+            params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+        const int projectionClassCount = projectionRootCount * 4 + 1;
+        if (outRootCount) *outRootCount = projectionClassCount;
+        if (outRootIndex) *outRootIndex = NearestRootIndexUnitRoots(z, projectionClassCount);
+        return true;
+    }
     const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
     const bool useCustomRoots = polynomialRootCount == 0 &&
         IsExplainoFamily(fractalType) &&
@@ -1211,6 +1219,20 @@ ESCAPE_TIME_COLOR_HD inline float ResolveBasinResidualMetric(float residual) {
     return -logf(fmaxf(residual, 1.0e-12f));
 }
 
+ESCAPE_TIME_COLOR_HD inline float ResolveProjectionAndFlowSmoothEscapeResidual(
+    FractalType fractalType,
+    float residual,
+    const KernelParams& params) {
+    if (fractalType != FractalType::projection_and_flow) {
+        return residual;
+    }
+    const float threshold = params.projection_and_flow_pressure_threshold;
+    if (!isfinite(threshold) || threshold <= 0.0f) {
+        return residual;
+    }
+    return fmaxf(residual, 0.0f) / fmaxf(threshold, 1.0e-12f);
+}
+
 ESCAPE_TIME_COLOR_HD inline float ResolveBasinSmoothEscapeSignal(float residual, const KernelParams& params) {
     return ResolveBasinResidualMetric(residual) * 0.05f *
         EscapeTimeColorClamp(params.color_smooth_escape_scale, 0.25f, 4.0f) +
@@ -1244,7 +1266,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveColorPipelineSourceStackEntryBasinSigna
         return 0.0f;
     }
     if (entry.signal == ColorSignal::smooth_escape) {
-        return ResolveBasinSmoothEscapeSignal(residual, entry.params);
+        return ResolveBasinSmoothEscapeSignal(
+            ResolveProjectionAndFlowSmoothEscapeResidual(fractalType, residual, params),
+            entry.params);
     }
     if (entry.signal == ColorSignal::escape_magnitude) {
         return ResolveEscapeMagnitudeSignal(magnitude, entry.params);
@@ -1312,7 +1336,9 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
         return 0.0f;
     }
     if (params.color_pipeline.signal == ColorSignal::smooth_escape) {
-        return ResolveBasinSmoothEscapeSignal(residual, params);
+        return ResolveBasinSmoothEscapeSignal(
+            ResolveProjectionAndFlowSmoothEscapeResidual(fractalType, residual, params),
+            params);
     }
     if (params.color_pipeline.signal == ColorSignal::escape_magnitude) {
         return ResolveEscapeMagnitudeSignal(EscapeTimeColorAbs(z), params);

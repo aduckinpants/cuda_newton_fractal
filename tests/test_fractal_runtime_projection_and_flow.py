@@ -260,3 +260,46 @@ def test_projection_and_flow_smooth_escape_runtime_capture_keeps_stable_classes_
     assert _bmp_unique_color_count(smooth_escape_capture["frame_bytes"]) > 8
     assert _bmp_non_black_pixel_count(smooth_escape_capture["frame_bytes"]) > 0
     assert smooth_escape_capture["frame_hash"] != baseline_capture["frame_hash"]
+
+
+def test_projection_and_flow_smooth_escape_runtime_capture_responds_to_pressure_threshold(tmp_path) -> None:
+    exe_path = _active_runtime_exe()
+
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "projection_and_flow",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    tight_threshold_state = _with_projection_flow_smooth_escape_state(
+        baseline_capture["state"],
+        radius=1.75,
+    )
+    tight_threshold_state["params"]["projection_and_flow_pressure_threshold"] = 0.25
+    loose_threshold_state = _with_projection_flow_smooth_escape_state(
+        baseline_capture["state"],
+        radius=1.75,
+    )
+    loose_threshold_state["params"]["projection_and_flow_pressure_threshold"] = 2.0
+
+    tight_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "projection_flow_threshold_tight", tight_threshold_state)),
+        "--capture-diagnostic",
+    )
+    loose_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "projection_flow_threshold_loose", loose_threshold_state)),
+        "--capture-diagnostic",
+    )
+
+    assert tight_capture["state"]["params"]["projection_and_flow_pressure_threshold"] == pytest.approx(0.25)
+    assert loose_capture["state"]["params"]["projection_and_flow_pressure_threshold"] == pytest.approx(2.0)
+    assert tight_capture["frame_hash"] != loose_capture["frame_hash"]

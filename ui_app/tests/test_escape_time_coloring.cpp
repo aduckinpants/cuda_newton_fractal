@@ -966,6 +966,84 @@ int main() {
     }
 
     {
+        params.color_pipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_shape_repeat_frequency = 8.0f;
+        params.color_shape_repeat_phase = 0.0f;
+        params.color_smooth_escape_scale = 1.0f;
+        params.color_smooth_escape_bias = 0.0f;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.25f;
+        const TestColor projectionAndFlowThresholdTight = MakeProgrammableBasinColor<TestColor>(
+            FractalType::projection_and_flow,
+            true,
+            false,
+            12,
+            100,
+            TestComplex{1.0f, 0.0f},
+            0.5f,
+            params);
+        params.projection_and_flow_pressure_threshold = 2.0f;
+        const TestColor projectionAndFlowThresholdLoose = MakeProgrammableBasinColor<TestColor>(
+            FractalType::projection_and_flow,
+            true,
+            false,
+            12,
+            100,
+            TestComplex{1.0f, 0.0f},
+            0.5f,
+            params);
+        if (Equals(projectionAndFlowThresholdTight, projectionAndFlowThresholdLoose)) {
+            std::cerr << "Projection-and-Flow smooth_escape programmable coloring should react to pressure-threshold changes\n";
+            return 1;
+        }
+    }
+
+    {
+        params.color_pipeline = {ColorSignal::root_index, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        params.color_shape = ColorPipelineShape::identity;
+        params.color_shape_offset = 0.0f;
+        params.color_shape_scale = 1.0f;
+        params.color_shape_repeat_frequency = 8.0f;
+        params.color_shape_repeat_phase = 0.0f;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+        constexpr int kProjectionAndFlowClassCount = 3 * 4 + 1;
+        constexpr float kTau = 6.28318530717958647692f;
+        const TestComplex projectionAndFlowClass0{
+            std::cos(kTau * 0.0f / static_cast<float>(kProjectionAndFlowClassCount)),
+            std::sin(kTau * 0.0f / static_cast<float>(kProjectionAndFlowClassCount)),
+        };
+        const TestComplex projectionAndFlowClass1{
+            std::cos(kTau * 1.0f / static_cast<float>(kProjectionAndFlowClassCount)),
+            std::sin(kTau * 1.0f / static_cast<float>(kProjectionAndFlowClassCount)),
+        };
+        const TestColor projectionAndFlowBand0 = MakeProgrammableBasinColor<TestColor>(
+            FractalType::projection_and_flow,
+            true,
+            false,
+            12,
+            100,
+            projectionAndFlowClass0,
+            0.5f,
+            params);
+        const TestColor projectionAndFlowBand1 = MakeProgrammableBasinColor<TestColor>(
+            FractalType::projection_and_flow,
+            true,
+            false,
+            12,
+            100,
+            projectionAndFlowClass1,
+            0.5f,
+            params);
+        if (Equals(projectionAndFlowBand0, projectionAndFlowBand1)) {
+            std::cerr << "Projection-and-Flow root_index programmable coloring should distinguish adjacent synthetic class roots\n";
+            return 1;
+        }
+    }
+
+    {
         params.color_pipeline = {ColorSignal::orbit_stripe, ColorPalette::phase_wheel, ColorGradingPreset::phase_default};
         params.color_shape = ColorPipelineShape::identity;
         params.color_shape_offset = 0.0f;

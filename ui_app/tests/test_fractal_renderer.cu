@@ -278,6 +278,50 @@ void TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible() {
     CleanupFractalCUDA();
 }
 
+void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
+    ViewState view{};
+    KernelParams tightParams{};
+    RenderSettings render{};
+    RenderStats tightStats{};
+    RenderStats looseStats{};
+    const char* tightError = nullptr;
+    const char* looseError = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    tightParams.max_iter = 96;
+    tightParams.epsilon = 1e-6f;
+    tightParams.coloring_mode = ColoringMode::smooth_escape;
+    tightParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    tightParams.projection_and_flow_target_radius = 1.75f;
+    tightParams.projection_and_flow_pressure_threshold = 0.25f;
+    tightParams.color_smooth_escape_scale = 1.0f;
+    tightParams.color_smooth_escape_bias = 0.0f;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    KernelParams looseParams = tightParams;
+    looseParams.projection_and_flow_pressure_threshold = 2.0f;
+
+    std::vector<uint32_t> tightPixels(64 * 48, 0u);
+    std::vector<uint32_t> loosePixels(64 * 48, 0u);
+    const bool tightOk = RenderFractalCUDA(view, tightParams, render, tightPixels.data(), nullptr, &tightStats, &tightError);
+    Check(tightOk, tightError ? tightError : "Projection-and-Flow threshold-tight smooth_escape render succeeds");
+    const bool looseOk = RenderFractalCUDA(view, looseParams, render, loosePixels.data(), nullptr, &looseStats, &looseError);
+    Check(looseOk, looseError ? looseError : "Projection-and-Flow threshold-loose smooth_escape render succeeds");
+    if (!tightOk || !looseOk) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(tightPixels != loosePixels,
+        "Projection-and-Flow smooth_escape render should react to pressure-threshold changes on the same radius lane");
+    CleanupFractalCUDA();
+}
+
 } // namespace
 
 int main() {
@@ -289,6 +333,7 @@ int main() {
     TestProjectionAndFlowRenderProducesMultipleClassColors();
     TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
     TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
+    TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;
