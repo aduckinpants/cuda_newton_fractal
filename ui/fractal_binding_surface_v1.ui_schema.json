@@ -419,6 +419,40 @@
           "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "counterfactual_pair,explaino_counterfactual_pair" }
         },
         {
+          "id": "projection_and_flow_root_family",
+          "type": "combo",
+          "label": "Flow Root Family",
+          "help": "Choose whether the free Newton step chases the cubic or quartic unit-root family before every radial projection.",
+          "value_type": "enum",
+          "default": "cubic_unit_roots",
+          "options": [
+            { "id": "cubic_unit_roots", "label": "Cubic Unit Roots" },
+            { "id": "quartic_unit_roots", "label": "Quartic Unit Roots" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_root_family" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "projection_and_flow" }
+        },
+        {
+          "id": "projection_and_flow_target_radius",
+          "type": "drag_float",
+          "label": "Projection Radius",
+          "help": "After each free Newton step, project radially onto the circle |z| = radius. This is the explicit admissible manifold for Projection-and-Flow.",
+          "value_type": "float",
+          "min": 0.0001, "ui_min": 0.25, "ui_max": 4.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_target_radius" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "projection_and_flow" }
+        },
+        {
+          "id": "projection_and_flow_pressure_threshold",
+          "type": "drag_float",
+          "label": "Pressure Threshold",
+          "help": "Classes 0..2N-1 = root sector x pressure bucket, where bucket 0 stays below the cumulative radial-projection threshold and bucket 1 crosses it. Class 2N = unstable.",
+          "value_type": "float",
+          "min": 0.0, "ui_min": 0.0, "ui_max": 8.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_pressure_threshold" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "projection_and_flow" }
+        },
+        {
           "id": "nova_alpha",
           "type": "slider_float",
           "label": "Nova Alpha",

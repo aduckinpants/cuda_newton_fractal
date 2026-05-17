@@ -300,6 +300,86 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
     return true;
 }
 
+bool ValidateProjectionAndFlowControlSurface(const UISchema& schema) {
+    const UISchemaPanel* fractalPanel = FindPanelById(schema, "fractal");
+    if (!fractalPanel) {
+        std::cerr << "Main schema missing fractal panel for Projection-and-Flow control validation\n";
+        return false;
+    }
+
+    const UISchemaControl* rootFamily = FindControlById(*fractalPanel, "projection_and_flow_root_family");
+    const UISchemaControl* targetRadius = FindControlById(*fractalPanel, "projection_and_flow_target_radius");
+    const UISchemaControl* pressureThreshold = FindControlById(*fractalPanel, "projection_and_flow_pressure_threshold");
+    if (!rootFamily || !targetRadius || !pressureThreshold) {
+        std::cerr << "Main schema is missing one or more Projection-and-Flow controls\n";
+        return false;
+    }
+
+    const bool rootFamilyOk =
+        rootFamily->has_binding &&
+        rootFamily->binding.path == "fractal.params.projection_and_flow_root_family" &&
+        rootFamily->has_default &&
+        rootFamily->def.is_string() &&
+        rootFamily->def.as_string() == "cubic_unit_roots" &&
+        rootFamily->options.size() == 2 &&
+        rootFamily->has_help &&
+        rootFamily->help.find("cubic") != std::string::npos &&
+        rootFamily->help.find("quartic") != std::string::npos &&
+        rootFamily->has_visible_if &&
+        rootFamily->visible_if.op == "eq" &&
+        rootFamily->visible_if.path == "fractal.view.fractal_type" &&
+        rootFamily->visible_if.value == "projection_and_flow";
+    if (!rootFamilyOk) {
+        std::cerr << "Main schema Projection-and-Flow root-family control drifted from the bounded owner seam\n";
+        return false;
+    }
+
+    const bool targetRadiusOk =
+        targetRadius->has_binding &&
+        targetRadius->binding.path == "fractal.params.projection_and_flow_target_radius" &&
+        targetRadius->has_default &&
+        targetRadius->def.is_number() &&
+        targetRadius->def.as_number() == 1.0 &&
+        targetRadius->has_min &&
+        targetRadius->min == 0.0001 &&
+        targetRadius->has_ui_min &&
+        targetRadius->ui_min == 0.25 &&
+        targetRadius->has_ui_max &&
+        targetRadius->ui_max == 4.0 &&
+        targetRadius->has_help &&
+        targetRadius->help.find("|z| = radius") != std::string::npos &&
+        targetRadius->has_visible_if &&
+        targetRadius->visible_if.op == "eq" &&
+        targetRadius->visible_if.path == "fractal.view.fractal_type" &&
+        targetRadius->visible_if.value == "projection_and_flow";
+    if (!targetRadiusOk) {
+        std::cerr << "Main schema Projection-and-Flow target-radius control does not make the projection manifold explicit\n";
+        return false;
+    }
+
+    const bool pressureThresholdOk =
+        pressureThreshold->has_binding &&
+        pressureThreshold->binding.path == "fractal.params.projection_and_flow_pressure_threshold" &&
+        pressureThreshold->has_default &&
+        pressureThreshold->def.is_number() &&
+        pressureThreshold->def.as_number() == 1.0 &&
+        pressureThreshold->has_min &&
+        pressureThreshold->min == 0.0 &&
+        pressureThreshold->has_help &&
+        pressureThreshold->help.find("root sector x pressure bucket") != std::string::npos &&
+        pressureThreshold->help.find("unstable") != std::string::npos &&
+        pressureThreshold->has_visible_if &&
+        pressureThreshold->visible_if.op == "eq" &&
+        pressureThreshold->visible_if.path == "fractal.view.fractal_type" &&
+        pressureThreshold->visible_if.value == "projection_and_flow";
+    if (!pressureThresholdOk) {
+        std::cerr << "Main schema Projection-and-Flow pressure control does not expose the public class split truthfully\n";
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -581,6 +661,9 @@ int main() {
         json_min::ParseResult pr2 = json_min::Parse(text);
         UISchemaLoadResult result = LoadUISchemaFromJson(pr2.value);
         if (!ValidateCounterfactualPairControlSurface(result.schema)) {
+            return 1;
+        }
+        if (!ValidateProjectionAndFlowControlSurface(result.schema)) {
             return 1;
         }
 
@@ -1150,7 +1233,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 7) {
+            fractalPanel->controls.size() != 10) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1195,8 +1278,15 @@ int main() {
         const UISchemaControl* pairOffsetX = FindControlById(*fractalPanel, "counterfactual_pair_offset_x");
         const UISchemaControl* pairOffsetY = FindControlById(*fractalPanel, "counterfactual_pair_offset_y");
         const UISchemaControl* pairReconvergenceRatio = FindControlById(*fractalPanel, "counterfactual_pair_reconvergence_ratio");
+        const UISchemaControl* projectionAndFlowRootFamily = FindControlById(*fractalPanel, "projection_and_flow_root_family");
+        const UISchemaControl* projectionAndFlowTargetRadius = FindControlById(*fractalPanel, "projection_and_flow_target_radius");
+        const UISchemaControl* projectionAndFlowPressureThreshold = FindControlById(*fractalPanel, "projection_and_flow_pressure_threshold");
         if (!pairRootFamily || !pairFrame || !pairOffsetX || !pairOffsetY || !pairReconvergenceRatio) {
             std::cerr << "Safe-mode schema did not expose the Counterfactual Pair hardening controls\n";
+            return 1;
+        }
+        if (!projectionAndFlowRootFamily || !projectionAndFlowTargetRadius || !projectionAndFlowPressureThreshold) {
+            std::cerr << "Safe-mode schema did not expose the Projection-and-Flow hardening controls\n";
             return 1;
         }
         if (!pairRootFamily->has_binding || pairRootFamily->binding.path != "fractal.params.counterfactual_pair_root_family" ||
@@ -1236,6 +1326,52 @@ int main() {
             !VisibleIfIncludesFractalType(*pairReconvergenceRatio, "counterfactual_pair") ||
             !VisibleIfIncludesFractalType(*pairReconvergenceRatio, "explaino_counterfactual_pair")) {
             std::cerr << "Safe-mode schema Counterfactual Pair reconvergence control did not expose the public class model\n";
+            return 1;
+        }
+        if (!projectionAndFlowRootFamily->has_binding ||
+            projectionAndFlowRootFamily->binding.path != "fractal.params.projection_and_flow_root_family" ||
+            !projectionAndFlowRootFamily->has_default ||
+            !projectionAndFlowRootFamily->def.is_string() ||
+            projectionAndFlowRootFamily->def.as_string() != "cubic_unit_roots" ||
+            projectionAndFlowRootFamily->options.size() != 2 ||
+            !projectionAndFlowRootFamily->has_help ||
+            projectionAndFlowRootFamily->help.find("cubic") == std::string::npos ||
+            projectionAndFlowRootFamily->help.find("quartic") == std::string::npos ||
+            !projectionAndFlowRootFamily->has_visible_if ||
+            projectionAndFlowRootFamily->visible_if.op != "eq" ||
+            projectionAndFlowRootFamily->visible_if.value != "projection_and_flow") {
+            std::cerr << "Safe-mode schema Projection-and-Flow root-family control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!projectionAndFlowTargetRadius->has_binding ||
+            projectionAndFlowTargetRadius->binding.path != "fractal.params.projection_and_flow_target_radius" ||
+            !projectionAndFlowTargetRadius->has_default ||
+            !projectionAndFlowTargetRadius->def.is_number() ||
+            projectionAndFlowTargetRadius->def.as_number() != 1.0 ||
+            !projectionAndFlowTargetRadius->has_min ||
+            projectionAndFlowTargetRadius->min != 0.0001 ||
+            !projectionAndFlowTargetRadius->has_help ||
+            projectionAndFlowTargetRadius->help.find("|z| = radius") == std::string::npos ||
+            !projectionAndFlowTargetRadius->has_visible_if ||
+            projectionAndFlowTargetRadius->visible_if.op != "eq" ||
+            projectionAndFlowTargetRadius->visible_if.value != "projection_and_flow") {
+            std::cerr << "Safe-mode schema Projection-and-Flow target-radius control did not make the projection manifold explicit\n";
+            return 1;
+        }
+        if (!projectionAndFlowPressureThreshold->has_binding ||
+            projectionAndFlowPressureThreshold->binding.path != "fractal.params.projection_and_flow_pressure_threshold" ||
+            !projectionAndFlowPressureThreshold->has_default ||
+            !projectionAndFlowPressureThreshold->def.is_number() ||
+            projectionAndFlowPressureThreshold->def.as_number() != 1.0 ||
+            !projectionAndFlowPressureThreshold->has_min ||
+            projectionAndFlowPressureThreshold->min != 0.0 ||
+            !projectionAndFlowPressureThreshold->has_help ||
+            projectionAndFlowPressureThreshold->help.find("root sector x pressure bucket") == std::string::npos ||
+            projectionAndFlowPressureThreshold->help.find("unstable") == std::string::npos ||
+            !projectionAndFlowPressureThreshold->has_visible_if ||
+            projectionAndFlowPressureThreshold->visible_if.op != "eq" ||
+            projectionAndFlowPressureThreshold->visible_if.value != "projection_and_flow") {
+            std::cerr << "Safe-mode schema Projection-and-Flow pressure control did not expose the public class split truthfully\n";
             return 1;
         }
 

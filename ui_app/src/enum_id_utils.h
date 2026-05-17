@@ -48,6 +48,11 @@ inline constexpr EnumIdPair<CounterfactualPairFrame> kCounterfactualPairFrameIds
     {CounterfactualPairFrame::view_relative, "view_relative"},
 };
 
+inline constexpr EnumIdPair<ProjectionAndFlowRootFamily> kProjectionAndFlowRootFamilyIds[] = {
+    {ProjectionAndFlowRootFamily::cubic_unit_roots, "cubic_unit_roots"},
+    {ProjectionAndFlowRootFamily::quartic_unit_roots, "quartic_unit_roots"},
+};
+
 inline constexpr EnumIdPair<TranscendentalFunc> kTranscendentalFuncIds[] = {
     {TranscendentalFunc::f_sin, "f_sin"},
     {TranscendentalFunc::f_exp_minus_1, "f_exp_minus_1"},
@@ -194,6 +199,14 @@ inline const char* CounterfactualPairFrameId(CounterfactualPairFrame value) {
 
 inline bool TryParseCounterfactualPairFrameId(std::string_view id, CounterfactualPairFrame* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kCounterfactualPairFrameIds, outValue);
+}
+
+inline const char* ProjectionAndFlowRootFamilyId(ProjectionAndFlowRootFamily value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kProjectionAndFlowRootFamilyIds);
+}
+
+inline bool TryParseProjectionAndFlowRootFamilyId(std::string_view id, ProjectionAndFlowRootFamily* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kProjectionAndFlowRootFamilyIds, outValue);
 }
 
 inline const char* TranscendentalFuncId(TranscendentalFunc value) {

@@ -61,6 +61,14 @@ Complete - the bounded Projection-and-Flow runtime lane is landed, hostile-audit
 - [x] Real issue found and repaired: the CUDA kernel test was not self-contained for the Explaino Counterfactual Pair setup it exercised, so it was repaired to carry the bounded defaults locally instead of depending on an unlinked preset helper seam.
 - [x] Clean re-read of the repaired state: no additional real defect found in the Projection-and-Flow runtime lane, the explicit pressure-threshold split, the preserved `SampleFractalPoints(...)` / `FractalSampleResult` legacy surface, or the narrowed scope fence.
 
+## Action Hostile Review
+
+- Action ID: projection-flow-hardening-contract-bridge-1
+- Suspected Failure Mode: The closed runtime-lane contract will keep blocking creation of the new Projection-and-Flow hardening plan/contract pair, which would force mutation under the wrong lock or an unscoped workaround.
+- Correct Owner/Action: Expand the closed runtime-lane contract scope only enough to add the new Projection-and-Flow hardening plan/contract files, then re-lock and replace the active contract immediately.
+- Proof Surface: This bridge may touch only the closed runtime-lane plan/contract plus the new hardening plan/contract file paths; no runtime, schema, renderer, or diagnostics seam may change before the new hardening contract is active.
+- Blocked Action: Add docs/contracts/projection_and_flow_fractal_semantics_control_surface_hardening.contract.json and docs/notes/projection_and_flow_fractal_semantics_control_surface_hardening_PHASED_PLAN.md
+
 ## Notes
 
 - Exit criteria:

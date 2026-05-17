@@ -66,9 +66,17 @@
             converged = (pAbs < eps);
         }
     } else if (ft == FractalType::projection_and_flow) {
-        constexpr int kProjectionAndFlowRootCount = 3;
-        constexpr int kProjectionAndFlowClassCount = 7;
-        constexpr double kProjectionAndFlowPressureThreshold = 1.0;
+        const int projectionRootCount =
+            params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+        const int projectionClassCount = projectionRootCount * 2 + 1;
+        const double projectionTargetRadius =
+            isfinite(params.projection_and_flow_target_radius)
+                ? fmax(1.0e-12, static_cast<double>(params.projection_and_flow_target_radius))
+                : 1.0;
+        const double projectionPressureThreshold =
+            isfinite(params.projection_and_flow_pressure_threshold)
+                ? fmax(0.0, static_cast<double>(params.projection_and_flow_pressure_threshold))
+                : 0.0;
         float flowCoeffs[5];
         #pragma unroll
         for (int k = 0; k < 5; ++k) {
@@ -91,7 +99,7 @@
                     if (residual < epsD) {
                         converged = true;
                         terminationKind = TerminationKind::root_converged;
-                        rootIndex = NearestRootIndexUnitRoots(zd, kProjectionAndFlowRootCount);
+                        rootIndex = NearestRootIndexUnitRoots(zd, projectionRootCount);
                         break;
                     }
                     const double dAbs2 = cxd_abs2(dP);
@@ -104,6 +112,16 @@
                         terminationKind = TerminationKind::nonfinite;
                         break;
                     }
+                    Cxd freeP, freeDP;
+                    poly_eval_real_coeffs_deg4_d(flowCoeffs, freeZ, &freeP, &freeDP);
+                    const double freeResidual = cxd_abs(freeP);
+                    if (freeResidual < epsD) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(freeZ, projectionRootCount);
+                        zd = freeZ;
+                        break;
+                    }
                     const double freeMag2 = cxd_abs2(freeZ);
                     if (freeMag2 < 1.0e-30) {
                         zd = {0.0, 0.0};
@@ -111,10 +129,9 @@
                         break;
                     }
                     const double freeMag = sqrt(freeMag2);
-                    const Cxd projected{freeZ.x / freeMag, freeZ.y / freeMag};
-                    const double dx = projected.x - freeZ.x;
-                    const double dy = projected.y - freeZ.y;
-                    projectionPressure += sqrt(dx * dx + dy * dy);
+                    const double projectionScale = projectionTargetRadius / freeMag;
+                    const Cxd projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
+                    projectionPressure += fabs(freeMag - projectionTargetRadius);
                     zd = projected;
                 }
             }
@@ -132,7 +149,7 @@
                     if (residual < eps) {
                         converged = true;
                         terminationKind = TerminationKind::root_converged;
-                        rootIndex = NearestRootIndexUnitRoots(z, kProjectionAndFlowRootCount);
+                        rootIndex = NearestRootIndexUnitRoots(z, projectionRootCount);
                         break;
                     }
                     const float dAbs2 = cx_abs2(dP);
@@ -145,6 +162,16 @@
                         terminationKind = TerminationKind::nonfinite;
                         break;
                     }
+                    Cx freeP, freeDP;
+                    poly_eval_real_coeffs_deg4(flowCoeffs, freeZ, &freeP, &freeDP);
+                    const float freeResidual = cx_abs(freeP);
+                    if (freeResidual < eps) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(freeZ, projectionRootCount);
+                        z = freeZ;
+                        break;
+                    }
                     const float freeMag2 = cx_abs2(freeZ);
                     if (freeMag2 < 1.0e-20f) {
                         z = {0.0f, 0.0f};
@@ -152,21 +179,24 @@
                         break;
                     }
                     const float freeMag = sqrtf(freeMag2);
-                    const Cx projected{freeZ.x / freeMag, freeZ.y / freeMag};
-                    const float dx = projected.x - freeZ.x;
-                    const float dy = projected.y - freeZ.y;
-                    projectionPressure += static_cast<double>(sqrtf(dx * dx + dy * dy));
+                    const float projectionScale = static_cast<float>(projectionTargetRadius) / freeMag;
+                    const Cx projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
+                    projectionPressure += static_cast<double>(fabsf(freeMag - static_cast<float>(projectionTargetRadius)));
                     z = projected;
                 }
             }
         }
 
-        int projectionClass = kProjectionAndFlowClassCount - 1;
-        if (converged && rootIndex >= 0 && rootIndex < kProjectionAndFlowRootCount) {
-            const int pressureBucket = projectionPressure >= kProjectionAndFlowPressureThreshold ? 1 : 0;
+        int projectionClass = projectionClassCount - 1;
+        if (converged && rootIndex >= 0 && rootIndex < projectionRootCount) {
+            const int pressureBucket = projectionPressure >= projectionPressureThreshold ? 1 : 0;
             projectionClass = rootIndex * 2 + pressureBucket;
         }
-        z = unit_root_k(projectionClass, kProjectionAndFlowClassCount);
+        // Encode the synthetic class root in the inverse order expected by
+        // NearestRootIndexUnitRoots(...) so the public class id round-trips.
+        const int projectionClassRoot =
+            (projectionClass - ((projectionClassCount + 1) / 2) + projectionClassCount) % projectionClassCount;
+        z = unit_root_k(projectionClassRoot, projectionClassCount);
         pAbs = static_cast<float>(projectionPressure);
         escaped = false;
     } else if (ft == FractalType::counterfactual_pair) {

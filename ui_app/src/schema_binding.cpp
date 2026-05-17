@@ -76,6 +76,18 @@ bool TryResolveCounterfactualPairRootFamilyForPolyKindLocal(PolyKind kind, Count
     return false;
 }
 
+bool TryResolveProjectionAndFlowRootFamilyForPolyKindLocal(PolyKind kind, ProjectionAndFlowRootFamily* outFamily) {
+    if (kind == PolyKind::z3_minus_1) {
+        if (outFamily) *outFamily = ProjectionAndFlowRootFamily::cubic_unit_roots;
+        return true;
+    }
+    if (kind == PolyKind::z4_minus_1) {
+        if (outFamily) *outFamily = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        return true;
+    }
+    return false;
+}
+
 void SyncCounterfactualPairRootFamilyPresetLocal(KernelParams& params) {
     switch (params.counterfactual_pair_root_family) {
     case CounterfactualPairRootFamily::cubic_unit_roots:
@@ -87,6 +99,27 @@ void SyncCounterfactualPairRootFamilyPresetLocal(KernelParams& params) {
         params.poly_coeffs[4] = 0.0f;
         break;
     case CounterfactualPairRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 0.0f;
+        params.poly_coeffs[4] = 1.0f;
+        break;
+    }
+}
+
+void SyncProjectionAndFlowRootFamilyPresetLocal(KernelParams& params) {
+    switch (params.projection_and_flow_root_family) {
+    case ProjectionAndFlowRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 0.0f;
+        break;
+    case ProjectionAndFlowRootFamily::quartic_unit_roots:
         params.poly_kind = PolyKind::z4_minus_1;
         params.poly_coeffs[0] = -1.0f;
         params.poly_coeffs[1] = 0.0f;
@@ -235,6 +268,22 @@ bool SetCounterfactualPairRootFamily(BindingContext* ctx, const std::string& id)
 bool SetCounterfactualPairFrame(BindingContext* ctx, const std::string& id) {
     return ctx && ctx->params &&
         ParseAndAssignEnumId(id, &ctx->params->counterfactual_pair_frame, TryParseCounterfactualPairFrameId);
+}
+
+bool SetProjectionAndFlowRootFamily(BindingContext* ctx, const std::string& id) {
+    if (!ctx || !ctx->params) {
+        return false;
+    }
+
+    ProjectionAndFlowRootFamily nextFamily = ctx->params->projection_and_flow_root_family;
+    if (!ParseAndAssignEnumId(id, &nextFamily, TryParseProjectionAndFlowRootFamilyId)) {
+        return false;
+    }
+    ctx->params->projection_and_flow_root_family = nextFamily;
+    if (ctx->view && ctx->view->fractal_type == FractalType::projection_and_flow) {
+        SyncProjectionAndFlowRootFamilyPresetLocal(*ctx->params);
+    }
+    return true;
 }
 
 bool SetColoringMode(BindingContext* ctx, const std::string& id) {
@@ -559,6 +608,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.counterfactual_pair_frame") {
         return EnumIdOrEmpty(CounterfactualPairFrameId(params->counterfactual_pair_frame));
     }
+    if (params && path == "fractal.params.projection_and_flow_root_family") {
+        return EnumIdOrEmpty(ProjectionAndFlowRootFamilyId(params->projection_and_flow_root_family));
+    }
     if (params && path == "fractal.params.transcendental_func") {
         return EnumIdOrEmpty(TranscendentalFuncId(params->transcendental_func));
     }
@@ -601,6 +653,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     }
     if (params && path == "fractal.params.counterfactual_pair_frame") {
         return SetCounterfactualPairFrame(this, id);
+    }
+    if (params && path == "fractal.params.projection_and_flow_root_family") {
+        return SetProjectionAndFlowRootFamily(this, id);
     }
     if (params && path == "fractal.params.transcendental_func") {
         return ParseAndAssignEnumId(id, &params->transcendental_func, TryParseTranscendentalFuncId);
@@ -751,6 +806,8 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.counterfactual_pair_offset_x") { *outPtr = &params->counterfactual_pair_offset_x; return true; }
         if (path == "fractal.params.counterfactual_pair_offset_y") { *outPtr = &params->counterfactual_pair_offset_y; return true; }
         if (path == "fractal.params.counterfactual_pair_reconvergence_ratio") { *outPtr = &params->counterfactual_pair_reconvergence_ratio; return true; }
+        if (path == "fractal.params.projection_and_flow_target_radius") { *outPtr = &params->projection_and_flow_target_radius; return true; }
+        if (path == "fractal.params.projection_and_flow_pressure_threshold") { *outPtr = &params->projection_and_flow_pressure_threshold; return true; }
         if (path == "fractal.params.nova_alpha") { *outPtr = &params->nova_alpha; return true; }
         if (path == "fractal.params.phoenix_p_real") { *outPtr = &params->phoenix_p_real; return true; }
         if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }

@@ -49,6 +49,7 @@ static void TestConcreteEnumIdWrappers() {
     ColorPipelineShape shape = ColorPipelineShape::identity;
     CounterfactualPairRootFamily rootFamily = CounterfactualPairRootFamily::cubic_unit_roots;
     CounterfactualPairFrame pairFrame = CounterfactualPairFrame::world_absolute;
+    ProjectionAndFlowRootFamily projectionFlowRootFamily = ProjectionAndFlowRootFamily::cubic_unit_roots;
 
     Check(std::string_view(PolyKindId(PolyKind::z3_minus_1)) == "z3_minus_1",
         "TestConcreteEnumIdWrappers_PolyKindLookup");
@@ -107,6 +108,12 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_CounterfactualPairFrameLookup");
     Check(TryParseCounterfactualPairFrameId("view_relative", &pairFrame) && pairFrame == CounterfactualPairFrame::view_relative,
         "TestConcreteEnumIdWrappers_CounterfactualPairFrameParse");
+
+    Check(std::string_view(ProjectionAndFlowRootFamilyId(ProjectionAndFlowRootFamily::cubic_unit_roots)) == "cubic_unit_roots",
+        "TestConcreteEnumIdWrappers_ProjectionAndFlowRootFamilyLookup");
+    Check(TryParseProjectionAndFlowRootFamilyId("quartic_unit_roots", &projectionFlowRootFamily) &&
+            projectionFlowRootFamily == ProjectionAndFlowRootFamily::quartic_unit_roots,
+        "TestConcreteEnumIdWrappers_ProjectionAndFlowRootFamilyParse");
 }
 
 int main() {

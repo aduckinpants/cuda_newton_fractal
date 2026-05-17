@@ -249,6 +249,11 @@ enum class CounterfactualPairFrame : int {
     view_relative = 1,
 };
 
+enum class ProjectionAndFlowRootFamily : int {
+    cubic_unit_roots = 0,
+    quartic_unit_roots = 1,
+};
+
 // --- Precision tier model (two-axis: backend x strategy) ---
 // Public presets (API / schema surface).
 enum class SampleTier : int {
@@ -358,6 +363,9 @@ struct KernelParams {
     float counterfactual_pair_offset_x{0.16f};
     float counterfactual_pair_offset_y{0.08f};
     float counterfactual_pair_reconvergence_ratio{0.60f};
+    ProjectionAndFlowRootFamily projection_and_flow_root_family{ProjectionAndFlowRootFamily::cubic_unit_roots};
+    float projection_and_flow_target_radius{1.0f};
+    float projection_and_flow_pressure_threshold{1.0f};
     int multibrot_power{3};
     float multibrot_power_float{3.0f};
     float lambda_real{2.9685855f};

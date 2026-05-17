@@ -79,6 +79,17 @@ static bool IsCounterfactualPairCarrierVisibleControl(const UISchemaControl* con
         ContainsCsvToken(control->visible_if.value, "explaino_counterfactual_pair");
 }
 
+static bool IsProjectionAndFlowVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "eq" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        control->visible_if.value == "projection_and_flow";
+}
+
 static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* viewPanel = FindPanelById(safeMode, "view");
@@ -87,7 +98,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 7,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 10,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 5,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -202,10 +213,36 @@ static void TestSafeModeSchemaExposesCounterfactualPairControls() {
         "TestSafeModeSchemaExposesCounterfactualPairControls_ReconvergenceRatio");
 }
 
+static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesProjectionAndFlowControls_FractalPanelPresent");
+    if (!fractalPanel) {
+        return;
+    }
+
+    const UISchemaControl* rootFamily = FindControlById(*fractalPanel, "projection_and_flow_root_family");
+    const UISchemaControl* targetRadius = FindControlById(*fractalPanel, "projection_and_flow_target_radius");
+    const UISchemaControl* pressureThreshold = FindControlById(*fractalPanel, "projection_and_flow_pressure_threshold");
+
+    Check(IsProjectionAndFlowVisibleControl(rootFamily, "fractal.params.projection_and_flow_root_family") &&
+            rootFamily->has_default && rootFamily->def.is_string() && rootFamily->def.as_string() == "cubic_unit_roots" &&
+            rootFamily->options.size() == 2,
+        "TestSafeModeSchemaExposesProjectionAndFlowControls_RootFamily");
+    Check(IsProjectionAndFlowVisibleControl(targetRadius, "fractal.params.projection_and_flow_target_radius") &&
+            targetRadius->has_default && targetRadius->def.is_number() && targetRadius->def.as_number() == 1.0,
+        "TestSafeModeSchemaExposesProjectionAndFlowControls_TargetRadius");
+    Check(IsProjectionAndFlowVisibleControl(pressureThreshold, "fractal.params.projection_and_flow_pressure_threshold") &&
+            pressureThreshold->has_default && pressureThreshold->def.is_number() && pressureThreshold->def.as_number() == 1.0 &&
+            pressureThreshold->has_help && pressureThreshold->help.find("unstable") != std::string::npos,
+        "TestSafeModeSchemaExposesProjectionAndFlowControls_PressureThreshold");
+}
+
 int main() {
     TestSafeModeSchemaExposesExpectedPanelsAndActions();
     TestSafeModeSchemaKeepsGroupedDefaults();
     TestSafeModeSchemaExposesCounterfactualPairControls();
+    TestSafeModeSchemaExposesProjectionAndFlowControls();
 
     std::printf("test_safe_mode_schema: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

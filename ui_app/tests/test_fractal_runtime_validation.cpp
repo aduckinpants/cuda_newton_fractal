@@ -3,6 +3,16 @@
 #include <iostream>
 #include <string>
 
+namespace {
+void SetProjectionAndFlowQuarticPreset(KernelParams& params) {
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[4] = 1.0f;
+}
+}
+
 int main() {
     {
         ViewState view{};
@@ -182,10 +192,71 @@ int main() {
         std::string error;
         view.fractal_type = FractalType::projection_and_flow;
         params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.5f;
+        SetProjectionAndFlowQuarticPreset(params);
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Projection-and-Flow validation to accept the bounded quartic hardening controls, got: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::z3_minus_1;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "projection_and_flow root family and poly_kind must agree") {
+            std::cerr << "Expected Projection-and-Flow validation to reject root-family/poly-kind drift\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
         params.poly_kind = PolyKind::z4_minus_1;
         if (ValidateFractalRuntimeState(view, params, &error) ||
-            error != "projection_and_flow requires poly_kind z3_minus_1") {
-            std::cerr << "Expected Projection-and-Flow validation to fence the first lane to cubic z^3-1\n";
+            error != "projection_and_flow root family must own the shipped polynomial preset") {
+            std::cerr << "Expected Projection-and-Flow validation to reject stale cubic coefficients under quartic controls\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_target_radius = 0.0f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "projection_and_flow_target_radius must be finite and in (0,4]") {
+            std::cerr << "Expected Projection-and-Flow validation to reject non-positive target radius\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_pressure_threshold = -0.1f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "projection_and_flow_pressure_threshold must be finite and in [0,8]") {
+            std::cerr << "Expected Projection-and-Flow validation to reject negative pressure threshold\n";
             return 1;
         }
     }

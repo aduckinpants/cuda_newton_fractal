@@ -276,6 +276,61 @@ UISchemaControl BuildCounterfactualPairReconvergenceControl() {
     return control;
 }
 
+UISchemaControl BuildProjectionAndFlowRootFamilyControl() {
+    UISchemaControl control = MakeParamControl(
+        "projection_and_flow_root_family",
+        "combo",
+        "Flow Root Family",
+        "enum",
+        "fractal.params.projection_and_flow_root_family",
+        json_min::Value{std::string("cubic_unit_roots")});
+    control.options = {
+        {"cubic_unit_roots", "Cubic Unit Roots", ""},
+        {"quartic_unit_roots", "Quartic Unit Roots", ""},
+    };
+    control.help = "Choose whether the free Newton step chases the cubic or quartic unit-root family before every radial projection.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "projection_and_flow");
+    return control;
+}
+
+UISchemaControl BuildProjectionAndFlowTargetRadiusControl() {
+    UISchemaControl control = MakeSoftMinParamControl(
+        "projection_and_flow_target_radius",
+        "drag_float",
+        "Projection Radius",
+        "float",
+        1.0e-4,
+        0.25,
+        4.0,
+        0.01,
+        "fractal.params.projection_and_flow_target_radius",
+        json_min::Value{1.0});
+    control.help = "After each free Newton step, project radially onto the circle |z| = radius. This is the explicit admissible manifold for Projection-and-Flow.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "projection_and_flow");
+    return control;
+}
+
+UISchemaControl BuildProjectionAndFlowPressureThresholdControl() {
+    UISchemaControl control = MakeSoftMinParamControl(
+        "projection_and_flow_pressure_threshold",
+        "drag_float",
+        "Pressure Threshold",
+        "float",
+        0.0,
+        0.0,
+        8.0,
+        0.01,
+        "fractal.params.projection_and_flow_pressure_threshold",
+        json_min::Value{1.0});
+    control.help =
+        "Classes 0..2N-1 = root sector x pressure bucket, where bucket 0 stays below the cumulative radial-projection threshold and bucket 1 crosses it. Class 2N = unstable.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "projection_and_flow");
+    return control;
+}
+
 std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
     std::vector<UISchemaOption> options;
     options.reserve(sizeof(kSafeModeFractalTypeOptionDefs) / sizeof(kSafeModeFractalTypeOptionDefs[0]));
@@ -335,6 +390,9 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildCounterfactualPairOffsetControl("counterfactual_pair_offset_x", "Partner Offset X", "fractal.params.counterfactual_pair_offset_x", 0.16),
         BuildCounterfactualPairOffsetControl("counterfactual_pair_offset_y", "Partner Offset Y", "fractal.params.counterfactual_pair_offset_y", 0.08),
         BuildCounterfactualPairReconvergenceControl(),
+        BuildProjectionAndFlowRootFamilyControl(),
+        BuildProjectionAndFlowTargetRadiusControl(),
+        BuildProjectionAndFlowPressureThresholdControl(),
     };
     return panel;
 }

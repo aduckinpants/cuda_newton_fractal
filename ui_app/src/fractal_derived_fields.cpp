@@ -151,6 +151,18 @@ static void SyncCounterfactualPairRootFamilyPreset(KernelParams& params) {
     SetPolyPreset(params);
 }
 
+static void SyncProjectionAndFlowRootFamilyPreset(KernelParams& params) {
+    switch (params.projection_and_flow_root_family) {
+    case ProjectionAndFlowRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        break;
+    case ProjectionAndFlowRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        break;
+    }
+    SetPolyPreset(params);
+}
+
 static void MarkDirty(bool* ioDirty) {
     if (ioDirty) *ioDirty = true;
 }
@@ -216,8 +228,10 @@ static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams&
     params.max_iter = fractalType == FractalType::nova ? 300 : 500;
     params.epsilon = 1e-6f;
     params.nova_alpha = 0.50f;
-    params.poly_kind = PolyKind::z3_minus_1;
-    SetPolyPreset(params);
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.projection_and_flow_target_radius = 1.0f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    SyncProjectionAndFlowRootFamilyPreset(params);
     ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = -0.50f;
@@ -242,8 +256,10 @@ static void ApplyCounterfactualPairPresetDefaults(KernelParams& params) {
 static void ApplyProjectionAndFlowPresetDefaults(KernelParams& params) {
     params.max_iter = 96;
     params.epsilon = 1e-6f;
-    params.poly_kind = PolyKind::z3_minus_1;
-    SetPolyPreset(params);
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.projection_and_flow_target_radius = 1.0f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    SyncProjectionAndFlowRootFamilyPreset(params);
     ApplyDefaultColoringSelection(FractalType::projection_and_flow, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = 0.0f;

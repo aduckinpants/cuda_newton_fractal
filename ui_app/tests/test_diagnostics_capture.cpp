@@ -193,6 +193,48 @@ void TestBundlePersistsExplainoCounterfactualPairFractalTypeId() {
         "state persists Explaino-owned controls for explaino_counterfactual_pair");
 }
 
+
+void TestBundlePersistsProjectionAndFlowHardeningControls() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::projection_and_flow;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.poly_kind = PolyKind::z4_minus_1;
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[4] = 1.0f;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 0.5f;
+
+    const fs::path outputDir = FreshTempRoot("projection_and_flow") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff224466u, 0xff335577u, 0xff446688u, 0xff557799u};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for projection_and_flow state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"projection_and_flow\"") != std::string::npos,
+        "state persists projection_and_flow fractal type id");
+    Check(json.find("\"projection_and_flow_root_family\": \"quartic_unit_roots\"") != std::string::npos,
+        "state persists Projection-and-Flow root family id");
+    Check(json.find("\"projection_and_flow_target_radius\": 1.75") != std::string::npos,
+        "state persists Projection-and-Flow target radius");
+    Check(json.find("\"projection_and_flow_pressure_threshold\": 0.5") != std::string::npos,
+        "state persists Projection-and-Flow pressure threshold");
+}
+
 void TestRejectsMismatchedPixelCount() {
     ViewState view{};
     KernelParams params{};
@@ -269,6 +311,7 @@ int main() {
     TestBundleWritesFrameAndState();
     TestBundlePersistsCounterfactualPairFractalTypeId();
     TestBundlePersistsExplainoCounterfactualPairFractalTypeId();
+    TestBundlePersistsProjectionAndFlowHardeningControls();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
 

@@ -70,6 +70,8 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");
     Check(static_cast<int>(CounterfactualPairFrame::view_relative) == 1, "CounterfactualPairFrame view-relative ordinal is stable");
+    Check(static_cast<int>(ProjectionAndFlowRootFamily::cubic_unit_roots) == 0, "ProjectionAndFlowRootFamily cubic ordinal is stable");
+    Check(static_cast<int>(ProjectionAndFlowRootFamily::quartic_unit_roots) == 1, "ProjectionAndFlowRootFamily quartic ordinal is stable");
     Check(static_cast<int>(SampleTier::tier_auto) == 0, "SampleTier auto ordinal is stable");
     Check(static_cast<int>(SampleTier::standard) == 2, "SampleTier standard ordinal is stable");
     Check(static_cast<int>(NumericBackend::float32) == 0, "NumericBackend float32 ordinal is stable");
@@ -189,6 +191,12 @@ void TestKernelParamsDefaults() {
         "KernelParams Counterfactual Pair offsets default to the shipped baseline gap");
     Check(Near(params.counterfactual_pair_reconvergence_ratio, 0.60f),
         "KernelParams Counterfactual Pair reconvergence ratio default is stable");
+    Check(params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::cubic_unit_roots,
+        "KernelParams Projection-and-Flow root family defaults to cubic unit roots");
+    Check(Near(params.projection_and_flow_target_radius, 1.0f),
+        "KernelParams Projection-and-Flow target radius defaults to the unit circle");
+    Check(Near(params.projection_and_flow_pressure_threshold, 1.0f),
+        "KernelParams Projection-and-Flow pressure threshold default is stable");
     Check(params.mcmullen_preset == McMullenPreset::z3_z3, "KernelParams McMullen preset defaults to z3_z3");
 }
 

@@ -212,6 +212,37 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::projection_and_flow;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.5f;
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 0.0f;
+        params.poly_coeffs[4] = 1.0f;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Projection-and-Flow defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::cubic_unit_roots ||
+            !NearlyEqual(params.projection_and_flow_target_radius, 1.0f) ||
+            !NearlyEqual(params.projection_and_flow_pressure_threshold, 1.0f) ||
+            params.poly_kind != PolyKind::z3_minus_1 ||
+            !NearlyEqual(params.poly_coeffs[0], -1.0f) ||
+            !NearlyEqual(params.poly_coeffs[3], 1.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 0.0f)) {
+            std::cerr << "Projection-and-Flow selector defaults should restore the shipped cubic/radius/pressure baseline\n";
+            return 1;
+        }
+    }
+
     // Explaino-Lambda defaults
     {
         ViewState view{};

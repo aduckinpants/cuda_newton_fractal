@@ -7,6 +7,8 @@
   "allowed_mutation_scope": [
     "docs/contracts/projection_and_flow_fractal_bounded_runtime_lane.contract.json",
     "docs/notes/projection_and_flow_fractal_bounded_runtime_lane_PHASED_PLAN.md",
+    "docs/contracts/projection_and_flow_fractal_semantics_control_surface_hardening.contract.json",
+    "docs/notes/projection_and_flow_fractal_semantics_control_surface_hardening_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
     "ui/fractal_binding_surface_v1.ui_schema.json",
     "ui_app/src/enum_id_utils.h",

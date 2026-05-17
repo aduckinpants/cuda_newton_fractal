@@ -170,6 +170,11 @@ const char* CaptureCounterfactualPairFrameId(CounterfactualPairFrame frame) {
     return (id && id[0] != '\0') ? id : "unknown";
 }
 
+const char* CaptureProjectionAndFlowRootFamilyId(ProjectionAndFlowRootFamily rootFamily) {
+    const char* id = ::ProjectionAndFlowRootFamilyId(rootFamily);
+    return (id && id[0] != '\0') ? id : "unknown";
+}
+
 bool WriteTextFile(const std::filesystem::path& path, const std::string& text, std::string* outError) {
     std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!file) {
@@ -577,6 +582,9 @@ std::string BuildStateJson(
     js << "    \"counterfactual_pair_offset_x\": " << static_cast<double>(params.counterfactual_pair_offset_x) << ",\n";
     js << "    \"counterfactual_pair_offset_y\": " << static_cast<double>(params.counterfactual_pair_offset_y) << ",\n";
     js << "    \"counterfactual_pair_reconvergence_ratio\": " << static_cast<double>(params.counterfactual_pair_reconvergence_ratio) << ",\n";
+    js << "    \"projection_and_flow_root_family\": \"" << CaptureProjectionAndFlowRootFamilyId(params.projection_and_flow_root_family) << "\",\n";
+    js << "    \"projection_and_flow_target_radius\": " << static_cast<double>(params.projection_and_flow_target_radius) << ",\n";
+    js << "    \"projection_and_flow_pressure_threshold\": " << static_cast<double>(params.projection_and_flow_pressure_threshold) << ",\n";
     if (hasLegacyColoringMirror) {
         js << "    \"coloring_mode\": \"" << CaptureColoringModeId(mirroredColoringMode) << "\",\n";
     }
