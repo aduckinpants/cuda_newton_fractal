@@ -95,6 +95,16 @@ int main() {
             std::cerr << "Projection-and-Flow should allow root_basin coloring\n";
             return 1;
         }
+        if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::smooth_escape)) {
+            std::cerr << "Projection-and-Flow should allow smooth_escape coloring because the public color controls expose it\n";
+            return 1;
+        }
+        const ColorPipelineSelection smoothEscapeProjectionFlow = {
+            ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        if (!IsColorPipelineAllowedForFractal(FractalType::projection_and_flow, smoothEscapeProjectionFlow)) {
+            std::cerr << "Projection-and-Flow should allow the public smooth_escape color tuple\n";
+            return 1;
+        }
         if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::joy_basins)) {
             std::cerr << "Projection-and-Flow should allow joy_basins coloring\n";
             return 1;

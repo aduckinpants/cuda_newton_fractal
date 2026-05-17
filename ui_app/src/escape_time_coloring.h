@@ -1323,13 +1323,14 @@ ESCAPE_TIME_COLOR_HD inline float ResolveProgrammableBasinSignal(
 template <typename Color, typename Complex>
 ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
     FractalType fractalType,
+    bool colorable,
     bool converged,
     int iteration,
     int maxIter,
     Complex z,
     float residual,
     const KernelParams& params) {
-    if (!converged &&
+    if (!colorable &&
         params.color_pipeline.signal != ColorSignal::root_proximity &&
         params.color_pipeline.palette != ColorPalette::phase_wheel) {
         return EscapeTimeColorMake<Color>(0, 0, 0, 255);
@@ -1338,6 +1339,26 @@ ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
         ResolveProgrammableBasinSignal(fractalType, iteration, maxIter, z, residual, params),
         params);
     return SampleProgrammableEscapeTimePalette<Color>(shapedSignal, converged, params);
+}
+
+template <typename Color, typename Complex>
+ESCAPE_TIME_COLOR_HD inline Color MakeProgrammableBasinColor(
+    FractalType fractalType,
+    bool converged,
+    int iteration,
+    int maxIter,
+    Complex z,
+    float residual,
+    const KernelParams& params) {
+    return MakeProgrammableBasinColor<Color>(
+        fractalType,
+        converged,
+        converged,
+        iteration,
+        maxIter,
+        z,
+        residual,
+        params);
 }
 
 template <typename Color, typename Complex>

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "projection_and_flow_smooth_escape_perf_regression_repair",
+  "feature_id": "projection_and_flow_smooth_escape_perf_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/projection_and_flow_smooth_escape_perf_regression_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/projection_and_flow_smooth_escape_perf_regression_repair.contract.json",
+    "docs/contracts/projection_and_flow_radius_semantics_truthful_class_model_repair.contract.json",
+    "docs/notes/projection_and_flow_smooth_escape_perf_regression_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_device_math.cuh",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/polynomial_eval_real_coeffs.h",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "tests/test_fractal_runtime_projection_and_flow.py"
+  ],
+  "required_operator_inputs": [
+    "repair the real Projection-and-Flow regression where the public smooth-escape and programmable basin path can collapse to an all-black frame on meaningful stable classes",
+    "repair or truthfully bound the current Projection-and-Flow FPS regression with one concrete same-lane before-after witness",
+    "keep the slice bounded to Projection-and-Flow smooth-escape and hot-loop repair rather than Explaino work, color-pipeline expansion, renderer replacement, or generic engine refactor",
+    "preserve FractalSampleResult and SampleFractalPoints as the shipped legacy sampling surfaces",
+    "close only with focused native proof, runtime publish, published-runtime Projection-and-Flow proof, hostile audit, checkpoint commit, machine receipts, push, and a clean tree"
+  ],
+  "forbidden_operator_prompts": [
+    "claim Projection-and-Flow is repaired while the public smooth-escape path still renders black on stable synthetic classes",
+    "claim performance is repaired without a concrete bounded before-after witness on the same Projection-and-Flow lane",
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the shipped legacy sampling path",
+    "widen into Explaino integration, color-pipeline expansion, renderer replacement, or a generic engine rewrite",
+    "close the slice without commit, machine receipts, hostile-audit proof, push, and a committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "projection_and_flow_smooth_escape_truthful": "required",
+    "projection_and_flow_perf_witness_recorded": "required",
+    "legacy_sampling_surface_preserved": "required",
+    "published_runtime_projection_flow_smooth_escape_proof_exists": "required"
+  },
+  "forbidden_defaults": {
+    "projection_and_flow_public_smooth_escape_blackout": "forbidden",
+    "projection_and_flow_perf_handwave": "forbidden",
+    "explaino_scope_drift": "forbidden",
+    "color_pipeline_feature_expansion": "forbidden",
+    "samplefractalpoints_signature_replaced": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/projection_and_flow_smooth_escape_perf_regression_repair.contract.json --out-json artifacts/validation/projection_and_flow_smooth_escape_perf_regression_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/projection_and_flow_smooth_escape_perf_regression_repair_PHASED_PLAN.md --out-json artifacts/validation/projection_and_flow_smooth_escape_perf_regression_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "projection_and_flow_smooth_escape_perf_regression_repair_contract_schema_valid",
+      "description": "The Projection-and-Flow smooth-escape plus performance repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/projection_and_flow_smooth_escape_perf_regression_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "projection_and_flow_smooth_escape_perf_regression_repair_plan_sync_ok",
+      "description": "The Projection-and-Flow smooth-escape plus performance repair phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "projection_and_flow_smooth_escape_perf_regression_repair_hostile_audit_ok",
+      "description": "The Projection-and-Flow smooth-escape plus performance repair hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/projection_and_flow_smooth_escape_perf_regression_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

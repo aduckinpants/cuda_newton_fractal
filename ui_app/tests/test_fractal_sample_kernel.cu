@@ -102,6 +102,18 @@ bool SameCounterfactualPairResult(const FractalSampleResult& lhs, const FractalS
         std::fabs(lhs.residual - rhs.residual) < 1.0e-6f;
 }
 
+bool SameFractalSampleResult(const FractalSampleResult& lhs, const FractalSampleResult& rhs) {
+    return lhs.iterations == rhs.iterations &&
+        lhs.converged == rhs.converged &&
+        lhs.escaped == rhs.escaped &&
+        lhs.termination_kind == rhs.termination_kind &&
+        lhs.has_far_field_delta == rhs.has_far_field_delta &&
+        std::fabs(lhs.final_z_x - rhs.final_z_x) < 1.0e-6f &&
+        std::fabs(lhs.final_z_y - rhs.final_z_y) < 1.0e-6f &&
+        std::fabs(lhs.residual - rhs.residual) < 1.0e-6f &&
+        std::fabs(lhs.far_field_delta - rhs.far_field_delta) < 1.0e-6f;
+}
+
 // Build default state for a fractal type.
 void MakeDefaults(FractalType ft, ViewState& view, KernelParams& params, RenderSettings& render) {
     view = {};
@@ -456,6 +468,51 @@ void TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses() {
     CHECK("projection_and_flow nonunit-radius still exposes multiple transient-pressure bands", sawMultiplePressureBands);
 }
 
+void TestProjectionAndFlowColorControlsDoNotChangeLegacySampleResults() {
+    ViewState view{};
+    KernelParams rootBasinParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::projection_and_flow, view, rootBasinParams, render);
+    rootBasinParams.max_iter = 96;
+    rootBasinParams.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    rootBasinParams.poly_kind = PolyKind::z3_minus_1;
+    rootBasinParams.poly_coeffs[0] = -1.0f;
+    rootBasinParams.poly_coeffs[1] = 0.0f;
+    rootBasinParams.poly_coeffs[2] = 0.0f;
+    rootBasinParams.poly_coeffs[3] = 1.0f;
+    rootBasinParams.poly_coeffs[4] = 0.0f;
+    rootBasinParams.projection_and_flow_target_radius = 1.75f;
+    rootBasinParams.projection_and_flow_pressure_threshold = 1.0f;
+
+    KernelParams smoothEscapeParams = rootBasinParams;
+    smoothEscapeParams.coloring_mode = ColoringMode::smooth_escape;
+    smoothEscapeParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    smoothEscapeParams.color_smooth_escape_scale = 1.0f;
+    smoothEscapeParams.color_smooth_escape_bias = 0.0f;
+
+    FractalSampleResult rootBasinResults[kProjectionAndFlowGridN]{};
+    FractalSampleResult smoothEscapeResults[kProjectionAndFlowGridN]{};
+    const char* error = nullptr;
+    const bool rootOk = SampleProjectionAndFlowGrid(view, rootBasinParams, render, rootBasinResults, &error);
+    CHECK("projection_and_flow root-basin sample grid ok", rootOk);
+    const bool smoothOk = SampleProjectionAndFlowGrid(view, smoothEscapeParams, render, smoothEscapeResults, &error);
+    CHECK("projection_and_flow smooth_escape sample grid ok", smoothOk);
+    if (!rootOk || !smoothOk) {
+        std::cerr << "    error: " << (error ? error : "unknown") << "\n";
+        return;
+    }
+
+    bool sawDifference = false;
+    for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
+        if (!SameFractalSampleResult(rootBasinResults[i], smoothEscapeResults[i])) {
+            sawDifference = true;
+            break;
+        }
+    }
+
+    CHECK("projection_and_flow color controls preserve SampleFractalPoints legacy results", !sawDifference);
+}
+
 void TestCounterfactualPairFrameModesAreExplicit() {
     ViewState view{};
     KernelParams worldParams{};
@@ -759,6 +816,7 @@ int main() {
     TestAllFractalTypes();
     TestProjectionAndFlowProducesExplicitProjectedClasses();
     TestProjectionAndFlowNonUnitRadiusStillProducesExplicitClasses();
+    TestProjectionAndFlowColorControlsDoNotChangeLegacySampleResults();
     TestCounterfactualPairProducesExplicitPairClasses();
     TestCounterfactualPairFrameModesAreExplicit();
     TestCounterfactualPairRootFamilyChangesRuntimeLane();

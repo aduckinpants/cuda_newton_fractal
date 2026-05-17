@@ -1,4 +1,5 @@
 #include "../src/fractal_types.h"
+#include "../src/fractal_family_rules.h"
 
 #include <cstdint>
 #include <cstring>
@@ -39,6 +40,14 @@ int CountDistinctPixels(const std::vector<uint32_t>& pixels) {
         }
     }
     return static_cast<int>(distinct.size());
+}
+
+int CountNonBlackPixels(const std::vector<uint32_t>& pixels) {
+    int count = 0;
+    for (uint32_t pixel : pixels) {
+        if ((pixel & 0x00ffffffu) != 0u) ++count;
+    }
+    return count;
 }
 
 void TestNullOutputFailsBeforeCudaWork() {
@@ -233,6 +242,42 @@ void TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors() {
     CleanupFractalCUDA();
 }
 
+void TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    params.color_smooth_escape_scale = 1.0f;
+    params.color_smooth_escape_bias = 0.0f;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(64 * 48, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Projection-and-Flow smooth_escape render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(pixels) > 1, "Projection-and-Flow smooth_escape render should not collapse to one flat color");
+    Check(CountNonBlackPixels(pixels) > 0, "Projection-and-Flow smooth_escape render should keep stable classes visible instead of rendering all black");
+    CleanupFractalCUDA();
+}
+
 } // namespace
 
 int main() {
@@ -243,6 +288,7 @@ int main() {
     TestCounterfactualPairRenderProducesMultipleClassColors();
     TestProjectionAndFlowRenderProducesMultipleClassColors();
     TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
+    TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;

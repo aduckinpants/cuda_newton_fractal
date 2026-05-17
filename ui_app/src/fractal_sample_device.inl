@@ -86,6 +86,9 @@
         double peakProjectionPressure = 0.0;
         double lastProjectionPressure = 0.0;
         bool sawProjectionPressure = false;
+        Cxd lastProjectedD{0.0, 0.0};
+        Cx lastProjectedF{0.0f, 0.0f};
+        bool hasProjectedPoint = false;
         int rootIndex = -1;
         terminationKind = TerminationKind::max_iterations;
 
@@ -115,8 +118,7 @@
                         terminationKind = TerminationKind::nonfinite;
                         break;
                     }
-                    Cxd freeP, freeDP;
-                    poly_eval_real_coeffs_deg4_d(flowCoeffs, freeZ, &freeP, &freeDP);
+                    const Cxd freeP = poly_eval_real_coeffs_deg4_value_d(flowCoeffs, freeZ);
                     const double freeResidual = cxd_abs(freeP);
                     if (freeResidual < epsD) {
                         converged = true;
@@ -138,7 +140,8 @@
                     peakProjectionPressure = fmax(peakProjectionPressure, projectionPressure);
                     lastProjectionPressure = projectionPressure;
                     sawProjectionPressure = true;
-                    rootIndex = NearestRootIndexUnitRoots(projected, projectionRootCount);
+                    lastProjectedD = projected;
+                    hasProjectedPoint = true;
                     zd = projected;
                 }
             }
@@ -169,8 +172,7 @@
                         terminationKind = TerminationKind::nonfinite;
                         break;
                     }
-                    Cx freeP, freeDP;
-                    poly_eval_real_coeffs_deg4(flowCoeffs, freeZ, &freeP, &freeDP);
+                    const Cx freeP = poly_eval_real_coeffs_deg4_value(flowCoeffs, freeZ);
                     const float freeResidual = cx_abs(freeP);
                     if (freeResidual < eps) {
                         converged = true;
@@ -193,10 +195,17 @@
                     peakProjectionPressure = fmax(peakProjectionPressure, projectionPressure);
                     lastProjectionPressure = projectionPressure;
                     sawProjectionPressure = true;
-                    rootIndex = NearestRootIndexUnitRoots(projected, projectionRootCount);
+                    lastProjectedF = projected;
+                    hasProjectedPoint = true;
                     z = projected;
                 }
             }
+        }
+
+        if (!converged && hasProjectedPoint) {
+            rootIndex = useFP64
+                ? NearestRootIndexUnitRoots(lastProjectedD, projectionRootCount)
+                : NearestRootIndexUnitRoots(lastProjectedF, projectionRootCount);
         }
 
         const double transientProjectionPressureExcess =

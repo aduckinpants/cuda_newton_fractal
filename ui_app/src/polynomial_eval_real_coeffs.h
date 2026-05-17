@@ -22,6 +22,22 @@ POLY_EVAL_REAL_COEFFS_HD inline Complex PolyEvalRealCoeffsScale(Complex value, S
 }
 
 template <typename Complex>
+POLY_EVAL_REAL_COEFFS_HD inline Complex PolyEvalRealCoeffsDeg4Value(const float coeffs[5], Complex z) {
+    using Scalar = decltype(z.x);
+
+    const Complex z2 = PolyEvalRealCoeffsMul(z, z);
+    const Complex z3 = PolyEvalRealCoeffsMul(z2, z);
+    const Complex z4 = PolyEvalRealCoeffsMul(z2, z2);
+
+    Complex p{static_cast<Scalar>(coeffs[0]), static_cast<Scalar>(0)};
+    p = PolyEvalRealCoeffsAdd(p, PolyEvalRealCoeffsScale(z, static_cast<Scalar>(coeffs[1])));
+    p = PolyEvalRealCoeffsAdd(p, PolyEvalRealCoeffsScale(z2, static_cast<Scalar>(coeffs[2])));
+    p = PolyEvalRealCoeffsAdd(p, PolyEvalRealCoeffsScale(z3, static_cast<Scalar>(coeffs[3])));
+    p = PolyEvalRealCoeffsAdd(p, PolyEvalRealCoeffsScale(z4, static_cast<Scalar>(coeffs[4])));
+    return p;
+}
+
+template <typename Complex>
 POLY_EVAL_REAL_COEFFS_HD inline void PolyEvalRealCoeffsDeg4(const float coeffs[5], Complex z, Complex* outP, Complex* outDp) {
     using Scalar = decltype(z.x);
 

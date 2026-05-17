@@ -197,7 +197,16 @@ __global__ void kernel_render(
                 }
             }
         } else {
-            color = MakeProgrammableBasinColor<uchar4>(ft, converged, it, maxIter, z, pAbs, params);
+            const bool programmableBasinColorable = converged || ft == FractalType::projection_and_flow;
+            color = MakeProgrammableBasinColor<uchar4>(
+                ft,
+                programmableBasinColorable,
+                converged,
+                it,
+                maxIter,
+                z,
+                pAbs,
+                params);
         }
     } else {
         // Escape-time coloring.
