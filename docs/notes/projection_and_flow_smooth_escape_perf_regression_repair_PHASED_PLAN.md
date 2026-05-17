@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 in progress - the bounded Projection-and-Flow repair is green on the focused runtime/native seams and the same-lane perf witness improved; checkpoint, receipts, push, clean-tree restoration, and the committed-head stale-plan gate remain.
+Complete - the bounded Projection-and-Flow smooth-escape and hot-loop regression repair is committed, receipted, pushed on `feature/fractal-sample-evidence-widening`, and the committed-head stale-plan reread is clean.
 
 ## Phase Checklist
 
 - [x] Phase 1 - open this checked-in plan and contract, replace the closed radius/class-model lock, and prove the current public smooth-escape path plus the current perf witness are both red on the bounded Projection-and-Flow lane.
 - [x] Phase 2 - land one explicit Projection-and-Flow colorability repair and one bounded hot-loop repair without widening into Explaino work, color-pipeline expansion, or generic engine refactor.
 - [x] Phase 3 - prove the repaired state through focused native seam tests, focused runtime publish, published-runtime Projection-and-Flow proof, and one concrete bounded before-after perf witness.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, push `feature/fractal-sample-evidence-widening`, clear stale closeout text, and leave the repo clean on the committed head.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, push `feature/fractal-sample-evidence-widening`, clear stale closeout text, and leave the repo clean on the committed head.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 4 in progress - the bounded Projection-and-Flow repair is green on the foc
 - [closed] Repair the bounded FPS regression, or stop at one truthful bounded performance limit with concrete proof.
 - [closed] Keep this bounded to Projection-and-Flow smooth-escape plus hot-loop repair rather than Explaino integration, color-pipeline expansion, renderer replacement, or generic engine refactor.
 - [closed] Preserve `FractalSampleResult` and `SampleFractalPoints(...)` as the shipped legacy sampling surfaces.
-- [open] Close only with focused native proof, runtime publish, published-runtime Projection-and-Flow proof, hostile audit, checkpoint commit, machine receipts, push, clean tree, and the committed-head stale-plan gate.
+- [closed] Close only with focused native proof, runtime publish, published-runtime Projection-and-Flow proof, hostile audit, checkpoint commit, machine receipts, push, clean tree, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -37,6 +37,7 @@ Phase 4 in progress - the bounded Projection-and-Flow repair is green on the foc
 - Focused runtime publish is green at `artifacts/projection_flow_runtime_build_after_fix.log`, and published-runtime proof is green at `artifacts/projection_flow_runtime_after_rebuild.log` (`7 passed`).
 - Focused native seam executables are green: `artifacts/projection_flow_test_escape_time_coloring.log`, `artifacts/projection_flow_test_fractal_family_rules.log`, `artifacts/projection_flow_test_fractal_renderer.log`, `artifacts/projection_flow_test_fractal_sample_kernel.log`, `artifacts/projection_flow_test_ui_schema.log`, and `artifacts/projection_flow_test_safe_mode_schema.log`.
 - Same-lane performance witness is improved at `artifacts/projection_flow_perf_witness_after.json`: average wall time moved from `196.112 ms` to `173.880 ms` at `1280x960` / `projection_and_flow_target_radius=1.75` (`-22.232 ms`, `11.34%` faster) with stable frame hash `3df85e6242a65cd5103ba970e3f6ec22b15c6c1232e21502a8cdd8f33fe70ecf` across the after-fix runs.
+- Closeout discipline is complete on the committed head: the final checkpoint carries fresh validation and contract-proof receipts, `feature/fractal-sample-evidence-widening` is pushed, and the committed-head stale-plan reread leaves none of the banned pre-closeout phrases in this active plan.
 - Scope remained bounded: code changes stay inside Projection-and-Flow programmable basin semantics, the bounded sampler hot loop, and regression tests; `SampleFractalPoints(...)` and `FractalSampleResult` stay intact.
 
 ## Hostile Audit
@@ -72,4 +73,4 @@ Phase 4 in progress - the bounded Projection-and-Flow repair is green on the foc
 ## Notes
 
 - Acceptance for this slice is the focused Projection-and-Flow native/runtime seam set above rather than a broad unrelated test-farm sweep.
-- Remaining closeout work is purely checkpoint/receipt/push/stale-plan/clean-tree discipline.
+- Closeout discipline is complete on the final committed head; no further closeout chores remain in this plan.
