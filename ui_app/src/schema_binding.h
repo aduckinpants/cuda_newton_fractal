@@ -5,11 +5,15 @@
 #include <vector>
 
 struct BindingContext {
+    using NoteUiAutomationRectFn = void(*)(void* user_data, const char* control_id);
+
     ViewState* view = nullptr;
     KernelParams* params = nullptr;
     RenderSettings* render = nullptr;
     LensSettings* lens = nullptr;
     bool edited_camera_hp_authority = false;
+    NoteUiAutomationRectFn note_ui_automation_rect = nullptr;
+    void* ui_automation_user_data = nullptr;
 
     std::string GetEnumId(const std::string& path) const;
     bool SetEnumId(const std::string& path, const std::string& id);

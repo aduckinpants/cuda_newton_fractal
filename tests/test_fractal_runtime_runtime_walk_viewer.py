@@ -21,11 +21,13 @@ from tests.runtime_harness import (
     active_runtime_exe as _active_runtime_exe,
     capture_explaino_runtime_baseline as _capture_explaino_runtime_baseline,
     capture_ready_window_pixels as _capture_ready_window_pixels,
+    run_headless_capture as _run_headless_capture,
     drag_screen_rect,
     find_window_for_pid as _find_window_for_pid,
     focus_window as _focus_window,
     run_headless_loaded_state_scenario as _run_headless_loaded_state_scenario,
     wait_for_ui_automation_rect,
+    write_state_bundle as _write_state_bundle,
     wait_for_window as _wait_for_window,
 )
 
@@ -42,6 +44,10 @@ WM_KEYUP = 0x0101
 VK_SPACE = 0x20
 VK_RIGHT = 0x27
 COLOR_PIPELINE_SCALE_CONTROL_ID = "color_pipeline.source.smooth_escape_ramp.signal.scale.primary"
+EXPLAINO_ALL_LIVE_CONTROL_IDS = (
+    "fractal_control.ripple_amplitude.primary",
+    "fractal_control.balance_void.primary",
+)
 
 
 def _write_state_json(path: Path) -> None:
@@ -239,6 +245,54 @@ def _viewport_probe_pixels(hwnd: int, control_rect: object) -> bytes:
     return _crop_rgba_region(pixels, width, height, left=left, top=top, right=right, bottom=bottom)
 
 
+def _controls_viewport_probe_region(hwnd: int, control_rect: object) -> tuple[int, int, int, int]:
+    width, height = _client_size(hwnd)
+    client_origin_x, _ = _client_origin(hwnd)
+    control_left = int(control_rect.screen_left) - client_origin_x
+    control_right = int(control_rect.screen_right) - client_origin_x
+    control_mid_x = (control_left + control_right) // 2
+
+    if control_mid_x < width // 2:
+        probe_left = min(max(control_right + 24, width // 3), width)
+        if probe_left >= width - 32:
+            probe_left = max(width // 2, 0)
+        return probe_left, 0, width, height
+
+    probe_right = max(min(control_left - 24, width * 2 // 3), 0)
+    if probe_right <= 32:
+        probe_right = max(width // 2, 64)
+    return 0, 0, probe_right, height
+
+
+def _controls_viewport_probe_pixels(hwnd: int, control_rect: object) -> bytes:
+    width, height = _client_size(hwnd)
+    left, top, right, bottom = _controls_viewport_probe_region(hwnd, control_rect)
+    pixels = _capture_ready_window_pixels(hwnd)
+    return _crop_rgba_region(pixels, width, height, left=left, top=top, right=right, bottom=bottom)
+
+
+def _wait_for_stable_controls_viewport_probe(
+    hwnd: int,
+    control_rect: object,
+    *,
+    timeout_seconds: float = 10.0,
+    stable_threshold: float = 0.1,
+    sample_gap_seconds: float = 0.2,
+) -> bytes:
+    deadline = time.monotonic() + timeout_seconds
+    previous = _controls_viewport_probe_pixels(hwnd, control_rect)
+    while time.monotonic() < deadline:
+        time.sleep(sample_gap_seconds)
+        current = _controls_viewport_probe_pixels(hwnd, control_rect)
+        if _mean_abs_diff(previous, current) < stable_threshold:
+            return current
+        previous = current
+    raise AssertionError(
+        "controls-window viewport probe never settled before timeout; "
+        f"control_id={getattr(control_rect, 'control_id', '<unknown>')!r}"
+    )
+
+
 def _write_loaded_state_json(path: Path, state: dict[str, object]) -> None:
     path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
@@ -317,6 +371,66 @@ def _wait_for_lane_rows(
     raise AssertionError(
         f"automation report never reached lane={lane_id!r} count={expected_count} row_id={target_row_id} enabled={target_enabled}; last_payload={last_payload!r}"
     )
+
+
+@pytest.mark.parametrize("control_id", EXPLAINO_ALL_LIVE_CONTROL_IDS)
+def test_explaino_all_controls_window_drag_changes_live_viewport(tmp_path: Path, control_id: str) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino live Controls-window regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    explaino_all_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_all",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    state = explaino_all_capture["state"]
+    assert state["fractal_type"] == "explaino_all"
+
+    state_path = _write_state_bundle(tmp_path / "explaino_all_live_controls", state)
+    automation_report_path = tmp_path / "ui_automation_report.json"
+
+    proc = subprocess.Popen(
+        [
+            str(exe_path),
+            "--load-state-json",
+            str(state_path),
+            "--ui-automation-report-json",
+            str(automation_report_path),
+        ],
+        cwd=str(RUNTIME_DIR),
+    )
+
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        control_rect = wait_for_ui_automation_rect(automation_report_path, control_id)
+
+        baseline_viewport = _wait_for_stable_controls_viewport_probe(hwnd, control_rect)
+
+        drag_screen_rect(control_rect)
+
+        changed_viewport = _wait_for_stable_controls_viewport_probe(hwnd, control_rect)
+        changed_diff = _mean_abs_diff(baseline_viewport, changed_viewport)
+        assert changed_diff > 0.03, (
+            "Dragging an explaino_all shared-axis slider in the live Controls window should visibly change the viewport; "
+            f"control_id={control_id!r} diff={changed_diff:.3f}"
+        )
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
 
 
 def _wait_for_ui_automation_click(

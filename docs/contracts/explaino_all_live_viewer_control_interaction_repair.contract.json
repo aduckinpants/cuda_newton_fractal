@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "contract_id": "explaino_all_live_viewer_control_interaction_repair",
+  "feature_id": "explaino_all_live_viewer_control_interaction_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_all_live_viewer_control_interaction_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/explaino_all_live_viewer_control_interaction_repair.contract.json",
+    "docs/notes/explaino_all_live_viewer_control_interaction_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/main.cpp",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py"
+  ],
+  "required_operator_inputs": [
+    "explain why canonical explaino_all sliders can still look inert in the running viewer even though the shared-carrier runtime repair landed",
+    "repair the live Controls-window interaction seam so explaino_all shared-axis slider edits visibly affect the viewport again",
+    "preserve the existing explaino_all shared-carrier runtime routing, explicit selector identity, and smooth_escape fast-path behavior",
+    "add focused viewer-path proof for this exact live bug instead of relying on headless state-load evidence alone",
+    "keep the slice tightly bounded to the live viewer control-interaction seam"
+  ],
+  "forbidden_operator_prompts": [
+    "rewrite explaino_all product semantics again instead of fixing the live viewer interaction seam",
+    "claim the bug is fixed from headless runtime proof alone without a live Controls-window witness",
+    "rebreak the restored explaino_all shared-carrier runtime routing",
+    "rebreak explicit Explaino selector identity",
+    "rebreak the smooth_escape fast-path repair",
+    "widen this slice into Meta-Basin, Operator-Itinerary, DSL/program-space, generic color expansion, or a broad UI/engine rewrite",
+    "close without focused native/runtime proof, hostile audit, checkpoint, receipts, and truthful closeout"
+  ],
+  "required_defaults": {
+    "canonical_explaino_all_shared_carrier_runtime_preserved": "required",
+    "live_controls_window_explaino_all_shared_axis_interaction_authoritative": "required",
+    "explicit_explaino_selector_identity_preserved": "required",
+    "smooth_escape_fast_path_preserved": "required"
+  },
+  "forbidden_defaults": {
+    "headless_only_closure": "forbidden",
+    "viewer_control_interaction_still_inert": "forbidden",
+    "shared_carrier_runtime_regressed": "forbidden",
+    "selector_identity_regressed": "forbidden",
+    "smooth_escape_perf_regressed": "forbidden",
+    "scope_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_all_live_viewer_control_interaction_repair.contract.json --out-json artifacts/validation/explaino_all_live_viewer_control_interaction_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_all_live_viewer_control_interaction_repair_PHASED_PLAN.md --out-json artifacts/validation/explaino_all_live_viewer_control_interaction_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "explaino_all_live_viewer_control_interaction_repair_contract_schema_valid",
+      "description": "The Explaino-all live viewer control interaction repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_all_live_viewer_control_interaction_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_all_live_viewer_control_interaction_repair_plan_sync_ok",
+      "description": "The Explaino-all live viewer repair phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_all_live_viewer_control_interaction_repair_hostile_audit_ok",
+      "description": "The Explaino-all live viewer repair hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_all_live_viewer_control_interaction_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -121,6 +121,33 @@ static std::string HeadlessDiagnosticsErrorPath(const std::string& exeDir, const
     return JoinPath(JoinPath(exeDir, "diagnostics\\last"), fileName);
 }
 
+struct ViewerUiAutomationRect {
+    std::string control_id;
+    int client_left = 0;
+    int client_top = 0;
+    int client_right = 0;
+    int client_bottom = 0;
+};
+
+static void NoteViewerUiAutomationRect(void* userData, const char* controlId) {
+    if (!userData || !controlId || controlId[0] == '\0') {
+        return;
+    }
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    if (max.x <= min.x || max.y <= min.y) {
+        return;
+    }
+    auto* rects = static_cast<std::vector<ViewerUiAutomationRect>*>(userData);
+    ViewerUiAutomationRect rect;
+    rect.control_id = controlId;
+    rect.client_left = static_cast<int>(std::lround(min.x));
+    rect.client_top = static_cast<int>(std::lround(min.y));
+    rect.client_right = static_cast<int>(std::lround(max.x));
+    rect.client_bottom = static_cast<int>(std::lround(max.y));
+    rects->push_back(std::move(rect));
+}
+
 static void ClearHeadlessErrorFile(const std::string& exeDir, const char* fileName) {
     const std::string errorPath = HeadlessDiagnosticsErrorPath(exeDir, fileName);
     DeleteFileA(errorPath.c_str());
@@ -857,7 +884,8 @@ static UiActionFlags RenderControlsWindow(
         bool canLoadFits, const std::string& loadFitsHint,
         const SweepPlayerConfig& sweepConfig, SweepPlayerState& sweepState,
         bool& sweepPaused, bool& sweepSingleStep,
-    const ColorPipelineWindowState& colorPipelineWindow,
+        std::vector<ViewerUiAutomationRect>* viewerUiAutomationRects,
+        const ColorPipelineWindowState& colorPipelineWindow,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
     ImGui::Begin("Controls");
     if (!schemaWarning.empty()) {
@@ -871,6 +899,8 @@ static UiActionFlags RenderControlsWindow(
     bind.params = &params;
     bind.render = &render;
     bind.lens = &lens;
+    bind.note_ui_automation_rect = viewerUiAutomationRects ? &NoteViewerUiAutomationRect : nullptr;
+    bind.ui_automation_user_data = viewerUiAutomationRects;
     Float2 uiCenterBefore = view.center;
     float uiZoomBefore = view.zoom;
     UiActionFlags actions = RenderSchemaPanels(schema, bind, canLoadFits, loadFitsHint, colorPipelineWindow, dirty);
@@ -1277,6 +1307,7 @@ static void PresentFrame() {
 static void WriteColorPipelineUiAutomationReport(
     const std::string& reportPath,
     HWND hwnd,
+    const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow) {
     if (reportPath.empty() || !hwnd) {
         return;
@@ -1355,11 +1386,23 @@ static void WriteColorPipelineUiAutomationReport(
     }
     out << "  ],\n";
     out << "  \"controls\": [";
-    for (std::size_t index = 0; index < colorPipelineWindow.ui_automation_rects.size(); ++index) {
-        const ColorPipelineUiAutomationRect& rect = colorPipelineWindow.ui_automation_rects[index];
-        if (index > 0) {
+    bool firstControl = true;
+    for (const ViewerUiAutomationRect& rect : viewerUiAutomationRects) {
+        if (!firstControl) {
             out << ',';
         }
+        firstControl = false;
+        out << "\n    {\"control_id\": \"" << rect.control_id << "\", \"screen_rect\": ["
+            << (clientOrigin.x + rect.client_left) << ", "
+            << (clientOrigin.y + rect.client_top) << ", "
+            << (clientOrigin.x + rect.client_right) << ", "
+            << (clientOrigin.y + rect.client_bottom) << "]}";
+    }
+    for (const ColorPipelineUiAutomationRect& rect : colorPipelineWindow.ui_automation_rects) {
+        if (!firstControl) {
+            out << ',';
+        }
+        firstControl = false;
         out << "\n    {\"control_id\": \"" << rect.control_id << "\", \"screen_rect\": ["
             << (clientOrigin.x + rect.client_left) << ", "
             << (clientOrigin.y + rect.client_top) << ", "
@@ -2397,17 +2440,20 @@ static void RunViewerFrame(
     RuntimeWalkGradientOverlay& runtimeWalkGradientOverlay,
     RuntimeWalkFieldSlimeState& runtimeWalkFieldSlime,
     bool& runtimeWalkFieldSlimeValid,
+    std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     bool& dirty) {
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
     }
 
     const std::string loadFitsHint;
+    viewerUiAutomationRects.clear();
     UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
         view, params, render, lens, stats, renderedFrame,
         findingStatus, lastFindingPath,
         true, loadFitsHint,
         cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
+        &viewerUiAutomationRects,
         colorPipelineWindow,
         lastFractalType, lastPolyKind, dirty);
 
@@ -2433,7 +2479,7 @@ static void RunViewerFrame(
     }
     RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
     if (cli.have_ui_automation_report_json) {
-        WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, colorPipelineWindow);
+        WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, viewerUiAutomationRects, colorPipelineWindow);
     }
     if (!ProcessRuntimeWalkViewerImportPerFrame(
             hwnd,
@@ -2636,6 +2682,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     RuntimeWalkOverlayPath runtimeWalkOverlayPath{};
     RuntimeWalkGradientOverlay runtimeWalkGradientOverlay{};
     RuntimeWalkFieldSlimeState runtimeWalkFieldSlime{}; bool runtimeWalkFieldSlimeValid = false;
+    std::vector<ViewerUiAutomationRect> viewerUiAutomationRects;
     if (!InitializeSweepIfEnabled(cli.sweep_config, sweepState, view, params, dirty)) {
         CleanupDeviceD3D();
         DestroyWindow(hwnd);
@@ -2733,6 +2780,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             runtimeWalkOverlayPath,
             runtimeWalkGradientOverlay,
             runtimeWalkFieldSlime, runtimeWalkFieldSlimeValid,
+            viewerUiAutomationRects,
             dirty);
     }
 

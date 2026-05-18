@@ -1226,6 +1226,18 @@ void MarkDirtyIfChanged(bool changed, bool* ioDirty) {
     if (changed && ioDirty) *ioDirty = true;
 }
 
+std::string BuildSchemaPrimaryUiAutomationControlId(const UISchemaControl& control) {
+    return std::string("fractal_control.") + control.id + ".primary";
+}
+
+void MaybeNotePrimaryUiAutomationRect(BindingContext& ctx, const UISchemaControl& control) {
+    if (!ctx.note_ui_automation_rect) {
+        return;
+    }
+    const std::string controlId = BuildSchemaPrimaryUiAutomationControlId(control);
+    ctx.note_ui_automation_rect(ctx.ui_automation_user_data, controlId.c_str());
+}
+
 void MarkCurrentItemInteraction(bool changed, bool* ioInteracted) {
     if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) {
         *ioInteracted = true;
@@ -1283,6 +1295,7 @@ bool RenderCheckboxControl(
     }
 
     const bool changed = ImGui::Checkbox(control.label.c_str(), value);
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;
@@ -1313,6 +1326,7 @@ bool RenderIntControl(
         const int dragMax = dragBounds.has_bounds ? static_cast<int>(dragBounds.max) : 0;
         changed = ImGui::DragInt(control.label.c_str(), value, speed, dragMin, dragMax);
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputInt(inputLabel.c_str(), value, 0, 0);
@@ -1350,6 +1364,7 @@ bool RenderCameraZoomControl(
     } else {
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &dragValue, speed, &minLog2Zoom, &maxLog2Zoom, "2^(%.3f)");
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), &displayedValue, 0.0, 0.0, inputFormat);
@@ -1400,6 +1415,7 @@ bool RenderFloatControl(
         const float dragMax = dragBounds.has_bounds ? static_cast<float>(dragBounds.max) : 0.0f;
         changed = ImGui::DragFloat(control.label.c_str(), &value, speed, dragMin, dragMax, displayFormat, flags);
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputFloat(inputLabel.c_str(), &value, 0.0f, 0.0f, inputFormat);
@@ -1434,6 +1450,7 @@ bool RenderExplainoSeedDoubleControl(
         const double* dragMax = dragBounds.has_bounds ? &dragBounds.max : nullptr;
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speed), dragMin, dragMax, valueFormat);
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), &displayed, 0.0, 0.0, valueFormat);
@@ -1479,6 +1496,7 @@ bool RenderDoubleControl(
         const double* dragMax = dragBounds.has_bounds ? &dragBounds.max : nullptr;
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, value, static_cast<float>(speed), dragMin, dragMax, valueFormat);
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), value, 0.0, 0.0, valueFormat);
@@ -1539,6 +1557,7 @@ bool RenderIntComboControl(
             }
         }
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;
@@ -1655,6 +1674,7 @@ bool RenderEnumComboControl(
             changed = ctx.SetEnumId(binding.path, visibleOptions[currentIndex]->id);
         }
     }
+    MaybeNotePrimaryUiAutomationRect(ctx, control);
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;

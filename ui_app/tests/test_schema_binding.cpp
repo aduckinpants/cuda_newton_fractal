@@ -70,6 +70,14 @@ bool NearlyEqual(double left, double right, double eps = 1.0e-6) {
     return delta < eps && delta > -eps;
 }
 
+void NoteTestUiAutomationControlId(void* userData, const char* controlId) {
+    if (!userData) {
+        return;
+    }
+    auto* output = static_cast<std::string*>(userData);
+    *output = controlId ? controlId : "";
+}
+
 constexpr double kTestMaxLog2Zoom = 1020.0;
 
 double TestLog2(double value) {
@@ -3074,6 +3082,31 @@ int main() {
         }
         if (renderOnce || interacted) {
             std::cerr << "Idle action buttons should not mark render-once or interaction flags\n";
+            return 1;
+        }
+        EndFrame();
+
+        BeginFrame();
+        std::string notedControlId;
+        ctx.note_ui_automation_rect = &NoteTestUiAutomationControlId;
+        ctx.ui_automation_user_data = &notedControlId;
+        UISchemaControl sharedAxisFloat = MakeBoundControl(
+            "ripple_amplitude",
+            "slider_float",
+            "Ripple",
+            "float",
+            "param",
+            "fractal.params.ripple_amplitude");
+        sharedAxisFloat.has_min = true;
+        sharedAxisFloat.min = 0.0;
+        sharedAxisFloat.has_max = true;
+        sharedAxisFloat.max = 1.0;
+        if (RenderControlFromSchema(sharedAxisFloat, ctx, nullptr, nullptr, nullptr)) {
+            std::cerr << "Expected idle schema-driven float controls to render without reporting a data change\n";
+            return 1;
+        }
+        if (notedControlId != "fractal_control.ripple_amplitude.primary") {
+            std::cerr << "Expected schema-driven float controls to publish their primary UI automation id during render\n";
             return 1;
         }
         EndFrame();
