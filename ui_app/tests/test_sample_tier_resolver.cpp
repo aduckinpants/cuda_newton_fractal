@@ -128,6 +128,24 @@ static void test_render_auto_keeps_explaino_all_smooth_escape_fast_when_registry
     }
 }
 
+static void test_render_auto_keeps_explaino_all_smooth_escape_fast_when_all_registry_axes_are_active() {
+    KernelParams params = SmoothEscapeParams();
+    for (const auto& axis : kExplainoAxisRegistry) {
+        float* axisValue = ResolveExplainoAxisValue(params, axis.slot);
+        CHECK(axisValue != nullptr, "every Explaino-all registry axis should resolve to a params slot");
+        if (!axisValue) {
+            continue;
+        }
+        *axisValue = ActiveExplainoAxisValue(axis);
+    }
+
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino_all, params, SampleTier::tier_auto, 10.0);
+    CHECK(
+        r.backend == NumericBackend::float32,
+        "render auto should keep explaino_all smooth_escape on float32 when all registry axes are active");
+    CHECK(r.strategy == IterationStrategy::direct, "render auto should keep explaino_all all-axis smooth_escape direct");
+}
+
 static void test_auto_deep_upgrades_to_float64() {
     auto r = ResolveSampleEvalMode(FractalType::newton, SampleTier::tier_auto, 25.0);
     CHECK(r.backend == NumericBackend::float64, "auto at deep zoom should upgrade to float64");
@@ -168,6 +186,7 @@ int main() {
     test_render_auto_keeps_explaino_balance_void_smooth_escape_fast_when_owner_axes_are_active();
     test_render_auto_still_promotes_neutral_explaino_ripple_without_owner_axis();
     test_render_auto_keeps_explaino_all_smooth_escape_fast_when_registry_axis_is_active();
+    test_render_auto_keeps_explaino_all_smooth_escape_fast_when_all_registry_axes_are_active();
     test_auto_deep_upgrades_to_float64();
     test_auto_boundary_exactly_20();
     test_mandelbrot_auto_upgrades_before_20();

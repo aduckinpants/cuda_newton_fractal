@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "contract_id": "explaino_all_standalone_balance_void_axis_effect_repair",
+  "feature_id": "explaino_all_standalone_balance_void_axis_effect_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/explaino_all_standalone_balance_void_axis_effect_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/explaino_all_standalone_balance_void_axis_effect_repair.contract.json",
+    "docs/notes/explaino_all_standalone_balance_void_axis_effect_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/sample_tier_resolver.cpp",
+    "ui_app/src/headless_modes.cpp",
+    "ui_app/tests/test_explaino_zero_axis_equivalence.cu",
+    "ui_app/tests/test_sample_tier_resolver.cpp",
+    "ui_app/tests/test_escape_time_sample_tier.cu",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py"
+  ],
+  "required_operator_inputs": [
+    "repair canonical explaino_all so standalone balance_void, symmetry_tension, and field_curvature each affect the rendered/sample result",
+    "preserve registry-driven explaino_all seven-axis semantics and explicit owner-lane selector/control behavior",
+    "preserve the smooth_escape auto-tier performance route on canonical explaino_all active registry-axis paths and explicit owner lanes",
+    "preserve Color Pipeline behavior while hardening shared in-process automation/report proof",
+    "close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, receipts, push, clean tree, and stale-plan cleanup"
+  ],
+  "forbidden_operator_prompts": [
+    "claim closure from a UI-control write without proving rendered/sample effect",
+    "claim closure from a combined ripple-plus-balance witness while standalone balance-void axes remain inert",
+    "use OS mouse movement as first-party runtime proof",
+    "rebreak explicit selector identity or owner-lane controls",
+    "rebreak the smooth_escape auto-tier performance route",
+    "work around or mask a Color Pipeline regression under this Explaino repair",
+    "widen this slice into Meta-Basin, Operator-Itinerary, DSL/program-space, generic color expansion, renderer replacement, or a broad engine rewrite"
+  ],
+  "required_defaults": {
+    "canonical_explaino_all_standalone_balance_void_effect": "required",
+    "canonical_explaino_all_standalone_symmetry_tension_effect": "required",
+    "canonical_explaino_all_standalone_field_curvature_effect": "required",
+    "registry_driven_explaino_all_seven_axis_semantics": "required",
+    "smooth_escape_auto_tier_performance_route_preserved": "required",
+    "color_pipeline_guard_preserved": "required",
+    "no_mouse_runtime_proof": "required"
+  },
+  "forbidden_defaults": {
+    "ui_write_only_proof": "forbidden",
+    "combined_axis_only_proof": "forbidden",
+    "physical_mouse_runtime_test": "forbidden",
+    "selector_identity_regression": "forbidden",
+    "smooth_escape_perf_regression": "forbidden",
+    "color_pipeline_regression": "forbidden",
+    "scope_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_all_standalone_balance_void_axis_effect_repair.contract.json --out-json artifacts/validation/explaino_all_standalone_balance_void_axis_effect_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_all_standalone_balance_void_axis_effect_repair_PHASED_PLAN.md --out-json artifacts/validation/explaino_all_standalone_balance_void_axis_effect_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "explaino_all_standalone_balance_void_axis_effect_repair_contract_schema_valid",
+      "description": "The standalone balance-void Explaino-all repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_all_standalone_balance_void_axis_effect_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_all_standalone_balance_void_axis_effect_repair_plan_sync_ok",
+      "description": "The standalone balance-void Explaino-all phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_all_standalone_balance_void_axis_effect_repair_hostile_audit_ok",
+      "description": "The standalone balance-void Explaino-all hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_all_standalone_balance_void_axis_effect_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

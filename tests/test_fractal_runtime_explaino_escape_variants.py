@@ -1722,6 +1722,63 @@ def test_explaino_balance_void_state_round_trips_and_changes_published_runtime_f
     )
 
 
+def test_explaino_all_balance_void_registry_axes_change_published_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino-all balance-void registry-axis runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    axes = _describe_explaino_axis_registry(exe_path)
+    balance_void_axes = [
+        axis for axis in axes if str(axis["carrier_fractal_type"]) == "explaino_balance_void"
+    ]
+    assert len(balance_void_axes) == 3
+
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_all",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    def state_with_only_axis(axis_id: str, value: float) -> dict[str, object]:
+        state = json.loads(json.dumps(baseline_capture["state"]))
+        state["fractal_type"] = "explaino_all"
+        params = state["params"]
+        assert isinstance(params, dict)
+        for axis in axes:
+            params[str(axis["axis_id"])] = 0.0
+        params[axis_id] = value
+        return state
+
+    for axis in balance_void_axes:
+        axis_id = str(axis["axis_id"])
+        low_capture = _run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(_write_state_bundle(tmp_path / f"explaino_all_{axis_id}_low", state_with_only_axis(axis_id, 0.10))),
+            "--capture-diagnostic",
+        )
+        high_capture = _run_headless_capture(
+            str(exe_path),
+            "--load-state-json",
+            str(_write_state_bundle(tmp_path / f"explaino_all_{axis_id}_high", state_with_only_axis(axis_id, 0.90))),
+            "--capture-diagnostic",
+        )
+        assert low_capture["state"]["fractal_type"] == "explaino_all"
+        assert high_capture["state"]["fractal_type"] == "explaino_all"
+        assert high_capture["state"]["params"][axis_id] == pytest.approx(0.90, abs=1e-6)
+        assert high_capture["frame_hash"] != low_capture["frame_hash"], (
+            f"expected canonical explaino_all {axis_id} slider value to change the published runtime frame"
+        )
+        assert _mean_absolute_frame_delta(low_capture["frame_bytes"], high_capture["frame_bytes"]) > 0.0, (
+            f"expected canonical explaino_all {axis_id} slider value to produce a measurable frame delta"
+        )
+
+
 def test_explaino_smooth_escape_explicit_variants_and_explaino_all_stay_within_bounded_runtime_usability(
     tmp_path: Path,
 ) -> None:
@@ -1761,51 +1818,32 @@ def test_explaino_smooth_escape_explicit_variants_and_explaino_all_stay_within_b
         samples.sort()
         return samples[len(samples) // 2]
 
+    axes = _describe_explaino_axis_registry(exe_path)
+    all_axis_defaults = {str(axis["axis_id"]): _axis_active_value(axis) for axis in axes}
+    owner_defaults: dict[str, dict[str, float]] = {}
+    for axis in axes:
+        owner_defaults.setdefault(str(axis["carrier_fractal_type"]), {})[str(axis["axis_id"])] = _axis_active_value(axis)
+
     baseline_elapsed = median_elapsed_seconds(smooth_baseline_state, "explaino_smooth_escape_baseline")
-    explicit_defaults = {
-        "explaino_ripple": {
-            "ripple_amplitude": 0.15,
-            "splice_offset": 0.0,
-            "vortex_strength": 0.0,
-            "tension_strength": 0.0,
-        },
-        "explaino_splice": {
-            "ripple_amplitude": 0.0,
-            "splice_offset": 0.5,
-            "vortex_strength": 0.0,
-            "tension_strength": 0.0,
-        },
-        "explaino_vortex": {
-            "ripple_amplitude": 0.0,
-            "splice_offset": 0.0,
-            "vortex_strength": 0.3,
-            "tension_strength": 0.0,
-        },
-        "explaino_tension": {
-            "ripple_amplitude": 0.0,
-            "splice_offset": 0.0,
-            "vortex_strength": 0.0,
-            "tension_strength": 0.02,
-        },
-        "explaino_all": {
-            "ripple_amplitude": 0.15,
-            "splice_offset": 0.0,
-            "vortex_strength": 0.0,
-            "tension_strength": 0.0,
-        },
-    }
+    timed_cases: list[tuple[str, str, dict[str, float]]] = [
+        (fractal_type, fractal_type, axis_defaults)
+        for fractal_type, axis_defaults in sorted(owner_defaults.items())
+    ]
+    timed_cases.append(("explaino_all_all_registry_axes", "explaino_all", all_axis_defaults))
     median_timings = {"explaino": baseline_elapsed}
-    for fractal_type, axis_defaults in explicit_defaults.items():
+    for case_name, fractal_type, axis_defaults in timed_cases:
         variant_state = json.loads(json.dumps(smooth_baseline_state))
         variant_state["fractal_type"] = fractal_type
         variant_params = variant_state["params"]
         assert isinstance(variant_params, dict)
+        for axis in axes:
+            variant_params[str(axis["axis_id"])] = 0.0
         variant_params.update(axis_defaults)
-        median_timings[fractal_type] = median_elapsed_seconds(variant_state, fractal_type)
+        median_timings[case_name] = median_elapsed_seconds(variant_state, case_name)
 
-    for fractal_type in explicit_defaults:
-        assert median_timings[fractal_type] <= baseline_elapsed * 1.8, (
-            "expected Explaino smooth_escape explicit variants plus explaino_all shared-axis routing to stay within the bounded merged-head usability envelope; "
+    for case_name, _fractal_type, _axis_defaults in timed_cases:
+        assert median_timings[case_name] <= baseline_elapsed * 1.8, (
+            "expected Explaino smooth_escape explicit owner lanes plus explaino_all seven-axis routing to stay within the bounded merged-head usability envelope; "
             f"median timings={median_timings}"
         )
 

@@ -546,6 +546,77 @@ void CheckCanonicalAllBalanceVoidPerturbsRuntime(float balanceVoid,
     CheckStateDifference(neutral, perturbed, "explaino_all shared explaino_balance_void axes");
 }
 
+void CheckCanonicalAllStandaloneBalanceVoidAxesPerturbRuntime() {
+    CheckCanonicalAllBalanceVoidPerturbsRuntime(0.35f, 0.0f, 0.0f);
+    CheckCanonicalAllBalanceVoidPerturbsRuntime(0.0f, -0.2f, 0.0f);
+    CheckCanonicalAllBalanceVoidPerturbsRuntime(0.0f, 0.0f, 0.25f);
+}
+
+void CheckCanonicalAllBalanceVoidSliderValueSensitivity() {
+    ZeroAxisState low;
+    ZeroAxisState high;
+
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &low,
+        0.10f,
+        0.0f,
+        0.0f);
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &high,
+        0.60f,
+        0.0f,
+        0.0f);
+    CheckStateDifference(low, high, "explaino_all balance_void slider value");
+
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &low,
+        0.0f,
+        -0.10f,
+        0.0f);
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &high,
+        0.0f,
+        -0.60f,
+        0.0f);
+    CheckStateDifference(low, high, "explaino_all symmetry_tension slider value");
+
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &low,
+        0.0f,
+        0.0f,
+        0.10f);
+    BuildExplainoVariantState(FractalType::explaino_all,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        &high,
+        0.0f,
+        0.0f,
+        0.60f);
+    CheckStateDifference(low, high, "explaino_all field_curvature slider value");
+}
+
 void CheckCanonicalAllComposedBalanceVoidCoupling() {
     ZeroAxisState neutral;
     ZeroAxisState perturbed;
@@ -663,6 +734,8 @@ int main() {
         0.0f,
         DefaultVariantStrength(FractalType::explaino_tension));
     CheckCanonicalAllBalanceVoidPerturbsRuntime(0.35f, -0.2f, 0.25f);
+    CheckCanonicalAllStandaloneBalanceVoidAxesPerturbRuntime();
+    CheckCanonicalAllBalanceVoidSliderValueSensitivity();
     CheckCanonicalAllComposedBalanceVoidCoupling();
     CheckComposedLabelInvariance(
         FractalType::explaino_ripple,

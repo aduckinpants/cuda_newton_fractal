@@ -17,11 +17,9 @@
     Cx cConst{0.0f, 0.0f};
 
     const FractalType requestedFt = view.fractal_type;
-    const bool hasExplainoComposedPerturbation = HasExplainoComposedAxisPerturbation(params);
     const bool hasExplainoBalanceVoidPerturbation = HasExplainoBalanceVoidPerturbation(params);
     const bool canonicalExplainoAllUsesBalanceVoidBias =
         requestedFt == ExplainoCanonicalFractalType() &&
-        hasExplainoComposedPerturbation &&
         hasExplainoBalanceVoidPerturbation;
     // Public selector identity stays explicit; canonical Explaino-all keeps the whole active registry axis structure.
     FractalType ft = ResolveExplainoRuntimeFractalType(requestedFt, params);
