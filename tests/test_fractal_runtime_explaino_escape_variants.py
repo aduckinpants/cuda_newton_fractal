@@ -5,6 +5,7 @@ import json
 import math
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -1039,7 +1040,7 @@ def test_explaino_composed_variants_render_distinct_default_frames() -> None:
             "240",
         )
         state = capture["state"]
-        assert state["fractal_type"] == "explaino_all"
+        assert state["fractal_type"] == variant
         for param_name, expected_value in expected_params.items():
             assert state["params"][param_name] == pytest.approx(expected_value, abs=1e-6)
         hashes[variant] = str(capture["frame_hash"])
@@ -1074,8 +1075,8 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
 
     initial_state = initial_capture["state"]
     reloaded_state = reloaded_capture["state"]
-    assert initial_state["fractal_type"] == "explaino_all"
-    assert reloaded_state["fractal_type"] == "explaino_all"
+    assert initial_state["fractal_type"] == "explaino_vortex"
+    assert reloaded_state["fractal_type"] == "explaino_vortex"
     assert reloaded_state["params"]["vortex_strength"] == pytest.approx(0.3, abs=1e-6)
     assert reloaded_state["params"]["ripple_amplitude"] == pytest.approx(0.0, abs=1e-6)
     assert "sidecar_orientation" in initial_state
@@ -1130,7 +1131,7 @@ def test_explaino_all_neutral_defaults_match_explaino_published_runtime() -> Non
     )
 
 
-def test_explaino_all_registry_axes_round_trip_and_change_published_runtime_frame(tmp_path: Path) -> None:
+def test_explaino_all_registry_axes_do_not_claim_published_runtime_ownership(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-all runtime regression is Windows-only")
 
@@ -1176,11 +1177,11 @@ def test_explaino_all_registry_axes_round_trip_and_change_published_runtime_fram
     assert reloaded_params["balance_void"] == pytest.approx(0.35, abs=1e-6)
     assert reloaded_params["symmetry_tension"] == pytest.approx(-0.2, abs=1e-6)
     assert reloaded_params["field_curvature"] == pytest.approx(0.25, abs=1e-6)
-    assert perturbed_capture["frame_hash"] != neutral_capture["frame_hash"], (
-        "expected Explaino-all registry-axis edits to change the published runtime frame"
+    assert perturbed_capture["frame_hash"] == neutral_capture["frame_hash"], (
+        "expected explaino_all to keep composed family-axis params out of its published runtime ownership surface"
     )
-    assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) > 0.01, (
-        "expected Explaino-all registry-axis edits to produce a measurable published-frame delta"
+    assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) == pytest.approx(0.0, abs=0.0), (
+        "expected explaino_all family-axis params to leave the published runtime frame unchanged"
     )
 
 
@@ -1211,7 +1212,7 @@ def test_explaino_balance_void_neutral_defaults_match_explaino_published_runtime
     )
 
     balance_void_state = balance_void_capture["state"]
-    assert balance_void_state["fractal_type"] == "explaino_all"
+    assert balance_void_state["fractal_type"] == "explaino_balance_void"
     balance_void_params = balance_void_state["params"]
     assert isinstance(balance_void_params, dict)
     assert balance_void_params["balance_void"] == pytest.approx(0.0, abs=1e-6)
@@ -1666,7 +1667,7 @@ def test_explaino_balance_void_state_round_trips_and_changes_published_runtime_f
     )
 
     reloaded_state = perturbed_capture["state"]
-    assert reloaded_state["fractal_type"] == "explaino_all"
+    assert reloaded_state["fractal_type"] == "explaino_balance_void"
     reloaded_params = reloaded_state["params"]
     assert isinstance(reloaded_params, dict)
     assert reloaded_params["balance_void"] == pytest.approx(0.35, abs=1e-6)
@@ -1682,6 +1683,86 @@ def test_explaino_balance_void_state_round_trips_and_changes_published_runtime_f
     assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) > 0.01, (
         "expected Explaino-BalanceVoid family-axis edits to produce a measurable published-frame delta"
     )
+
+
+def test_explaino_smooth_escape_explicit_variants_stay_within_bounded_runtime_usability(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino smooth_escape usability regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "1024",
+        "--height",
+        "1024",
+    )
+    smooth_baseline_state = _with_explaino_programmable_color_state(
+        baseline_capture["state"],
+        palette="cyclic_escape",
+    )
+
+    def median_elapsed_seconds(state: dict[str, object], name: str) -> float:
+        state_path = _write_state_bundle(tmp_path / name, state)
+        samples: list[float] = []
+        for run_index in range(3):
+            start = time.perf_counter()
+            capture = _run_headless_capture(
+                str(exe_path),
+                "--load-state-json",
+                str(state_path),
+                "--capture-diagnostic",
+            )
+            samples.append(time.perf_counter() - start)
+            assert capture["state"]["fractal_type"] == state["fractal_type"]
+            assert capture["state"]["params"]["coloring_mode"] == "smooth_escape"
+        samples.sort()
+        return samples[len(samples) // 2]
+
+    baseline_elapsed = median_elapsed_seconds(smooth_baseline_state, "explaino_smooth_escape_baseline")
+    explicit_defaults = {
+        "explaino_ripple": {
+            "ripple_amplitude": 0.15,
+            "splice_offset": 0.0,
+            "vortex_strength": 0.0,
+            "tension_strength": 0.0,
+        },
+        "explaino_splice": {
+            "ripple_amplitude": 0.0,
+            "splice_offset": 0.5,
+            "vortex_strength": 0.0,
+            "tension_strength": 0.0,
+        },
+        "explaino_vortex": {
+            "ripple_amplitude": 0.0,
+            "splice_offset": 0.0,
+            "vortex_strength": 0.3,
+            "tension_strength": 0.0,
+        },
+        "explaino_tension": {
+            "ripple_amplitude": 0.0,
+            "splice_offset": 0.0,
+            "vortex_strength": 0.0,
+            "tension_strength": 0.02,
+        },
+    }
+    median_timings = {"explaino": baseline_elapsed}
+    for fractal_type, axis_defaults in explicit_defaults.items():
+        variant_state = json.loads(json.dumps(smooth_baseline_state))
+        variant_state["fractal_type"] = fractal_type
+        variant_params = variant_state["params"]
+        assert isinstance(variant_params, dict)
+        variant_params.update(axis_defaults)
+        median_timings[fractal_type] = median_elapsed_seconds(variant_state, fractal_type)
+
+    for fractal_type in explicit_defaults:
+        assert median_timings[fractal_type] <= baseline_elapsed * 1.8, (
+            "expected Explaino smooth_escape explicit variants to stay within the bounded merged-head usability envelope; "
+            f"median timings={median_timings}"
+        )
 
 
 def test_explaino_programmable_color_pipeline_changes_published_runtime_frame(tmp_path: Path) -> None:
@@ -2328,6 +2409,64 @@ def test_explaino_smooth_escape_auto_records_float64_backend_in_published_runtim
     assert state["params"]["color_signal"] == "smooth_escape"
     assert state["render"]["sample_tier"] == "tier_auto"
     assert state["stats"]["resolved_backend"] == "float64"
+    assert state["stats"]["resolved_strategy"] == "direct"
+
+
+@pytest.mark.parametrize(
+    ("fractal_type", "param_updates"),
+    [
+        pytest.param("explaino_ripple", {"ripple_amplitude": 0.15}, id="ripple"),
+        pytest.param("explaino_splice", {"splice_offset": 0.5}, id="splice"),
+        pytest.param("explaino_vortex", {"vortex_strength": 0.3}, id="vortex"),
+        pytest.param("explaino_tension", {"tension_strength": 0.02}, id="tension"),
+        pytest.param(
+            "explaino_balance_void",
+            {"balance_void": 0.35, "symmetry_tension": -0.2, "field_curvature": 0.25},
+            id="balance-void",
+        ),
+    ],
+)
+def test_explaino_legacy_projection_smooth_escape_auto_records_float32_backend_in_published_runtime(
+    tmp_path: Path,
+    fractal_type: str,
+    param_updates: dict[str, float],
+) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino legacy-projection smooth_escape backend runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino",
+        "--width",
+        "16",
+        "--height",
+        "16",
+    )
+
+    smooth_state = _with_explaino_programmable_color_state(
+        baseline_capture["state"],
+        palette="cyclic_escape",
+        max_iter=64,
+        **param_updates,
+    )
+    smooth_state["fractal_type"] = fractal_type
+
+    smooth_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / fractal_type, smooth_state)),
+        "--capture-diagnostic",
+    )
+
+    state = smooth_capture["state"]
+    assert state["fractal_type"] == fractal_type
+    assert state["params"]["coloring_mode"] == "smooth_escape"
+    assert state["params"]["color_signal"] == "smooth_escape"
+    assert state["render"]["sample_tier"] == "tier_auto"
+    assert state["stats"]["resolved_backend"] == "float32"
     assert state["stats"]["resolved_strategy"] == "direct"
 
 

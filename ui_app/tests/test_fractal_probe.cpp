@@ -479,8 +479,8 @@ int main() {
             std::cerr << "Expected variant_crossfade sequence_grid probe to run: " << error << "\n";
             return 1;
         }
-        if (!response.ok || response.runtime.fractal_type != "explaino_all") {
-            std::cerr << "Expected successful variant_crossfade probe response to publish the canonical explaino_all identity on the final projected selector step\n";
+        if (!response.ok || response.runtime.fractal_type != "explaino_splice") {
+            std::cerr << "Expected successful variant_crossfade probe response to publish the explicit final Explaino selector identity on the last crossfade step\n";
             return 1;
         }
         if (response.sequence_results.size() != 5) {
@@ -563,50 +563,49 @@ int main() {
     }
 
     {
-        const struct ComposedReductionCase {
+        const struct HiddenAxisIgnoredCase {
             const char* label;
-            const char* primary_type;
-            const char* secondary_type;
+            const char* selected_type;
             double ripple_amplitude;
             double splice_offset;
             double vortex_strength;
             double tension_strength;
         } cases[] = {
-            {"probe composed ripple->vortex", "explaino_ripple", "explaino_vortex", 0.0, 0.0, 0.3, 0.0},
-            {"probe composed vortex->splice", "explaino_vortex", "explaino_splice", 0.0, 0.5, 0.0, 0.0},
-            {"probe composed splice->tension", "explaino_splice", "explaino_tension", 0.0, 0.0, 0.0, 0.02},
-            {"probe composed tension->ripple", "explaino_tension", "explaino_ripple", 0.15, 0.0, 0.0, 0.0},
+            {"probe explaino_ripple ignores hidden vortex axis", "explaino_ripple", 0.0, 0.0, 0.3, 0.0},
+            {"probe explaino_vortex ignores hidden splice axis", "explaino_vortex", 0.0, 0.5, 0.0, 0.0},
+            {"probe explaino_splice ignores hidden tension axis", "explaino_splice", 0.0, 0.0, 0.0, 0.02},
+            {"probe explaino_tension ignores hidden ripple axis", "explaino_tension", 0.15, 0.0, 0.0, 0.0},
         };
 
-        for (const auto& composedCase : cases) {
+        for (const auto& probeCase : cases) {
             FractalProbeResponse expectedResponse{};
             FractalProbeResponse actualResponse{};
             std::string error;
             if (!RunExplainoPointProbe(
-                    std::string(composedCase.label) + "-expected",
-                    composedCase.secondary_type,
-                    composedCase.ripple_amplitude,
-                    composedCase.splice_offset,
-                    composedCase.vortex_strength,
-                    composedCase.tension_strength,
+                    std::string(probeCase.label) + "-expected",
+                    "explaino",
+                    probeCase.ripple_amplitude,
+                    probeCase.splice_offset,
+                    probeCase.vortex_strength,
+                    probeCase.tension_strength,
                     &expectedResponse,
                     &error)) {
-                std::cerr << composedCase.label << " expected probe failed: " << error << "\n";
+                std::cerr << probeCase.label << " expected probe failed: " << error << "\n";
                 return 1;
             }
             if (!RunExplainoPointProbe(
-                    std::string(composedCase.label) + "-actual",
-                    composedCase.primary_type,
-                    composedCase.ripple_amplitude,
-                    composedCase.splice_offset,
-                    composedCase.vortex_strength,
-                    composedCase.tension_strength,
+                    std::string(probeCase.label) + "-actual",
+                    probeCase.selected_type,
+                    probeCase.ripple_amplitude,
+                    probeCase.splice_offset,
+                    probeCase.vortex_strength,
+                    probeCase.tension_strength,
                     &actualResponse,
                     &error)) {
-                std::cerr << composedCase.label << " actual probe failed: " << error << "\n";
+                std::cerr << probeCase.label << " actual probe failed: " << error << "\n";
                 return 1;
             }
-            if (!CompareProbeResponses(expectedResponse, actualResponse, composedCase.label)) {
+            if (!CompareProbeResponses(expectedResponse, actualResponse, probeCase.label)) {
                 return 1;
             }
         }
@@ -647,48 +646,53 @@ int main() {
     }
 
     {
-        const struct ComposedLabelCase {
+        const struct OwningAxisIsolationCase {
             const char* label;
-            const char* left_type;
-            const char* right_type;
-            double ripple_amplitude;
-            double splice_offset;
-            double vortex_strength;
-            double tension_strength;
+            const char* selected_type;
+            double expected_ripple_amplitude;
+            double expected_splice_offset;
+            double expected_vortex_strength;
+            double expected_tension_strength;
+            double actual_ripple_amplitude;
+            double actual_splice_offset;
+            double actual_vortex_strength;
+            double actual_tension_strength;
         } cases[] = {
-            {"probe composed label invariance ripple-vortex", "explaino_ripple", "explaino_vortex", 0.15, 0.0, 0.3, 0.0},
-            {"probe composed label invariance splice-tension", "explaino_splice", "explaino_tension", 0.0, 0.5, 0.0, 0.02},
+            {"probe explaino_ripple ignores hidden vortex when ripple owns runtime", "explaino_ripple", 0.15, 0.0, 0.0, 0.0, 0.15, 0.0, 0.3, 0.0},
+            {"probe explaino_vortex ignores hidden splice when vortex owns runtime", "explaino_vortex", 0.0, 0.0, 0.3, 0.0, 0.0, 0.5, 0.3, 0.0},
+            {"probe explaino_splice ignores hidden tension when splice owns runtime", "explaino_splice", 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.02},
+            {"probe explaino_tension ignores hidden ripple when tension owns runtime", "explaino_tension", 0.0, 0.0, 0.0, 0.02, 0.15, 0.0, 0.0, 0.02},
         };
 
-        for (const auto& composedCase : cases) {
-            FractalProbeResponse leftResponse{};
-            FractalProbeResponse rightResponse{};
+        for (const auto& probeCase : cases) {
+            FractalProbeResponse expectedResponse{};
+            FractalProbeResponse actualResponse{};
             std::string error;
             if (!RunExplainoPointProbe(
-                    std::string(composedCase.label) + "-left",
-                    composedCase.left_type,
-                    composedCase.ripple_amplitude,
-                    composedCase.splice_offset,
-                    composedCase.vortex_strength,
-                    composedCase.tension_strength,
-                    &leftResponse,
+                    std::string(probeCase.label) + "-expected",
+                    probeCase.selected_type,
+                    probeCase.expected_ripple_amplitude,
+                    probeCase.expected_splice_offset,
+                    probeCase.expected_vortex_strength,
+                    probeCase.expected_tension_strength,
+                    &expectedResponse,
                     &error)) {
-                std::cerr << composedCase.label << " left probe failed: " << error << "\n";
+                std::cerr << probeCase.label << " expected probe failed: " << error << "\n";
                 return 1;
             }
             if (!RunExplainoPointProbe(
-                    std::string(composedCase.label) + "-right",
-                    composedCase.right_type,
-                    composedCase.ripple_amplitude,
-                    composedCase.splice_offset,
-                    composedCase.vortex_strength,
-                    composedCase.tension_strength,
-                    &rightResponse,
+                    std::string(probeCase.label) + "-actual",
+                    probeCase.selected_type,
+                    probeCase.actual_ripple_amplitude,
+                    probeCase.actual_splice_offset,
+                    probeCase.actual_vortex_strength,
+                    probeCase.actual_tension_strength,
+                    &actualResponse,
                     &error)) {
-                std::cerr << composedCase.label << " right probe failed: " << error << "\n";
+                std::cerr << probeCase.label << " actual probe failed: " << error << "\n";
                 return 1;
             }
-            if (!CompareProbeResponses(leftResponse, rightResponse, composedCase.label)) {
+            if (!CompareProbeResponses(expectedResponse, actualResponse, probeCase.label)) {
                 return 1;
             }
         }

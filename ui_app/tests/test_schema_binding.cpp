@@ -288,7 +288,7 @@ int main() {
             return 1;
         }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_vortex") ||
-            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_all" ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_vortex" ||
             !NearlyEqual(params.ripple_amplitude, 0.0f) ||
             !NearlyEqual(params.splice_offset, 0.0f) ||
             !NearlyEqual(params.vortex_strength, 0.3f) ||
@@ -296,12 +296,12 @@ int main() {
             !NearlyEqual(params.balance_void, 0.0f) ||
             !NearlyEqual(params.symmetry_tension, 0.0f) ||
             !NearlyEqual(params.field_curvature, 0.0f)) {
-            std::cerr << "Expected legacy explaino_vortex selection to canonicalize to explaino_all plus the vortex preset vector\n";
+            std::cerr << "Expected explaino_vortex selection to preserve its explicit public identity while loading the vortex preset vector\n";
             return 1;
         }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_balance_void") ||
-            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_all") {
-            std::cerr << "Expected legacy explaino_balance_void selection to canonicalize to explaino_all instead of preserving a separate public family identity\n";
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_balance_void") {
+            std::cerr << "Expected explaino_balance_void selection to preserve its explicit public family identity\n";
             return 1;
         }
         float* balanceVoidParam = nullptr;

@@ -1169,10 +1169,9 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
-    if (ft == FractalType::explaino_ripple ||
-        ft == FractalType::explaino_splice ||
-        ft == FractalType::explaino_vortex ||
-        ft == FractalType::explaino_tension) {
+    if (ft == ExplainoCanonicalFractalType() &&
+        (HasExplainoComposedAxisPerturbation(params) ||
+         HasExplainoBalanceVoidPerturbation(params))) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
         Cx zPrev = z;
         const Cx pConst{params.phoenix_p_real, params.phoenix_p_imag};

@@ -84,6 +84,28 @@ static void test_render_context_preserves_explicit_fast() {
     CHECK(r.backend == NumericBackend::float32, "render context must preserve explicit fast tier");
 }
 
+static void test_render_auto_keeps_explaino_ripple_smooth_escape_fast_when_owner_axis_is_active() {
+    KernelParams params = SmoothEscapeParams();
+    params.ripple_amplitude = 0.15f;
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino_ripple, params, SampleTier::tier_auto, 10.0);
+    CHECK(r.backend == NumericBackend::float32, "render auto should keep owner-active explaino_ripple smooth_escape on float32");
+}
+
+static void test_render_auto_keeps_explaino_balance_void_smooth_escape_fast_when_owner_axes_are_active() {
+    KernelParams params = SmoothEscapeParams();
+    params.balance_void = 0.35f;
+    params.symmetry_tension = -0.2f;
+    params.field_curvature = 0.25f;
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino_balance_void, params, SampleTier::tier_auto, 10.0);
+    CHECK(r.backend == NumericBackend::float32, "render auto should keep owner-active explaino_balance_void smooth_escape on float32");
+}
+
+static void test_render_auto_still_promotes_neutral_explaino_ripple_without_owner_axis() {
+    KernelParams params = SmoothEscapeParams();
+    auto r = ResolveSampleEvalModeForRender(FractalType::explaino_ripple, params, SampleTier::tier_auto, 10.0);
+    CHECK(r.backend == NumericBackend::float64, "neutral explaino_ripple should inherit baseline explaino smooth_escape float64 promotion");
+}
+
 static void test_auto_deep_upgrades_to_float64() {
     auto r = ResolveSampleEvalMode(FractalType::newton, SampleTier::tier_auto, 25.0);
     CHECK(r.backend == NumericBackend::float64, "auto at deep zoom should upgrade to float64");
@@ -120,6 +142,9 @@ int main() {
     test_render_auto_promotes_basin_root_proximity();
     test_render_auto_does_not_promote_basin_root_index();
     test_render_context_preserves_explicit_fast();
+    test_render_auto_keeps_explaino_ripple_smooth_escape_fast_when_owner_axis_is_active();
+    test_render_auto_keeps_explaino_balance_void_smooth_escape_fast_when_owner_axes_are_active();
+    test_render_auto_still_promotes_neutral_explaino_ripple_without_owner_axis();
     test_auto_deep_upgrades_to_float64();
     test_auto_boundary_exactly_20();
     test_mandelbrot_auto_upgrades_before_20();

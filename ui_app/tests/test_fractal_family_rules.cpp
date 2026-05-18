@@ -174,10 +174,65 @@ int main() {
             std::cerr << "Explaino-all slice 2 should fence projection selectors to the seven-axis legacy family only\n";
             return 1;
         }
-        if (ResolveExplainoPublicFractalType(FractalType::explaino_ripple) != FractalType::explaino_all ||
-            ResolveExplainoPublicFractalType(FractalType::explaino_balance_void) != FractalType::explaino_all ||
+        if (ResolveExplainoPublicFractalType(FractalType::explaino_ripple) != FractalType::explaino_ripple ||
+            ResolveExplainoPublicFractalType(FractalType::explaino_balance_void) != FractalType::explaino_balance_void ||
             ResolveExplainoPublicFractalType(FractalType::explaino_dual) != FractalType::explaino_dual) {
-            std::cerr << "Explaino-all slice 2 should project only the legacy seven-axis selectors back to the canonical explaino_all public identity\n";
+            std::cerr << "Explaino selector resolution should preserve every explicit public family identity instead of collapsing projection lanes to explaino_all\n";
+            return 1;
+        }
+        KernelParams explainoAllParams{};
+        explainoAllParams.ripple_amplitude = 0.15f;
+        explainoAllParams.balance_void = 0.42f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllParams) != FractalType::explaino) {
+            std::cerr << "Explaino-all runtime resolution should ignore hidden family-axis params instead of routing through legacy projection carriers\n";
+            return 1;
+        }
+        KernelParams explicitRippleNeutral{};
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_ripple, explicitRippleNeutral) != FractalType::explaino) {
+            std::cerr << "Explaino-Ripple should keep the shipped zero-axis collapse to baseline Explaino at the runtime seam\n";
+            return 1;
+        }
+        KernelParams explicitRippleForeignOnly{};
+        explicitRippleForeignOnly.vortex_strength = 0.3f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_ripple, explicitRippleForeignOnly) != FractalType::explaino) {
+            std::cerr << "Explaino-Ripple should ignore hidden Vortex ownership until ripple_amplitude itself is active\n";
+            return 1;
+        }
+        KernelParams explicitRippleOwned{};
+        explicitRippleOwned.ripple_amplitude = 0.15f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_ripple, explicitRippleOwned) != FractalType::explaino_ripple) {
+            std::cerr << "Explaino-Ripple should keep owning its single-axis runtime lane when its public control is active\n";
+            return 1;
+        }
+        KernelParams explicitRippleOwnedWithForeign{};
+        explicitRippleOwnedWithForeign.ripple_amplitude = 0.15f;
+        explicitRippleOwnedWithForeign.vortex_strength = 0.3f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_ripple, explicitRippleOwnedWithForeign) != FractalType::explaino_ripple) {
+            std::cerr << "Explaino-Ripple should keep its owning runtime lane even when hidden foreign axes are latently populated\n";
+            return 1;
+        }
+        KernelParams explicitBalanceVoidNeutral{};
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_balance_void, explicitBalanceVoidNeutral) != FractalType::explaino) {
+            std::cerr << "Explaino-BalanceVoid should keep the shipped neutral collapse to baseline Explaino at the runtime seam\n";
+            return 1;
+        }
+        KernelParams explicitBalanceVoidForeignOnly{};
+        explicitBalanceVoidForeignOnly.ripple_amplitude = 0.15f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_balance_void, explicitBalanceVoidForeignOnly) != FractalType::explaino) {
+            std::cerr << "Explaino-BalanceVoid should ignore hidden legacy projection ownership until one of its own public controls is active\n";
+            return 1;
+        }
+        KernelParams explicitBalanceVoidOwned{};
+        explicitBalanceVoidOwned.balance_void = 0.42f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_balance_void, explicitBalanceVoidOwned) != FractalType::explaino_balance_void) {
+            std::cerr << "Explaino-BalanceVoid should keep owning its explicit runtime lane when one of its public controls is active\n";
+            return 1;
+        }
+        KernelParams explicitBalanceVoidOwnedWithForeign{};
+        explicitBalanceVoidOwnedWithForeign.balance_void = 0.42f;
+        explicitBalanceVoidOwnedWithForeign.ripple_amplitude = 0.15f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_balance_void, explicitBalanceVoidOwnedWithForeign) != FractalType::explaino_balance_void) {
+            std::cerr << "Explaino-BalanceVoid should keep its owning runtime lane even when hidden foreign legacy axes are latently populated\n";
             return 1;
         }
         struct ExpectedAxis {

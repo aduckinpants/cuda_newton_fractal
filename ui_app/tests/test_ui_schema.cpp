@@ -1007,24 +1007,26 @@ int main() {
                 if (ctrl.id == "field_curvature" && VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     foundFieldCurvatureVisibleForExplainoAll = true;
                 }
+                const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(ctrl.id);
+                if (axis) {
+                    if (!ctrl.has_binding || ctrl.binding.path != axis->binding_path) {
+                        std::cerr << "Main schema Explaino axis controls drifted away from the canonical Explaino axis registry\n";
+                        return 1;
+                    }
+                    const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
+                    if (!ctrl.has_visible_if ||
+                        ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                        !carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId) ||
+                        VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
+                        CsvTokenCount(ctrl.visible_if.value) != 1u) {
+                        std::cerr << "Main schema Explaino axis controls should be visible only on their explicit owning family lane, not on explaino_all\n";
+                        return 1;
+                    }
+                }
                 if (VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
                     ++explainoAllVisibleControlCount;
-                    const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(ctrl.id);
                     if (axis) {
                         ++explainoAllVisibleAxisCount;
-                        if (!ctrl.has_binding || ctrl.binding.path != axis->binding_path) {
-                            std::cerr << "Main schema Explaino-all axis controls drifted away from the canonical Explaino axis registry\n";
-                            return 1;
-                        }
-                        const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
-                        if (!ctrl.has_visible_if || ctrl.visible_if.op != "in" ||
-                            ctrl.visible_if.path != "fractal.view.fractal_type" ||
-                            !VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
-                            !carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId) ||
-                            CsvTokenCount(ctrl.visible_if.value) != 2u) {
-                            std::cerr << "Main schema Explaino-all axis controls should decode to explaino_all plus their owning legacy carrier only\n";
-                            return 1;
-                        }
                     } else {
                         ++explainoAllVisibleNonAxisCount;
                         if (!ctrl.has_binding || !IsKnownExplainoAllVisibleBindingPath(ctrl.binding.path)) {
@@ -1168,17 +1170,17 @@ int main() {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }
-        if (!foundRippleAmplitudeVisibleForExplainoAll || !foundSpliceOffsetVisibleForExplainoAll ||
-            !foundVortexStrengthVisibleForExplainoAll || !foundTensionStrengthVisibleForExplainoAll ||
-            !foundBalanceVoidVisibleForExplainoAll || !foundSymmetryTensionVisibleForExplainoAll ||
-            !foundFieldCurvatureVisibleForExplainoAll) {
-            std::cerr << "Did not find the canonical Explaino-all axis control surface in schema\n";
+        if (foundRippleAmplitudeVisibleForExplainoAll || foundSpliceOffsetVisibleForExplainoAll ||
+            foundVortexStrengthVisibleForExplainoAll || foundTensionStrengthVisibleForExplainoAll ||
+            foundBalanceVoidVisibleForExplainoAll || foundSymmetryTensionVisibleForExplainoAll ||
+            foundFieldCurvatureVisibleForExplainoAll) {
+            std::cerr << "Explaino-all should not surface family-specific axis controls in schema\n";
             return 1;
         }
-        if (explainoAllVisibleAxisCount != (sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0])) ||
+        if (explainoAllVisibleAxisCount != 0 ||
             explainoAllVisibleNonAxisCount != kKnownExplainoAllVisibleBindingPathCount ||
-            explainoAllVisibleControlCount != explainoAllVisibleAxisCount + explainoAllVisibleNonAxisCount) {
-            std::cerr << "Main schema Explaino-all visible control surface drifted outside the canonical axis registry and explicit non-axis allowlist\n";
+            explainoAllVisibleControlCount != explainoAllVisibleNonAxisCount) {
+            std::cerr << "Main schema Explaino-all visible control surface should stay limited to the explicit shared non-axis allowlist\n";
             return 1;
         }
         for (bool foundDeferredCouplingSchema : foundDeferredCouplingSchemaMatches) {

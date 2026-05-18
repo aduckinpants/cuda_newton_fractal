@@ -246,9 +246,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoLegacyProjectionSelector
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoPublicFractalType(FractalType fractalType) {
-    return IsExplainoLegacyProjectionSelector(fractalType)
-        ? ExplainoCanonicalFractalType()
-        : fractalType;
+    return fractalType;
 }
 
 inline constexpr ExplainoAxisDescriptor kExplainoAxisRegistry[] = {
@@ -327,19 +325,32 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoBalanceVoidPerturbation
         params.field_curvature != 0.0f;
 }
 
+FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoSingleAxisProjectionOwnershipPerturbation(
+    FractalType fractalType,
+    const KernelParams& params) {
+    switch (fractalType) {
+    case FractalType::explaino_ripple:
+        return params.ripple_amplitude != 0.0f;
+    case FractalType::explaino_splice:
+        return params.splice_offset != 0.0f;
+    case FractalType::explaino_vortex:
+        return params.vortex_strength != 0.0f;
+    case FractalType::explaino_tension:
+        return params.tension_strength != 0.0f;
+    default:
+        return false;
+    }
+}
+
 FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoRuntimeFractalType(
     FractalType fractalType,
     const KernelParams& params) {
     if (fractalType == ExplainoCanonicalFractalType()) {
-        if (HasExplainoComposedAxisPerturbation(params)) {
-            return FractalType::explaino_ripple;
-        }
-        if (HasExplainoBalanceVoidPerturbation(params)) {
-            return FractalType::explaino_balance_void;
-        }
+        // explaino_all is a neutral umbrella; hidden family-axis params do not grant it runtime ownership.
         return FractalType::explaino;
     }
-    if (IsExplainoComposedAxisCarrier(fractalType) && !HasExplainoComposedAxisPerturbation(params)) {
+    if (IsExplainoSingleAxisProjectionSelector(fractalType) &&
+        !HasExplainoSingleAxisProjectionOwnershipPerturbation(fractalType, params)) {
         return FractalType::explaino;
     }
     if (fractalType == FractalType::explaino_balance_void && !HasExplainoBalanceVoidPerturbation(params)) {

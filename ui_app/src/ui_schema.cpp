@@ -49,16 +49,13 @@ static void apply_explaino_axis_registry(UISchema* schema) {
             const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(control.id);
             if (!axis) continue;
 
-            control.has_visible_if = true;
-            control.visible_if.op = "in";
-            control.visible_if.path = "fractal.view.fractal_type";
-            control.visible_if.value = FractalTypeId(ExplainoCanonicalFractalType());
-
             const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
-            if (carrierId && control.visible_if.value != carrierId) {
-                control.visible_if.value += ",";
-                control.visible_if.value += carrierId;
-            }
+            if (!carrierId) continue;
+
+            control.has_visible_if = true;
+            control.visible_if.op = "eq";
+            control.visible_if.path = "fractal.view.fractal_type";
+            control.visible_if.value = carrierId;
         }
     }
 }

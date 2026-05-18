@@ -19,6 +19,18 @@ bool BasinColoringNeedsStandard(FractalType fractalType, const KernelParams& par
         BasinColorSignalNeedsStandard(params.color_pipeline.signal);
 }
 
+bool ExplainoLegacyProjectionSmoothEscapeStaysFast(
+    FractalType requestedFractalType,
+    FractalType runtimeFractalType,
+    const KernelParams& params) {
+    if (params.coloring_mode != ColoringMode::smooth_escape ||
+        params.color_pipeline.signal != ColorSignal::smooth_escape) {
+        return false;
+    }
+    return requestedFractalType == runtimeFractalType &&
+        IsExplainoLegacyProjectionSelector(requestedFractalType);
+}
+
 double AutoStandardThresholdLog2(FractalType fractalType) {
     switch (fractalType) {
     case FractalType::julia:
@@ -107,11 +119,16 @@ ResolvedEvalMode ResolveSampleEvalModeForRender(
     SampleTier requestedTier,
     double log2Zoom)
 {
-    const uint32_t support = GetSampleTierSupport(fractalType);
+    const FractalType runtimeFractalType = ResolveExplainoRuntimeFractalType(fractalType, params);
+    const uint32_t support = GetSampleTierSupport(runtimeFractalType);
+    if (requestedTier == SampleTier::tier_auto &&
+        ExplainoLegacyProjectionSmoothEscapeStaysFast(fractalType, runtimeFractalType, params)) {
+        return {NumericBackend::float32, IterationStrategy::direct};
+    }
     if (requestedTier == SampleTier::tier_auto &&
         (support & kSupport_Standard) &&
-        BasinColoringNeedsStandard(fractalType, params)) {
+        BasinColoringNeedsStandard(runtimeFractalType, params)) {
         return {NumericBackend::float64, IterationStrategy::direct};
     }
-    return ResolveSampleEvalMode(fractalType, requestedTier, log2Zoom);
+    return ResolveSampleEvalMode(runtimeFractalType, requestedTier, log2Zoom);
 }

@@ -304,8 +304,8 @@ int main() {
             std::cerr << "Legacy Explaino composed reset should mark dirty\n";
             return 1;
         }
-        if (composedView.fractal_type != FractalType::explaino_all) {
-            std::cerr << "Legacy Explaino composed reset should canonicalize to explaino_all before restoring the preset vector\n";
+        if (composedView.fractal_type != FractalType::explaino_vortex) {
+            std::cerr << "Legacy Explaino composed reset should preserve the explicit Explaino-Vortex selector while restoring its preset vector\n";
             return 1;
         }
         if (!NearlyEqual(composedParams.ripple_amplitude, 0.0f) ||
@@ -315,7 +315,7 @@ int main() {
             !NearlyEqual(composedParams.balance_void, 0.0f) ||
             !NearlyEqual(composedParams.symmetry_tension, 0.0f) ||
             !NearlyEqual(composedParams.field_curvature, 0.0f)) {
-            std::cerr << "Legacy Explaino composed reset should restore the canonical explaino_all vortex preset vector\n";
+            std::cerr << "Legacy Explaino composed reset should restore only the explicit Explaino-Vortex preset vector\n";
             return 1;
         }
     }
@@ -342,14 +342,14 @@ int main() {
             std::cerr << "ExplainO-BalanceVoid reset should mark dirty\n";
             return 1;
         }
-        if (balanceVoidView.fractal_type != FractalType::explaino_all) {
-            std::cerr << "ExplainO-BalanceVoid reset should canonicalize to explaino_all instead of preserving a legacy public selector identity\n";
+        if (balanceVoidView.fractal_type != FractalType::explaino_balance_void) {
+            std::cerr << "ExplainO-BalanceVoid reset should preserve the explicit public selector identity\n";
             return 1;
         }
         if (!NearlyEqual(balanceVoidParams.balance_void, 0.0f) ||
             !NearlyEqual(balanceVoidParams.symmetry_tension, 0.0f) ||
             !NearlyEqual(balanceVoidParams.field_curvature, 0.0f)) {
-            std::cerr << "ExplainO-BalanceVoid reset should preserve the dedicated canonical axes at the neutral collapse point\n";
+            std::cerr << "ExplainO-BalanceVoid reset should preserve its dedicated family-axis defaults at the neutral collapse point\n";
             return 1;
         }
         if (!NearlyEqual(balanceVoidParams.ripple_amplitude, 0.0f) ||
@@ -508,8 +508,8 @@ int main() {
 
             ResetRuntimeStateForCurrentFractal(projectionView, projectionParams, projectionRender, projectionLens, &projectionDirty);
 
-            if (!projectionDirty || projectionView.fractal_type != ExplainoCanonicalFractalType()) {
-                std::cerr << "Phoenix-step projection carriers should still canonicalize their public selector to explaino_all on reset\n";
+            if (!projectionDirty || projectionView.fractal_type != projectionViewType) {
+                std::cerr << "Phoenix-step projection carriers should preserve their explicit public selector identity on reset\n";
                 return 1;
             }
             const ExplainoAxisDescriptor* axis = FindExplainoSingleAxisProjectionDescriptor(projectionViewType);

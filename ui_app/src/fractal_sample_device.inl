@@ -23,8 +23,7 @@
         requestedFt == ExplainoCanonicalFractalType() &&
         hasExplainoComposedPerturbation &&
         hasExplainoBalanceVoidPerturbation;
-    // Slice 1 keeps the legacy carriers as the runtime implementation seam while making
-    // explaino_all the canonical public identity.
+    // Public selector identity stays explicit; explaino_all no longer owns the hidden family-axis runtime lanes.
     FractalType ft = ResolveExplainoRuntimeFractalType(requestedFt, params);
     if (ft == FractalType::newton) {
         if (useFP64) {
@@ -1725,10 +1724,9 @@
             }
             converged = true;
         }
-    } else if (ft == FractalType::explaino_ripple ||
-               ft == FractalType::explaino_splice ||
-               ft == FractalType::explaino_vortex ||
-               ft == FractalType::explaino_tension) {
+    } else if (ft == ExplainoCanonicalFractalType() &&
+               (HasExplainoComposedAxisPerturbation(params) ||
+                HasExplainoBalanceVoidPerturbation(params))) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;

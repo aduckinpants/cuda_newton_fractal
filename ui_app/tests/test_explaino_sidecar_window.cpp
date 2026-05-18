@@ -289,28 +289,28 @@ EngineFunctionCatalog BuildBalanceVoidCatalog() {
     fractalType.type = "enum";
     fractalType.label = "Fractal Type";
     fractalType.required = true;
-    fractalType.options.push_back({"explaino_all", "Explaino-all"});
+    fractalType.options.push_back({"explaino_balance_void", "Explaino BalanceVoid"});
     fractalSample.parameters.push_back(fractalType);
 
     FunctionParamDescriptor balanceVoid = MakeParam("fractal.params.balance_void", "float", "Balance Void", -1.0, 1.0, 0.0);
     balanceVoid.has_applicable_when = true;
     balanceVoid.applicable_when.op = "eq";
     balanceVoid.applicable_when.path = "fractal.view.fractal_type";
-    balanceVoid.applicable_when.value = "explaino_all";
+    balanceVoid.applicable_when.value = "explaino_balance_void";
     fractalSample.parameters.push_back(balanceVoid);
 
     FunctionParamDescriptor symmetryTension = MakeParam("fractal.params.symmetry_tension", "float", "Symmetry Tension", -1.0, 1.0, 0.0);
     symmetryTension.has_applicable_when = true;
     symmetryTension.applicable_when.op = "eq";
     symmetryTension.applicable_when.path = "fractal.view.fractal_type";
-    symmetryTension.applicable_when.value = "explaino_all";
+    symmetryTension.applicable_when.value = "explaino_balance_void";
     fractalSample.parameters.push_back(symmetryTension);
 
     FunctionParamDescriptor fieldCurvature = MakeParam("fractal.params.field_curvature", "float", "Field Curvature", -1.0, 1.0, 0.0);
     fieldCurvature.has_applicable_when = true;
     fieldCurvature.applicable_when.op = "eq";
     fieldCurvature.applicable_when.path = "fractal.view.fractal_type";
-    fieldCurvature.applicable_when.value = "explaino_all";
+    fieldCurvature.applicable_when.value = "explaino_balance_void";
     fractalSample.parameters.push_back(fieldCurvature);
 
     catalog.functions.push_back(fractalSample);
@@ -698,7 +698,7 @@ int main() {
         ExplainoSidecarWindowState state;
         std::string error;
         if (!BuildExplainoSidecarWindowState(BuildBalanceVoidCatalog(), balanceVoidCtx, &host, &state, &error)) {
-            std::cerr << "Expected BalanceVoid widened sidecar window state to build on the existing generic explaino_all seam: "
+            std::cerr << "Expected BalanceVoid widened sidecar window state to build on the explicit explaino_balance_void owner seam: "
                       << error << "\n";
             return 1;
         }
@@ -706,8 +706,8 @@ int main() {
             std::cerr << "Expected BalanceVoid widened sidecar window state to avoid the legacy sample host\n";
             return 1;
         }
-        if (state.fractal_type_id != "explaino_all") {
-            std::cerr << "Expected legacy explaino_balance_void sidecar state to canonicalize onto the generic explaino_all owner seam, got: "
+        if (state.fractal_type_id != "explaino_balance_void") {
+            std::cerr << "Expected explaino_balance_void sidecar state to preserve its explicit owner seam, got: "
                       << state.fractal_type_id << "\n";
             return 1;
         }

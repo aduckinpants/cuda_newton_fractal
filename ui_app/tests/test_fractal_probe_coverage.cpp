@@ -40,7 +40,7 @@ bool Check(bool condition, const char* file, int line, const char* msg) {
 // here too — or the completeness check at the end catches it.
 struct FractalProbeCase {
     const char* type_id;         // string ID used in overrides
-    const char* expected_runtime_type; // runtime-visible ID after any canonicalization
+    const char* expected_runtime_type; // runtime-visible public ID after request overrides
     bool is_basin;               // true if SupportsBasinColoring
     bool is_escape;              // true if escape-time family
     // Extra overrides needed for valid sampling (e.g. multibrot_power).
@@ -68,13 +68,12 @@ std::vector<FractalProbeCase> AllProbeCases() {
         {"explaino_fold", "explaino_fold", true, false, {}},
         {"explaino_bell", "explaino_bell", true, false, {}},
         {"explaino_projection_and_flow", "explaino_projection_and_flow", true, false, {}},
-        // These legacy Explaino projection selectors intentionally publish back
-        // through the generic explaino_all public runtime identity.
-        {"explaino_ripple", "explaino_all", true, false, {}},
-        {"explaino_splice", "explaino_all", true, false, {}},
-        {"explaino_vortex", "explaino_all", true, false, {}},
-        {"explaino_tension", "explaino_all", true, false, {}},
-        {"explaino_balance_void", "explaino_all", true, false, {}},
+        // These explicit Explaino selectors now publish their own public runtime identity.
+        {"explaino_ripple", "explaino_ripple", true, false, {}},
+        {"explaino_splice", "explaino_splice", true, false, {}},
+        {"explaino_vortex", "explaino_vortex", true, false, {}},
+        {"explaino_tension", "explaino_tension", true, false, {}},
+        {"explaino_balance_void", "explaino_balance_void", true, false, {}},
 
         // Escape-time types
         {"mandelbrot", "mandelbrot", false, true, {}},
