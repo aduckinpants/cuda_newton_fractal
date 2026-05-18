@@ -47,6 +47,9 @@ static void TestConcreteEnumIdWrappers() {
     CameraBehavior cameraBehavior = CameraBehavior::manual;
     SampleTier sampleTier = SampleTier::fast;
     ColorPipelineShape shape = ColorPipelineShape::identity;
+    CounterfactualPairRootFamily rootFamily = CounterfactualPairRootFamily::cubic_unit_roots;
+    CounterfactualPairFrame pairFrame = CounterfactualPairFrame::world_absolute;
+    ProjectionAndFlowRootFamily projectionFlowRootFamily = ProjectionAndFlowRootFamily::cubic_unit_roots;
 
     Check(std::string_view(PolyKindId(PolyKind::z3_minus_1)) == "z3_minus_1",
         "TestConcreteEnumIdWrappers_PolyKindLookup");
@@ -57,6 +60,23 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_FractalTypeCanonicalExplainoAllLookup");
     Check(TryParseFractalTypeId("explaino_all", &fractalType) && fractalType == FractalType::explaino_all,
         "TestConcreteEnumIdWrappers_FractalTypeCanonicalExplainoAllParse");
+    Check(std::string_view(FractalTypeId(FractalType::counterfactual_pair)) == "counterfactual_pair",
+        "TestConcreteEnumIdWrappers_FractalTypeCounterfactualPairLookup");
+    Check(TryParseFractalTypeId("counterfactual_pair", &fractalType) && fractalType == FractalType::counterfactual_pair,
+        "TestConcreteEnumIdWrappers_FractalTypeCounterfactualPairParse");
+    Check(std::string_view(FractalTypeId(FractalType::explaino_counterfactual_pair)) == "explaino_counterfactual_pair",
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoCounterfactualPairLookup");
+    Check(TryParseFractalTypeId("explaino_counterfactual_pair", &fractalType) && fractalType == FractalType::explaino_counterfactual_pair,
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoCounterfactualPairParse");
+    Check(std::string_view(FractalTypeId(FractalType::projection_and_flow)) == "projection_and_flow",
+        "TestConcreteEnumIdWrappers_FractalTypeProjectionAndFlowLookup");
+    Check(TryParseFractalTypeId("projection_and_flow", &fractalType) && fractalType == FractalType::projection_and_flow,
+        "TestConcreteEnumIdWrappers_FractalTypeProjectionAndFlowParse");
+    Check(std::string_view(FractalTypeId(FractalType::explaino_projection_and_flow)) == "explaino_projection_and_flow",
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoProjectionAndFlowLookup");
+    Check(TryParseFractalTypeId("explaino_projection_and_flow", &fractalType) &&
+            fractalType == FractalType::explaino_projection_and_flow,
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoProjectionAndFlowParse");
     Check(std::string_view(FractalTypeId(FractalType::explaino_lambda)) == "explaino_lambda",
         "TestConcreteEnumIdWrappers_FractalTypeLookup");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,
@@ -83,6 +103,22 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_ColorPipelineShapeLookup");
     Check(TryParseColorPipelineShapeId("mirror_repeat", &shape) && shape == ColorPipelineShape::mirror_repeat,
         "TestConcreteEnumIdWrappers_ColorPipelineShapeParse");
+
+    Check(std::string_view(CounterfactualPairRootFamilyId(CounterfactualPairRootFamily::cubic_unit_roots)) == "cubic_unit_roots",
+        "TestConcreteEnumIdWrappers_CounterfactualPairRootFamilyLookup");
+    Check(TryParseCounterfactualPairRootFamilyId("quartic_unit_roots", &rootFamily) && rootFamily == CounterfactualPairRootFamily::quartic_unit_roots,
+        "TestConcreteEnumIdWrappers_CounterfactualPairRootFamilyParse");
+
+    Check(std::string_view(CounterfactualPairFrameId(CounterfactualPairFrame::world_absolute)) == "world_absolute",
+        "TestConcreteEnumIdWrappers_CounterfactualPairFrameLookup");
+    Check(TryParseCounterfactualPairFrameId("view_relative", &pairFrame) && pairFrame == CounterfactualPairFrame::view_relative,
+        "TestConcreteEnumIdWrappers_CounterfactualPairFrameParse");
+
+    Check(std::string_view(ProjectionAndFlowRootFamilyId(ProjectionAndFlowRootFamily::cubic_unit_roots)) == "cubic_unit_roots",
+        "TestConcreteEnumIdWrappers_ProjectionAndFlowRootFamilyLookup");
+    Check(TryParseProjectionAndFlowRootFamilyId("quartic_unit_roots", &projectionFlowRootFamily) &&
+            projectionFlowRootFamily == ProjectionAndFlowRootFamily::quartic_unit_roots,
+        "TestConcreteEnumIdWrappers_ProjectionAndFlowRootFamilyParse");
 }
 
 int main() {

@@ -75,6 +75,76 @@ int main() {
     }
 
     {
+        if (!SupportsBasinColoring(FractalType::projection_and_flow)) {
+            std::cerr << "Projection-and-Flow should support basin coloring\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::projection_and_flow)) {
+            std::cerr << "Projection-and-Flow should not be escape-time\n";
+            return 1;
+        }
+        if (IsExplainoFamily(FractalType::projection_and_flow)) {
+            std::cerr << "Projection-and-Flow should stay outside the Explaino family\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::projection_and_flow) != ColoringMode::root_basin) {
+            std::cerr << "Projection-and-Flow should default to root_basin\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::root_basin)) {
+            std::cerr << "Projection-and-Flow should allow root_basin coloring\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::smooth_escape)) {
+            std::cerr << "Projection-and-Flow should allow smooth_escape coloring because the public color controls expose it\n";
+            return 1;
+        }
+        const ColorPipelineSelection smoothEscapeProjectionFlow = {
+            ColorSignal::smooth_escape, ColorPalette::cyclic_escape, ColorGradingPreset::escape_default};
+        if (!IsColorPipelineAllowedForFractal(FractalType::projection_and_flow, smoothEscapeProjectionFlow)) {
+            std::cerr << "Projection-and-Flow should allow the public smooth_escape color tuple\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::projection_and_flow, ColoringMode::joy_basins)) {
+            std::cerr << "Projection-and-Flow should allow joy_basins coloring\n";
+            return 1;
+        }
+    }
+
+    {
+        if (!SupportsBasinColoring(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should support basin coloring\n";
+            return 1;
+        }
+        if (!IsExplainoFamily(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should be in the Explaino family\n";
+            return 1;
+        }
+        if (IsEscapeTimeFamily(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should not be escape-time\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_projection_and_flow) != ColoringMode::root_basin) {
+            std::cerr << "Explaino Projection-and-Flow should default to root_basin\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::explaino_projection_and_flow, ColoringMode::root_basin) ||
+            !IsColoringModeAllowedForFractal(FractalType::explaino_projection_and_flow, ColoringMode::smooth_escape) ||
+            !IsColoringModeAllowedForFractal(FractalType::explaino_projection_and_flow, ColoringMode::joy_basins)) {
+            std::cerr << "Explaino Projection-and-Flow should preserve the shipped Projection-and-Flow coloring surface\n";
+            return 1;
+        }
+        if (!IsProjectionAndFlowCarrier(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should stay on the shared Projection-and-Flow runtime lane\n";
+            return 1;
+        }
+        if (!UsesExplainoCustomPolynomialAuthority(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should own Explaino custom polynomial authority so its surfaced root-shape controls are real\n";
+            return 1;
+        }
+    }
+
+    {
         if (!SupportsBasinColoring(FractalType::explaino_fp)) {
             std::cerr << "Explaino FP should support basin coloring\n";
             return 1;

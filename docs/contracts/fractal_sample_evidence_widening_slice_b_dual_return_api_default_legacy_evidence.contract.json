@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence",
+  "feature_id": "fractal_sample_evidence_widening",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence.contract.json",
+    "docs/notes/fractal_sample_evidence_widening_launch_anchor.md",
+    "docs/notes/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_PHASED_PLAN.md",
+    "docs/contracts/fractal_sample_evidence_widening_staging.contract.json",
+    "docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/fractal_sample_core.cu",
+    "ui_app/tests/test_fractal_sample_result.cpp",
+    "ui_app/tests/test_fractal_sample_core.cu",
+    "ui_app/tests/test_fractal_sample_kernel.cu"
+  ],
+  "required_operator_inputs": [
+    "front-load the known continuity cleanup by removing the duplicated ck:4b8ae91d closeout line and keeping the launch anchor plus staging packet truthful for the live slice-A stop point",
+    "add one widened host sampling API beside SampleFractalPoints while preserving SampleFractalPoints as the shipped legacy projection path",
+    "teach the bounded sample device or kernel path to emit default FractalSampleEvidence that projects back to unchanged legacy FractalSampleResult semantics",
+    "keep slice C first-consumer work, renderer replacement, whole-engine generic refactor, advanced-color reopen, and Explaino deferred follow-ups out of scope"
+  ],
+  "forbidden_operator_prompts": [
+    "replace FractalSampleResult or SampleFractalPoints instead of preserving the legacy projection path",
+    "ship the first widened consumer, renderer replacement, runtime publish debt, or a whole-engine generic abstraction rewrite from this slice",
+    "reopen meta-basin, operator-itinerary, DSL/program-space, generic advanced-color, or historical explaino_inertial archaeology from this slice",
+    "close the slice without the handoff dedupe repaired, machine receipts written, and the committed-head stale-plan gate cleared"
+  ],
+  "required_defaults": {
+    "widened_host_api_exists": "required",
+    "samplefractalpoints_legacy_projection_preserved": "required",
+    "default_widened_legacy_evidence_emitted": "required",
+    "legacy_semantics_project_back_truthfully": "required",
+    "slice_c_first_consumer_deferred": "required",
+    "handoff_dedup_repaired": "required"
+  },
+  "forbidden_defaults": {
+    "samplefractalpoints_removed_or_signature_replaced": "forbidden",
+    "fractal_sample_result_replaced": "forbidden",
+    "first_widened_consumer_shipped": "forbidden",
+    "renderer_replaced": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "unproven_runtime_publish_claim": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence.contract.json --out-json artifacts/validation/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_PHASED_PLAN.md --out-json artifacts/validation/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_sample_evidence_widening_slice_b_contract_schema_valid",
+      "description": "The sample-evidence widening slice-B contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_slice_b_plan_sync_ok",
+      "description": "The sample-evidence widening slice-B plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_slice_b_hostile_audit_ok",
+      "description": "The sample-evidence widening slice-B hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

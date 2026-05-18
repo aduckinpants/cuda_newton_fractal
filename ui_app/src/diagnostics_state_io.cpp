@@ -300,6 +300,90 @@ bool ParseSampleTier(const std::string& text, SampleTier* outTier) {
     return TryParseSampleTierId(text, outTier);
 }
 
+bool ParseCounterfactualPairRootFamily(const std::string& text, CounterfactualPairRootFamily* outRootFamily) {
+    return TryParseCounterfactualPairRootFamilyId(text, outRootFamily);
+}
+
+bool ParseCounterfactualPairFrame(const std::string& text, CounterfactualPairFrame* outFrame) {
+    return TryParseCounterfactualPairFrameId(text, outFrame);
+}
+
+bool ParseProjectionAndFlowRootFamily(const std::string& text, ProjectionAndFlowRootFamily* outRootFamily) {
+    return TryParseProjectionAndFlowRootFamilyId(text, outRootFamily);
+}
+
+bool TryResolveCounterfactualPairRootFamilyForPolyKindLocal(PolyKind kind, CounterfactualPairRootFamily* outRootFamily) {
+    if (kind == PolyKind::z3_minus_1) {
+        if (outRootFamily) *outRootFamily = CounterfactualPairRootFamily::cubic_unit_roots;
+        return true;
+    }
+    if (kind == PolyKind::z4_minus_1) {
+        if (outRootFamily) *outRootFamily = CounterfactualPairRootFamily::quartic_unit_roots;
+        return true;
+    }
+    return false;
+}
+
+bool TryResolveProjectionAndFlowRootFamilyForPolyKindLocal(PolyKind kind, ProjectionAndFlowRootFamily* outRootFamily) {
+    if (kind == PolyKind::z3_minus_1) {
+        if (outRootFamily) *outRootFamily = ProjectionAndFlowRootFamily::cubic_unit_roots;
+        return true;
+    }
+    if (kind == PolyKind::z4_minus_1) {
+        if (outRootFamily) *outRootFamily = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        return true;
+    }
+    return false;
+}
+
+void SyncCounterfactualPairRootFamilyPresetLocal(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    switch (ioParams->counterfactual_pair_root_family) {
+    case CounterfactualPairRootFamily::cubic_unit_roots:
+        ioParams->poly_kind = PolyKind::z3_minus_1;
+        ioParams->poly_coeffs[0] = -1.0f;
+        ioParams->poly_coeffs[1] = 0.0f;
+        ioParams->poly_coeffs[2] = 0.0f;
+        ioParams->poly_coeffs[3] = 1.0f;
+        ioParams->poly_coeffs[4] = 0.0f;
+        break;
+    case CounterfactualPairRootFamily::quartic_unit_roots:
+        ioParams->poly_kind = PolyKind::z4_minus_1;
+        ioParams->poly_coeffs[0] = -1.0f;
+        ioParams->poly_coeffs[1] = 0.0f;
+        ioParams->poly_coeffs[2] = 0.0f;
+        ioParams->poly_coeffs[3] = 0.0f;
+        ioParams->poly_coeffs[4] = 1.0f;
+        break;
+    }
+}
+
+void SyncProjectionAndFlowRootFamilyPresetLocal(KernelParams* ioParams) {
+    if (!ioParams) {
+        return;
+    }
+    switch (ioParams->projection_and_flow_root_family) {
+    case ProjectionAndFlowRootFamily::cubic_unit_roots:
+        ioParams->poly_kind = PolyKind::z3_minus_1;
+        ioParams->poly_coeffs[0] = -1.0f;
+        ioParams->poly_coeffs[1] = 0.0f;
+        ioParams->poly_coeffs[2] = 0.0f;
+        ioParams->poly_coeffs[3] = 1.0f;
+        ioParams->poly_coeffs[4] = 0.0f;
+        break;
+    case ProjectionAndFlowRootFamily::quartic_unit_roots:
+        ioParams->poly_kind = PolyKind::z4_minus_1;
+        ioParams->poly_coeffs[0] = -1.0f;
+        ioParams->poly_coeffs[1] = 0.0f;
+        ioParams->poly_coeffs[2] = 0.0f;
+        ioParams->poly_coeffs[3] = 0.0f;
+        ioParams->poly_coeffs[4] = 1.0f;
+        break;
+    }
+}
+
 void ResetLegacyColorSourceMirror(KernelParams* ioParams) {
     if (!ioParams) {
         return;
@@ -1839,6 +1923,21 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
     double lambdaImag = static_cast<double>(nextParams.lambda_imag);
+    std::string counterfactualPairRootFamilyId;
+    std::string counterfactualPairFrameId;
+    std::string projectionAndFlowRootFamilyId;
+    const bool hasCounterfactualPairRootFamilyId =
+        TryGetOptionalString(*paramsObject, "counterfactual_pair_root_family", &counterfactualPairRootFamilyId);
+    const bool hasCounterfactualPairFrameId =
+        TryGetOptionalString(*paramsObject, "counterfactual_pair_frame", &counterfactualPairFrameId);
+    const bool hasProjectionAndFlowRootFamilyId =
+        TryGetOptionalString(*paramsObject, "projection_and_flow_root_family", &projectionAndFlowRootFamilyId);
+    double counterfactualPairOffsetX = static_cast<double>(nextParams.counterfactual_pair_offset_x);
+    double counterfactualPairOffsetY = static_cast<double>(nextParams.counterfactual_pair_offset_y);
+    double counterfactualPairReconvergenceRatio =
+        static_cast<double>(nextParams.counterfactual_pair_reconvergence_ratio);
+    double projectionAndFlowTargetRadius = static_cast<double>(nextParams.projection_and_flow_target_radius);
+    double projectionAndFlowPressureThreshold = static_cast<double>(nextParams.projection_and_flow_pressure_threshold);
     double explainoSeed = 0.0;
     double explainoSeedB = nextParams.explaino_seed_b;
     double explainoMix = nextParams.explaino_mix;
@@ -1871,6 +1970,11 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
     }
+    if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_x", &counterfactualPairOffsetX, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_y", &counterfactualPairOffsetY, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_reconvergence_ratio", &counterfactualPairReconvergenceRatio, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "projection_and_flow_target_radius", &projectionAndFlowTargetRadius, nullptr, outError)) return false;
+    if (!GetOptionalNumber(*paramsObject, "projection_and_flow_pressure_threshold", &projectionAndFlowPressureThreshold, nullptr, outError)) return false;
     const bool hasColorSignalId = TryGetOptionalString(*paramsObject, "color_signal", &colorSignalId);
     const bool hasColorShapeId = TryGetOptionalString(*paramsObject, "color_shape", &colorShapeId);
     const bool hasColorPaletteId = TryGetOptionalString(*paramsObject, "color_palette", &colorPaletteId);
@@ -1909,10 +2013,40 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (outError) *outError = "Unknown poly_kind: " + std::to_string(rawPolyKind);
         return false;
     }
-    if (IsExplainoFamily(nextView.fractal_type) && nextParams.poly_kind != PolyKind::custom) {
+    if (UsesExplainoCustomPolynomialAuthority(nextView.fractal_type) && nextParams.poly_kind != PolyKind::custom) {
         if (outError) *outError = "poly_kind must be custom for fractal_type " + fractalTypeId;
         return false;
     }
+    if (hasCounterfactualPairRootFamilyId) {
+        if (!ParseCounterfactualPairRootFamily(counterfactualPairRootFamilyId, &nextParams.counterfactual_pair_root_family)) {
+            if (outError) *outError = "Unknown counterfactual_pair_root_family: " + counterfactualPairRootFamilyId;
+            return false;
+        }
+    } else if (nextView.fractal_type == FractalType::counterfactual_pair &&
+        !TryResolveCounterfactualPairRootFamilyForPolyKindLocal(nextParams.poly_kind, &nextParams.counterfactual_pair_root_family)) {
+        if (outError) *outError = "counterfactual_pair requires a supported root-family polynomial preset";
+        return false;
+    }
+    if (hasCounterfactualPairFrameId &&
+        !ParseCounterfactualPairFrame(counterfactualPairFrameId, &nextParams.counterfactual_pair_frame)) {
+        if (outError) *outError = "Unknown counterfactual_pair_frame: " + counterfactualPairFrameId;
+        return false;
+    }
+    if (hasProjectionAndFlowRootFamilyId) {
+        if (!ParseProjectionAndFlowRootFamily(projectionAndFlowRootFamilyId, &nextParams.projection_and_flow_root_family)) {
+            if (outError) *outError = "Unknown projection_and_flow_root_family: " + projectionAndFlowRootFamilyId;
+            return false;
+        }
+    } else if (IsProjectionAndFlowCarrier(nextView.fractal_type) &&
+        !TryResolveProjectionAndFlowRootFamilyForPolyKindLocal(nextParams.poly_kind, &nextParams.projection_and_flow_root_family)) {
+        if (outError) *outError = "projection_and_flow requires a supported root-family polynomial preset";
+        return false;
+    }
+    nextParams.counterfactual_pair_offset_x = static_cast<float>(counterfactualPairOffsetX);
+    nextParams.counterfactual_pair_offset_y = static_cast<float>(counterfactualPairOffsetY);
+    nextParams.counterfactual_pair_reconvergence_ratio = static_cast<float>(counterfactualPairReconvergenceRatio);
+    nextParams.projection_and_flow_target_radius = static_cast<float>(projectionAndFlowTargetRadius);
+    nextParams.projection_and_flow_pressure_threshold = static_cast<float>(projectionAndFlowPressureThreshold);
     if (stateVersion >= 2) {
         nextParams.nova_alpha = static_cast<float>(novaAlpha);
         nextParams.phoenix_p_real = static_cast<float>(phoenixPReal);
@@ -2008,6 +2142,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         root = {0.0f, 0.0f};
     }
     if (!ParseOptionalExplainoRoots(*paramsObject, nextParams.explaino_root_count, &nextParams, nullptr, outError)) return false;
+    if (!UsesExplainoCustomPolynomialAuthority(nextView.fractal_type)) {
+        nextParams.explaino_root_count = 0;
+        for (Float2& root : nextParams.explaino_roots) {
+            root = {0.0f, 0.0f};
+        }
+    }
     nextParams.joy_coupling = static_cast<float>(joyCoupling);
     nextParams.fold_coupling = static_cast<float>(foldCoupling);
     nextParams.bell_coupling = static_cast<float>(bellCoupling);
@@ -2243,6 +2383,12 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         coeff = 0.0f;
     }
     if (polyCoeffsBArray && !ParseFixedFloatArray(*polyCoeffsBArray, "poly_coeffs_b", nextParams.poly_coeffs_b, 5, outError)) return false;
+    if (nextView.fractal_type == FractalType::counterfactual_pair) {
+        SyncCounterfactualPairRootFamilyPresetLocal(&nextParams);
+    }
+    if (nextView.fractal_type == FractalType::projection_and_flow) {
+        SyncProjectionAndFlowRootFamilyPresetLocal(&nextParams);
+    }
 
     int width = 0;
     int height = 0;

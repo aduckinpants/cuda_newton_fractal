@@ -5,6 +5,10 @@
 #include <limits>
 #include <utility>
 
+bool CudaSidecarMeasurementHost::SupportsWidenedEvidence() const {
+    return true;
+}
+
 bool CudaSidecarMeasurementHost::Sample(const std::vector<Double2>& coords,
     const ViewState& view,
     const KernelParams& params,
@@ -42,5 +46,45 @@ bool CudaSidecarMeasurementHost::Sample(const std::vector<Double2>& coords,
     }
 
     *outResults = std::move(results);
+    return true;
+}
+
+bool CudaSidecarMeasurementHost::SampleEvidence(const std::vector<Double2>& coords,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    std::vector<FractalSampleEvidence>* outEvidence,
+    std::string* outError) const {
+    if (!outEvidence) {
+        if (outError) *outError = "CudaSidecarMeasurementHost requires outEvidence";
+        return false;
+    }
+
+    if (coords.empty()) {
+        outEvidence->clear();
+        return true;
+    }
+
+    if (coords.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        if (outError) *outError = "Sidecar measurement coord count exceeds SampleFractalEvidencePoints limit";
+        return false;
+    }
+
+    std::vector<FractalSampleEvidence> evidence(coords.size());
+    const char* sampleError = nullptr;
+    if (!SampleFractalEvidencePoints(coords.data(),
+            static_cast<int>(coords.size()),
+            view,
+            params,
+            render,
+            evidence.data(),
+            &sampleError)) {
+        if (outError) {
+            *outError = sampleError ? sampleError : "SampleFractalEvidencePoints failed for sidecar measurement";
+        }
+        return false;
+    }
+
+    *outEvidence = std::move(evidence);
     return true;
 }

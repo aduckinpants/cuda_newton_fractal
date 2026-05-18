@@ -219,6 +219,64 @@ int main() {
     }
 
     {
+        SidecarMeasurementBatch batch;
+        batch.coordinate_count = 5;
+        batch.mean_information_gain_estimate = 1.0;
+        batch.total_information_gain_estimate = 1.0;
+        batch.mean_decode_stability = 0.8;
+
+        SidecarMeasurementRow row = MakeMeasurementRow(
+            "fractal.view.zoom",
+            "Zoom",
+            10.0,
+            1.0,
+            1.0,
+            0.8,
+            MakeAggregate(10.0, 1.0, 0.6, 0.2),
+            MakeAggregate(12.0, 1.2, 0.7, 0.1),
+            MakeAggregate(8.0, 0.8, 0.5, 0.3));
+        row.minus_counterfactual.coordinate_count = 5;
+        row.minus_counterfactual.mean_sample_coord_distance = 0.05;
+        row.plus_counterfactual.coordinate_count = 5;
+        row.plus_counterfactual.mean_sample_coord_distance = 0.35;
+        batch.rows.push_back(row);
+
+        SidecarBudgetState budget;
+        budget.function_id = "fractal.sample";
+        budget.fractal_type_id = "explaino";
+        budget.batch_count = 1;
+        budget.estimated_information_gain_total = 1.0;
+        budget.cumulative_information_gain_total = 1.0;
+        budget.mean_posterior_uncertainty = 0.5;
+        budget.mean_decode_stability = 0.8;
+        budget.rows.push_back(MakeBudgetRow("fractal.view.zoom", "Zoom", 1.0, 1.0, 0.5, 0.8, 1));
+
+        SidecarLensProjection projection;
+        std::string error;
+        if (!BuildSidecarLensProjection(BuildSpace(), batch, budget, &projection, &error)) {
+            std::cerr << "Expected tie-shaped lens projection witness to build: " << error << "\n";
+            return 1;
+        }
+        if (projection.rows.size() != 1) {
+            std::cerr << "Expected one zoom row in tie-shaped lens projection witness\n";
+            return 1;
+        }
+        const SidecarLensProjectionRow& zoom = projection.rows[0];
+        if (!(zoom.projection_flow_bias > 0.0)) {
+            std::cerr << "Expected projection flow bias to turn positive when widened plus-direction witness flow exceeds minus-direction flow\n";
+            return 1;
+        }
+        if (zoom.guidance.find('+') == std::string::npos) {
+            std::cerr << "Expected projection flow witness to break aggregate ties toward plus guidance\n";
+            return 1;
+        }
+        if (!(zoom.active_max - zoom.current_value > zoom.current_value - zoom.active_min)) {
+            std::cerr << "Expected projection flow witness to bias the active zone toward the stronger plus-direction flow\n";
+            return 1;
+        }
+    }
+
+    {
         SidecarMeasurementBatch brokenBatch = BuildBatch();
         brokenBatch.rows.push_back(brokenBatch.rows[0]);
         SidecarLensProjection projection;

@@ -1,5 +1,6 @@
 #include "diagnostics_capture.h"
 
+#include "enum_id_utils.h"
 #define COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
@@ -20,48 +21,8 @@
 namespace {
 
 const char* CaptureFractalTypeId(FractalType fractalType) {
-    switch (fractalType) {
-    case FractalType::newton: return "newton";
-    case FractalType::nova: return "nova";
-    case FractalType::mandelbrot: return "mandelbrot";
-    case FractalType::julia: return "julia";
-    case FractalType::burning_ship: return "burning_ship";
-    case FractalType::multibrot: return "multibrot";
-    case FractalType::phoenix: return "phoenix";
-    case FractalType::explaino: return "explaino";
-    case FractalType::explaino_all: return "explaino_all";
-    case FractalType::explaino_y: return "explaino_y";
-    case FractalType::explaino_fp: return "explaino_fp";
-    case FractalType::explaino_nova: return "explaino_nova";
-    case FractalType::explaino_halley: return "explaino_halley";
-    case FractalType::explaino_dual: return "explaino_dual";
-    case FractalType::explaino_mult: return "explaino_mult";
-    case FractalType::explaino_phoenix: return "explaino_phoenix";
-    case FractalType::explaino_transcendental: return "explaino_transcendental";
-    case FractalType::explaino_inertial: return "explaino_inertial";
-    case FractalType::explaino_julia: return "explaino_julia";
-    case FractalType::explaino_rational: return "explaino_rational";
-    case FractalType::explaino_joy: return "explaino_joy";
-    case FractalType::explaino_fold: return "explaino_fold";
-    case FractalType::explaino_bell: return "explaino_bell";
-    case FractalType::explaino_ripple: return "explaino_ripple";
-    case FractalType::explaino_splice: return "explaino_splice";
-    case FractalType::explaino_vortex: return "explaino_vortex";
-    case FractalType::explaino_tension: return "explaino_tension";
-    case FractalType::explaino_balance_void: return "explaino_balance_void";
-    case FractalType::multicorn: return "multicorn";
-    case FractalType::halley: return "halley";
-    case FractalType::collatz: return "collatz";
-    case FractalType::explaino_collatz: return "explaino_collatz";
-    case FractalType::mcmullen: return "mcmullen";
-    case FractalType::lambda_map: return "lambda";
-    case FractalType::explaino_lambda: return "explaino_lambda";
-    case FractalType::explaino_rational_escape: return "explaino_rational_escape";
-    case FractalType::spider: return "spider";
-    case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
-    case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
-    }
-    return "unknown";
+    const char* id = ::FractalTypeId(fractalType);
+    return (id && id[0] != '\0') ? id : "unknown";
 }
 
 const char* CaptureColoringModeId(ColoringMode coloringMode) {
@@ -197,6 +158,21 @@ const char* CaptureMcMullenPresetId(McMullenPreset preset) {
     case McMullenPreset::z3_z2: return "z3_z2";
     }
     return "unknown";
+}
+
+const char* CaptureCounterfactualPairRootFamilyId(CounterfactualPairRootFamily rootFamily) {
+    const char* id = ::CounterfactualPairRootFamilyId(rootFamily);
+    return (id && id[0] != '\0') ? id : "unknown";
+}
+
+const char* CaptureCounterfactualPairFrameId(CounterfactualPairFrame frame) {
+    const char* id = ::CounterfactualPairFrameId(frame);
+    return (id && id[0] != '\0') ? id : "unknown";
+}
+
+const char* CaptureProjectionAndFlowRootFamilyId(ProjectionAndFlowRootFamily rootFamily) {
+    const char* id = ::ProjectionAndFlowRootFamilyId(rootFamily);
+    return (id && id[0] != '\0') ? id : "unknown";
 }
 
 bool WriteTextFile(const std::filesystem::path& path, const std::string& text, std::string* outError) {
@@ -601,6 +577,14 @@ std::string BuildStateJson(
     js << "    \"epsilon\": " << static_cast<double>(params.epsilon) << ",\n";
     js << "    \"exposure\": " << static_cast<double>(params.exposure) << ",\n";
     js << "    \"poly_kind\": " << static_cast<int>(params.poly_kind) << ",\n";
+    js << "    \"counterfactual_pair_root_family\": \"" << CaptureCounterfactualPairRootFamilyId(params.counterfactual_pair_root_family) << "\",\n";
+    js << "    \"counterfactual_pair_frame\": \"" << CaptureCounterfactualPairFrameId(params.counterfactual_pair_frame) << "\",\n";
+    js << "    \"counterfactual_pair_offset_x\": " << static_cast<double>(params.counterfactual_pair_offset_x) << ",\n";
+    js << "    \"counterfactual_pair_offset_y\": " << static_cast<double>(params.counterfactual_pair_offset_y) << ",\n";
+    js << "    \"counterfactual_pair_reconvergence_ratio\": " << static_cast<double>(params.counterfactual_pair_reconvergence_ratio) << ",\n";
+    js << "    \"projection_and_flow_root_family\": \"" << CaptureProjectionAndFlowRootFamilyId(params.projection_and_flow_root_family) << "\",\n";
+    js << "    \"projection_and_flow_target_radius\": " << static_cast<double>(params.projection_and_flow_target_radius) << ",\n";
+    js << "    \"projection_and_flow_pressure_threshold\": " << static_cast<double>(params.projection_and_flow_pressure_threshold) << ",\n";
     if (hasLegacyColoringMirror) {
         js << "    \"coloring_mode\": \"" << CaptureColoringModeId(mirroredColoringMode) << "\",\n";
     }

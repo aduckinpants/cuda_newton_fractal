@@ -82,6 +82,13 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         center = {0.36f, -0.1f};
         zoom = 2.8f;
         break;
+    case FractalType::projection_and_flow:
+    case FractalType::explaino_projection_and_flow:
+    case FractalType::counterfactual_pair:
+    case FractalType::explaino_counterfactual_pair:
+        center = {0.0f, 0.0f};
+        zoom = 1.0f;
+        break;
     case FractalType::newton:
     case FractalType::nova:
     case FractalType::explaino_all:
@@ -131,6 +138,30 @@ void SetPolyPreset(KernelParams& params) {
         params.poly_coeffs[3] = 0.0f;
         params.poly_coeffs[4] = 1.0f;
     }
+}
+
+static void SyncCounterfactualPairRootFamilyPreset(KernelParams& params) {
+    switch (params.counterfactual_pair_root_family) {
+    case CounterfactualPairRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        break;
+    case CounterfactualPairRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        break;
+    }
+    SetPolyPreset(params);
+}
+
+static void SyncProjectionAndFlowRootFamilyPreset(KernelParams& params) {
+    switch (params.projection_and_flow_root_family) {
+    case ProjectionAndFlowRootFamily::cubic_unit_roots:
+        params.poly_kind = PolyKind::z3_minus_1;
+        break;
+    case ProjectionAndFlowRootFamily::quartic_unit_roots:
+        params.poly_kind = PolyKind::z4_minus_1;
+        break;
+    }
+    SetPolyPreset(params);
 }
 
 static void MarkDirty(bool* ioDirty) {
@@ -198,12 +229,57 @@ static void ApplyNewtonLikePresetDefaults(FractalType fractalType, KernelParams&
     params.max_iter = fractalType == FractalType::nova ? 300 : 500;
     params.epsilon = 1e-6f;
     params.nova_alpha = 0.50f;
-    params.poly_kind = PolyKind::z3_minus_1;
-    SetPolyPreset(params);
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.projection_and_flow_target_radius = 1.0f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    SyncProjectionAndFlowRootFamilyPreset(params);
     ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
     params.phoenix_p_real = -0.50f;
     params.phoenix_p_imag = 0.0f;
+}
+
+static void ApplyCounterfactualPairPresetDefaults(KernelParams& params) {
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::world_absolute;
+    params.counterfactual_pair_offset_x = 0.16f;
+    params.counterfactual_pair_offset_y = 0.08f;
+    params.counterfactual_pair_reconvergence_ratio = 0.60f;
+    SyncCounterfactualPairRootFamilyPreset(params);
+    ApplyDefaultColoringSelection(FractalType::counterfactual_pair, params);
+    params.exposure = 1.0f;
+    params.phoenix_p_real = 0.0f;
+    params.phoenix_p_imag = 0.0f;
+}
+
+static void ApplyProjectionAndFlowPresetDefaults(KernelParams& params) {
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.projection_and_flow_target_radius = 1.0f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    SyncProjectionAndFlowRootFamilyPreset(params);
+    ApplyDefaultColoringSelection(FractalType::projection_and_flow, params);
+    params.exposure = 1.0f;
+    params.phoenix_p_real = 0.0f;
+    params.phoenix_p_imag = 0.0f;
+}
+
+static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& params);
+
+static void ApplyExplainoProjectionAndFlowPresetDefaults(KernelParams& params) {
+    ApplyExplainoPresetDefaults(FractalType::explaino_projection_and_flow, params);
+    params.max_iter = 96;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::cubic_unit_roots;
+    params.projection_and_flow_target_radius = 1.0f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    params.explaino_warp_strength = 0.25f;
+    params.explaino_damping = 0.75f;
+    params.explaino_root_count = 0;
+    SyncProjectionAndFlowRootFamilyPreset(params);
+    ApplyDefaultColoringSelection(FractalType::explaino_projection_and_flow, params);
 }
 
 static bool IsExplainoPresetFractal(FractalType fractalType) {
@@ -232,6 +308,8 @@ static bool IsExplainoPresetFractal(FractalType fractalType) {
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
+    case FractalType::explaino_counterfactual_pair:
+    case FractalType::explaino_projection_and_flow:
         return true;
     default:
         return false;
@@ -258,6 +336,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
     case FractalType::explaino_balance_void:
+    case FractalType::explaino_counterfactual_pair:
         return 500;
     case FractalType::explaino_nova:
         return 300;
@@ -294,6 +373,17 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     if (fractalType == FractalType::explaino_rational_escape) {
         params.exposure = 1.2f;
     }
+}
+
+static void ApplyExplainoCounterfactualPairPresetDefaults(KernelParams& params) {
+    ApplyExplainoPresetDefaults(FractalType::explaino_counterfactual_pair, params);
+    params.max_iter = 96;
+    params.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::world_absolute;
+    params.counterfactual_pair_offset_x = 0.16f;
+    params.counterfactual_pair_offset_y = 0.08f;
+    params.counterfactual_pair_reconvergence_ratio = 0.60f;
+    ApplyDefaultColoringSelection(FractalType::explaino_counterfactual_pair, params);
 }
 
 static void ApplyEscapeTimePresetDefaults(FractalType fractalType, KernelParams& params, int maxIter, float exposure) {
@@ -350,6 +440,18 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
     case FractalType::newton:
     case FractalType::nova:
         ApplyNewtonLikePresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::projection_and_flow:
+        ApplyProjectionAndFlowPresetDefaults(params);
+        break;
+    case FractalType::counterfactual_pair:
+        ApplyCounterfactualPairPresetDefaults(params);
+        break;
+    case FractalType::explaino_counterfactual_pair:
+        ApplyExplainoCounterfactualPairPresetDefaults(params);
+        break;
+    case FractalType::explaino_projection_and_flow:
+        ApplyExplainoProjectionAndFlowPresetDefaults(params);
         break;
     case FractalType::multicorn:
         ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);
@@ -512,6 +614,46 @@ static void SetDegree4PolynomialCoefficientsFromRoots(const Float2 roots[4], flo
     coeffs[0] = p01x * p23x - p01y * p23y;
 }
 
+static void SetDegree3PolynomialCoefficientsFromRoots(const Float2 roots[3], float coeffs[5]) {
+    const float a = roots[0].x;
+    const float b = roots[0].y;
+    const float c = roots[2].x;
+    const float pairProduct = a * a + b * b;
+    const float pairwiseSum = pairProduct + 2.0f * a * c;
+    const float rootSum = 2.0f * a + c;
+    const float tripleProduct = pairProduct * c;
+
+    coeffs[4] = 0.0f;
+    coeffs[3] = 1.0f;
+    coeffs[2] = -rootSum;
+    coeffs[1] = pairwiseSum;
+    coeffs[0] = -tripleProduct;
+}
+
+static void SetExplainoProjectionAndFlowRootsForShape(ProjectionAndFlowRootFamily rootFamily,
+                                                      const ExplainoSeedShape& shape,
+                                                      KernelParams& params) {
+    for (Float2& root : params.explaino_roots) {
+        root = {0.0f, 0.0f};
+    }
+
+    if (rootFamily == ProjectionAndFlowRootFamily::quartic_unit_roots) {
+        params.explaino_root_count = 4;
+        SetExplainoRootsForShape(FractalType::explaino_projection_and_flow, params.explaino_cluster_radius, shape, params);
+        SetDegree4PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
+        return;
+    }
+
+    params.explaino_root_count = 3;
+    params.explaino_roots[0] = {shape.a, shape.b};
+    params.explaino_roots[1] = {shape.a, -shape.b};
+    params.explaino_roots[2] = {
+        ClampF(shape.c + 0.35f * std::copysign(shape.d, shape.c == 0.0f ? 1.0f : shape.c), -4.0f, 4.0f),
+        0.0f,
+    };
+    SetDegree3PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
+}
+
 static void UpdateExplainoSplicePolynomial(const ViewState& view, const KernelParams& params,
                                            float phase, float spread, float phaseStrength,
                                            float coeffs[5]) {
@@ -556,6 +698,14 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
         return;
     }
 
+    if (!UsesExplainoCustomPolynomialAuthority(view.fractal_type)) {
+        params.explaino_root_count = 0;
+        ClearPolynomialCoefficients(params.poly_coeffs_b);
+        SyncProjectionAndFlowRootFamilyPreset(params);
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
     params.poly_kind = PolyKind::custom;
     params.explaino_root_count = 4;
 
@@ -564,6 +714,14 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     const float phaseStrength = view.explaino_phase_strength;
 
     const ExplainoSeedShape shape = ResolveExplainoSeedShape(view, params, phase, spread, phaseStrength);
+    if (view.fractal_type == FractalType::explaino_projection_and_flow) {
+        params.poly_kind = PolyKind::custom;
+        SetExplainoProjectionAndFlowRootsForShape(params.projection_and_flow_root_family, shape, params);
+        ClearPolynomialCoefficients(params.poly_coeffs_b);
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+
     SetExplainoRootsForShape(view.fractal_type, params.explaino_cluster_radius, shape, params);
     SetDegree4PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
 

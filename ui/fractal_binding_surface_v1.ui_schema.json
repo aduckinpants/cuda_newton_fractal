@@ -23,6 +23,8 @@
             { "id": "phoenix", "label": "Phoenix", "group": "Common" },
             { "id": "newton", "label": "Newton", "group": "Root-Finding" },
             { "id": "halley", "label": "Halley", "group": "Root-Finding" },
+            { "id": "projection_and_flow", "label": "Projection and Flow", "group": "Root-Finding" },
+            { "id": "counterfactual_pair", "label": "Counterfactual Pair", "group": "Root-Finding" },
             { "id": "multibrot", "label": "Multibrot", "group": "Escape-Time" },
             { "id": "spider", "label": "Spider", "group": "Escape-Time" },
             { "id": "celtic_mandelbrot", "label": "Celtic Mandelbrot", "group": "Escape-Time" },
@@ -53,7 +55,9 @@
             { "id": "explaino_splice", "label": "Explaino Splice", "group": "Explaino" },
             { "id": "explaino_vortex", "label": "Explaino Vortex", "group": "Explaino" },
             { "id": "explaino_tension", "label": "Explaino Tension", "group": "Explaino" },
-            { "id": "explaino_balance_void", "label": "Explaino BalanceVoid", "group": "Explaino" }
+            { "id": "explaino_balance_void", "label": "Explaino BalanceVoid", "group": "Explaino" },
+            { "id": "explaino_counterfactual_pair", "label": "Explaino Counterfactual Pair", "group": "Explaino" },
+            { "id": "explaino_projection_and_flow", "label": "Explaino Projection and Flow", "group": "Explaino" }
           ],
           "binding": { "kind": "param", "path": "fractal.view.fractal_type" },
           "help": "Select the fractal formula. View mapping/camera behavior remain the same across types."
@@ -175,7 +179,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           },
           "help": "Continuously advances the combined Explaino seed through the existing drift+tween seam."
         },
@@ -354,8 +358,100 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,halley"
+            "value": "newton,nova,projection_and_flow,explaino_projection_and_flow,counterfactual_pair,explaino_counterfactual_pair,explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,halley"
           }
+        },
+        {
+          "id": "counterfactual_pair_root_family",
+          "type": "combo",
+          "label": "Pair Root Family",
+          "help": "Choose the paired Newton family used by both the baseline and perturbed partner orbits.",
+          "value_type": "enum",
+          "default": "cubic_unit_roots",
+          "options": [
+            { "id": "cubic_unit_roots", "label": "Cubic Unit Roots" },
+            { "id": "quartic_unit_roots", "label": "Quartic Unit Roots" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_root_family" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_frame",
+          "type": "combo",
+          "label": "Perturbation Frame",
+          "help": "World Absolute keeps the partner offset fixed in the complex plane. View Relative scales the offset with the current zoom.",
+          "value_type": "enum",
+          "default": "world_absolute",
+          "options": [
+            { "id": "world_absolute", "label": "World Absolute" },
+            { "id": "view_relative", "label": "View Relative" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_frame" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "counterfactual_pair,explaino_counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_offset_x",
+          "type": "drag_float",
+          "label": "Partner Offset X",
+          "help": "Real-axis offset applied to the perturbed partner before the paired Newton evolution begins.",
+          "value_type": "float",
+          "ui_min": -1.0, "ui_max": 1.0, "step": 0.001, "default": 0.16,
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_offset_x" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "counterfactual_pair,explaino_counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_offset_y",
+          "type": "drag_float",
+          "label": "Partner Offset Y",
+          "help": "Imaginary-axis offset applied to the perturbed partner before the paired Newton evolution begins.",
+          "value_type": "float",
+          "ui_min": -1.0, "ui_max": 1.0, "step": 0.001, "default": 0.08,
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_offset_y" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "counterfactual_pair,explaino_counterfactual_pair" }
+        },
+        {
+          "id": "counterfactual_pair_reconvergence_ratio",
+          "type": "drag_float",
+          "label": "Reconvergence Ratio",
+          "help": "Class 0 = same-root reconvergence when mean pair gap <= ratio * initial gap. Class 1 = same-basin drift above that ratio. Class 2 = basin swap. Class 3 = unstable.",
+          "value_type": "float",
+          "min": 0.0, "ui_min": 0.0, "ui_max": 4.0, "step": 0.01, "default": 0.6,
+          "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_reconvergence_ratio" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "counterfactual_pair,explaino_counterfactual_pair" }
+        },
+        {
+          "id": "projection_and_flow_root_family",
+          "type": "combo",
+          "label": "Flow Root Family",
+          "help": "Choose whether the free Newton step chases the cubic or quartic unit-root family before every radial projection.",
+          "value_type": "enum",
+          "default": "cubic_unit_roots",
+          "options": [
+            { "id": "cubic_unit_roots", "label": "Cubic Unit Roots" },
+            { "id": "quartic_unit_roots", "label": "Quartic Unit Roots" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_root_family" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "projection_and_flow,explaino_projection_and_flow" }
+        },
+        {
+          "id": "projection_and_flow_target_radius",
+          "type": "drag_float",
+          "label": "Projection Radius",
+          "help": "After each free Newton step, project radially onto the circle |z| = radius. This is the explicit admissible manifold for Projection-and-Flow.",
+          "value_type": "float",
+          "min": 0.0001, "ui_min": 0.25, "ui_max": 4.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_target_radius" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "projection_and_flow,explaino_projection_and_flow" }
+        },
+        {
+          "id": "projection_and_flow_pressure_threshold",
+          "type": "drag_float",
+          "label": "Pressure Threshold",
+          "help": "Classes 0..4N-1 = root sector x transient-pressure band, using the projected orbit's peak radial correction minus its settled correction. Band 0 stays below 25% of the threshold, Band 1 stays in [25%, 50%), Band 2 stays in [50%, 100%), Band 3 saturates at or above the threshold. Class 4N = unstable.",
+          "value_type": "float",
+          "min": 0.0, "ui_min": 0.0, "ui_max": 8.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.projection_and_flow_pressure_threshold" },
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "projection_and_flow,explaino_projection_and_flow" }
         },
         {
           "id": "nova_alpha",
@@ -502,7 +598,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           },
           "help": "Primary Explaino seed control. The host splits this combined value into the integer seed base and fractional drift."
         },
@@ -534,7 +630,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -545,7 +641,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -558,7 +654,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -572,7 +668,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -586,7 +682,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -600,7 +696,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -733,7 +829,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -746,7 +842,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           },
           "help": "Advanced fractional component of the combined Explaino seed. Usually edit Explaino Seed instead."
         },
@@ -760,7 +856,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         }
       ]

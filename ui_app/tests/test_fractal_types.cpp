@@ -61,6 +61,19 @@ void TestEnumOrdinalContracts() {
     Check(static_cast<int>(FractalType::explaino) == 7, "FractalType explaino ordinal is stable");
     Check(static_cast<int>(FractalType::lambda_map) == 24, "FractalType lambda_map ordinal is stable");
     Check(static_cast<int>(FractalType::explaino_tension) == 36, "FractalType explaino_tension ordinal is stable");
+    Check(static_cast<int>(FractalType::counterfactual_pair) == 39, "FractalType counterfactual_pair ordinal is stable");
+    Check(static_cast<int>(FractalType::explaino_counterfactual_pair) == 40,
+        "FractalType explaino_counterfactual_pair ordinal is stable");
+    Check(static_cast<int>(FractalType::projection_and_flow) == 41,
+        "FractalType projection_and_flow ordinal is stable");
+    Check(static_cast<int>(FractalType::explaino_projection_and_flow) == 42,
+        "FractalType explaino_projection_and_flow ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairRootFamily::cubic_unit_roots) == 0, "CounterfactualPairRootFamily cubic ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");
+    Check(static_cast<int>(CounterfactualPairFrame::view_relative) == 1, "CounterfactualPairFrame view-relative ordinal is stable");
+    Check(static_cast<int>(ProjectionAndFlowRootFamily::cubic_unit_roots) == 0, "ProjectionAndFlowRootFamily cubic ordinal is stable");
+    Check(static_cast<int>(ProjectionAndFlowRootFamily::quartic_unit_roots) == 1, "ProjectionAndFlowRootFamily quartic ordinal is stable");
     Check(static_cast<int>(SampleTier::tier_auto) == 0, "SampleTier auto ordinal is stable");
     Check(static_cast<int>(SampleTier::standard) == 2, "SampleTier standard ordinal is stable");
     Check(static_cast<int>(NumericBackend::float32) == 0, "NumericBackend float32 ordinal is stable");
@@ -174,6 +187,18 @@ void TestKernelParamsDefaults() {
         "KernelParams splice polynomial defaults are zeroed");
     Check(Near(params.vortex_strength, 0.0f) && Near(params.tension_strength, 0.0f),
         "KernelParams vortex and tension defaults are stable");
+    Check(params.counterfactual_pair_root_family == CounterfactualPairRootFamily::cubic_unit_roots, "KernelParams Counterfactual Pair root family defaults to cubic unit roots");
+    Check(params.counterfactual_pair_frame == CounterfactualPairFrame::world_absolute, "KernelParams Counterfactual Pair frame defaults to world-absolute");
+    Check(Near(params.counterfactual_pair_offset_x, 0.16f) && Near(params.counterfactual_pair_offset_y, 0.08f),
+        "KernelParams Counterfactual Pair offsets default to the shipped baseline gap");
+    Check(Near(params.counterfactual_pair_reconvergence_ratio, 0.60f),
+        "KernelParams Counterfactual Pair reconvergence ratio default is stable");
+    Check(params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::cubic_unit_roots,
+        "KernelParams Projection-and-Flow root family defaults to cubic unit roots");
+    Check(Near(params.projection_and_flow_target_radius, 1.0f),
+        "KernelParams Projection-and-Flow target radius defaults to the unit circle");
+    Check(Near(params.projection_and_flow_pressure_threshold, 1.0f),
+        "KernelParams Projection-and-Flow pressure threshold default is stable");
     Check(params.mcmullen_preset == McMullenPreset::z3_z3, "KernelParams McMullen preset defaults to z3_z3");
 }
 

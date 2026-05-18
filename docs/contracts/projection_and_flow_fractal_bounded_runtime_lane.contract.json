@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "contract_id": "projection_and_flow_fractal_bounded_runtime_lane",
+  "feature_id": "projection_and_flow_fractal",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/projection_and_flow_fractal_bounded_runtime_lane_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/projection_and_flow_fractal_bounded_runtime_lane.contract.json",
+    "docs/notes/projection_and_flow_fractal_bounded_runtime_lane_PHASED_PLAN.md",
+    "docs/contracts/projection_and_flow_fractal_semantics_control_surface_hardening.contract.json",
+    "docs/notes/projection_and_flow_fractal_semantics_control_surface_hardening_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/tests/test_callable_engine_adversarial.cpp",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "ui_app/tests/test_fractal_runtime_validation.cpp",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_safe_mode_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_projection_and_flow.py"
+  ],
+  "required_operator_inputs": [
+    "land one bounded Projection-and-Flow runtime-visible lane rather than relabeling the closed sidecar projection-flow witness",
+    "keep the state model explicit as cubic z^3-1 free evolution plus radial projection back onto the unit circle on every step",
+    "make the classification output explicit as terminal root sector times projection-pressure bucket plus one unstable class while preserving FractalSampleResult and SampleFractalPoints as the shipped legacy projection surfaces",
+    "close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, and machine receipts"
+  ],
+  "forbidden_operator_prompts": [
+    "claim Projection-and-Flow is implemented when only sidecar measurement or lens/window witnesses changed",
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the shipped legacy projection path",
+    "reopen sample-evidence widening, Counterfactual Pair, ExplainO-BalanceVoid, meta-basin, Operator-Itinerary, DSL/program-space, renderer replacement, or a whole-engine generic refactor as the main work",
+    "close the slice without commit, machine receipts, hostile-audit proof, runtime publish, published-runtime proof, and a committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "projection_and_flow_runtime_lane_visible": "required",
+    "free_evolution_projection_model_explicit": "required",
+    "classification_output_explicit": "required",
+    "legacy_projection_surface_preserved": "required",
+    "published_runtime_proof_exists": "required"
+  },
+  "forbidden_defaults": {
+    "sidecar_only_relabel": "forbidden",
+    "samplefractalpoints_signature_replaced": "forbidden",
+    "counterfactual_pair_or_balance_void_scope_drift": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "speculative_engine_widening": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/projection_and_flow_fractal_bounded_runtime_lane.contract.json --out-json artifacts/validation/projection_and_flow_fractal_bounded_runtime_lane_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/projection_and_flow_fractal_bounded_runtime_lane_PHASED_PLAN.md --out-json artifacts/validation/projection_and_flow_fractal_bounded_runtime_lane_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "projection_and_flow_fractal_bounded_runtime_lane_contract_schema_valid",
+      "description": "The Projection-and-Flow Fractal contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/projection_and_flow_fractal_bounded_runtime_lane_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "projection_and_flow_fractal_bounded_runtime_lane_plan_sync_ok",
+      "description": "The Projection-and-Flow Fractal phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "projection_and_flow_fractal_bounded_runtime_lane_hostile_audit_ok",
+      "description": "The Projection-and-Flow Fractal hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/projection_and_flow_fractal_bounded_runtime_lane_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

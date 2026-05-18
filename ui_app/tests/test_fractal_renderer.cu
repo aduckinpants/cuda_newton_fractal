@@ -1,4 +1,5 @@
 #include "../src/fractal_types.h"
+#include "../src/fractal_family_rules.h"
 
 #include <cstdint>
 #include <cstring>
@@ -21,6 +22,32 @@ void Check(bool condition, const char* message) {
 
 bool ErrorContains(const char* error, const char* needle) {
     return error && std::strstr(error, needle) != nullptr;
+}
+
+int CountDistinctPixels(const std::vector<uint32_t>& pixels) {
+    std::vector<uint32_t> distinct;
+    distinct.reserve(pixels.size());
+    for (uint32_t pixel : pixels) {
+        bool seen = false;
+        for (uint32_t existing : distinct) {
+            if (existing == pixel) {
+                seen = true;
+                break;
+            }
+        }
+        if (!seen) {
+            distinct.push_back(pixel);
+        }
+    }
+    return static_cast<int>(distinct.size());
+}
+
+int CountNonBlackPixels(const std::vector<uint32_t>& pixels) {
+    int count = 0;
+    for (uint32_t pixel : pixels) {
+        if ((pixel & 0x00ffffffu) != 0u) ++count;
+    }
+    return count;
 }
 
 void TestNullOutputFailsBeforeCudaWork() {
@@ -112,6 +139,189 @@ void TestTinyRenderProducesPixelsMaskAndStats() {
     Check(true, "CleanupFractalCUDA is idempotent after a tiny render");
 }
 
+void TestCounterfactualPairRenderProducesMultipleClassColors() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::counterfactual_pair;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::root_basin;
+    render.resolution = {16, 16};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(16 * 16, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Counterfactual Pair render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    bool sawDifferentPixel = false;
+    const uint32_t firstPixel = pixels.front();
+    for (uint32_t pixel : pixels) {
+        if (pixel != firstPixel) {
+            sawDifferentPixel = true;
+            break;
+        }
+    }
+    Check(sawDifferentPixel, "Counterfactual Pair render emits more than one explicit class color");
+
+    CleanupFractalCUDA();
+}
+
+void TestProjectionAndFlowRenderProducesMultipleClassColors() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::root_basin;
+    render.resolution = {16, 16};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(16 * 16, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Projection-and-Flow render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(pixels) >= 6, "Projection-and-Flow unit-radius render emits several explicit class colors");
+
+    CleanupFractalCUDA();
+}
+
+void TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::root_basin;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(64 * 48, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Projection-and-Flow non-unit-radius render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(pixels) >= 6, "Projection-and-Flow non-unit-radius render does not collapse to only three public class colors");
+
+    CleanupFractalCUDA();
+}
+
+void TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    const char* error = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    params.max_iter = 96;
+    params.epsilon = 1e-6f;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 1.0f;
+    params.color_smooth_escape_scale = 1.0f;
+    params.color_smooth_escape_bias = 0.0f;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    std::vector<uint32_t> pixels(64 * 48, 0u);
+    const bool ok = RenderFractalCUDA(view, params, render, pixels.data(), nullptr, &stats, &error);
+    Check(ok, error ? error : "Projection-and-Flow smooth_escape render succeeds");
+    if (!ok) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(pixels) > 1, "Projection-and-Flow smooth_escape render should not collapse to one flat color");
+    Check(CountNonBlackPixels(pixels) > 0, "Projection-and-Flow smooth_escape render should keep stable classes visible instead of rendering all black");
+    CleanupFractalCUDA();
+}
+
+void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
+    ViewState view{};
+    KernelParams tightParams{};
+    RenderSettings render{};
+    RenderStats tightStats{};
+    RenderStats looseStats{};
+    const char* tightError = nullptr;
+    const char* looseError = nullptr;
+
+    view.fractal_type = FractalType::projection_and_flow;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    tightParams.max_iter = 96;
+    tightParams.epsilon = 1e-6f;
+    tightParams.coloring_mode = ColoringMode::smooth_escape;
+    tightParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    tightParams.projection_and_flow_target_radius = 1.75f;
+    tightParams.projection_and_flow_pressure_threshold = 0.25f;
+    tightParams.color_smooth_escape_scale = 1.0f;
+    tightParams.color_smooth_escape_bias = 0.0f;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    KernelParams looseParams = tightParams;
+    looseParams.projection_and_flow_pressure_threshold = 2.0f;
+
+    std::vector<uint32_t> tightPixels(64 * 48, 0u);
+    std::vector<uint32_t> loosePixels(64 * 48, 0u);
+    const bool tightOk = RenderFractalCUDA(view, tightParams, render, tightPixels.data(), nullptr, &tightStats, &tightError);
+    Check(tightOk, tightError ? tightError : "Projection-and-Flow threshold-tight smooth_escape render succeeds");
+    const bool looseOk = RenderFractalCUDA(view, looseParams, render, loosePixels.data(), nullptr, &looseStats, &looseError);
+    Check(looseOk, looseError ? looseError : "Projection-and-Flow threshold-loose smooth_escape render succeeds");
+    if (!tightOk || !looseOk) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(tightPixels != loosePixels,
+        "Projection-and-Flow smooth_escape render should react to pressure-threshold changes on the same radius lane");
+    CleanupFractalCUDA();
+}
+
 } // namespace
 
 int main() {
@@ -119,6 +329,11 @@ int main() {
     TestRuntimeValidationFailsBeforeBufferAllocation();
     TestInvalidResolutionFailsBeforeCudaAllocation();
     TestTinyRenderProducesPixelsMaskAndStats();
+    TestCounterfactualPairRenderProducesMultipleClassColors();
+    TestProjectionAndFlowRenderProducesMultipleClassColors();
+    TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
+    TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
+    TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
     return g_failed == 0 ? 0 : 1;

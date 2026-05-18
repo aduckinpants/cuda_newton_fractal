@@ -33,6 +33,35 @@ __device__ FractalSampleResult fractal_sample_device(
 #include "fractal_sample_device.inl"
 }
 
+__device__ __forceinline__ int ResolveBasinRenderRootCount(FractalType ft, const KernelParams& params, bool* outUseCustomRoots) {
+    if (ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair) {
+        if (outUseCustomRoots) *outUseCustomRoots = false;
+        return 4;
+    }
+    if (IsProjectionAndFlowCarrier(ft)) {
+        if (outUseCustomRoots) *outUseCustomRoots = false;
+        const int projectionRootCount =
+            params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+        return projectionRootCount * 4 + 1;
+    }
+    const int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+    const bool useCustomRoots = (nRoots == 0) && IsExplainoFamily(ft) && (params.explaino_root_count > 0);
+    if (outUseCustomRoots) *outUseCustomRoots = useCustomRoots;
+    return useCustomRoots ? params.explaino_root_count : nRoots;
+}
+
+__device__ __forceinline__ int ResolveBasinRenderRootIndex(FractalType ft, Cx z, const KernelParams& params) {
+    bool useCustomRoots = false;
+    const int rootCount = ResolveBasinRenderRootCount(ft, params, &useCustomRoots);
+    if (rootCount <= 0) {
+        return -1;
+    }
+    if (useCustomRoots) {
+        return NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
+    }
+    return NearestRootIndexUnitRoots(z, rootCount);
+}
+
 __global__ void kernel_render(
     uint32_t* outRGBA,
     uint8_t* outMask,
@@ -86,6 +115,9 @@ __global__ void kernel_render(
     bool converged = sample.converged;
     bool escaped = sample.escaped;
     FractalType ft = view.fractal_type;
+    const bool hasExplicitSyntheticClass =
+        ft == FractalType::counterfactual_pair || ft == FractalType::explaino_counterfactual_pair ||
+        IsProjectionAndFlowCarrier(ft);
     int maxIter = max(1, params.max_iter);
 
 
@@ -101,7 +133,7 @@ __global__ void kernel_render(
     if (SupportsBasinColoring(ft)) {
         // Basin-coloring family branch (Newton + Explaino family).
         if (mode == ColoringMode::joy_basins) {
-            if (!converged) {
+            if (!converged && !hasExplicitSyntheticClass) {
                 // "Submerged" undertow: preserve faint structure, but keep it dark.
                 float t = (float)it / (float)maxIter;
                 float a = atan2f(z.y, z.x);
@@ -114,15 +146,13 @@ __global__ void kernel_render(
                 unsigned char b = (unsigned char)(18.0f + 34.0f * v + 14.0f * w);
                 color = {r, g, b, 255};
             } else {
-                int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+                bool useCustomRoots = false;
+                const int rootCount = ResolveBasinRenderRootCount(ft, params, &useCustomRoots);
 
                 bool isExplainoFamily = IsExplainoFamily(ft);
-                bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
 
-                if (nRoots > 0 || useCustomRoots) {
-                    const int rootCount = useCustomRoots ? params.explaino_root_count : nRoots;
-                    int idx = useCustomRoots ? NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count)
-                                             : NearestRootIndexUnitRoots(z, nRoots);
+                if (rootCount > 0) {
+                    int idx = ResolveBasinRenderRootIndex(ft, z, params);
                     idx = ResolveShapedColorPipelineRootIndex(idx, rootCount, params);
                     uchar4 base = PaletteJoyRoot<uchar4>(idx);
 
@@ -151,21 +181,15 @@ __global__ void kernel_render(
                 }
             }
         } else if (mode == ColoringMode::root_basin) {
-            if (!converged) {
+            if (!converged && !hasExplicitSyntheticClass) {
                 color = {0, 0, 0, 255};
             } else {
-                int nRoots = ResolvePolynomialRootCount(params.poly_kind);
+                bool useCustomRoots = false;
+                const int rootCount = ResolveBasinRenderRootCount(ft, params, &useCustomRoots);
 
-                bool isExplainoFamily = IsExplainoFamily(ft);
-                bool useCustomRoots = (nRoots == 0) && isExplainoFamily && (params.explaino_root_count > 0);
-
-                if (useCustomRoots) {
-                    int idx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
-                    idx = ResolveShapedColorPipelineRootIndex(idx, params.explaino_root_count, params);
-                    color = PaletteRoot<uchar4>(idx);
-                } else if (nRoots > 0) {
-                    int idx = NearestRootIndexUnitRoots(z, nRoots);
-                    idx = ResolveShapedColorPipelineRootIndex(idx, nRoots, params);
+                if (rootCount > 0) {
+                    int idx = ResolveBasinRenderRootIndex(ft, z, params);
+                    idx = ResolveShapedColorPipelineRootIndex(idx, rootCount, params);
                     color = PaletteRoot<uchar4>(idx);
                 } else {
                     // Invalid: root identity not defined.
@@ -173,7 +197,16 @@ __global__ void kernel_render(
                 }
             }
         } else {
-            color = MakeProgrammableBasinColor<uchar4>(ft, converged, it, maxIter, z, pAbs, params);
+            const bool programmableBasinColorable = converged || IsProjectionAndFlowCarrier(ft);
+            color = MakeProgrammableBasinColor<uchar4>(
+                ft,
+                programmableBasinColorable,
+                converged,
+                it,
+                maxIter,
+                z,
+                pAbs,
+                params);
         }
     } else {
         // Escape-time coloring.
@@ -191,15 +224,7 @@ __global__ void kernel_render(
             // Basin types: mask boundary = basin boundaries (root-index parity).
             // "converged vs not" is useless here — nearly all pixels converge,
             // producing a uniform mask and a flat (black) SDF.
-            int rootIdx = -1;
-            int nRoots = ResolvePolynomialRootCount(params.poly_kind);
-            bool isExpFam = IsExplainoFamily(ft);
-            bool useCustom = (nRoots == 0) && isExpFam && (params.explaino_root_count > 0);
-            if (useCustom) {
-                rootIdx = NearestRootIndexList(z, params.explaino_roots, params.explaino_root_count);
-            } else if (nRoots > 0) {
-                rootIdx = NearestRootIndexUnitRoots(z, nRoots);
-            }
+            const int rootIdx = ResolveBasinRenderRootIndex(ft, z, params);
             inside = (rootIdx >= 0) && ((rootIdx & 1) == 0);
         } else {
             inside = LensMaskInsideForFractal(ft, converged, escaped);

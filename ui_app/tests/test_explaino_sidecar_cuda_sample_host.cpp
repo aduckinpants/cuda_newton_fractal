@@ -9,9 +9,13 @@ namespace {
 int g_passed = 0;
 int g_failed = 0;
 int g_sample_calls = 0;
+int g_evidence_sample_calls = 0;
 bool g_stub_success = true;
+bool g_evidence_stub_success = true;
 const char* g_stub_error = nullptr;
+const char* g_evidence_stub_error = nullptr;
 std::vector<FractalSampleResult> g_stub_results;
+std::vector<FractalSampleEvidence> g_stub_evidence;
 
 void Check(bool condition, const char* name) {
     if (condition) {
@@ -25,9 +29,13 @@ void Check(bool condition, const char* name) {
 
 void ResetStub() {
     g_sample_calls = 0;
+    g_evidence_sample_calls = 0;
     g_stub_success = true;
+    g_evidence_stub_success = true;
     g_stub_error = nullptr;
+    g_evidence_stub_error = nullptr;
     g_stub_results.clear();
+    g_stub_evidence.clear();
 }
 
 } // namespace
@@ -51,6 +59,30 @@ bool SampleFractalPoints(
     }
     for (int index = 0; index < numPoints; ++index) {
         outResults[index] = g_stub_results[static_cast<size_t>(index)];
+    }
+    if (outError) *outError = nullptr;
+    return true;
+}
+
+bool SampleFractalEvidencePoints(
+    const Double2* coords,
+    int numPoints,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleEvidence* outEvidence,
+    const char** outError) {
+    (void)coords;
+    (void)view;
+    (void)params;
+    (void)render;
+    ++g_evidence_sample_calls;
+    if (!g_evidence_stub_success) {
+        if (outError) *outError = g_evidence_stub_error;
+        return false;
+    }
+    for (int index = 0; index < numPoints; ++index) {
+        outEvidence[index] = g_stub_evidence[static_cast<size_t>(index)];
     }
     if (outError) *outError = nullptr;
     return true;
@@ -139,6 +171,58 @@ void TestSuccessfulSampleForwardsResults() {
         "TestSuccessfulSampleForwardsResults_BackendCall");
 }
 
+void TestSupportsWidenedEvidenceAndForwardsEvidenceResults() {
+    ResetStub();
+    g_stub_evidence = {
+        {{0.0, 0.0}, {3, 1.0f, -1.0f, 0.5f, true, false, TerminationKind::root_converged, false, 0.0f}},
+        {{0.5, 0.5}, {8, -0.25f, 0.75f, 2.0f, false, true, TerminationKind::escaped_radius, true, 4.0f}},
+    };
+
+    CudaSidecarMeasurementHost host;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    std::vector<Double2> coords = {{0.0, 0.0}, {0.5, 0.5}};
+    std::vector<FractalSampleEvidence> evidence;
+    std::string error;
+
+    Check(host.SupportsWidenedEvidence(),
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_SupportsWidenedEvidence");
+    Check(host.SampleEvidence(coords, view, params, render, &evidence, &error),
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_Succeeds");
+    Check(evidence.size() == 2,
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_ResultCount");
+    Check(evidence[0].sample_coord.x == 0.0 && evidence[0].legacy_result.termination_kind == TerminationKind::root_converged,
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_FirstEvidence");
+    Check(evidence[1].sample_coord.x == 0.5 && evidence[1].legacy_result.has_far_field_delta && evidence[1].legacy_result.far_field_delta == 4.0f,
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_SecondEvidence");
+    Check(g_evidence_sample_calls == 1,
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_EvidenceBackendCall");
+    Check(g_sample_calls == 0,
+        "TestSupportsWidenedEvidenceAndForwardsEvidenceResults_NoLegacyBackendCall");
+}
+
+void TestEvidenceBackendFailurePropagates() {
+    ResetStub();
+    g_evidence_stub_success = false;
+    g_evidence_stub_error = "stub evidence backend failure";
+
+    CudaSidecarMeasurementHost host;
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    std::vector<Double2> coords = {{0.25, -0.5}};
+    std::vector<FractalSampleEvidence> evidence;
+    std::string error;
+
+    Check(!host.SampleEvidence(coords, view, params, render, &evidence, &error),
+        "TestEvidenceBackendFailurePropagates_Fails");
+    Check(error == "stub evidence backend failure",
+        "TestEvidenceBackendFailurePropagates_Error");
+    Check(g_evidence_sample_calls == 1,
+        "TestEvidenceBackendFailurePropagates_BackendCall");
+}
+
 } // namespace
 
 int main() {
@@ -146,6 +230,8 @@ int main() {
     TestEmptyCoordsSkipsBackend();
     TestBackendFailurePropagates();
     TestSuccessfulSampleForwardsResults();
+    TestSupportsWidenedEvidenceAndForwardsEvidenceResults();
+    TestEvidenceBackendFailurePropagates();
 
     std::printf("test_explaino_sidecar_cuda_sample_host: %d passed, %d failed\n", g_passed, g_failed);
     return g_failed > 0 ? 1 : 0;

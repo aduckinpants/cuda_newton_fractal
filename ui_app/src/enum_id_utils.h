@@ -38,6 +38,21 @@ inline constexpr EnumIdPair<PolyKind> kPolyKindIds[] = {
     {PolyKind::custom, "custom"},
 };
 
+inline constexpr EnumIdPair<CounterfactualPairRootFamily> kCounterfactualPairRootFamilyIds[] = {
+    {CounterfactualPairRootFamily::cubic_unit_roots, "cubic_unit_roots"},
+    {CounterfactualPairRootFamily::quartic_unit_roots, "quartic_unit_roots"},
+};
+
+inline constexpr EnumIdPair<CounterfactualPairFrame> kCounterfactualPairFrameIds[] = {
+    {CounterfactualPairFrame::world_absolute, "world_absolute"},
+    {CounterfactualPairFrame::view_relative, "view_relative"},
+};
+
+inline constexpr EnumIdPair<ProjectionAndFlowRootFamily> kProjectionAndFlowRootFamilyIds[] = {
+    {ProjectionAndFlowRootFamily::cubic_unit_roots, "cubic_unit_roots"},
+    {ProjectionAndFlowRootFamily::quartic_unit_roots, "quartic_unit_roots"},
+};
+
 inline constexpr EnumIdPair<TranscendentalFunc> kTranscendentalFuncIds[] = {
     {TranscendentalFunc::f_sin, "f_sin"},
     {TranscendentalFunc::f_exp_minus_1, "f_exp_minus_1"},
@@ -141,6 +156,10 @@ inline constexpr EnumIdPair<FractalType> kFractalTypeIds[] = {
     {FractalType::explaino_vortex, "explaino_vortex"},
     {FractalType::explaino_tension, "explaino_tension"},
     {FractalType::explaino_balance_void, "explaino_balance_void"},
+    {FractalType::counterfactual_pair, "counterfactual_pair"},
+    {FractalType::explaino_counterfactual_pair, "explaino_counterfactual_pair"},
+    {FractalType::projection_and_flow, "projection_and_flow"},
+    {FractalType::explaino_projection_and_flow, "explaino_projection_and_flow"},
 };
 
 inline constexpr EnumIdPair<CameraBehavior> kCameraBehaviorIds[] = {
@@ -165,6 +184,30 @@ inline const char* PolyKindId(PolyKind value) {
 
 inline bool TryParsePolyKindId(std::string_view id, PolyKind* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kPolyKindIds, outValue);
+}
+
+inline const char* CounterfactualPairRootFamilyId(CounterfactualPairRootFamily value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kCounterfactualPairRootFamilyIds);
+}
+
+inline bool TryParseCounterfactualPairRootFamilyId(std::string_view id, CounterfactualPairRootFamily* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kCounterfactualPairRootFamilyIds, outValue);
+}
+
+inline const char* CounterfactualPairFrameId(CounterfactualPairFrame value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kCounterfactualPairFrameIds);
+}
+
+inline bool TryParseCounterfactualPairFrameId(std::string_view id, CounterfactualPairFrame* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kCounterfactualPairFrameIds, outValue);
+}
+
+inline const char* ProjectionAndFlowRootFamilyId(ProjectionAndFlowRootFamily value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kProjectionAndFlowRootFamilyIds);
+}
+
+inline bool TryParseProjectionAndFlowRootFamilyId(std::string_view id, ProjectionAndFlowRootFamily* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kProjectionAndFlowRootFamilyIds, outValue);
 }
 
 inline const char* TranscendentalFuncId(TranscendentalFunc value) {

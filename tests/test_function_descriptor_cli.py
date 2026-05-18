@@ -73,6 +73,7 @@ def test_describe_functions_emits_valid_catalog() -> None:
         "explaino_splice",
         "explaino_vortex",
         "explaino_tension",
+        "explaino_projection_and_flow",
         "multicorn",
         "halley",
         "collatz",

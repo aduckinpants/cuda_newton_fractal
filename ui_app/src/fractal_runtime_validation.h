@@ -15,6 +15,42 @@ inline bool FailFractalRuntimeValidation(const char* message, const char** outEr
     return false;
 }
 
+inline PolyKind ProjectionAndFlowRequiredPolyKind(ProjectionAndFlowRootFamily rootFamily) {
+    switch (rootFamily) {
+    case ProjectionAndFlowRootFamily::cubic_unit_roots:
+        return PolyKind::z3_minus_1;
+    case ProjectionAndFlowRootFamily::quartic_unit_roots:
+        return PolyKind::z4_minus_1;
+    }
+    return PolyKind::z3_minus_1;
+}
+
+inline int ProjectionAndFlowExpectedExplainoRootCount(ProjectionAndFlowRootFamily rootFamily) {
+    return rootFamily == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+}
+
+inline bool ProjectionAndFlowExplainoPolyDegreeMatchesRootFamily(const KernelParams& params) {
+    if (params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots) {
+        return params.poly_coeffs[4] != 0.0f;
+    }
+    return params.poly_coeffs[4] == 0.0f && params.poly_coeffs[3] != 0.0f;
+}
+
+inline bool ProjectionAndFlowPolyPresetMatchesRootFamily(const KernelParams& params) {
+    if (params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::cubic_unit_roots) {
+        return params.poly_coeffs[0] == -1.0f &&
+               params.poly_coeffs[1] == 0.0f &&
+               params.poly_coeffs[2] == 0.0f &&
+               params.poly_coeffs[3] == 1.0f &&
+               params.poly_coeffs[4] == 0.0f;
+    }
+    return params.poly_coeffs[0] == -1.0f &&
+           params.poly_coeffs[1] == 0.0f &&
+           params.poly_coeffs[2] == 0.0f &&
+           params.poly_coeffs[3] == 0.0f &&
+           params.poly_coeffs[4] == 1.0f;
+}
+
 template <typename ErrorSink>
 inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     const KernelParams& params,
@@ -27,6 +63,36 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     }
     if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
+    }
+    if (IsProjectionAndFlowCarrier(view.fractal_type)) {
+        if (view.fractal_type == FractalType::projection_and_flow) {
+            if (params.poly_kind != ProjectionAndFlowRequiredPolyKind(params.projection_and_flow_root_family)) {
+                return FailFractalRuntimeValidation("projection_and_flow root family and poly_kind must agree", outError);
+            }
+            if (!ProjectionAndFlowPolyPresetMatchesRootFamily(params)) {
+                return FailFractalRuntimeValidation("projection_and_flow root family must own the shipped polynomial preset", outError);
+            }
+        } else {
+            if (params.poly_kind != PolyKind::custom) {
+                return FailFractalRuntimeValidation("explaino_projection_and_flow must preserve custom Explaino polynomial authority", outError);
+            }
+            if (params.explaino_root_count != ProjectionAndFlowExpectedExplainoRootCount(params.projection_and_flow_root_family)) {
+                return FailFractalRuntimeValidation("explaino_projection_and_flow root family and explaino_root_count must agree", outError);
+            }
+            if (!ProjectionAndFlowExplainoPolyDegreeMatchesRootFamily(params)) {
+                return FailFractalRuntimeValidation("explaino_projection_and_flow root family must match the custom carrier polynomial degree", outError);
+            }
+        }
+        if (!std::isfinite(params.projection_and_flow_target_radius) ||
+            params.projection_and_flow_target_radius <= 0.0f ||
+            params.projection_and_flow_target_radius > 4.0f) {
+            return FailFractalRuntimeValidation("projection_and_flow_target_radius must be finite and in (0,4]", outError);
+        }
+        if (!std::isfinite(params.projection_and_flow_pressure_threshold) ||
+            params.projection_and_flow_pressure_threshold < 0.0f ||
+            params.projection_and_flow_pressure_threshold > 8.0f) {
+            return FailFractalRuntimeValidation("projection_and_flow_pressure_threshold must be finite and in [0,8]", outError);
+        }
     }
     if ((view.fractal_type == FractalType::lambda_map || view.fractal_type == FractalType::explaino_lambda) &&
         (!std::isfinite(params.lambda_real) || !std::isfinite(params.lambda_imag) ||

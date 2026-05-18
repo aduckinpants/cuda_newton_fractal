@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "contract_id": "counterfactual_pair_fractal_bounded_runtime_lane",
+  "feature_id": "counterfactual_pair_fractal",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/counterfactual_pair_fractal_bounded_runtime_lane_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/counterfactual_pair_fractal_bounded_runtime_lane.contract.json",
+    "docs/notes/counterfactual_pair_fractal_bounded_runtime_lane_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_callable_engine_adversarial.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_safe_mode_schema.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_counterfactual_pair.py"
+  ],
+  "required_operator_inputs": [
+    "implement one bounded Counterfactual Pair Fractal runtime-visible lane rather than another sidecar-only witness",
+    "preserve FractalSampleResult and SampleFractalPoints as the shipped legacy projection surfaces while using the already-landed widened seam only if it is sufficient",
+    "make the paired-state model and classification output explicit enough that the lane is a real fractal object instead of generic drift coloring",
+    "close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, and machine receipts"
+  ],
+  "forbidden_operator_prompts": [
+    "relabel an existing sidecar or measurement witness as the Counterfactual Pair Fractal without landing a runtime-visible mode",
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the legacy projection path",
+    "reopen sample-evidence widening, ExplainO-BalanceVoid, meta-basin, operator-itinerary, DSL/program-space, renderer replacement, or a whole-engine generic refactor as the main work",
+    "close the slice without commit, machine receipts, hostile-audit proof, and a committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "counterfactual_pair_runtime_lane_visible": "required",
+    "paired_state_model_explicit": "required",
+    "classification_output_explicit": "required",
+    "legacy_projection_surface_preserved": "required",
+    "published_runtime_proof_exists": "required"
+  },
+  "forbidden_defaults": {
+    "sidecar_only_relabel": "forbidden",
+    "samplefractalpoints_signature_replaced": "forbidden",
+    "fractalscope_generic_engine_refactor": "forbidden",
+    "speculative_engine_widening": "forbidden",
+    "meta_basin_or_operator_itinerary_scope_drift": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/counterfactual_pair_fractal_bounded_runtime_lane.contract.json --out-json artifacts/validation/counterfactual_pair_fractal_bounded_runtime_lane_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/counterfactual_pair_fractal_bounded_runtime_lane_PHASED_PLAN.md --out-json artifacts/validation/counterfactual_pair_fractal_bounded_runtime_lane_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "counterfactual_pair_fractal_bounded_runtime_lane_contract_schema_valid",
+      "description": "The Counterfactual Pair Fractal contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/counterfactual_pair_fractal_bounded_runtime_lane_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "counterfactual_pair_fractal_bounded_runtime_lane_plan_sync_ok",
+      "description": "The Counterfactual Pair Fractal phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "counterfactual_pair_fractal_bounded_runtime_lane_hostile_audit_ok",
+      "description": "The Counterfactual Pair Fractal hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/counterfactual_pair_fractal_bounded_runtime_lane_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

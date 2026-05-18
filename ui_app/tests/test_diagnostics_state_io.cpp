@@ -1794,6 +1794,415 @@ int main() {
         }
     }
     {
+        const fs::path statePath = tempRoot / "explaino_counterfactual_pair_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_counterfactual_pair",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.5,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 96,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 2.9685855,
+    "lambda_imag": -0.27446103,
+    "counterfactual_pair_root_family": "quartic_unit_roots",
+    "counterfactual_pair_frame": "view_relative",
+    "counterfactual_pair_offset_x": 0.125,
+    "counterfactual_pair_offset_y": -0.0625,
+    "counterfactual_pair_reconvergence_ratio": 0.4,
+    "explaino_seed": 3.5,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.25,
+    "explaino_root_spread": 0.5,
+    "explaino_damping": 0.75,
+    "explaino_root_count": 4,
+    "explaino_roots": [
+      { "x": 0.5, "y": 0.0 },
+      { "x": 0.0, "y": 0.5 },
+      { "x": -0.5, "y": 0.0 },
+      { "x": 0.0, "y": -0.5 }
+    ],
+    "explaino_cluster_radius": 0.0,
+    "joy_coupling": 0.0,
+    "fold_coupling": 0.0,
+    "bell_coupling": 0.0,
+    "ripple_amplitude": 0.0,
+    "splice_offset": 0.0,
+    "vortex_strength": 0.0,
+    "tension_strength": 0.0,
+    "transcendental_func": "f_sin",
+    "momentum_beta": 0.0,
+    "mcmullen_preset": "z3_z3",
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0],
+    "color_saturation": 1.15,
+    "color_contrast": 1.1,
+    "color_tint_r": 1.0,
+    "color_tint_g": 1.0,
+    "color_tint_b": 1.0
+  },
+  "render": {
+    "width": 320,
+    "height": 240,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30.0,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "explaino_counterfactual_pair state should load: " << error << "\n";
+            return 1;
+        }
+
+        if (view.fractal_type != FractalType::explaino_counterfactual_pair) {
+            std::cerr << "explaino_counterfactual_pair diagnostics state should preserve its explicit Explaino carrier identity\n";
+            return 1;
+        }
+        if (params.poly_kind != PolyKind::custom || params.explaino_root_count != 4) {
+            std::cerr << "explaino_counterfactual_pair diagnostics state should preserve the Explaino custom polynomial seam\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.counterfactual_pair_offset_x, 0.125f, 1.0e-6) ||
+            !NearlyEqual(params.counterfactual_pair_offset_y, -0.0625f, 1.0e-6) ||
+            !NearlyEqual(params.counterfactual_pair_reconvergence_ratio, 0.4f, 1.0e-6) ||
+            params.counterfactual_pair_frame != CounterfactualPairFrame::view_relative) {
+            std::cerr << "explaino_counterfactual_pair diagnostics state should round-trip the shared pair controls\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, 3.0, 1.0e-9) ||
+            !NearlyEqual(view.explaino_seed_drift, 0.5f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_warp_strength, 0.25f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_damping, 0.75f, 1.0e-6)) {
+            std::cerr << "explaino_counterfactual_pair diagnostics state should round-trip Explaino-owned controls\n";
+            return 1;
+        }
+    }
+    {
+        const fs::path statePath = tempRoot / "standalone_counterfactual_pair_with_explicit_root_family_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "counterfactual_pair",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 1.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 96,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "counterfactual_pair_root_family": "quartic_unit_roots",
+    "counterfactual_pair_frame": "view_relative",
+    "counterfactual_pair_offset_x": 0.125,
+    "counterfactual_pair_offset_y": -0.0625,
+    "counterfactual_pair_reconvergence_ratio": 0.4,
+    "explaino_seed": 3.5,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.25,
+    "explaino_root_spread": 0.5,
+    "explaino_damping": 0.75,
+    "explaino_root_count": 4,
+    "explaino_roots": [
+      { "x": 0.5, "y": 0.0 },
+      { "x": 0.0, "y": 0.5 },
+      { "x": -0.5, "y": 0.0 },
+      { "x": 0.0, "y": -0.5 }
+    ],
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 320,
+    "height": 240,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30.0,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "counterfactual_pair diagnostics state with explicit root-family authority should load even when the saved poly_kind still reflects the Explaino custom polynomial seam: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::counterfactual_pair ||
+            params.counterfactual_pair_root_family != CounterfactualPairRootFamily::quartic_unit_roots ||
+            params.poly_kind != PolyKind::z4_minus_1) {
+            std::cerr << "counterfactual_pair diagnostics state should let explicit root-family authority override the stale Explaino custom polynomial seam and resync the standalone preset\n";
+            return 1;
+        }
+    }
+    {
+        const fs::path statePath = tempRoot / "projection_and_flow_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "projection_and_flow",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 96,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 0,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 2.9685855,
+    "lambda_imag": -0.27446103,
+    "projection_and_flow_root_family": "quartic_unit_roots",
+    "projection_and_flow_target_radius": 1.75,
+    "projection_and_flow_pressure_threshold": 0.5,
+    "explaino_seed": 0.0,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_spread": 0.5,
+    "explaino_damping": 1.0,
+    "explaino_root_count": 0,
+    "explaino_roots": [],
+    "explaino_cluster_radius": 0.0,
+    "joy_coupling": 0.0,
+    "fold_coupling": 0.0,
+    "bell_coupling": 0.0,
+    "balance_void": 0.0,
+    "symmetry_tension": 0.0,
+    "field_curvature": 0.0,
+    "ripple_amplitude": 0.0,
+    "splice_offset": 0.0,
+    "vortex_strength": 0.0,
+    "tension_strength": 0.0,
+    "transcendental_func": "f_sin",
+    "momentum_beta": 0.0,
+    "mcmullen_preset": "z3_z3",
+    "poly_coeffs": [-1.0, 0.0, 0.0, 1.0, 0.0],
+    "color_saturation": 1.15,
+    "color_contrast": 1.1,
+    "color_tint_r": 1.0,
+    "color_tint_g": 1.0,
+    "color_tint_b": 1.0
+  },
+  "render": {
+    "width": 320,
+    "height": 240,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30.0,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "projection_and_flow diagnostics state with explicit root-family authority should load: " << error << "\n";
+            return 1;
+        }
+
+        if (view.fractal_type != FractalType::projection_and_flow ||
+            params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::quartic_unit_roots ||
+            params.poly_kind != PolyKind::z4_minus_1) {
+            std::cerr << "projection_and_flow diagnostics state should let explicit root-family authority override the stale cubic polynomial seam and resync the runtime preset\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.projection_and_flow_target_radius, 1.75f, 1.0e-6) ||
+            !NearlyEqual(params.projection_and_flow_pressure_threshold, 0.5f, 1.0e-6)) {
+            std::cerr << "projection_and_flow diagnostics state should round-trip the public target-radius and pressure-threshold controls\n";
+            return 1;
+        }
+    }
+
+    {
+        const fs::path statePath = tempRoot / "explaino_projection_and_flow_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 3,
+  "fractal_type": "explaino_projection_and_flow",
+  "view": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "zoom": 1.0,
+    "rotation_degrees": 0.0,
+    "center_hp_x": 0.0,
+    "center_hp_y": 0.0,
+    "log2_zoom": 0.0,
+    "explaino_phase": 1.0,
+    "explaino_seed_drift": 0.5,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 96,
+    "epsilon": 0.000001,
+    "exposure": 1.0,
+    "poly_kind": 2,
+    "coloring_mode": "root_basin",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 2.9685855,
+    "lambda_imag": -0.27446103,
+    "projection_and_flow_root_family": "quartic_unit_roots",
+    "projection_and_flow_target_radius": 1.75,
+    "projection_and_flow_pressure_threshold": 0.5,
+    "explaino_seed": 3.0,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.25,
+    "explaino_root_spread": 0.5,
+    "explaino_damping": 0.75,
+    "explaino_root_count": 4,
+    "explaino_roots": [
+      { "x": 0.5, "y": 0.0 },
+      { "x": 0.0, "y": 0.5 },
+      { "x": -0.5, "y": 0.0 },
+      { "x": 0.0, "y": -0.5 }
+    ],
+    "explaino_cluster_radius": 0.0,
+    "joy_coupling": 0.0,
+    "fold_coupling": 0.0,
+    "bell_coupling": 0.0,
+    "balance_void": 0.0,
+    "symmetry_tension": 0.0,
+    "field_curvature": 0.0,
+    "ripple_amplitude": 0.0,
+    "splice_offset": 0.0,
+    "vortex_strength": 0.0,
+    "tension_strength": 0.0,
+    "transcendental_func": "f_sin",
+    "momentum_beta": 0.0,
+    "mcmullen_preset": "z3_z3",
+    "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0]
+  },
+  "render": {
+    "width": 320,
+    "height": 240,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30.0,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "explaino_projection_and_flow diagnostics state with explicit root-family authority should load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::explaino_projection_and_flow ||
+            params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::quartic_unit_roots ||
+            params.poly_kind != PolyKind::custom) {
+            std::cerr << "explaino_projection_and_flow diagnostics state should preserve its explicit carrier identity and custom Explaino polynomial authority\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.projection_and_flow_target_radius, 1.75f, 1.0e-6) ||
+            !NearlyEqual(params.projection_and_flow_pressure_threshold, 0.5f, 1.0e-6)) {
+            std::cerr << "explaino_projection_and_flow diagnostics state should round-trip the shared Projection-and-Flow controls\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_seed, 3.0, 1.0e-9) ||
+            !NearlyEqual(view.explaino_seed_drift, 0.5f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_warp_strength, 0.25f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_damping, 0.75f, 1.0e-6) ||
+            params.explaino_root_count != 4 ||
+            !NearlyEqual(params.poly_coeffs[4], 1.0f, 1.0e-6f) ||
+            (NearlyEqual(params.explaino_roots[0].x, 0.0f, 1.0e-6f) &&
+             NearlyEqual(params.explaino_roots[0].y, 0.0f, 1.0e-6f) &&
+             NearlyEqual(params.explaino_roots[1].x, 0.0f, 1.0e-6f) &&
+             NearlyEqual(params.explaino_roots[1].y, 0.0f, 1.0e-6f))) {
+            std::cerr << "explaino_projection_and_flow diagnostics state should preserve the Explaino-owned custom-root carrier instead of zeroing it back to the preset lane or trusting stale preset coefficients\n";
+            return 1;
+        }
+    }
+
+    {
         const fs::path statePath = tempRoot / "legacy_explaino_nova_state.json";
         std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
         file << R"({

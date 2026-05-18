@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "fractal_sample_evidence_widening_staging",
+  "feature_id": "fractal_sample_evidence_widening",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_sample_evidence_widening_staging.contract.json",
+    "docs/notes/fractal_sample_evidence_widening_launch_anchor.md",
+    "docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "treat this as a docs-only staging slice for the bounded sample-evidence widening engine lane rather than as implementation work",
+    "write one reusable launch-anchor surface that future prompts can point at instead of restating the whole sample-evidence doctrine inline",
+    "write the bounded staged slice order explicitly while keeping later per-session kickoff prompts and contracts flexible",
+    "keep the current legacy FractalSampleResult and SampleFractalPoints surfaces authoritative in the staging packet so the future implementation cannot drift into a fake universal refactor"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the widened evidence API or evidence struct is already implemented from this staging slice",
+    "genericize the whole fractal engine or replace the renderer contract in this staging slice",
+    "prebake a full meta-basin, operator-itinerary, or DSL implementation into the packet",
+    "leave future prompts without a checked-in owner-seam map, slice order, or first-consumer fence"
+  ],
+  "required_defaults": {
+    "sample_evidence_launch_anchor_exists": "required",
+    "sample_evidence_slice_map_exists": "required",
+    "legacy_projection_preserved_in_staging_authority": "required",
+    "future_kickoff_flexibility_preserved": "required",
+    "broad_engine_refactor_forbidden": "required"
+  },
+  "forbidden_defaults": {
+    "sample_evidence_claimed_shipped": "forbidden",
+    "whole_engine_generic_refactor_claimed": "forbidden",
+    "first_consumer_precommitted_too_broadly": "forbidden",
+    "renderer_replacement_claimed": "forbidden",
+    "runtime_or_code_implementation_in_this_slice": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_sample_evidence_widening_staging.contract.json --out-json artifacts/validation/fractal_sample_evidence_widening_staging_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md --out-json artifacts/validation/fractal_sample_evidence_widening_staging_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_sample_evidence_widening_staging_contract_schema_valid",
+      "description": "The sample-evidence widening staging contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_staging_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_staging_plan_sync_ok",
+      "description": "The sample-evidence widening staging plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_staging_hostile_audit_ok",
+      "description": "The sample-evidence widening staging hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_staging_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

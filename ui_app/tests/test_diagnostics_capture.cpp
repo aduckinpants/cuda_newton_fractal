@@ -104,6 +104,198 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"coloring_mode\": \"joy_basins\"") != std::string::npos, "state derives legacy coloring mirror from coherent root-basin pair");
 }
 
+void TestBundlePersistsCounterfactualPairFractalTypeId() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::counterfactual_pair;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::view_relative;
+    params.counterfactual_pair_offset_x = 0.125f;
+    params.counterfactual_pair_offset_y = -0.0625f;
+    params.counterfactual_pair_reconvergence_ratio = 0.25f;
+
+    const fs::path outputDir = FreshTempRoot("counterfactual_pair") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff112233u, 0xff445566u, 0xff778899u, 0xffaabbccu};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for counterfactual pair state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"counterfactual_pair\"") != std::string::npos,
+        "state persists counterfactual_pair fractal type id");
+    Check(json.find("\"fractal_type\": \"unknown\"") == std::string::npos,
+        "state export never falls back to unknown for counterfactual_pair");
+    Check(json.find("\"counterfactual_pair_root_family\": \"quartic_unit_roots\"") != std::string::npos,
+        "state persists Counterfactual Pair root family id");
+    Check(json.find("\"counterfactual_pair_frame\": \"view_relative\"") != std::string::npos,
+        "state persists Counterfactual Pair frame id");
+    Check(json.find("\"counterfactual_pair_offset_x\": 0.125") != std::string::npos,
+        "state persists Counterfactual Pair offset x");
+    Check(json.find("\"counterfactual_pair_offset_y\": -0.0625") != std::string::npos,
+        "state persists Counterfactual Pair offset y");
+    Check(json.find("\"counterfactual_pair_reconvergence_ratio\": 0.25") != std::string::npos,
+        "state persists Counterfactual Pair reconvergence ratio");
+}
+
+void TestBundlePersistsExplainoCounterfactualPairFractalTypeId() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::explaino_counterfactual_pair;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.poly_kind = PolyKind::custom;
+    params.counterfactual_pair_frame = CounterfactualPairFrame::view_relative;
+    params.counterfactual_pair_offset_x = 0.1875f;
+    params.counterfactual_pair_offset_y = -0.09375f;
+    params.counterfactual_pair_reconvergence_ratio = 0.4f;
+    params.explaino_seed = 3.5;
+    params.explaino_warp_strength = 0.25f;
+    params.explaino_damping = 0.75f;
+    params.explaino_root_count = 4;
+    params.explaino_roots[0] = {0.5f, 0.0f};
+    params.explaino_roots[1] = {0.0f, 0.5f};
+    params.explaino_roots[2] = {-0.5f, 0.0f};
+    params.explaino_roots[3] = {0.0f, -0.5f};
+
+    const fs::path outputDir = FreshTempRoot("explaino_counterfactual_pair") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff224466u, 0xff335577u, 0xff446688u, 0xff557799u};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for explaino_counterfactual_pair state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"explaino_counterfactual_pair\"") != std::string::npos,
+        "state persists explaino_counterfactual_pair fractal type id");
+    Check(json.find("\"fractal_type\": \"unknown\"") == std::string::npos,
+        "state export never falls back to unknown for explaino_counterfactual_pair");
+    Check(json.find("\"counterfactual_pair_frame\": \"view_relative\"") != std::string::npos,
+        "state persists shared Counterfactual Pair frame for explaino_counterfactual_pair");
+    Check(json.find("\"explaino_seed\": 3.5") != std::string::npos &&
+        json.find("\"explaino_warp_strength\": 0.25") != std::string::npos,
+        "state persists Explaino-owned controls for explaino_counterfactual_pair");
+}
+
+
+void TestBundlePersistsProjectionAndFlowHardeningControls() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::projection_and_flow;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.poly_kind = PolyKind::z4_minus_1;
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[4] = 1.0f;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 0.5f;
+
+    const fs::path outputDir = FreshTempRoot("projection_and_flow") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff224466u, 0xff335577u, 0xff446688u, 0xff557799u};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for projection_and_flow state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"projection_and_flow\"") != std::string::npos,
+        "state persists projection_and_flow fractal type id");
+    Check(json.find("\"projection_and_flow_root_family\": \"quartic_unit_roots\"") != std::string::npos,
+        "state persists Projection-and-Flow root family id");
+    Check(json.find("\"projection_and_flow_target_radius\": 1.75") != std::string::npos,
+        "state persists Projection-and-Flow target radius");
+    Check(json.find("\"projection_and_flow_pressure_threshold\": 0.5") != std::string::npos,
+        "state persists Projection-and-Flow pressure threshold");
+}
+
+void TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::explaino_projection_and_flow;
+    view.explaino_phase = 1.0f;
+    view.explaino_phase_strength = 1.0f;
+    view.explaino_seed_drift = 0.5f;
+    params.max_iter = 96;
+    params.epsilon = 1.0e-6f;
+    params.poly_kind = PolyKind::custom;
+    params.poly_coeffs[0] = 1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 1.0f;
+    params.poly_coeffs[4] = 1.0f;
+    params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+    params.projection_and_flow_target_radius = 1.75f;
+    params.projection_and_flow_pressure_threshold = 0.5f;
+    params.explaino_seed = 3.0;
+    params.explaino_root_spread = 0.5f;
+    params.explaino_warp_strength = 0.25f;
+    params.explaino_damping = 0.75f;
+    params.explaino_root_count = 4;
+    params.explaino_roots[0] = {0.5f, 0.0f};
+    params.explaino_roots[1] = {0.0f, 0.5f};
+    params.explaino_roots[2] = {-0.5f, 0.0f};
+    params.explaino_roots[3] = {0.0f, -0.5f};
+
+    const fs::path outputDir = FreshTempRoot("explaino_projection_and_flow") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff113355u, 0xff224466u, 0xff335577u, 0xff446688u};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for explaino_projection_and_flow state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"explaino_projection_and_flow\"") != std::string::npos,
+        "state persists explaino_projection_and_flow fractal type id");
+    Check(json.find("\"projection_and_flow_root_family\": \"quartic_unit_roots\"") != std::string::npos,
+        "state persists shared Projection-and-Flow root family for explaino_projection_and_flow");
+    Check(json.find("\"projection_and_flow_target_radius\": 1.75") != std::string::npos &&
+            json.find("\"projection_and_flow_pressure_threshold\": 0.5") != std::string::npos,
+        "state persists shared Projection-and-Flow controls for explaino_projection_and_flow");
+    Check(json.find("\"poly_kind\": 2") != std::string::npos &&
+            json.find("\"explaino_root_count\": 4") != std::string::npos,
+        "state persists explaino_projection_and_flow as an explicit custom-polynomial carrier");
+    Check(json.find("\"explaino_seed\": 3") != std::string::npos &&
+            json.find("\"explaino_root_spread\": 0.5") != std::string::npos &&
+            json.find("\"explaino_warp_strength\": 0.25") != std::string::npos &&
+            json.find("\"explaino_damping\": 0.75") != std::string::npos &&
+            json.find("\"explaino_phase_strength\": 1") != std::string::npos,
+        "state persists Explaino-owned controls for explaino_projection_and_flow");
+}
+
 void TestRejectsMismatchedPixelCount() {
     ViewState view{};
     KernelParams params{};
@@ -178,6 +370,10 @@ void TestLastBundleAndSidecarOverloads() {
 
 int main() {
     TestBundleWritesFrameAndState();
+    TestBundlePersistsCounterfactualPairFractalTypeId();
+    TestBundlePersistsExplainoCounterfactualPairFractalTypeId();
+    TestBundlePersistsProjectionAndFlowHardeningControls();
+    TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
 

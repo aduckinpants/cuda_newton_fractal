@@ -108,6 +108,14 @@ __device__ __forceinline__ Cx unit_root_k(int k, int n) {
     return {cosf(a), sinf(a)};
 }
 
+__device__ __forceinline__ Cx poly_eval_real_coeffs_deg4_value(const float coeffs[5], Cx z) {
+    return PolyEvalRealCoeffsDeg4Value(coeffs, z);
+}
+
+__device__ __forceinline__ Cxd poly_eval_real_coeffs_deg4_value_d(const float coeffs[5], Cxd z) {
+    return PolyEvalRealCoeffsDeg4Value(coeffs, z);
+}
+
 __device__ __forceinline__ void poly_eval_real_coeffs_deg4(const float coeffs[5], Cx z, Cx* outP, Cx* outDp) {
     PolyEvalRealCoeffsDeg4(coeffs, z, outP, outDp);
 }

@@ -141,6 +141,46 @@ EngineFunctionCatalog BuildProjectionParityCatalog() {
     return catalog;
 }
 
+EngineFunctionCatalog BuildBalanceVoidParityCatalog() {
+    EngineFunctionCatalog catalog;
+
+    FunctionDescriptor fractalSample;
+    fractalSample.id = "fractal.sample";
+    fractalSample.name = "Fractal Sample";
+
+    FunctionParamDescriptor fractalType;
+    fractalType.path = "fractal.view.fractal_type";
+    fractalType.type = "enum";
+    fractalType.label = "Fractal Type";
+    fractalType.required = true;
+    fractalType.options.push_back({"explaino_all", "Explaino-all"});
+    fractalSample.parameters.push_back(fractalType);
+
+    FunctionParamDescriptor balanceVoid = MakeParam("fractal.params.balance_void", "float", "Balance Void", -1.0, 1.0, 0.05);
+    balanceVoid.has_applicable_when = true;
+    balanceVoid.applicable_when.op = "eq";
+    balanceVoid.applicable_when.path = "fractal.view.fractal_type";
+    balanceVoid.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(balanceVoid);
+
+    FunctionParamDescriptor symmetryTension = MakeParam("fractal.params.symmetry_tension", "float", "Symmetry Tension", -1.0, 1.0, 0.05);
+    symmetryTension.has_applicable_when = true;
+    symmetryTension.applicable_when.op = "eq";
+    symmetryTension.applicable_when.path = "fractal.view.fractal_type";
+    symmetryTension.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(symmetryTension);
+
+    FunctionParamDescriptor fieldCurvature = MakeParam("fractal.params.field_curvature", "float", "Field Curvature", -1.0, 1.0, 0.05);
+    fieldCurvature.has_applicable_when = true;
+    fieldCurvature.applicable_when.op = "eq";
+    fieldCurvature.applicable_when.path = "fractal.view.fractal_type";
+    fieldCurvature.applicable_when.value = "explaino_all";
+    fractalSample.parameters.push_back(fieldCurvature);
+
+    catalog.functions.push_back(fractalSample);
+    return catalog;
+}
+
 BindingContext MakeBindingContext(ViewState* view, KernelParams* params, RenderSettings* render, LensSettings* lens) {
     BindingContext ctx;
     ctx.view = view;
@@ -260,6 +300,132 @@ public:
         return true;
     }
 };
+
+class EvidenceMeasurementHost : public SidecarMeasurementHost {
+public:
+    mutable int legacy_calls = 0;
+    bool mismatch_sample_coord = false;
+
+    bool Sample(const std::vector<Double2>&,
+        const ViewState&,
+        const KernelParams&,
+        const RenderSettings&,
+        std::vector<FractalSampleResult>*,
+        std::string* outError) const override {
+        ++legacy_calls;
+        if (outError) *outError = "legacy sample should not be used when widened evidence is supported";
+        return false;
+    }
+
+    bool SupportsWidenedEvidence() const override {
+        return true;
+    }
+
+    bool SampleEvidence(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams& params,
+        const RenderSettings& render,
+        std::vector<FractalSampleEvidence>* outEvidence,
+        std::string* outError) const override {
+        if (!outEvidence) {
+            if (outError) *outError = "outEvidence is null";
+            return false;
+        }
+
+        outEvidence->clear();
+        outEvidence->reserve(coords.size());
+        for (std::size_t index = 0; index < coords.size(); ++index) {
+            const Double2 coord = coords[index];
+            const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
+            const double mixSignal = static_cast<double>(params.explaino_mix) * 100.0;
+            const double epsilonSignal = static_cast<double>(params.epsilon) * 10000.0;
+            const double zoomSignal = coordSpan * 20.0;
+            const double renderSignal = static_cast<double>(render.device_id);
+
+            FractalSampleEvidence evidence{};
+            evidence.sample_coord = mismatch_sample_coord && index == 0u
+                ? Double2{coord.x + 0.25, coord.y}
+                : coord;
+            evidence.legacy_result.iterations = static_cast<int>(std::lround(10.0 + mixSignal + epsilonSignal + zoomSignal + renderSignal));
+            evidence.legacy_result.final_z_x = static_cast<float>(coord.x);
+            evidence.legacy_result.final_z_y = static_cast<float>(coord.y);
+            evidence.legacy_result.residual = static_cast<float>(1.0 + static_cast<double>(params.explaino_mix) + coordSpan + epsilonSignal * 0.1);
+            evidence.legacy_result.converged = params.explaino_mix >= 0.5f;
+            evidence.legacy_result.escaped = !evidence.legacy_result.converged && coordSpan > 0.05;
+            outEvidence->push_back(evidence);
+        }
+        return true;
+    }
+};
+
+class BalanceVoidEvidenceHost : public SidecarMeasurementHost {
+public:
+    mutable int legacy_calls = 0;
+
+    bool Sample(const std::vector<Double2>&,
+        const ViewState&,
+        const KernelParams&,
+        const RenderSettings&,
+        std::vector<FractalSampleResult>*,
+        std::string* outError) const override {
+        ++legacy_calls;
+        if (outError) *outError = "legacy sample should not be used for BalanceVoid widened-evidence proof";
+        return false;
+    }
+
+    bool SupportsWidenedEvidence() const override {
+        return true;
+    }
+
+    bool SampleEvidence(const std::vector<Double2>& coords,
+        const ViewState& view,
+        const KernelParams& params,
+        const RenderSettings& render,
+        std::vector<FractalSampleEvidence>* outEvidence,
+        std::string* outError) const override {
+        if (!outEvidence) {
+            if (outError) *outError = "outEvidence is null";
+            return false;
+        }
+
+        outEvidence->clear();
+        outEvidence->reserve(coords.size());
+        for (const Double2& coord : coords) {
+            const double coordSpan = std::fabs(coord.x - view.center_hp_x) + std::fabs(coord.y - view.center_hp_y);
+            const double balanceSignal = static_cast<double>(params.balance_void) * 60.0;
+            const double symmetrySignal = static_cast<double>(params.symmetry_tension) * 45.0;
+            const double curvatureSignal = static_cast<double>(params.field_curvature) * 30.0;
+            const double renderSignal = static_cast<double>(render.device_id);
+            const double totalSignal = balanceSignal + symmetrySignal + curvatureSignal + renderSignal;
+
+            FractalSampleEvidence evidence{};
+            evidence.sample_coord = coord;
+            evidence.legacy_result.iterations = static_cast<int>(std::lround(18.0 + totalSignal + coordSpan * 8.0));
+            evidence.legacy_result.final_z_x = static_cast<float>(coord.x);
+            evidence.legacy_result.final_z_y = static_cast<float>(coord.y);
+            evidence.legacy_result.residual = static_cast<float>(1.0 +
+                0.20 * std::fabs(static_cast<double>(params.balance_void)) +
+                0.15 * std::fabs(static_cast<double>(params.symmetry_tension)) +
+                0.10 * std::fabs(static_cast<double>(params.field_curvature)) +
+                coordSpan);
+            evidence.legacy_result.converged =
+                (static_cast<double>(params.balance_void) + static_cast<double>(params.field_curvature)) >=
+                std::fabs(static_cast<double>(params.symmetry_tension));
+            evidence.legacy_result.escaped = !evidence.legacy_result.converged && coordSpan > 0.05;
+            outEvidence->push_back(evidence);
+        }
+        return true;
+    }
+};
+
+const SidecarMeasurementRow* FindMeasurementRowByPath(const SidecarMeasurementBatch& batch, const char* path) {
+    for (const SidecarMeasurementRow& row : batch.rows) {
+        if (row.path == path) {
+            return &row;
+        }
+    }
+    return nullptr;
+}
 
 } // namespace
 
@@ -462,6 +628,72 @@ int main() {
         SidecarHypothesisSpace space{};
         std::string error;
         if (!BuildSidecarHypothesisSpace(BuildCatalog(), "fractal.sample", ctx, &space, &error)) {
+            std::cerr << "Expected sidecar hypothesis space to build for widened-evidence measurement tests: " << error << "\n";
+            return 1;
+        }
+
+        EvidenceMeasurementHost host;
+        SidecarMeasurementBatch batch;
+        if (!BuildSidecarMeasurementBatch(space, ctx, host, &batch, &error)) {
+            std::cerr << "Expected widened-evidence measurement batch to build: " << error << "\n";
+            return 1;
+        }
+        if (host.legacy_calls != 0) {
+            std::cerr << "Expected widened sidecar measurement path to use widened evidence instead of falling back to legacy sampling\n";
+            return 1;
+        }
+        const SidecarMeasurementRow* mixRow = nullptr;
+        const SidecarMeasurementRow* zoomRow = nullptr;
+        for (const SidecarMeasurementRow& row : batch.rows) {
+            if (row.path == "fractal.params.explaino_mix") mixRow = &row;
+            if (row.path == "fractal.view.zoom") zoomRow = &row;
+        }
+        if (!mixRow || !zoomRow) {
+            std::cerr << "Expected widened measurement batch to keep both the explaino_mix and zoom rows\n";
+            return 1;
+        }
+        if (mixRow->minus_counterfactual.coordinate_count != batch.coordinate_count ||
+            mixRow->plus_counterfactual.coordinate_count != batch.coordinate_count) {
+            std::cerr << "Expected widened measurement rows to expose paired counterfactual witnesses for every sampled coordinate\n";
+            return 1;
+        }
+        if (!(mixRow->minus_counterfactual.mean_abs_residual_delta > 0.0) ||
+            !(mixRow->plus_counterfactual.mean_abs_iteration_delta > 0.0)) {
+            std::cerr << "Expected paired counterfactual witness metrics to react to widened evidence deltas\n";
+            return 1;
+        }
+        if (!(zoomRow->minus_counterfactual.mean_sample_coord_distance > 0.0) ||
+            !(zoomRow->plus_counterfactual.mean_sample_coord_distance > 0.0)) {
+            std::cerr << "Expected widened counterfactual witness to read sample_coord displacement for view-driven sweeps\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace space{};
+        std::string error;
+        if (!BuildSidecarHypothesisSpace(BuildCatalog(), "fractal.sample", ctx, &space, &error)) {
+            std::cerr << "Expected sidecar hypothesis space to build for coordinate-mismatch test: " << error << "\n";
+            return 1;
+        }
+
+        EvidenceMeasurementHost host;
+        host.mismatch_sample_coord = true;
+        SidecarMeasurementBatch batch;
+        if (BuildSidecarMeasurementBatch(space, ctx, host, &batch, &error)) {
+            std::cerr << "Expected widened measurement batch to fail when widened sample evidence does not preserve the requested sample_coord pairing\n";
+            return 1;
+        }
+        if (error.find("sample_coord") == std::string::npos) {
+            std::cerr << "Expected widened measurement mismatch error to mention sample_coord pairing\n";
+            return 1;
+        }
+    }
+
+    {
+        SidecarHypothesisSpace space{};
+        std::string error;
+        if (!BuildSidecarHypothesisSpace(BuildCatalog(), "fractal.sample", ctx, &space, &error)) {
             std::cerr << "Expected sidecar hypothesis space to build for failure-path tests\n";
             return 1;
         }
@@ -496,6 +728,110 @@ int main() {
         }
         if (error.find("returned 4 results for 5 coords") == std::string::npos) {
             std::cerr << "Expected wrong-count error to mention the returned and expected sizes\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState legacyView{};
+        KernelParams legacyParams{};
+        RenderSettings legacyRender{};
+        LensSettings legacyLens{};
+        legacyView.fractal_type = FractalType::explaino_balance_void;
+        legacyView.zoom = 10.0f;
+        legacyParams.balance_void = 0.4f;
+        legacyParams.symmetry_tension = -0.3f;
+        legacyParams.field_curvature = 0.25f;
+        BindingContext legacyCtx = MakeBindingContext(&legacyView, &legacyParams, &legacyRender, &legacyLens);
+
+        ViewState canonicalView{};
+        KernelParams canonicalParams{};
+        RenderSettings canonicalRender{};
+        LensSettings canonicalLens{};
+        canonicalView.fractal_type = FractalType::explaino_all;
+        canonicalView.zoom = 10.0f;
+        canonicalParams.balance_void = 0.4f;
+        canonicalParams.symmetry_tension = -0.3f;
+        canonicalParams.field_curvature = 0.25f;
+        BindingContext canonicalCtx = MakeBindingContext(&canonicalView, &canonicalParams, &canonicalRender, &canonicalLens);
+
+        const EngineFunctionCatalog balanceVoidCatalog = BuildBalanceVoidParityCatalog();
+        SidecarHypothesisSpace legacySpace{};
+        SidecarHypothesisSpace canonicalSpace{};
+        std::string error;
+        if (!BuildSidecarHypothesisSpace(balanceVoidCatalog, "fractal.sample", legacyCtx, &legacySpace, &error) ||
+            !BuildSidecarHypothesisSpace(balanceVoidCatalog, "fractal.sample", canonicalCtx, &canonicalSpace, &error)) {
+            std::cerr << "Expected BalanceVoid parity hypothesis spaces to build: " << error << "\n";
+            return 1;
+        }
+
+        BalanceVoidEvidenceHost host;
+        SidecarMeasurementBatch legacyBatch;
+        SidecarMeasurementBatch canonicalBatch;
+        if (!BuildSidecarMeasurementBatch(legacySpace, legacyCtx, host, &legacyBatch, &error) ||
+            !BuildSidecarMeasurementBatch(canonicalSpace, canonicalCtx, host, &canonicalBatch, &error)) {
+            std::cerr << "Expected BalanceVoid parity measurement batches to build on existing widened evidence: " << error << "\n";
+            return 1;
+        }
+        if (host.legacy_calls != 0) {
+            std::cerr << "Expected BalanceVoid parity proof to stay on widened evidence instead of the legacy sample host\n";
+            return 1;
+        }
+        if (legacySpace.applicable_parameters.size() != 4 || canonicalSpace.applicable_parameters.size() != 4) {
+            std::cerr << "Expected BalanceVoid parity hypothesis spaces to expose the canonical fractal type selector plus the three dedicated BalanceVoid axes\n";
+            return 1;
+        }
+        if (legacyBatch.rows.size() != 3 || canonicalBatch.rows.size() != 3) {
+            std::cerr << "Expected BalanceVoid parity measurement batches to expose exactly the three dedicated BalanceVoid rows\n";
+            return 1;
+        }
+
+        const char* expectedPaths[] = {
+            "fractal.params.balance_void",
+            "fractal.params.symmetry_tension",
+            "fractal.params.field_curvature",
+        };
+        for (const char* path : expectedPaths) {
+            const SidecarMeasurementRow* legacyRow = FindMeasurementRowByPath(legacyBatch, path);
+            const SidecarMeasurementRow* canonicalRow = FindMeasurementRowByPath(canonicalBatch, path);
+            if (!legacyRow || !canonicalRow) {
+                std::cerr << "Expected BalanceVoid parity measurement rows to keep path " << path << "\n";
+                return 1;
+            }
+            if (legacyRow->minus_counterfactual.coordinate_count != legacyBatch.coordinate_count ||
+                legacyRow->plus_counterfactual.coordinate_count != legacyBatch.coordinate_count ||
+                canonicalRow->minus_counterfactual.coordinate_count != canonicalBatch.coordinate_count ||
+                canonicalRow->plus_counterfactual.coordinate_count != canonicalBatch.coordinate_count) {
+                std::cerr << "Expected BalanceVoid parity widened witnesses to cover every sampled coordinate for path " << path << "\n";
+                return 1;
+            }
+            if (!NearlyEqual(legacyRow->minus_counterfactual.mean_sample_coord_distance, 0.0) ||
+                !NearlyEqual(legacyRow->plus_counterfactual.mean_sample_coord_distance, 0.0) ||
+                !NearlyEqual(canonicalRow->minus_counterfactual.mean_sample_coord_distance, 0.0) ||
+                !NearlyEqual(canonicalRow->plus_counterfactual.mean_sample_coord_distance, 0.0)) {
+                std::cerr << "Expected BalanceVoid param sweeps to preserve sample_coord pairing and react through legacy-result deltas instead of coordinate motion for path " << path << "\n";
+                return 1;
+            }
+            if (!(legacyRow->minus_counterfactual.mean_abs_iteration_delta > 0.0) ||
+                !(legacyRow->plus_counterfactual.mean_abs_residual_delta > 0.0) ||
+                !(canonicalRow->minus_counterfactual.mean_abs_iteration_delta > 0.0) ||
+                !(canonicalRow->plus_counterfactual.mean_abs_residual_delta > 0.0)) {
+                std::cerr << "Expected existing widened payload to stay sufficient for BalanceVoid axis witnesses through legacy-result deltas for path " << path << "\n";
+                return 1;
+            }
+            if (!NearlyEqual(legacyRow->information_gain_estimate, canonicalRow->information_gain_estimate) ||
+                !NearlyEqual(legacyRow->minus_variant.mean_iterations, canonicalRow->minus_variant.mean_iterations) ||
+                !NearlyEqual(legacyRow->plus_variant.mean_iterations, canonicalRow->plus_variant.mean_iterations) ||
+                !NearlyEqual(legacyRow->minus_counterfactual.mean_abs_iteration_delta, canonicalRow->minus_counterfactual.mean_abs_iteration_delta) ||
+                !NearlyEqual(legacyRow->plus_counterfactual.mean_abs_residual_delta, canonicalRow->plus_counterfactual.mean_abs_residual_delta)) {
+                std::cerr << "Expected legacy explaino_balance_void measurement sweeps to canonicalize onto the same generic explaino_all widened lane for path " << path << "\n";
+                return 1;
+            }
+        }
+        if (!NearlyEqual(legacyBatch.total_information_gain_estimate, canonicalBatch.total_information_gain_estimate) ||
+            !NearlyEqual(legacyBatch.explored_fraction, canonicalBatch.explored_fraction) ||
+            !NearlyEqual(legacyBatch.mean_decode_stability, canonicalBatch.mean_decode_stability)) {
+            std::cerr << "Expected legacy explaino_balance_void measurement batches to match canonical explaino_all widened parity\n";
             return 1;
         }
     }

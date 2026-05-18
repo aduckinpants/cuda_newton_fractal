@@ -234,6 +234,25 @@ enum class FractalType : int {
     explaino_tension = 36,
     explaino_balance_void = 37,
     explaino_all = 38,
+    counterfactual_pair = 39,
+    explaino_counterfactual_pair = 40,
+    projection_and_flow = 41,
+    explaino_projection_and_flow = 42,
+};
+
+enum class CounterfactualPairRootFamily : int {
+    cubic_unit_roots = 0,
+    quartic_unit_roots = 1,
+};
+
+enum class CounterfactualPairFrame : int {
+    world_absolute = 0,
+    view_relative = 1,
+};
+
+enum class ProjectionAndFlowRootFamily : int {
+    cubic_unit_roots = 0,
+    quartic_unit_roots = 1,
 };
 
 // --- Precision tier model (two-axis: backend x strategy) ---
@@ -340,6 +359,14 @@ struct KernelParams {
     float phoenix_p_imag{0.0f};
     PolyKind poly_kind{PolyKind::z3_minus_1};
     float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
+    CounterfactualPairRootFamily counterfactual_pair_root_family{CounterfactualPairRootFamily::cubic_unit_roots};
+    CounterfactualPairFrame counterfactual_pair_frame{CounterfactualPairFrame::world_absolute};
+    float counterfactual_pair_offset_x{0.16f};
+    float counterfactual_pair_offset_y{0.08f};
+    float counterfactual_pair_reconvergence_ratio{0.60f};
+    ProjectionAndFlowRootFamily projection_and_flow_root_family{ProjectionAndFlowRootFamily::cubic_unit_roots};
+    float projection_and_flow_target_radius{1.0f};
+    float projection_and_flow_pressure_threshold{1.0f};
     int multibrot_power{3};
     float multibrot_power_float{3.0f};
     float lambda_real{2.9685855f};
@@ -468,9 +495,20 @@ bool RenderFractalCUDA(
 
 // K2: Sample arbitrary complex-plane coordinates without pixel mapping or coloring.
 // coords: host array of complex-plane points (Double2: .x = Re, .y = Im).
-// outResults: host array of FractalSampleResult (caller-allocated, length numPoints).
+// outEvidence: host array of FractalSampleEvidence (caller-allocated, length numPoints).
 // Returns false on error; *outError will be set.
+struct FractalSampleEvidence;
 struct FractalSampleResult;
+bool SampleFractalEvidencePoints(
+    const Double2* coords,
+    int numPoints,
+    const ViewState& view,
+    const KernelParams& params,
+    const RenderSettings& render,
+    FractalSampleEvidence* outEvidence,
+    const char** outError);
+
+// Legacy projection path preserved for existing callers.
 bool SampleFractalPoints(
     const Double2* coords,
     int numPoints,

@@ -212,6 +212,153 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::projection_and_flow;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.5f;
+        params.poly_kind = PolyKind::z4_minus_1;
+        params.poly_coeffs[0] = -1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 0.0f;
+        params.poly_coeffs[4] = 1.0f;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Projection-and-Flow defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::cubic_unit_roots ||
+            !NearlyEqual(params.projection_and_flow_target_radius, 1.0f) ||
+            !NearlyEqual(params.projection_and_flow_pressure_threshold, 1.0f) ||
+            params.poly_kind != PolyKind::z3_minus_1 ||
+            !NearlyEqual(params.poly_coeffs[0], -1.0f) ||
+            !NearlyEqual(params.poly_coeffs[3], 1.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 0.0f)) {
+            std::cerr << "Projection-and-Flow selector defaults should restore the shipped cubic/radius/pressure baseline\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_projection_and_flow;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.projection_and_flow_target_radius = 1.75f;
+        params.projection_and_flow_pressure_threshold = 0.5f;
+        params.explaino_warp_strength = 0.0f;
+        params.explaino_damping = 1.0f;
+        params.poly_kind = PolyKind::custom;
+        params.poly_coeffs[0] = 1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 1.0f;
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+        if (!dirty) {
+            std::cerr << "Explaino Projection-and-Flow defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::cubic_unit_roots ||
+            !NearlyEqual(params.projection_and_flow_target_radius, 1.0f) ||
+            !NearlyEqual(params.projection_and_flow_pressure_threshold, 1.0f) ||
+            params.poly_kind != PolyKind::custom ||
+            !NearlyEqual(params.explaino_warp_strength, 0.25f) ||
+            !NearlyEqual(params.explaino_damping, 0.75f) ||
+            params.explaino_root_count != 3 ||
+            !NearlyEqual(params.poly_coeffs[3], 1.0f) ||
+            !NearlyEqual(params.poly_coeffs[4], 0.0f)) {
+            std::cerr << "Explaino Projection-and-Flow defaults should keep the shared Projection-and-Flow controls while deriving a cubic Explaino carrier polynomial\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams narrowSpread{};
+        KernelParams wideSpread{};
+        view.fractal_type = FractalType::explaino_projection_and_flow;
+        view.explaino_phase = 1.0f;
+        view.explaino_phase_strength = 1.0f;
+        ExplainoSeedSetCombined(view, narrowSpread, 3.25);
+        ExplainoSeedSetCombined(view, wideSpread, 3.25);
+        narrowSpread.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        wideSpread.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        narrowSpread.explaino_root_spread = 0.15f;
+        wideSpread.explaino_root_spread = 1.35f;
+
+        UpdateExplainoPolynomial(view, narrowSpread, nullptr);
+        UpdateExplainoPolynomial(view, wideSpread, nullptr);
+
+        if (narrowSpread.poly_kind != PolyKind::custom ||
+            wideSpread.poly_kind != PolyKind::custom ||
+            narrowSpread.explaino_root_count != 4 ||
+            wideSpread.explaino_root_count != 4) {
+            std::cerr << "Explaino Projection-and-Flow root-spread authority should keep the quartic Explaino carrier live\n";
+            return 1;
+        }
+
+        bool sawRootSpreadDifference = false;
+        for (int coeffIndex = 0; coeffIndex < 5; ++coeffIndex) {
+            if (!NearlyEqual(narrowSpread.poly_coeffs[coeffIndex], wideSpread.poly_coeffs[coeffIndex], 1.0e-6f)) {
+                sawRootSpreadDifference = true;
+                break;
+            }
+        }
+        if (!sawRootSpreadDifference) {
+            std::cerr << "Explaino Projection-and-Flow root spread should rewrite the derived carrier polynomial instead of persisting as a dead slider\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState neutralView{};
+        ViewState activeView{};
+        KernelParams neutralPhaseStrength{};
+        KernelParams activePhaseStrength{};
+        neutralView.fractal_type = FractalType::explaino_projection_and_flow;
+        activeView.fractal_type = FractalType::explaino_projection_and_flow;
+        neutralView.explaino_phase = 1.0f;
+        activeView.explaino_phase = 1.0f;
+        neutralView.explaino_phase_strength = 0.0f;
+        activeView.explaino_phase_strength = 1.6f;
+        ExplainoSeedSetCombined(neutralView, neutralPhaseStrength, 4.5);
+        ExplainoSeedSetCombined(activeView, activePhaseStrength, 4.5);
+        neutralPhaseStrength.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        activePhaseStrength.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        neutralPhaseStrength.explaino_root_spread = 0.5f;
+        activePhaseStrength.explaino_root_spread = 0.5f;
+
+        UpdateExplainoPolynomial(neutralView, neutralPhaseStrength, nullptr);
+        UpdateExplainoPolynomial(activeView, activePhaseStrength, nullptr);
+
+        if (neutralPhaseStrength.poly_kind != PolyKind::custom ||
+            activePhaseStrength.poly_kind != PolyKind::custom ||
+            neutralPhaseStrength.explaino_root_count != 4 ||
+            activePhaseStrength.explaino_root_count != 4) {
+            std::cerr << "Explaino Projection-and-Flow phase-strength authority should keep the quartic Explaino carrier live\n";
+            return 1;
+        }
+
+        bool sawPhaseStrengthDifference = false;
+        for (int coeffIndex = 0; coeffIndex < 5; ++coeffIndex) {
+            if (!NearlyEqual(neutralPhaseStrength.poly_coeffs[coeffIndex], activePhaseStrength.poly_coeffs[coeffIndex], 1.0e-6f)) {
+                sawPhaseStrengthDifference = true;
+                break;
+            }
+        }
+        if (!sawPhaseStrengthDifference) {
+            std::cerr << "Explaino Projection-and-Flow phase strength should rewrite the derived carrier polynomial instead of staying inert\n";
+            return 1;
+        }
+    }
+
     // Explaino-Lambda defaults
     {
         ViewState view{};

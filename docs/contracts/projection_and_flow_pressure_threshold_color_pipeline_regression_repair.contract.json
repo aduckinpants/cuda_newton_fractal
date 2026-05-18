@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "contract_id": "projection_and_flow_pressure_threshold_color_pipeline_regression_repair",
+  "feature_id": "projection_and_flow_pressure_threshold_color_pipeline_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/projection_and_flow_pressure_threshold_color_pipeline_regression_repair.contract.json",
+    "docs/contracts/projection_and_flow_smooth_escape_perf_regression_repair.contract.json",
+    "docs/notes/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "tests/test_fractal_runtime_projection_and_flow.py"
+  ],
+  "required_operator_inputs": [
+    "repair the real Projection-and-Flow regression where the public programmable or smooth-escape color path ignores projection_and_flow_pressure_threshold while the legacy root_basin path still reacts",
+    "keep the repair bounded to Projection-and-Flow programmable color authority rather than reopening generic color-pipeline expansion, Explaino work, renderer replacement, or a broad engine refactor",
+    "preserve FractalSampleResult and SampleFractalPoints as the shipped legacy sampling surfaces while the programmable color-path repair lands",
+    "close only with focused native proof, runtime publish, published-runtime Projection-and-Flow proof, hostile audit, checkpoint commit, machine receipts, push, and the committed-head stale-plan gate"
+  ],
+  "forbidden_operator_prompts": [
+    "claim Projection-and-Flow is repaired while smooth_escape or the programmable basin path still hashes the same across materially different pressure thresholds on the same lane",
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the shipped legacy sampling path",
+    "widen into generic color-pipeline feature expansion, Explaino integration, renderer replacement, or a generic engine rewrite",
+    "close the slice without commit, machine receipts, hostile-audit proof, push, and a committed-head stale-plan reread"
+  ],
+  "required_defaults": {
+    "projection_and_flow_pressure_threshold_affects_programmable_output": "required",
+    "projection_and_flow_root_basin_path_still_truthful": "required",
+    "legacy_sampling_surface_preserved": "required",
+    "published_runtime_projection_flow_threshold_proof_exists": "required"
+  },
+  "forbidden_defaults": {
+    "projection_and_flow_programmable_threshold_dead": "forbidden",
+    "color_pipeline_scope_drift": "forbidden",
+    "samplefractalpoints_signature_replaced": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/projection_and_flow_pressure_threshold_color_pipeline_regression_repair.contract.json --out-json artifacts/validation/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_PHASED_PLAN.md --out-json artifacts/validation/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "projection_and_flow_pressure_threshold_color_pipeline_regression_repair_contract_schema_valid",
+      "description": "The Projection-and-Flow pressure-threshold programmable color regression contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "projection_and_flow_pressure_threshold_color_pipeline_regression_repair_plan_sync_ok",
+      "description": "The Projection-and-Flow pressure-threshold programmable color regression plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "projection_and_flow_pressure_threshold_color_pipeline_regression_repair_hostile_audit_ok",
+      "description": "The Projection-and-Flow pressure-threshold programmable color regression hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/projection_and_flow_pressure_threshold_color_pipeline_regression_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

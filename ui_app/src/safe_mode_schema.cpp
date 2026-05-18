@@ -19,6 +19,8 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"phoenix", "Phoenix", "Common"},
     {"newton", "Newton", "Root-Finding"},
     {"halley", "Halley", "Root-Finding"},
+    {"projection_and_flow", "Projection and Flow", "Root-Finding"},
+    {"counterfactual_pair", "Counterfactual Pair", "Root-Finding"},
     {"multibrot", "Multibrot", "Escape-Time"},
     {"spider", "Spider", "Escape-Time"},
     {"celtic_mandelbrot", "Celtic Mandelbrot", "Escape-Time"},
@@ -50,6 +52,8 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"explaino_vortex", "Explaino Vortex", "Explaino"},
     {"explaino_tension", "Explaino Tension", "Explaino"},
     {"explaino_balance_void", "Explaino BalanceVoid", "Explaino"},
+    {"explaino_counterfactual_pair", "Explaino Counterfactual Pair", "Explaino"},
+    {"explaino_projection_and_flow", "Explaino Projection and Flow", "Explaino"},
 };
 
 UISchemaBinding MakeBinding(const char* kind, const char* path) {
@@ -57,6 +61,22 @@ UISchemaBinding MakeBinding(const char* kind, const char* path) {
     binding.kind = kind;
     binding.path = path;
     return binding;
+}
+
+UISchemaPredicate MakeEqVisibleIf(const char* path, const char* value) {
+    UISchemaPredicate predicate;
+    predicate.op = "eq";
+    predicate.path = path;
+    predicate.value = value;
+    return predicate;
+}
+
+UISchemaPredicate MakeInVisibleIf(const char* path, const char* value) {
+    UISchemaPredicate predicate;
+    predicate.op = "in";
+    predicate.path = path;
+    predicate.value = value;
+    return predicate;
 }
 
 UISchemaControl MakeParamControl(
@@ -166,6 +186,152 @@ UISchemaControl MakeActionControl(const char* id, const char* label, const char*
     return control;
 }
 
+void SetVisibleForFractalType(UISchemaControl* control, const char* fractalTypeId) {
+    if (!control) {
+        return;
+    }
+    control->has_visible_if = true;
+    control->visible_if = MakeEqVisibleIf("fractal.view.fractal_type", fractalTypeId);
+}
+
+void SetVisibleForFractalTypes(UISchemaControl* control, const char* fractalTypeIds) {
+    if (!control) {
+        return;
+    }
+    control->has_visible_if = true;
+    control->visible_if = MakeInVisibleIf("fractal.view.fractal_type", fractalTypeIds);
+}
+
+UISchemaControl BuildCounterfactualPairRootFamilyControl() {
+    UISchemaControl control = MakeParamControl(
+        "counterfactual_pair_root_family",
+        "combo",
+        "Pair Root Family",
+        "enum",
+        "fractal.params.counterfactual_pair_root_family",
+        json_min::Value{std::string("cubic_unit_roots")});
+    control.options = {
+        {"cubic_unit_roots", "Cubic Unit Roots", ""},
+        {"quartic_unit_roots", "Quartic Unit Roots", ""},
+    };
+    control.help = "Choose the paired Newton family used by both orbits.";
+    control.has_help = true;
+    SetVisibleForFractalType(&control, "counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildCounterfactualPairFrameControl() {
+    UISchemaControl control = MakeParamControl(
+        "counterfactual_pair_frame",
+        "combo",
+        "Perturbation Frame",
+        "enum",
+        "fractal.params.counterfactual_pair_frame",
+        json_min::Value{std::string("world_absolute")});
+    control.options = {
+        {"world_absolute", "World Absolute", ""},
+        {"view_relative", "View Relative", ""},
+    };
+    control.help = "World Absolute keeps the partner gap fixed in the complex plane. View Relative scales the gap with the current zoom.";
+    control.has_help = true;
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildCounterfactualPairOffsetControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    double defaultValue) {
+    UISchemaControl control = MakeUiRangedParamControl(
+        id,
+        "drag_float",
+        label,
+        "float",
+        -1.0,
+        1.0,
+        0.001,
+        path,
+        json_min::Value{defaultValue});
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildCounterfactualPairReconvergenceControl() {
+    UISchemaControl control = MakeSoftMinParamControl(
+        "counterfactual_pair_reconvergence_ratio",
+        "drag_float",
+        "Reconvergence Ratio",
+        "float",
+        0.0,
+        0.0,
+        4.0,
+        0.01,
+        "fractal.params.counterfactual_pair_reconvergence_ratio",
+        json_min::Value{0.60});
+    control.help =
+        "Class 0 = same-root reconvergence when mean pair gap stays under ratio * initial gap. "
+        "Class 1 = same-basin drift above that ratio. Class 2 = basin swap. Class 3 = unstable.";
+    control.has_help = true;
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
+    return control;
+}
+
+UISchemaControl BuildProjectionAndFlowRootFamilyControl() {
+    UISchemaControl control = MakeParamControl(
+        "projection_and_flow_root_family",
+        "combo",
+        "Flow Root Family",
+        "enum",
+        "fractal.params.projection_and_flow_root_family",
+        json_min::Value{std::string("cubic_unit_roots")});
+    control.options = {
+        {"cubic_unit_roots", "Cubic Unit Roots", ""},
+        {"quartic_unit_roots", "Quartic Unit Roots", ""},
+    };
+    control.help = "Choose whether the free Newton step chases the cubic or quartic unit-root family before every radial projection.";
+    control.has_help = true;
+    SetVisibleForFractalTypes(&control, "projection_and_flow,explaino_projection_and_flow");
+    return control;
+}
+
+UISchemaControl BuildProjectionAndFlowTargetRadiusControl() {
+    UISchemaControl control = MakeSoftMinParamControl(
+        "projection_and_flow_target_radius",
+        "drag_float",
+        "Projection Radius",
+        "float",
+        1.0e-4,
+        0.25,
+        4.0,
+        0.01,
+        "fractal.params.projection_and_flow_target_radius",
+        json_min::Value{1.0});
+    control.help = "After each free Newton step, project radially onto the circle |z| = radius. This is the explicit admissible manifold for Projection-and-Flow.";
+    control.has_help = true;
+    SetVisibleForFractalTypes(&control, "projection_and_flow,explaino_projection_and_flow");
+    return control;
+}
+
+UISchemaControl BuildProjectionAndFlowPressureThresholdControl() {
+    UISchemaControl control = MakeSoftMinParamControl(
+        "projection_and_flow_pressure_threshold",
+        "drag_float",
+        "Pressure Threshold",
+        "float",
+        0.0,
+        0.0,
+        8.0,
+        0.01,
+        "fractal.params.projection_and_flow_pressure_threshold",
+        json_min::Value{1.0});
+    control.help =
+        "Classes 0..4N-1 = root sector x transient-pressure band, using the projected orbit's peak radial correction minus its settled correction. Band 0 stays below 25% of the threshold, Band 1 stays in [25%, 50%), Band 2 stays in [50%, 100%), Band 3 saturates at or above the threshold. Class 4N = unstable.";
+    control.has_help = true;
+    SetVisibleForFractalTypes(&control, "projection_and_flow,explaino_projection_and_flow");
+    return control;
+}
+
 std::vector<UISchemaOption> BuildSafeModeFractalTypeOptions() {
     std::vector<UISchemaOption> options;
     options.reserve(sizeof(kSafeModeFractalTypeOptionDefs) / sizeof(kSafeModeFractalTypeOptionDefs[0]));
@@ -220,6 +386,14 @@ UISchemaPanel BuildSafeModeFractalPanel() {
     panel.controls = {
         MakeSoftMinParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
         MakeRangedParamControl("exposure", "slider_float", "Exposure", "float", 0.1, 5.0, 0.01, "fractal.params.exposure", json_min::Value{1.0}),
+        BuildCounterfactualPairRootFamilyControl(),
+        BuildCounterfactualPairFrameControl(),
+        BuildCounterfactualPairOffsetControl("counterfactual_pair_offset_x", "Partner Offset X", "fractal.params.counterfactual_pair_offset_x", 0.16),
+        BuildCounterfactualPairOffsetControl("counterfactual_pair_offset_y", "Partner Offset Y", "fractal.params.counterfactual_pair_offset_y", 0.08),
+        BuildCounterfactualPairReconvergenceControl(),
+        BuildProjectionAndFlowRootFamilyControl(),
+        BuildProjectionAndFlowTargetRadiusControl(),
+        BuildProjectionAndFlowPressureThresholdControl(),
     };
     return panel;
 }

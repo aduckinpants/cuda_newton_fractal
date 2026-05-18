@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "contract_id": "fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness",
+  "feature_id": "fractal_sample_evidence_widening",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness.contract.json",
+    "docs/contracts/fractal_sample_evidence_widening_staging.contract.json",
+    "docs/notes/fractal_sample_evidence_widening_launch_anchor.md",
+    "docs/notes/fractal_sample_evidence_widening_staging_PHASED_PLAN.md",
+    "docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md",
+    "docs/notes/fractal_sample_evidence_widening_slice_a_contract_skeleton_PHASED_PLAN.md",
+    "docs/notes/fractal_sample_evidence_widening_slice_b_dual_return_api_default_legacy_evidence_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/explaino_sidecar_cuda_sample_host.h",
+    "ui_app/src/explaino_sidecar_cuda_sample_host.cpp",
+    "ui_app/src/explaino_sidecar_measurement.h",
+    "ui_app/src/explaino_sidecar_measurement.cpp",
+    "ui_app/tests/test_explaino_sidecar_cuda_sample_host.cpp",
+    "ui_app/tests/test_explaino_sidecar_measurement.cpp",
+    "ui_app/tests/test_runtime_walk_headless.cpp"
+  ],
+  "required_operator_inputs": [
+    "land one real first widened consumer only in the bounded paired-state or counterfactual lane unless live repo proof forces a narrower truthful alternative",
+    "preserve FractalSampleResult and SampleFractalPoints as the shipped legacy projection surfaces while the first widened consumer lands",
+    "prove the chosen widened fields are necessary and actually read rather than adding speculative evidence growth",
+    "keep projection-and-flow, ExplainO-BalanceVoid, renderer replacement, runtime publish debt, and whole-engine generic refactor work out of scope unless the actual consumer surface proves otherwise"
+  ],
+  "forbidden_operator_prompts": [
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the legacy projection path",
+    "claim slice C is done without one real non-legacy consumer that reads widened evidence meaningfully",
+    "widen into projection-and-flow, ExplainO-BalanceVoid, runtime-walk redesign, renderer replacement, or a whole-engine generic abstraction rewrite from this slice",
+    "close the slice without machine receipts, hostile-audit proof, and the committed-head stale-plan gate cleared"
+  ],
+  "required_defaults": {
+    "one_real_widened_consumer_exists": "required",
+    "paired_state_counterfactual_witness_reads_widened_evidence": "required",
+    "samplefractalpoints_legacy_projection_preserved": "required",
+    "current_evidence_payload_reused_without_speculative_growth": "required",
+    "projection_and_flow_deferred": "required",
+    "balance_void_deferred": "required"
+  },
+  "forbidden_defaults": {
+    "samplefractalpoints_removed_or_signature_replaced": "forbidden",
+    "fractal_sample_result_replaced": "forbidden",
+    "speculative_evidence_field_growth": "forbidden",
+    "projection_and_flow_lane_opened": "forbidden",
+    "balance_void_lane_opened": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "renderer_replacement": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness.contract.json --out-json artifacts/validation/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_PHASED_PLAN.md --out-json artifacts/validation/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_sample_evidence_widening_slice_c_contract_schema_valid",
+      "description": "The sample-evidence widening slice-C contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_slice_c_plan_sync_ok",
+      "description": "The sample-evidence widening slice-C plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_sample_evidence_widening_slice_c_hostile_audit_ok",
+      "description": "The sample-evidence widening slice-C hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_sample_evidence_widening_slice_c_paired_state_counterfactual_witness_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

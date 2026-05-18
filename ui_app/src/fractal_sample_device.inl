@@ -9,6 +9,9 @@
     float pAbs = 0.0f;
     bool converged = false;
     bool escaped = false;
+    TerminationKind terminationKind = TerminationKind::none;
+    bool hasFarFieldDelta = false;
+    float farFieldDelta = 0.0f;
 
     Cx z{0.0f, 0.0f};
     Cx cConst{0.0f, 0.0f};
@@ -62,6 +65,666 @@
             }
             converged = (pAbs < eps);
         }
+    } else if (IsProjectionAndFlowCarrier(ft)) {
+        const bool explainoProjectionAndFlow = ft == FractalType::explaino_projection_and_flow;
+        const int projectionRootCount =
+            params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+        const int projectionPressureBandCount = 4;
+        const int projectionClassCount = projectionRootCount * projectionPressureBandCount + 1;
+        const double projectionTargetRadius =
+            isfinite(params.projection_and_flow_target_radius)
+                ? fmax(1.0e-12, static_cast<double>(params.projection_and_flow_target_radius))
+                : 1.0;
+        const double projectionPressureThreshold =
+            isfinite(params.projection_and_flow_pressure_threshold)
+                ? fmax(0.0, static_cast<double>(params.projection_and_flow_pressure_threshold))
+                : 0.0;
+        float flowCoeffs[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) {
+            flowCoeffs[k] = params.poly_coeffs[k];
+        }
+        double peakProjectionPressure = 0.0;
+        double lastProjectionPressure = 0.0;
+        bool sawProjectionPressure = false;
+        Cxd lastProjectedD{0.0, 0.0};
+        Cx lastProjectedF{0.0f, 0.0f};
+        bool hasProjectedPoint = false;
+        int rootIndex = -1;
+        terminationKind = TerminationKind::max_iterations;
+        const float explainoPhase = view.explaino_phase;
+        const float explainoWarpStrength = params.explaino_warp_strength;
+        const float explainoDamping = isfinite(params.explaino_damping) ? fmaxf(0.0f, params.explaino_damping) : 1.0f;
+        const double explainoSeed = explainoProjectionAndFlow
+            ? LogisticAreaUToSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
+            : 0.0;
+
+        if (useFP64) {
+            Cxd zd = explainoProjectionAndFlow
+                ? explaino_warp_start_d(coordD, explainoSeed, explainoPhase, explainoWarpStrength)
+                : coordD;
+            if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                zd = {0.0, 0.0};
+                terminationKind = TerminationKind::nonfinite;
+            } else {
+                for (; it < maxIter; ++it) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(flowCoeffs, zd, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(zd, projectionRootCount);
+                        break;
+                    }
+                    const double dAbs2 = cxd_abs2(dP);
+                    if (dAbs2 < 1.0e-30) {
+                        break;
+                    }
+                    const Cxd step = cxd_div(P, dP);
+                    double damp = 1.0;
+                    if (explainoProjectionAndFlow) {
+                        damp = static_cast<double>(explainoDamping) /
+                            (1.0 + sqrt(fmax(0.0, cxd_abs2(step))));
+                    }
+                    const Cxd freeZ = cxd_sub(zd, cxd_scale(step, damp));
+                    if (!isfinite(freeZ.x) || !isfinite(freeZ.y)) {
+                        zd = {0.0, 0.0};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const Cxd freeP = poly_eval_real_coeffs_deg4_value_d(flowCoeffs, freeZ);
+                    const double freeResidual = cxd_abs(freeP);
+                    if (freeResidual < epsD) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(freeZ, projectionRootCount);
+                        zd = freeZ;
+                        break;
+                    }
+                    const double freeMag2 = cxd_abs2(freeZ);
+                    if (freeMag2 < 1.0e-30) {
+                        zd = {0.0, 0.0};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const double freeMag = sqrt(freeMag2);
+                    const double projectionScale = projectionTargetRadius / freeMag;
+                    const Cxd projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
+                    const double projectionPressure = fabs(freeMag - projectionTargetRadius);
+                    peakProjectionPressure = fmax(peakProjectionPressure, projectionPressure);
+                    lastProjectionPressure = projectionPressure;
+                    sawProjectionPressure = true;
+                    lastProjectedD = projected;
+                    hasProjectedPoint = true;
+                    zd = projected;
+                }
+            }
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = explainoProjectionAndFlow
+                ? explaino_warp_start(coord, explainoSeed, explainoPhase, explainoWarpStrength)
+                : coord;
+            if (!isfinite(z.x) || !isfinite(z.y)) {
+                z = {0.0f, 0.0f};
+                terminationKind = TerminationKind::nonfinite;
+            } else {
+                for (; it < maxIter; ++it) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(flowCoeffs, z, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(z, projectionRootCount);
+                        break;
+                    }
+                    const float dAbs2 = cx_abs2(dP);
+                    if (dAbs2 < 1.0e-20f) {
+                        break;
+                    }
+                    const Cx step = cx_div(P, dP);
+                    float damp = 1.0f;
+                    if (explainoProjectionAndFlow) {
+                        damp = explainoDamping / (1.0f + sqrtf(fmaxf(0.0f, cx_abs2(step))));
+                    }
+                    const Cx freeZ = cx_sub(z, cx_scale(step, damp));
+                    if (!isfinite(freeZ.x) || !isfinite(freeZ.y)) {
+                        z = {0.0f, 0.0f};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const Cx freeP = poly_eval_real_coeffs_deg4_value(flowCoeffs, freeZ);
+                    const float freeResidual = cx_abs(freeP);
+                    if (freeResidual < eps) {
+                        converged = true;
+                        terminationKind = TerminationKind::root_converged;
+                        rootIndex = NearestRootIndexUnitRoots(freeZ, projectionRootCount);
+                        z = freeZ;
+                        break;
+                    }
+                    const float freeMag2 = cx_abs2(freeZ);
+                    if (freeMag2 < 1.0e-20f) {
+                        z = {0.0f, 0.0f};
+                        terminationKind = TerminationKind::nonfinite;
+                        break;
+                    }
+                    const float freeMag = sqrtf(freeMag2);
+                    const float projectionScale = static_cast<float>(projectionTargetRadius) / freeMag;
+                    const Cx projected{freeZ.x * projectionScale, freeZ.y * projectionScale};
+                    const double projectionPressure =
+                        static_cast<double>(fabsf(freeMag - static_cast<float>(projectionTargetRadius)));
+                    peakProjectionPressure = fmax(peakProjectionPressure, projectionPressure);
+                    lastProjectionPressure = projectionPressure;
+                    sawProjectionPressure = true;
+                    lastProjectedF = projected;
+                    hasProjectedPoint = true;
+                    z = projected;
+                }
+            }
+        }
+
+        if (!converged && hasProjectedPoint) {
+            rootIndex = useFP64
+                ? NearestRootIndexUnitRoots(lastProjectedD, projectionRootCount)
+                : NearestRootIndexUnitRoots(lastProjectedF, projectionRootCount);
+        }
+
+        const double transientProjectionPressureExcess =
+            sawProjectionPressure ? fmax(0.0, peakProjectionPressure - lastProjectionPressure) : 0.0;
+        int projectionClass = projectionClassCount - 1;
+        if (rootIndex >= 0 && rootIndex < projectionRootCount) {
+            int pressureBand = 0;
+            if (projectionPressureThreshold <= 0.0) {
+                pressureBand = transientProjectionPressureExcess > 0.0 ? (projectionPressureBandCount - 1) : 0;
+            } else {
+                const double normalizedTransientPressure =
+                    transientProjectionPressureExcess / projectionPressureThreshold;
+                if (normalizedTransientPressure >= 1.0) {
+                    pressureBand = 3;
+                } else if (normalizedTransientPressure >= 0.5) {
+                    pressureBand = 2;
+                } else if (normalizedTransientPressure >= 0.25) {
+                    pressureBand = 1;
+                }
+            }
+            projectionClass = rootIndex * projectionPressureBandCount + pressureBand;
+        }
+        // Encode the synthetic class root in the inverse order expected by
+        // NearestRootIndexUnitRoots(...) so the public class id round-trips.
+        const int projectionClassRoot =
+            (projectionClass - ((projectionClassCount + 1) / 2) + projectionClassCount) % projectionClassCount;
+        z = unit_root_k(projectionClassRoot, projectionClassCount);
+        pAbs = static_cast<float>(transientProjectionPressureExcess);
+        escaped = false;
+    } else if (ft == FractalType::counterfactual_pair) {
+        float pairCoeffs[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) {
+            pairCoeffs[k] = params.poly_coeffs[k];
+        }
+        const int pairRootCount = ResolvePolynomialRootCount(params.poly_kind);
+        const double zoomScale = fmax(1.0e-300, exp2(view.log2_zoom));
+        const double rawPairOffsetX = isfinite(params.counterfactual_pair_offset_x) ? static_cast<double>(params.counterfactual_pair_offset_x) : 0.0;
+        const double rawPairOffsetY = isfinite(params.counterfactual_pair_offset_y) ? static_cast<double>(params.counterfactual_pair_offset_y) : 0.0;
+        const double pairOffsetScale = params.counterfactual_pair_frame == CounterfactualPairFrame::view_relative ? (2.0 / zoomScale) : 1.0;
+        const double pairOffsetX = rawPairOffsetX * pairOffsetScale;
+        const double pairOffsetY = rawPairOffsetY * pairOffsetScale;
+        const double initialGap = sqrt(pairOffsetX * pairOffsetX + pairOffsetY * pairOffsetY);
+        const double reconvergenceRatio = isfinite(params.counterfactual_pair_reconvergence_ratio)
+            ? fmax(0.0, static_cast<double>(params.counterfactual_pair_reconvergence_ratio))
+            : 0.0;
+        const double sameRootDriftThreshold = initialGap * reconvergenceRatio;
+
+        int baselineIterations = maxIter;
+        int partnerIterations = maxIter;
+        bool baselineConverged = false;
+        bool partnerConverged = false;
+        int baselineRoot = -1;
+        int partnerRoot = -1;
+        TerminationKind baselineTermination = TerminationKind::max_iterations;
+        TerminationKind partnerTermination = TerminationKind::max_iterations;
+        double meanGap = initialGap;
+        int pairClass = 3;
+
+        if (useFP64) {
+            Cxd baselineZ = coordD;
+            Cxd partnerZ = {coordD.x + pairOffsetX, coordD.y + pairOffsetY};
+            bool baselineDone = false;
+            bool partnerDone = false;
+            double gapSum = 0.0;
+            int gapSamples = 0;
+
+            for (int step = 0; step < maxIter; ++step) {
+                if (!baselineDone) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(pairCoeffs, baselineZ, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        baselineDone = true;
+                        baselineConverged = true;
+                        baselineIterations = step;
+                        baselineTermination = TerminationKind::root_converged;
+                        baselineRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(baselineZ, pairRootCount) : -1;
+                    } else {
+                        const double dAbs2 = cxd_abs2(dP);
+                        if (dAbs2 < 1.0e-30) {
+                            baselineDone = true;
+                            baselineIterations = step;
+                            baselineTermination = TerminationKind::max_iterations;
+                        } else {
+                            baselineZ = cxd_sub(baselineZ, cxd_div(P, dP));
+                            if (!isfinite(baselineZ.x) || !isfinite(baselineZ.y)) {
+                                baselineZ = {0.0, 0.0};
+                                baselineDone = true;
+                                baselineIterations = step + 1;
+                                baselineTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+                if (!partnerDone) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(pairCoeffs, partnerZ, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        partnerDone = true;
+                        partnerConverged = true;
+                        partnerIterations = step;
+                        partnerTermination = TerminationKind::root_converged;
+                        partnerRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(partnerZ, pairRootCount) : -1;
+                    } else {
+                        const double dAbs2 = cxd_abs2(dP);
+                        if (dAbs2 < 1.0e-30) {
+                            partnerDone = true;
+                            partnerIterations = step;
+                            partnerTermination = TerminationKind::max_iterations;
+                        } else {
+                            partnerZ = cxd_sub(partnerZ, cxd_div(P, dP));
+                            if (!isfinite(partnerZ.x) || !isfinite(partnerZ.y)) {
+                                partnerZ = {0.0, 0.0};
+                                partnerDone = true;
+                                partnerIterations = step + 1;
+                                partnerTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+
+                const double dx = baselineZ.x - partnerZ.x;
+                const double dy = baselineZ.y - partnerZ.y;
+                gapSum += sqrt(dx * dx + dy * dy);
+                ++gapSamples;
+
+                if (baselineDone && partnerDone) {
+                    break;
+                }
+            }
+
+            if (!baselineDone) {
+                baselineIterations = maxIter;
+                baselineTermination = TerminationKind::max_iterations;
+            }
+            if (!partnerDone) {
+                partnerIterations = maxIter;
+                partnerTermination = TerminationKind::max_iterations;
+            }
+
+            meanGap = gapSamples > 0 ? (gapSum / static_cast<double>(gapSamples)) : initialGap;
+            if (baselineConverged && partnerConverged && pairRootCount > 0) {
+                if (baselineRoot != partnerRoot) {
+                    pairClass = 2;
+                } else {
+                    pairClass = meanGap <= sameRootDriftThreshold ? 0 : 1;
+                }
+            }
+        } else {
+            Cx baselineZ = coord;
+            Cx partnerZ{coord.x + static_cast<float>(pairOffsetX), coord.y + static_cast<float>(pairOffsetY)};
+            bool baselineDone = false;
+            bool partnerDone = false;
+            float gapSum = 0.0f;
+            int gapSamples = 0;
+
+            for (int step = 0; step < maxIter; ++step) {
+                if (!baselineDone) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(pairCoeffs, baselineZ, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        baselineDone = true;
+                        baselineConverged = true;
+                        baselineIterations = step;
+                        baselineTermination = TerminationKind::root_converged;
+                        baselineRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(baselineZ, pairRootCount) : -1;
+                    } else {
+                        const float dAbs2 = cx_abs2(dP);
+                        if (dAbs2 < 1.0e-20f) {
+                            baselineDone = true;
+                            baselineIterations = step;
+                            baselineTermination = TerminationKind::max_iterations;
+                        } else {
+                            baselineZ = cx_sub(baselineZ, cx_div(P, dP));
+                            if (!isfinite(baselineZ.x) || !isfinite(baselineZ.y)) {
+                                baselineZ = {0.0f, 0.0f};
+                                baselineDone = true;
+                                baselineIterations = step + 1;
+                                baselineTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+                if (!partnerDone) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(pairCoeffs, partnerZ, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        partnerDone = true;
+                        partnerConverged = true;
+                        partnerIterations = step;
+                        partnerTermination = TerminationKind::root_converged;
+                        partnerRoot = pairRootCount > 0 ? NearestRootIndexUnitRoots(partnerZ, pairRootCount) : -1;
+                    } else {
+                        const float dAbs2 = cx_abs2(dP);
+                        if (dAbs2 < 1.0e-20f) {
+                            partnerDone = true;
+                            partnerIterations = step;
+                            partnerTermination = TerminationKind::max_iterations;
+                        } else {
+                            partnerZ = cx_sub(partnerZ, cx_div(P, dP));
+                            if (!isfinite(partnerZ.x) || !isfinite(partnerZ.y)) {
+                                partnerZ = {0.0f, 0.0f};
+                                partnerDone = true;
+                                partnerIterations = step + 1;
+                                partnerTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+
+                const float dx = baselineZ.x - partnerZ.x;
+                const float dy = baselineZ.y - partnerZ.y;
+                gapSum += sqrtf(dx * dx + dy * dy);
+                ++gapSamples;
+
+                if (baselineDone && partnerDone) {
+                    break;
+                }
+            }
+
+            if (!baselineDone) {
+                baselineIterations = maxIter;
+                baselineTermination = TerminationKind::max_iterations;
+            }
+            if (!partnerDone) {
+                partnerIterations = maxIter;
+                partnerTermination = TerminationKind::max_iterations;
+            }
+
+            meanGap = gapSamples > 0 ? (static_cast<double>(gapSum) / static_cast<double>(gapSamples)) : initialGap;
+            if (baselineConverged && partnerConverged && pairRootCount > 0) {
+                if (baselineRoot != partnerRoot) {
+                    pairClass = 2;
+                } else {
+                    pairClass = meanGap <= sameRootDriftThreshold ? 0 : 1;
+                }
+            }
+        }
+
+        const Cx classRoot = unit_root_k((pairClass + 2) % 4, 4);
+        z = classRoot;
+        pAbs = static_cast<float>(meanGap);
+        it = max(baselineIterations, partnerIterations);
+        converged = pairClass != 3;
+        escaped = false;
+        terminationKind = converged ? TerminationKind::root_converged
+            : (baselineTermination != TerminationKind::root_converged ? baselineTermination : partnerTermination);
+    } else if (ft == FractalType::explaino_counterfactual_pair) {
+        float pairCoeffs[5];
+        #pragma unroll
+        for (int k = 0; k < 5; ++k) {
+            pairCoeffs[k] = params.poly_coeffs[k];
+        }
+        float phase = view.explaino_phase;
+        float strength = params.explaino_warp_strength;
+        float userDamp = params.explaino_damping;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+        const bool useExplicitRoots = params.explaino_root_count > 0;
+        const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
+        const int pairRootCount = useExplicitRoots ? params.explaino_root_count : polynomialRootCount;
+        const double zoomScale = fmax(1.0e-300, exp2(view.log2_zoom));
+        const double rawPairOffsetX = isfinite(params.counterfactual_pair_offset_x) ? static_cast<double>(params.counterfactual_pair_offset_x) : 0.0;
+        const double rawPairOffsetY = isfinite(params.counterfactual_pair_offset_y) ? static_cast<double>(params.counterfactual_pair_offset_y) : 0.0;
+        const double pairOffsetScale = params.counterfactual_pair_frame == CounterfactualPairFrame::view_relative ? (2.0 / zoomScale) : 1.0;
+        const double pairOffsetX = rawPairOffsetX * pairOffsetScale;
+        const double pairOffsetY = rawPairOffsetY * pairOffsetScale;
+        const double initialGap = sqrt(pairOffsetX * pairOffsetX + pairOffsetY * pairOffsetY);
+        const double reconvergenceRatio = isfinite(params.counterfactual_pair_reconvergence_ratio)
+            ? fmax(0.0, static_cast<double>(params.counterfactual_pair_reconvergence_ratio))
+            : 0.0;
+        const double sameRootDriftThreshold = initialGap * reconvergenceRatio;
+
+        int baselineIterations = maxIter;
+        int partnerIterations = maxIter;
+        bool baselineConverged = false;
+        bool partnerConverged = false;
+        int baselineRoot = -1;
+        int partnerRoot = -1;
+        TerminationKind baselineTermination = TerminationKind::max_iterations;
+        TerminationKind partnerTermination = TerminationKind::max_iterations;
+        double meanGap = initialGap;
+        int pairClass = 3;
+
+        if (useFP64) {
+            const double dampD = (double)userDamp;
+            Cxd baselineZ = explaino_warp_start_d(coordD, seed, phase, strength);
+            Cxd partnerZ = {baselineZ.x + pairOffsetX, baselineZ.y + pairOffsetY};
+            bool baselineDone = false;
+            bool partnerDone = false;
+            double gapSum = 0.0;
+            int gapSamples = 0;
+
+            for (int step = 0; step < maxIter; ++step) {
+                if (!baselineDone) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(pairCoeffs, baselineZ, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        baselineDone = true;
+                        baselineConverged = true;
+                        baselineIterations = step;
+                        baselineTermination = TerminationKind::root_converged;
+                        baselineRoot = pairRootCount > 0
+                            ? (useExplicitRoots
+                                ? NearestRootIndexList(baselineZ, params.explaino_roots, params.explaino_root_count)
+                                : NearestRootIndexUnitRoots(baselineZ, pairRootCount))
+                            : -1;
+                    } else {
+                        const double dAbs2 = cxd_abs2(dP);
+                        if (dAbs2 < 1.0e-30) {
+                            baselineDone = true;
+                            baselineIterations = step;
+                            baselineTermination = TerminationKind::max_iterations;
+                        } else {
+                            baselineZ = cxd_sub(baselineZ, cxd_scale(cxd_div(P, dP), dampD));
+                            if (!isfinite(baselineZ.x) || !isfinite(baselineZ.y)) {
+                                baselineZ = {0.0, 0.0};
+                                baselineDone = true;
+                                baselineIterations = step + 1;
+                                baselineTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+                if (!partnerDone) {
+                    Cxd P, dP;
+                    poly_eval_real_coeffs_deg4_d(pairCoeffs, partnerZ, &P, &dP);
+                    const double residual = cxd_abs(P);
+                    if (residual < epsD) {
+                        partnerDone = true;
+                        partnerConverged = true;
+                        partnerIterations = step;
+                        partnerTermination = TerminationKind::root_converged;
+                        partnerRoot = pairRootCount > 0
+                            ? (useExplicitRoots
+                                ? NearestRootIndexList(partnerZ, params.explaino_roots, params.explaino_root_count)
+                                : NearestRootIndexUnitRoots(partnerZ, pairRootCount))
+                            : -1;
+                    } else {
+                        const double dAbs2 = cxd_abs2(dP);
+                        if (dAbs2 < 1.0e-30) {
+                            partnerDone = true;
+                            partnerIterations = step;
+                            partnerTermination = TerminationKind::max_iterations;
+                        } else {
+                            partnerZ = cxd_sub(partnerZ, cxd_scale(cxd_div(P, dP), dampD));
+                            if (!isfinite(partnerZ.x) || !isfinite(partnerZ.y)) {
+                                partnerZ = {0.0, 0.0};
+                                partnerDone = true;
+                                partnerIterations = step + 1;
+                                partnerTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+
+                const double dx = baselineZ.x - partnerZ.x;
+                const double dy = baselineZ.y - partnerZ.y;
+                gapSum += sqrt(dx * dx + dy * dy);
+                ++gapSamples;
+
+                if (baselineDone && partnerDone) {
+                    break;
+                }
+            }
+
+            if (!baselineDone) {
+                baselineIterations = maxIter;
+                baselineTermination = TerminationKind::max_iterations;
+            }
+            if (!partnerDone) {
+                partnerIterations = maxIter;
+                partnerTermination = TerminationKind::max_iterations;
+            }
+
+            meanGap = gapSamples > 0 ? (gapSum / static_cast<double>(gapSamples)) : initialGap;
+            if (baselineConverged && partnerConverged && pairRootCount > 0) {
+                if (baselineRoot != partnerRoot) {
+                    pairClass = 2;
+                } else {
+                    pairClass = meanGap <= sameRootDriftThreshold ? 0 : 1;
+                }
+            }
+        } else {
+            Cx baselineZ = explaino_warp_start(coord, seed, phase, strength);
+            Cx partnerZ{baselineZ.x + static_cast<float>(pairOffsetX), baselineZ.y + static_cast<float>(pairOffsetY)};
+            bool baselineDone = false;
+            bool partnerDone = false;
+            float gapSum = 0.0f;
+            int gapSamples = 0;
+
+            for (int step = 0; step < maxIter; ++step) {
+                if (!baselineDone) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(pairCoeffs, baselineZ, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        baselineDone = true;
+                        baselineConverged = true;
+                        baselineIterations = step;
+                        baselineTermination = TerminationKind::root_converged;
+                        baselineRoot = pairRootCount > 0
+                            ? (useExplicitRoots
+                                ? NearestRootIndexList(baselineZ, params.explaino_roots, params.explaino_root_count)
+                                : NearestRootIndexUnitRoots(baselineZ, pairRootCount))
+                            : -1;
+                    } else {
+                        const float dAbs2 = cx_abs2(dP);
+                        if (dAbs2 < 1.0e-20f) {
+                            baselineDone = true;
+                            baselineIterations = step;
+                            baselineTermination = TerminationKind::max_iterations;
+                        } else {
+                            baselineZ = cx_sub(baselineZ, cx_scale(cx_div(P, dP), userDamp));
+                            if (!isfinite(baselineZ.x) || !isfinite(baselineZ.y)) {
+                                baselineZ = {0.0f, 0.0f};
+                                baselineDone = true;
+                                baselineIterations = step + 1;
+                                baselineTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+                if (!partnerDone) {
+                    Cx P, dP;
+                    poly_eval_real_coeffs_deg4(pairCoeffs, partnerZ, &P, &dP);
+                    const float residual = cx_abs(P);
+                    if (residual < eps) {
+                        partnerDone = true;
+                        partnerConverged = true;
+                        partnerIterations = step;
+                        partnerTermination = TerminationKind::root_converged;
+                        partnerRoot = pairRootCount > 0
+                            ? (useExplicitRoots
+                                ? NearestRootIndexList(partnerZ, params.explaino_roots, params.explaino_root_count)
+                                : NearestRootIndexUnitRoots(partnerZ, pairRootCount))
+                            : -1;
+                    } else {
+                        const float dAbs2 = cx_abs2(dP);
+                        if (dAbs2 < 1.0e-20f) {
+                            partnerDone = true;
+                            partnerIterations = step;
+                            partnerTermination = TerminationKind::max_iterations;
+                        } else {
+                            partnerZ = cx_sub(partnerZ, cx_scale(cx_div(P, dP), userDamp));
+                            if (!isfinite(partnerZ.x) || !isfinite(partnerZ.y)) {
+                                partnerZ = {0.0f, 0.0f};
+                                partnerDone = true;
+                                partnerIterations = step + 1;
+                                partnerTermination = TerminationKind::nonfinite;
+                            }
+                        }
+                    }
+                }
+
+                const float dx = baselineZ.x - partnerZ.x;
+                const float dy = baselineZ.y - partnerZ.y;
+                gapSum += sqrtf(dx * dx + dy * dy);
+                ++gapSamples;
+
+                if (baselineDone && partnerDone) {
+                    break;
+                }
+            }
+
+            if (!baselineDone) {
+                baselineIterations = maxIter;
+                baselineTermination = TerminationKind::max_iterations;
+            }
+            if (!partnerDone) {
+                partnerIterations = maxIter;
+                partnerTermination = TerminationKind::max_iterations;
+            }
+
+            meanGap = gapSamples > 0 ? (static_cast<double>(gapSum) / static_cast<double>(gapSamples)) : initialGap;
+            if (baselineConverged && partnerConverged && pairRootCount > 0) {
+                if (baselineRoot != partnerRoot) {
+                    pairClass = 2;
+                } else {
+                    pairClass = meanGap <= sameRootDriftThreshold ? 0 : 1;
+                }
+            }
+        }
+
+        const Cx classRoot = unit_root_k((pairClass + 2) % 4, 4);
+        z = classRoot;
+        pAbs = static_cast<float>(meanGap);
+        it = max(baselineIterations, partnerIterations);
+        converged = pairClass != 3;
+        escaped = false;
+        terminationKind = converged ? TerminationKind::root_converged
+            : (baselineTermination != TerminationKind::root_converged ? baselineTermination : partnerTermination);
     } else if (ft == FractalType::explaino || ft == FractalType::explaino_dual || ft == FractalType::explaino_mult) {
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
@@ -2436,4 +3099,7 @@
     result.residual = pAbs;
     result.converged = converged;
     result.escaped = escaped;
+    result.termination_kind = terminationKind;
+    result.has_far_field_delta = hasFarFieldDelta;
+    result.far_field_delta = farFieldDelta;
     return result;

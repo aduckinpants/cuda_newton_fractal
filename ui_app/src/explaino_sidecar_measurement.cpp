@@ -17,6 +17,7 @@ constexpr double kPi = 3.14159265358979323846;
 constexpr double kMeasurementSweepFraction = 0.01;
 constexpr double kMinFloatSweep = 1.0e-6;
 constexpr double kGainEpsilon = 1.0e-9;
+constexpr double kSampleCoordTolerance = 1.0e-12;
 
 struct MeasurementState {
     ViewState view{};
@@ -263,6 +264,101 @@ SidecarMeasurementAggregate SummarizeResults(const std::vector<FractalSampleResu
     return aggregate;
 }
 
+SidecarMeasurementAggregate SummarizeEvidence(const std::vector<FractalSampleEvidence>& evidence) {
+    SidecarMeasurementAggregate aggregate;
+    if (evidence.empty()) return aggregate;
+
+    for (const FractalSampleEvidence& sample : evidence) {
+        const FractalSampleResult& result = sample.legacy_result;
+        aggregate.mean_iterations += static_cast<double>(result.iterations);
+        aggregate.mean_residual += static_cast<double>(result.residual);
+        aggregate.converged_fraction += result.converged ? 1.0 : 0.0;
+        aggregate.escaped_fraction += result.escaped ? 1.0 : 0.0;
+    }
+
+    const double denom = static_cast<double>(evidence.size());
+    aggregate.mean_iterations /= denom;
+    aggregate.mean_residual /= denom;
+    aggregate.converged_fraction /= denom;
+    aggregate.escaped_fraction /= denom;
+    return aggregate;
+}
+
+bool SampleCoordMatchesRequested(const Double2& requested, const Double2& sampled) {
+    return std::fabs(requested.x - sampled.x) <= kSampleCoordTolerance &&
+        std::fabs(requested.y - sampled.y) <= kSampleCoordTolerance;
+}
+
+bool ValidateEvidenceMatchesRequestedCoords(const std::vector<Double2>& coords,
+    const std::vector<FractalSampleEvidence>& evidence,
+    std::string* outError) {
+    if (evidence.size() != coords.size()) {
+        if (outError) {
+            *outError = "Sidecar widened sample host returned " + std::to_string(evidence.size()) +
+                " evidence rows for " + std::to_string(coords.size()) + " coords";
+        }
+        return false;
+    }
+
+    for (std::size_t index = 0; index < coords.size(); ++index) {
+        if (!SampleCoordMatchesRequested(coords[index], evidence[index].sample_coord)) {
+            if (outError) {
+                *outError = "Sidecar widened sample_coord mismatch at index " + std::to_string(index);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+bool BuildCounterfactualWitness(const std::vector<FractalSampleEvidence>& baseline,
+    const std::vector<FractalSampleEvidence>& variant,
+    SidecarCounterfactualWitness* outWitness,
+    std::string* outError) {
+    if (!outWitness) {
+        if (outError) *outError = "BuildCounterfactualWitness requires outWitness";
+        return false;
+    }
+    if (baseline.size() != variant.size()) {
+        if (outError) {
+            *outError = "Counterfactual witness requires paired evidence counts; got " +
+                std::to_string(baseline.size()) + " baseline and " + std::to_string(variant.size()) + " variant rows";
+        }
+        return false;
+    }
+
+    SidecarCounterfactualWitness witness;
+    witness.coordinate_count = static_cast<int>(baseline.size());
+    if (baseline.empty()) {
+        *outWitness = witness;
+        return true;
+    }
+
+    for (std::size_t index = 0; index < baseline.size(); ++index) {
+        const Double2 baseCoord = baseline[index].sample_coord;
+        const Double2 variantCoord = variant[index].sample_coord;
+        const double dx = variantCoord.x - baseCoord.x;
+        const double dy = variantCoord.y - baseCoord.y;
+        witness.mean_sample_coord_distance += std::sqrt(dx * dx + dy * dy);
+
+        const FractalSampleResult& baseResult = baseline[index].legacy_result;
+        const FractalSampleResult& variantResult = variant[index].legacy_result;
+        witness.mean_abs_iteration_delta += std::fabs(static_cast<double>(variantResult.iterations - baseResult.iterations));
+        witness.mean_abs_residual_delta += std::fabs(static_cast<double>(variantResult.residual) - static_cast<double>(baseResult.residual));
+        witness.converged_flip_fraction += (baseResult.converged != variantResult.converged) ? 1.0 : 0.0;
+        witness.escaped_flip_fraction += (baseResult.escaped != variantResult.escaped) ? 1.0 : 0.0;
+    }
+
+    const double denom = static_cast<double>(baseline.size());
+    witness.mean_sample_coord_distance /= denom;
+    witness.mean_abs_iteration_delta /= denom;
+    witness.mean_abs_residual_delta /= denom;
+    witness.converged_flip_fraction /= denom;
+    witness.escaped_flip_fraction /= denom;
+    *outWitness = witness;
+    return true;
+}
+
 double ComputeAggregateDelta(const SidecarMeasurementAggregate& baseline,
     const SidecarMeasurementAggregate& variant) {
     double score = 0.0;
@@ -327,6 +423,35 @@ bool SampleAndSummarize(const SidecarMeasurementHost& host,
     return true;
 }
 
+bool SampleAndSummarizeEvidence(const SidecarMeasurementHost& host,
+    const std::vector<Double2>& coords,
+    const MeasurementState& state,
+    SidecarMeasurementAggregate* outAggregate,
+    std::vector<FractalSampleEvidence>* outEvidence,
+    std::string* outError) {
+    if (!outAggregate) {
+        if (outError) *outError = "SampleAndSummarizeEvidence requires outAggregate";
+        return false;
+    }
+    if (!outEvidence) {
+        if (outError) *outError = "SampleAndSummarizeEvidence requires outEvidence";
+        return false;
+    }
+    if (!ValidateFractalRuntimeState(state.view, state.params, outError)) return false;
+
+    std::vector<FractalSampleEvidence> evidence;
+    if (!host.SampleEvidence(coords, state.view, state.params, state.render, &evidence, outError)) {
+        return false;
+    }
+    if (!ValidateEvidenceMatchesRequestedCoords(coords, evidence, outError)) {
+        return false;
+    }
+
+    *outAggregate = SummarizeEvidence(evidence);
+    *outEvidence = std::move(evidence);
+    return true;
+}
+
 bool MeasurementRowOrder(const SidecarMeasurementRow& left, const SidecarMeasurementRow& right) {
     if (left.information_gain_estimate != right.information_gain_estimate) {
         return left.information_gain_estimate > right.information_gain_estimate;
@@ -361,10 +486,17 @@ bool BuildSidecarMeasurementBatch(
     EnsureViewHpInitialized(&baselineState.view);
     RefreshDerivedState(&baselineState);
 
+    const bool useWidenedEvidence = host.SupportsWidenedEvidence();
     const BindingContext baselineCtx = BindMeasurementState(&baselineState);
     const std::vector<Double2> baselineCoords = BuildMeasurementCoordinates(baselineState.view);
     SidecarMeasurementAggregate baselineAggregate;
-    if (!SampleAndSummarize(host, baselineCoords, baselineState, &baselineAggregate, outError)) {
+    std::vector<FractalSampleEvidence> baselineEvidence;
+    if (useWidenedEvidence) {
+        if (!SampleAndSummarizeEvidence(host, baselineCoords, baselineState, &baselineAggregate, &baselineEvidence, outError)) {
+            *outBatch = {};
+            return false;
+        }
+    } else if (!SampleAndSummarize(host, baselineCoords, baselineState, &baselineAggregate, outError)) {
         *outBatch = {};
         return false;
     }
@@ -401,10 +533,20 @@ bool BuildSidecarMeasurementBatch(
             return false;
         }
 
+        const std::vector<Double2> minusCoords = BuildMeasurementCoordinates(minusState.view);
+        const std::vector<Double2> plusCoords = BuildMeasurementCoordinates(plusState.view);
         SidecarMeasurementAggregate minusAggregate;
         SidecarMeasurementAggregate plusAggregate;
-        if (!SampleAndSummarize(host, BuildMeasurementCoordinates(minusState.view), minusState, &minusAggregate, outError) ||
-            !SampleAndSummarize(host, BuildMeasurementCoordinates(plusState.view), plusState, &plusAggregate, outError)) {
+        std::vector<FractalSampleEvidence> minusEvidence;
+        std::vector<FractalSampleEvidence> plusEvidence;
+        if (useWidenedEvidence) {
+            if (!SampleAndSummarizeEvidence(host, minusCoords, minusState, &minusAggregate, &minusEvidence, outError) ||
+                !SampleAndSummarizeEvidence(host, plusCoords, plusState, &plusAggregate, &plusEvidence, outError)) {
+                *outBatch = {};
+                return false;
+            }
+        } else if (!SampleAndSummarize(host, minusCoords, minusState, &minusAggregate, outError) ||
+            !SampleAndSummarize(host, plusCoords, plusState, &plusAggregate, outError)) {
             *outBatch = {};
             return false;
         }
@@ -422,6 +564,13 @@ bool BuildSidecarMeasurementBatch(
         row.baseline = baselineAggregate;
         row.minus_variant = minusAggregate;
         row.plus_variant = plusAggregate;
+        if (useWidenedEvidence) {
+            if (!BuildCounterfactualWitness(baselineEvidence, minusEvidence, &row.minus_counterfactual, outError) ||
+                !BuildCounterfactualWitness(baselineEvidence, plusEvidence, &row.plus_counterfactual, outError)) {
+                *outBatch = {};
+                return false;
+            }
+        }
         row.information_gain_estimate = 0.5 * totalDelta;
         row.information_gradient = ComputeInformationGradient(minusDelta, plusDelta, requestedStep);
         row.information_curvature = ComputeInformationCurvature(minusDelta, plusDelta, requestedStep);

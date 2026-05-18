@@ -20,3 +20,16 @@ struct FractalSampleResult {
     bool has_far_field_delta{false};
     float far_field_delta{0.0f};
 };
+
+// Slice A widens the sample seam without replacing the shipped legacy result.
+// The richer payload keeps the sampled coordinate beside the legacy result so
+// later slices can add new consumers while current callers still project back
+// through FractalSampleResult unchanged.
+struct FractalSampleEvidence {
+    Double2 sample_coord{0.0, 0.0};
+    FractalSampleResult legacy_result{};
+};
+
+inline FractalSampleResult BuildLegacySampleResult(const FractalSampleEvidence& evidence) {
+    return evidence.legacy_result;
+}
