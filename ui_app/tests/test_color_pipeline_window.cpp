@@ -513,10 +513,21 @@ void TestSourcePalettePresetCheckboxesTogglePairedRows() {
             params.color_pipeline.palette == ColorPalette::joy,
         "TestSourcePalettePresetCheckboxesTogglePairedRows_RuntimeUsesRemainingPresetPair");
 
+    std::size_t remainingPairIndex = state.lanes[2].rows.size();
+    for (std::size_t index = 0; index < state.lanes[2].rows.size() && index < state.lanes[0].rows.size(); ++index) {
+        if (state.lanes[0].rows[index].enabled && state.lanes[2].rows[index].enabled) {
+            remainingPairIndex = index;
+            break;
+        }
+    }
     ClearColorPipelineValidationMessages(&state);
-    Check(SetColorPipelineRowEnabledFromUi(&state, 2, 0, false),
+    Check(remainingPairIndex < state.lanes[2].rows.size() &&
+            SetColorPipelineRowEnabledFromUi(&state, 2, remainingPairIndex, false),
         "TestSourcePalettePresetCheckboxesTogglePairedRows_LastPairDisableIsHandled");
-    Check(state.lanes[0].rows[0].enabled && state.lanes[2].rows[0].enabled && !state.validation_messages.empty(),
+    Check(remainingPairIndex < state.lanes[0].rows.size() &&
+            state.lanes[0].rows[remainingPairIndex].enabled &&
+            state.lanes[2].rows[remainingPairIndex].enabled &&
+            !state.validation_messages.empty(),
         "TestSourcePalettePresetCheckboxesTogglePairedRows_LastPairStaysEnabled");
 }
 

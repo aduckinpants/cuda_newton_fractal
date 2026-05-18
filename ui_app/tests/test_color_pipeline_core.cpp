@@ -545,6 +545,22 @@ void TestSelectionAndScheduleBridgeIds() {
 
     const char* sourceFunction = nullptr;
     const char* paletteFunction = nullptr;
+    const ColorGradingPreset smoothEscapeGradingRows[] = {
+        ColorGradingPreset::escape_default,
+        ColorGradingPreset::neutral_default,
+        ColorGradingPreset::tone_map_default,
+        ColorGradingPreset::glow_default,
+        ColorGradingPreset::balance_void_default,
+    };
+    for (ColorGradingPreset grading : smoothEscapeGradingRows) {
+        sourceFunction = nullptr;
+        paletteFunction = nullptr;
+        const ColorPipelineSelection smoothEscapePipeline = {ColorSignal::smooth_escape, ColorPalette::cyclic_escape, grading};
+        Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(smoothEscapePipeline, &sourceFunction, &paletteFunction) &&
+                std::string(sourceFunction ? sourceFunction : "") == "smooth_escape_ramp" &&
+                std::string(paletteFunction ? paletteFunction : "") == "heatmap",
+            "TestSelectionAndScheduleBridgeIds_ShippedSmoothEscapeGradingRowsBridge");
+    }
     const ColorPipelineSelection bandsPipeline = {ColorSignal::iteration_bands, ColorPalette::banded_escape, ColorGradingPreset::bands_default};
     Check(color_pipeline_core::TryBuildColorPipelineScheduleBridgeIds(bandsPipeline, &sourceFunction, &paletteFunction) &&
             std::string(sourceFunction ? sourceFunction : "") == "banded_signal" &&

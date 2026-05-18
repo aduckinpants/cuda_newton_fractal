@@ -38,6 +38,7 @@
 #include "explaino_sidecar_refresh.h"
 #include "explaino_sidecar_window.h"
 #include "explaino_seed_dynamics.h"
+#include "enum_id_utils.h"
 #include "param_anim_dynamics.h"
 #include "flashlight_probe.h"
 #include "fractal_derived_fields.h"
@@ -885,7 +886,7 @@ static UiActionFlags RenderControlsWindow(
         const SweepPlayerConfig& sweepConfig, SweepPlayerState& sweepState,
         bool& sweepPaused, bool& sweepSingleStep,
         std::vector<ViewerUiAutomationRect>* viewerUiAutomationRects,
-        const ColorPipelineWindowState& colorPipelineWindow,
+        ColorPipelineWindowState& colorPipelineWindow,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
     ImGui::Begin("Controls");
     if (!schemaWarning.empty()) {
@@ -901,6 +902,12 @@ static UiActionFlags RenderControlsWindow(
     bind.lens = &lens;
     bind.note_ui_automation_rect = viewerUiAutomationRects ? &NoteViewerUiAutomationRect : nullptr;
     bind.ui_automation_user_data = viewerUiAutomationRects;
+    if (colorPipelineWindow.ui_automation_set_pending) {
+        bind.ui_automation_set_control_id = &colorPipelineWindow.ui_automation_set_control_id;
+        bind.ui_automation_set_control_value = colorPipelineWindow.ui_automation_set_control_value;
+        bind.ui_automation_set_consumed = &colorPipelineWindow.ui_automation_set_consumed;
+        bind.ui_automation_set_error = &colorPipelineWindow.ui_automation_set_error;
+    }
     Float2 uiCenterBefore = view.center;
     float uiZoomBefore = view.zoom;
     UiActionFlags actions = RenderSchemaPanels(schema, bind, canLoadFits, loadFitsHint, colorPipelineWindow, dirty);
@@ -1304,11 +1311,28 @@ static void PresentFrame() {
     g_pSwapChain->Present(1, 0);
 }
 
+static std::string JsonEscapeAutomationReportString(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (char c : s) {
+        switch (c) {
+        case '\\': out += "\\\\"; break;
+        case '"': out += "\\\""; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        default: out += c; break;
+        }
+    }
+    return out;
+}
+
 static void WriteColorPipelineUiAutomationReport(
     const std::string& reportPath,
     HWND hwnd,
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
-    const ColorPipelineWindowState& colorPipelineWindow) {
+    const ColorPipelineWindowState& colorPipelineWindow,
+    const ViewState& view) {
     if (reportPath.empty() || !hwnd) {
         return;
     }
@@ -1335,12 +1359,26 @@ static void WriteColorPipelineUiAutomationReport(
     out << "  \"window_open\": " << (colorPipelineWindow.open ? "true" : "false") << ",\n";
     out << "  \"initialized\": " << (colorPipelineWindow.initialized ? "true" : "false") << ",\n";
     out << "  \"force_open_for_automation\": " << (colorPipelineWindow.force_open_for_automation ? "true" : "false") << ",\n";
+    const char* currentFractalTypeId = enum_id_utils::LookupEnumId(view.fractal_type, enum_id_utils::kFractalTypeIds);
+    out << "  \"current_fractal_type\": \"" << (currentFractalTypeId ? currentFractalTypeId : "") << "\",\n";
     if (colorPipelineWindow.ui_automation_click_control_id.empty()) {
         out << "  \"requested_click_control_id\": null,\n";
     } else {
         out << "  \"requested_click_control_id\": \"" << colorPipelineWindow.ui_automation_click_control_id << "\",\n";
     }
     out << "  \"click_consumed\": " << (colorPipelineWindow.ui_automation_click_consumed ? "true" : "false") << ",\n";
+    if (colorPipelineWindow.ui_automation_set_control_id.empty()) {
+        out << "  \"requested_set_control_id\": null,\n";
+    } else {
+        out << "  \"requested_set_control_id\": \"" << JsonEscapeAutomationReportString(colorPipelineWindow.ui_automation_set_control_id) << "\",\n";
+    }
+    out << "  \"requested_set_value\": " << std::setprecision(12) << colorPipelineWindow.ui_automation_set_control_value << ",\n";
+    out << "  \"set_value_consumed\": " << (colorPipelineWindow.ui_automation_set_consumed ? "true" : "false") << ",\n";
+    if (colorPipelineWindow.ui_automation_set_error.empty()) {
+        out << "  \"set_value_error\": null,\n";
+    } else {
+        out << "  \"set_value_error\": \"" << JsonEscapeAutomationReportString(colorPipelineWindow.ui_automation_set_error) << "\",\n";
+    }
     out << "  \"lane_rows\": [";
     bool firstLaneRow = true;
     for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
@@ -1434,10 +1472,12 @@ static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exe
 static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::string& exePath,
                                        const std::string& exeDir) {
     const bool exploreRecommend = cli.explore_recommend || cli.have_explore_recommend_json;
+    const bool describeExplainoAxisRegistry = cli.describe_explaino_axis_registry || cli.have_describe_explaino_axis_registry_json;
     const bool runtimeWalk = cli.have_runtime_walk_request_json;
     const bool runtimeWalkViewer = cli.have_runtime_walk_viewer_request_json || cli.have_runtime_walk_viewer_fits_path;
     if (cli.sample_session) {
         if (cli.any_sample_mode_arg || cli.describe_functions || cli.have_describe_functions_json ||
+            describeExplainoAxisRegistry ||
             exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer ||
             cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only) {
             std::fprintf(stderr, "--sample-session is mutually exclusive with other headless verbs\n");
@@ -1447,15 +1487,15 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     }
 
     if (cli.any_sample_mode_arg) {
-        if (exploreRecommend || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
-            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
+        if (exploreRecommend || describeExplainoAxisRegistry || cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+            std::fprintf(stderr, "sample mode is mutually exclusive with --explore-recommend, --describe-explaino-axis-registry, --flashlight-probe, runtime-walk headless, and runtime-walk viewer load verbs\n");
             return 1;
         }
         return RunSampleMode(BuildViewerCliSampleModeArgs(cli), exePath);
     }
 
     if (cli.describe_functions || cli.have_describe_functions_json) {
-        if (exploreRecommend ||
+        if (exploreRecommend || describeExplainoAxisRegistry ||
                 cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
                 cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
             std::fprintf(stderr, "--describe-functions is mutually exclusive with other headless verbs\n");
@@ -1464,6 +1504,17 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
         return RunDescribeFunctionsMode(cli.describe_functions,
             cli.have_describe_functions_json ? cli.describe_functions_json_path : std::string(),
             BuildViewerSchemaCandidates(exeDir));
+    }
+
+    if (describeExplainoAxisRegistry) {
+        if (exploreRecommend ||
+                cli.validate_ui_only || cli.capture_diagnostic_only || cli.capture_finding_only || cli.any_sample_mode_arg ||
+                cli.flashlight_probe || runtimeWalk || runtimeWalkViewer) {
+            std::fprintf(stderr, "--describe-explaino-axis-registry is mutually exclusive with other headless verbs\n");
+            return 1;
+        }
+        return RunDescribeExplainoAxisRegistryMode(cli.describe_explaino_axis_registry,
+            cli.have_describe_explaino_axis_registry_json ? cli.describe_explaino_axis_registry_json_path : std::string());
     }
 
     return -1;
@@ -1524,6 +1575,17 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         colorPipelineWindow.ui_automation_click_control_id = cli.ui_automation_click_control_id;
         colorPipelineWindow.ui_automation_click_pending = true;
         colorPipelineWindow.ui_automation_click_consumed = false;
+    }
+    if (cli.have_ui_automation_set_control_value) {
+        colorPipelineWindow.ui_automation_set_control_id = cli.ui_automation_set_control_id;
+        colorPipelineWindow.ui_automation_set_control_value = cli.ui_automation_set_control_value;
+        colorPipelineWindow.ui_automation_set_pending = true;
+        colorPipelineWindow.ui_automation_set_consumed = false;
+        colorPipelineWindow.ui_automation_set_error.clear();
+        if (cli.ui_automation_set_control_id.rfind("color_pipeline.", 0) == 0) {
+            colorPipelineWindow.open = true;
+            colorPipelineWindow.force_open_for_automation = true;
+        }
     }
     return 0;
 }
@@ -2479,7 +2541,7 @@ static void RunViewerFrame(
     }
     RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
     if (cli.have_ui_automation_report_json) {
-        WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, viewerUiAutomationRects, colorPipelineWindow);
+        WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, viewerUiAutomationRects, colorPipelineWindow, view);
     }
     if (!ProcessRuntimeWalkViewerImportPerFrame(
             hwnd,
@@ -2711,6 +2773,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             return 1;
         }
     }
+    if (runtimeWalkViewerSession.loaded) {
+        lastPolyKind = params.poly_kind;
+        lastFractalType = view.fractal_type;
+    }
+
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
 

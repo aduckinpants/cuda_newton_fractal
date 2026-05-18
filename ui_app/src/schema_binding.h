@@ -14,6 +14,10 @@ struct BindingContext {
     bool edited_camera_hp_authority = false;
     NoteUiAutomationRectFn note_ui_automation_rect = nullptr;
     void* ui_automation_user_data = nullptr;
+    const std::string* ui_automation_set_control_id = nullptr;
+    double ui_automation_set_control_value = 0.0;
+    bool* ui_automation_set_consumed = nullptr;
+    std::string* ui_automation_set_error = nullptr;
 
     std::string GetEnumId(const std::string& path) const;
     bool SetEnumId(const std::string& path, const std::string& id);

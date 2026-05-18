@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -20,6 +21,7 @@
 #include "explaino_exploration_advisor.h"
 #include "explaino_sidecar_measurement.h"
 #include "explaino_sidecar_window.h"
+#include "enum_id_utils.h"
 #include "fractal_derived_fields.h"
 #include "fractal_family_rules.h"
 #include "fractal_probe_runner.h"
@@ -28,6 +30,8 @@
 #include "schema_binding.h"
 #include "ui_schema.h"
 #include "viewer_schema_load.h"
+
+static std::string JsonEscapeString(const std::string& s);
 
 namespace {
 
@@ -1008,6 +1012,40 @@ int RunSampleMode(const SampleModeArgs& args, const std::string& exePath) {
     }
     std::fprintf(stderr, "%s\n", error.c_str());
     return 1;
+}
+
+int RunDescribeExplainoAxisRegistryMode(bool toStdout, const std::string& jsonPath) {
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"ok\": true,\n";
+    out << "  \"count\": " << ExplainoAxisRegistryCount() << ",\n";
+    out << "  \"axes\": [";
+    for (std::size_t index = 0; index < ExplainoAxisRegistryCount(); ++index) {
+        const ExplainoAxisDescriptor& axis = kExplainoAxisRegistry[index];
+        const char* carrierId = enum_id_utils::LookupEnumId(axis.carrier_fractal_type, enum_id_utils::kFractalTypeIds);
+        if (index > 0) {
+            out << ',';
+        }
+        out << "\n    {"
+            << "\"axis_id\": \"" << JsonEscapeString(axis.axis_id) << "\", "
+            << "\"binding_path\": \"" << JsonEscapeString(axis.binding_path) << "\", "
+            << "\"carrier_fractal_type\": \"" << JsonEscapeString(carrierId ? carrierId : "") << "\", "
+            << "\"default_value\": " << std::setprecision(9) << axis.default_value << ", "
+            << "\"control_id\": \"fractal_control." << JsonEscapeString(axis.axis_id) << ".primary\""
+            << "}";
+    }
+    if (ExplainoAxisRegistryCount() > 0) {
+        out << '\n';
+    }
+    out << "  ]\n";
+    out << "}\n";
+
+    std::string emitError;
+    if (!EmitProbeResponse(out.str(), toStdout, jsonPath, &emitError)) {
+        std::fprintf(stderr, "%s\n", emitError.c_str());
+        return 1;
+    }
+    return 0;
 }
 
 int RunDescribeFunctionsMode(bool toStdout, const std::string& jsonPath,

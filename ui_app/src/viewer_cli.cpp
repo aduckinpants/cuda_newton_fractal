@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
@@ -85,6 +86,29 @@ static bool TryParseFlashlightArgs(const std::vector<std::string>& args, ViewerC
     return true;
 }
 
+static bool TryParseFiniteDoubleText(const std::string& text, double* outValue);
+
+static bool TryParseUiAutomationSetControlValueSpec(
+    const std::string& spec,
+    std::string* outControlId,
+    double* outValue) {
+    const std::size_t equals = spec.find('=');
+    if (equals == std::string::npos || equals == 0 || equals + 1 >= spec.size()) {
+        return false;
+    }
+    double parsedValue = 0.0;
+    if (!TryParseFiniteDoubleText(spec.substr(equals + 1), &parsedValue)) {
+        return false;
+    }
+    if (outControlId) {
+        *outControlId = spec.substr(0, equals);
+    }
+    if (outValue) {
+        *outValue = parsedValue;
+    }
+    return true;
+}
+
 static bool TryParseRuntimeWalkArgs(const std::vector<std::string>& args, ViewerCliArgs* out) {
     if (!TryStr(args, "--runtime-walk-request-json", &out->have_runtime_walk_request_json, &out->runtime_walk_request_json_path)) return false;
     if (!TryStr(args, "--load-runtime-walk-request-json", &out->have_runtime_walk_viewer_request_json, &out->runtime_walk_viewer_request_json_path)) return false;
@@ -92,6 +116,16 @@ static bool TryParseRuntimeWalkArgs(const std::vector<std::string>& args, Viewer
     out->open_color_pipeline_window_on_startup = HasArg(args, "--open-color-pipeline-window");
     if (!TryStr(args, "--ui-automation-report-json", &out->have_ui_automation_report_json, &out->ui_automation_report_json_path)) return false;
     if (!TryStr(args, "--ui-automation-click-control-id", &out->have_ui_automation_click_control_id, &out->ui_automation_click_control_id)) return false;
+    std::string setControlValueSpec;
+    bool haveSetControlValueSpec = false;
+    if (!TryStr(args, "--ui-automation-set-control-value", &haveSetControlValueSpec, &setControlValueSpec)) return false;
+    if (haveSetControlValueSpec) {
+        out->have_ui_automation_set_control_value = TryParseUiAutomationSetControlValueSpec(
+            setControlValueSpec,
+            &out->ui_automation_set_control_id,
+            &out->ui_automation_set_control_value);
+        if (!out->have_ui_automation_set_control_value) return false;
+    }
     return true;
 }
 
@@ -398,6 +432,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
     out->capture_diagnostic_only = HasArg(args, "--capture-diagnostic");
     out->capture_finding_only = HasArg(args, "--capture-finding");
     out->describe_functions = HasArg(args, "--describe-functions");
+    out->describe_explaino_axis_registry = HasArg(args, "--describe-explaino-axis-registry");
     out->explore_recommend = HasArg(args, "--explore-recommend");
 
     // Sample mode
@@ -416,6 +451,7 @@ int ParseViewerCli(const std::vector<std::string>& args, ViewerCliArgs* out) {
 
     // Describe-functions JSON
     if (!TryStr(args, "--describe-functions-json", &out->have_describe_functions_json, &out->describe_functions_json_path)) return 1;
+    if (!TryStr(args, "--describe-explaino-axis-registry-json", &out->have_describe_explaino_axis_registry_json, &out->describe_explaino_axis_registry_json_path)) return 1;
     if (!TryStr(args, "--explore-recommend-json", &out->have_explore_recommend_json, &out->explore_recommend_json_path)) return 1;
     if (!TryParseFlashlightArgs(args, out)) return 1;
     if (!TryParseRuntimeWalkArgs(args, out)) return 1;

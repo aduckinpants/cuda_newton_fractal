@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -41,6 +42,11 @@ struct ColorPipelineWindowState {
     std::string ui_automation_click_control_id;
     bool ui_automation_click_pending = false;
     bool ui_automation_click_consumed = false;
+    std::string ui_automation_set_control_id;
+    double ui_automation_set_control_value = 0.0;
+    bool ui_automation_set_pending = false;
+    bool ui_automation_set_consumed = false;
+    std::string ui_automation_set_error;
     std::uint64_t next_row_id = 1;
     std::vector<ColorPipelineLaneState> lanes;
     ColorPipelineLiveSnapshot live_snapshot;
@@ -2731,13 +2737,40 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         }
     }
 
-    if (ioParams->color_source_stack_count != static_cast<int>(nextSourceStack.size())) {
-        ioParams->color_source_stack_count = static_cast<int>(nextSourceStack.size());
+    bool materializeSourceStack = true;
+    if (!rootBasinPairSchedule &&
+        ColorPipelineSelectionsEqual(ioParams->color_pipeline, effectivePipeline) &&
+        ioParams->color_source_stack_count == 0 &&
+        nextSourceStack.size() == 1) {
+        ColorPipelineLaneState liveSourceLane;
+        bool liveSourceImportSupported = true;
+        std::string liveSourceError;
+        ColorPipelineSourceStackEntry liveImplicitEntry;
+        if (TryBuildColorPipelineSourceLaneFromLive(
+                *ioParams,
+                &liveSourceLane,
+                &liveSourceImportSupported,
+                &liveSourceError) &&
+            liveSourceImportSupported &&
+            liveSourceLane.rows.size() == 1 &&
+            TryBuildColorPipelineSourceStackEntryFromRow(
+                liveSourceLane.rows.front(),
+                &liveImplicitEntry,
+                &liveSourceError) &&
+            ColorPipelineSourceStackEntriesEqual(liveImplicitEntry, nextSourceStack.front())) {
+            materializeSourceStack = false;
+        }
+    }
+    const int nextSourceStackCount = materializeSourceStack
+        ? static_cast<int>(nextSourceStack.size())
+        : 0;
+    if (ioParams->color_source_stack_count != nextSourceStackCount) {
+        ioParams->color_source_stack_count = nextSourceStackCount;
         changed = true;
     }
     for (int index = 0; index < kColorPipelineMaxSourceStackCount; ++index) {
         ColorPipelineSourceStackEntry nextEntry;
-        if (index < static_cast<int>(nextSourceStack.size())) {
+        if (materializeSourceStack && index < nextSourceStackCount) {
             nextEntry = nextSourceStack[static_cast<std::size_t>(index)];
         }
         if (!ColorPipelineSourceStackEntriesEqual(ioParams->color_source_stack[index], nextEntry)) {
@@ -2746,13 +2779,39 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         }
     }
 
-    if (ioParams->color_shape_stack_count != static_cast<int>(nextShapeStack.size())) {
-        ioParams->color_shape_stack_count = static_cast<int>(nextShapeStack.size());
+    bool materializeShapeStack = true;
+    if (ColorPipelineSelectionsEqual(ioParams->color_pipeline, effectivePipeline) &&
+        ioParams->color_shape_stack_count == 0 &&
+        nextShapeStack.size() == 1) {
+        ColorPipelineLaneState liveShapeLane;
+        bool liveShapeImportSupported = true;
+        std::string liveShapeError;
+        ColorPipelineShapeStackEntry liveImplicitEntry;
+        if (TryBuildColorPipelineShapeLaneFromLive(
+                *ioParams,
+                &liveShapeLane,
+                &liveShapeImportSupported,
+                &liveShapeError) &&
+            liveShapeImportSupported &&
+            liveShapeLane.rows.size() == 1 &&
+            TryBuildColorPipelineShapeStackEntryFromRow(
+                liveShapeLane.rows.front(),
+                &liveImplicitEntry,
+                &liveShapeError) &&
+            ColorPipelineShapeStackEntriesEqual(liveImplicitEntry, nextShapeStack.front())) {
+            materializeShapeStack = false;
+        }
+    }
+    const int nextShapeStackCount = materializeShapeStack
+        ? static_cast<int>(nextShapeStack.size())
+        : 0;
+    if (ioParams->color_shape_stack_count != nextShapeStackCount) {
+        ioParams->color_shape_stack_count = nextShapeStackCount;
         changed = true;
     }
     for (int index = 0; index < kColorPipelineMaxShapeStackCount; ++index) {
         ColorPipelineShapeStackEntry nextEntry;
-        if (index < static_cast<int>(nextShapeStack.size())) {
+        if (materializeShapeStack && index < nextShapeStackCount) {
             nextEntry = nextShapeStack[static_cast<std::size_t>(index)];
         }
         if (!ColorPipelineShapeStackEntriesEqual(ioParams->color_shape_stack[index], nextEntry)) {
@@ -2778,13 +2837,40 @@ inline bool ApplySupportedColorPipelineParamsToLive(
             nextPaletteStack.push_back(paletteEntry);
         }
     }
-    if (ioParams->color_palette_stack_count != static_cast<int>(nextPaletteStack.size())) {
-        ioParams->color_palette_stack_count = static_cast<int>(nextPaletteStack.size());
+    bool materializePaletteStack = true;
+    if (!rootBasinPairSchedule &&
+        ColorPipelineSelectionsEqual(ioParams->color_pipeline, effectivePipeline) &&
+        ioParams->color_palette_stack_count == 0 &&
+        nextPaletteStack.size() == 1) {
+        ColorPipelineLaneState livePaletteLane;
+        bool livePaletteImportSupported = true;
+        std::string livePaletteError;
+        ColorPipelinePaletteStackEntry liveImplicitEntry;
+        if (TryBuildColorPipelinePaletteLaneFromLive(
+                *ioParams,
+                &livePaletteLane,
+                &livePaletteImportSupported,
+                &livePaletteError) &&
+            livePaletteImportSupported &&
+            livePaletteLane.rows.size() == 1 &&
+            TryBuildColorPipelinePaletteStackEntryFromRow(
+                livePaletteLane.rows.front(),
+                &liveImplicitEntry,
+                &livePaletteError) &&
+            ColorPipelinePaletteStackEntriesEqual(liveImplicitEntry, nextPaletteStack.front())) {
+            materializePaletteStack = false;
+        }
+    }
+    const int nextPaletteStackCount = materializePaletteStack
+        ? static_cast<int>(nextPaletteStack.size())
+        : 0;
+    if (ioParams->color_palette_stack_count != nextPaletteStackCount) {
+        ioParams->color_palette_stack_count = nextPaletteStackCount;
         changed = true;
     }
     for (int index = 0; index < kColorPipelineMaxPaletteStackCount; ++index) {
         ColorPipelinePaletteStackEntry nextEntry;
-        if (index < static_cast<int>(nextPaletteStack.size())) {
+        if (materializePaletteStack && index < nextPaletteStackCount) {
             nextEntry = nextPaletteStack[static_cast<std::size_t>(index)];
         }
         if (!ColorPipelinePaletteStackEntriesEqual(ioParams->color_palette_stack[index], nextEntry)) {
@@ -2802,13 +2888,39 @@ inline bool ApplySupportedColorPipelineParamsToLive(
         }
         nextGradingStack.push_back(gradingEntry);
     }
-    if (ioParams->color_grading_stack_count != static_cast<int>(nextGradingStack.size())) {
-        ioParams->color_grading_stack_count = static_cast<int>(nextGradingStack.size());
+    bool materializeGradingStack = true;
+    if (ColorPipelineSelectionsEqual(ioParams->color_pipeline, effectivePipeline) &&
+        ioParams->color_grading_stack_count == 0 &&
+        nextGradingStack.size() == 1) {
+        ColorPipelineLaneState liveGradingLane;
+        bool liveGradingImportSupported = true;
+        std::string liveGradingError;
+        ColorPipelineGradingStackEntry liveImplicitEntry;
+        if (TryBuildColorPipelineGradingLaneFromLive(
+                *ioParams,
+                &liveGradingLane,
+                &liveGradingImportSupported,
+                &liveGradingError) &&
+            liveGradingImportSupported &&
+            liveGradingLane.rows.size() == 1 &&
+            TryBuildColorPipelineGradingStackEntryFromRow(
+                liveGradingLane.rows.front(),
+                &liveImplicitEntry,
+                &liveGradingError) &&
+            ColorPipelineGradingStackEntriesEqual(liveImplicitEntry, nextGradingStack.front())) {
+            materializeGradingStack = false;
+        }
+    }
+    const int nextGradingStackCount = materializeGradingStack
+        ? static_cast<int>(nextGradingStack.size())
+        : 0;
+    if (ioParams->color_grading_stack_count != nextGradingStackCount) {
+        ioParams->color_grading_stack_count = nextGradingStackCount;
         changed = true;
     }
     for (int index = 0; index < kColorPipelineMaxGradingStackCount; ++index) {
         ColorPipelineGradingStackEntry nextEntry;
-        if (index < static_cast<int>(nextGradingStack.size())) {
+        if (materializeGradingStack && index < nextGradingStackCount) {
             nextEntry = nextGradingStack[static_cast<std::size_t>(index)];
         }
         if (!ColorPipelineGradingStackEntriesEqual(ioParams->color_grading_stack[index], nextEntry)) {
@@ -3512,6 +3624,54 @@ inline bool CommitColorPipelineNumericParamEditFromCurrentItem(
         ioInteraction);
 }
 
+template <typename T>
+inline bool TryApplyColorPipelineUiAutomationSetValue(
+    ColorPipelineWindowState* ioState,
+    const char* primaryControlId,
+    FractalType liveFractalType,
+    KernelParams* liveParams,
+    const NumericControlRange& range,
+    T* ioWidgetValue,
+    ColorPipelineParamState* ioValue,
+    bool* ioDirty = nullptr,
+    ColorPipelineRenderInteractionState* ioInteraction = nullptr) {
+    if (!ioState || !primaryControlId || !ioState->ui_automation_set_pending ||
+        ioState->ui_automation_set_consumed || ioState->ui_automation_set_control_id != primaryControlId) {
+        return false;
+    }
+
+    T requestedValue{};
+    if constexpr (std::is_integral<T>::value) {
+        requestedValue = static_cast<T>(std::lround(ioState->ui_automation_set_control_value));
+    } else {
+        requestedValue = static_cast<T>(ioState->ui_automation_set_control_value);
+    }
+
+    const bool applied = CommitColorPipelineNumericParamEdit(
+        ioState,
+        liveFractalType,
+        liveParams,
+        range,
+        requestedValue,
+        ioValue,
+        true,
+        false,
+        false,
+        true,
+        ioDirty,
+        ioInteraction);
+    if (!applied) {
+        ioState->ui_automation_set_error = std::string("color pipeline draft/live bridge rejected visible control: ") + primaryControlId;
+        return false;
+    }
+    if (ioWidgetValue) {
+        *ioWidgetValue = requestedValue;
+    }
+    ioState->ui_automation_set_consumed = true;
+    ioState->ui_automation_set_error.clear();
+    return true;
+}
+
 inline bool ShouldAutoApplySupportedColorPipelineDraft(
     const ColorPipelineWindowState& state,
     const ColorPipelineDraftApplyState& applyState,
@@ -3582,6 +3742,16 @@ inline bool RenderColorPipelineParamControl(
             sliderChanged = ImGui::DragFloat(param.label.c_str(), &value, step, dragMin, dragMax, "%.3f");
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
+        const bool automationChanged = TryApplyColorPipelineUiAutomationSetValue(
+            ioState,
+            primaryControlId,
+            liveFractalType,
+            liveParams,
+            range,
+            &value,
+            ioValue,
+            ioDirty,
+            ioInteraction);
         CommitColorPipelineNumericParamEditFromCurrentItem(
             ioState,
             liveFractalType,
@@ -3604,7 +3774,7 @@ inline bool RenderColorPipelineParamControl(
             typedChanged,
             ioDirty,
             ioInteraction);
-        changed = sliderChanged || typedChanged;
+        changed = sliderChanged || typedChanged || automationChanged;
     } else if (param.type == "double") {
         double value = ioValue->number_value;
         const NumericControlRange range = ResolveColorPipelineNumericControlRange(param);
@@ -3621,6 +3791,16 @@ inline bool RenderColorPipelineParamControl(
             sliderChanged = ImGui::DragScalar(param.label.c_str(), ImGuiDataType_Double, &value, static_cast<float>(step), dragMin, dragMax, "%.6f");
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
+        const bool automationChanged = TryApplyColorPipelineUiAutomationSetValue(
+            ioState,
+            primaryControlId,
+            liveFractalType,
+            liveParams,
+            range,
+            &value,
+            ioValue,
+            ioDirty,
+            ioInteraction);
         CommitColorPipelineNumericParamEditFromCurrentItem(
             ioState,
             liveFractalType,
@@ -3643,7 +3823,7 @@ inline bool RenderColorPipelineParamControl(
             typedChanged,
             ioDirty,
             ioInteraction);
-        changed = sliderChanged || typedChanged;
+        changed = sliderChanged || typedChanged || automationChanged;
     } else if (param.type == "int") {
         int value = static_cast<int>(std::lround(ioValue->number_value));
         const NumericControlRange range = ResolveColorPipelineNumericControlRange(param);
@@ -3660,6 +3840,16 @@ inline bool RenderColorPipelineParamControl(
             sliderChanged = ImGui::DragInt(param.label.c_str(), &value, step, dragMin, dragMax);
         }
         NoteColorPipelineUiAutomationRect(ioState, primaryControlId);
+        const bool automationChanged = TryApplyColorPipelineUiAutomationSetValue(
+            ioState,
+            primaryControlId,
+            liveFractalType,
+            liveParams,
+            range,
+            &value,
+            ioValue,
+            ioDirty,
+            ioInteraction);
         CommitColorPipelineNumericParamEditFromCurrentItem(
             ioState,
             liveFractalType,
@@ -3682,7 +3872,7 @@ inline bool RenderColorPipelineParamControl(
             typedChanged,
             ioDirty,
             ioInteraction);
-        changed = sliderChanged || typedChanged;
+        changed = sliderChanged || typedChanged || automationChanged;
     } else if (param.type == "bool") {
         bool value = ioValue->bool_value;
         changed = ImGui::Checkbox(param.label.c_str(), &value);

@@ -33,6 +33,7 @@ static void TestDefaultsNoArgs() {
     Check(!cli.capture_diagnostic_only, "TestDefaultsNoArgs_CaptureDiag");
     Check(!cli.capture_finding_only, "TestDefaultsNoArgs_CaptureFinding");
     Check(!cli.describe_functions, "TestDefaultsNoArgs_DescribeFunctions");
+    Check(!cli.describe_explaino_axis_registry, "TestDefaultsNoArgs_DescribeExplainoAxisRegistry");
     Check(!cli.have_fractal_type, "TestDefaultsNoArgs_FractalType");
     Check(!cli.have_explaino_seed, "TestDefaultsNoArgs_ExplainoSeed");
     Check(!cli.have_width, "TestDefaultsNoArgs_Width");
@@ -392,6 +393,37 @@ static void TestUiAutomationClickControlIdMissingValue() {
     int rc = ParseViewerCli(Args({"--ui-automation-click-control-id"}), &cli);
     Check(rc != 0, "TestUiAutomationClickControlIdMissingValue_Fails");
 }
+
+static void TestUiAutomationSetControlValueFlag() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--ui-automation-set-control-value", "fractal_control.ripple_amplitude.primary=0.375"}), &cli);
+    Check(rc == 0, "TestUiAutomationSetControlValueFlag_ReturnCode");
+    Check(cli.have_ui_automation_set_control_value, "TestUiAutomationSetControlValueFlag_Have");
+    Check(cli.ui_automation_set_control_id == "fractal_control.ripple_amplitude.primary", "TestUiAutomationSetControlValueFlag_ControlId");
+    Check(std::fabs(cli.ui_automation_set_control_value - 0.375) < 1e-9, "TestUiAutomationSetControlValueFlag_Value");
+}
+
+static void TestUiAutomationSetControlValueRejectsInvalidSpec() {
+    ViewerCliArgs cli{};
+    Check(ParseViewerCli(Args({"--ui-automation-set-control-value"}), &cli) != 0, "TestUiAutomationSetControlValueRejectsMissingValue");
+    Check(ParseViewerCli(Args({"--ui-automation-set-control-value", "fractal_control.ripple_amplitude.primary"}), &cli) != 0, "TestUiAutomationSetControlValueRejectsMissingEquals");
+    Check(ParseViewerCli(Args({"--ui-automation-set-control-value", "fractal_control.ripple_amplitude.primary=nan"}), &cli) != 0, "TestUiAutomationSetControlValueRejectsNan");
+}
+
+static void TestDescribeExplainoAxisRegistry() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--describe-explaino-axis-registry"}), &cli);
+    Check(rc == 0, "TestDescribeExplainoAxisRegistry_ReturnCode");
+    Check(cli.describe_explaino_axis_registry, "TestDescribeExplainoAxisRegistry_Flag");
+}
+
+static void TestDescribeExplainoAxisRegistryJson() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--describe-explaino-axis-registry-json", "axis.json"}), &cli);
+    Check(rc == 0, "TestDescribeExplainoAxisRegistryJson_ReturnCode");
+    Check(cli.have_describe_explaino_axis_registry_json, "TestDescribeExplainoAxisRegistryJson_Have");
+    Check(cli.describe_explaino_axis_registry_json_path == "axis.json", "TestDescribeExplainoAxisRegistryJson_Path");
+}
 static void TestColorPipelineActionsParseTypedSequence() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -607,6 +639,10 @@ int main() {
     TestUiAutomationReportJsonMissingValue();
     TestUiAutomationClickControlIdFlag();
     TestUiAutomationClickControlIdMissingValue();
+    TestUiAutomationSetControlValueFlag();
+    TestUiAutomationSetControlValueRejectsInvalidSpec();
+    TestDescribeExplainoAxisRegistry();
+    TestDescribeExplainoAxisRegistryJson();
     TestColorPipelineActionsParseTypedSequence();
     TestColorPipelineActionsRejectInvalidSpec();
     TestSidecarApplyArmedStepCount();

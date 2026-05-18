@@ -567,7 +567,7 @@ void CheckCanonicalAllComposedBalanceVoidCoupling() {
         0.35f,
         -0.2f,
         0.25f);
-    CheckStateEquivalence(neutral, perturbed, "explaino_all keeps single-axis precedence over hidden balance-void axes");
+    CheckStateDifference(neutral, perturbed, "explaino_all composes ripple and balance-void axes");
 }
 
 void CheckComposedLabelInvariance(FractalType leftType,

@@ -39,6 +39,16 @@ mkdir "%PDBROOT%"
 if errorlevel 1 exit /b 1
 
 set CL=/FS /Fo"%OBJROOT%\\" /Fd"%PDBROOT%\\build_tests.pdb"
+goto after_test_helpers
+:run_test
+%*
+set "RUN_TEST_RC=%ERRORLEVEL%"
+if not "%RUN_TEST_RC%"=="0" (
+  echo [build_tests_vsdevcmd] Test command failed with exit %RUN_TEST_RC%: %*
+  exit /b 1
+)
+exit /b 0
+:after_test_helpers
 
 set FOCUSED_TEST=%~1
 if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color_grading_red
@@ -480,8 +490,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
   /Fe:"%TESTROOT%\test_diagnostics_state_io.exe"
 if errorlevel 1 exit /b 1
-"%TESTROOT%\test_diagnostics_state_io.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
 exit /b 0
 
 :focused_test_finding_archive_actions
@@ -489,8 +498,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
 if errorlevel 1 exit /b 1
-"%TESTROOT%\test_finding_archive_actions.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
 exit /b 0
 
 :focused_serializer_owner_fast
@@ -502,10 +510,8 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\finding_archive_actions.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_finding_archive_actions.cpp ^
   /Fe:"%TESTROOT%\test_finding_archive_actions.exe"
 if errorlevel 1 exit /b 1
-"%TESTROOT%\test_diagnostics_state_io.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_finding_archive_actions.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
 exit /b 0
 
 :focused_advanced_color_grading_red
@@ -531,16 +537,11 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_fractal_family_rules.cpp ^
   /Fe:"%TESTROOT%\test_fractal_family_rules.exe"
 if errorlevel 1 exit /b 1
-"%TESTROOT%\test_color_pipeline_core.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_color_pipeline_window.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_schema_binding.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_escape_time_coloring.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_fractal_family_rules.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_core.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_escape_time_coloring.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_fractal_family_rules.exe" || exit /b 1
 exit /b 0
 
 :focused_advanced_color_grading_owner
@@ -578,244 +579,163 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\tests\test_runtime_reset.cpp ^
   /Fe:"%TESTROOT%\test_runtime_reset.exe"
 if errorlevel 1 exit /b 1
-"%TESTROOT%\test_color_pipeline_core.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_color_pipeline_window.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_schema_binding.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_escape_time_coloring.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_fractal_family_rules.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_diagnostics_state_io.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_finding_archive_actions.exe"
-if errorlevel 1 exit /b 1
-"%TESTROOT%\test_runtime_reset.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_core.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_escape_time_coloring.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_fractal_family_rules.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_runtime_reset.exe" || exit /b 1
 exit /b 0
 
 :full_test_run
 
-"%TESTROOT%\test_cli_args.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_cli_args.exe" || exit /b 1
 
-"%TESTROOT%\test_viewer_cli.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_cli.exe" || exit /b 1
 
-"%TESTROOT%\test_main.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_main.exe" || exit /b 1
 
-"%TESTROOT%\test_viewer_state_init.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_state_init.exe" || exit /b 1
 
-"%TESTROOT%\test_viewer_schema_load.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_schema_load.exe" || exit /b 1
 
-"%TESTROOT%\test_json_min.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_json_min.exe" || exit /b 1
 
-"%TESTROOT%\test_viewport_interaction.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewport_interaction.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_seed.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_seed.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_seed_dynamics.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_seed_dynamics.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_budget.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_budget.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_lens.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_lens.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_action.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_action.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_energy.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_energy.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_trace.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_trace.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_controller.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_controller.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_divergence.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_divergence.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_completeness.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_completeness.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_measurement.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_measurement.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_derived_fields.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_derived_fields.exe" || exit /b 1
 
-"%TESTROOT%\test_seed_tween_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_seed_tween_continuity.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_reset.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_reset.exe" || exit /b 1
 
-"%TESTROOT%\test_lens_sdf.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_lens_sdf.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk_headless.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_headless.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk_bootstrap.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_bootstrap.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk_viewer.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_viewer.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk_field_slime.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_field_slime.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk_viewer_import.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_viewer_import.exe" || exit /b 1
 
-"%TESTROOT%\test_runtime_walk_viewer_session.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_runtime_walk_viewer_session.exe" || exit /b 1
 
-"%TESTROOT%\test_viewer_shutdown.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_shutdown.exe" || exit /b 1
 
-"%TESTROOT%\test_viewer_sweep.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_sweep.exe" || exit /b 1
 
-"%TESTROOT%\test_sweep_player.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_sweep_player.exe" || exit /b 1
 
-"%TESTROOT%\test_view_hp_sync.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_view_hp_sync.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_variant_benchmark.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_variant_benchmark.exe" || exit /b 1
 
-"%TESTROOT%\test_diagnostics_state_io.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
 
-"%TESTROOT%\test_finding_state_actions.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_finding_state_actions.exe" || exit /b 1
 
-"%TESTROOT%\test_schema_startup_policy.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_schema_startup_policy.exe" || exit /b 1
 
-"%TESTROOT%\test_schema_binding.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
 
-"%TESTROOT%\test_color_pipeline_core.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_core.exe" || exit /b 1
 
-"%TESTROOT%\test_color_pipeline_window.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_color_pipeline_window.exe" || exit /b 1
 
-"%TESTROOT%\test_finding_capture_state.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_finding_capture_state.exe" || exit /b 1
 
-"%TESTROOT%\test_finding_archive_actions.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
 
-"%TESTROOT%\test_diagnostics_capture.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_diagnostics_capture.exe" || exit /b 1
 
-"%TESTROOT%\test_render_capture_guard.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_render_capture_guard.exe" || exit /b 1
 
-"%TESTROOT%\test_viewer_render_pacing.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_render_pacing.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_runtime_validation.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_runtime_validation.exe" || exit /b 1
 
-"%TESTROOT%\test_escape_time_specialized_formulas.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_escape_time_specialized_formulas.exe" || exit /b 1
 
-"%TESTROOT%\test_perturbation_reference_orbit.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_perturbation_reference_orbit.exe" || exit /b 1
 
-"%TESTROOT%\test_escape_time_coloring.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_escape_time_coloring.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_collatz_formulas.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_collatz_formulas.exe" || exit /b 1
 
-"%TESTROOT%\test_polynomial_eval_real_coeffs.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_polynomial_eval_real_coeffs.exe" || exit /b 1
 
-"%TESTROOT%\test_basin_coloring.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_basin_coloring.exe" || exit /b 1
 
-"%TESTROOT%\test_escape_time_direct_formulas.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_escape_time_direct_formulas.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_probe.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_probe.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_family_rules.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_family_rules.exe" || exit /b 1
 
-"%TESTROOT%\test_ui_schema.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_ui_schema.exe" || exit /b 1
 
-"%TESTROOT%\test_ui_schema_grouping.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_ui_schema_grouping.exe" || exit /b 1
 
-"%TESTROOT%\test_enum_id_utils.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_enum_id_utils.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_sample_result.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_result.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_types.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_types.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_refresh.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_refresh.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_cuda_sample_host.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_cuda_sample_host.exe" || exit /b 1
 
-"%TESTROOT%\test_generic_function_types.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_function_types.exe" || exit /b 1
 
-"%TESTROOT%\test_generic_function_cpu_eval.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_function_cpu_eval.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_seed_curve.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_seed_curve.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_probe_runner.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_probe_runner.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_probe_contract.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_probe_contract.exe" || exit /b 1
 
-"%TESTROOT%\test_safe_mode_schema.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_safe_mode_schema.exe" || exit /b 1
 
-"%TESTROOT%\test_function_descriptor.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_function_descriptor.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_model.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_model.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_window.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_window.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_sidecar_schema_contract.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_sidecar_schema_contract.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_exploration_advisor.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_exploration_advisor.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\sample_tier_resolver.cpp .\tests\test_sample_tier_resolver.cpp ^
@@ -886,96 +806,77 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_explaino_zero_axis_equivalence.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_sample_tier_resolver.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_sample_tier_resolver.exe" || exit /b 1
 
-"%TESTROOT%\test_escape_time_sample_tier.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_escape_time_sample_tier.exe" || exit /b 1
 
-"%TESTROOT%\test_newton_basin_regression.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_newton_basin_regression.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_sample_device.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_device.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_renderer.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_renderer.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_sample_core.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_core.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_sample_kernel.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_kernel.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_sample_equivalence.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_equivalence.exe" || exit /b 1
 
-"%TESTROOT%\test_explaino_zero_axis_equivalence.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_zero_axis_equivalence.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_nova_iteration.cpp ^
   /Fe:"%TESTROOT%\test_nova_iteration.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_nova_iteration.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_nova_iteration.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_explaino_joy_continuity.cpp ^
   /Fe:"%TESTROOT%\test_explaino_joy_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_explaino_joy_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_joy_continuity.exe" || exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\\src ^
   .\\tests\\test_explaino_fold_continuity.cpp ^
   /Fe:"%TESTROOT%\\test_explaino_fold_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\\test_explaino_fold_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\\test_explaino_fold_continuity.exe" || exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\\src ^
   .\\tests\\test_explaino_bell_continuity.cpp ^
   /Fe:"%TESTROOT%\\test_explaino_bell_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\\test_explaino_bell_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\\test_explaino_bell_continuity.exe" || exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_explaino_ripple_continuity.cpp ^
   /Fe:"%TESTROOT%\test_explaino_ripple_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_explaino_ripple_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_ripple_continuity.exe" || exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_explaino_splice_continuity.cpp ^
   /Fe:"%TESTROOT%\test_explaino_splice_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_explaino_splice_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_splice_continuity.exe" || exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_explaino_vortex_continuity.cpp ^
   /Fe:"%TESTROOT%\test_explaino_vortex_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_explaino_vortex_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_vortex_continuity.exe" || exit /b 1
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_explaino_tension_continuity.cpp ^
   /Fe:"%TESTROOT%\test_explaino_tension_continuity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_explaino_tension_continuity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_explaino_tension_continuity.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_sample_pipeline.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_pipeline.exe" || exit /b 1
 
-"%TESTROOT%\test_fractal_probe_coverage.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_probe_coverage.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\param_anim_dynamics.cpp ^
@@ -984,11 +885,9 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_param_anim_dynamics.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_headless_modes.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_headless_modes.exe" || exit /b 1
 
-"%TESTROOT%\test_param_anim_dynamics.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_param_anim_dynamics.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\param_anim_dynamics.cpp ^
@@ -997,16 +896,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /Fe:"%TESTROOT%\test_param_anim_generic.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_param_anim_generic.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_param_anim_generic.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_generic_function_math.cpp ^
   /Fe:"%TESTROOT%\test_generic_function_math.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_generic_function_math.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_function_math.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
@@ -1016,8 +913,7 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_generic_function_eval.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_generic_function_eval.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_function_eval.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
@@ -1027,8 +923,7 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_generic_sample_core.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_generic_sample_core.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_sample_core.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
@@ -1038,16 +933,14 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_generic_sample_parity.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_generic_sample_parity.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_sample_parity.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_generic_function_parser.cpp ^
   /Fe:"%TESTROOT%\test_generic_function_parser.exe"
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_generic_function_parser.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_function_parser.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
@@ -1056,8 +949,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_callable_engine_adversarial.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_callable_engine_adversarial.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
@@ -1066,8 +958,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
-"%TESTROOT%\test_generic_probe.exe"
-if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_probe.exe" || exit /b 1
 
 echo All helper tests passed.
 exit /b 0

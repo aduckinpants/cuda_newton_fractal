@@ -2,6 +2,7 @@
 
 #include "fractal_types.h"
 
+#include <cstddef>
 #include <string_view>
 
 #if defined(__CUDACC__)
@@ -259,6 +260,15 @@ inline constexpr ExplainoAxisDescriptor kExplainoAxisRegistry[] = {
     {"field_curvature", "fractal.params.field_curvature", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::field_curvature},
 };
 
+inline constexpr std::size_t ExplainoAxisRegistryCount() {
+    return sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0]);
+}
+
+FRACTAL_FAMILY_RULES_HD inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot);
+FRACTAL_FAMILY_RULES_HD inline const float* ResolveExplainoAxisValue(const KernelParams& params, ExplainoAxisParamSlot slot);
+
+FRACTAL_FAMILY_RULES_HD inline bool ExplainoAxisValueIsActive(float value) { return value != 0.0f; }
+
 inline constexpr ExplainoCouplingDescriptor kExplainoCouplingRegistry[] = {
     {"momentum_beta", "fractal.params.momentum_beta", FractalType::explaino_inertial, 0.15f, 0.0f, ExplainoCouplingParamSlot::momentum_beta, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::inertial_memory, true, false},
     {"joy_coupling", "fractal.params.joy_coupling", FractalType::explaino_joy, 0.3f, 0.0f, ExplainoCouplingParamSlot::joy_coupling, ExplainoCouplingOwnership::different_ownership_model, ExplainoCouplingModel::phoenix_step_variant, false, true},
@@ -312,45 +322,86 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoComposedAxisCarrier(Frac
     return IsExplainoSingleAxisProjectionSelector(fractalType);
 }
 
-FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoComposedAxisPerturbation(const KernelParams& params) {
-    return params.ripple_amplitude != 0.0f ||
-        params.splice_offset != 0.0f ||
-        params.vortex_strength != 0.0f ||
-        params.tension_strength != 0.0f;
-}
-
-FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoBalanceVoidPerturbation(const KernelParams& params) {
-    return params.balance_void != 0.0f ||
-        params.symmetry_tension != 0.0f ||
-        params.field_curvature != 0.0f;
-}
-
-FRACTAL_FAMILY_RULES_HD inline constexpr bool HasExplainoSingleAxisProjectionOwnershipPerturbation(
-    FractalType fractalType,
+FRACTAL_FAMILY_RULES_HD inline bool HasExplainoAxisRegistryPerturbationForCarrier(
+    FractalType carrierFractalType,
     const KernelParams& params) {
-    switch (fractalType) {
+#if defined(__CUDA_ARCH__)
+    switch (carrierFractalType) {
     case FractalType::explaino_ripple:
-        return params.ripple_amplitude != 0.0f;
+        return ExplainoAxisValueIsActive(params.ripple_amplitude);
     case FractalType::explaino_splice:
-        return params.splice_offset != 0.0f;
+        return ExplainoAxisValueIsActive(params.splice_offset);
     case FractalType::explaino_vortex:
-        return params.vortex_strength != 0.0f;
+        return ExplainoAxisValueIsActive(params.vortex_strength);
     case FractalType::explaino_tension:
-        return params.tension_strength != 0.0f;
+        return ExplainoAxisValueIsActive(params.tension_strength);
+    case FractalType::explaino_balance_void:
+        return ExplainoAxisValueIsActive(params.balance_void) ||
+            ExplainoAxisValueIsActive(params.symmetry_tension) ||
+            ExplainoAxisValueIsActive(params.field_curvature);
     default:
         return false;
     }
+#else
+    for (const auto& axis : kExplainoAxisRegistry) {
+        if (axis.carrier_fractal_type != carrierFractalType) {
+            continue;
+        }
+        const float* value = ResolveExplainoAxisValue(params, axis.slot);
+        if (value && ExplainoAxisValueIsActive(*value)) {
+            return true;
+        }
+    }
+    return false;
+#endif
 }
 
-FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoRuntimeFractalType(
+FRACTAL_FAMILY_RULES_HD inline bool HasAnyExplainoAxisRegistryPerturbation(const KernelParams& params) {
+#if defined(__CUDA_ARCH__)
+    return ExplainoAxisValueIsActive(params.ripple_amplitude) ||
+        ExplainoAxisValueIsActive(params.splice_offset) ||
+        ExplainoAxisValueIsActive(params.vortex_strength) ||
+        ExplainoAxisValueIsActive(params.tension_strength) ||
+        ExplainoAxisValueIsActive(params.balance_void) ||
+        ExplainoAxisValueIsActive(params.symmetry_tension) ||
+        ExplainoAxisValueIsActive(params.field_curvature);
+#else
+    for (const auto& axis : kExplainoAxisRegistry) {
+        const float* value = ResolveExplainoAxisValue(params, axis.slot);
+        if (value && ExplainoAxisValueIsActive(*value)) {
+            return true;
+        }
+    }
+    return false;
+#endif
+}
+
+FRACTAL_FAMILY_RULES_HD inline bool HasExplainoComposedAxisPerturbation(const KernelParams& params) {
+    return HasExplainoAxisRegistryPerturbationForCarrier(FractalType::explaino_ripple, params) ||
+        HasExplainoAxisRegistryPerturbationForCarrier(FractalType::explaino_splice, params) ||
+        HasExplainoAxisRegistryPerturbationForCarrier(FractalType::explaino_vortex, params) ||
+        HasExplainoAxisRegistryPerturbationForCarrier(FractalType::explaino_tension, params);
+}
+
+FRACTAL_FAMILY_RULES_HD inline bool HasExplainoBalanceVoidPerturbation(const KernelParams& params) {
+    return HasExplainoAxisRegistryPerturbationForCarrier(FractalType::explaino_balance_void, params);
+}
+
+FRACTAL_FAMILY_RULES_HD inline bool HasExplainoSingleAxisProjectionOwnershipPerturbation(
+    FractalType fractalType,
+    const KernelParams& params) {
+    if (!IsExplainoSingleAxisProjectionSelector(fractalType)) {
+        return false;
+    }
+    return HasExplainoAxisRegistryPerturbationForCarrier(fractalType, params);
+}
+
+FRACTAL_FAMILY_RULES_HD inline FractalType ResolveExplainoRuntimeFractalType(
     FractalType fractalType,
     const KernelParams& params) {
     if (fractalType == ExplainoCanonicalFractalType()) {
-        if (HasExplainoComposedAxisPerturbation(params)) {
-            return FractalType::explaino_ripple;
-        }
-        if (HasExplainoBalanceVoidPerturbation(params)) {
-            return FractalType::explaino_balance_void;
+        if (HasAnyExplainoAxisRegistryPerturbation(params)) {
+            return ExplainoCanonicalFractalType();
         }
         return FractalType::explaino;
     }
@@ -472,7 +523,7 @@ inline constexpr const ExplainoClusterRadiusSelectorDescriptor* FindExplainoClus
     return nullptr;
 }
 
-inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot) {
+FRACTAL_FAMILY_RULES_HD inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot) {
     switch (slot) {
     case ExplainoAxisParamSlot::ripple_amplitude:
         return &params.ripple_amplitude;
@@ -492,7 +543,7 @@ inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSl
     return nullptr;
 }
 
-inline const float* ResolveExplainoAxisValue(const KernelParams& params, ExplainoAxisParamSlot slot) {
+FRACTAL_FAMILY_RULES_HD inline const float* ResolveExplainoAxisValue(const KernelParams& params, ExplainoAxisParamSlot slot) {
     switch (slot) {
     case ExplainoAxisParamSlot::ripple_amplitude:
         return &params.ripple_amplitude;

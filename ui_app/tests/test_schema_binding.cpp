@@ -3112,6 +3112,29 @@ int main() {
         EndFrame();
 
         BeginFrame();
+        bool automationDirty = false;
+        bool automationInteracted = false;
+        bool automationConsumed = false;
+        std::string automationError;
+        const std::string automationControlId = "fractal_control.ripple_amplitude.primary";
+        ctx.ui_automation_set_control_id = &automationControlId;
+        ctx.ui_automation_set_control_value = 0.375;
+        ctx.ui_automation_set_consumed = &automationConsumed;
+        ctx.ui_automation_set_error = &automationError;
+        if (!RenderControlFromSchema(sharedAxisFloat, ctx, &automationDirty, nullptr, &automationInteracted)) {
+            std::cerr << "Visible schema-driven set-value automation should apply through the float edit path\n";
+            return 1;
+        }
+        if (!automationConsumed || !automationDirty || !automationInteracted || !automationError.empty() || !NearlyEqual(params.ripple_amplitude, 0.375)) {
+            std::cerr << "Schema-driven set-value automation should consume, dirty, interact, and write ripple_amplitude\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
         UISchemaControl badCheckbox = MakeBoundControl("bad_checkbox", "checkbox", "Bad Checkbox", "bool", "param", "fractal.params.not_a_real_bool");
         if (RenderControlFromSchema(badCheckbox, ctx, nullptr, nullptr, nullptr)) {
             std::cerr << "Checkboxes with invalid binding paths should fail closed\n";

@@ -23,7 +23,7 @@
         requestedFt == ExplainoCanonicalFractalType() &&
         hasExplainoComposedPerturbation &&
         hasExplainoBalanceVoidPerturbation;
-    // Public selector identity stays explicit; explaino_all no longer owns the hidden family-axis runtime lanes.
+    // Public selector identity stays explicit; canonical Explaino-all keeps the whole active registry axis structure.
     FractalType ft = ResolveExplainoRuntimeFractalType(requestedFt, params);
     if (ft == FractalType::newton) {
         if (useFP64) {

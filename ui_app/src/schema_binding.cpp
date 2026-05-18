@@ -1238,6 +1238,40 @@ void MaybeNotePrimaryUiAutomationRect(BindingContext& ctx, const UISchemaControl
     ctx.note_ui_automation_rect(ctx.ui_automation_user_data, controlId.c_str());
 }
 
+bool TryApplyPrimaryUiAutomationSetValue(
+    BindingContext& ctx,
+    const UISchemaControl& control,
+    const UISchemaBinding& binding,
+    const NumericControlRange& range,
+    bool* ioDirty,
+    bool* ioInteracted) {
+    if (!ctx.ui_automation_set_control_id ||
+        (ctx.ui_automation_set_consumed && *ctx.ui_automation_set_consumed)) {
+        return false;
+    }
+    const std::string controlId = BuildSchemaPrimaryUiAutomationControlId(control);
+    if (*ctx.ui_automation_set_control_id != controlId) {
+        return false;
+    }
+    if (!ApplyFloatControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value)) {
+        if (ctx.ui_automation_set_error) {
+            *ctx.ui_automation_set_error = std::string("schema edit rejected visible control: ") + controlId;
+        }
+        return false;
+    }
+    if (ctx.ui_automation_set_consumed) {
+        *ctx.ui_automation_set_consumed = true;
+    }
+    if (ctx.ui_automation_set_error) {
+        ctx.ui_automation_set_error->clear();
+    }
+    MarkDirtyIfChanged(true, ioDirty);
+    if (ioInteracted) {
+        *ioInteracted = true;
+    }
+    return true;
+}
+
 void MarkCurrentItemInteraction(bool changed, bool* ioInteracted) {
     if ((changed || ImGui::IsItemActivated() || ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit()) && ioInteracted) {
         *ioInteracted = true;
@@ -1365,6 +1399,7 @@ bool RenderCameraZoomControl(
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &dragValue, speed, &minLog2Zoom, &maxLog2Zoom, "2^(%.3f)");
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), &displayedValue, 0.0, 0.0, inputFormat);
@@ -1376,7 +1411,7 @@ bool RenderCameraZoomControl(
         return RenderDiagnosticLabel(control, "camera edit failed");
     }
 
-    changed = changed || typedChanged;
+    changed = changed || typedChanged || automationChanged;
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;
@@ -1416,6 +1451,7 @@ bool RenderFloatControl(
         changed = ImGui::DragFloat(control.label.c_str(), &value, speed, dragMin, dragMax, displayFormat, flags);
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputFloat(inputLabel.c_str(), &value, 0.0f, 0.0f, inputFormat);
@@ -1425,6 +1461,7 @@ bool RenderFloatControl(
         }
         changed = true;
     }
+    changed = changed || automationChanged;
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;

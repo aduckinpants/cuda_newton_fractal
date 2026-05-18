@@ -13,8 +13,6 @@ import pytest
 
 from tests.runtime_harness import (
     HeadlessLoadedStateScenario as _HeadlessLoadedStateScenario,
-    MOUSEEVENTF_LEFTDOWN,
-    MOUSEEVENTF_LEFTUP,
     POINT,
     RUNTIME_DIR,
     WM_CLOSE,
@@ -22,7 +20,6 @@ from tests.runtime_harness import (
     capture_explaino_runtime_baseline as _capture_explaino_runtime_baseline,
     capture_ready_window_pixels as _capture_ready_window_pixels,
     run_headless_capture as _run_headless_capture,
-    drag_screen_rect,
     find_window_for_pid as _find_window_for_pid,
     focus_window as _focus_window,
     run_headless_loaded_state_scenario as _run_headless_loaded_state_scenario,
@@ -44,11 +41,128 @@ WM_KEYUP = 0x0101
 VK_SPACE = 0x20
 VK_RIGHT = 0x27
 COLOR_PIPELINE_SCALE_CONTROL_ID = "color_pipeline.source.smooth_escape_ramp.signal.scale.primary"
-EXPLAINO_ALL_LIVE_CONTROL_IDS = (
-    "fractal_control.ripple_amplitude.primary",
-    "fractal_control.balance_void.primary",
-)
 
+
+
+def _describe_explaino_axis_registry(exe_path: Path) -> list[dict[str, object]]:
+    result = subprocess.run(
+        [str(exe_path), "--describe-explaino-axis-registry"],
+        cwd=str(RUNTIME_DIR),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    axes = payload.get("axes")
+    assert isinstance(axes, list) and len(axes) == int(payload.get("count", -1))
+    for axis in axes:
+        assert isinstance(axis, dict)
+        assert isinstance(axis.get("axis_id"), str) and axis["axis_id"]
+        assert isinstance(axis.get("carrier_fractal_type"), str) and axis["carrier_fractal_type"]
+        assert isinstance(axis.get("control_id"), str) and axis["control_id"].startswith("fractal_control.")
+    return axes
+
+
+def _axis_active_value(axis: dict[str, object]) -> float:
+    default_value = float(axis.get("default_value", 0.0))
+    return default_value if abs(default_value) > 1.0e-9 else 0.35
+
+
+def _wait_for_ui_automation_set_value(
+    report_path: Path,
+    control_id: str,
+    *,
+    timeout_seconds: float = 10.0,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, object] | None = None
+    while time.monotonic() < deadline:
+        payload = _load_ui_automation_report(report_path)
+        if payload is None:
+            time.sleep(0.05)
+            continue
+        last_payload = payload
+        if payload.get("requested_set_control_id") != control_id:
+            time.sleep(0.05)
+            continue
+        set_error = payload.get("set_value_error")
+        assert not set_error, f"set-value automation failed for {control_id}: {set_error}"
+        if payload.get("set_value_consumed") is True:
+            return payload
+        time.sleep(0.1)
+    raise AssertionError(f"UI set-value automation never consumed {control_id}; last_payload={last_payload!r}")
+
+
+def _capture_controls_viewport_with_optional_set_value(
+    exe_path: Path,
+    state_path: Path,
+    report_path: Path,
+    control_id: str,
+    set_value: float | None,
+) -> tuple[bytes, dict[str, object] | None]:
+    args = [str(exe_path), "--load-state-json", str(state_path), "--ui-automation-report-json", str(report_path)]
+    if set_value is not None:
+        args.extend(["--ui-automation-set-control-value", f"{control_id}={set_value}"])
+    proc = subprocess.Popen(args, cwd=str(RUNTIME_DIR))
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        control_rect = wait_for_ui_automation_rect(report_path, control_id)
+        consumed_payload = None
+        if set_value is not None:
+            consumed_payload = _wait_for_ui_automation_set_value(report_path, control_id)
+        return _wait_for_stable_controls_viewport_probe(hwnd, control_rect), consumed_payload
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def _capture_runtime_walk_color_pipeline_viewport(
+    exe_path: Path,
+    request_path: Path,
+    report_path: Path,
+    set_value: float | None,
+) -> tuple[bytes, dict[str, object] | None]:
+    args = [
+        str(exe_path),
+        "--load-runtime-walk-request-json",
+        str(request_path),
+        "--open-color-pipeline-window",
+        "--ui-automation-report-json",
+        str(report_path),
+    ]
+    if set_value is not None:
+        args.extend(["--ui-automation-set-control-value", f"{COLOR_PIPELINE_SCALE_CONTROL_ID}={set_value}"])
+    proc = subprocess.Popen(args, cwd=str(RUNTIME_DIR))
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        control_rect = wait_for_ui_automation_rect(report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
+        ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
+        ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
+        consumed_payload = None
+        if set_value is not None:
+            consumed_payload = _wait_for_ui_automation_set_value(report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
+        time.sleep(0.5)
+        return _wait_for_stable_controls_viewport_probe(hwnd, control_rect), consumed_payload
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
 
 def _write_state_json(path: Path) -> None:
     payload = {
@@ -373,64 +487,42 @@ def _wait_for_lane_rows(
     )
 
 
-@pytest.mark.parametrize("control_id", EXPLAINO_ALL_LIVE_CONTROL_IDS)
-def test_explaino_all_controls_window_drag_changes_live_viewport(tmp_path: Path, control_id: str) -> None:
+def test_explaino_registry_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
     if sys.platform != "win32":
-        pytest.skip("Explaino live Controls-window regression is Windows-only")
+        pytest.skip("runtime-walk viewer regression is Windows-only")
 
     exe_path = _active_runtime_exe()
-    explaino_all_capture = _run_headless_capture(
-        str(exe_path),
-        "--capture-diagnostic",
-        "--fractal-type",
-        "explaino_all",
-        "--width",
-        "320",
-        "--height",
-        "240",
+    axes = _describe_explaino_axis_registry(exe_path)
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino_all", "--width", "320", "--height", "240"
     )
-    state = explaino_all_capture["state"]
-    assert state["fractal_type"] == "explaino_all"
+    base_state = neutral_capture["state"]
+    for axis in axes:
+        axis_id = str(axis["axis_id"])
+        control_id = str(axis["control_id"])
+        active_value = _axis_active_value(axis)
+        for fractal_type in ("explaino_all", str(axis["carrier_fractal_type"])):
+            state = json.loads(json.dumps(base_state))
+            state["fractal_type"] = fractal_type
+            params = state["params"]
+            assert isinstance(params, dict)
+            for registry_axis in axes:
+                params[str(registry_axis["axis_id"])] = 0.0
+            state_path = _write_state_bundle(tmp_path / f"{fractal_type}_{axis_id}_neutral", state)
+            baseline_pixels, _ = _capture_controls_viewport_with_optional_set_value(
+                exe_path, state_path, tmp_path / f"{fractal_type}_{axis_id}_baseline_report.json", control_id, None
+            )
+            edited_pixels, payload = _capture_controls_viewport_with_optional_set_value(
+                exe_path, state_path, tmp_path / f"{fractal_type}_{axis_id}_edited_report.json", control_id, active_value
+            )
+            assert payload is not None
+            assert payload.get("current_fractal_type") == fractal_type
+            changed_diff = _mean_abs_diff(baseline_pixels, edited_pixels)
+            assert changed_diff > 0.03, (
+                "No-mouse set-value automation for a visible Explaino registry control should change the live viewport; "
+                f"fractal_type={fractal_type!r} axis={axis_id!r} diff={changed_diff:.3f}"
+            )
 
-    state_path = _write_state_bundle(tmp_path / "explaino_all_live_controls", state)
-    automation_report_path = tmp_path / "ui_automation_report.json"
-
-    proc = subprocess.Popen(
-        [
-            str(exe_path),
-            "--load-state-json",
-            str(state_path),
-            "--ui-automation-report-json",
-            str(automation_report_path),
-        ],
-        cwd=str(RUNTIME_DIR),
-    )
-
-    hwnd: int | None = None
-    try:
-        hwnd = _wait_for_window(proc)
-        _focus_window(hwnd)
-        control_rect = wait_for_ui_automation_rect(automation_report_path, control_id)
-
-        baseline_viewport = _wait_for_stable_controls_viewport_probe(hwnd, control_rect)
-
-        drag_screen_rect(control_rect)
-
-        changed_viewport = _wait_for_stable_controls_viewport_probe(hwnd, control_rect)
-        changed_diff = _mean_abs_diff(baseline_viewport, changed_viewport)
-        assert changed_diff > 0.03, (
-            "Dragging an explaino_all shared-axis slider in the live Controls window should visibly change the viewport; "
-            f"control_id={control_id!r} diff={changed_diff:.3f}"
-        )
-    finally:
-        if hwnd is not None:
-            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
-        if proc.poll() is None:
-            try:
-                proc.wait(timeout=5.0)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait(timeout=5.0)
 
 
 def _wait_for_ui_automation_click(
@@ -578,162 +670,47 @@ def test_runtime_walk_viewer_replays_and_space_pauses(tmp_path: Path) -> None:
                 proc.wait(timeout=5.0)
 
 
-def test_runtime_walk_viewer_physical_color_pipeline_drag_changes_frame(tmp_path: Path) -> None:
+def test_runtime_walk_viewer_no_mouse_color_pipeline_set_value_changes_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("runtime-walk viewer regression is Windows-only")
-
     exe_path = _active_runtime_exe()
     state_path = tmp_path / "state.json"
     bundle_path = tmp_path / "bundle.json"
     request_path = tmp_path / "runtime_walk_viewer_request.json"
-    automation_report_path = tmp_path / "ui_automation_report.json"
     out_dir = tmp_path / "out"
     _write_state_json(state_path)
     _write_bundle_json(bundle_path)
     _write_request_json(request_path, state_path, bundle_path, out_dir)
-
-    proc = subprocess.Popen(
-        [
-            str(exe_path),
-            "--load-runtime-walk-request-json",
-            str(request_path),
-            "--open-color-pipeline-window",
-            "--ui-automation-report-json",
-            str(automation_report_path),
-        ],
-        cwd=str(RUNTIME_DIR),
+    baseline_pixels, _ = _capture_runtime_walk_color_pipeline_viewport(
+        exe_path, request_path, tmp_path / "color_pipeline_baseline_report.json", None
+    )
+    edited_pixels, payload = _capture_runtime_walk_color_pipeline_viewport(
+        exe_path, request_path, tmp_path / "color_pipeline_edited_report.json", 1.65
+    )
+    assert payload is not None
+    assert payload.get("requested_set_control_id") == COLOR_PIPELINE_SCALE_CONTROL_ID
+    assert payload.get("set_value_consumed") is True
+    changed_diff = _mean_abs_diff(baseline_pixels, edited_pixels)
+    assert changed_diff > 0.06, (
+        "No-mouse set-value automation for the Color Pipeline Source Scale control should visibly change the published runtime frame; "
+        f"diff={changed_diff:.3f}"
     )
 
-    hwnd: int | None = None
-    try:
-        hwnd = _wait_for_window(proc)
-        _focus_window(hwnd)
-        control_rect = wait_for_ui_automation_rect(automation_report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
 
-        user32 = ctypes.windll.user32
-        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
-        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
+def test_runtime_walk_viewer_first_party_tests_do_not_use_physical_mouse_automation() -> None:
+    forbidden_tokens = [
+        "Set" + "CursorPos",
+        "Get" + "CursorPos",
+        "mouse" + "_event",
+        "MOUSE" + "EVENTF",
+        "drag" + "_screen_rect",
+        "Send" + "Input",
+    ]
+    for path in (REPO_ROOT / "tests" / "runtime_harness.py", Path(__file__)):
+        source = path.read_text(encoding="utf-8")
+        for token in forbidden_tokens:
+            assert token not in source, f"first-party runtime tests must not use physical mouse automation token {token!r} in {path}"
 
-        time.sleep(0.5)
-        paused_frame_a, paused_frame_b = _capture_stable_window_pixels(hwnd)
-        paused_diff = _mean_abs_diff(paused_frame_a, paused_frame_b)
-        assert paused_diff < 0.1, f"Space pause did not freeze runtime-walk playback before the color-pipeline drag; diff={paused_diff:.3f}"
-
-        drag_screen_rect(control_rect)
-
-        changed_frame_a, changed_frame_b = _capture_stable_window_pixels(hwnd)
-        changed_diff = _mean_abs_diff(paused_frame_b, changed_frame_a)
-        assert changed_diff > 0.06, (
-            "Physical drag of the Color Pipeline Source Scale control did not visibly change the published-runtime frame; "
-            f"diff={changed_diff:.3f}"
-        )
-
-        steady_after_drag = _mean_abs_diff(changed_frame_a, changed_frame_b)
-        assert steady_after_drag < 0.1, (
-            "The viewer did not settle after the Color Pipeline drag while runtime-walk playback was paused; "
-            f"diff={steady_after_drag:.3f}"
-        )
-    finally:
-        if hwnd is not None:
-            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
-        if proc.poll() is None:
-            try:
-                proc.wait(timeout=5.0)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait(timeout=5.0)
-
-
-def test_runtime_walk_viewer_physical_color_pipeline_drag_updates_frame_before_release(tmp_path: Path) -> None:
-    if sys.platform != "win32":
-        pytest.skip("runtime-walk viewer regression is Windows-only")
-
-    exe_path = _active_runtime_exe()
-    state_path = tmp_path / "state.json"
-    bundle_path = tmp_path / "bundle.json"
-    request_path = tmp_path / "runtime_walk_viewer_request.json"
-    automation_report_path = tmp_path / "ui_automation_report.json"
-    out_dir = tmp_path / "out"
-    _write_state_json(state_path)
-    _write_bundle_json(bundle_path)
-    _write_request_json(request_path, state_path, bundle_path, out_dir)
-
-    proc = subprocess.Popen(
-        [
-            str(exe_path),
-            "--load-runtime-walk-request-json",
-            str(request_path),
-            "--open-color-pipeline-window",
-            "--ui-automation-report-json",
-            str(automation_report_path),
-        ],
-        cwd=str(RUNTIME_DIR),
-    )
-
-    hwnd: int | None = None
-    user32 = ctypes.windll.user32
-    original_cursor = POINT()
-    left_button_down = False
-    try:
-        hwnd = _wait_for_window(proc)
-        _focus_window(hwnd)
-        control_rect = wait_for_ui_automation_rect(automation_report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
-
-        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
-        user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
-
-        time.sleep(0.5)
-        paused_frame_a, paused_frame_b = _capture_stable_window_pixels(hwnd)
-        paused_diff = _mean_abs_diff(paused_frame_a, paused_frame_b)
-        assert paused_diff < 0.1, f"Space pause did not freeze runtime-walk playback before the held color-pipeline drag; diff={paused_diff:.3f}"
-
-        paused_viewport = _viewport_probe_pixels(hwnd, control_rect)
-        user32.GetCursorPos(ctypes.byref(original_cursor))
-        start_x = round(control_rect.screen_left + control_rect.width * 0.35)
-        mid_x = round(control_rect.screen_left + control_rect.width * 0.58)
-        end_x = round(control_rect.screen_left + control_rect.width * 0.82)
-        y = round(control_rect.screen_top + control_rect.height * 0.5)
-
-        user32.SetCursorPos(start_x, y)
-        time.sleep(0.05)
-        user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-        left_button_down = True
-        time.sleep(0.05)
-        user32.SetCursorPos(mid_x, y)
-        time.sleep(0.25)
-
-        mid_drag_frame_a = _viewport_probe_pixels(hwnd, control_rect)
-        time.sleep(0.2)
-        mid_drag_frame_b = _viewport_probe_pixels(hwnd, control_rect)
-        mid_drag_diff = _mean_abs_diff(paused_viewport, mid_drag_frame_a)
-        assert mid_drag_diff > 0.03, (
-            "Holding a physical drag on the Color Pipeline Source Scale control did not visibly change the viewport region before mouse release; "
-            f"diff={mid_drag_diff:.3f}"
-        )
-
-        steady_while_held = _mean_abs_diff(mid_drag_frame_a, mid_drag_frame_b)
-        assert steady_while_held < 0.1, (
-            "The viewport region did not settle on the held mid-drag Color Pipeline value while playback was paused; "
-            f"diff={steady_while_held:.3f}"
-        )
-
-        user32.SetCursorPos(end_x, y)
-        time.sleep(0.05)
-        user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
-        left_button_down = False
-        time.sleep(0.3)
-    finally:
-        if left_button_down:
-            user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
-        user32.SetCursorPos(original_cursor.x, original_cursor.y)
-        if hwnd is not None:
-            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
-        if proc.poll() is None:
-            try:
-                proc.wait(timeout=5.0)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait(timeout=5.0)
 
 
 def test_runtime_viewer_grading_enabled_checkbox_preserves_disabled_row(tmp_path: Path) -> None:

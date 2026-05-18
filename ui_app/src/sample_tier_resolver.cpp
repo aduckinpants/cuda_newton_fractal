@@ -27,6 +27,10 @@ bool ExplainoLegacyProjectionSmoothEscapeStaysFast(
         params.color_pipeline.signal != ColorSignal::smooth_escape) {
         return false;
     }
+    if (requestedFractalType == ExplainoCanonicalFractalType() &&
+        HasAnyExplainoAxisRegistryPerturbation(params)) {
+        return true;
+    }
     if (requestedFractalType == runtimeFractalType &&
         IsExplainoLegacyProjectionSelector(requestedFractalType)) {
         return true;

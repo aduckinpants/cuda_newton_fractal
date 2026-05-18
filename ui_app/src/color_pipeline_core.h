@@ -1378,8 +1378,10 @@ inline bool TryBuildColorPipelineScheduleBridgeIds(
 
     const bool isEscapeLikeGrading =
         pipeline.grading == ColorGradingPreset::escape_default ||
+        pipeline.grading == ColorGradingPreset::neutral_default ||
         pipeline.grading == ColorGradingPreset::tone_map_default ||
-        pipeline.grading == ColorGradingPreset::glow_default;
+        pipeline.grading == ColorGradingPreset::glow_default ||
+        pipeline.grading == ColorGradingPreset::balance_void_default;
 
     if (pipeline.signal == ColorSignal::smooth_escape &&
         pipeline.palette == ColorPalette::cyclic_escape &&

@@ -1127,6 +1127,24 @@ def test_explaino_composed_variant_state_round_trips_through_load_state_json(tmp
 
 
 
+
+def _describe_explaino_axis_registry(exe_path: Path) -> list[dict[str, object]]:
+    result = subprocess.run([str(exe_path), "--describe-explaino-axis-registry"], cwd=str(RUNTIME_DIR), capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    axes = payload.get("axes")
+    assert isinstance(axes, list) and len(axes) == int(payload.get("count", -1))
+    for axis in axes:
+        assert isinstance(axis, dict)
+        assert isinstance(axis.get("axis_id"), str) and axis["axis_id"]
+        assert isinstance(axis.get("carrier_fractal_type"), str) and axis["carrier_fractal_type"]
+    return axes
+
+
+def _axis_active_value(axis: dict[str, object]) -> float:
+    default_value = float(axis.get("default_value", 0.0))
+    return default_value if abs(default_value) > 1.0e-9 else 0.35
+
 def test_explaino_all_neutral_defaults_match_explaino_published_runtime() -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-all runtime regression is Windows-only")
@@ -1172,55 +1190,36 @@ def test_explaino_all_neutral_defaults_match_explaino_published_runtime() -> Non
 def test_explaino_all_registry_axes_round_trip_and_change_published_runtime_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-all runtime regression is Windows-only")
-
     exe_path = _active_runtime_exe()
-    neutral_capture = _run_headless_capture(
-        str(exe_path),
-        "--capture-diagnostic",
-        "--fractal-type",
-        "explaino_all",
-        "--width",
-        "320",
-        "--height",
-        "240",
-    )
+    axes = _describe_explaino_axis_registry(exe_path)
+    neutral_capture = _run_headless_capture(str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino_all", "--width", "320", "--height", "240")
+    for axis in axes:
+        axis_id = str(axis["axis_id"])
+        perturbed_state = json.loads(json.dumps(neutral_capture["state"]))
+        perturbed_params = perturbed_state["params"]
+        assert isinstance(perturbed_params, dict)
+        for registry_axis in axes:
+            perturbed_params[str(registry_axis["axis_id"])] = 0.0
+        perturbed_params[axis_id] = _axis_active_value(axis)
+        perturbed_capture = _run_headless_capture(
+            str(exe_path), "--load-state-json", str(_write_state_bundle(tmp_path / f"explaino_all_{axis_id}_perturbed", perturbed_state)), "--capture-diagnostic"
+        )
+        reloaded_state = perturbed_capture["state"]
+        assert reloaded_state["fractal_type"] == "explaino_all"
+        reloaded_params = reloaded_state["params"]
+        assert isinstance(reloaded_params, dict)
+        assert reloaded_params[axis_id] == pytest.approx(_axis_active_value(axis), abs=1e-6)
+        assert perturbed_capture["frame_hash"] != neutral_capture["frame_hash"], f"expected Explaino-all registry axis {axis_id} to change the published runtime frame"
+        assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) > 0.01, f"expected Explaino-all registry axis {axis_id} to produce a measurable published-frame delta"
+    all_axes_state = json.loads(json.dumps(neutral_capture["state"]))
+    all_axes_params = all_axes_state["params"]
+    assert isinstance(all_axes_params, dict)
+    for axis in axes:
+        all_axes_params[str(axis["axis_id"])] = _axis_active_value(axis)
+    all_axes_capture = _run_headless_capture(str(exe_path), "--load-state-json", str(_write_state_bundle(tmp_path / "explaino_all_every_registry_axis", all_axes_state)), "--capture-diagnostic")
+    assert all_axes_capture["state"]["fractal_type"] == "explaino_all"
+    assert all_axes_capture["frame_hash"] != neutral_capture["frame_hash"]
 
-    perturbed_state = json.loads(json.dumps(neutral_capture["state"]))
-    perturbed_params = perturbed_state["params"]
-    assert isinstance(perturbed_params, dict)
-    perturbed_params.update(
-        {
-            "ripple_amplitude": 0.15,
-            "balance_void": 0.35,
-            "symmetry_tension": -0.2,
-            "field_curvature": 0.25,
-        }
-    )
-
-    perturbed_capture = _run_headless_capture(
-        str(exe_path),
-        "--load-state-json",
-        str(_write_state_bundle(tmp_path / "explaino_all_perturbed", perturbed_state)),
-        "--capture-diagnostic",
-    )
-
-    reloaded_state = perturbed_capture["state"]
-    assert reloaded_state["fractal_type"] == "explaino_all"
-    reloaded_params = reloaded_state["params"]
-    assert isinstance(reloaded_params, dict)
-    assert reloaded_params["ripple_amplitude"] == pytest.approx(0.15, abs=1e-6)
-    assert reloaded_params["splice_offset"] == pytest.approx(0.0, abs=1e-6)
-    assert reloaded_params["vortex_strength"] == pytest.approx(0.0, abs=1e-6)
-    assert reloaded_params["tension_strength"] == pytest.approx(0.0, abs=1e-6)
-    assert reloaded_params["balance_void"] == pytest.approx(0.35, abs=1e-6)
-    assert reloaded_params["symmetry_tension"] == pytest.approx(-0.2, abs=1e-6)
-    assert reloaded_params["field_curvature"] == pytest.approx(0.25, abs=1e-6)
-    assert perturbed_capture["frame_hash"] != neutral_capture["frame_hash"], (
-        "expected Explaino-all registry-axis edits to change the published runtime frame"
-    )
-    assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) > 0.01, (
-        "expected Explaino-all registry-axis edits to produce a measurable published-frame delta"
-    )
 
 
 def test_explaino_balance_void_neutral_defaults_match_explaino_published_runtime() -> None:
@@ -2458,63 +2457,32 @@ def test_explaino_smooth_escape_auto_records_float64_backend_in_published_runtim
     assert state["stats"]["resolved_strategy"] == "direct"
 
 
-@pytest.mark.parametrize(
-    ("fractal_type", "param_updates"),
-    [
-        pytest.param("explaino_ripple", {"ripple_amplitude": 0.15}, id="ripple"),
-        pytest.param("explaino_splice", {"splice_offset": 0.5}, id="splice"),
-        pytest.param("explaino_vortex", {"vortex_strength": 0.3}, id="vortex"),
-        pytest.param("explaino_tension", {"tension_strength": 0.02}, id="tension"),
-        pytest.param("explaino_all", {"ripple_amplitude": 0.15}, id="explaino-all-shared-axis"),
-        pytest.param(
-            "explaino_balance_void",
-            {"balance_void": 0.35, "symmetry_tension": -0.2, "field_curvature": 0.25},
-            id="balance-void",
-        ),
-    ],
-)
-def test_explaino_legacy_projection_smooth_escape_auto_records_float32_backend_in_published_runtime(
-    tmp_path: Path,
-    fractal_type: str,
-    param_updates: dict[str, float],
-) -> None:
+def test_explaino_legacy_projection_smooth_escape_auto_records_float32_backend_in_published_runtime(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino legacy-projection smooth_escape backend runtime regression is Windows-only")
-
     exe_path = _active_runtime_exe()
-    baseline_capture = _run_headless_capture(
-        str(exe_path),
-        "--capture-diagnostic",
-        "--fractal-type",
-        "explaino",
-        "--width",
-        "16",
-        "--height",
-        "16",
-    )
-
-    smooth_state = _with_explaino_programmable_color_state(
-        baseline_capture["state"],
-        palette="cyclic_escape",
-        max_iter=64,
-        **param_updates,
-    )
-    smooth_state["fractal_type"] = fractal_type
-
-    smooth_capture = _run_headless_capture(
-        str(exe_path),
-        "--load-state-json",
-        str(_write_state_bundle(tmp_path / fractal_type, smooth_state)),
-        "--capture-diagnostic",
-    )
-
-    state = smooth_capture["state"]
-    assert state["fractal_type"] == fractal_type
-    assert state["params"]["coloring_mode"] == "smooth_escape"
-    assert state["params"]["color_signal"] == "smooth_escape"
-    assert state["render"]["sample_tier"] == "tier_auto"
-    assert state["stats"]["resolved_backend"] == "float32"
-    assert state["stats"]["resolved_strategy"] == "direct"
+    axes = _describe_explaino_axis_registry(exe_path)
+    owner_updates: dict[str, dict[str, float]] = {}
+    for axis in axes:
+        owner_updates.setdefault(str(axis["carrier_fractal_type"]), {})[str(axis["axis_id"])] = _axis_active_value(axis)
+    cases = [("explaino_all", {str(axis["axis_id"]): _axis_active_value(axis) for axis in axes})]
+    cases.extend(sorted(owner_updates.items()))
+    baseline_capture = _run_headless_capture(str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino", "--width", "16", "--height", "16")
+    for fractal_type, param_updates in cases:
+        smooth_state = _with_explaino_programmable_color_state(baseline_capture["state"], palette="cyclic_escape", max_iter=64, **param_updates)
+        smooth_state["fractal_type"] = fractal_type
+        params = smooth_state["params"]
+        assert isinstance(params, dict)
+        for axis in axes:
+            params.setdefault(str(axis["axis_id"]), 0.0)
+        smooth_capture = _run_headless_capture(str(exe_path), "--load-state-json", str(_write_state_bundle(tmp_path / fractal_type, smooth_state)), "--capture-diagnostic")
+        state = smooth_capture["state"]
+        assert state["fractal_type"] == fractal_type
+        assert state["params"]["coloring_mode"] == "smooth_escape"
+        assert state["params"]["color_signal"] == "smooth_escape"
+        assert state["render"]["sample_tier"] == "tier_auto"
+        assert state["stats"]["resolved_backend"] == "float32", f"expected {fractal_type} active registry-axis smooth_escape auto path to stay on float32"
+        assert state["stats"]["resolved_strategy"] == "direct"
 
 
 def test_explaino_root_proximity_auto_records_float64_backend_in_published_runtime(tmp_path: Path) -> None:

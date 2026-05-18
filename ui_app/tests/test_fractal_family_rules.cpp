@@ -185,19 +185,31 @@ int main() {
             std::cerr << "Explaino-all neutral defaults should still collapse to baseline Explaino at the runtime seam\n";
             return 1;
         }
-        KernelParams explainoAllSharedAxis{};
-        explainoAllSharedAxis.ripple_amplitude = 0.15f;
-        explainoAllSharedAxis.balance_void = 0.42f;
-        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllSharedAxis) != FractalType::explaino_ripple) {
-            std::cerr << "Explaino-all should restore the legacy shared single-axis carrier precedence when a shared registry axis is active\n";
-            return 1;
+        for (const auto& axis : kExplainoAxisRegistry) {
+            KernelParams explainoAllSingleAxis{};
+            float* axisValue = ResolveExplainoAxisValue(explainoAllSingleAxis, axis.slot);
+            if (!axisValue) {
+                std::cerr << "Every Explaino-all registry axis should resolve to a KernelParams slot\n";
+                return 1;
+            }
+            *axisValue = axis.default_value != 0.0f ? axis.default_value : 0.42f;
+            if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllSingleAxis) != FractalType::explaino_all) {
+                std::cerr << "Active canonical Explaino-all registry axis should keep the whole common-axis runtime structure active: "
+                          << axis.axis_id << "\n";
+                return 1;
+            }
         }
-        KernelParams explainoAllBalanceVoidOnly{};
-        explainoAllBalanceVoidOnly.balance_void = 0.42f;
-        explainoAllBalanceVoidOnly.symmetry_tension = -0.2f;
-        explainoAllBalanceVoidOnly.field_curvature = 0.25f;
-        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllBalanceVoidOnly) != FractalType::explaino_balance_void) {
-            std::cerr << "Explaino-all should restore the legacy shared BalanceVoid carrier when only the dedicated BalanceVoid axes are active\n";
+        KernelParams explainoAllEveryAxis{};
+        for (const auto& axis : kExplainoAxisRegistry) {
+            float* axisValue = ResolveExplainoAxisValue(explainoAllEveryAxis, axis.slot);
+            if (!axisValue) {
+                std::cerr << "Every Explaino-all registry axis should resolve to a KernelParams slot\n";
+                return 1;
+            }
+            *axisValue = axis.default_value != 0.0f ? axis.default_value : 0.42f;
+        }
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllEveryAxis) != FractalType::explaino_all) {
+            std::cerr << "Canonical Explaino-all should not collapse an active common-axis combination into a partial owner lane\n";
             return 1;
         }
         KernelParams explicitRippleNeutral{};
