@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - hostile-audit the repaired merged head, restore the temporary Meta-Basin bridge scope, finish validator / receipt / checkpoint closeout, and re-read the committed head for stale closeout text before stopping.
+Closed on the committed head - the merged-head Explaino selector/control/smooth-escape repair is checkpointed, hostile-audited, validator-clean, preserves `SampleFractalPoints(...)` as the shipped legacy projection surface, and holds the merged-head public selector/control/runtime/perf contract without reopening Meta-Basin, Operator-Itinerary, DSL/program-space, or generic engine rewrite work.
 
 ## Phase Checklist
 
 - [x] Phase 1 - replace the closed Meta-Basin lock with this checked-in merged-head repair contract and land RED proofs for selector collapse, false `explaino_all` ownership, regressed tests, bounded smooth-escape perf/usability failure, and preserved legacy projection semantics.
 - [x] Phase 2 - land one truthful selector-identity repair and one truthful `explaino_all` control-ownership repair across schema/public-state/runtime-routing/catalog surfaces without widening into Meta-Basin, Operator-Itinerary, DSL/program-space, or generic engine redesign.
 - [x] Phase 3 - land one bounded smooth-escape Explaino usability/perf repair, prove one-at-a-time control authority on the owning lanes, and keep `SampleFractalPoints(...)` / legacy callers unchanged as the shipped projection surface.
-- [ ] Phase 4 - hostile-audit the repaired merged head, restore the temporary Meta-Basin bridge scope, run focused native/runtime publish/published-runtime/perf proof plus contract validation and plan sync, checkpoint, write receipts, clear stale closeout text, and leave the repo clean.
+- [x] Phase 4 - hostile-audit the repaired merged head, restore the temporary Meta-Basin bridge scope, run focused native/runtime publish/published-runtime/perf proof plus contract validation and plan sync, checkpoint, write receipts, clear stale closeout text, and leave the repo clean.
 
 ## Explicit User Asks
 
@@ -18,7 +18,7 @@ Phase 4 - hostile-audit the repaired merged head, restore the temporary Meta-Bas
 - [done] Repair the merged-head Explaino smooth-escape usability/perf regression with one bounded witness on the same public path instead of a vague "it still renders" claim.
 - [done] Update tests so they enforce the truthful merged-head product contract instead of encoding selector collapse or false `explaino_all` ownership as correct.
 - [done] Preserve `SampleFractalPoints(...)` as the shipped legacy projection surface and keep Meta-Basin, Operator-Itinerary, DSL/program-space, generic color expansion, and broad engine rewrite out of scope unless one tiny blocker seam is proved exactly.
-- [open] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
+- [done] Close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -39,6 +39,7 @@ Phase 4 - hostile-audit the repaired merged head, restore the temporary Meta-Bas
 - The bounded smooth-escape repair is now in `ui_app/src/sample_tier_resolver.cpp`: `ResolveSampleEvalModeForRender(...)` resolves the truthful Explaino runtime type first, keeps owner-active legacy projection selectors (`ripple`, `splice`, `vortex`, `tension`, `balance_void`) on `float32` for `tier_auto + smooth_escape`, and leaves neutral / umbrella Explaino lanes and other color signals on the prior path.
 - Focused proof on the repaired head is green: repo-local targeted native unit `artifacts/build_targeted/test_sample_tier_resolver.exe` passed, runtime publish via `ui_app/build_vsdevcmd.cmd > artifacts/logs/explaino_selector_control_fix_runtime_build2.log 2>&1` succeeded, and focused published-runtime proof via `artifacts/logs/explaino_selector_control_fix_runtime_pytest2.log` finished `15 passed in 8.68s`.
 - Post-fix merged-head smooth-escape witness medians are back inside the usability envelope on the same public path: baseline `explaino=0.1917s` (`float64`), `explaino_ripple=0.2093s` (`float32`), `explaino_splice=0.2005s` (`float32`), `explaino_vortex=0.1887s` (`float32`), and `explaino_tension=0.2139s` (`float32`).
+- Contract validation, phased-plan sync, and hostile-audit validation are green on the repaired merged head via `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/merged_head_explaino_selector_control_smooth_escape_regression_repair.contract.json --out-json artifacts/validation/merged_head_explaino_selector_control_smooth_escape_regression_repair_contract.json`, `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`, and `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/merged_head_explaino_selector_control_smooth_escape_regression_repair_PHASED_PLAN.md --out-json artifacts/validation/merged_head_explaino_selector_control_smooth_escape_regression_repair_hostile_audit.json`.
 
 ## Hostile Audit
 
@@ -57,7 +58,7 @@ Phase 4 - hostile-audit the repaired merged head, restore the temporary Meta-Bas
 
 - [x] Pass 1 - land the first REDs proving selector collapse, false `explaino_all` ownership, current regressed tests, bounded smooth-escape perf/usability failure, and preserved legacy projection semantics on the merged head.
 - [x] Pass 2 - hostile-reread the repaired selector/control/perf seams for truthful ownership, one-at-a-time control authority, bounded scope, and preserved legacy sampling.
-- [x] Pass 3 - rerun the repaired native/runtime/perf witnesses, restore the temporary Meta-Basin bridge scope, and reread the repaired head until no additional product lie or workflow lie remains before checkpoint/receipt closeout.
+- [x] Pass 3 - rerun the repaired native/runtime/perf witnesses, restore the temporary Meta-Basin bridge scope, and reread the repaired head until no additional product lie, workflow lie, or stale closeout text remains.
 
 ## Audit Findings
 
