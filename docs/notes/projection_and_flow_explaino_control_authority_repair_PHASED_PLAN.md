@@ -2,14 +2,14 @@
 
 ## Current Phase
 
-Phase 4 - hostile audit is complete and the repaired `explaino_projection_and_flow` control-authority slice is at checkpoint/receipt closeout with the bridge contract restored; remaining work is contract validation, handoff/receipts, checkpoint commit, and the committed-head stale-plan gate.
+Closed on the committed head - the Explaino Projection-and-Flow control-authority repair is checkpointed, hostile-audited, stale-plan synced, and bounded away from color-pipeline expansion, BalanceVoid, meta-basin, Operator-Itinerary, DSL/program-space, renderer replacement, and legacy sample-surface mutation.
 
 ## Phase Checklist
 
 - [x] Phase 1 - replace the closed Explaino Projection-and-Flow variant lock, prove the current dead/weak control-authority seams, and keep the bridge preflight bounded to opening this slice.
 - [x] Phase 2 - land one bounded Explaino Projection-and-Flow control-authority repair that makes `root spread` and `phase strength` materially real while strengthening one-at-a-time seed / seed-fraction authority without reopening color-pipeline or broad engine work.
 - [x] Phase 3 - prove the repaired state through focused derived-field, kernel/native, and published-runtime one-at-a-time control-sensitivity witnesses while preserving `SampleFractalPoints(...)` / `FractalSampleResult`.
-- [ ] Phase 4 - run hostile audit, checkpoint, write receipts, restore any temporary bridge scope, clear stale closeout text, and leave the repo clean on the committed head.
+- [x] Phase 4 - run hostile audit, checkpoint, write receipts, restore any temporary bridge scope, clear stale closeout text, and leave the repo clean on the committed head.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 4 - hostile audit is complete and the repaired `explaino_projection_and_fl
 - [done] Make the surfaced `root spread`, `phase strength`, `seed`, and `seed fraction` controls on `explaino_projection_and_flow` materially authoritative instead of hiding or de-scoping them.
 - [done] Keep this bounded away from color-pipeline expansion, ExplainO-BalanceVoid, meta-basin, Operator-Itinerary, DSL/program-space, renderer replacement, and broad engine refactor work unless one tiny blocker seam proves otherwise.
 - [done] Preserve `FractalSampleResult` and `SampleFractalPoints(...)` as the shipped legacy projection surfaces.
-- [open] Close only with focused native proof, runtime publish, one-at-a-time published-runtime sensitivity proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
+- [done] Close only with focused native proof, runtime publish, one-at-a-time published-runtime sensitivity proof, hostile audit, checkpoint commit, machine receipts, clean tree, and the committed-head stale-plan gate.
 
 ## Proof Ledger
 
@@ -32,10 +32,11 @@ Phase 4 - hostile audit is complete and the repaired `explaino_projection_and_fl
 - Implemented authority seam: `ui_app/src/fractal_derived_fields.cpp` now maps `explaino_projection_and_flow` into a custom Explaino polynomial keyed by `projection_and_flow_root_family`; quartic family keeps the full conjugate-pair Explaino root pack, cubic family collapses the second lobe into a bounded real anchor so `root spread`, `phase strength`, `seed`, and `seed drift` all materially perturb the carrier polynomial while standalone `projection_and_flow` keeps the shipped preset path.
 - Shared-vs-Explaino control ownership is now explicit and proved: shared `projection_and_flow_root_family`, `projection_and_flow_target_radius`, and `projection_and_flow_pressure_threshold` still govern the Projection-and-Flow lane, while Explaino-owned `explaino_root_spread`, `view.explaino_phase_strength`, `explaino_seed`, `view.explaino_seed_drift`, `explaino_warp_strength`, and `explaino_damping` stay public and now materially alter either the derived carrier polynomial or the runtime start/damping path on `explaino_projection_and_flow`.
 - Legacy projection ownership stays intact: `SampleFractalPoints(...)` and `FractalSampleResult` were not changed; the repaired lane continues to flow through the existing sample/result seam, with Explaino-specific control authority injected via derived `params.poly_coeffs` and existing runtime inputs instead of API widening.
-- Focused native proof is green on the current dirty head via `ui_app/build_tests_vsdevcmd.cmd` (`artifacts/logs/projection_flow_control_authority_native_rerun8.log`), including the new derived-field, family-rule, diagnostics, validation, and kernel witnesses for the Explaino Projection-and-Flow carrier.
-- Focused runtime publish is green on the current dirty head via `ui_app/build_vsdevcmd.cmd` (`artifacts/logs/projection_flow_control_authority_runtime_build_rerun2.log`).
-- Focused published-runtime proof is green on the current dirty head via `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k projection_and_flow -q` (`artifacts/logs/projection_flow_control_authority_runtime_pytest_rerun4.log`), including one-at-a-time headless frame-sensitivity witnesses for `root spread`, `phase strength`, `seed`, `seed drift`, and `warp strength`.
-- The temporary bridge scope on the closed prior contract has been restored; the active repair contract and this phased plan now own the remaining checkpoint/receipt closeout only.
+- Focused native proof is green for the repair checkpoint via `ui_app/build_tests_vsdevcmd.cmd` (`artifacts/logs/projection_flow_control_authority_native_rerun8.log`), including the new derived-field, family-rule, diagnostics, validation, and kernel witnesses for the Explaino Projection-and-Flow carrier.
+- Focused runtime publish is green for the repair checkpoint via `ui_app/build_vsdevcmd.cmd` (`artifacts/logs/projection_flow_control_authority_runtime_build_rerun2.log`).
+- Focused published-runtime proof is green for the repair checkpoint via `py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py -k projection_and_flow -q` (`artifacts/logs/projection_flow_control_authority_runtime_pytest_rerun4.log`), including one-at-a-time headless frame-sensitivity witnesses for `root spread`, `phase strength`, `seed`, `seed drift`, and `warp strength`.
+- Contract validation, phased-plan sync, and hostile-audit validation are green on this closeout lane via `tools/viewer_host_validate_slice_contract.py`, `tools/viewer_host_assert_phased_plan_sync.py`, and `tools/viewer_host_validate_hostile_audit.py`.
+- The temporary bridge scope on the closed prior contract has been restored, checkpoint commit `0bab8f0` captured the bounded repair, and this phased plan now reflects the closed post-audit state with no remaining slice-owned work.
 
 ## Hostile Audit
 
