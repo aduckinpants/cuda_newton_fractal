@@ -240,15 +240,35 @@ int main() {
         view.fractal_type = FractalType::explaino_projection_and_flow;
         params.coloring_mode = ColoringMode::root_basin;
         params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
-        params.poly_kind = PolyKind::z4_minus_1;
+        params.poly_kind = PolyKind::custom;
         params.projection_and_flow_target_radius = 1.75f;
         params.projection_and_flow_pressure_threshold = 0.5f;
         params.explaino_seed = 3.0;
         params.explaino_warp_strength = 0.25f;
         params.explaino_damping = 0.75f;
-        SetProjectionAndFlowQuarticPreset(params);
+        params.explaino_root_count = 4;
+        params.poly_coeffs[0] = 1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 1.0f;
         if (!ValidateFractalRuntimeState(view, params, &error)) {
-            std::cerr << "Expected Explaino Projection-and-Flow validation to accept the shared root-family hardening plus Explaino controls, got: " << error << "\n";
+            std::cerr << "Expected Explaino Projection-and-Flow validation to accept a custom Explaino carrier polynomial plus the shared Projection-and-Flow controls, got: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino_projection_and_flow;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::z4_minus_1;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "explaino_projection_and_flow must preserve custom Explaino polynomial authority") {
+            std::cerr << "Expected Explaino Projection-and-Flow validation to reject falling back to the standalone preset polynomial seam\n";
             return 1;
         }
     }
@@ -261,9 +281,15 @@ int main() {
         params.coloring_mode = ColoringMode::root_basin;
         params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
         params.poly_kind = PolyKind::custom;
+        params.explaino_root_count = 4;
+        params.poly_coeffs[0] = 1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 0.0f;
         if (ValidateFractalRuntimeState(view, params, &error) ||
-            error != "projection_and_flow root family and poly_kind must agree") {
-            std::cerr << "Expected Explaino Projection-and-Flow validation to reject falling back to the generic Explaino custom polynomial seam\n";
+            error != "explaino_projection_and_flow root family must match the custom carrier polynomial degree") {
+            std::cerr << "Expected Explaino Projection-and-Flow validation to reject a quartic root-family claim backed by a cubic custom polynomial\n";
             return 1;
         }
     }

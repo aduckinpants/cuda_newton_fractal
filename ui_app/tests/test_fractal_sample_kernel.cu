@@ -737,11 +737,19 @@ void TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls() {
     explainoParams.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
     explainoParams.projection_and_flow_target_radius = 1.75f;
     explainoParams.projection_and_flow_pressure_threshold = 0.5f;
-    SyncProjectionAndFlowRootFamilyPresetLocal(explainoParams);
+    explainoView.explaino_phase = 1.0f;
+    explainoParams.explaino_seed = 3.0;
+    explainoParams.explaino_root_spread = 0.5f;
+    explainoParams.poly_kind = PolyKind::custom;
+    explainoParams.poly_coeffs[0] = 1.0f;
+    explainoParams.poly_coeffs[1] = 0.0f;
+    explainoParams.poly_coeffs[2] = 0.0f;
+    explainoParams.poly_coeffs[3] = 1.0f;
+    explainoParams.poly_coeffs[4] = 1.0f;
+    explainoParams.explaino_root_count = 4;
 
     ViewState activeExplainoView = explainoView;
     KernelParams activeExplainoParams = explainoParams;
-    activeExplainoView.explaino_phase = 1.0f;
     activeExplainoParams.explaino_warp_strength = 0.4f;
 
     FractalSampleResult standaloneResults[kProjectionAndFlowGridN]{};
@@ -763,7 +771,7 @@ void TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls() {
     constexpr int kProjectionAndFlowPressureBandCount = 4;
     constexpr int kProjectionAndFlowClassCount = kProjectionAndFlowRootCount * kProjectionAndFlowPressureBandCount + 1;
     bool sawStandaloneDifference = false;
-    bool sawExplainoControlDifference = false;
+    bool sawWarpStrengthDifference = false;
     for (int i = 0; i < kProjectionAndFlowGridN; ++i) {
         CHECK("explaino projection_and_flow final_z finite", std::isfinite(explainoResults[i].final_z_x) && std::isfinite(explainoResults[i].final_z_y));
         CHECK("explaino projection_and_flow residual finite", std::isfinite(explainoResults[i].residual));
@@ -780,14 +788,14 @@ void TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls() {
             sawStandaloneDifference = true;
         }
         if (!SameFractalSampleResult(explainoResults[i], activeExplainoResults[i])) {
-            sawExplainoControlDifference = true;
+            sawWarpStrengthDifference = true;
         }
     }
 
     CHECK("explaino projection_and_flow stays distinct from standalone projection_and_flow",
         sawStandaloneDifference);
-    CHECK("explaino projection_and_flow reads Explaino-owned controls",
-        sawExplainoControlDifference);
+    CHECK("explaino projection_and_flow warp strength changes SampleFractalPoints results",
+        sawWarpStrengthDifference);
 }
 
 // Test 4: Widened evidence projects back to legacy semantics.

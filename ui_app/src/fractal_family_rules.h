@@ -675,7 +675,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fract
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoCustomPolynomialAuthority(FractalType fractalType) {
-    return IsExplainoFamily(fractalType) && fractalType != FractalType::explaino_projection_and_flow;
+    return IsExplainoFamily(fractalType);
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool IsProjectionAndFlowCarrier(FractalType fractalType) {

@@ -2178,8 +2178,8 @@ int main() {
         }
         if (view.fractal_type != FractalType::explaino_projection_and_flow ||
             params.projection_and_flow_root_family != ProjectionAndFlowRootFamily::quartic_unit_roots ||
-            params.poly_kind != PolyKind::z4_minus_1) {
-            std::cerr << "explaino_projection_and_flow diagnostics state should preserve its explicit carrier identity and resync the shared Projection-and-Flow preset\n";
+            params.poly_kind != PolyKind::custom) {
+            std::cerr << "explaino_projection_and_flow diagnostics state should preserve its explicit carrier identity and custom Explaino polynomial authority\n";
             return 1;
         }
         if (!NearlyEqual(params.projection_and_flow_target_radius, 1.75f, 1.0e-6) ||
@@ -2191,8 +2191,13 @@ int main() {
             !NearlyEqual(view.explaino_seed_drift, 0.5f, 1.0e-6) ||
             !NearlyEqual(params.explaino_warp_strength, 0.25f, 1.0e-6) ||
             !NearlyEqual(params.explaino_damping, 0.75f, 1.0e-6) ||
-            params.explaino_root_count != 0) {
-            std::cerr << "explaino_projection_and_flow diagnostics state should preserve Explaino-owned controls without reviving the generic custom-root seam\n";
+            params.explaino_root_count != 4 ||
+            !NearlyEqual(params.poly_coeffs[4], 1.0f, 1.0e-6f) ||
+            (NearlyEqual(params.explaino_roots[0].x, 0.0f, 1.0e-6f) &&
+             NearlyEqual(params.explaino_roots[0].y, 0.0f, 1.0e-6f) &&
+             NearlyEqual(params.explaino_roots[1].x, 0.0f, 1.0e-6f) &&
+             NearlyEqual(params.explaino_roots[1].y, 0.0f, 1.0e-6f))) {
+            std::cerr << "explaino_projection_and_flow diagnostics state should preserve the Explaino-owned custom-root carrier instead of zeroing it back to the preset lane or trusting stale preset coefficients\n";
             return 1;
         }
     }

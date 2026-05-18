@@ -618,14 +618,25 @@ def test_explaino_projection_and_flow_loaded_state_has_explicit_runtime_identity
     explaino_projection_flow_state = json.loads(json.dumps(baseline_capture["state"]))
     explaino_projection_flow_state["fractal_type"] = "explaino_projection_and_flow"
     explaino_projection_flow_state["view"]["explaino_phase"] = 1.0
+    explaino_projection_flow_state["view"]["explaino_phase_strength"] = 1.0
     explaino_projection_flow_state["params"].update(
         {
+            "poly_kind": 2,
             "projection_and_flow_root_family": "quartic_unit_roots",
             "projection_and_flow_target_radius": 1.75,
             "projection_and_flow_pressure_threshold": 0.5,
             "explaino_seed": 3.5,
+            "explaino_root_count": 4,
+            "explaino_roots": [
+                {"x": 0.5, "y": 0.0},
+                {"x": 0.0, "y": 0.5},
+                {"x": -0.5, "y": 0.0},
+                {"x": 0.0, "y": -0.5},
+            ],
+            "explaino_root_spread": 0.5,
             "explaino_warp_strength": 0.25,
             "explaino_damping": 0.75,
+            "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0],
         }
     )
 
@@ -647,19 +658,12 @@ def test_explaino_projection_and_flow_loaded_state_has_explicit_runtime_identity
 
     explaino_all_state = json.loads(json.dumps(explaino_projection_flow_state))
     explaino_all_state["fractal_type"] = "explaino_all"
-    explaino_all_result = subprocess.run(
-        [
-            str(exe_path),
-            "--load-state-json",
-            str(_write_state_bundle(tmp_path / "explaino_all_projection_flow", explaino_all_state)),
-            "--capture-diagnostic",
-        ],
-        cwd=str(RUNTIME_DIR),
-        text=True,
-        capture_output=True,
-        check=False,
+    explaino_all_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_all_projection_flow", explaino_all_state)),
+        "--capture-diagnostic",
     )
-    assert explaino_all_result.returncode != 0
 
     state = explaino_projection_flow_capture["state"]
     params = state["params"]
@@ -668,12 +672,18 @@ def test_explaino_projection_and_flow_loaded_state_has_explicit_runtime_identity
     assert params["projection_and_flow_root_family"] == "quartic_unit_roots"
     assert params["projection_and_flow_target_radius"] == pytest.approx(1.75)
     assert params["projection_and_flow_pressure_threshold"] == pytest.approx(0.5)
+    assert params["poly_kind"] == 2
+    assert params["explaino_root_count"] == 4
     assert params["explaino_seed"] == pytest.approx(3.0)
+    assert params["explaino_root_spread"] == pytest.approx(0.5)
     assert params["explaino_warp_strength"] == pytest.approx(0.25)
     assert params["explaino_damping"] == pytest.approx(0.75)
     assert view["explaino_phase"] == pytest.approx(1.0)
+    assert view["explaino_phase_strength"] == pytest.approx(1.0)
     assert view["explaino_seed_drift"] == pytest.approx(0.5)
     assert explaino_projection_flow_capture["frame_hash"] != standalone_capture["frame_hash"]
+    assert explaino_all_capture["state"]["fractal_type"] == "explaino_all"
+    assert explaino_projection_flow_capture["frame_hash"] != explaino_all_capture["frame_hash"]
 
 
 def test_explaino_projection_and_flow_capture_round_trips_shared_and_explaino_controls(tmp_path: Path) -> None:
@@ -695,14 +705,25 @@ def test_explaino_projection_and_flow_capture_round_trips_shared_and_explaino_co
     mutated_state = json.loads(json.dumps(baseline_capture["state"]))
     mutated_state["fractal_type"] = "explaino_projection_and_flow"
     mutated_state["view"]["explaino_phase"] = 0.75
+    mutated_state["view"]["explaino_phase_strength"] = 1.5
     mutated_state["params"].update(
         {
+            "poly_kind": 2,
             "projection_and_flow_root_family": "quartic_unit_roots",
             "projection_and_flow_target_radius": 1.75,
             "projection_and_flow_pressure_threshold": 0.25,
             "explaino_seed": 2.25,
+            "explaino_root_count": 4,
+            "explaino_roots": [
+                {"x": 0.5, "y": 0.0},
+                {"x": 0.0, "y": 0.5},
+                {"x": -0.5, "y": 0.0},
+                {"x": 0.0, "y": -0.5},
+            ],
+            "explaino_root_spread": 0.85,
             "explaino_warp_strength": 0.4,
             "explaino_damping": 0.5,
+            "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0],
         }
     )
 
@@ -720,12 +741,220 @@ def test_explaino_projection_and_flow_capture_round_trips_shared_and_explaino_co
     assert captured_params["projection_and_flow_root_family"] == "quartic_unit_roots"
     assert captured_params["projection_and_flow_target_radius"] == pytest.approx(1.75)
     assert captured_params["projection_and_flow_pressure_threshold"] == pytest.approx(0.25)
+    assert captured_params["poly_kind"] == 2
+    assert captured_params["explaino_root_count"] == 4
     assert captured_params["explaino_seed"] == pytest.approx(2.0)
+    assert captured_params["explaino_root_spread"] == pytest.approx(0.85)
     assert captured_params["explaino_warp_strength"] == pytest.approx(0.4)
     assert captured_params["explaino_damping"] == pytest.approx(0.5)
     assert captured_view["explaino_phase"] == pytest.approx(0.75)
+    assert captured_view["explaino_phase_strength"] == pytest.approx(1.5)
     assert captured_view["explaino_seed_drift"] == pytest.approx(0.25)
     assert mutated_capture["frame_hash"] != baseline_capture["frame_hash"]
+
+
+def _projection_and_flow_runtime_baseline_capture(exe_path: Path) -> dict[str, object]:
+    return _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "projection_and_flow",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+
+def _make_explaino_projection_and_flow_state(projection_flow_capture: dict[str, object]) -> dict[str, object]:
+    state = json.loads(json.dumps(projection_flow_capture["state"]))
+    state["fractal_type"] = "explaino_projection_and_flow"
+    view = state["view"]
+    params = state["params"]
+    assert isinstance(view, dict)
+    assert isinstance(params, dict)
+    view.update(
+        {
+            "explaino_phase": 1.0,
+            "explaino_phase_strength": 1.0,
+            "explaino_seed_drift": 0.0,
+        }
+    )
+    params.update(
+        {
+            "poly_kind": 2,
+            "projection_and_flow_root_family": "quartic_unit_roots",
+            "projection_and_flow_target_radius": 1.75,
+            "projection_and_flow_pressure_threshold": 0.5,
+            "explaino_seed": 3.0,
+            "explaino_root_count": 4,
+            "explaino_roots": [
+                {"x": 0.5, "y": 0.0},
+                {"x": 0.0, "y": 0.5},
+                {"x": -0.5, "y": 0.0},
+                {"x": 0.0, "y": -0.5},
+            ],
+            "explaino_root_spread": 0.5,
+            "explaino_warp_strength": 0.25,
+            "explaino_damping": 0.75,
+            "poly_coeffs": [1.0, 0.0, 0.0, 1.0, 1.0],
+        }
+    )
+    return state
+
+
+def _capture_explaino_projection_and_flow_variant_pair(
+    tmp_path: Path,
+    *,
+    name: str,
+    baseline_view_updates: dict[str, object] | None = None,
+    baseline_param_updates: dict[str, object] | None = None,
+    variant_view_updates: dict[str, object] | None = None,
+    variant_param_updates: dict[str, object] | None = None,
+) -> tuple[dict[str, object], dict[str, object]]:
+    exe_path = _active_runtime_exe()
+    projection_flow_capture = _projection_and_flow_runtime_baseline_capture(exe_path)
+    base_state = _make_explaino_projection_and_flow_state(projection_flow_capture)
+
+    baseline_state = json.loads(json.dumps(base_state))
+    variant_state = json.loads(json.dumps(base_state))
+    baseline_view = baseline_state["view"]
+    baseline_params = baseline_state["params"]
+    variant_view = variant_state["view"]
+    variant_params = variant_state["params"]
+    assert isinstance(baseline_view, dict)
+    assert isinstance(baseline_params, dict)
+    assert isinstance(variant_view, dict)
+    assert isinstance(variant_params, dict)
+    baseline_view.update(baseline_view_updates or {})
+    baseline_params.update(baseline_param_updates or {})
+    variant_view.update(variant_view_updates or {})
+    variant_params.update(variant_param_updates or {})
+
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / name / "baseline", baseline_state)),
+        "--capture-diagnostic",
+    )
+    variant_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / name / "variant", variant_state)),
+        "--capture-diagnostic",
+    )
+    return baseline_capture, variant_capture
+
+
+def _assert_explaino_projection_and_flow_frame_changed(
+    baseline_capture: dict[str, object],
+    variant_capture: dict[str, object],
+) -> None:
+    assert variant_capture["frame_hash"] != baseline_capture["frame_hash"]
+    assert _mean_absolute_frame_delta(
+        baseline_capture["frame_bytes"],
+        variant_capture["frame_bytes"],
+    ) > 0.0
+
+
+def test_explaino_projection_and_flow_root_spread_changes_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    baseline_capture, variant_capture = _capture_explaino_projection_and_flow_variant_pair(
+        tmp_path,
+        name="root_spread",
+        baseline_param_updates={"explaino_root_spread": 0.15},
+        variant_param_updates={"explaino_root_spread": 1.35},
+    )
+
+    baseline_params = baseline_capture["state"]["params"]
+    variant_params = variant_capture["state"]["params"]
+    assert baseline_params["explaino_root_spread"] == pytest.approx(0.15)
+    assert variant_params["explaino_root_spread"] == pytest.approx(1.35)
+    _assert_explaino_projection_and_flow_frame_changed(baseline_capture, variant_capture)
+
+
+def test_explaino_projection_and_flow_phase_strength_changes_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    baseline_capture, variant_capture = _capture_explaino_projection_and_flow_variant_pair(
+        tmp_path,
+        name="phase_strength",
+        baseline_view_updates={"explaino_phase_strength": 0.0},
+        variant_view_updates={"explaino_phase_strength": 1.6},
+    )
+
+    baseline_view = baseline_capture["state"]["view"]
+    variant_view = variant_capture["state"]["view"]
+    assert baseline_view["explaino_phase"] == pytest.approx(1.0)
+    assert variant_view["explaino_phase"] == pytest.approx(1.0)
+    assert baseline_view["explaino_phase_strength"] == pytest.approx(0.0)
+    assert variant_view["explaino_phase_strength"] == pytest.approx(1.6)
+    _assert_explaino_projection_and_flow_frame_changed(baseline_capture, variant_capture)
+
+
+def test_explaino_projection_and_flow_seed_changes_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    baseline_capture, variant_capture = _capture_explaino_projection_and_flow_variant_pair(
+        tmp_path,
+        name="seed",
+        baseline_param_updates={"explaino_seed": 3.0},
+        variant_param_updates={"explaino_seed": 4.0},
+    )
+
+    baseline_params = baseline_capture["state"]["params"]
+    variant_params = variant_capture["state"]["params"]
+    baseline_view = baseline_capture["state"]["view"]
+    variant_view = variant_capture["state"]["view"]
+    assert baseline_params["explaino_seed"] == pytest.approx(3.0)
+    assert variant_params["explaino_seed"] == pytest.approx(4.0)
+    assert baseline_view["explaino_seed_drift"] == pytest.approx(0.0)
+    assert variant_view["explaino_seed_drift"] == pytest.approx(0.0)
+    _assert_explaino_projection_and_flow_frame_changed(baseline_capture, variant_capture)
+
+
+def test_explaino_projection_and_flow_seed_drift_changes_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    baseline_capture, variant_capture = _capture_explaino_projection_and_flow_variant_pair(
+        tmp_path,
+        name="seed_drift",
+        baseline_view_updates={"explaino_seed_drift": 0.0},
+        variant_view_updates={"explaino_seed_drift": 0.625},
+    )
+
+    baseline_params = baseline_capture["state"]["params"]
+    variant_params = variant_capture["state"]["params"]
+    baseline_view = baseline_capture["state"]["view"]
+    variant_view = variant_capture["state"]["view"]
+    assert baseline_params["explaino_seed"] == pytest.approx(3.0)
+    assert variant_params["explaino_seed"] == pytest.approx(3.0)
+    assert baseline_view["explaino_seed_drift"] == pytest.approx(0.0)
+    assert variant_view["explaino_seed_drift"] == pytest.approx(0.625)
+    _assert_explaino_projection_and_flow_frame_changed(baseline_capture, variant_capture)
+
+
+def test_explaino_projection_and_flow_warp_strength_changes_runtime_frame(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")
+
+    baseline_capture, variant_capture = _capture_explaino_projection_and_flow_variant_pair(
+        tmp_path,
+        name="warp_strength",
+        baseline_param_updates={"explaino_warp_strength": 0.0},
+        variant_param_updates={"explaino_warp_strength": 0.45},
+    )
+
+    baseline_params = baseline_capture["state"]["params"]
+    variant_params = variant_capture["state"]["params"]
+    assert baseline_params["explaino_warp_strength"] == pytest.approx(0.0)
+    assert variant_params["explaino_warp_strength"] == pytest.approx(0.45)
+    _assert_explaino_projection_and_flow_frame_changed(baseline_capture, variant_capture)
 
 
 def test_explaino_rational_escape_cli_overrides_survive_headless_capture() -> None:

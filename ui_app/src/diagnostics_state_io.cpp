@@ -2386,7 +2386,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     if (nextView.fractal_type == FractalType::counterfactual_pair) {
         SyncCounterfactualPairRootFamilyPresetLocal(&nextParams);
     }
-    if (IsProjectionAndFlowCarrier(nextView.fractal_type)) {
+    if (nextView.fractal_type == FractalType::projection_and_flow) {
         SyncProjectionAndFlowRootFamilyPresetLocal(&nextParams);
     }
 

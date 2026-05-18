@@ -134,6 +134,14 @@ int main() {
             std::cerr << "Explaino Projection-and-Flow should preserve the shipped Projection-and-Flow coloring surface\n";
             return 1;
         }
+        if (!IsProjectionAndFlowCarrier(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should stay on the shared Projection-and-Flow runtime lane\n";
+            return 1;
+        }
+        if (!UsesExplainoCustomPolynomialAuthority(FractalType::explaino_projection_and_flow)) {
+            std::cerr << "Explaino Projection-and-Flow should own Explaino custom polynomial authority so its surfaced root-shape controls are real\n";
+            return 1;
+        }
     }
 
     {

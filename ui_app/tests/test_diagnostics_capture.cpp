@@ -243,21 +243,28 @@ void TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity() {
     PopulateState(&view, &params, &render, &stats);
     view.fractal_type = FractalType::explaino_projection_and_flow;
     view.explaino_phase = 1.0f;
+    view.explaino_phase_strength = 1.0f;
     view.explaino_seed_drift = 0.5f;
     params.max_iter = 96;
     params.epsilon = 1.0e-6f;
-    params.poly_kind = PolyKind::z4_minus_1;
-    params.poly_coeffs[0] = -1.0f;
+    params.poly_kind = PolyKind::custom;
+    params.poly_coeffs[0] = 1.0f;
     params.poly_coeffs[1] = 0.0f;
     params.poly_coeffs[2] = 0.0f;
-    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[3] = 1.0f;
     params.poly_coeffs[4] = 1.0f;
     params.projection_and_flow_root_family = ProjectionAndFlowRootFamily::quartic_unit_roots;
     params.projection_and_flow_target_radius = 1.75f;
     params.projection_and_flow_pressure_threshold = 0.5f;
     params.explaino_seed = 3.0;
+    params.explaino_root_spread = 0.5f;
     params.explaino_warp_strength = 0.25f;
     params.explaino_damping = 0.75f;
+    params.explaino_root_count = 4;
+    params.explaino_roots[0] = {0.5f, 0.0f};
+    params.explaino_roots[1] = {0.0f, 0.5f};
+    params.explaino_roots[2] = {-0.5f, 0.0f};
+    params.explaino_roots[3] = {0.0f, -0.5f};
 
     const fs::path outputDir = FreshTempRoot("explaino_projection_and_flow") / "diagnostics_bundle";
     std::vector<uint32_t> rgba{0xff113355u, 0xff224466u, 0xff335577u, 0xff446688u};
@@ -278,9 +285,14 @@ void TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity() {
     Check(json.find("\"projection_and_flow_target_radius\": 1.75") != std::string::npos &&
             json.find("\"projection_and_flow_pressure_threshold\": 0.5") != std::string::npos,
         "state persists shared Projection-and-Flow controls for explaino_projection_and_flow");
+    Check(json.find("\"poly_kind\": 2") != std::string::npos &&
+            json.find("\"explaino_root_count\": 4") != std::string::npos,
+        "state persists explaino_projection_and_flow as an explicit custom-polynomial carrier");
     Check(json.find("\"explaino_seed\": 3") != std::string::npos &&
+            json.find("\"explaino_root_spread\": 0.5") != std::string::npos &&
             json.find("\"explaino_warp_strength\": 0.25") != std::string::npos &&
-            json.find("\"explaino_damping\": 0.75") != std::string::npos,
+            json.find("\"explaino_damping\": 0.75") != std::string::npos &&
+            json.find("\"explaino_phase_strength\": 1") != std::string::npos,
         "state persists Explaino-owned controls for explaino_projection_and_flow");
 }
 

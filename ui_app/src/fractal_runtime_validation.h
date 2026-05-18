@@ -25,6 +25,17 @@ inline PolyKind ProjectionAndFlowRequiredPolyKind(ProjectionAndFlowRootFamily ro
     return PolyKind::z3_minus_1;
 }
 
+inline int ProjectionAndFlowExpectedExplainoRootCount(ProjectionAndFlowRootFamily rootFamily) {
+    return rootFamily == ProjectionAndFlowRootFamily::quartic_unit_roots ? 4 : 3;
+}
+
+inline bool ProjectionAndFlowExplainoPolyDegreeMatchesRootFamily(const KernelParams& params) {
+    if (params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::quartic_unit_roots) {
+        return params.poly_coeffs[4] != 0.0f;
+    }
+    return params.poly_coeffs[4] == 0.0f && params.poly_coeffs[3] != 0.0f;
+}
+
 inline bool ProjectionAndFlowPolyPresetMatchesRootFamily(const KernelParams& params) {
     if (params.projection_and_flow_root_family == ProjectionAndFlowRootFamily::cubic_unit_roots) {
         return params.poly_coeffs[0] == -1.0f &&
@@ -54,11 +65,23 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
     }
     if (IsProjectionAndFlowCarrier(view.fractal_type)) {
-        if (params.poly_kind != ProjectionAndFlowRequiredPolyKind(params.projection_and_flow_root_family)) {
-            return FailFractalRuntimeValidation("projection_and_flow root family and poly_kind must agree", outError);
-        }
-        if (!ProjectionAndFlowPolyPresetMatchesRootFamily(params)) {
-            return FailFractalRuntimeValidation("projection_and_flow root family must own the shipped polynomial preset", outError);
+        if (view.fractal_type == FractalType::projection_and_flow) {
+            if (params.poly_kind != ProjectionAndFlowRequiredPolyKind(params.projection_and_flow_root_family)) {
+                return FailFractalRuntimeValidation("projection_and_flow root family and poly_kind must agree", outError);
+            }
+            if (!ProjectionAndFlowPolyPresetMatchesRootFamily(params)) {
+                return FailFractalRuntimeValidation("projection_and_flow root family must own the shipped polynomial preset", outError);
+            }
+        } else {
+            if (params.poly_kind != PolyKind::custom) {
+                return FailFractalRuntimeValidation("explaino_projection_and_flow must preserve custom Explaino polynomial authority", outError);
+            }
+            if (params.explaino_root_count != ProjectionAndFlowExpectedExplainoRootCount(params.projection_and_flow_root_family)) {
+                return FailFractalRuntimeValidation("explaino_projection_and_flow root family and explaino_root_count must agree", outError);
+            }
+            if (!ProjectionAndFlowExplainoPolyDegreeMatchesRootFamily(params)) {
+                return FailFractalRuntimeValidation("explaino_projection_and_flow root family must match the custom carrier polynomial degree", outError);
+            }
         }
         if (!std::isfinite(params.projection_and_flow_target_radius) ||
             params.projection_and_flow_target_radius <= 0.0f ||

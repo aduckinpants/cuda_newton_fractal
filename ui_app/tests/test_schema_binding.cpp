@@ -219,13 +219,21 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to preserve explaino_projection_and_flow as an explicit Explaino carrier\n";
             return 1;
         }
+        view.explaino_phase = 1.0f;
+        params.explaino_seed = 3.0;
+        params.explaino_root_spread = 0.5f;
+        params.poly_kind = PolyKind::custom;
+        params.poly_coeffs[0] = 1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 1.0f;
+        params.explaino_root_count = 3;
         if (!ctx.SetEnumId("fractal.params.projection_and_flow_root_family", "quartic_unit_roots") ||
             ctx.GetEnumId("fractal.params.projection_and_flow_root_family") != "quartic_unit_roots" ||
-            params.poly_kind != PolyKind::z4_minus_1 ||
-            !NearlyEqual(params.poly_coeffs[0], -1.0f) ||
-            !NearlyEqual(params.poly_coeffs[3], 0.0f) ||
-            !NearlyEqual(params.poly_coeffs[4], 1.0f)) {
-            std::cerr << "Expected explaino_projection_and_flow root family edits to preserve the shipped Projection-and-Flow polynomial preset\n";
+            params.poly_kind != PolyKind::custom ||
+            params.explaino_root_count != 3) {
+            std::cerr << "Expected explaino_projection_and_flow root family edits to preserve Explaino carrier authority instead of preset-syncing back to the standalone lane\n";
             return 1;
         }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "counterfactual_pair") ||
