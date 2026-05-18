@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "contract_id": "explaino_native_meta_basin_viability_owner_seam_proof",
+  "feature_id": "explaino_native_meta_basin",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/explaino_native_meta_basin_viability_owner_seam_proof_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/explaino_native_meta_basin_viability_owner_seam_proof.contract.json",
+    "docs/contracts/projection_and_flow_explaino_control_authority_repair.contract.json",
+    "docs/notes/explaino_native_meta_basin_viability_owner_seam_proof_PHASED_PLAN.md",
+    "docs/notes/explaino_native_meta_basin_viability_owner_seam_answer.v1.json",
+    "docs/notes/projection_and_flow_explaino_control_authority_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "tests",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_fractal_sample_result.cpp",
+    "ui_app/tests/test_ui_schema.cpp"
+  ],
+  "required_operator_inputs": [
+    "prove whether Explaino-native Meta-Basin is or is not the next truthful bounded implementation lane on the merged head",
+    "name the exact owner seam, state model, classification output, and visible-control answer for the first truthful Meta-Basin lane or prove the lane is blocked",
+    "preserve SampleFractalPoints and FractalSampleResult as the shipped legacy projection surfaces unless exact proof forces a narrower future transition",
+    "keep sample-evidence widening, Counterfactual Pair, Projection-and-Flow, ExplainO-BalanceVoid, Operator-Itinerary, DSL/program-space, color-pipeline work, and generic engine refactor out of scope unless one tiny blocker seam is proved exactly"
+  ],
+  "forbidden_operator_prompts": [
+    "claim Explaino-native Meta-Basin is ready to implement without repo-grounded owner-seam proof",
+    "treat existing Explaino-family, widened-evidence, sidecar, or slime seams as Meta-Basin without proving controller-state attractor ownership",
+    "inherit visible Explaino controls without explicitly classifying each one as authoritative now, intentionally hidden now, or explicitly blocked with proof",
+    "replace SampleFractalPoints or FractalSampleResult instead of preserving the shipped legacy projection path on this viability slice"
+  ],
+  "required_defaults": {
+    "meta_basin_owner_seam_answer_explicit": "required",
+    "meta_basin_state_model_answer_explicit": "required",
+    "meta_basin_classification_output_answer_explicit": "required",
+    "meta_basin_visible_control_audit_explicit": "required",
+    "legacy_projection_surface_preserved": "required",
+    "operator_itinerary_and_dsl_out_of_scope": "required"
+  },
+  "forbidden_defaults": {
+    "meta_basin_runtime_lane_claimed_without_owner_proof": "forbidden",
+    "inherited_visible_controls_left_unaudited": "forbidden",
+    "samplefractalpoints_signature_replaced": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "published_runtime_claim_without_lane": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_native_meta_basin_viability_owner_seam_proof.contract.json --out-json artifacts/validation/explaino_native_meta_basin_viability_owner_seam_proof_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_native_meta_basin_viability_owner_seam_proof_PHASED_PLAN.md --out-json artifacts/validation/explaino_native_meta_basin_viability_owner_seam_proof_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "explaino_native_meta_basin_viability_owner_seam_proof_contract_schema_valid",
+      "description": "The Meta-Basin viability / owner-seam proof contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_native_meta_basin_viability_owner_seam_proof_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_native_meta_basin_viability_owner_seam_proof_plan_sync_ok",
+      "description": "The Meta-Basin viability / owner-seam phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_native_meta_basin_viability_owner_seam_proof_hostile_audit_ok",
+      "description": "The Meta-Basin viability / owner-seam hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_native_meta_basin_viability_owner_seam_proof_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

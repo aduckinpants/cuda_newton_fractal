@@ -1,0 +1,169 @@
+{
+  "answer_version": 1,
+  "topic": "Explaino-native Meta-Basin viability / owner-seam proof",
+  "status": "blocked_with_exact_owner_seam_proof",
+  "supportability_outcome": "blocked_without_larger_refactor",
+  "owner_seam_classification": "another_owner_seam_entirely",
+  "first_runtime_owner_seam": {
+    "kind": "new_explanation_state_runtime_contract",
+    "summary": "A truthful Meta-Basin lane must own explanation-state sampling and render-class emission directly instead of relabeling an existing root-basin or sidecar seam.",
+    "required_owner_files": [
+      "ui/fractal_binding_surface_v1.ui_schema.json",
+      "ui_app/src/schema_binding.cpp",
+      "ui_app/src/fractal_runtime_validation.h",
+      "ui_app/src/fractal_sample_result.h",
+      "ui_app/src/fractal_sample_core.cu",
+      "ui_app/src/fractal_sample_device.inl",
+      "ui_app/src/fractal_renderer.cu"
+    ],
+    "rejected_current_carriers": [
+      {
+        "carrier": "explaino_projection_and_flow",
+        "reason": "Current carrier emits projected-root class ids from legacy complex-point samples instead of explanation-state attractor classes."
+      },
+      {
+        "carrier": "projection_and_flow",
+        "reason": "Current carrier classifies root-sector x transient pressure-band outcomes for projected Newton orbits, not explanation-state attractors."
+      },
+      {
+        "carrier": "explaino_sidecar_family",
+        "reason": "Current measurement/lens/window sidecars are post-sample consumers of existing runtime output and do not own the per-pixel state space or rendered class contract."
+      },
+      {
+        "carrier": "runtime_walk_field_slime",
+        "reason": "Current seam is host/runtime walk telemetry rather than per-pixel Meta-Basin sampling, so it cannot own a fractal render lane."
+      }
+    ]
+  },
+  "state_attractor_model": {
+    "kind": "higher_order_explanation_state",
+    "pixel_domain": "pixels represent different initial explanation-states rather than only different complex seeds",
+    "required_state_fields": [
+      "measurement_state",
+      "choice_state",
+      "uncertainty_state",
+      "action_sequence_state",
+      "memory_trace_state",
+      "motif_attractor_identity"
+    ],
+    "required_stop_conditions": [
+      "fixed_step_budget",
+      "attractor_convergence",
+      "uncertainty_collapse",
+      "return_to_baseline_event",
+      "divergence_or_invalid_state_guard"
+    ]
+  },
+  "classification_render_output": {
+    "kind": "explanation_trajectory_outcome",
+    "primary_semantics": "basins are attractors of explanation trajectories, not roots of P(z)",
+    "required_outputs": [
+      "motif_attractor_identity",
+      "action_itinerary_family",
+      "cumulative_information_gain",
+      "terminal_uncertainty",
+      "explanatory_return_error",
+      "basin_graph_transition_class",
+      "reversible_vs_nonreversible_path_type"
+    ],
+    "blocked_reason": "Current renderer consumes FractalSampleResult root and escape style channels and has no explanation-state class channel to color a Meta-Basin outcome honestly."
+  },
+  "visible_control_audit": {
+    "status": "blocked_with_proof",
+    "candidate_carrier_under_audit": "explaino_projection_and_flow",
+    "authoritative_controls": [],
+    "intentionally_hidden_controls": [],
+    "explicitly_blocked_controls": [
+      {
+        "binding_path": "fractal.view.auto_increment_seed",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "Animation-only seed stepping over the legacy Explaino carrier does not own Meta-Basin explanation-state dynamics."
+      },
+      {
+        "binding_path": "fractal.params.epsilon",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This currently tunes Newton root convergence on legacy sample surfaces, not explanation-state attractor closure."
+      },
+      {
+        "binding_path": "fractal.params.projection_and_flow_root_family",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This selects the cubic versus quartic unit-root projection family for the legacy projection carrier, not a Meta-Basin state family."
+      },
+      {
+        "binding_path": "fractal.params.projection_and_flow_target_radius",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This owns the legacy radial projection manifold radius for Projection-and-Flow, not Meta-Basin state evolution."
+      },
+      {
+        "binding_path": "fractal.params.projection_and_flow_pressure_threshold",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This owns the legacy projection pressure-band split for projected-root classes, not explanation attractor identity."
+      },
+      {
+        "binding_path": "fractal.params.explaino_seed",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This is the legacy Explaino warp-start seed and not a higher-order explanation-state coordinate."
+      },
+      {
+        "binding_path": "fractal.actions.prev_seed",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This steps the legacy Explaino seed and has no truthful Meta-Basin state ownership or isolated sensitivity proof."
+      },
+      {
+        "binding_path": "fractal.actions.next_seed",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This steps the legacy Explaino seed and has no truthful Meta-Basin state ownership or isolated sensitivity proof."
+      },
+      {
+        "binding_path": "fractal.params.explaino_warp_strength",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This controls the legacy Explaino warp-start perturbation rather than a Meta-Basin explanation trajectory seam."
+      },
+      {
+        "binding_path": "fractal.params.explaino_root_spread",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This spreads the current Explaino custom root placements and does not map to Meta-Basin attractor structure."
+      },
+      {
+        "binding_path": "fractal.view.explaino_phase_strength",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This modulates legacy Explaino phase influence over current root geometry, not explanation-state attractor classes."
+      },
+      {
+        "binding_path": "fractal.params.explaino_damping",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This changes the legacy Newton step size and not a Meta-Basin explanation-state transition rule."
+      },
+      {
+        "binding_path": "fractal.view.explaino_phase",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This is the current Explaino phase carrier control and does not own Meta-Basin state or classification semantics."
+      },
+      {
+        "binding_path": "fractal.view.explaino_seed_drift",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This interpolates the legacy Explaino seed surface and has no truthful Meta-Basin explanation-state authority."
+      },
+      {
+        "binding_path": "fractal.view.explaino_seed_tween",
+        "classification": "explicitly_blocked_with_proof",
+        "reason": "This toggles legacy Explaino seed tween behavior and has no truthful Meta-Basin explanation-state authority."
+      }
+    ],
+    "one_at_a_time_sensitivity": {
+      "status": "not_applicable_no_authoritative_controls",
+      "reason": "No current visible control is truthful for Meta-Basin on the merged head, so no live control is eligible for one-at-a-time sensitivity proof in this slice."
+    }
+  },
+  "legacy_projection_surface": {
+    "sample_fractal_points_preserved": true,
+    "fractal_sample_result_preserved": true,
+    "sample_fractal_points_semantics": "legacy_projection_only"
+  },
+  "out_of_scope_confirmed": {
+    "operator_itinerary": true,
+    "dsl_program_space": true,
+    "generic_engine_refactor": true,
+    "broad_sample_evidence_reopen": true
+  }
+}

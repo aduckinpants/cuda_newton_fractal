@@ -77,6 +77,10 @@ static void TestConcreteEnumIdWrappers() {
     Check(TryParseFractalTypeId("explaino_projection_and_flow", &fractalType) &&
             fractalType == FractalType::explaino_projection_and_flow,
         "TestConcreteEnumIdWrappers_FractalTypeExplainoProjectionAndFlowParse");
+    Check(!TryParseFractalTypeId("meta_basin", &fractalType),
+        "TestConcreteEnumIdWrappers_FractalTypeRejectsStandaloneMetaBasin");
+    Check(!TryParseFractalTypeId("explaino_meta_basin", &fractalType),
+        "TestConcreteEnumIdWrappers_FractalTypeRejectsExplainoMetaBasin");
     Check(std::string_view(FractalTypeId(FractalType::explaino_lambda)) == "explaino_lambda",
         "TestConcreteEnumIdWrappers_FractalTypeLookup");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,

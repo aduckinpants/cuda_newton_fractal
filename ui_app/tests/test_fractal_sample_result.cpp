@@ -1,6 +1,7 @@
 #include "../src/fractal_sample_result.h"
 #include "../src/fractal_types.h"
 
+#include <cstddef>
 #include <cstdio>
 #include <type_traits>
 
@@ -103,6 +104,17 @@ void TestLegacyProjectionHelperRoundTrip() {
     Check(projected.far_field_delta == 2.5f, "TestLegacyProjectionHelperRoundTrip_FarFieldDelta");
 }
 
+void TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult() {
+    Check(std::is_standard_layout_v<FractalSampleEvidence>,
+        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_StandardLayout");
+    Check(offsetof(FractalSampleEvidence, sample_coord) == 0u,
+        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_CoordAtStart");
+    Check(offsetof(FractalSampleEvidence, legacy_result) == sizeof(Double2),
+        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_LegacyResultOffset");
+    Check(sizeof(FractalSampleEvidence) == sizeof(Double2) + sizeof(FractalSampleResult),
+        "TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult_SizeMatchesTwoFieldContract");
+}
+
 void TestSampleFractalEvidencePointsSurfaceExists() {
     using EvidenceFn = bool (*)(
         const Double2*,
@@ -141,6 +153,7 @@ int main() {
     TestFieldRoundTrip();
     TestWidenedEvidenceDefaults();
     TestLegacyProjectionHelperRoundTrip();
+    TestWidenedEvidenceLayoutStaysSampleCoordPlusLegacyResult();
     TestSampleFractalEvidencePointsSurfaceExists();
     TestSampleFractalPointsStaysLegacyProjectionSurface();
     TestCompactLayoutExpectation();
