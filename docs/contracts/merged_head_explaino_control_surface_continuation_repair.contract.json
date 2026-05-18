@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "contract_id": "merged_head_explaino_control_surface_continuation_repair",
+  "feature_id": "merged_head_explaino_control_surface_continuation_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/merged_head_explaino_control_surface_continuation_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/merged_head_explaino_selector_control_smooth_escape_regression_repair.contract.json",
+    "docs/contracts/merged_head_explaino_control_surface_continuation_repair.contract.json",
+    "docs/notes/merged_head_explaino_control_surface_continuation_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/tests/test_ui_schema.cpp",
+    "tests/test_fractal_runtime_explaino_escape_variants.py"
+  ],
+  "required_operator_inputs": [
+    "repair the stranded Explaino family-axis control surface so explicit owner lanes expose ripple_amplitude, splice_offset, vortex_strength, tension_strength, balance_void, symmetry_tension, and field_curvature again",
+    "keep explicit Explaino selector identity intact and keep explaino_all as a neutral umbrella that does not claim those family-axis controls",
+    "preserve the bounded smooth-escape explicit-lane perf repair and keep SampleFractalPoints plus legacy projection callers unchanged",
+    "repair the native schema rail so it catches raw shipped-schema owner-lane regressions instead of masking them",
+    "close only with focused native proof, runtime publish, published-runtime proof, hostile audit, checkpoint commit, receipts, push, clean tree, and stale-plan cleanup"
+  ],
+  "forbidden_operator_prompts": [
+    "leave the named Explaino family-axis controls accessible only through explaino_all",
+    "rebreak explicit Explaino selector identity while restoring control visibility",
+    "rebreak the smooth-escape explicit-lane perf repair while moving the controls back to their owners",
+    "claim the native schema rail catches this bug while the loader still normalizes the raw artifact without direct proof",
+    "widen this slice into Meta-Basin, Operator-Itinerary, DSL/program-space, generic color expansion, renderer replacement, or a broad engine rewrite",
+    "close without commit, machine receipts, hostile-audit proof, runtime publish, published-runtime proof, push, and a clean tree"
+  ],
+  "required_defaults": {
+    "explicit_explaino_selector_identity_preserved": "required",
+    "owner_lane_control_visibility_restored": "required",
+    "explaino_all_neutral_umbrella_preserved": "required",
+    "raw_schema_owner_truth_tested": "required",
+    "published_runtime_schema_owner_truth_tested": "required",
+    "smooth_escape_explicit_lane_perf_preserved": "required",
+    "legacy_projection_surface_preserved": "required"
+  },
+  "forbidden_defaults": {
+    "family_axis_controls_stranded_on_explaino_all": "forbidden",
+    "selector_identity_regressed": "forbidden",
+    "smooth_escape_perf_regressed": "forbidden",
+    "meta_basin_scope_drift": "forbidden",
+    "operator_itinerary_scope_drift": "forbidden",
+    "dsl_program_space_scope_drift": "forbidden",
+    "generic_engine_refactor": "forbidden",
+    "helper_only_closure": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/merged_head_explaino_control_surface_continuation_repair.contract.json --out-json artifacts/validation/merged_head_explaino_control_surface_continuation_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/merged_head_explaino_control_surface_continuation_repair_PHASED_PLAN.md --out-json artifacts/validation/merged_head_explaino_control_surface_continuation_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "merged_head_explaino_control_surface_continuation_repair_contract_schema_valid",
+      "description": "The Explaino control-surface continuation repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/merged_head_explaino_control_surface_continuation_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "merged_head_explaino_control_surface_continuation_repair_plan_sync_ok",
+      "description": "The Explaino control-surface continuation phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "merged_head_explaino_control_surface_continuation_repair_hostile_audit_ok",
+      "description": "The Explaino control-surface continuation hostile-audit validator passes",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/merged_head_explaino_control_surface_continuation_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

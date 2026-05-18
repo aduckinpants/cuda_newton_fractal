@@ -36,6 +36,17 @@ bool ReadTextFile(const std::filesystem::path& path, std::string* outText) {
     return true;
 }
 
+bool GetJsonStringField(const json_min::Value& object, const char* key, std::string* outValue) {
+    const auto* value = object.get(key);
+    if (!value || !value->is_string()) {
+        return false;
+    }
+    if (outValue) {
+        *outValue = value->as_string();
+    }
+    return true;
+}
+
 bool LoadAndValidateSchemaFile(const std::filesystem::path& path) {
     std::string text;
     if (!ReadTextFile(path, &text)) {
@@ -133,6 +144,38 @@ bool VisibleIfIncludesFractalType(const UISchemaControl& control, std::string_vi
         control.visible_if.path == "fractal.view.fractal_type" &&
         (control.visible_if.op == "eq" || control.visible_if.op == "in") &&
         ContainsCsvToken(control.visible_if.value, fractalTypeId);
+}
+
+const json_min::Value* FindRawControlById(const json_min::Value& root, std::string_view controlId) {
+    const auto* panels = root.get("panels");
+    if (!panels || !panels->is_array()) {
+        return nullptr;
+    }
+    for (const auto& panel : panels->as_array()) {
+        if (!panel.is_object()) continue;
+        const auto* controls = panel.get("controls");
+        if (!controls || !controls->is_array()) continue;
+        for (const auto& control : controls->as_array()) {
+            if (!control.is_object()) continue;
+            std::string id;
+            if (GetJsonStringField(control, "id", &id) && id == controlId) {
+                return &control;
+            }
+        }
+    }
+    return nullptr;
+}
+
+bool RawVisibleIfEqualsFractalType(const json_min::Value& root, std::string_view controlId, std::string_view fractalTypeId) {
+    const json_min::Value* control = FindRawControlById(root, controlId);
+    if (!control || !control->is_object()) return false;
+    const auto* visibleIf = control->get("visible_if");
+    if (!visibleIf || !visibleIf->is_object()) return false;
+    std::string op;
+    std::string path;
+    std::string value;
+    return GetJsonStringField(*visibleIf, "op", &op) && GetJsonStringField(*visibleIf, "path", &path) && GetJsonStringField(*visibleIf, "value", &value) &&
+        op == "eq" && path == "fractal.view.fractal_type" && value == fractalTypeId;
 }
 
 std::size_t CsvTokenCount(std::string_view csv) {
@@ -666,6 +709,13 @@ int main() {
             return 1;
         }
         json_min::ParseResult pr2 = json_min::Parse(text);
+        for (const auto& axis : kExplainoAxisRegistry) {
+            const char* carrierId = FractalTypeId(axis.carrier_fractal_type);
+            if (!carrierId || !RawVisibleIfEqualsFractalType(pr2.value, axis.axis_id, carrierId)) {
+                std::cerr << "Raw main schema Explaino axis controls must ship on their explicit owning family lane before any loader normalization\n";
+                return 1;
+            }
+        }
         UISchemaLoadResult result = LoadUISchemaFromJson(pr2.value);
         if (!ValidateCounterfactualPairControlSurface(result.schema)) {
             return 1;

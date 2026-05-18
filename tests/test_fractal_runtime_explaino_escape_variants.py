@@ -435,6 +435,44 @@ def _numeric_state_deltas(before: dict[str, object], after: dict[str, object], *
     return changed
 
 
+def _published_viewer_schema_control(control_id: str) -> dict[str, object]:
+    schema_path = RUNTIME_DIR / "ui" / "fractal_binding_surface_v1.ui_schema.json"
+    assert schema_path.exists(), f"missing published runtime schema: {schema_path}"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    panels = schema.get("panels")
+    assert isinstance(panels, list), "published runtime schema panels must be a list"
+    for panel in panels:
+        if not isinstance(panel, dict):
+            continue
+        controls = panel.get("controls")
+        assert isinstance(controls, list), "published runtime schema controls must be a list"
+        for control in controls:
+            if isinstance(control, dict) and control.get("id") == control_id:
+                return control
+    raise AssertionError(f"missing published runtime schema control: {control_id}")
+
+
+def test_published_runtime_schema_restores_explaino_axis_owner_lanes() -> None:
+    if sys.platform != "win32":
+        pytest.skip("Published runtime schema regression is Windows-only")
+
+    expected = {
+        "ripple_amplitude": "explaino_ripple",
+        "splice_offset": "explaino_splice",
+        "vortex_strength": "explaino_vortex",
+        "tension_strength": "explaino_tension",
+        "balance_void": "explaino_balance_void",
+        "symmetry_tension": "explaino_balance_void",
+        "field_curvature": "explaino_balance_void",
+    }
+    for control_id, owner_lane in expected.items():
+        assert _published_viewer_schema_control(control_id).get("visible_if") == {
+            "op": "eq",
+            "path": "fractal.view.fractal_type",
+            "value": owner_lane,
+        }
+
+
 def test_explaino_lambda_cli_overrides_survive_headless_capture() -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-Lambda runtime regression is Windows-only")
