@@ -27,8 +27,12 @@ bool ExplainoLegacyProjectionSmoothEscapeStaysFast(
         params.color_pipeline.signal != ColorSignal::smooth_escape) {
         return false;
     }
-    return requestedFractalType == runtimeFractalType &&
-        IsExplainoLegacyProjectionSelector(requestedFractalType);
+    if (requestedFractalType == runtimeFractalType &&
+        IsExplainoLegacyProjectionSelector(requestedFractalType)) {
+        return true;
+    }
+    return requestedFractalType == ExplainoCanonicalFractalType() &&
+        IsExplainoLegacyProjectionSelector(runtimeFractalType);
 }
 
 double AutoStandardThresholdLog2(FractalType fractalType) {

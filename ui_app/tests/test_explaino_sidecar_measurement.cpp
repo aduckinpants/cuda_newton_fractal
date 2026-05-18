@@ -133,9 +133,9 @@ EngineFunctionCatalog BuildProjectionParityCatalog() {
 
     FunctionParamDescriptor vortex = MakeParam("fractal.params.vortex_strength", "float", "Vortex Strength", 0.0, 1.0, 0.05);
     vortex.has_applicable_when = true;
-    vortex.applicable_when.op = "eq";
+    vortex.applicable_when.op = "in";
     vortex.applicable_when.path = "fractal.view.fractal_type";
-    vortex.applicable_when.value = "explaino_vortex";
+    vortex.applicable_when.value = "explaino_all,explaino_vortex";
     fractalSample.parameters.push_back(vortex);
 
     catalog.functions.push_back(fractalSample);
@@ -160,23 +160,23 @@ EngineFunctionCatalog BuildBalanceVoidParityCatalog() {
 
     FunctionParamDescriptor balanceVoid = MakeParam("fractal.params.balance_void", "float", "Balance Void", -1.0, 1.0, 0.05);
     balanceVoid.has_applicable_when = true;
-    balanceVoid.applicable_when.op = "eq";
+    balanceVoid.applicable_when.op = "in";
     balanceVoid.applicable_when.path = "fractal.view.fractal_type";
-    balanceVoid.applicable_when.value = "explaino_balance_void";
+    balanceVoid.applicable_when.value = "explaino_all,explaino_balance_void";
     fractalSample.parameters.push_back(balanceVoid);
 
     FunctionParamDescriptor symmetryTension = MakeParam("fractal.params.symmetry_tension", "float", "Symmetry Tension", -1.0, 1.0, 0.05);
     symmetryTension.has_applicable_when = true;
-    symmetryTension.applicable_when.op = "eq";
+    symmetryTension.applicable_when.op = "in";
     symmetryTension.applicable_when.path = "fractal.view.fractal_type";
-    symmetryTension.applicable_when.value = "explaino_balance_void";
+    symmetryTension.applicable_when.value = "explaino_all,explaino_balance_void";
     fractalSample.parameters.push_back(symmetryTension);
 
     FunctionParamDescriptor fieldCurvature = MakeParam("fractal.params.field_curvature", "float", "Field Curvature", -1.0, 1.0, 0.05);
     fieldCurvature.has_applicable_when = true;
-    fieldCurvature.applicable_when.op = "eq";
+    fieldCurvature.applicable_when.op = "in";
     fieldCurvature.applicable_when.path = "fractal.view.fractal_type";
-    fieldCurvature.applicable_when.value = "explaino_balance_void";
+    fieldCurvature.applicable_when.value = "explaino_all,explaino_balance_void";
     fractalSample.parameters.push_back(fieldCurvature);
 
     catalog.functions.push_back(fractalSample);
@@ -609,21 +609,21 @@ int main() {
             return 1;
         }
 
-        if (legacySpace.applicable_parameters.size() != 2 || canonicalSpace.applicable_parameters.size() != 1) {
-            std::cerr << "Expected projection-parity hypothesis spaces to expose the explicit Explaino-Vortex selector plus its owning axis while keeping explaino_all on the selector-only surface\n";
+        if (legacySpace.applicable_parameters.size() != 2 || canonicalSpace.applicable_parameters.size() != 2) {
+            std::cerr << "Expected projection-parity hypothesis spaces to expose the canonical fractal selector plus the shared vortex axis on both explaino_all and Explaino-Vortex\n";
             return 1;
         }
-        if (legacyBatch.rows.size() != 1 || canonicalBatch.rows.size() != 0 ||
-            legacyBatch.rows[0].path != "fractal.params.vortex_strength") {
-            std::cerr << "Expected projection-parity catalog to expose the vortex axis only on the explicit Explaino-Vortex lane\n";
+        if (legacyBatch.rows.size() != 1 || canonicalBatch.rows.size() != 1 ||
+            legacyBatch.rows[0].path != "fractal.params.vortex_strength" ||
+            canonicalBatch.rows[0].path != "fractal.params.vortex_strength") {
+            std::cerr << "Expected projection-parity catalog to expose the shared vortex axis row on both explaino_all and Explaino-Vortex\n";
             return 1;
         }
         if (!(legacyBatch.rows[0].information_gain_estimate > 0.0) ||
+            !(canonicalBatch.rows[0].information_gain_estimate > 0.0) ||
             !NearlyEqual(legacyBatch.explored_fraction, 1.0) ||
-            !NearlyEqual(canonicalBatch.total_information_gain_estimate, 0.0) ||
-            !NearlyEqual(canonicalBatch.explored_fraction, 0.0) ||
-            !NearlyEqual(canonicalBatch.mean_decode_stability, 1.0)) {
-            std::cerr << "Expected Explaino-Vortex sidecar measurement sweeps to stay real on the owning lane while explaino_all keeps no vortex measurement rows\n";
+            !NearlyEqual(canonicalBatch.explored_fraction, 1.0)) {
+            std::cerr << "Expected Explaino-Vortex sidecar measurement sweeps to stay real on both the explicit owner lane and the canonical explaino_all shared surface\n";
             return 1;
         }
     }
@@ -781,12 +781,12 @@ int main() {
             std::cerr << "Expected BalanceVoid parity proof to stay on widened evidence instead of the legacy sample host\n";
             return 1;
         }
-        if (legacySpace.applicable_parameters.size() != 4 || canonicalSpace.applicable_parameters.size() != 1) {
-            std::cerr << "Expected BalanceVoid parity hypothesis spaces to expose the explicit selector plus the three owning axes while explaino_all stays on the selector-only surface\n";
+        if (legacySpace.applicable_parameters.size() != 4 || canonicalSpace.applicable_parameters.size() != 4) {
+            std::cerr << "Expected BalanceVoid parity hypothesis spaces to expose the canonical fractal selector plus the three shared BalanceVoid axes on both explaino_all and Explaino-BalanceVoid\n";
             return 1;
         }
-        if (legacyBatch.rows.size() != 3 || canonicalBatch.rows.size() != 0) {
-            std::cerr << "Expected BalanceVoid parity measurement batches to keep the three dedicated rows only on the explicit Explaino-BalanceVoid lane\n";
+        if (legacyBatch.rows.size() != 3 || canonicalBatch.rows.size() != 3) {
+            std::cerr << "Expected BalanceVoid parity measurement batches to expose the three shared BalanceVoid rows on both explaino_all and Explaino-BalanceVoid\n";
             return 1;
         }
 
@@ -797,31 +797,38 @@ int main() {
         };
         for (const char* path : expectedPaths) {
             const SidecarMeasurementRow* legacyRow = FindMeasurementRowByPath(legacyBatch, path);
-            if (!legacyRow) {
-                std::cerr << "Expected BalanceVoid parity measurement rows to keep path " << path << " on the owning lane\n";
+            const SidecarMeasurementRow* canonicalRow = FindMeasurementRowByPath(canonicalBatch, path);
+            if (!legacyRow || !canonicalRow) {
+                std::cerr << "Expected BalanceVoid parity measurement rows to keep path " << path << " on both the explicit owner lane and explaino_all\n";
                 return 1;
             }
             if (legacyRow->minus_counterfactual.coordinate_count != legacyBatch.coordinate_count ||
-                legacyRow->plus_counterfactual.coordinate_count != legacyBatch.coordinate_count) {
+                legacyRow->plus_counterfactual.coordinate_count != legacyBatch.coordinate_count ||
+                canonicalRow->minus_counterfactual.coordinate_count != canonicalBatch.coordinate_count ||
+                canonicalRow->plus_counterfactual.coordinate_count != canonicalBatch.coordinate_count) {
                 std::cerr << "Expected BalanceVoid widened witnesses to cover every sampled coordinate for path " << path << "\n";
                 return 1;
             }
             if (!NearlyEqual(legacyRow->minus_counterfactual.mean_sample_coord_distance, 0.0) ||
-                !NearlyEqual(legacyRow->plus_counterfactual.mean_sample_coord_distance, 0.0)) {
+                !NearlyEqual(legacyRow->plus_counterfactual.mean_sample_coord_distance, 0.0) ||
+                !NearlyEqual(canonicalRow->minus_counterfactual.mean_sample_coord_distance, 0.0) ||
+                !NearlyEqual(canonicalRow->plus_counterfactual.mean_sample_coord_distance, 0.0)) {
                 std::cerr << "Expected BalanceVoid param sweeps to preserve sample_coord pairing and react through legacy-result deltas instead of coordinate motion for path " << path << "\n";
                 return 1;
             }
             if (!(legacyRow->minus_counterfactual.mean_abs_iteration_delta > 0.0) ||
                 !(legacyRow->plus_counterfactual.mean_abs_residual_delta > 0.0) ||
-                !(legacyRow->information_gain_estimate > 0.0)) {
-                std::cerr << "Expected existing widened payload to stay sufficient for BalanceVoid axis witnesses on the owning lane for path " << path << "\n";
+                !(canonicalRow->minus_counterfactual.mean_abs_iteration_delta > 0.0) ||
+                !(canonicalRow->plus_counterfactual.mean_abs_residual_delta > 0.0) ||
+                !(legacyRow->information_gain_estimate > 0.0) ||
+                !(canonicalRow->information_gain_estimate > 0.0)) {
+                std::cerr << "Expected existing widened payload to stay sufficient for BalanceVoid axis witnesses on both the owner lane and explaino_all for path " << path << "\n";
                 return 1;
             }
         }
-        if (!NearlyEqual(canonicalBatch.total_information_gain_estimate, 0.0) ||
-            !NearlyEqual(canonicalBatch.explored_fraction, 0.0) ||
-            !NearlyEqual(canonicalBatch.mean_decode_stability, 1.0)) {
-            std::cerr << "Expected explaino_all widened parity to keep no BalanceVoid measurement rows once those controls move back to the explicit owning lane\n";
+        if (!(canonicalBatch.total_information_gain_estimate > 0.0) ||
+            !NearlyEqual(canonicalBatch.explored_fraction, 1.0)) {
+            std::cerr << "Expected explaino_all widened parity to keep real BalanceVoid measurement rows on the restored shared surface\n";
             return 1;
         }
     }

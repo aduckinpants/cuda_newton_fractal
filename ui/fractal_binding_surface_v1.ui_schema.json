@@ -757,7 +757,7 @@
           "value_type": "float",
           "ui_min": 0.0, "ui_max": 0.5, "step": 0.005, "default": 0.15,
           "binding": { "kind": "param", "path": "fractal.params.ripple_amplitude" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_ripple" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_ripple" }
         },
         {
           "id": "splice_offset",
@@ -767,7 +767,7 @@
           "value_type": "float",
           "ui_min": 0.0, "ui_max": 2.0, "step": 0.01, "default": 0.5,
           "binding": { "kind": "param", "path": "fractal.params.splice_offset" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_splice" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_splice" }
         },
         {
           "id": "vortex_strength",
@@ -777,7 +777,7 @@
           "value_type": "float",
           "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.3,
           "binding": { "kind": "param", "path": "fractal.params.vortex_strength" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_vortex" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_vortex" }
         },
         {
           "id": "tension_strength",
@@ -787,7 +787,7 @@
           "value_type": "float",
           "ui_min": 0.0, "ui_max": 0.1, "step": 0.001, "default": 0.02,
           "binding": { "kind": "param", "path": "fractal.params.tension_strength" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_tension" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_tension" }
         },
         {
           "id": "balance_void",
@@ -797,7 +797,7 @@
           "value_type": "float",
           "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.balance_void" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_balance_void" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_balance_void" }
         },
         {
           "id": "symmetry_tension",
@@ -807,7 +807,7 @@
           "value_type": "float",
           "ui_min": -1.0, "ui_max": 1.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.symmetry_tension" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_balance_void" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_balance_void" }
         },
         {
           "id": "field_curvature",
@@ -817,7 +817,7 @@
           "value_type": "float",
           "ui_min": -1.0, "ui_max": 1.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.field_curvature" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_balance_void" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino_all,explaino_balance_void" }
         },
         {
           "id": "explaino_phase",

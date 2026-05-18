@@ -106,9 +106,9 @@ int main() {
         rippleControl.binding.kind = "param";
         rippleControl.binding.path = "fractal.params.ripple_amplitude";
         rippleControl.has_visible_if = true;
-        rippleControl.visible_if.op = "eq";
+        rippleControl.visible_if.op = "in";
         rippleControl.visible_if.path = "fractal.view.fractal_type";
-        rippleControl.visible_if.value = "explaino_ripple";
+        rippleControl.visible_if.value = "explaino_all,explaino_ripple";
         paramsPanel.controls.push_back(rippleControl);
 
         schema.panels.push_back(paramsPanel);
@@ -191,8 +191,8 @@ int main() {
             std::cerr << "Third param should be ripple_amplitude float\n";
             return 1;
         }
-        if (!p2.has_applicable_when || p2.applicable_when.op != "eq" || p2.applicable_when.value != "explaino_ripple") {
-            std::cerr << "ripple_amplitude should keep the explaino_ripple applicable_when predicate\n";
+        if (!p2.has_applicable_when || p2.applicable_when.op != "in" || p2.applicable_when.value != "explaino_all,explaino_ripple") {
+            std::cerr << "ripple_amplitude should keep the shared explaino_all plus explaino_ripple applicable_when predicate\n";
             return 1;
         }
         if (!p2.has_cost_hint || !NearlyEqual(p2.cost_hint, 2.55, 1.0e-6)) {

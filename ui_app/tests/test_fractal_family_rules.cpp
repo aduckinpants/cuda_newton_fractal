@@ -180,11 +180,24 @@ int main() {
             std::cerr << "Explaino selector resolution should preserve every explicit public family identity instead of collapsing projection lanes to explaino_all\n";
             return 1;
         }
-        KernelParams explainoAllParams{};
-        explainoAllParams.ripple_amplitude = 0.15f;
-        explainoAllParams.balance_void = 0.42f;
-        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllParams) != FractalType::explaino) {
-            std::cerr << "Explaino-all runtime resolution should ignore hidden family-axis params instead of routing through legacy projection carriers\n";
+        KernelParams explainoAllNeutral{};
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllNeutral) != FractalType::explaino) {
+            std::cerr << "Explaino-all neutral defaults should still collapse to baseline Explaino at the runtime seam\n";
+            return 1;
+        }
+        KernelParams explainoAllSharedAxis{};
+        explainoAllSharedAxis.ripple_amplitude = 0.15f;
+        explainoAllSharedAxis.balance_void = 0.42f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllSharedAxis) != FractalType::explaino_ripple) {
+            std::cerr << "Explaino-all should restore the legacy shared single-axis carrier precedence when a shared registry axis is active\n";
+            return 1;
+        }
+        KernelParams explainoAllBalanceVoidOnly{};
+        explainoAllBalanceVoidOnly.balance_void = 0.42f;
+        explainoAllBalanceVoidOnly.symmetry_tension = -0.2f;
+        explainoAllBalanceVoidOnly.field_curvature = 0.25f;
+        if (ResolveExplainoRuntimeFractalType(FractalType::explaino_all, explainoAllBalanceVoidOnly) != FractalType::explaino_balance_void) {
+            std::cerr << "Explaino-all should restore the legacy shared BalanceVoid carrier when only the dedicated BalanceVoid axes are active\n";
             return 1;
         }
         KernelParams explicitRippleNeutral{};

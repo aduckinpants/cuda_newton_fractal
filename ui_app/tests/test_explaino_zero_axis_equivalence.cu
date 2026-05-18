@@ -325,6 +325,57 @@ void CheckStateEquivalence(const ZeroAxisState& expected,
     CHECK("state final_z stays within tolerance", finalZMismatches == 0);
 }
 
+void CheckStateDifference(const ZeroAxisState& baseline,
+    const ZeroAxisState& variant,
+    const char* name) {
+    CheckRootSurface(baseline, variant, name);
+
+    std::vector<Double2> coords;
+    BuildGridCoordinates(baseline.view, &coords);
+
+    std::vector<FractalSampleResult> baselineResults;
+    std::vector<FractalSampleResult> variantResults;
+    CHECK("baseline sample ok", SampleGrid(baseline, coords, &baselineResults));
+    CHECK("variant sample ok", SampleGrid(variant, coords, &variantResults));
+    if (baselineResults.size() != variantResults.size() || baselineResults.empty()) {
+        CHECK("sample result counts match", false);
+        return;
+    }
+
+    int changedFlags = 0;
+    int changedIterations = 0;
+    int changedBasins = 0;
+    int changedFinalZ = 0;
+    for (size_t index = 0; index < baselineResults.size(); ++index) {
+        const FractalSampleResult& baselineResult = baselineResults[index];
+        const FractalSampleResult& variantResult = variantResults[index];
+        if (baselineResult.converged != variantResult.converged || baselineResult.escaped != variantResult.escaped) {
+            ++changedFlags;
+        }
+        if (baselineResult.iterations != variantResult.iterations) {
+            ++changedIterations;
+        }
+        if (baselineResult.converged && variantResult.converged) {
+            if (NearestRootIndex(baseline.params, baselineResult) != NearestRootIndex(variant.params, variantResult)) {
+                ++changedBasins;
+            }
+            if (Distance(baselineResult.final_z_x, baselineResult.final_z_y, variantResult.final_z_x, variantResult.final_z_y) > 1.0e-5) {
+                ++changedFinalZ;
+            }
+        }
+    }
+
+    std::printf("    %-30s flag=%4d basin=%4d iter=%4d final_z=%4d\n",
+        name,
+        changedFlags,
+        changedBasins,
+        changedIterations,
+        changedFinalZ);
+
+    CHECK("state difference proves runtime ownership",
+        changedFlags > 0 || changedIterations > 0 || changedBasins > 0 || changedFinalZ > 0);
+}
+
 void CheckSecondaryVariantReduction(FractalType primaryType,
     const char* primaryName,
     FractalType secondaryType,
@@ -457,56 +508,42 @@ void CheckBalanceVoidControlPerturbation() {
         changedFlags > 0 || changedIterations > 0 || changedBasins > 0 || changedFinalZ > 0);
 }
 
-void CheckCanonicalAllMatchesCarrier(FractalType carrierType,
-    const char* carrierName,
+void CheckCanonicalAllSharedAxisPerturbsRuntime(const char* carrierName,
     float rippleAmplitude,
     float spliceOffset,
     float vortexStrength,
     float tensionStrength) {
-    ZeroAxisState expected;
-    ZeroAxisState actual;
-    BuildExplainoVariantState(FractalType::explaino,
-        rippleAmplitude,
-        spliceOffset,
-        vortexStrength,
-        tensionStrength,
-        &expected);
+    ZeroAxisState neutral;
+    ZeroAxisState perturbed;
+    BuildZeroAxisState(FractalType::explaino_all, &neutral);
     BuildExplainoVariantState(FractalType::explaino_all,
         rippleAmplitude,
         spliceOffset,
         vortexStrength,
         tensionStrength,
-        &actual);
+        &perturbed);
 
     char label[128];
-    std::snprintf(label, sizeof(label), "explaino_all ignores %s carrier axis", carrierName);
-    CheckStateEquivalence(expected, actual, label);
+    std::snprintf(label, sizeof(label), "explaino_all shared %s axis", carrierName);
+    CheckStateDifference(neutral, perturbed, label);
 }
 
-void CheckCanonicalAllMatchesBalanceVoidCarrier(float balanceVoid,
+void CheckCanonicalAllBalanceVoidPerturbsRuntime(float balanceVoid,
     float symmetryTension,
     float fieldCurvature) {
-    ZeroAxisState expected;
-    ZeroAxisState actual;
-    BuildExplainoVariantState(FractalType::explaino,
-        0.0f,
-        0.0f,
-        0.0f,
-        0.0f,
-        &expected,
-        balanceVoid,
-        symmetryTension,
-        fieldCurvature);
+    ZeroAxisState neutral;
+    ZeroAxisState perturbed;
+    BuildZeroAxisState(FractalType::explaino_all, &neutral);
     BuildExplainoVariantState(FractalType::explaino_all,
         0.0f,
         0.0f,
         0.0f,
         0.0f,
-        &actual,
+        &perturbed,
         balanceVoid,
         symmetryTension,
         fieldCurvature);
-    CheckStateEquivalence(expected, actual, "explaino_all ignores hidden explaino_balance_void axes");
+    CheckStateDifference(neutral, perturbed, "explaino_all shared explaino_balance_void axes");
 }
 
 void CheckCanonicalAllComposedBalanceVoidCoupling() {
@@ -530,7 +567,7 @@ void CheckCanonicalAllComposedBalanceVoidCoupling() {
         0.35f,
         -0.2f,
         0.25f);
-    CheckStateEquivalence(neutral, perturbed, "explaino_all ignores hidden balance-void axes");
+    CheckStateEquivalence(neutral, perturbed, "explaino_all keeps single-axis precedence over hidden balance-void axes");
 }
 
 void CheckComposedLabelInvariance(FractalType leftType,
@@ -601,35 +638,31 @@ int main() {
     CheckSecondaryVariantReduction(FractalType::explaino_tension, "explaino_tension", FractalType::explaino_ripple, "explaino_ripple");
     CheckPlainExplainoIgnoresLatentComposition();
     CheckBalanceVoidControlPerturbation();
-    CheckCanonicalAllMatchesCarrier(
-        FractalType::explaino_ripple,
+    CheckCanonicalAllSharedAxisPerturbsRuntime(
         "explaino_ripple",
         DefaultVariantStrength(FractalType::explaino_ripple),
         0.0f,
         0.0f,
         0.0f);
-    CheckCanonicalAllMatchesCarrier(
-        FractalType::explaino_splice,
+    CheckCanonicalAllSharedAxisPerturbsRuntime(
         "explaino_splice",
         0.0f,
         DefaultVariantStrength(FractalType::explaino_splice),
         0.0f,
         0.0f);
-    CheckCanonicalAllMatchesCarrier(
-        FractalType::explaino_vortex,
+    CheckCanonicalAllSharedAxisPerturbsRuntime(
         "explaino_vortex",
         0.0f,
         0.0f,
         DefaultVariantStrength(FractalType::explaino_vortex),
         0.0f);
-    CheckCanonicalAllMatchesCarrier(
-        FractalType::explaino_tension,
+    CheckCanonicalAllSharedAxisPerturbsRuntime(
         "explaino_tension",
         0.0f,
         0.0f,
         0.0f,
         DefaultVariantStrength(FractalType::explaino_tension));
-    CheckCanonicalAllMatchesBalanceVoidCarrier(0.35f, -0.2f, 0.25f);
+    CheckCanonicalAllBalanceVoidPerturbsRuntime(0.35f, -0.2f, 0.25f);
     CheckCanonicalAllComposedBalanceVoidCoupling();
     CheckComposedLabelInvariance(
         FractalType::explaino_ripple,

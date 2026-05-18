@@ -452,22 +452,22 @@ def _published_viewer_schema_control(control_id: str) -> dict[str, object]:
     raise AssertionError(f"missing published runtime schema control: {control_id}")
 
 
-def test_published_runtime_schema_restores_explaino_axis_owner_lanes() -> None:
+def test_published_runtime_schema_restores_explaino_shared_axis_surface() -> None:
     if sys.platform != "win32":
         pytest.skip("Published runtime schema regression is Windows-only")
 
     expected = {
-        "ripple_amplitude": "explaino_ripple",
-        "splice_offset": "explaino_splice",
-        "vortex_strength": "explaino_vortex",
-        "tension_strength": "explaino_tension",
-        "balance_void": "explaino_balance_void",
-        "symmetry_tension": "explaino_balance_void",
-        "field_curvature": "explaino_balance_void",
+        "ripple_amplitude": "explaino_all,explaino_ripple",
+        "splice_offset": "explaino_all,explaino_splice",
+        "vortex_strength": "explaino_all,explaino_vortex",
+        "tension_strength": "explaino_all,explaino_tension",
+        "balance_void": "explaino_all,explaino_balance_void",
+        "symmetry_tension": "explaino_all,explaino_balance_void",
+        "field_curvature": "explaino_all,explaino_balance_void",
     }
     for control_id, owner_lane in expected.items():
         assert _published_viewer_schema_control(control_id).get("visible_if") == {
-            "op": "eq",
+            "op": "in",
             "path": "fractal.view.fractal_type",
             "value": owner_lane,
         }
@@ -1169,7 +1169,7 @@ def test_explaino_all_neutral_defaults_match_explaino_published_runtime() -> Non
     )
 
 
-def test_explaino_all_registry_axes_do_not_claim_published_runtime_ownership(tmp_path: Path) -> None:
+def test_explaino_all_registry_axes_round_trip_and_change_published_runtime_frame(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino-all runtime regression is Windows-only")
 
@@ -1215,11 +1215,11 @@ def test_explaino_all_registry_axes_do_not_claim_published_runtime_ownership(tmp
     assert reloaded_params["balance_void"] == pytest.approx(0.35, abs=1e-6)
     assert reloaded_params["symmetry_tension"] == pytest.approx(-0.2, abs=1e-6)
     assert reloaded_params["field_curvature"] == pytest.approx(0.25, abs=1e-6)
-    assert perturbed_capture["frame_hash"] == neutral_capture["frame_hash"], (
-        "expected explaino_all to keep composed family-axis params out of its published runtime ownership surface"
+    assert perturbed_capture["frame_hash"] != neutral_capture["frame_hash"], (
+        "expected Explaino-all registry-axis edits to change the published runtime frame"
     )
-    assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) == pytest.approx(0.0, abs=0.0), (
-        "expected explaino_all family-axis params to leave the published runtime frame unchanged"
+    assert _mean_absolute_frame_delta(neutral_capture["frame_bytes"], perturbed_capture["frame_bytes"]) > 0.01, (
+        "expected Explaino-all registry-axis edits to produce a measurable published-frame delta"
     )
 
 
@@ -1723,7 +1723,9 @@ def test_explaino_balance_void_state_round_trips_and_changes_published_runtime_f
     )
 
 
-def test_explaino_smooth_escape_explicit_variants_stay_within_bounded_runtime_usability(tmp_path: Path) -> None:
+def test_explaino_smooth_escape_explicit_variants_and_explaino_all_stay_within_bounded_runtime_usability(
+    tmp_path: Path,
+) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino smooth_escape usability regression is Windows-only")
 
@@ -1786,6 +1788,12 @@ def test_explaino_smooth_escape_explicit_variants_stay_within_bounded_runtime_us
             "vortex_strength": 0.0,
             "tension_strength": 0.02,
         },
+        "explaino_all": {
+            "ripple_amplitude": 0.15,
+            "splice_offset": 0.0,
+            "vortex_strength": 0.0,
+            "tension_strength": 0.0,
+        },
     }
     median_timings = {"explaino": baseline_elapsed}
     for fractal_type, axis_defaults in explicit_defaults.items():
@@ -1798,7 +1806,7 @@ def test_explaino_smooth_escape_explicit_variants_stay_within_bounded_runtime_us
 
     for fractal_type in explicit_defaults:
         assert median_timings[fractal_type] <= baseline_elapsed * 1.8, (
-            "expected Explaino smooth_escape explicit variants to stay within the bounded merged-head usability envelope; "
+            "expected Explaino smooth_escape explicit variants plus explaino_all shared-axis routing to stay within the bounded merged-head usability envelope; "
             f"median timings={median_timings}"
         )
 
@@ -2457,6 +2465,7 @@ def test_explaino_smooth_escape_auto_records_float64_backend_in_published_runtim
         pytest.param("explaino_splice", {"splice_offset": 0.5}, id="splice"),
         pytest.param("explaino_vortex", {"vortex_strength": 0.3}, id="vortex"),
         pytest.param("explaino_tension", {"tension_strength": 0.02}, id="tension"),
+        pytest.param("explaino_all", {"ripple_amplitude": 0.15}, id="explaino-all-shared-axis"),
         pytest.param(
             "explaino_balance_void",
             {"balance_void": 0.35, "symmetry_tension": -0.2, "field_curvature": 0.25},

@@ -346,7 +346,12 @@ FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoRuntimeFract
     FractalType fractalType,
     const KernelParams& params) {
     if (fractalType == ExplainoCanonicalFractalType()) {
-        // explaino_all is a neutral umbrella; hidden family-axis params do not grant it runtime ownership.
+        if (HasExplainoComposedAxisPerturbation(params)) {
+            return FractalType::explaino_ripple;
+        }
+        if (HasExplainoBalanceVoidPerturbation(params)) {
+            return FractalType::explaino_balance_void;
+        }
         return FractalType::explaino;
     }
     if (IsExplainoSingleAxisProjectionSelector(fractalType) &&

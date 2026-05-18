@@ -95,8 +95,8 @@ def test_describe_functions_emits_valid_catalog() -> None:
 
     ripple_param = next(p for p in func["parameters"] if p["path"] == "fractal.params.ripple_amplitude")
     assert ripple_param["type"] == "float"
-    assert ripple_param["applicable_when"]["op"] == "eq"
-    assert ripple_param["applicable_when"]["value"] == "explaino_ripple"
+    assert ripple_param["applicable_when"]["op"] == "in"
+    assert ripple_param["applicable_when"]["value"] == "explaino_all,explaino_ripple"
     assert ripple_param["cost_hint"] == pytest.approx(2.55)
     assert ripple_param["sensitivity"]["zero_case_id"] == "explaino_ripple_zero"
     assert ripple_param["sensitivity"]["default_case_id"] == "explaino_ripple_default"
@@ -106,8 +106,8 @@ def test_describe_functions_emits_valid_catalog() -> None:
 
     balance_void_param = next(p for p in func["parameters"] if p["path"] == "fractal.params.balance_void")
     assert balance_void_param["type"] == "float"
-    assert balance_void_param["applicable_when"]["op"] == "eq"
-    assert balance_void_param["applicable_when"]["value"] == "explaino_balance_void"
+    assert balance_void_param["applicable_when"]["op"] == "in"
+    assert balance_void_param["applicable_when"]["value"] == "explaino_all,explaino_balance_void"
 
     # status output should be enum with option list
     status_out = next(o for o in func["outputs"] if o["name"] == "status")

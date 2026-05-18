@@ -146,6 +146,8 @@ bool VisibleIfIncludesFractalType(const UISchemaControl& control, std::string_vi
         ContainsCsvToken(control.visible_if.value, fractalTypeId);
 }
 
+std::size_t CsvTokenCount(std::string_view csv);
+
 const json_min::Value* FindRawControlById(const json_min::Value& root, std::string_view controlId) {
     const auto* panels = root.get("panels");
     if (!panels || !panels->is_array()) {
@@ -166,7 +168,10 @@ const json_min::Value* FindRawControlById(const json_min::Value& root, std::stri
     return nullptr;
 }
 
-bool RawVisibleIfEqualsFractalType(const json_min::Value& root, std::string_view controlId, std::string_view fractalTypeId) {
+bool RawVisibleIfIncludesFractalTypes(const json_min::Value& root,
+    std::string_view controlId,
+    std::string_view leftFractalTypeId,
+    std::string_view rightFractalTypeId) {
     const json_min::Value* control = FindRawControlById(root, controlId);
     if (!control || !control->is_object()) return false;
     const auto* visibleIf = control->get("visible_if");
@@ -175,7 +180,10 @@ bool RawVisibleIfEqualsFractalType(const json_min::Value& root, std::string_view
     std::string path;
     std::string value;
     return GetJsonStringField(*visibleIf, "op", &op) && GetJsonStringField(*visibleIf, "path", &path) && GetJsonStringField(*visibleIf, "value", &value) &&
-        op == "eq" && path == "fractal.view.fractal_type" && value == fractalTypeId;
+        op == "in" && path == "fractal.view.fractal_type" &&
+        ContainsCsvToken(value, leftFractalTypeId) &&
+        ContainsCsvToken(value, rightFractalTypeId) &&
+        CsvTokenCount(value) == 2u;
 }
 
 std::size_t CsvTokenCount(std::string_view csv) {
@@ -711,8 +719,8 @@ int main() {
         json_min::ParseResult pr2 = json_min::Parse(text);
         for (const auto& axis : kExplainoAxisRegistry) {
             const char* carrierId = FractalTypeId(axis.carrier_fractal_type);
-            if (!carrierId || !RawVisibleIfEqualsFractalType(pr2.value, axis.axis_id, carrierId)) {
-                std::cerr << "Raw main schema Explaino axis controls must ship on their explicit owning family lane before any loader normalization\n";
+            if (!carrierId || !RawVisibleIfIncludesFractalTypes(pr2.value, axis.axis_id, "explaino_all", carrierId)) {
+                std::cerr << "Raw main schema Explaino axis controls must ship on explaino_all plus their explicit owning family lane before any loader normalization\n";
                 return 1;
             }
         }
@@ -1066,10 +1074,11 @@ int main() {
                     const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
                     if (!ctrl.has_visible_if ||
                         ctrl.visible_if.path != "fractal.view.fractal_type" ||
+                        ctrl.visible_if.op != "in" ||
                         !carrierId || !VisibleIfIncludesFractalType(ctrl, carrierId) ||
-                        VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
-                        CsvTokenCount(ctrl.visible_if.value) != 1u) {
-                        std::cerr << "Main schema Explaino axis controls should be visible only on their explicit owning family lane, not on explaino_all\n";
+                        !VisibleIfIncludesFractalType(ctrl, "explaino_all") ||
+                        CsvTokenCount(ctrl.visible_if.value) != 2u) {
+                        std::cerr << "Main schema Explaino axis controls should be visible on explaino_all plus their explicit owning family lane\n";
                         return 1;
                     }
                 }
@@ -1220,17 +1229,17 @@ int main() {
             std::cerr << "Did not preserve the existing Explaino family control surface for the canonical Explaino-all identity\n";
             return 1;
         }
-        if (foundRippleAmplitudeVisibleForExplainoAll || foundSpliceOffsetVisibleForExplainoAll ||
-            foundVortexStrengthVisibleForExplainoAll || foundTensionStrengthVisibleForExplainoAll ||
-            foundBalanceVoidVisibleForExplainoAll || foundSymmetryTensionVisibleForExplainoAll ||
-            foundFieldCurvatureVisibleForExplainoAll) {
-            std::cerr << "Explaino-all should not surface family-specific axis controls in schema\n";
+        if (!foundRippleAmplitudeVisibleForExplainoAll || !foundSpliceOffsetVisibleForExplainoAll ||
+            !foundVortexStrengthVisibleForExplainoAll || !foundTensionStrengthVisibleForExplainoAll ||
+            !foundBalanceVoidVisibleForExplainoAll || !foundSymmetryTensionVisibleForExplainoAll ||
+            !foundFieldCurvatureVisibleForExplainoAll) {
+            std::cerr << "Did not find the canonical Explaino-all shared axis control surface in schema\n";
             return 1;
         }
-        if (explainoAllVisibleAxisCount != 0 ||
+        if (explainoAllVisibleAxisCount != (sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0])) ||
             explainoAllVisibleNonAxisCount != kKnownExplainoAllVisibleBindingPathCount ||
-            explainoAllVisibleControlCount != explainoAllVisibleNonAxisCount) {
-            std::cerr << "Main schema Explaino-all visible control surface should stay limited to the explicit shared non-axis allowlist\n";
+            explainoAllVisibleControlCount != explainoAllVisibleAxisCount + explainoAllVisibleNonAxisCount) {
+            std::cerr << "Main schema Explaino-all visible control surface drifted away from the shared axis registry plus explicit non-axis allowlist\n";
             return 1;
         }
         for (bool foundDeferredCouplingSchema : foundDeferredCouplingSchemaMatches) {
