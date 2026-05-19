@@ -44,8 +44,7 @@
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_fractal_toolkit_scan.py --out-json artifacts/validation/magnet_quick_benefits_fractal_toolkit_scan.json",
     "py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_fractal_runtime_magnet.py -q --junitxml artifacts/pytest/magnet_quick_benefits_pytest.junit.xml",
-    "ui_app/build_tests_vsdevcmd.cmd test_fractal_renderer",
-    "ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/code_quality_report.json",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/magnet_quick_benefits_PHASED_PLAN.md --out-json artifacts/validation/magnet_quick_benefits_hostile_audit.json"
   ],
   "required_acceptance_assertions": [
