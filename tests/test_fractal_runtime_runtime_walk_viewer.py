@@ -22,6 +22,7 @@ from tests.runtime_harness import (
     find_window_for_pid as _find_window_for_pid,
     focus_window as _focus_window,
     run_headless_loaded_state_scenario as _run_headless_loaded_state_scenario,
+    runtime_automation_lock as _runtime_automation_lock,
     wait_for_ui_automation_rect,
     write_state_bundle as _write_state_bundle,
     wait_for_window as _wait_for_window,
@@ -40,6 +41,12 @@ WM_KEYUP = 0x0101
 VK_SPACE = 0x20
 VK_RIGHT = 0x27
 COLOR_PIPELINE_SCALE_CONTROL_ID = "color_pipeline.source.smooth_escape_ramp.signal.scale.primary"
+
+
+@pytest.fixture(autouse=True)
+def _serialize_runtime_walk_viewer_automation():
+    with _runtime_automation_lock():
+        yield
 
 
 
@@ -546,6 +553,49 @@ def test_nova_poly_c4_no_mouse_set_value_change_live_viewport(tmp_path: Path) ->
         "No-mouse set-value automation for Nova poly_c4 should change the rendered frame; "
         f"baseline_hash={baseline_hash} edited_hash={edited_hash}"
     )
+
+
+def test_standalone_scalar_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    cases = [
+        ("nova", "nova_alpha", "fractal_control.nova_alpha.primary", 1.15),
+        ("phoenix", "phoenix_p_real", "fractal_control.phoenix_p_real.primary", 0.15),
+        ("phoenix", "phoenix_p_imag", "fractal_control.phoenix_p_imag.primary", 0.45),
+        ("lambda", "lambda_real", "fractal_control.lambda_real.primary", 3.35),
+        ("lambda", "lambda_imag", "fractal_control.lambda_imag.primary", 0.28),
+        ("multibrot", "multibrot_power_float", "fractal_control.multibrot_power_float.primary", 4.2),
+        ("multicorn", "multicorn_power", "fractal_control.multicorn_power.primary", 3.0),
+    ]
+    for fractal_type, param_id, control_id, set_value in cases:
+        neutral_capture = _run_headless_capture(
+            str(exe_path), "--capture-diagnostic", "--fractal-type", fractal_type, "--width", "320", "--height", "240"
+        )
+        state = neutral_capture["state"]
+        state_path = _write_state_bundle(tmp_path / f"{fractal_type}_{param_id}_neutral", state)
+        baseline_payload = _capture_controls_report_with_optional_set_value(
+            exe_path,
+            state_path,
+            tmp_path / f"{fractal_type}_{param_id}_baseline_report.json",
+            control_id,
+            None,
+        )
+        payload = _capture_controls_report_with_optional_set_value(
+            exe_path,
+            state_path,
+            tmp_path / f"{fractal_type}_{param_id}_edited_report.json",
+            control_id,
+            set_value,
+        )
+        assert payload.get("current_fractal_type") == fractal_type
+        baseline_hash = _require_rendered_frame_hash(baseline_payload)
+        edited_hash = _require_rendered_frame_hash(payload)
+        assert edited_hash != baseline_hash, (
+            "No-mouse set-value automation for a standalone scalar control should change the rendered frame; "
+            f"fractal_type={fractal_type!r} param={param_id!r} baseline_hash={baseline_hash} edited_hash={edited_hash}"
+        )
 
 
 

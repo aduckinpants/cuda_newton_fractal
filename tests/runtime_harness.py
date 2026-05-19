@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes
 from dataclasses import dataclass
 import hashlib
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -16,11 +18,13 @@ RUNTIME_DIR = Path(r"D:\salt-fractal\cuda_newton_fractal_clone\runtime")
 ACTIVE_RUNTIME_FILE = RUNTIME_DIR / "fractal_ui_active.txt"
 DIAGNOSTICS_STATE_FILE = RUNTIME_DIR / "diagnostics" / "last" / "state.json"
 DIAGNOSTICS_FRAME_FILE = RUNTIME_DIR / "diagnostics" / "last" / "frame.bmp"
+RUNTIME_AUTOMATION_LOCK_FILE = RUNTIME_DIR / ".runtime_ui_automation.lock"
 
 WM_CLOSE = 0x0010
 SRCCOPY = 0x00CC0020
 DIB_RGB_COLORS = 0
 PW_RENDERFULLCONTENT = 0x00000002
+RUNTIME_AUTOMATION_LOCK_STALE_SECONDS = 300.0
 
 
 class RECT(ctypes.Structure):
@@ -91,6 +95,40 @@ class UiAutomationRect:
     @property
     def height(self) -> int:
         return self.screen_bottom - self.screen_top
+
+
+@contextmanager
+def runtime_automation_lock(*, timeout_seconds: float = 120.0):
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout_seconds
+    fd: int | None = None
+    while time.monotonic() < deadline:
+        try:
+            fd = os.open(str(RUNTIME_AUTOMATION_LOCK_FILE), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            os.write(fd, f"pid={os.getpid()} acquired_at={time.time():.6f}\n".encode("ascii"))
+            break
+        except FileExistsError:
+            try:
+                lock_age = time.time() - RUNTIME_AUTOMATION_LOCK_FILE.stat().st_mtime
+            except OSError:
+                lock_age = 0.0
+            if lock_age > RUNTIME_AUTOMATION_LOCK_STALE_SECONDS:
+                try:
+                    RUNTIME_AUTOMATION_LOCK_FILE.unlink()
+                    continue
+                except OSError:
+                    pass
+            time.sleep(0.1)
+    if fd is None:
+        raise AssertionError(f"runtime UI automation lock was not acquired: {RUNTIME_AUTOMATION_LOCK_FILE}")
+    try:
+        yield
+    finally:
+        os.close(fd)
+        try:
+            RUNTIME_AUTOMATION_LOCK_FILE.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def active_runtime_exe() -> Path:
