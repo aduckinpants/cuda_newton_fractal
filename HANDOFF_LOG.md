@@ -140,3 +140,5 @@
 - `ck:3a8e24fd` 2026-05-19 02:06 UTC | score 97 — Closed Phase 1 top-down architecture repair: extracted viewer UI automation report seam, added architecture ratchet, replaced blank-window slider proof with in-process rendered-frame hashes, preserved Explaino and Color Pipeline focused rails.
 - `ck:78749f45` 2026-05-19 03:19 UTC — session-start | branch=master | head=f2074dc | status=dirty | profile=checkpoint | intent=modular fractal toolkit Magnet Type I first implementation
 - `ck:78749f45` 2026-05-19 05:41 UTC | score 98 — Closed modular fractal toolkit Magnet Type I slice: plan/contract, direct formula seam, enum/schema/safe-mode/binding/catalog/diagnostics/probe/runtime support, no-mouse runtime proof, Color Pipeline and legacy SampleFractalPoints guards, code-quality/hostile-audit repairs.
+- `ck:119889dd` 2026-05-19 13:23 UTC — session-start | branch=master | head=3055c88 | status=dirty | profile=checkpoint | intent=diagnostics capture render stats repair
+- `ck:119889dd` 2026-05-19 14:04 UTC | score 5 — Diagnostics capture render stats repair closed: 64-bit iteration-sum stats, finding-capture benchmark timing, focused native/runtime proof green.

@@ -226,10 +226,20 @@ void TestRenderAndStatsDefaults() {
     Check(!lens.enabled && lens.downsample == 2, "LensSettings defaults to disabled two-times downsample");
 
     const RenderStats stats{};
-    Check(Near(stats.last_render_ms, 0.0f) && stats.last_iters_avg == 0 && stats.last_device_id == 0,
+    Check(Near(stats.last_render_ms, 0.0f) && stats.last_iters_avg == 0 && stats.last_iters_sum == 0 &&
+            stats.last_pixel_count == 0 && stats.last_device_id == 0,
         "RenderStats timing and device defaults are stable");
     Check(stats.resolved_eval.backend == NumericBackend::float32 && stats.resolved_eval.strategy == IterationStrategy::direct,
         "RenderStats resolved eval defaults to float32 direct");
+}
+
+void TestRenderStatsIterationAverageUsesWideSum() {
+    const int pixelCount = ComputeRenderStatsPixelCount(4096, 4096);
+    Check(pixelCount == 16777216, "RenderStats pixel count helper preserves 4k capture pixel count");
+
+    const unsigned long long overflowRiskSum = static_cast<unsigned long long>(pixelCount) * 176ull;
+    Check(ComputeRenderStatsIterationAverage(overflowRiskSum, pixelCount) == 176,
+        "RenderStats average helper handles 4k sums that exceed signed 32-bit range");
 }
 
 void TestOrbitTerminationDefaults() {
@@ -252,6 +262,7 @@ int main() {
     TestViewStateDefaults();
     TestKernelParamsDefaults();
     TestRenderAndStatsDefaults();
+    TestRenderStatsIterationAverageUsesWideSum();
     TestOrbitTerminationDefaults();
 
     std::cout << "test_fractal_types: passed=" << g_passed << " failed=" << g_failed << "\n";

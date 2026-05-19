@@ -482,9 +482,27 @@ struct LensSettings {
     int downsample{2};
 };
 
+inline int ComputeRenderStatsPixelCount(int width, int height) {
+    if (width <= 0 || height <= 0) return 0;
+    const unsigned long long pixels = static_cast<unsigned long long>(width) * static_cast<unsigned long long>(height);
+    return pixels > 2147483647ull ? 2147483647 : static_cast<int>(pixels);
+}
+
+inline int ComputeRenderStatsIterationAverage(unsigned long long iteration_sum, int pixel_count) {
+    if (pixel_count <= 0) return 0;
+    const unsigned long long average = iteration_sum / static_cast<unsigned long long>(pixel_count);
+    return average > 2147483647ull ? 2147483647 : static_cast<int>(average);
+}
+
+inline int ComputeRenderStatsIterationAverage(unsigned long long iteration_sum, int width, int height) {
+    return ComputeRenderStatsIterationAverage(iteration_sum, ComputeRenderStatsPixelCount(width, height));
+}
+
 struct RenderStats {
     float last_render_ms{0.0f};
     int last_iters_avg{0};
+    unsigned long long last_iters_sum{0};
+    int last_pixel_count{0};
     int last_device_id{0};
     ResolvedEvalMode resolved_eval{};
 };

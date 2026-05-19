@@ -130,6 +130,9 @@ void TestTinyRenderProducesPixelsMaskAndStats() {
     Check(stats.last_device_id >= 0, "Render stats record a non-negative device id");
     Check(stats.last_iters_avg >= 0 && stats.last_iters_avg <= params.max_iter,
         "Render stats average iterations stay within max_iter");
+    Check(stats.last_pixel_count == 4, "Render stats record rendered pixel count");
+    Check(stats.last_iters_sum <= static_cast<unsigned long long>(params.max_iter) * 4ull,
+        "Render stats iteration sum stays within max_iter times pixel count");
     Check(stats.resolved_eval.backend == NumericBackend::float32 && stats.resolved_eval.strategy == IterationStrategy::direct,
         "Render stats record resolved fast direct mode");
     Check(stats.last_render_ms == 0.0f, "Non-benchmark render leaves elapsed milliseconds at zero");

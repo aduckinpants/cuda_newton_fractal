@@ -572,9 +572,13 @@ int main() {
             std::cerr << "Expected finding archive capture to force a 4k square frame\n";
             return 1;
         }
+        if (!captureRender.benchmark || render.benchmark) {
+            std::cerr << "Expected finding archive capture to enable benchmark timing without changing the source render defaults\n";
+            return 1;
+        }
         if (captureRender.block_size != render.block_size || captureRender.device_id != render.device_id ||
             captureRender.preview_target_fps != render.preview_target_fps) {
-            std::cerr << "Expected 4k finding archive render to preserve the non-resolution render settings\n";
+            std::cerr << "Expected 4k finding archive render to preserve non-resolution settings except capture benchmark timing\n";
             return 1;
         }
     }

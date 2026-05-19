@@ -69,6 +69,8 @@ void PopulateState(ViewState* view, KernelParams* params, RenderSettings* render
     *stats = RenderStats{};
     stats->last_render_ms = 4.5f;
     stats->last_iters_avg = 17;
+    stats->last_iters_sum = 68;
+    stats->last_pixel_count = 4;
     stats->last_device_id = 3;
     stats->resolved_eval = {NumericBackend::float64, IterationStrategy::direct};
 }
@@ -98,6 +100,8 @@ void TestBundleWritesFrameAndState() {
     Check(json.find("\"height\": 2") != std::string::npos, "state persists render height");
     Check(json.find("\"interaction_debounce_ms\": 123") != std::string::npos, "state persists render debounce");
     Check(json.find("\"last_render_ms\": 4.5") != std::string::npos, "state persists render stats");
+    Check(json.find("\"last_iters_sum\": 68") != std::string::npos, "state persists raw render iteration sum");
+    Check(json.find("\"last_pixel_count\": 4") != std::string::npos, "state persists render pixel count");
     Check(json.find("\"sample_tier\": \"standard\"") != std::string::npos, "state persists requested sample tier");
     Check(json.find("\"resolved_backend\": \"float64\"") != std::string::npos, "state persists resolved numeric backend");
     Check(json.find("\"resolved_strategy\": \"direct\"") != std::string::npos, "state persists resolved iteration strategy");

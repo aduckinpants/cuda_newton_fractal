@@ -665,6 +665,8 @@ std::string BuildStateJson(
     js << "  \"stats\": {\n";
     js << "    \"last_render_ms\": " << static_cast<double>(stats.last_render_ms) << ",\n";
     js << "    \"last_iters_avg\": " << stats.last_iters_avg << ",\n";
+    js << "    \"last_iters_sum\": " << stats.last_iters_sum << ",\n";
+    js << "    \"last_pixel_count\": " << stats.last_pixel_count << ",\n";
     js << "    \"last_device_id\": " << stats.last_device_id << ",\n";
     js << "    \"resolved_backend\": \"" << CaptureNumericBackendId(stats.resolved_eval.backend) << "\",\n";
     js << "    \"resolved_strategy\": \"" << CaptureIterationStrategyId(stats.resolved_eval.strategy) << "\"\n";

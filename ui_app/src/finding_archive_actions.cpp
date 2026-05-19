@@ -467,6 +467,7 @@ FindingArchiveIdentity BuildUniqueFindingIdentity(
 RenderSettings BuildFindingArchiveCaptureRender(const RenderSettings& render) {
     RenderSettings captureRender = render;
     captureRender.resolution = {kFindingArchiveCaptureResolution, kFindingArchiveCaptureResolution};
+    captureRender.benchmark = true;
     return captureRender;
 }
 

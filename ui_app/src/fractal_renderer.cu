@@ -73,7 +73,7 @@ __global__ void kernel_render(
     const double2* refOrbit,
     int refLen,
     double2 refC0,
-    int* outItersSum)
+    unsigned long long* outItersSum)
 {
     int px = (int)(blockIdx.x * blockDim.x + threadIdx.x);
     int py = (int)(blockIdx.y * blockDim.y + threadIdx.y);
@@ -121,9 +121,10 @@ __global__ void kernel_render(
     int maxIter = max(1, params.max_iter);
 
 
-    // Accumulate a rough measure for UI stats
+    // Accumulate a rough measure for UI stats. The 4k finding capture path can exceed signed 32-bit sums.
     if (outItersSum) {
-        atomicAdd(outItersSum, it);
+        const int iterationCount = it < 0 ? 0 : it;
+        atomicAdd(outItersSum, static_cast<unsigned long long>(iterationCount));
     }
 
     ColoringMode mode = params.coloring_mode;
@@ -238,7 +239,7 @@ struct CachedBuffers {
     int h = 0;
     uint32_t* d_rgba = nullptr;
     uint8_t* d_mask = nullptr;
-    int* d_itersSum = nullptr;
+    unsigned long long* d_itersSum = nullptr;
     double2* d_refOrbit = nullptr;
     int refOrbitLen = 0;
 
@@ -283,7 +284,7 @@ bool ensure_buffers(int w, int h, const char** outError) {
         return false;
     }
 
-    if (cudaMalloc(&g_cached.d_itersSum, sizeof(int)) != cudaSuccess) {
+    if (cudaMalloc(&g_cached.d_itersSum, sizeof(unsigned long long)) != cudaSuccess) {
         if (outError) *outError = "cudaMalloc failed for itersSum";
         g_cached.d_itersSum = nullptr;
         return false;
@@ -372,8 +373,8 @@ bool RenderFractalCUDA(
         }
     }
 
-    int zero = 0;
-    cudaMemcpy(g_cached.d_itersSum, &zero, sizeof(int), cudaMemcpyHostToDevice);
+    unsigned long long zero = 0;
+    cudaMemcpy(g_cached.d_itersSum, &zero, sizeof(unsigned long long), cudaMemcpyHostToDevice);
 
     dim3 block;
     int bs = render.block_size;
@@ -435,11 +436,14 @@ bool RenderFractalCUDA(
         cudaMemcpy(outMask, g_cached.d_mask, maskBytes, cudaMemcpyDeviceToHost);
     }
 
-    int itersSum = 0;
-    cudaMemcpy(&itersSum, g_cached.d_itersSum, sizeof(int), cudaMemcpyDeviceToHost);
+    unsigned long long itersSum = 0;
+    cudaMemcpy(&itersSum, g_cached.d_itersSum, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
     if (outStats) {
+        const int pixelCount = ComputeRenderStatsPixelCount(w, h);
         outStats->last_device_id = dev;
-        outStats->last_iters_avg = (w > 0 && h > 0) ? (itersSum / (w * h)) : 0;
+        outStats->last_iters_sum = itersSum;
+        outStats->last_pixel_count = pixelCount;
+        outStats->last_iters_avg = ComputeRenderStatsIterationAverage(itersSum, pixelCount);
         if (!render.benchmark) outStats->last_render_ms = 0.0f;
         outStats->resolved_eval = resolvedRender.resolved_eval;
     }
