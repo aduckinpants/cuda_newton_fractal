@@ -19,6 +19,7 @@ from fractal_explorer.finding_analyzer import (
     newton_iterate,
     poly_eval,
     analyze_finding,
+    summarize_render_stats,
 )
 
 
@@ -91,6 +92,55 @@ def test_root_geometry_square():
     assert geo["conjugate_pairs"] == 2
 
 
+def test_finding_analyzer_labels_render_stats_without_hiding_raw_totals():
+    state = {
+        "stats": {
+            "last_render_ms": 78.26534271240234,
+            "last_iters_avg": 517,
+            "last_iters_sum": 8676524606,
+            "last_pixel_count": 16777216,
+            "resolved_backend": "float32",
+            "resolved_strategy": "direct",
+        }
+    }
+    summary = summarize_render_stats(state)
+    assert summary["last_iters_avg"] == 517
+    assert summary["last_iters_sum"] == 8676524606
+    assert summary["last_pixel_count"] == 16777216
+    assert summary["derived_iters_avg"] == 517.161
+    assert summary["timing_status"] == "measured"
+
+
+def test_analyze_finding_report_includes_render_stats_labels():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        finding_dir = Path(tmpdir)
+        state = {
+            "state_version": 3,
+            "fractal_type": "magnet",
+            "view": {"center_x": -0.08, "center_y": 0.0, "zoom": 2.2},
+            "params": {},
+            "render": {"width": 64, "height": 64},
+            "stats": {
+                "last_render_ms": 0,
+                "last_iters_avg": 500,
+                "last_iters_sum": 2048000,
+                "last_pixel_count": 4096,
+                "resolved_backend": "float32",
+                "resolved_strategy": "direct",
+            },
+        }
+        (finding_dir / "state.json").write_text(json.dumps(state))
+        (finding_dir / "finding.json").write_text(json.dumps({"finding_id": "magnet_stats"}))
+
+        analysis = analyze_finding(finding_dir, sample_step=8)
+        assert analysis.render_stats["timing_status"] == "unmeasured_or_stale_zero"
+        report = format_report(analysis)
+        assert "Render stats:" in report
+        assert "Average iteration count: 500" in report
+        assert "Raw iteration sum: 2048000" in report
+        assert "Pixel count: 4096" in report
+        assert "Backend/strategy: float32 / direct" in report
+
 def test_analyze_finding_roundtrip():
     """Create a minimal finding directory and analyze it."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -128,6 +178,8 @@ if __name__ == "__main__":
         test_classify_basin,
         test_basin_map_z3,
         test_root_geometry_square,
+        test_finding_analyzer_labels_render_stats_without_hiding_raw_totals,
+        test_analyze_finding_report_includes_render_stats_labels,
         test_analyze_finding_roundtrip,
     ]
     failures = 0

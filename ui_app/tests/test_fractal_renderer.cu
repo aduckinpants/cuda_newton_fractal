@@ -281,51 +281,80 @@ void TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible() {
     CleanupFractalCUDA();
 }
 
-void TestMagnetRenderRespondsToRelaxation() {
-    ViewState view{};
-    KernelParams slowParams{};
-    RenderSettings render{};
-    RenderStats slowStats{};
-    RenderStats fastStats{};
-    const char* slowError = nullptr;
-    const char* fastError = nullptr;
+KernelParams BaseMagnetParams() {
+    KernelParams params{};
+    params.max_iter = 180;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.magnet_seed_real = 0.0f;
+    params.magnet_seed_imag = 0.0f;
+    params.magnet_relaxation = 1.0f;
+    params.magnet_bailout = 12.0f;
+    return params;
+}
 
+bool RenderMagnetPixels(
+    const KernelParams& params,
+    std::vector<uint32_t>* outPixels,
+    RenderStats* outStats,
+    const char** outError) {
+    ViewState view{};
+    RenderSettings render{};
     view.fractal_type = FractalType::magnet;
     view.center_hp_x = -0.08;
     view.center_hp_y = 0.0;
     view.log2_zoom = 1.13750352375;
-    slowParams.max_iter = 180;
-    slowParams.coloring_mode = ColoringMode::smooth_escape;
-    slowParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
-    slowParams.magnet_seed_real = 0.0f;
-    slowParams.magnet_seed_imag = 0.0f;
-    slowParams.magnet_relaxation = 0.35f;
-    slowParams.magnet_bailout = 12.0f;
     render.resolution = {64, 48};
     render.block_size = 64;
     render.sample_tier = SampleTier::fast;
 
-    KernelParams fastParams = slowParams;
-    fastParams.magnet_relaxation = 1.15f;
+    outPixels->assign(64 * 48, 0u);
+    return RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, outStats, outError);
+}
 
-    std::vector<uint32_t> slowPixels(64 * 48, 0u);
-    std::vector<uint32_t> fastPixels(64 * 48, 0u);
-    const bool slowOk = RenderFractalCUDA(view, slowParams, render, slowPixels.data(), nullptr, &slowStats, &slowError);
-    Check(slowOk, slowError ? slowError : "Magnet low-relaxation smooth_escape render succeeds");
-    const bool fastOk = RenderFractalCUDA(view, fastParams, render, fastPixels.data(), nullptr, &fastStats, &fastError);
-    Check(fastOk, fastError ? fastError : "Magnet high-relaxation smooth_escape render succeeds");
-    if (!slowOk || !fastOk) {
+void CheckMagnetControlChangesPixels(const char* label, const KernelParams& baselineParams, KernelParams changedParams) {
+    std::vector<uint32_t> baselinePixels;
+    std::vector<uint32_t> changedPixels;
+    RenderStats baselineStats{};
+    RenderStats changedStats{};
+    const char* baselineError = nullptr;
+    const char* changedError = nullptr;
+
+    const bool baselineOk = RenderMagnetPixels(baselineParams, &baselinePixels, &baselineStats, &baselineError);
+    Check(baselineOk, baselineError ? baselineError : "Magnet baseline smooth_escape render succeeds");
+    const bool changedOk = RenderMagnetPixels(changedParams, &changedPixels, &changedStats, &changedError);
+    Check(changedOk, changedError ? changedError : "Magnet changed smooth_escape render succeeds");
+    if (!baselineOk || !changedOk) {
         CleanupFractalCUDA();
         return;
     }
 
-    Check(CountDistinctPixels(slowPixels) > 1, "Magnet render should emit a non-flat smooth_escape field");
-    Check(slowPixels != fastPixels, "Magnet render should react to relaxation changes on the same public lane");
-    Check(slowStats.last_iters_avg >= 0 && slowStats.last_iters_avg <= slowParams.max_iter,
-        "Magnet low-relaxation stats stay within max_iter");
-    Check(fastStats.last_iters_avg >= 0 && fastStats.last_iters_avg <= fastParams.max_iter,
-        "Magnet high-relaxation stats stay within max_iter");
+    Check(CountDistinctPixels(baselinePixels) > 1, "Magnet render should emit a non-flat smooth_escape field");
+    Check(baselinePixels != changedPixels, label);
+    Check(changedStats.last_iters_avg >= 0 && changedStats.last_iters_avg <= changedParams.max_iter,
+        "Magnet changed stats stay within max_iter");
+    Check(changedStats.last_pixel_count == 64 * 48, "Magnet changed stats record rendered pixel count");
     CleanupFractalCUDA();
+}
+
+void TestMagnetRenderRespondsToVisibleControls() {
+    const KernelParams baselineParams = BaseMagnetParams();
+
+    KernelParams seedRealParams = baselineParams;
+    seedRealParams.magnet_seed_real = 0.38f;
+    CheckMagnetControlChangesPixels("Magnet render should react to magnet_seed_real changes", baselineParams, seedRealParams);
+
+    KernelParams seedImagParams = baselineParams;
+    seedImagParams.magnet_seed_imag = -0.31f;
+    CheckMagnetControlChangesPixels("Magnet render should react to magnet_seed_imag changes", baselineParams, seedImagParams);
+
+    KernelParams relaxationParams = baselineParams;
+    relaxationParams.magnet_relaxation = 0.42f;
+    CheckMagnetControlChangesPixels("Magnet render should react to magnet_relaxation changes", baselineParams, relaxationParams);
+
+    KernelParams bailoutParams = baselineParams;
+    bailoutParams.magnet_bailout = 4.0f;
+    CheckMagnetControlChangesPixels("Magnet render should react to magnet_bailout changes", baselineParams, bailoutParams);
 }
 
 void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
@@ -383,7 +412,7 @@ int main() {
     TestProjectionAndFlowRenderProducesMultipleClassColors();
     TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
     TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
-    TestMagnetRenderRespondsToRelaxation();
+    TestMagnetRenderRespondsToVisibleControls();
     TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";

@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "contract_id": "magnet_quick_benefits",
+  "feature_id": "magnet_quick_benefits",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/magnet_quick_benefits_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/magnet_quick_benefits.contract.json",
+    "docs/notes/magnet_quick_benefits_PHASED_PLAN.md",
+    "docs/examples/magnet_state_pack",
+    "tests/test_fractal_runtime_magnet.py",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "tools/reality_toolkit/fractal_explorer/finding_analyzer.py",
+    "tests/test_fractal_finding_analyzer.py",
+    "tools/viewer_host_validate_fractal_toolkit_scan.py",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "work the three low-hanging Magnet-adjacent items on a fresh branch",
+    "provide tangible quick benefits: state pack, wider Magnet slider proof, and capture stats polish",
+    "do not use OS mouse automation or start a new fractal architecture slice"
+  ],
+  "forbidden_operator_prompts": [
+    "implement explaino_magnet in this slice",
+    "mutate Explaino registry semantics or Color Pipeline behavior under this Magnet quick-benefits slice",
+    "claim slider coverage from only the existing magnet_relaxation witness",
+    "claim stats clarity without testing the finding analyzer output"
+  ],
+  "required_defaults": {
+    "branch": "codex/magnet-quick-benefits",
+    "scope": "magnet_examples_control_proof_stats_polish",
+    "no_mouse_runtime_proof": "required",
+    "hostile_audit": "required"
+  },
+  "forbidden_defaults": {
+    "explaino_magnet_implementation": "forbidden",
+    "broad_renderer_refactor": "forbidden",
+    "color_pipeline_reopen": "forbidden",
+    "physical_mouse_automation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/magnet_quick_benefits.contract.json --out-json artifacts/validation/magnet_quick_benefits_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_fractal_toolkit_scan.py --out-json artifacts/validation/magnet_quick_benefits_fractal_toolkit_scan.json",
+    "py -3.14 -m pytest tests/test_fractal_finding_analyzer.py tests/test_fractal_runtime_magnet.py -q --junitxml artifacts/pytest/magnet_quick_benefits_pytest.junit.xml",
+    "ui_app/build_tests_vsdevcmd.cmd test_fractal_renderer",
+    "ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/magnet_quick_benefits_PHASED_PLAN.md --out-json artifacts/validation/magnet_quick_benefits_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "magnet_quick_benefits_contract_schema_valid",
+      "description": "The Magnet quick-benefits contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/magnet_quick_benefits_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "magnet_quick_benefits_plan_sync_ok",
+      "description": "The active phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "magnet_quick_benefits_fractal_toolkit_scan_ok",
+      "description": "The deterministic Magnet toolkit scan recognizes the widened proof surface",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/magnet_quick_benefits_fractal_toolkit_scan.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "magnet_quick_benefits_hostile_audit_ok",
+      "description": "The hostile-audit validator passes after the implementation review",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/magnet_quick_benefits_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -144,3 +144,5 @@
 - `ck:119889dd` 2026-05-19 14:04 UTC | score 5 — Diagnostics capture render stats repair closed: 64-bit iteration-sum stats, finding-capture benchmark timing, focused native/runtime proof green.
 - `ck:84040116` 2026-05-19 14:13 UTC — session-start | branch=master | head=04359a9 | status=dirty | profile=checkpoint | intent=document explaino magnet research and low hanging fruit
 - `ck:84040116` 2026-05-19 14:15 UTC | score 5 — Explaino Magnet research and low-hanging-fruit note closed: deferred medium-risk explaino_magnet path documented; lower-risk Magnet follow-ups ranked; no product code changed.
+- `ck:534bb217` 2026-05-19 14:33 UTC — session-start | branch=codex/magnet-quick-benefits | head=8399df6 | status=dirty | profile=checkpoint | intent=magnet quick benefits: examples, full slider proof, capture stats polish
+- `ck:534bb217` 2026-05-19 15:26 UTC | score 5 — Magnet quick-benefits slice closed: loadable Magnet state pack, all four visible Magnet controls covered by native and no-mouse runtime proof, capture stats analyzer labels raw totals, focused renderer build target added, runtime publish green.

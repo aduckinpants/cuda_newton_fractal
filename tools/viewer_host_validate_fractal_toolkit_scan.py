@@ -16,10 +16,10 @@ REQUIRED_SNIPPETS = {
     "ui_app/src/diagnostics_capture.cpp": ["magnet_seed_real", "magnet_relaxation"],
     "ui_app/src/diagnostics_state_io.cpp": ["magnetSeedReal", "magnetBailout"],
     "ui_app/src/function_descriptor.cpp": ["FractalType::magnet"],
-    "tests/test_fractal_runtime_magnet.py": ["--ui-automation-set-control-value", "fractal_control.magnet_relaxation.primary", "set_value_consumed"],
+    "tests/test_fractal_runtime_magnet.py": ["--ui-automation-set-control-value", "fractal_control.magnet_seed_real.primary", "fractal_control.magnet_seed_imag.primary", "fractal_control.magnet_relaxation.primary", "fractal_control.magnet_bailout.primary", "set_value_consumed"],
     "ui_app/tests/test_fractal_sample_device.cu": ["FractalType::magnet"],
     "ui_app/tests/test_fractal_sample_kernel.cu": ["FractalType::magnet"],
-    "ui_app/tests/test_fractal_renderer.cu": ["TestMagnetRenderRespondsToRelaxation"],
+    "ui_app/tests/test_fractal_renderer.cu": ["TestMagnetRenderRespondsToVisibleControls", "magnet_seed_real", "magnet_seed_imag", "magnet_relaxation", "magnet_bailout"],
     "ui_app/tests/test_diagnostics_capture.cpp": ["TestBundlePersistsMagnetParams"],
 }
 

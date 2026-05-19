@@ -417,9 +417,52 @@ class FindingAnalysis:
     roots: List[dict] = field(default_factory=list)
     root_geometry: dict = field(default_factory=dict)
     basin_map: dict = field(default_factory=dict)
+    render_stats: dict = field(default_factory=dict)
     frame_metrics: dict = field(default_factory=dict)
     color_clusters: dict = field(default_factory=dict)
     symmetry: dict = field(default_factory=dict)
+
+
+def summarize_render_stats(state: dict) -> dict:
+    """Return product-facing render-stat labels from a captured state.json."""
+    raw = state.get("stats", {})
+    if not isinstance(raw, dict):
+        return {}
+
+    def as_number(name: str) -> float | int | None:
+        value = raw.get(name)
+        if isinstance(value, bool):
+            return None
+        return value if isinstance(value, (int, float)) else None
+
+    last_iters_sum = as_number("last_iters_sum")
+    last_pixel_count = as_number("last_pixel_count")
+    derived_average = None
+    if (
+        isinstance(last_iters_sum, (int, float))
+        and isinstance(last_pixel_count, (int, float))
+        and last_pixel_count > 0
+    ):
+        derived_average = round(float(last_iters_sum) / float(last_pixel_count), 3)
+
+    last_render_ms = as_number("last_render_ms")
+    timing_status = "measured"
+    if last_render_ms is None:
+        timing_status = "missing"
+    elif float(last_render_ms) <= 0.0:
+        timing_status = "unmeasured_or_stale_zero"
+
+    summary = {
+        "last_render_ms": last_render_ms,
+        "timing_status": timing_status,
+        "last_iters_avg": as_number("last_iters_avg"),
+        "last_iters_sum": last_iters_sum,
+        "last_pixel_count": last_pixel_count,
+        "derived_iters_avg": derived_average,
+        "resolved_backend": raw.get("resolved_backend"),
+        "resolved_strategy": raw.get("resolved_strategy"),
+    }
+    return {key: value for key, value in summary.items() if value is not None}
 
 
 def analyze_finding(finding_dir: Path, sample_step: int = 8) -> FindingAnalysis:
@@ -440,6 +483,8 @@ def analyze_finding(finding_dir: Path, sample_step: int = 8) -> FindingAnalysis:
         finding_dir=str(finding_dir),
         state=state,
     )
+
+    analysis.render_stats = summarize_render_stats(state)
 
     params = state.get("params", {})
     view = state.get("view", {})
@@ -535,6 +580,30 @@ def format_report(a: FindingAnalysis) -> str:
             lines.append(f"  Basin {b['root_index']}: root=({b['root']['x']:.4f},{b['root']['y']:.4f})  "
                          f"{b['fraction']*100:.1f}%  mean_iter={b['mean_iterations']:.0f}")
         lines.append(f"  Unconverged: {bm.get('unconverged_fraction', 0)*100:.1f}%")
+    lines.append("")
+
+    # Render stats
+    rs = a.render_stats
+    if rs:
+        lines.append("Render stats:")
+        timing_status = rs.get("timing_status", "unknown")
+        render_ms = rs.get("last_render_ms")
+        if timing_status == "measured" and isinstance(render_ms, (int, float)):
+            lines.append(f"  Render time: {render_ms:.3f} ms")
+        elif timing_status == "unmeasured_or_stale_zero":
+            lines.append("  Render time: unmeasured/stale zero")
+        if "last_iters_avg" in rs:
+            lines.append(f"  Average iteration count: {rs['last_iters_avg']}")
+        if "derived_iters_avg" in rs:
+            lines.append(f"  Derived average from raw sum/pixels: {rs['derived_iters_avg']}")
+        if "last_iters_sum" in rs:
+            lines.append(f"  Raw iteration sum: {rs['last_iters_sum']}")
+        if "last_pixel_count" in rs:
+            lines.append(f"  Pixel count: {rs['last_pixel_count']}")
+        backend = rs.get("resolved_backend")
+        strategy = rs.get("resolved_strategy")
+        if backend or strategy:
+            lines.append(f"  Backend/strategy: {backend or 'unknown'} / {strategy or 'unknown'}")
     lines.append("")
 
     # Symmetry

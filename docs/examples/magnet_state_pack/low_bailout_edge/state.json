@@ -1,0 +1,72 @@
+{
+  "state_version": 3,
+  "fractal_type": "magnet",
+  "view": {
+    "center_x": -0.08,
+    "center_y": 0.0,
+    "zoom": 2.2,
+    "rotation_degrees": 0.0,
+    "center_hp_x": -0.08,
+    "center_hp_y": 0.0,
+    "log2_zoom": 1.13750352375,
+    "explaino_phase": 0.0,
+    "explaino_seed_drift": 0.0,
+    "explaino_seed_tween": true,
+    "auto_max_iter": false,
+    "auto_increment_seed": false,
+    "explaino_seed_rate": 0.001,
+    "explaino_phase_strength": 1.0
+  },
+  "params": {
+    "max_iter": 900,
+    "epsilon": 1e-06,
+    "exposure": 1.35,
+    "poly_kind": 0,
+    "color_signal": "smooth_escape",
+    "color_shape": "identity",
+    "color_palette": "cyclic_escape",
+    "color_grading": "escape_default",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "multibrot_power_float": 3.0,
+    "lambda_real": 2.9685855,
+    "lambda_imag": -0.27446103,
+    "magnet_seed_real": 0.0,
+    "magnet_seed_imag": 0.0,
+    "magnet_relaxation": 1.0,
+    "magnet_bailout": 4.0,
+    "explaino_seed": 0.0,
+    "explaino_seed_b": 1.0,
+    "explaino_mix": 0.5,
+    "explaino_warp_strength": 0.0,
+    "explaino_root_spread": 0.5,
+    "explaino_damping": 1.0,
+    "explaino_root_count": 0,
+    "poly_coeffs": [
+      -1,
+      0,
+      0,
+      1,
+      0
+    ],
+    "poly_coeffs_b": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "render": {
+    "width": 640,
+    "height": 480,
+    "interaction_debounce_ms": 200,
+    "preview_target_fps": 30,
+    "preview_min_scale": 0.5,
+    "block_size": 256,
+    "device_id": 0,
+    "sample_tier": "tier_auto"
+  }
+}

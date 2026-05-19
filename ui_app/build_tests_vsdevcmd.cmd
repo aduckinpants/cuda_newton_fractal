@@ -57,6 +57,7 @@ if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fa
 if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_viewer_ui_automation_report
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
+if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
 if not "%FOCUSED_TEST%"=="" (
   echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
   exit /b 1
@@ -528,6 +529,17 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_renderer
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_renderer.cu ^
+  -o "%TESTROOT%\test_fractal_renderer.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_renderer.exe" || exit /b 1
 exit /b 0
 
 :focused_advanced_color_grading_red
