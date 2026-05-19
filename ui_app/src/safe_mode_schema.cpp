@@ -29,6 +29,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"collatz", "Collatz", "Escape-Time"},
     {"mcmullen", "McMullen", "Escape-Time"},
     {"lambda", "Lambda", "Escape-Time"},
+    {"magnet", "Magnet Type I", "Escape-Time"},
     {"explaino_all", "Explaino-all", "Explaino"},
     {"explaino_y", "Explaino Y", "Explaino"},
     {"explaino_fp", "Explaino FP", "Explaino"},
@@ -313,6 +314,43 @@ UISchemaControl BuildProjectionAndFlowTargetRadiusControl() {
     return control;
 }
 
+UISchemaControl BuildMagnetFloatControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    double uiMin,
+    double uiMax,
+    double step,
+    double defaultValue) {
+    UISchemaControl control = MakeUiRangedParamControl(
+        id,
+        "drag_float",
+        label,
+        "float",
+        uiMin,
+        uiMax,
+        step,
+        path,
+        json_min::Value{defaultValue});
+    SetVisibleForFractalType(&control, "magnet");
+    return control;
+}
+
+UISchemaControl BuildMagnetBailoutControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "magnet_bailout",
+        "slider_float",
+        "Magnet Bailout",
+        "float",
+        2.0,
+        64.0,
+        0.1,
+        "fractal.params.magnet_bailout",
+        json_min::Value{12.0});
+    SetVisibleForFractalType(&control, "magnet");
+    return control;
+}
+
 UISchemaControl BuildProjectionAndFlowPressureThresholdControl() {
     UISchemaControl control = MakeSoftMinParamControl(
         "projection_and_flow_pressure_threshold",
@@ -394,6 +432,10 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildProjectionAndFlowRootFamilyControl(),
         BuildProjectionAndFlowTargetRadiusControl(),
         BuildProjectionAndFlowPressureThresholdControl(),
+        BuildMagnetFloatControl("magnet_seed_real", "Magnet Seed Real", "fractal.params.magnet_seed_real", -2.0, 2.0, 0.01, 0.0),
+        BuildMagnetFloatControl("magnet_seed_imag", "Magnet Seed Imag", "fractal.params.magnet_seed_imag", -2.0, 2.0, 0.01, 0.0),
+        BuildMagnetFloatControl("magnet_relaxation", "Magnet Relaxation", "fractal.params.magnet_relaxation", 0.05, 1.5, 0.01, 1.0),
+        BuildMagnetBailoutControl(),
     };
     return panel;
 }

@@ -35,6 +35,8 @@ void TestProbeSamplingImplementationFlag() {
         "TestProbeSamplingImplementationFlag_KnownType");
     Check(IsProbeSamplingImplementedForFractalTypeId("lambda"),
         "TestProbeSamplingImplementationFlag_KnownEscapeType");
+    Check(IsProbeSamplingImplementedForFractalTypeId("magnet"),
+        "TestProbeSamplingImplementationFlag_MagnetType");
     Check(!IsProbeSamplingImplementedForFractalTypeId("not_a_real_fractal_type"),
         "TestProbeSamplingImplementationFlag_UnknownType");
 }

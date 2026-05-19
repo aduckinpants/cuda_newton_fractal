@@ -915,26 +915,38 @@ bool SamplePoint(const ProbeState& state,
     }
 
     if (UsesSharedEscapeTimeDirectFormula(ft)) {
-        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
+        const Cx magnetSeed{params.magnet_seed_real, params.magnet_seed_imag};
+        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed);
         const float powerFloat = params.multibrot_power_float;
         const int powerInt = params.multibrot_power;
         const Cx lambdaConst{params.lambda_real, params.lambda_imag};
         const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
+        const float escapeRadiusSquared = ft == FractalType::magnet
+            ? DirectEscapeTimeRadiusSquared<float>(params.magnet_bailout)
+            : DirectEscapeTimeRadiusSquared<float>();
 
         for (; it < maxIter; ++it) {
-            StepEscapeTimeDirectState(ft, powerFloat, powerInt, lambdaConst, phoenixP, &state);
+            StepEscapeTimeDirectState(ft, powerFloat, powerInt, lambdaConst, phoenixP, params.magnet_relaxation, &state);
             z = state.z;
             if (!IsFiniteCx(state.z) || !IsFiniteCx(state.z_prev)) {
                 status = FractalProbeSampleStatus::nonfinite;
                 break;
             }
-            if (CxAbs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
+            if (ft == FractalType::magnet) {
+                const float residualSquared = EscapeTimeDirectMagnetResidualSquared(state.z);
+                pAbs = std::sqrt(residualSquared);
+                if (residualSquared < eps * eps) {
+                    status = FractalProbeSampleStatus::converged;
+                    break;
+                }
+            }
+            if (CxAbs2(state.z) > escapeRadiusSquared) {
                 status = FractalProbeSampleStatus::escaped;
                 break;
             }
         }
 
-        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, 0.0f, false, params, false);
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, pAbs, ft == FractalType::magnet, params, false);
         return true;
     }
 

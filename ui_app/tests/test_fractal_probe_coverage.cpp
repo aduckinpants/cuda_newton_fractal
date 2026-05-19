@@ -97,6 +97,7 @@ std::vector<FractalProbeCase> AllProbeCases() {
         {"explaino_nova", "explaino_nova", false, true, {}},
         {"explaino_julia", "explaino_julia", false, true, {}},
         {"lambda", "lambda", false, true, {}},
+        {"magnet", "magnet", false, true, {}},
         {"explaino_lambda", "explaino_lambda", false, true, {
             {"fractal.params.lambda_real", FractalProbeScalar::Number(2.9685855)},
             {"fractal.params.lambda_imag", FractalProbeScalar::Number(-0.27446103)},

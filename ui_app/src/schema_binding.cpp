@@ -842,6 +842,10 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
         if (path == "fractal.params.lambda_real") { *outPtr = &params->lambda_real; return true; }
         if (path == "fractal.params.lambda_imag") { *outPtr = &params->lambda_imag; return true; }
+        if (path == "fractal.params.magnet_seed_real") { *outPtr = &params->magnet_seed_real; return true; }
+        if (path == "fractal.params.magnet_seed_imag") { *outPtr = &params->magnet_seed_imag; return true; }
+        if (path == "fractal.params.magnet_relaxation") { *outPtr = &params->magnet_relaxation; return true; }
+        if (path == "fractal.params.magnet_bailout") { *outPtr = &params->magnet_bailout; return true; }
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
         if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }

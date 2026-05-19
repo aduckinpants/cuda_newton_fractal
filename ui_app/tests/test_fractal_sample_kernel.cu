@@ -270,6 +270,7 @@ void TestAllFractalTypes() {
         {FractalType::explaino_collatz, "explaino_collatz"},
         {FractalType::mcmullen, "mcmullen"},
         {FractalType::lambda_map, "lambda_map"},
+        {FractalType::magnet, "magnet"},
         {FractalType::explaino_lambda, "explaino_lambda"},
         {FractalType::explaino_rational_escape, "explaino_rational_escape"},
         {FractalType::spider, "spider"},

@@ -195,6 +195,39 @@ int main() {
     {
         ViewState view{};
         KernelParams params{};
+        view.fractal_type = FractalType::magnet;
+        bool dirty = false;
+        ApplyFractalViewPresetDefaults(view, &dirty);
+        if (!dirty) {
+            std::cerr << "Magnet view defaults should mark dirty\n";
+            return 1;
+        }
+        if (!NearlyEqual(view.center.x, -0.08f) || !NearlyEqual(view.center.y, 0.0f) ||
+            !NearlyEqual(view.zoom, 2.2f) || view.auto_max_iter) {
+            std::cerr << "Magnet view defaults should land on the bounded Type I inspection region without default auto max-iter\n";
+            return 1;
+        }
+        params.magnet_seed_real = 0.4f;
+        params.magnet_seed_imag = -0.2f;
+        params.magnet_relaxation = 0.25f;
+        params.magnet_bailout = 40.0f;
+        dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        if (!dirty || params.max_iter != 900 || params.coloring_mode != ColoringMode::smooth_escape ||
+            params.color_pipeline.signal != ColorSignal::smooth_escape ||
+            params.color_pipeline.palette != ColorPalette::cyclic_escape ||
+            params.color_pipeline.grading != ColorGradingPreset::escape_default ||
+            !NearlyEqual(params.exposure, 1.35f) ||
+            !NearlyEqual(params.magnet_seed_real, 0.0f) || !NearlyEqual(params.magnet_seed_imag, 0.0f) ||
+            !NearlyEqual(params.magnet_relaxation, 1.0f) || !NearlyEqual(params.magnet_bailout, 12.0f)) {
+            std::cerr << "Magnet selector defaults should restore the bounded Type I smooth-escape preset\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
         view.fractal_type = FractalType::lambda_map;
         bool dirty = false;
         ApplyFractalPresetDefaults(view, params, &dirty);

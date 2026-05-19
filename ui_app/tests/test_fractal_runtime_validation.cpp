@@ -1,6 +1,7 @@
 #include "../src/fractal_runtime_validation.h"
 
 #include <iostream>
+#include <limits>
 #include <string>
 
 namespace {
@@ -318,6 +319,61 @@ int main() {
         if (ValidateFractalRuntimeState(view, params, &error) ||
             error != "projection_and_flow_pressure_threshold must be finite and in [0,8]") {
             std::cerr << "Expected Projection-and-Flow validation to reject negative pressure threshold\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::magnet;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.magnet_seed_real = -0.05f;
+        params.magnet_seed_imag = 0.02f;
+        params.magnet_relaxation = 0.75f;
+        params.magnet_bailout = 18.0f;
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Magnet validation to accept bounded Type I controls, got: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::magnet;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.magnet_seed_real = std::numeric_limits<float>::infinity();
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "magnet_seed_real/imag must be finite") {
+            std::cerr << "Expected Magnet validation to reject non-finite seeds\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::magnet;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.magnet_relaxation = 0.0f;
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "magnet_relaxation must be finite and in [0.05,1.5]") {
+            std::cerr << "Expected Magnet validation to reject out-of-range relaxation\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::magnet;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.magnet_bailout = 1.0f;
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "magnet_bailout must be finite and in [2,64]") {
+            std::cerr << "Expected Magnet validation to reject out-of-range bailout\n";
             return 1;
         }
     }

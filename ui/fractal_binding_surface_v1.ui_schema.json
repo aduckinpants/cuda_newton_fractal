@@ -33,6 +33,7 @@
             { "id": "collatz", "label": "Collatz", "group": "Escape-Time" },
             { "id": "mcmullen", "label": "McMullen", "group": "Escape-Time" },
             { "id": "lambda", "label": "Lambda", "group": "Escape-Time" },
+            { "id": "magnet", "label": "Magnet Type I", "group": "Escape-Time" },
             { "id": "explaino_all", "label": "Explaino-all", "group": "Explaino" },
             { "id": "explaino_y", "label": "Explaino Y", "group": "Explaino" },
             { "id": "explaino_fp", "label": "Explaino FP", "group": "Explaino" },
@@ -211,6 +212,8 @@
             { "id": "phoenix_p_real", "label": "Phoenix P (Real)" },
             { "id": "multibrot_power", "label": "Multibrot Power" },
             { "id": "lambda_real", "label": "Lambda (Real)" },
+            { "id": "magnet_relaxation", "label": "Magnet Relaxation" },
+            { "id": "magnet_bailout", "label": "Magnet Bailout" },
             { "id": "momentum_beta", "label": "Momentum Beta" },
             { "id": "joy_coupling", "label": "Joy Coupling" },
             { "id": "fold_coupling", "label": "Fold Coupling" },
@@ -290,6 +293,42 @@
           "binding": { "kind": "param", "path": "fractal.params.lambda_imag" },
           "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "lambda,explaino_lambda" },
           "help": "Imaginary part of the complex lambda parameter in z_{n+1} = lambda z_n (1 - z_n)."
+        },
+        {
+          "id": "magnet_seed_real",
+          "type": "drag_float",
+          "label": "Magnet Seed Real",
+          "value_type": "float",
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.magnet_seed_real" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+        },
+        {
+          "id": "magnet_seed_imag",
+          "type": "drag_float",
+          "label": "Magnet Seed Imag",
+          "value_type": "float",
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.magnet_seed_imag" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+        },
+        {
+          "id": "magnet_relaxation",
+          "type": "slider_float",
+          "label": "Magnet Relaxation",
+          "value_type": "float",
+          "min": 0.05, "max": 1.5, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.magnet_relaxation" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
+        },
+        {
+          "id": "magnet_bailout",
+          "type": "slider_float",
+          "label": "Magnet Bailout",
+          "value_type": "float",
+          "min": 2.0, "max": 64.0, "step": 0.1, "default": 12.0,
+          "binding": { "kind": "param", "path": "fractal.params.magnet_bailout" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" }
         }
       ]
     },

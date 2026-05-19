@@ -31,6 +31,7 @@ constexpr FractalType kSupportedNonExplainoProbeFractalTypes[] = {
     FractalType::collatz,
     FractalType::mcmullen,
     FractalType::lambda_map,
+    FractalType::magnet,
     FractalType::spider,
     FractalType::celtic_mandelbrot,
     FractalType::perpendicular_burning_ship,

@@ -68,6 +68,8 @@ void TestEnumOrdinalContracts() {
         "FractalType projection_and_flow ordinal is stable");
     Check(static_cast<int>(FractalType::explaino_projection_and_flow) == 42,
         "FractalType explaino_projection_and_flow ordinal is stable");
+    Check(static_cast<int>(FractalType::magnet) == 43,
+        "FractalType magnet ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::cubic_unit_roots) == 0, "CounterfactualPairRootFamily cubic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");
@@ -144,6 +146,9 @@ void TestKernelParamsDefaults() {
         "KernelParams multibrot power defaults are stable");
     Check(Near(params.lambda_real, 2.9685855f) && Near(params.lambda_imag, -0.27446103f),
         "KernelParams lambda defaults are stable");
+    Check(Near(params.magnet_seed_real, 0.0f) && Near(params.magnet_seed_imag, 0.0f) &&
+            Near(params.magnet_relaxation, 1.0f) && Near(params.magnet_bailout, 12.0f),
+        "KernelParams Magnet Type I defaults are stable");
     Check(params.coloring_mode == ColoringMode::root_basin, "KernelParams coloring mode defaults to root basin");
     Check(params.color_pipeline.signal == ColorSignal::root_index && params.color_pipeline.palette == ColorPalette::root_classic,
         "KernelParams color pipeline selection defaults are stable");

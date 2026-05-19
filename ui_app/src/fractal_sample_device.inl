@@ -3050,14 +3050,26 @@
         } else {
             // Standard direct escape-time iteration shared with the probe sampler.
             if (useFP64) {
-                EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD);
+                const Cxd magnetSeedD{(double)params.magnet_seed_real, (double)params.magnet_seed_imag};
+                EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD, magnetSeedD);
                 const double powerFloat = (double)params.multibrot_power_float;
                 const Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
                 const Cxd phoenixPD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
+                const double escapeRadiusSquaredD = ft == FractalType::magnet
+                    ? DirectEscapeTimeRadiusSquared<double>((double)params.magnet_bailout)
+                    : DirectEscapeTimeRadiusSquared<double>();
 
                 for (; it < maxIter; ++it) {
-                    StepEscapeTimeDirectState(ft, powerFloat, params.multibrot_power, lambdaConstD, phoenixPD, &state);
-                    if (cxd_abs2(state.z) > DirectEscapeTimeRadiusSquared<double>()) {
+                    StepEscapeTimeDirectState(ft, powerFloat, params.multibrot_power, lambdaConstD, phoenixPD, (double)params.magnet_relaxation, &state);
+                    if (ft == FractalType::magnet) {
+                        const double residualSquaredD = EscapeTimeDirectMagnetResidualSquared(state.z);
+                        pAbs = (float)sqrt(residualSquaredD);
+                        if (residualSquaredD < epsD * epsD) {
+                            converged = true;
+                            break;
+                        }
+                    }
+                    if (cxd_abs2(state.z) > escapeRadiusSquaredD) {
                         escaped = true;
                         break;
                     }
@@ -3068,14 +3080,26 @@
                 }
                 z = {(float)state.z.x, (float)state.z.y};
             } else {
-                EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord);
+                const Cx magnetSeed{params.magnet_seed_real, params.magnet_seed_imag};
+                EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed);
                 const float powerFloat = params.multibrot_power_float;
                 const Cx lambdaConst{params.lambda_real, params.lambda_imag};
                 const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
+                const float escapeRadiusSquared = ft == FractalType::magnet
+                    ? DirectEscapeTimeRadiusSquared<float>(params.magnet_bailout)
+                    : DirectEscapeTimeRadiusSquared<float>();
 
                 for (; it < maxIter; ++it) {
-                    StepEscapeTimeDirectState(ft, powerFloat, params.multibrot_power, lambdaConst, phoenixP, &state);
-                    if (cx_abs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
+                    StepEscapeTimeDirectState(ft, powerFloat, params.multibrot_power, lambdaConst, phoenixP, params.magnet_relaxation, &state);
+                    if (ft == FractalType::magnet) {
+                        const float residualSquared = EscapeTimeDirectMagnetResidualSquared(state.z);
+                        pAbs = sqrt(residualSquared);
+                        if (residualSquared < eps * eps) {
+                            converged = true;
+                            break;
+                        }
+                    }
+                    if (cx_abs2(state.z) > escapeRadiusSquared) {
                         escaped = true;
                         break;
                     }

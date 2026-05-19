@@ -612,6 +612,10 @@ std::string BuildStateJson(
     js << "    \"multibrot_power_float\": " << static_cast<double>(params.multibrot_power_float) << ",\n";
     js << "    \"lambda_real\": " << static_cast<double>(params.lambda_real) << ",\n";
     js << "    \"lambda_imag\": " << static_cast<double>(params.lambda_imag) << ",\n";
+    js << "    \"magnet_seed_real\": " << static_cast<double>(params.magnet_seed_real) << ",\n";
+    js << "    \"magnet_seed_imag\": " << static_cast<double>(params.magnet_seed_imag) << ",\n";
+    js << "    \"magnet_relaxation\": " << static_cast<double>(params.magnet_relaxation) << ",\n";
+    js << "    \"magnet_bailout\": " << static_cast<double>(params.magnet_bailout) << ",\n";
     js << "    \"explaino_seed\": " << params.explaino_seed << ",\n";
     js << "    \"explaino_seed_b\": " << params.explaino_seed_b << ",\n";
     js << "    \"explaino_mix\": " << static_cast<double>(params.explaino_mix) << ",\n";

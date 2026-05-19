@@ -218,6 +218,14 @@ bool TestParseFractalTypePerpendicularBurningShip() {
     return true;
 }
 
+bool TestParseFractalTypeMagnet() {
+    std::vector<std::string> args = {"app.exe", "--fractal-type", "magnet"};
+    FractalType type{};
+    ASSERT(TryParseFractalTypeArg(args, &type), "should parse magnet");
+    ASSERT(type == FractalType::magnet, "type should be magnet");
+    return true;
+}
+
 bool TestParseFractalTypeUnknown() {
     std::vector<std::string> args = {"app.exe", "--fractal-type", "nonexistent"};
     FractalType type{};
@@ -279,6 +287,7 @@ bool TestParseFractalTypeAllValues() {
         {"spider", FractalType::spider},
         {"celtic_mandelbrot", FractalType::celtic_mandelbrot},
         {"perpendicular_burning_ship", FractalType::perpendicular_burning_ship},
+        {"magnet", FractalType::magnet},
     };
 
     for (const auto& c : cases) {
@@ -324,6 +333,7 @@ int main() {
     RUN(TestParseFractalTypeMandelbrot);
     RUN(TestParseFractalTypeLambda);
     RUN(TestParseFractalTypePerpendicularBurningShip);
+    RUN(TestParseFractalTypeMagnet);
     RUN(TestParseFractalTypeUnknown);
     RUN(TestParseFractalTypeMissing);
     RUN(TestParseFractalTypeNullOutType);

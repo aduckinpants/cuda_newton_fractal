@@ -1919,6 +1919,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
     double lambdaImag = static_cast<double>(nextParams.lambda_imag);
+    double magnetSeedReal = static_cast<double>(nextParams.magnet_seed_real);
+    double magnetSeedImag = static_cast<double>(nextParams.magnet_seed_imag);
+    double magnetRelaxation = static_cast<double>(nextParams.magnet_relaxation);
+    double magnetBailout = static_cast<double>(nextParams.magnet_bailout);
     std::string counterfactualPairRootFamilyId;
     std::string counterfactualPairFrameId;
     std::string projectionAndFlowRootFamilyId;
@@ -1965,6 +1969,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "magnet_seed_real", &magnetSeedReal, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "magnet_seed_imag", &magnetSeedImag, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "magnet_relaxation", &magnetRelaxation, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "magnet_bailout", &magnetBailout, nullptr, outError)) return false;
     }
     if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_x", &counterfactualPairOffsetX, nullptr, outError)) return false;
     if (!GetOptionalNumber(*paramsObject, "counterfactual_pair_offset_y", &counterfactualPairOffsetY, nullptr, outError)) return false;
@@ -2051,6 +2059,10 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
         nextParams.lambda_real = static_cast<float>(lambdaReal);
         nextParams.lambda_imag = static_cast<float>(lambdaImag);
+        nextParams.magnet_seed_real = static_cast<float>(magnetSeedReal);
+        nextParams.magnet_seed_imag = static_cast<float>(magnetSeedImag);
+        nextParams.magnet_relaxation = static_cast<float>(magnetRelaxation);
+        nextParams.magnet_bailout = static_cast<float>(magnetBailout);
     }
     if (stateVersion >= 2 && !hasAnyExplicitColorPipeline) {
         if (!ParseColoringMode(coloringModeId, &nextParams.coloring_mode)) {

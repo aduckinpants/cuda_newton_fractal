@@ -35,55 +35,58 @@ struct FractalViewPresetDefaults {
     float zoom;
 };
 
-static FractalViewPresetDefaults ResolveFractalViewPresetDefaults(FractalType fractalType) {
-    FractalViewPresetDefaults defaults{{0.0f, 0.0f}, 1.0f};
-
+static bool TryResolveEscapeTimeViewPresetDefaults(FractalType fractalType, FractalViewPresetDefaults* outDefaults) {
+    if (!outDefaults) return false;
     switch (fractalType) {
     case FractalType::mandelbrot:
-        defaults.center = {-0.745f, 0.186f};
-        defaults.zoom = 38.0f;
-        break;
+        *outDefaults = {{-0.745f, 0.186f}, 38.0f};
+        return true;
     case FractalType::julia:
-        defaults.center = {0.0f, 0.0f};
-        defaults.zoom = 1.5f;
-        break;
+        *outDefaults = {{0.0f, 0.0f}, 1.5f};
+        return true;
     case FractalType::burning_ship:
-        defaults.center = {-1.762f, -0.028f};
-        defaults.zoom = 25.0f;
-        break;
+        *outDefaults = {{-1.762f, -0.028f}, 25.0f};
+        return true;
     case FractalType::spider:
-        defaults.center = {-0.12f, 0.75f};
-        defaults.zoom = 4.0f;
-        break;
+        *outDefaults = {{-0.12f, 0.75f}, 4.0f};
+        return true;
     case FractalType::celtic_mandelbrot:
-        defaults.center = {-0.45f, 0.42f};
-        defaults.zoom = 3.2f;
-        break;
+        *outDefaults = {{-0.45f, 0.42f}, 3.2f};
+        return true;
     case FractalType::perpendicular_burning_ship:
-        defaults.center = {-1.785f, -0.012f};
-        defaults.zoom = 18.0f;
-        break;
+        *outDefaults = {{-1.785f, -0.012f}, 18.0f};
+        return true;
     case FractalType::multibrot:
-        defaults.center = {-0.15f, 0.75f};
-        defaults.zoom = 4.5f;
-        break;
+        *outDefaults = {{-0.15f, 0.75f}, 4.5f};
+        return true;
     case FractalType::multicorn:
-        defaults.center = {-0.3f, 0.0f};
-        defaults.zoom = 1.5f;
-        break;
+        *outDefaults = {{-0.3f, 0.0f}, 1.5f};
+        return true;
     case FractalType::lambda_map:
     case FractalType::explaino_lambda:
-        defaults.center = {0.5f, 0.0f};
-        defaults.zoom = 4.5f;
-        break;
+        *outDefaults = {{0.5f, 0.0f}, 4.5f};
+        return true;
+    case FractalType::magnet:
+        *outDefaults = {{-0.08f, 0.0f}, 2.2f};
+        return true;
     case FractalType::explaino_rational_escape:
-        defaults.center = {0.0f, 0.0f};
-        defaults.zoom = 1.8f;
-        break;
+        *outDefaults = {{0.0f, 0.0f}, 1.8f};
+        return true;
     case FractalType::phoenix:
-        defaults.center = {0.36f, -0.1f};
-        defaults.zoom = 2.8f;
-        break;
+        *outDefaults = {{0.36f, -0.1f}, 2.8f};
+        return true;
+    default:
+        return false;
+    }
+}
+
+static FractalViewPresetDefaults ResolveFractalViewPresetDefaults(FractalType fractalType) {
+    FractalViewPresetDefaults defaults{{0.0f, 0.0f}, 1.0f};
+    if (TryResolveEscapeTimeViewPresetDefaults(fractalType, &defaults)) {
+        return defaults;
+    }
+
+    switch (fractalType) {
     case FractalType::projection_and_flow:
     case FractalType::explaino_projection_and_flow:
     case FractalType::counterfactual_pair:
@@ -181,6 +184,10 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.multibrot_power_float = 3.0f;
     params.lambda_real = 2.9685855f;
     params.lambda_imag = -0.27446103f;
+    params.magnet_seed_real = 0.0f;
+    params.magnet_seed_imag = 0.0f;
+    params.magnet_relaxation = 1.0f;
+    params.magnet_bailout = 12.0f;
     params.color_saturation = 1.15f;
     params.color_contrast = 1.10f;
     params.color_tint_r = 1.0f;
@@ -441,6 +448,16 @@ static void ApplyMcMullenPresetDefaults(FractalType fractalType, KernelParams& p
     params.mcmullen_preset = McMullenPreset::z3_z3;
 }
 
+static void ApplyMagnetPresetDefaults(FractalType fractalType, KernelParams& params) {
+    params.max_iter = 900;
+    ApplyDefaultColoringSelection(fractalType, params);
+    params.exposure = 1.35f;
+    params.magnet_seed_real = 0.0f;
+    params.magnet_seed_imag = 0.0f;
+    params.magnet_relaxation = 1.0f;
+    params.magnet_bailout = 12.0f;
+}
+
 void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, bool* ioDirty) {
     ApplyCommonPresetDefaults(params);
 
@@ -485,6 +502,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         break;
     case FractalType::lambda_map:
         ApplyLambdaPresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::magnet:
+        ApplyMagnetPresetDefaults(view.fractal_type, params);
         break;
     case FractalType::collatz:
         ApplyCollatzPresetDefaults(view.fractal_type, params);

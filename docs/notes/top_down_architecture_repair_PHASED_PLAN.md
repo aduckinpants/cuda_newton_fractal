@@ -66,6 +66,14 @@ Hostile questions for closure:
 - [done] The new runtime-harness helper code initially grew a guarded risk surface; obsolete blank-window probe helpers were removed and the architecture audit is green.
 - [done] Explaino escape-variant runtime rail had a false-red double-precision expectation for a float-backed `epsilon` field; the test now uses a float-appropriate tolerance.
 
+## Action Hostile Review
+
+- Action ID: fractal-toolkit-magnet-bridge-1
+- Suspected Failure Mode: the closed top-down contract keeps blocking the new modular fractal-toolkit plan/contract pair, causing product edits to happen under a stale or wrong contract.
+- Correct Owner/Action: widen only the closed top-down planning contract scope enough to add the new Magnet-wave plan and contract, then immediately lock the new slice before touching runtime, schema, renderer, or tests.
+- Proof Surface: this bridge may touch only the closed top-down plan/contract and the new plan/contract file paths; no product runtime file is allowed before the new contract is active.
+- Blocked Action: adding Magnet runtime/schema/test code, scan tooling changes, or any new fractal implementation under the old top-down architecture contract.
+
 ## Notes
 
 - Phase 1 is closed as a concrete foundation: a real seam was extracted, a risk-surface audit gate was added, and the broken no-mouse slider proof moved to renderer-owned evidence.

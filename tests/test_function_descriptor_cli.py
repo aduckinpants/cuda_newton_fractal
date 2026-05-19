@@ -80,6 +80,7 @@ def test_describe_functions_emits_valid_catalog() -> None:
         "explaino_collatz",
         "mcmullen",
         "lambda",
+        "magnet",
         "explaino_lambda",
         "explaino_rational_escape",
         "spider",

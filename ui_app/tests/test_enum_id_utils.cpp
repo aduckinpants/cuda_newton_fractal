@@ -83,6 +83,10 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_FractalTypeRejectsExplainoMetaBasin");
     Check(std::string_view(FractalTypeId(FractalType::explaino_lambda)) == "explaino_lambda",
         "TestConcreteEnumIdWrappers_FractalTypeLookup");
+    Check(std::string_view(FractalTypeId(FractalType::magnet)) == "magnet",
+        "TestConcreteEnumIdWrappers_FractalTypeMagnetLookup");
+    Check(TryParseFractalTypeId("magnet", &fractalType) && fractalType == FractalType::magnet,
+        "TestConcreteEnumIdWrappers_FractalTypeMagnetParse");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,
         "TestConcreteEnumIdWrappers_FractalTypeParseAlias");
 

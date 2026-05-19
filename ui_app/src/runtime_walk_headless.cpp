@@ -84,6 +84,11 @@ const char* FractalTypeId(FractalType fractalType) {
     case FractalType::spider: return "spider";
     case FractalType::celtic_mandelbrot: return "celtic_mandelbrot";
     case FractalType::perpendicular_burning_ship: return "perpendicular_burning_ship";
+    case FractalType::magnet: return "magnet";
+    case FractalType::counterfactual_pair: return "counterfactual_pair";
+    case FractalType::explaino_counterfactual_pair: return "explaino_counterfactual_pair";
+    case FractalType::projection_and_flow: return "projection_and_flow";
+    case FractalType::explaino_projection_and_flow: return "explaino_projection_and_flow";
     }
     return "unknown";
 }

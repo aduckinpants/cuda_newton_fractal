@@ -79,6 +79,17 @@ static bool IsCounterfactualPairCarrierVisibleControl(const UISchemaControl* con
         ContainsCsvToken(control->visible_if.value, "explaino_counterfactual_pair");
 }
 
+static bool IsMagnetVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "eq" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        control->visible_if.value == "magnet";
+}
+
 static bool IsProjectionAndFlowVisibleControl(const UISchemaControl* control, const char* bindingPath) {
     return control &&
         control->has_binding &&
@@ -99,7 +110,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 10,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 14,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 5,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -131,6 +142,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
     bool foundExplainoProjectionAndFlowGroup = false;
     bool foundFractalTypeDefaultExplainoAll = false;
     bool foundContinuousRenderDefaultFalse = false;
+    bool foundMagnetEscapeTimeGroup = false;
 
     for (const auto& panel : safeMode.panels) {
         for (const auto& ctrl : panel.controls) {
@@ -144,6 +156,7 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
                     if (option.id == "counterfactual_pair" && option.group == "Root-Finding") foundCounterfactualPairRootFindingGroup = true;
                     if (option.id == "projection_and_flow" && option.group == "Root-Finding") foundProjectionAndFlowRootFindingGroup = true;
                     if (option.id == "multibrot" && option.group == "Escape-Time") foundFractalTypeEscapeTimeGroup = true;
+                    if (option.id == "magnet" && option.group == "Escape-Time") foundMagnetEscapeTimeGroup = true;
                     if (option.id == "explaino_lambda" && option.group == "Explaino") foundFractalTypeExplainoGroup = true;
                     if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundExplainoProjectionAndFlowGroup = true;
                 }
@@ -174,6 +187,8 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
         "TestSafeModeSchemaKeepsGroupedDefaults_ProjectionAndFlowRootFindingGroup");
     Check(foundFractalTypeEscapeTimeGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_EscapeTimeGroup");
+    Check(foundMagnetEscapeTimeGroup,
+        "TestSafeModeSchemaKeepsGroupedDefaults_MagnetEscapeTimeGroup");
     Check(foundFractalTypeExplainoGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_ExplainoGroup");
     Check(foundExplainoProjectionAndFlowGroup,
@@ -218,6 +233,21 @@ static void TestSafeModeSchemaExposesCounterfactualPairControls() {
         "TestSafeModeSchemaExposesCounterfactualPairControls_ReconvergenceRatio");
 }
 
+static void TestSafeModeSchemaExposesMagnetControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesMagnetControls_FractalPanelPresent");
+    if (!fractalPanel) return;
+    const UISchemaControl* seedReal = FindControlById(*fractalPanel, "magnet_seed_real");
+    const UISchemaControl* seedImag = FindControlById(*fractalPanel, "magnet_seed_imag");
+    const UISchemaControl* relaxation = FindControlById(*fractalPanel, "magnet_relaxation");
+    const UISchemaControl* bailout = FindControlById(*fractalPanel, "magnet_bailout");
+    Check(IsMagnetVisibleControl(seedReal, "fractal.params.magnet_seed_real"), "TestSafeModeSchemaExposesMagnetControls_SeedReal");
+    Check(IsMagnetVisibleControl(seedImag, "fractal.params.magnet_seed_imag"), "TestSafeModeSchemaExposesMagnetControls_SeedImag");
+    Check(IsMagnetVisibleControl(relaxation, "fractal.params.magnet_relaxation") && relaxation->has_ui_min && relaxation->ui_min == 0.05 && relaxation->has_ui_max && relaxation->ui_max == 1.5, "TestSafeModeSchemaExposesMagnetControls_Relaxation");
+    Check(IsMagnetVisibleControl(bailout, "fractal.params.magnet_bailout") && bailout->has_min && bailout->min == 2.0 && bailout->has_max && bailout->max == 64.0, "TestSafeModeSchemaExposesMagnetControls_Bailout");
+}
+
 static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
@@ -249,6 +279,7 @@ int main() {
     TestSafeModeSchemaExposesExpectedPanelsAndActions();
     TestSafeModeSchemaKeepsGroupedDefaults();
     TestSafeModeSchemaExposesCounterfactualPairControls();
+    TestSafeModeSchemaExposesMagnetControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
 
     std::printf("test_safe_mode_schema: %d passed, %d failed\n", g_passed, g_failed);

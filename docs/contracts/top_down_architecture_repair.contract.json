@@ -7,6 +7,8 @@
   "allowed_mutation_scope": [
     "docs/contracts/top_down_architecture_repair.contract.json",
     "docs/notes/top_down_architecture_repair_PHASED_PLAN.md",
+    "docs/contracts/fractal_toolkit_magnet_wave.contract.json",
+    "docs/notes/fractal_toolkit_modular_catalog_magnet_wave_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
     "tools/viewer_host_architecture_audit.py",
     "tests/test_viewer_host_architecture_audit.py",

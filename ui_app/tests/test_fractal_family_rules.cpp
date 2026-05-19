@@ -1187,6 +1187,44 @@ int main() {
         }
     }
 
+    // Magnet Type I: not explaino + escape-time + no basin coloring
+    {
+        if (IsExplainoFamily(FractalType::magnet)) {
+            std::cerr << "Magnet should not be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::magnet)) {
+            std::cerr << "Magnet should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::magnet)) {
+            std::cerr << "Magnet should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::magnet) != ColoringMode::smooth_escape) {
+            std::cerr << "Magnet should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::magnet, ColoringMode::root_basin) ||
+            IsColoringModeAllowedForFractal(FractalType::magnet, ColoringMode::joy_basins)) {
+            std::cerr << "Magnet should reject basin coloring modes\n";
+            return 1;
+        }
+        if (!IsColoringModeAllowedForFractal(FractalType::magnet, ColoringMode::iteration_count) ||
+            !IsColoringModeAllowedForFractal(FractalType::magnet, ColoringMode::smooth_escape)) {
+            std::cerr << "Magnet should allow escape-time coloring modes\n";
+            return 1;
+        }
+        if (DefaultAutoMaxIterForFractal(FractalType::magnet)) {
+            std::cerr << "Magnet should not opt into auto max-iter by default in the first bounded FPS-safe slice\n";
+            return 1;
+        }
+        if (ComputeAutoMaxIter(0.0, FractalType::magnet) != 200) {
+            std::cerr << "Magnet should use the shared escape-time auto max-iter curve when explicitly enabled\n";
+            return 1;
+        }
+    }
+
     // ComputeAutoMaxIter tests
     {
         // At zoom 0 (no zoom): basin type gets base 150

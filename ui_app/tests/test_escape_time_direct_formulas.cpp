@@ -23,8 +23,9 @@ bool NearlyEqualCx(Cx left, Cx right, float eps = 1.0e-6f) {
 int main() {
     if (!UsesSharedEscapeTimeDirectFormula(FractalType::mandelbrot) ||
         !UsesSharedEscapeTimeDirectFormula(FractalType::phoenix) ||
-        !UsesSharedEscapeTimeDirectFormula(FractalType::multicorn)) {
-        std::cerr << "Expected direct escape-time helper to cover Mandelbrot, Phoenix, and Multicorn\n";
+        !UsesSharedEscapeTimeDirectFormula(FractalType::multicorn) ||
+        !UsesSharedEscapeTimeDirectFormula(FractalType::magnet)) {
+        std::cerr << "Expected direct escape-time helper to cover Mandelbrot, Phoenix, Multicorn, and Magnet\n";
         return 1;
     }
     if (UsesSharedEscapeTimeDirectFormula(FractalType::mcmullen) ||
@@ -122,6 +123,27 @@ int main() {
             std::cerr << "Spider step should update both z and the running c state\n";
             return 1;
         }
+    }
+
+    {
+        const Cx coord{0.0f, 0.0f};
+        const Cx magnetSeed{0.0f, 0.0f};
+        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(FractalType::magnet, coord, magnetSeed);
+        if (!NearlyEqualCx(state.z, magnetSeed) || !NearlyEqualCx(state.c, coord)) {
+            std::cerr << "Magnet direct-state init should start from the explicit seed and keep c=coord\n";
+            return 1;
+        }
+        StepEscapeTimeDirectState(FractalType::magnet, 3.0f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, 0.5f, &state);
+        if (!NearlyEqualCx(state.z, {0.125f, 0.0f}) ||
+            !NearlyEqual(EscapeTimeDirectMagnetResidualSquared(state.z), 0.765625f)) {
+            std::cerr << "Magnet step should apply the bounded rational Type I map and report residual to the unit attractor\n";
+            return 1;
+        }
+    }
+
+    if (!NearlyEqual(DirectEscapeTimeRadiusSquared<float>(12.0f), 144.0f)) {
+        std::cerr << "Direct escape-time helper should square Magnet's explicit bailout radius\n";
+        return 1;
     }
 
     if (!NearlyEqual(DirectEscapeTimeRadiusSquared<float>(), 4.0f)) {

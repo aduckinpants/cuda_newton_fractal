@@ -1,4 +1,5 @@
 #include "diagnostics_capture.h"
+#include "fractal_family_rules.h"
 
 #include <filesystem>
 #include <fstream>
@@ -296,6 +297,44 @@ void TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity() {
         "state persists Explaino-owned controls for explaino_projection_and_flow");
 }
 
+void TestBundlePersistsMagnetParams() {
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    RenderStats stats{};
+    PopulateState(&view, &params, &render, &stats);
+    view.fractal_type = FractalType::magnet;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.magnet_seed_real = -0.125f;
+    params.magnet_seed_imag = 0.0625f;
+    params.magnet_relaxation = 0.75f;
+    params.magnet_bailout = 18.0f;
+
+    const fs::path outputDir = FreshTempRoot("magnet") / "diagnostics_bundle";
+    std::vector<uint32_t> rgba{0xff112244u, 0xff335577u, 0xff6688aau, 0xff99bbddu};
+    DiagnosticsCaptureResult result{};
+    std::string error;
+
+    const bool ok = CaptureDiagnosticsBundleToDir(outputDir.string(), view, params, render, stats, rgba.data(), rgba.size(), &result, &error);
+    Check(ok, "CaptureDiagnosticsBundleToDir succeeds for magnet state export");
+    if (!ok) {
+        return;
+    }
+
+    const std::string json = ReadTextFile(result.state_json_path);
+    Check(json.find("\"fractal_type\": \"magnet\"") != std::string::npos,
+        "state persists magnet fractal type id");
+    Check(json.find("\"magnet_seed_real\": -0.125") != std::string::npos,
+        "state persists Magnet seed real");
+    Check(json.find("\"magnet_seed_imag\": 0.0625") != std::string::npos,
+        "state persists Magnet seed imag");
+    Check(json.find("\"magnet_relaxation\": 0.75") != std::string::npos,
+        "state persists Magnet relaxation");
+    Check(json.find("\"magnet_bailout\": 18") != std::string::npos,
+        "state persists Magnet bailout");
+}
+
 void TestRejectsMismatchedPixelCount() {
     ViewState view{};
     KernelParams params{};
@@ -374,6 +413,7 @@ int main() {
     TestBundlePersistsExplainoCounterfactualPairFractalTypeId();
     TestBundlePersistsProjectionAndFlowHardeningControls();
     TestBundlePersistsExplainoProjectionAndFlowExplicitIdentity();
+    TestBundlePersistsMagnetParams();
     TestRejectsMismatchedPixelCount();
     TestLastBundleAndSidecarOverloads();
 

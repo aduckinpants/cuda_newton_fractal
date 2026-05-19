@@ -109,6 +109,17 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("explaino_cluster_radius must be finite and in [0,2]", outError);
         }
     }
+    if (view.fractal_type == FractalType::magnet) {
+        if (!std::isfinite(params.magnet_seed_real) || !std::isfinite(params.magnet_seed_imag)) {
+            return FailFractalRuntimeValidation("magnet_seed_real/imag must be finite", outError);
+        }
+        if (!std::isfinite(params.magnet_relaxation) || params.magnet_relaxation < 0.05f || params.magnet_relaxation > 1.5f) {
+            return FailFractalRuntimeValidation("magnet_relaxation must be finite and in [0.05,1.5]", outError);
+        }
+        if (!std::isfinite(params.magnet_bailout) || params.magnet_bailout < 2.0f || params.magnet_bailout > 64.0f) {
+            return FailFractalRuntimeValidation("magnet_bailout must be finite and in [2,64]", outError);
+        }
+    }
     if (view.fractal_type == FractalType::multibrot) {
         if (!std::isfinite(params.multibrot_power_float) ||
             params.multibrot_power_float < 2.0f ||

@@ -39,6 +39,11 @@ ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectAdd(Complex left, Complex r
 }
 
 template <typename Complex>
+ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectSub(Complex left, Complex right) {
+    return {left.x - right.x, left.y - right.y};
+}
+
+template <typename Complex>
 ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectMul(Complex left, Complex right) {
     return {left.x * right.x - left.y * right.y, left.x * right.y + left.y * right.x};
 }
@@ -46,6 +51,21 @@ ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectMul(Complex left, Complex r
 template <typename Complex, typename Scalar>
 ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectScale(Complex value, Scalar scale) {
     return {value.x * scale, value.y * scale};
+}
+
+template <typename Complex>
+ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectDiv(Complex left, Complex right) {
+    using Scalar = decltype(left.x);
+    const Scalar denom = right.x * right.x + right.y * right.y;
+    if (denom <= static_cast<Scalar>(1.0e-30)) {
+        return {static_cast<Scalar>(1.0e20), static_cast<Scalar>(1.0e20)};
+    }
+    return {(left.x * right.x + left.y * right.y) / denom, (left.y * right.x - left.x * right.y) / denom};
+}
+
+template <typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline Scalar EscapeTimeDirectClamp(Scalar value, Scalar lo, Scalar hi) {
+    return value < lo ? lo : (value > hi ? hi : value);
 }
 
 template <typename Complex>
@@ -92,13 +112,17 @@ ESCAPE_TIME_DIRECT_HD inline constexpr bool UsesSharedEscapeTimeDirectFormula(Fr
         fractalType == FractalType::phoenix ||
         fractalType == FractalType::multicorn ||
         fractalType == FractalType::lambda_map ||
+        fractalType == FractalType::magnet ||
         fractalType == FractalType::spider ||
         fractalType == FractalType::celtic_mandelbrot ||
         fractalType == FractalType::perpendicular_burning_ship;
 }
 
 template <typename Complex>
-ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirectState(FractalType fractalType, Complex coord) {
+ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirectState(
+    FractalType fractalType,
+    Complex coord,
+    Complex magnetSeed) {
     using Scalar = decltype(coord.x);
 
     EscapeTimeDirectState<Complex> state{};
@@ -108,12 +132,21 @@ ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirect
     } else if (fractalType == FractalType::lambda_map) {
         state.z = coord;
         state.c = {static_cast<Scalar>(0), static_cast<Scalar>(0)};
+    } else if (fractalType == FractalType::magnet) {
+        state.z = magnetSeed;
+        state.c = coord;
     } else {
         state.z = {static_cast<Scalar>(0), static_cast<Scalar>(0)};
         state.c = coord;
     }
     state.z_prev = {static_cast<Scalar>(0), static_cast<Scalar>(0)};
     return state;
+}
+
+template <typename Complex>
+ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirectState(FractalType fractalType, Complex coord) {
+    using Scalar = decltype(coord.x);
+    return InitEscapeTimeDirectState(fractalType, coord, {static_cast<Scalar>(0), static_cast<Scalar>(0)});
 }
 
 template <typename Complex, typename Scalar>
@@ -123,6 +156,7 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     int multibrotPowerInt,
     Complex lambdaConst,
     Complex phoenixP,
+    Scalar magnetRelaxation,
     EscapeTimeDirectState<Complex>* ioState) {
     if (!ioState) return;
 
@@ -157,6 +191,14 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
         const Complex zNext = EscapeTimeDirectAdd(EscapeTimeDirectAdd(EscapeTimeDirectMul(z, z), c), EscapeTimeDirectMul(phoenixP, zPrev));
         zPrev = z;
         z = zNext;
+    } else if (fractalType == FractalType::magnet) {
+        const Complex z2 = EscapeTimeDirectMul(z, z);
+        const Complex numerator = EscapeTimeDirectAdd(EscapeTimeDirectSub(z2, {static_cast<Real>(1), static_cast<Real>(0)}), c);
+        const Complex denominator = EscapeTimeDirectAdd(EscapeTimeDirectSub(EscapeTimeDirectScale(z, static_cast<Real>(2)), {static_cast<Real>(2), static_cast<Real>(0)}), c);
+        const Complex quotient = EscapeTimeDirectDiv(numerator, denominator);
+        const Complex raw = EscapeTimeDirectMul(quotient, quotient);
+        const Real relax = EscapeTimeDirectClamp(static_cast<Real>(magnetRelaxation), static_cast<Real>(0.05), static_cast<Real>(1.5));
+        z = EscapeTimeDirectAdd(z, EscapeTimeDirectScale(EscapeTimeDirectSub(raw, z), relax));
     } else {
         z = EscapeTimeDirectAdd(EscapeTimeDirectMul(z, z), c);
     }
@@ -166,9 +208,32 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     ioState->z_prev = zPrev;
 }
 
+template <typename Complex, typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
+    FractalType fractalType,
+    Scalar multibrotPowerFloat,
+    int multibrotPowerInt,
+    Complex lambdaConst,
+    Complex phoenixP,
+    EscapeTimeDirectState<Complex>* ioState) {
+    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, multibrotPowerInt, lambdaConst, phoenixP, static_cast<Scalar>(1), ioState);
+}
+
+template <typename Complex>
+ESCAPE_TIME_DIRECT_HD inline auto EscapeTimeDirectMagnetResidualSquared(Complex z) -> decltype(z.x * z.x + z.y * z.y) {
+    using Scalar = decltype(z.x);
+    const Scalar dx = z.x - static_cast<Scalar>(1);
+    return dx * dx + z.y * z.y;
+}
+
 template <typename Scalar>
 ESCAPE_TIME_DIRECT_HD inline constexpr Scalar DirectEscapeTimeRadiusSquared() {
     return static_cast<Scalar>(4.0);
+}
+
+template <typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline Scalar DirectEscapeTimeRadiusSquared(Scalar radius) {
+    return radius * radius;
 }
 
 #undef ESCAPE_TIME_DIRECT_HD

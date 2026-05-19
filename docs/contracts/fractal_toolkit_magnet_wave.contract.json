@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "contract_id": "fractal_toolkit_magnet_wave",
+  "feature_id": "fractal_toolkit_modular_catalog_magnet_wave",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/fractal_toolkit_modular_catalog_magnet_wave_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_toolkit_magnet_wave.contract.json",
+    "docs/notes/fractal_toolkit_modular_catalog_magnet_wave_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "tools/viewer_host_validate_fractal_toolkit_scan.py",
+    "tests/test_viewer_host_fractal_toolkit_scan.py",
+    "tests/test_fractal_runtime_magnet.py",
+    "tests/test_function_descriptor_cli.py",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/src/enum_id_utils.h",
+    "ui_app/src/escape_time_direct_formulas.h",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/function_descriptor.cpp",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/runtime_walk_headless.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_diagnostics_capture.cpp",
+    "ui_app/tests/test_diagnostics_state_io.cpp",
+    "ui_app/tests/test_fractal_probe_runner.cpp",
+    "ui_app/tests/test_fractal_probe_coverage.cpp",
+    "ui_app/tests/test_function_descriptor.cpp",
+    "ui_app/tests/test_cli_args.cpp",
+    "ui_app/tests/test_enum_id_utils.cpp",
+    "ui_app/tests/test_escape_time_direct_formulas.cpp",
+    "ui_app/tests/test_fractal_derived_fields.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "ui_app/tests/test_fractal_runtime_validation.cpp",
+    "ui_app/tests/test_fractal_sample_kernel.cu",
+    "ui_app/tests/test_fractal_sample_device.cu",
+    "ui_app/tests/test_fractal_types.cpp",
+    "ui_app/tests/test_safe_mode_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp"
+  ],
+  "required_operator_inputs": [
+    "implement the first modular long-term fractal toolkit slice with Magnet Type I as the bounded first new fractal family",
+    "keep the roadmap detailed but start real implementation instead of stopping at planning",
+    "preserve FPS-sensitive paths and prove controls are meaningful through native/runtime witnesses",
+    "integrate deterministic code scanning/tooling into the validation surface",
+    "preserve existing Explaino, Color Pipeline, no-mouse automation, smooth-escape routing, and legacy SampleFractalPoints behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "ship 3D Mandelbulb, IFS, attractor-density, Operator-Itinerary, Program-Space/DSL, or Meta-Basin in this first Magnet slice",
+    "hide Magnet behind existing fractal ids or relabel an existing runtime lane",
+    "add physical cursor or OS-mouse runtime tests",
+    "grow the renderer or sample-device monolith without modular formula seams and scan proof",
+    "claim perturbation deep zoom is done in this slice"
+  ],
+  "required_defaults": {
+    "first_new_fractal": "magnet_type_i",
+    "modular_formula_seam": "required",
+    "deterministic_scan_gate": "required",
+    "no_mouse_runtime_proof": "required",
+    "fps_guard": "required",
+    "hostile_audit": "required"
+  },
+  "forbidden_defaults": {
+    "monolith_growth": "forbidden",
+    "physical_mouse_runtime_test": "forbidden",
+    "broad_renderer_rewrite": "forbidden",
+    "meta_basin_or_dsl_scope": "forbidden",
+    "silent_control_noop": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_toolkit_magnet_wave.contract.json --out-json artifacts/validation/fractal_toolkit_magnet_wave_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_toolkit_modular_catalog_magnet_wave_PHASED_PLAN.md --out-json artifacts/validation/fractal_toolkit_magnet_wave_hostile_audit.json",
+    "py -3.14 tools/viewer_host_validate_fractal_toolkit_scan.py --out-json artifacts/validation/fractal_toolkit_magnet_wave_scan.json",
+    "py -3.14 tools/code_quality_audit.py --out artifacts/validation/fractal_toolkit_magnet_wave_code_quality.json --check-baseline",
+    "py -3.14 -m pytest tests/test_viewer_host_fractal_toolkit_scan.py -q --junitxml artifacts/pytest/test_viewer_host_fractal_toolkit_scan.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_toolkit_magnet_contract_schema_valid",
+      "description": "The Magnet-wave fractal toolkit contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_toolkit_magnet_wave_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_toolkit_magnet_plan_sync_ok",
+      "description": "The Magnet-wave phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_toolkit_magnet_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_toolkit_magnet_wave_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_toolkit_scan_ok",
+      "description": "The deterministic fractal toolkit scan passes for the Magnet lane",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_toolkit_magnet_wave_scan.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

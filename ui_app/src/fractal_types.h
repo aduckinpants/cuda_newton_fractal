@@ -238,6 +238,7 @@ enum class FractalType : int {
     explaino_counterfactual_pair = 40,
     projection_and_flow = 41,
     explaino_projection_and_flow = 42,
+    magnet = 43,
 };
 
 enum class CounterfactualPairRootFamily : int {
@@ -371,6 +372,10 @@ struct KernelParams {
     float multibrot_power_float{3.0f};
     float lambda_real{2.9685855f};
     float lambda_imag{-0.27446103f};
+    float magnet_seed_real{0.0f};
+    float magnet_seed_imag{0.0f};
+    float magnet_relaxation{1.0f};
+    float magnet_bailout{12.0f};
     ColoringMode coloring_mode{ColoringMode::root_basin};
     ColorPipelineSelection color_pipeline{};
     float exposure{1.0f};

@@ -647,6 +647,9 @@ int main() {
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
+        bool foundMagnetEscapeTimeGroup = false;
+        bool foundMagnetRelaxation = false;
+        bool foundMagnetBailout = false;
         bool foundFractalTypeDefaultExplainoAll = false;
         bool foundEpsilonVisibleForExplainoAll = false;
         bool foundEpsilonVisibleForCounterfactualPair = false;
@@ -784,7 +787,18 @@ int main() {
                         if (option.id == "spider" && option.group == "Escape-Time") foundSpiderEscapeTimeGroup = true;
                         if (option.id == "celtic_mandelbrot" && option.group == "Escape-Time") foundCelticEscapeTimeGroup = true;
                         if (option.id == "perpendicular_burning_ship" && option.group == "Escape-Time") foundPerpendicularShipEscapeTimeGroup = true;
+                        if (option.id == "magnet" && option.group == "Escape-Time") foundMagnetEscapeTimeGroup = true;
                     }
+                }
+                if (ctrl.id == "magnet_relaxation" && ctrl.has_binding && ctrl.binding.path == "fractal.params.magnet_relaxation" &&
+                    ctrl.has_min && ctrl.min == 0.05 && ctrl.has_max && ctrl.max == 1.5 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
+                    foundMagnetRelaxation = true;
+                }
+                if (ctrl.id == "magnet_bailout" && ctrl.has_binding && ctrl.binding.path == "fractal.params.magnet_bailout" &&
+                    ctrl.has_min && ctrl.min == 2.0 && ctrl.has_max && ctrl.max == 64.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
+                    foundMagnetBailout = true;
                 }
                 if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
                     foundRenderHeightDefault = true;
@@ -1260,8 +1274,12 @@ int main() {
                 return 1;
             }
         }
-        if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {
+        if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup || !foundMagnetEscapeTimeGroup) {
             std::cerr << "Did not find the new escape-time catalog wave options in schema\n";
+            return 1;
+        }
+        if (!foundMagnetRelaxation || !foundMagnetBailout) {
+            std::cerr << "Did not find Magnet Type I owner controls in schema\n";
             return 1;
         }
         if (!foundDualSeedB || !foundDualSeedMix || !foundColoringModeControl || !foundColorGradingControl ||
@@ -1293,6 +1311,7 @@ int main() {
         bool foundSpiderEscapeTimeGroup = false;
         bool foundCelticEscapeTimeGroup = false;
         bool foundPerpendicularShipEscapeTimeGroup = false;
+        bool foundMagnetSafeModeEscapeTimeGroup = false;
         bool foundFractalTypeDefaultExplainoAll = false;
         bool foundInteractionDebounceDefault = false;
         bool foundPreviewTargetFpsDefault = false;
@@ -1311,7 +1330,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 10) {
+            fractalPanel->controls.size() != 14) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1495,6 +1514,7 @@ int main() {
                         if (option.id == "spider" && option.group == "Escape-Time") foundSpiderEscapeTimeGroup = true;
                         if (option.id == "celtic_mandelbrot" && option.group == "Escape-Time") foundCelticEscapeTimeGroup = true;
                         if (option.id == "perpendicular_burning_ship" && option.group == "Escape-Time") foundPerpendicularShipEscapeTimeGroup = true;
+                        if (option.id == "magnet" && option.group == "Escape-Time") foundMagnetSafeModeEscapeTimeGroup = true;
                     }
                 }
                 if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
@@ -1562,7 +1582,7 @@ int main() {
             std::cerr << "Safe-mode schema did not default startup fractal selection to Explaino-all\n";
             return 1;
         }
-        if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup) {
+        if (!foundSpiderEscapeTimeGroup || !foundCelticEscapeTimeGroup || !foundPerpendicularShipEscapeTimeGroup || !foundMagnetSafeModeEscapeTimeGroup) {
             std::cerr << "Safe-mode schema did not expose the new escape-time catalog wave options\n";
             return 1;
         }

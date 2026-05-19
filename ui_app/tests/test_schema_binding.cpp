@@ -207,6 +207,27 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to accept lambda\n";
             return 1;
         }
+        if (!ctx.SetEnumId("fractal.view.fractal_type", "magnet") ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "magnet") {
+            std::cerr << "Expected fractal type enum round-trip to accept magnet\n";
+            return 1;
+        }
+        float* magnetSeedReal = nullptr;
+        float* magnetSeedImag = nullptr;
+        float* magnetRelaxation = nullptr;
+        float* magnetBailout = nullptr;
+        if (!ctx.BindFloat("fractal.params.magnet_seed_real", &magnetSeedReal) ||
+            !ctx.BindFloat("fractal.params.magnet_seed_imag", &magnetSeedImag) ||
+            !ctx.BindFloat("fractal.params.magnet_relaxation", &magnetRelaxation) ||
+            !ctx.BindFloat("fractal.params.magnet_bailout", &magnetBailout) ||
+            magnetSeedReal != &params.magnet_seed_real ||
+            magnetSeedImag != &params.magnet_seed_imag ||
+            magnetRelaxation != &params.magnet_relaxation ||
+            magnetBailout != &params.magnet_bailout ||
+            !NearlyEqual(*magnetRelaxation, 1.0f) || !NearlyEqual(*magnetBailout, 12.0f)) {
+            std::cerr << "Expected Magnet schema bindings to own the bounded Type I numeric controls\n";
+            return 1;
+        }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "projection_and_flow") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "projection_and_flow") {
             std::cerr << "Expected fractal type enum round-trip to accept projection_and_flow\n";
