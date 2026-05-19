@@ -21,7 +21,7 @@ Phase 1 - standalone Julia constant-control repair is implemented and validated;
 - [ ] Phase 4 - dead-slider repairs from the matrix, split by bounded family groups with one-at-a-time proof.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
-- [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint-ready plan text, receipts-ready proof set, clean-tree target, and stale-plan guard text.
+- [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
 
 ## Proof Ledger
 
