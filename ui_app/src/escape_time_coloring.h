@@ -256,51 +256,44 @@ ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStackRow(
     return ApplyFractalColorGradingPass(color, params, exposure, saturation, contrast);
 }
 
-template <typename Color>
-ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const KernelParams& params) {
-    int gradingStackCount = params.color_grading_stack_count;
-    if (gradingStackCount > kColorPipelineMaxGradingStackCount) {
-        gradingStackCount = kColorPipelineMaxGradingStackCount;
-    }
-    if (gradingStackCount > 0) {
-        for (int index = 0; index < gradingStackCount; ++index) {
-            color = ApplyFractalColorGradingStackRow(color, params, params.color_grading_stack[index]);
-        }
-        return color;
-    }
+ESCAPE_TIME_COLOR_HD inline int ClampedColorGradingStackCount(const KernelParams& params) {
+    return params.color_grading_stack_count > kColorPipelineMaxGradingStackCount ?
+        kColorPipelineMaxGradingStackCount : params.color_grading_stack_count;
+}
 
-    const float exposure = ResolveFractalGradeExposure(params);
-    const float saturation = ResolveFractalGradeSaturation(params);
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGradingStack(Color color, const KernelParams& params, int gradingStackCount) {
+    for (int index = 0; index < gradingStackCount; ++index) {
+        color = ApplyFractalColorGradingStackRow(color, params, params.color_grading_stack[index]);
+    }
+    return color;
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorPipelinePresetGrading(
+    Color color, const KernelParams& params, float exposure, float saturation) {
     if (params.color_pipeline.grading == ColorGradingPreset::tone_map_default) {
-        return ApplyFractalColorToneMapFinishPass(
-            color,
-            params,
-            exposure,
-            saturation,
-            params.color_contrast);
+        return ApplyFractalColorToneMapFinishPass(color, params, exposure, saturation, params.color_contrast);
     }
     if (params.color_pipeline.grading == ColorGradingPreset::glow_default) {
-        return ApplyFractalColorGlowFinishPass(
-            color,
-            params,
-            params.exposure < 0.0f ? 0.0f : params.exposure,
-            params.color_saturation,
-            params.color_contrast,
-            params.color_glow);
+        return ApplyFractalColorGlowFinishPass(color, params, params.exposure < 0.0f ? 0.0f : params.exposure,
+            params.color_saturation, params.color_contrast, params.color_glow);
     }
     if (params.color_pipeline.grading == ColorGradingPreset::balance_void_default) {
         return ApplyFractalColorBalanceVoidGradePass(
-            color,
-            params.color_balance_void,
-            params.color_chroma_tension,
-            params.color_accent_bias);
+            color, params.color_balance_void, params.color_chroma_tension, params.color_accent_bias);
     }
-    return ApplyFractalColorGradingPass(
-        color,
-        params,
-        exposure,
-        saturation,
-        params.color_contrast);
+    return ApplyFractalColorGradingPass(color, params, exposure, saturation, params.color_contrast);
+}
+
+template <typename Color>
+ESCAPE_TIME_COLOR_HD inline Color ApplyFractalColorGrading(Color color, const KernelParams& params) {
+    const int gradingStackCount = ClampedColorGradingStackCount(params);
+    if (gradingStackCount > 0) {
+        return ApplyFractalColorGradingStack(color, params, gradingStackCount);
+    }
+    return ApplyFractalColorPipelinePresetGrading(
+        color, params, ResolveFractalGradeExposure(params), ResolveFractalGradeSaturation(params));
 }
 
     ESCAPE_TIME_COLOR_HD inline float ApplyColorPipelineShapeValue(float value, const KernelParams& params, float repeatWrap = 1.0f);

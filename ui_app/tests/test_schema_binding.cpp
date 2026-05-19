@@ -3135,6 +3135,112 @@ int main() {
         EndFrame();
 
         BeginFrame();
+        bool intAutomationDirty = false;
+        bool intAutomationInteracted = false;
+        bool intAutomationConsumed = false;
+        std::string intAutomationError;
+        const std::string intAutomationControlId = "fractal_control.width.primary";
+        UISchemaControl widthControl = MakeBoundControl(
+            "width",
+            "slider_int",
+            "Width",
+            "int",
+            "param",
+            "fractal.render.resolution.x");
+        widthControl.has_min = true;
+        widthControl.min = 16.0;
+        widthControl.has_max = true;
+        widthControl.max = 4096.0;
+        render.resolution.x = 320;
+        ctx.ui_automation_set_control_id = &intAutomationControlId;
+        ctx.ui_automation_set_control_value = 640.0;
+        ctx.ui_automation_set_consumed = &intAutomationConsumed;
+        ctx.ui_automation_set_error = &intAutomationError;
+        if (!RenderControlFromSchema(widthControl, ctx, &intAutomationDirty, nullptr, &intAutomationInteracted)) {
+            std::cerr << "Visible schema-driven set-value automation should apply through the int edit path\n";
+            return 1;
+        }
+        if (!intAutomationConsumed || !intAutomationDirty || !intAutomationInteracted || !intAutomationError.empty() || render.resolution.x != 640) {
+            std::cerr << "Schema-driven int set-value automation should consume, dirty, interact, and write width\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
+        bool doubleAutomationDirty = false;
+        bool doubleAutomationInteracted = false;
+        bool doubleAutomationConsumed = false;
+        std::string doubleAutomationError;
+        const std::string doubleAutomationControlId = "fractal_control.explaino_seed_b.primary";
+        UISchemaControl seedBControl = MakeBoundControl(
+            "explaino_seed_b",
+            "slider_double",
+            "Explaino Seed B",
+            "double",
+            "param",
+            "fractal.params.explaino_seed_b");
+        seedBControl.has_ui_min = true;
+        seedBControl.ui_min = -10.0;
+        seedBControl.has_ui_max = true;
+        seedBControl.ui_max = 10.0;
+        params.explaino_seed_b = 1.0;
+        ctx.ui_automation_set_control_id = &doubleAutomationControlId;
+        ctx.ui_automation_set_control_value = 2.25;
+        ctx.ui_automation_set_consumed = &doubleAutomationConsumed;
+        ctx.ui_automation_set_error = &doubleAutomationError;
+        if (!RenderControlFromSchema(seedBControl, ctx, &doubleAutomationDirty, nullptr, &doubleAutomationInteracted)) {
+            std::cerr << "Visible schema-driven set-value automation should apply through the double edit path\n";
+            return 1;
+        }
+        if (!doubleAutomationConsumed || !doubleAutomationDirty || !doubleAutomationInteracted || !doubleAutomationError.empty() || !NearlyEqual(params.explaino_seed_b, 2.25)) {
+            std::cerr << "Schema-driven double set-value automation should consume, dirty, interact, and write explaino_seed_b\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
+        bool combinedSeedAutomationDirty = false;
+        bool combinedSeedAutomationInteracted = false;
+        bool combinedSeedAutomationConsumed = false;
+        std::string combinedSeedAutomationError;
+        const std::string combinedSeedAutomationControlId = "fractal_control.explaino_seed.primary";
+        UISchemaControl combinedSeedControl = MakeBoundControl(
+            "explaino_seed",
+            "slider_double",
+            "Explaino Seed",
+            "double",
+            "param",
+            "fractal.params.explaino_seed");
+        combinedSeedControl.has_ui_min = true;
+        combinedSeedControl.ui_min = -10.0;
+        combinedSeedControl.has_ui_max = true;
+        combinedSeedControl.ui_max = 10.0;
+        ExplainoSeedSetCombined(view, params, 0.0);
+        ctx.ui_automation_set_control_id = &combinedSeedAutomationControlId;
+        ctx.ui_automation_set_control_value = 3.5;
+        ctx.ui_automation_set_consumed = &combinedSeedAutomationConsumed;
+        ctx.ui_automation_set_error = &combinedSeedAutomationError;
+        if (!RenderControlFromSchema(combinedSeedControl, ctx, &combinedSeedAutomationDirty, nullptr, &combinedSeedAutomationInteracted)) {
+            std::cerr << "Visible schema-driven set-value automation should apply through the combined Explaino seed double path\n";
+            return 1;
+        }
+        if (!combinedSeedAutomationConsumed || !combinedSeedAutomationDirty || !combinedSeedAutomationInteracted ||
+            !combinedSeedAutomationError.empty() || !NearlyEqual(ExplainoSeedCombined(view, params), 3.5)) {
+            std::cerr << "Schema-driven combined Explaino seed set-value automation should consume, dirty, interact, and write the combined seed\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
         UISchemaControl badCheckbox = MakeBoundControl("bad_checkbox", "checkbox", "Bad Checkbox", "bool", "param", "fractal.params.not_a_real_bool");
         if (RenderControlFromSchema(badCheckbox, ctx, nullptr, nullptr, nullptr)) {
             std::cerr << "Checkboxes with invalid binding paths should fail closed\n";

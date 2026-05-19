@@ -412,6 +412,35 @@ bool TryGetFloatControlDragValue(const UISchemaBinding& binding, const BindingCo
     return TryGetFloatControlDisplayValue(binding, ctx, outValue);
 }
 
+bool ApplyIntControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
+    int* target = nullptr;
+    if (!ctx.BindInt(binding.path, &target) || !target) {
+        return false;
+    }
+
+    int nextValue = static_cast<int>(std::lround(value));
+    ClampNumericValue(&nextValue, range);
+    *target = nextValue;
+    return true;
+}
+
+bool ApplyDoubleControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
+    double nextValue = value;
+    ClampNumericValue(&nextValue, range);
+
+    if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
+        ExplainoSeedSetCombined(*ctx.view, *ctx.params, nextValue);
+        return true;
+    }
+
+    double* target = nullptr;
+    if (!ctx.BindDouble(binding.path, &target) || !target) {
+        return false;
+    }
+    *target = nextValue;
+    return true;
+}
+
 bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
     double nextValue = value;
     ClampNumericValue(&nextValue, range);
@@ -1253,7 +1282,15 @@ bool TryApplyPrimaryUiAutomationSetValue(
     if (*ctx.ui_automation_set_control_id != controlId) {
         return false;
     }
-    if (!ApplyFloatControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value)) {
+    bool applied = false;
+    if (control.value_type == "int") {
+        applied = ApplyIntControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value);
+    } else if (control.value_type == "float") {
+        applied = ApplyFloatControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value);
+    } else if (control.value_type == "double") {
+        applied = ApplyDoubleControlEdit(binding, ctx, range, ctx.ui_automation_set_control_value);
+    }
+    if (!applied) {
         if (ctx.ui_automation_set_error) {
             *ctx.ui_automation_set_error = std::string("schema edit rejected visible control: ") + controlId;
         }
@@ -1361,6 +1398,7 @@ bool RenderIntControl(
         changed = ImGui::DragInt(control.label.c_str(), value, speed, dragMin, dragMax);
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputInt(inputLabel.c_str(), value, 0, 0);
@@ -1368,6 +1406,7 @@ bool RenderIntControl(
         ClampNumericValue(value, range);
         changed = true;
     }
+    changed = changed || automationChanged;
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;
@@ -1470,6 +1509,7 @@ bool RenderFloatControl(
 bool RenderExplainoSeedDoubleControl(
     const UISchemaControl& control,
     BindingContext& ctx,
+    const UISchemaBinding& binding,
     const NumericControlRange& range,
     double speed,
     const char* valueFormat,
@@ -1488,6 +1528,7 @@ bool RenderExplainoSeedDoubleControl(
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, &displayed, static_cast<float>(speed), dragMin, dragMax, valueFormat);
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), &displayed, 0.0, 0.0, valueFormat);
@@ -1498,6 +1539,7 @@ bool RenderExplainoSeedDoubleControl(
     if (changed) {
         ExplainoSeedSetCombined(*ctx.view, *ctx.params, displayed);
     }
+    changed = changed || automationChanged;
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;
@@ -1522,7 +1564,7 @@ bool RenderDoubleControl(
     const char* valueFormat = "%.6f";
 
     if (binding.path == "fractal.params.explaino_seed" && ctx.view && ctx.params) {
-        return RenderExplainoSeedDoubleControl(control, ctx, range, speed, valueFormat, ioDirty, ioInteracted);
+        return RenderExplainoSeedDoubleControl(control, ctx, binding, range, speed, valueFormat, ioDirty, ioInteracted);
     }
 
     bool changed = false;
@@ -1534,6 +1576,7 @@ bool RenderDoubleControl(
         changed = ImGui::DragScalar(control.label.c_str(), ImGuiDataType_Double, value, static_cast<float>(speed), dragMin, dragMax, valueFormat);
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
+    const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
     const bool typedChanged = ImGui::InputDouble(inputLabel.c_str(), value, 0.0, 0.0, valueFormat);
@@ -1541,6 +1584,7 @@ bool RenderDoubleControl(
         ClampNumericValue(value, range);
         changed = true;
     }
+    changed = changed || automationChanged;
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;

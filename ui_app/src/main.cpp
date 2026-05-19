@@ -477,16 +477,18 @@ static int RunHeadlessDiagnosticCapture(
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
     const SidecarAutoDemoControllerPolicy& sidecarControllerPolicy) {
+    RenderSettings diagnosticRender = render;
+    diagnosticRender.benchmark = true;
     std::vector<uint32_t> headlessRgba;
-    headlessRgba.resize((size_t)render.resolution.x * (size_t)render.resolution.y);
+    headlessRgba.resize((size_t)diagnosticRender.resolution.x * (size_t)diagnosticRender.resolution.y);
     const char* err = nullptr;
     RenderStats headlessStats{};
-    if (!RenderFractalCUDA(view, params, render, headlessRgba.data(), nullptr, &headlessStats, &err)) {
+    if (!RenderFractalCUDA(view, params, diagnosticRender, headlessRgba.data(), nullptr, &headlessStats, &err)) {
         return 1;
     }
     std::string captureError;
     DiagnosticsCaptureResult captureResult;
-    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, render, headlessStats,
+    if (!CaptureDiagnosticsLastBundle(exeDir, view, params, diagnosticRender, headlessStats,
             headlessRgba.data(), headlessRgba.size(), sidecarOrientation, &sidecarControllerPolicy, sidecarMutationHistory, colorPipelineWindow, &captureResult, &captureError)) {
         return 1;
     }
@@ -1321,10 +1323,66 @@ static std::string JsonEscapeAutomationReportString(const std::string& s) {
         case '\n': out += "\\n"; break;
         case '\r': out += "\\r"; break;
         case '\t': out += "\\t"; break;
-        default: out += c; break;
+        default:
+            if (static_cast<unsigned char>(c) < 0x20) {
+                constexpr char kHex[] = "0123456789abcdef";
+                const unsigned char value = static_cast<unsigned char>(c);
+                out += "\\u00";
+                out += kHex[(value >> 4) & 0x0f];
+                out += kHex[value & 0x0f];
+            } else {
+                out += c;
+            }
+            break;
         }
     }
     return out;
+}
+
+static void WriteAutomationReportString(std::ofstream& out, const std::string& value) {
+    out << '"' << JsonEscapeAutomationReportString(value) << '"';
+}
+
+static bool ViewerUiAutomationControlIdVisible(
+    const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
+    const ColorPipelineWindowState& colorPipelineWindow,
+    const std::string& controlId) {
+    for (const ViewerUiAutomationRect& rect : viewerUiAutomationRects) {
+        if (rect.control_id == controlId) {
+            return true;
+        }
+    }
+    for (const ColorPipelineUiAutomationRect& rect : colorPipelineWindow.ui_automation_rects) {
+        if (rect.control_id == controlId) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void FailClosedPendingUiAutomationSetValue(
+    const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
+    ColorPipelineWindowState& colorPipelineWindow) {
+    if (!colorPipelineWindow.ui_automation_set_pending ||
+        colorPipelineWindow.ui_automation_set_consumed ||
+        !colorPipelineWindow.ui_automation_set_error.empty() ||
+        colorPipelineWindow.ui_automation_set_control_id.empty()) {
+        return;
+    }
+
+    const std::string& controlId = colorPipelineWindow.ui_automation_set_control_id;
+    if (ViewerUiAutomationControlIdVisible(viewerUiAutomationRects, colorPipelineWindow, controlId)) {
+        colorPipelineWindow.ui_automation_set_error = std::string("set-value automation did not support visible control: ") + controlId;
+        return;
+    }
+
+    const bool wantsColorPipeline = controlId.rfind("color_pipeline.", 0) == 0;
+    const bool colorPipelineReady = colorPipelineWindow.open &&
+        colorPipelineWindow.initialized &&
+        !colorPipelineWindow.ui_automation_rects.empty();
+    if (!wantsColorPipeline || colorPipelineReady) {
+        colorPipelineWindow.ui_automation_set_error = std::string("requested set-value control is not visible or unsupported: ") + controlId;
+    }
 }
 
 static void WriteColorPipelineUiAutomationReport(
@@ -1360,24 +1418,32 @@ static void WriteColorPipelineUiAutomationReport(
     out << "  \"initialized\": " << (colorPipelineWindow.initialized ? "true" : "false") << ",\n";
     out << "  \"force_open_for_automation\": " << (colorPipelineWindow.force_open_for_automation ? "true" : "false") << ",\n";
     const char* currentFractalTypeId = enum_id_utils::LookupEnumId(view.fractal_type, enum_id_utils::kFractalTypeIds);
-    out << "  \"current_fractal_type\": \"" << (currentFractalTypeId ? currentFractalTypeId : "") << "\",\n";
+    out << "  \"current_fractal_type\": ";
+    WriteAutomationReportString(out, currentFractalTypeId ? currentFractalTypeId : "");
+    out << ",\n";
     if (colorPipelineWindow.ui_automation_click_control_id.empty()) {
         out << "  \"requested_click_control_id\": null,\n";
     } else {
-        out << "  \"requested_click_control_id\": \"" << colorPipelineWindow.ui_automation_click_control_id << "\",\n";
+        out << "  \"requested_click_control_id\": ";
+        WriteAutomationReportString(out, colorPipelineWindow.ui_automation_click_control_id);
+        out << ",\n";
     }
     out << "  \"click_consumed\": " << (colorPipelineWindow.ui_automation_click_consumed ? "true" : "false") << ",\n";
     if (colorPipelineWindow.ui_automation_set_control_id.empty()) {
         out << "  \"requested_set_control_id\": null,\n";
     } else {
-        out << "  \"requested_set_control_id\": \"" << JsonEscapeAutomationReportString(colorPipelineWindow.ui_automation_set_control_id) << "\",\n";
+        out << "  \"requested_set_control_id\": ";
+        WriteAutomationReportString(out, colorPipelineWindow.ui_automation_set_control_id);
+        out << ",\n";
     }
     out << "  \"requested_set_value\": " << std::setprecision(12) << colorPipelineWindow.ui_automation_set_control_value << ",\n";
     out << "  \"set_value_consumed\": " << (colorPipelineWindow.ui_automation_set_consumed ? "true" : "false") << ",\n";
     if (colorPipelineWindow.ui_automation_set_error.empty()) {
         out << "  \"set_value_error\": null,\n";
     } else {
-        out << "  \"set_value_error\": \"" << JsonEscapeAutomationReportString(colorPipelineWindow.ui_automation_set_error) << "\",\n";
+        out << "  \"set_value_error\": ";
+        WriteAutomationReportString(out, colorPipelineWindow.ui_automation_set_error);
+        out << ",\n";
     }
     out << "  \"lane_rows\": [";
     bool firstLaneRow = true;
@@ -1387,7 +1453,8 @@ static void WriteColorPipelineUiAutomationReport(
                 out << ',';
             }
             firstLaneRow = false;
-            out << "\n    \"" << lane.lane_id << ':' << row.function_id << "\"";
+            out << "\n    ";
+            WriteAutomationReportString(out, lane.lane_id + std::string(":") + row.function_id);
         }
     }
     if (!firstLaneRow) {
@@ -1402,10 +1469,11 @@ static void WriteColorPipelineUiAutomationReport(
                 out << ",";
             }
             firstRowState = false;
-            out << "\n    {\"lane_id\": \"" << lane.lane_id
-                << "\", \"ui_row_id\": " << row.ui_row_id
-                << ", \"function_id\": \"" << row.function_id
-                << "\", \"enabled\": " << (row.enabled ? "true" : "false") << "}";
+            out << "\n    {\"lane_id\": ";
+            WriteAutomationReportString(out, lane.lane_id);
+            out << ", \"ui_row_id\": " << row.ui_row_id << ", \"function_id\": ";
+            WriteAutomationReportString(out, row.function_id);
+            out << ", \"enabled\": " << (row.enabled ? "true" : "false") << "}";
         }
     }
     if (!firstRowState) {
@@ -1417,7 +1485,8 @@ static void WriteColorPipelineUiAutomationReport(
         if (index > 0) {
             out << ',';
         }
-        out << "\n    \"" << colorPipelineWindow.validation_messages[index] << "\"";
+        out << "\n    ";
+        WriteAutomationReportString(out, colorPipelineWindow.validation_messages[index]);
     }
     if (!colorPipelineWindow.validation_messages.empty()) {
         out << '\n';
@@ -1430,7 +1499,9 @@ static void WriteColorPipelineUiAutomationReport(
             out << ',';
         }
         firstControl = false;
-        out << "\n    {\"control_id\": \"" << rect.control_id << "\", \"screen_rect\": ["
+        out << "\n    {\"control_id\": ";
+        WriteAutomationReportString(out, rect.control_id);
+        out << ", \"screen_rect\": ["
             << (clientOrigin.x + rect.client_left) << ", "
             << (clientOrigin.y + rect.client_top) << ", "
             << (clientOrigin.x + rect.client_right) << ", "
@@ -1441,7 +1512,9 @@ static void WriteColorPipelineUiAutomationReport(
             out << ',';
         }
         firstControl = false;
-        out << "\n    {\"control_id\": \"" << rect.control_id << "\", \"screen_rect\": ["
+        out << "\n    {\"control_id\": ";
+        WriteAutomationReportString(out, rect.control_id);
+        out << ", \"screen_rect\": ["
             << (clientOrigin.x + rect.client_left) << ", "
             << (clientOrigin.y + rect.client_top) << ", "
             << (clientOrigin.x + rect.client_right) << ", "
@@ -2540,6 +2613,7 @@ static void RunViewerFrame(
         actions.interactionChanged = true;
     }
     RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
+    FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);
     if (cli.have_ui_automation_report_json) {
         WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, viewerUiAutomationRects, colorPipelineWindow, view);
     }
@@ -2659,6 +2733,10 @@ static void RunViewerFrame(
     PresentFrame();
 }
 
+static void CaptureLoadedStateFractalTypeIfAny(const std::string& loadedStatePath, const ViewState& view, FractalType& outFractalType) {
+    if (!loadedStatePath.empty()) outFractalType = view.fractal_type;
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<std::string> args = GetCommandLineArgsUtf8();
     ViewerCliArgs cli{};
@@ -2702,9 +2780,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
           currentLoadedStatePath,
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
-    if (!currentLoadedStatePath.empty()) {
-        currentLoadedStateFractalType = view.fractal_type;
-    }
+    CaptureLoadedStateFractalTypeIfAny(currentLoadedStatePath, view, currentLoadedStateFractalType);
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
 
@@ -2746,9 +2822,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     RuntimeWalkFieldSlimeState runtimeWalkFieldSlime{}; bool runtimeWalkFieldSlimeValid = false;
     std::vector<ViewerUiAutomationRect> viewerUiAutomationRects;
     if (!InitializeSweepIfEnabled(cli.sweep_config, sweepState, view, params, dirty)) {
-        CleanupDeviceD3D();
-        DestroyWindow(hwnd);
-        UnregisterClass(wc.lpszClassName, wc.hInstance);
+        ShutdownViewer(hwnd, wc);
         return 1;
     }
     {
@@ -2767,9 +2841,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 &dirty,
                 &runtimeWalkError)) {
             std::fprintf(stderr, "%s\n", runtimeWalkError.c_str());
-            CleanupDeviceD3D();
-            DestroyWindow(hwnd);
-            UnregisterClass(wc.lpszClassName, wc.hInstance);
+            ShutdownViewer(hwnd, wc);
             return 1;
         }
     }

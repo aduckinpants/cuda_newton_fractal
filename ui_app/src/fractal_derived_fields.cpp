@@ -30,64 +30,66 @@ static inline float LerpF(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
-void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
-    Float2 center = {0.0f, 0.0f};
-    float zoom = 1.0f;
+struct FractalViewPresetDefaults {
+    Float2 center;
+    float zoom;
+};
 
-    view.auto_max_iter = DefaultAutoMaxIterForFractal(view.fractal_type);
+static FractalViewPresetDefaults ResolveFractalViewPresetDefaults(FractalType fractalType) {
+    FractalViewPresetDefaults defaults{{0.0f, 0.0f}, 1.0f};
 
-    switch (view.fractal_type) {
+    switch (fractalType) {
     case FractalType::mandelbrot:
-        center = {-0.745f, 0.186f};
-        zoom = 38.0f;
+        defaults.center = {-0.745f, 0.186f};
+        defaults.zoom = 38.0f;
         break;
     case FractalType::julia:
-        center = {0.0f, 0.0f};
-        zoom = 1.5f;
+        defaults.center = {0.0f, 0.0f};
+        defaults.zoom = 1.5f;
         break;
     case FractalType::burning_ship:
-        center = {-1.762f, -0.028f};
-        zoom = 25.0f;
+        defaults.center = {-1.762f, -0.028f};
+        defaults.zoom = 25.0f;
         break;
     case FractalType::spider:
-        center = {-0.12f, 0.75f};
-        zoom = 4.0f;
+        defaults.center = {-0.12f, 0.75f};
+        defaults.zoom = 4.0f;
         break;
     case FractalType::celtic_mandelbrot:
-        center = {-0.45f, 0.42f};
-        zoom = 3.2f;
+        defaults.center = {-0.45f, 0.42f};
+        defaults.zoom = 3.2f;
         break;
     case FractalType::perpendicular_burning_ship:
-        center = {-1.785f, -0.012f};
-        zoom = 18.0f;
+        defaults.center = {-1.785f, -0.012f};
+        defaults.zoom = 18.0f;
         break;
     case FractalType::multibrot:
-        center = {-0.15f, 0.75f};
-        zoom = 4.5f;
+        defaults.center = {-0.15f, 0.75f};
+        defaults.zoom = 4.5f;
         break;
     case FractalType::multicorn:
-        center = {-0.3f, 0.0f};
-        zoom = 1.5f;
+        defaults.center = {-0.3f, 0.0f};
+        defaults.zoom = 1.5f;
         break;
     case FractalType::lambda_map:
     case FractalType::explaino_lambda:
-        center = {0.5f, 0.0f};
-        zoom = 4.5f;
+        defaults.center = {0.5f, 0.0f};
+        defaults.zoom = 4.5f;
         break;
     case FractalType::explaino_rational_escape:
-        center = {0.0f, 0.0f};
-        zoom = 1.8f;
+        defaults.center = {0.0f, 0.0f};
+        defaults.zoom = 1.8f;
         break;
     case FractalType::phoenix:
-        center = {0.36f, -0.1f};
-        zoom = 2.8f;
+        defaults.center = {0.36f, -0.1f};
+        defaults.zoom = 2.8f;
         break;
     case FractalType::projection_and_flow:
     case FractalType::explaino_projection_and_flow:
     case FractalType::counterfactual_pair:
     case FractalType::explaino_counterfactual_pair:
-        center = {0.0f, 0.0f};
-        zoom = 1.0f;
+        defaults.center = {0.0f, 0.0f};
+        defaults.zoom = 1.0f;
         break;
     case FractalType::newton:
     case FractalType::nova:
@@ -118,8 +120,14 @@ void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
         break;
     }
 
-    view.center = center;
-    view.zoom = zoom;
+    return defaults;
+}
+
+void ApplyFractalViewPresetDefaults(ViewState& view, bool* ioDirty) {
+    const FractalViewPresetDefaults defaults = ResolveFractalViewPresetDefaults(view.fractal_type);
+    view.auto_max_iter = DefaultAutoMaxIterForFractal(view.fractal_type);
+    view.center = defaults.center;
+    view.zoom = defaults.zoom;
     view.rotation_degrees = 0.0f;
     if (ioDirty) *ioDirty = true;
 }

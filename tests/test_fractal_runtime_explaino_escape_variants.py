@@ -5,7 +5,6 @@ import json
 import math
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -1801,20 +1800,25 @@ def test_explaino_smooth_escape_explicit_variants_and_explaino_all_stay_within_b
         palette="cyclic_escape",
     )
 
-    def median_elapsed_seconds(state: dict[str, object], name: str) -> float:
+    def median_render_ms(state: dict[str, object], name: str, expected_backend: str) -> float:
         state_path = _write_state_bundle(tmp_path / name, state)
         samples: list[float] = []
         for run_index in range(3):
-            start = time.perf_counter()
             capture = _run_headless_capture(
                 str(exe_path),
                 "--load-state-json",
                 str(state_path),
                 "--capture-diagnostic",
             )
-            samples.append(time.perf_counter() - start)
             assert capture["state"]["fractal_type"] == state["fractal_type"]
             assert capture["state"]["params"]["coloring_mode"] == "smooth_escape"
+            stats = capture["state"].get("stats")
+            assert isinstance(stats, dict)
+            assert stats.get("resolved_backend") == expected_backend, f"unexpected backend for {name}: {stats!r}"
+            assert stats.get("resolved_strategy") == "direct", f"unexpected strategy for {name}: {stats!r}"
+            render_ms = float(stats.get("last_render_ms", 0.0))
+            assert render_ms > 0.0, f"expected renderer-owned timing for {name}, got stats={stats!r}"
+            samples.append(render_ms)
         samples.sort()
         return samples[len(samples) // 2]
 
@@ -1824,13 +1828,13 @@ def test_explaino_smooth_escape_explicit_variants_and_explaino_all_stay_within_b
     for axis in axes:
         owner_defaults.setdefault(str(axis["carrier_fractal_type"]), {})[str(axis["axis_id"])] = _axis_active_value(axis)
 
-    baseline_elapsed = median_elapsed_seconds(smooth_baseline_state, "explaino_smooth_escape_baseline")
+    baseline_render_ms = median_render_ms(smooth_baseline_state, "explaino_smooth_escape_baseline", "float64")
     timed_cases: list[tuple[str, str, dict[str, float]]] = [
         (fractal_type, fractal_type, axis_defaults)
         for fractal_type, axis_defaults in sorted(owner_defaults.items())
     ]
     timed_cases.append(("explaino_all_all_registry_axes", "explaino_all", all_axis_defaults))
-    median_timings = {"explaino": baseline_elapsed}
+    median_render_timings = {"explaino": baseline_render_ms}
     for case_name, fractal_type, axis_defaults in timed_cases:
         variant_state = json.loads(json.dumps(smooth_baseline_state))
         variant_state["fractal_type"] = fractal_type
@@ -1839,12 +1843,13 @@ def test_explaino_smooth_escape_explicit_variants_and_explaino_all_stay_within_b
         for axis in axes:
             variant_params[str(axis["axis_id"])] = 0.0
         variant_params.update(axis_defaults)
-        median_timings[case_name] = median_elapsed_seconds(variant_state, case_name)
+        median_render_timings[case_name] = median_render_ms(variant_state, case_name, "float32")
 
+    renderer_budget_ms = 45.0
     for case_name, _fractal_type, _axis_defaults in timed_cases:
-        assert median_timings[case_name] <= baseline_elapsed * 1.8, (
-            "expected Explaino smooth_escape explicit owner lanes plus explaino_all seven-axis routing to stay within the bounded merged-head usability envelope; "
-            f"median timings={median_timings}"
+        assert median_render_timings[case_name] <= renderer_budget_ms, (
+            "expected Explaino smooth_escape explicit owner lanes plus explaino_all seven-axis routing to stay inside the bounded renderer-owned usability budget; "
+            f"budget_ms={renderer_budget_ms} median render ms={median_render_timings}"
         )
 
 

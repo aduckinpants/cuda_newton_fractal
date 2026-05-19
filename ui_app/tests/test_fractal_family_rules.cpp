@@ -279,6 +279,10 @@ int main() {
             std::cerr << "Explaino-all should expose exactly one canonical seven-axis registry\n";
             return 1;
         }
+        if (ExplainoAxisRegistrySourceEntryCount() != ExplainoAxisRegistryCount()) {
+            std::cerr << "Explaino axis registry should derive its public table and device predicates from one source-entry list\n";
+            return 1;
+        }
         for (std::size_t index = 0; index < (sizeof(kExpectedAxes) / sizeof(kExpectedAxes[0])); ++index) {
             const auto& axis = kExplainoAxisRegistry[index];
             if (std::string_view(axis.axis_id) != kExpectedAxes[index].axis_id ||

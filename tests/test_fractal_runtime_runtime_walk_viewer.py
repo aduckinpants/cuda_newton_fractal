@@ -94,6 +94,31 @@ def _wait_for_ui_automation_set_value(
     raise AssertionError(f"UI set-value automation never consumed {control_id}; last_payload={last_payload!r}")
 
 
+def _wait_for_ui_automation_set_value_error(
+    report_path: Path,
+    control_id: str,
+    *,
+    timeout_seconds: float = 10.0,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, object] | None = None
+    while time.monotonic() < deadline:
+        payload = _load_ui_automation_report(report_path)
+        if payload is None:
+            time.sleep(0.05)
+            continue
+        last_payload = payload
+        if payload.get("requested_set_control_id") != control_id:
+            time.sleep(0.05)
+            continue
+        set_error = payload.get("set_value_error")
+        if isinstance(set_error, str) and set_error:
+            assert payload.get("set_value_consumed") is False
+            return payload
+        time.sleep(0.1)
+    raise AssertionError(f"UI set-value automation never failed closed for {control_id}; last_payload={last_payload!r}")
+
+
 def _capture_controls_viewport_with_optional_set_value(
     exe_path: Path,
     state_path: Path,
@@ -438,6 +463,26 @@ def _load_ui_automation_report(report_path: Path) -> dict[str, object] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def _wait_for_parseable_ui_automation_report(
+    report_path: Path,
+    *,
+    timeout_seconds: float = 3.0,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout_seconds
+    last_text: str | None = None
+    while time.monotonic() < deadline:
+        if report_path.exists():
+            try:
+                last_text = report_path.read_text(encoding="utf-8")
+            except OSError:
+                last_text = None
+            payload = _load_ui_automation_report(report_path)
+            if payload is not None:
+                return payload
+        time.sleep(0.1)
+    raise AssertionError(f"automation report never became parseable JSON; last_text={last_text!r}")
+
+
 def _lane_rows_from_report(payload: dict[str, object], lane_id: str) -> list[dict[str, object]]:
     rows = payload.get("rows", [])
     if not isinstance(rows, list):
@@ -523,6 +568,103 @@ def test_explaino_registry_controls_no_mouse_set_value_change_live_viewport(tmp_
                 f"fractal_type={fractal_type!r} axis={axis_id!r} diff={changed_diff:.3f}"
             )
 
+
+
+def test_runtime_walk_viewer_no_mouse_schema_int_set_value_consumes_visible_control(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino_all", "--width", "320", "--height", "240"
+    )
+    state_path = _write_state_bundle(tmp_path / "schema_width_state", neutral_capture["state"])
+    _pixels, payload = _capture_controls_viewport_with_optional_set_value(
+        exe_path,
+        state_path,
+        tmp_path / "schema_width_set_value_report.json",
+        "fractal_control.width.primary",
+        640.0,
+    )
+    assert payload is not None
+    assert payload.get("set_value_consumed") is True
+    assert payload.get("set_value_error") is None
+
+
+def test_runtime_walk_viewer_no_mouse_unknown_set_value_fails_closed(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino_all", "--width", "320", "--height", "240"
+    )
+    state_path = _write_state_bundle(tmp_path / "schema_unknown_state", neutral_capture["state"])
+    report_path = tmp_path / "schema_unknown_set_value_report.json"
+    control_id = "fractal_control.not_a_real_visible_control.primary"
+    args = [
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--ui-automation-report-json",
+        str(report_path),
+        "--ui-automation-set-control-value",
+        f"{control_id}=0.5",
+    ]
+    proc = subprocess.Popen(args, cwd=str(RUNTIME_DIR))
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        payload = _wait_for_ui_automation_set_value_error(report_path, control_id)
+        assert "not visible" in str(payload.get("set_value_error", "")).lower() or "unsupported" in str(payload.get("set_value_error", "")).lower()
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
+
+
+def test_runtime_walk_viewer_automation_report_escapes_dynamic_requested_ids(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino_all", "--width", "320", "--height", "240"
+    )
+    state_path = _write_state_bundle(tmp_path / "quoted_click_state", neutral_capture["state"])
+    report_path = tmp_path / "quoted_click_report.json"
+    control_id = 'runtime_walk.bad"quoted\\control' + chr(1)
+    args = [
+        str(exe_path),
+        "--load-state-json",
+        str(state_path),
+        "--ui-automation-report-json",
+        str(report_path),
+        "--ui-automation-click-control-id",
+        control_id,
+    ]
+    proc = subprocess.Popen(args, cwd=str(RUNTIME_DIR))
+    hwnd: int | None = None
+    try:
+        hwnd = _wait_for_window(proc)
+        _focus_window(hwnd)
+        payload = _wait_for_parseable_ui_automation_report(report_path)
+        assert payload.get("requested_click_control_id") == control_id
+    finally:
+        if hwnd is not None:
+            ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
+        if proc.poll() is None:
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5.0)
 
 
 def _wait_for_ui_automation_click(

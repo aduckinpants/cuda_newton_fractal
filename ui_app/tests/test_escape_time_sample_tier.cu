@@ -1,4 +1,5 @@
 #include "../src/fractal_types.h"
+#include "../src/fractal_family_rules.h"
 
 #include <cstdint>
 #include <iostream>
@@ -154,9 +155,84 @@ int CountPixelDiffs(const std::vector<uint32_t>& left, const std::vector<uint32_
     return diffs;
 }
 
+__global__ void ProbeExplainoAxisRegistryDevice(KernelParams params, FractalType carrierFractalType, int* outFlags) {
+    if (!outFlags) {
+        return;
+    }
+    outFlags[0] = HasAnyExplainoAxisRegistryPerturbation(params) ? 1 : 0;
+    outFlags[1] = HasExplainoAxisRegistryPerturbationForCarrier(carrierFractalType, params) ? 1 : 0;
+}
+
+bool DeviceExplainoAxisRegistryFlags(KernelParams params, FractalType carrierFractalType, int* outAny, int* outCarrier) {
+    int* deviceFlags = nullptr;
+    int hostFlags[2] = {0, 0};
+    if (cudaMalloc(&deviceFlags, sizeof(hostFlags)) != cudaSuccess) {
+        return false;
+    }
+    if (cudaMemset(deviceFlags, 0, sizeof(hostFlags)) != cudaSuccess) {
+        cudaFree(deviceFlags);
+        return false;
+    }
+    ProbeExplainoAxisRegistryDevice<<<1, 1>>>(params, carrierFractalType, deviceFlags);
+    const cudaError_t launchError = cudaGetLastError();
+    if (launchError != cudaSuccess || cudaDeviceSynchronize() != cudaSuccess) {
+        cudaFree(deviceFlags);
+        return false;
+    }
+    if (cudaMemcpy(hostFlags, deviceFlags, sizeof(hostFlags), cudaMemcpyDeviceToHost) != cudaSuccess) {
+        cudaFree(deviceFlags);
+        return false;
+    }
+    cudaFree(deviceFlags);
+    if (outAny) *outAny = hostFlags[0];
+    if (outCarrier) *outCarrier = hostFlags[1];
+    return true;
+}
+
+bool VerifyExplainoAxisRegistryDeviceParity() {
+    KernelParams neutral{};
+    int any = -1;
+    int carrier = -1;
+    if (!DeviceExplainoAxisRegistryFlags(neutral, FractalType::explaino_ripple, &any, &carrier)) {
+        std::cerr << "CUDA Explaino axis registry device probe failed for neutral params\n";
+        return false;
+    }
+    if (any != 0 || carrier != 0) {
+        std::cerr << "Neutral params should not activate any CUDA Explaino axis registry predicate\n";
+        return false;
+    }
+
+    for (const auto& axis : kExplainoAxisRegistry) {
+        KernelParams params{};
+        float* axisValue = ResolveExplainoAxisValue(params, axis.slot);
+        if (!axisValue) {
+            std::cerr << "Every registry axis should resolve before CUDA device parity probe\n";
+            return false;
+        }
+        *axisValue = axis.default_value != 0.0f ? axis.default_value : 0.35f;
+        any = 0;
+        carrier = 0;
+        if (!DeviceExplainoAxisRegistryFlags(params, axis.carrier_fractal_type, &any, &carrier)) {
+            std::cerr << "CUDA Explaino axis registry device probe failed for " << axis.axis_id << "\n";
+            return false;
+        }
+        if (any != 1 || carrier != 1) {
+            std::cerr << "CUDA Explaino axis registry predicate drifted from host registry for " << axis.axis_id
+                      << ": any=" << any << " carrier=" << carrier << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 int main() {
+    if (!VerifyExplainoAxisRegistryDeviceParity()) {
+        CleanupFractalCUDA();
+        return 1;
+    }
+
     std::vector<uint32_t> fastPixels;
     std::vector<uint32_t> standardPixels;
     RenderStats fastStats{};

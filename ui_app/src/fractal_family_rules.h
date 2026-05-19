@@ -29,6 +29,15 @@ struct ExplainoAxisDescriptor {
     ExplainoAxisParamSlot slot;
 };
 
+#define EXPLAINO_AXIS_REGISTRY_ENTRIES(X) \
+    X(ripple_amplitude, "ripple_amplitude", "fractal.params.ripple_amplitude", FractalType::explaino_ripple, 0.15f, ExplainoAxisParamSlot::ripple_amplitude) \
+    X(splice_offset, "splice_offset", "fractal.params.splice_offset", FractalType::explaino_splice, 0.5f, ExplainoAxisParamSlot::splice_offset) \
+    X(vortex_strength, "vortex_strength", "fractal.params.vortex_strength", FractalType::explaino_vortex, 0.3f, ExplainoAxisParamSlot::vortex_strength) \
+    X(tension_strength, "tension_strength", "fractal.params.tension_strength", FractalType::explaino_tension, 0.02f, ExplainoAxisParamSlot::tension_strength) \
+    X(balance_void, "balance_void", "fractal.params.balance_void", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::balance_void) \
+    X(symmetry_tension, "symmetry_tension", "fractal.params.symmetry_tension", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::symmetry_tension) \
+    X(field_curvature, "field_curvature", "fractal.params.field_curvature", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::field_curvature)
+
 enum class ExplainoCouplingParamSlot : int {
     momentum_beta = 0,
     joy_coupling = 1,
@@ -250,18 +259,25 @@ FRACTAL_FAMILY_RULES_HD inline constexpr FractalType ResolveExplainoPublicFracta
     return fractalType;
 }
 
+#define EXPLAINO_AXIS_DESCRIPTOR_ENTRY(member_name, axis_id, binding_path, carrier_fractal_type, default_value, slot) \
+    {axis_id, binding_path, carrier_fractal_type, default_value, slot},
+
 inline constexpr ExplainoAxisDescriptor kExplainoAxisRegistry[] = {
-    {"ripple_amplitude", "fractal.params.ripple_amplitude", FractalType::explaino_ripple, 0.15f, ExplainoAxisParamSlot::ripple_amplitude},
-    {"splice_offset", "fractal.params.splice_offset", FractalType::explaino_splice, 0.5f, ExplainoAxisParamSlot::splice_offset},
-    {"vortex_strength", "fractal.params.vortex_strength", FractalType::explaino_vortex, 0.3f, ExplainoAxisParamSlot::vortex_strength},
-    {"tension_strength", "fractal.params.tension_strength", FractalType::explaino_tension, 0.02f, ExplainoAxisParamSlot::tension_strength},
-    {"balance_void", "fractal.params.balance_void", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::balance_void},
-    {"symmetry_tension", "fractal.params.symmetry_tension", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::symmetry_tension},
-    {"field_curvature", "fractal.params.field_curvature", FractalType::explaino_balance_void, 0.0f, ExplainoAxisParamSlot::field_curvature},
+    EXPLAINO_AXIS_REGISTRY_ENTRIES(EXPLAINO_AXIS_DESCRIPTOR_ENTRY)
 };
+
+#undef EXPLAINO_AXIS_DESCRIPTOR_ENTRY
 
 inline constexpr std::size_t ExplainoAxisRegistryCount() {
     return sizeof(kExplainoAxisRegistry) / sizeof(kExplainoAxisRegistry[0]);
+}
+
+inline constexpr std::size_t ExplainoAxisRegistrySourceEntryCount() {
+    return 0
+#define EXPLAINO_AXIS_COUNT_ENTRY(member_name, axis_id, binding_path, carrier_fractal_type, default_value, slot) + 1
+        EXPLAINO_AXIS_REGISTRY_ENTRIES(EXPLAINO_AXIS_COUNT_ENTRY)
+#undef EXPLAINO_AXIS_COUNT_ENTRY
+        ;
 }
 
 FRACTAL_FAMILY_RULES_HD inline float* ResolveExplainoAxisValue(KernelParams& params, ExplainoAxisParamSlot slot);
@@ -326,22 +342,11 @@ FRACTAL_FAMILY_RULES_HD inline bool HasExplainoAxisRegistryPerturbationForCarrie
     FractalType carrierFractalType,
     const KernelParams& params) {
 #if defined(__CUDA_ARCH__)
-    switch (carrierFractalType) {
-    case FractalType::explaino_ripple:
-        return ExplainoAxisValueIsActive(params.ripple_amplitude);
-    case FractalType::explaino_splice:
-        return ExplainoAxisValueIsActive(params.splice_offset);
-    case FractalType::explaino_vortex:
-        return ExplainoAxisValueIsActive(params.vortex_strength);
-    case FractalType::explaino_tension:
-        return ExplainoAxisValueIsActive(params.tension_strength);
-    case FractalType::explaino_balance_void:
-        return ExplainoAxisValueIsActive(params.balance_void) ||
-            ExplainoAxisValueIsActive(params.symmetry_tension) ||
-            ExplainoAxisValueIsActive(params.field_curvature);
-    default:
-        return false;
-    }
+#define EXPLAINO_AXIS_DEVICE_CARRIER_CHECK(member_name, axis_id, binding_path, carrier_fractal_type, default_value, slot) \
+    if (carrierFractalType == carrier_fractal_type && ExplainoAxisValueIsActive(params.member_name)) { return true; }
+    EXPLAINO_AXIS_REGISTRY_ENTRIES(EXPLAINO_AXIS_DEVICE_CARRIER_CHECK)
+#undef EXPLAINO_AXIS_DEVICE_CARRIER_CHECK
+    return false;
 #else
     for (const auto& axis : kExplainoAxisRegistry) {
         if (axis.carrier_fractal_type != carrierFractalType) {
@@ -358,13 +363,11 @@ FRACTAL_FAMILY_RULES_HD inline bool HasExplainoAxisRegistryPerturbationForCarrie
 
 FRACTAL_FAMILY_RULES_HD inline bool HasAnyExplainoAxisRegistryPerturbation(const KernelParams& params) {
 #if defined(__CUDA_ARCH__)
-    return ExplainoAxisValueIsActive(params.ripple_amplitude) ||
-        ExplainoAxisValueIsActive(params.splice_offset) ||
-        ExplainoAxisValueIsActive(params.vortex_strength) ||
-        ExplainoAxisValueIsActive(params.tension_strength) ||
-        ExplainoAxisValueIsActive(params.balance_void) ||
-        ExplainoAxisValueIsActive(params.symmetry_tension) ||
-        ExplainoAxisValueIsActive(params.field_curvature);
+#define EXPLAINO_AXIS_DEVICE_ANY_CHECK(member_name, axis_id, binding_path, carrier_fractal_type, default_value, slot) \
+    if (ExplainoAxisValueIsActive(params.member_name)) { return true; }
+    EXPLAINO_AXIS_REGISTRY_ENTRIES(EXPLAINO_AXIS_DEVICE_ANY_CHECK)
+#undef EXPLAINO_AXIS_DEVICE_ANY_CHECK
+    return false;
 #else
     for (const auto& axis : kExplainoAxisRegistry) {
         const float* value = ResolveExplainoAxisValue(params, axis.slot);
@@ -707,38 +710,31 @@ inline void ApplyExplainoClusterRadiusDefaults(FractalType fractalType, KernelPa
     }
 }
 
-FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fractalType) {
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsCoreExplainoFamily(FractalType fractalType) {
     switch (fractalType) {
-    case FractalType::explaino:
-    case FractalType::explaino_all:
-    case FractalType::explaino_y:
-    case FractalType::explaino_fp:
-    case FractalType::explaino_nova:
-    case FractalType::explaino_halley:
-    case FractalType::explaino_dual:
-    case FractalType::explaino_mult:
-    case FractalType::explaino_phoenix:
-    case FractalType::explaino_transcendental:
-    case FractalType::explaino_inertial:
-    case FractalType::explaino_julia:
-    case FractalType::explaino_rational:
-    case FractalType::explaino_collatz:
-    case FractalType::explaino_lambda:
-    case FractalType::explaino_rational_escape:
-    case FractalType::explaino_joy:
-    case FractalType::explaino_fold:
-    case FractalType::explaino_bell:
-    case FractalType::explaino_ripple:
-    case FractalType::explaino_splice:
-    case FractalType::explaino_vortex:
-    case FractalType::explaino_tension:
-    case FractalType::explaino_balance_void:
-    case FractalType::explaino_counterfactual_pair:
-    case FractalType::explaino_projection_and_flow:
+    case FractalType::explaino: case FractalType::explaino_all: case FractalType::explaino_y:
+    case FractalType::explaino_fp: case FractalType::explaino_nova: case FractalType::explaino_halley:
+    case FractalType::explaino_dual: case FractalType::explaino_mult: case FractalType::explaino_phoenix:
+    case FractalType::explaino_transcendental: case FractalType::explaino_inertial: case FractalType::explaino_julia:
+    case FractalType::explaino_rational: case FractalType::explaino_collatz: case FractalType::explaino_lambda:
         return true;
-    default:
-        return false;
+    default: return false;
     }
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExtendedExplainoFamily(FractalType fractalType) {
+    switch (fractalType) {
+    case FractalType::explaino_rational_escape: case FractalType::explaino_joy: case FractalType::explaino_fold:
+    case FractalType::explaino_bell: case FractalType::explaino_ripple: case FractalType::explaino_splice:
+    case FractalType::explaino_vortex: case FractalType::explaino_tension: case FractalType::explaino_balance_void:
+    case FractalType::explaino_counterfactual_pair: case FractalType::explaino_projection_and_flow:
+        return true;
+    default: return false;
+    }
+}
+
+FRACTAL_FAMILY_RULES_HD inline constexpr bool IsExplainoFamily(FractalType fractalType) {
+    return IsCoreExplainoFamily(fractalType) || IsExtendedExplainoFamily(fractalType);
 }
 
 FRACTAL_FAMILY_RULES_HD inline constexpr bool UsesExplainoCustomPolynomialAuthority(FractalType fractalType) {

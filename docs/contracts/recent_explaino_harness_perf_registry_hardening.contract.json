@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "contract_id": "recent_explaino_harness_perf_registry_hardening",
+  "feature_id": "recent_explaino_harness_perf_registry_hardening",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/recent_explaino_harness_perf_registry_hardening_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/recent_explaino_harness_perf_registry_hardening.contract.json",
+    "docs/notes/recent_explaino_harness_perf_registry_hardening_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/schema_binding.h",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_cli.cpp",
+    "ui_app/src/viewer_cli.h",
+    "ui_app/src/headless_modes.cpp",
+    "ui_app/src/fractal_family_rules.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/sample_tier_resolver.cpp",
+    "ui_app/src/fractal_renderer.cu",
+    "ui_app/src/escape_time_coloring.h",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/color_pipeline_core.h",
+    "ui_app/src/color_pipeline_window.h",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_viewer_cli.cpp",
+    "ui_app/tests/test_sample_tier_resolver.cpp",
+    "ui_app/tests/test_fractal_family_rules.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "ui_app/tests/test_escape_time_sample_tier.cu",
+    "ui_app/tests/test_color_pipeline_core.cpp",
+    "ui_app/tests/test_color_pipeline_window.cpp",
+    "ui_app/tests/test_escape_time_coloring.cpp",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_function_descriptor_cli.py",
+    "tests/test_callable_engine_adversarial_cli.py",
+    "tests/runtime_harness.py"
+  ],
+  "required_operator_inputs": [
+    "repair the in-process set-value automation harness so visible schema numeric controls can be edited without OS mouse movement",
+    "preserve Color Pipeline smooth-escape numeric/live behavior and row click automation while changing shared automation/report harness code",
+    "replace weak smooth-escape performance proof with renderer/runtime-owned evidence on canonical explaino_all and explicit owner lanes",
+    "tighten Explaino-all registry authority and host/device parity for all seven registry axes",
+    "harden automation report JSON dynamic string escaping",
+    "repair or explicitly classify code-quality profile regressions before claiming public validation profile health",
+    "close only with focused native/runtime proof, hostile audit, checkpoint commit, receipts, push, clean tree, and stale-plan cleanup"
+  ],
+  "forbidden_operator_prompts": [
+    "use physical OS mouse movement as first-party runtime proof",
+    "claim a schema control is fixed when visible int or double controls still ignore set-value automation silently",
+    "claim smooth-escape performance from subprocess wall-clock timing alone",
+    "rebreak Explaino selector identity, explaino_all seven-axis behavior, or Color Pipeline numeric live behavior",
+    "widen this slice into Meta-Basin, Operator-Itinerary, DSL/program-space, new fractal families, renderer replacement, broad UI redesign, or new Color Pipeline features",
+    "change SampleFractalPoints legacy projection semantics instead of proving they remain stable"
+  ],
+  "required_defaults": {
+    "no_mouse_schema_numeric_set_value": "required",
+    "color_pipeline_guard_preserved": "required",
+    "renderer_owned_smooth_escape_perf_witness": "required",
+    "explaino_axis_registry_authority": "required",
+    "json_report_escaping": "required",
+    "code_quality_profile_truth": "required"
+  },
+  "forbidden_defaults": {
+    "physical_mouse_runtime_test": "forbidden",
+    "silent_unconsumed_set_value": "forbidden",
+    "subprocess_only_perf_claim": "forbidden",
+    "color_pipeline_regression": "forbidden",
+    "scope_widening": "forbidden",
+    "legacy_projection_semantics_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/recent_explaino_harness_perf_registry_hardening.contract.json --out-json artifacts/validation/recent_explaino_harness_perf_registry_hardening_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/recent_explaino_harness_perf_registry_hardening_PHASED_PLAN.md --out-json artifacts/validation/recent_explaino_harness_perf_registry_hardening_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "recent_explaino_harness_perf_registry_hardening_contract_schema_valid",
+      "description": "The recent Explaino harness/perf/registry hardening contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/recent_explaino_harness_perf_registry_hardening_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "recent_explaino_harness_perf_registry_hardening_plan_sync_ok",
+      "description": "The recent Explaino hardening phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "recent_explaino_harness_perf_registry_hardening_hostile_audit_ok",
+      "description": "The recent Explaino hardening hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/recent_explaino_harness_perf_registry_hardening_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
