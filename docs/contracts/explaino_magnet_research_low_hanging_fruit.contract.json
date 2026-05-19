@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "contract_id": "explaino_magnet_research_low_hanging_fruit",
+  "feature_id": "explaino_magnet_research_low_hanging_fruit",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/explaino_magnet_research_low_hanging_fruit_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/explaino_magnet_research_low_hanging_fruit.contract.json",
+    "docs/notes/explaino_magnet_research_low_hanging_fruit_PHASED_PLAN.md",
+    "docs/notes/explaino_magnet_variant_research_and_low_hanging_fruit.md",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "document explaino_magnet feasibility for later without implementing it",
+    "rank lower-effort adjacent work that is safer than starting explaino_magnet now",
+    "keep the slice documentation-only"
+  ],
+  "forbidden_operator_prompts": [
+    "implement explaino_magnet in this slice",
+    "mutate schema, renderer, Color Pipeline, sample code, or runtime tests under this docs-only note",
+    "claim explaino_magnet is low hanging without naming the legacy Explaino basin/root assumptions"
+  ],
+  "required_defaults": {
+    "documentation_only": "required",
+    "explaino_magnet_status": "deferred_medium_effort",
+    "low_hanging_fruit_ranking": "required",
+    "hostile_audit": "required"
+  },
+  "forbidden_defaults": {
+    "product_code_mutation": "forbidden",
+    "fake_implementation_start": "forbidden",
+    "color_pipeline_reopen": "forbidden",
+    "legacy_explaino_assumption_blur": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_magnet_research_low_hanging_fruit.contract.json --out-json artifacts/validation/explaino_magnet_research_low_hanging_fruit_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/explaino_magnet_research_low_hanging_fruit_PHASED_PLAN.md --out-json artifacts/validation/explaino_magnet_research_low_hanging_fruit_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "explaino_magnet_research_contract_schema_valid",
+      "description": "The Explaino Magnet research contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_magnet_research_low_hanging_fruit_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_magnet_research_plan_sync_ok",
+      "description": "The Explaino Magnet research phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "explaino_magnet_research_hostile_audit_ok",
+      "description": "The hostile-audit validator passes for the docs-only note",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_magnet_research_low_hanging_fruit_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -142,3 +142,5 @@
 - `ck:78749f45` 2026-05-19 05:41 UTC | score 98 — Closed modular fractal toolkit Magnet Type I slice: plan/contract, direct formula seam, enum/schema/safe-mode/binding/catalog/diagnostics/probe/runtime support, no-mouse runtime proof, Color Pipeline and legacy SampleFractalPoints guards, code-quality/hostile-audit repairs.
 - `ck:119889dd` 2026-05-19 13:23 UTC — session-start | branch=master | head=3055c88 | status=dirty | profile=checkpoint | intent=diagnostics capture render stats repair
 - `ck:119889dd` 2026-05-19 14:04 UTC | score 5 — Diagnostics capture render stats repair closed: 64-bit iteration-sum stats, finding-capture benchmark timing, focused native/runtime proof green.
+- `ck:84040116` 2026-05-19 14:13 UTC — session-start | branch=master | head=04359a9 | status=dirty | profile=checkpoint | intent=document explaino magnet research and low hanging fruit
+- `ck:84040116` 2026-05-19 14:15 UTC | score 5 — Explaino Magnet research and low-hanging-fruit note closed: deferred medium-risk explaino_magnet path documented; lower-risk Magnet follow-ups ranked; no product code changed.
