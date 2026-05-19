@@ -54,12 +54,19 @@ set FOCUSED_TEST=%~1
 if /I "%FOCUSED_TEST%"=="advanced_color_grading_red" goto focused_advanced_color_grading_red
 if /I "%FOCUSED_TEST%"=="advanced_color_grading_owner" goto focused_advanced_color_grading_owner
 if /I "%FOCUSED_TEST%"=="serializer_owner_fast" goto focused_serializer_owner_fast
+if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_viewer_ui_automation_report
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if not "%FOCUSED_TEST%"=="" (
   echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
   exit /b 1
 )
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
+  .\src\viewer_ui_automation_report.cpp .\tests\test_viewer_ui_automation_report.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_ui_automation_report.exe" ^
+  /link user32.lib
+if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\cli_args.cpp .\tests\test_cli_args.cpp ^
@@ -485,6 +492,15 @@ if errorlevel 1 exit /b 1
 
 goto full_test_run
 
+:focused_test_viewer_ui_automation_report
+cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
+  .\src\viewer_ui_automation_report.cpp .\tests\test_viewer_ui_automation_report.cpp ^
+  /Fe:"%TESTROOT%\test_viewer_ui_automation_report.exe" ^
+  /link user32.lib
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_viewer_ui_automation_report.exe" || exit /b 1
+exit /b 0
+
 :focused_test_diagnostics_state_io
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\src\json_min.cpp .\src\explaino_seed.cpp .\src\diagnostics_state_io.cpp .\src\diagnostics_capture.cpp .\src\render_capture_guard.cpp .\tests\test_diagnostics_state_io.cpp ^
@@ -591,6 +607,7 @@ exit /b 0
 
 :full_test_run
 
+call :run_test "%TESTROOT%\test_viewer_ui_automation_report.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_cli_args.exe" || exit /b 1
 
 call :run_test "%TESTROOT%\test_viewer_cli.exe" || exit /b 1

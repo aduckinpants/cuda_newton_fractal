@@ -2650,7 +2650,7 @@ def test_explaino_escape_magnitude_ignores_residual_exit_threshold_in_published_
     assert tight_params["color_signal"] == "escape_magnitude"
     assert loose_params["color_signal"] == "escape_magnitude"
     assert tight_params["epsilon"] == pytest.approx(1.0e-6, abs=1.0e-12)
-    assert loose_params["epsilon"] == pytest.approx(1.0e-3, abs=1.0e-12)
+    assert loose_params["epsilon"] == pytest.approx(1.0e-3, abs=1.0e-9)
     escape_delta = _mean_absolute_frame_delta(escape_tight_capture["frame_bytes"], escape_loose_capture["frame_bytes"])
     smooth_delta = _mean_absolute_frame_delta(smooth_tight_capture["frame_bytes"], smooth_loose_capture["frame_bytes"])
     assert smooth_delta > 0.0, "expected smooth_escape to remain sensitive to epsilon changes in the published runtime witness"

@@ -13,7 +13,6 @@ import pytest
 
 from tests.runtime_harness import (
     HeadlessLoadedStateScenario as _HeadlessLoadedStateScenario,
-    POINT,
     RUNTIME_DIR,
     WM_CLOSE,
     active_runtime_exe as _active_runtime_exe,
@@ -119,13 +118,43 @@ def _wait_for_ui_automation_set_value_error(
     raise AssertionError(f"UI set-value automation never failed closed for {control_id}; last_payload={last_payload!r}")
 
 
-def _capture_controls_viewport_with_optional_set_value(
+def _require_rendered_frame_hash(payload: dict[str, object]) -> str:
+    assert payload.get("rendered_frame_ready") is True, f"automation report did not include a ready rendered frame: {payload!r}"
+    frame_hash = payload.get("rendered_frame_hash")
+    assert isinstance(frame_hash, str) and frame_hash.startswith("fnv1a64:"), (
+        f"automation report did not include a renderer-owned frame hash: {payload!r}"
+    )
+    assert isinstance(payload.get("rendered_frame_width"), int) and int(payload["rendered_frame_width"]) > 0
+    assert isinstance(payload.get("rendered_frame_height"), int) and int(payload["rendered_frame_height"]) > 0
+    return frame_hash
+
+
+def _wait_for_ui_automation_rendered_frame(
+    report_path: Path,
+    *,
+    timeout_seconds: float = 10.0,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, object] | None = None
+    while time.monotonic() < deadline:
+        payload = _load_ui_automation_report(report_path)
+        if payload is None:
+            time.sleep(0.05)
+            continue
+        last_payload = payload
+        if payload.get("rendered_frame_ready") is True and isinstance(payload.get("rendered_frame_hash"), str):
+            return payload
+        time.sleep(0.1)
+    raise AssertionError(f"UI automation report never exposed a ready rendered frame; last_payload={last_payload!r}")
+
+
+def _capture_controls_report_with_optional_set_value(
     exe_path: Path,
     state_path: Path,
     report_path: Path,
     control_id: str,
     set_value: float | None,
-) -> tuple[bytes, dict[str, object] | None]:
+) -> dict[str, object]:
     args = [str(exe_path), "--load-state-json", str(state_path), "--ui-automation-report-json", str(report_path)]
     if set_value is not None:
         args.extend(["--ui-automation-set-control-value", f"{control_id}={set_value}"])
@@ -134,11 +163,10 @@ def _capture_controls_viewport_with_optional_set_value(
     try:
         hwnd = _wait_for_window(proc)
         _focus_window(hwnd)
-        control_rect = wait_for_ui_automation_rect(report_path, control_id)
-        consumed_payload = None
+        wait_for_ui_automation_rect(report_path, control_id)
         if set_value is not None:
-            consumed_payload = _wait_for_ui_automation_set_value(report_path, control_id)
-        return _wait_for_stable_controls_viewport_probe(hwnd, control_rect), consumed_payload
+            return _wait_for_ui_automation_set_value(report_path, control_id)
+        return _wait_for_ui_automation_rendered_frame(report_path)
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
@@ -150,12 +178,12 @@ def _capture_controls_viewport_with_optional_set_value(
                 proc.wait(timeout=5.0)
 
 
-def _capture_runtime_walk_color_pipeline_viewport(
+def _capture_runtime_walk_color_pipeline_report(
     exe_path: Path,
     request_path: Path,
     report_path: Path,
     set_value: float | None,
-) -> tuple[bytes, dict[str, object] | None]:
+) -> dict[str, object]:
     args = [
         str(exe_path),
         "--load-runtime-walk-request-json",
@@ -171,14 +199,12 @@ def _capture_runtime_walk_color_pipeline_viewport(
     try:
         hwnd = _wait_for_window(proc)
         _focus_window(hwnd)
-        control_rect = wait_for_ui_automation_rect(report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
+        wait_for_ui_automation_rect(report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
         ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYDOWN, VK_SPACE, 0)
         ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_KEYUP, VK_SPACE, 0)
-        consumed_payload = None
         if set_value is not None:
-            consumed_payload = _wait_for_ui_automation_set_value(report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
-        time.sleep(0.5)
-        return _wait_for_stable_controls_viewport_probe(hwnd, control_rect), consumed_payload
+            return _wait_for_ui_automation_set_value(report_path, COLOR_PIPELINE_SCALE_CONTROL_ID)
+        return _wait_for_ui_automation_rendered_frame(report_path)
     finally:
         if hwnd is not None:
             ctypes.windll.user32.PostMessageW(wintypes.HWND(hwnd), WM_CLOSE, 0, 0)
@@ -322,116 +348,6 @@ def _mean_abs_diff(left: bytes, right: bytes) -> float:
     return total / len(left)
 
 
-def _client_size(hwnd: int) -> tuple[int, int]:
-    rect = wintypes.RECT()
-    if not ctypes.windll.user32.GetClientRect(wintypes.HWND(hwnd), ctypes.byref(rect)):
-        raise OSError("GetClientRect failed for viewport probe")
-    width = rect.right - rect.left
-    height = rect.bottom - rect.top
-    if width <= 0 or height <= 0:
-        raise OSError(f"invalid client size for viewport probe: width={width} height={height}")
-    return width, height
-
-
-def _client_origin(hwnd: int) -> tuple[int, int]:
-    origin = POINT()
-    if not ctypes.windll.user32.ClientToScreen(wintypes.HWND(hwnd), ctypes.byref(origin)):
-        raise OSError("ClientToScreen failed for viewport probe")
-    return origin.x, origin.y
-
-
-def _crop_rgba_region(
-    pixels: bytes,
-    width: int,
-    height: int,
-    *,
-    left: int,
-    top: int,
-    right: int,
-    bottom: int,
-) -> bytes:
-    clamped_left = max(0, min(left, width))
-    clamped_top = max(0, min(top, height))
-    clamped_right = max(clamped_left, min(right, width))
-    clamped_bottom = max(clamped_top, min(bottom, height))
-    if clamped_right <= clamped_left or clamped_bottom <= clamped_top:
-        raise AssertionError(
-            f"invalid crop region left={left} top={top} right={right} bottom={bottom} for client {width}x{height}"
-        )
-    row_stride = width * 4
-    region = bytearray()
-    for y in range(clamped_top, clamped_bottom):
-        start = y * row_stride + clamped_left * 4
-        end = y * row_stride + clamped_right * 4
-        region.extend(pixels[start:end])
-    return bytes(region)
-
-
-def _viewport_probe_region(hwnd: int, control_rect: object) -> tuple[int, int, int, int]:
-    width, height = _client_size(hwnd)
-    client_origin_x, _ = _client_origin(hwnd)
-    control_left = int(control_rect.screen_left) - client_origin_x
-    probe_right = min(max(control_left - 24, width // 3), width)
-    if probe_right <= 32:
-        probe_right = max(64, width // 4)
-    return 0, 0, probe_right, height
-
-
-def _viewport_probe_pixels(hwnd: int, control_rect: object) -> bytes:
-    width, height = _client_size(hwnd)
-    left, top, right, bottom = _viewport_probe_region(hwnd, control_rect)
-    pixels = _capture_ready_window_pixels(hwnd)
-    return _crop_rgba_region(pixels, width, height, left=left, top=top, right=right, bottom=bottom)
-
-
-def _controls_viewport_probe_region(hwnd: int, control_rect: object) -> tuple[int, int, int, int]:
-    width, height = _client_size(hwnd)
-    client_origin_x, _ = _client_origin(hwnd)
-    control_left = int(control_rect.screen_left) - client_origin_x
-    control_right = int(control_rect.screen_right) - client_origin_x
-    control_mid_x = (control_left + control_right) // 2
-
-    if control_mid_x < width // 2:
-        probe_left = min(max(control_right + 24, width // 3), width)
-        if probe_left >= width - 32:
-            probe_left = max(width // 2, 0)
-        return probe_left, 0, width, height
-
-    probe_right = max(min(control_left - 24, width * 2 // 3), 0)
-    if probe_right <= 32:
-        probe_right = max(width // 2, 64)
-    return 0, 0, probe_right, height
-
-
-def _controls_viewport_probe_pixels(hwnd: int, control_rect: object) -> bytes:
-    width, height = _client_size(hwnd)
-    left, top, right, bottom = _controls_viewport_probe_region(hwnd, control_rect)
-    pixels = _capture_ready_window_pixels(hwnd)
-    return _crop_rgba_region(pixels, width, height, left=left, top=top, right=right, bottom=bottom)
-
-
-def _wait_for_stable_controls_viewport_probe(
-    hwnd: int,
-    control_rect: object,
-    *,
-    timeout_seconds: float = 10.0,
-    stable_threshold: float = 0.1,
-    sample_gap_seconds: float = 0.2,
-) -> bytes:
-    deadline = time.monotonic() + timeout_seconds
-    previous = _controls_viewport_probe_pixels(hwnd, control_rect)
-    while time.monotonic() < deadline:
-        time.sleep(sample_gap_seconds)
-        current = _controls_viewport_probe_pixels(hwnd, control_rect)
-        if _mean_abs_diff(previous, current) < stable_threshold:
-            return current
-        previous = current
-    raise AssertionError(
-        "controls-window viewport probe never settled before timeout; "
-        f"control_id={getattr(control_rect, 'control_id', '<unknown>')!r}"
-    )
-
-
 def _write_loaded_state_json(path: Path, state: dict[str, object]) -> None:
     path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
@@ -554,18 +470,18 @@ def test_explaino_registry_controls_no_mouse_set_value_change_live_viewport(tmp_
             for registry_axis in axes:
                 params[str(registry_axis["axis_id"])] = 0.0
             state_path = _write_state_bundle(tmp_path / f"{fractal_type}_{axis_id}_neutral", state)
-            baseline_pixels, _ = _capture_controls_viewport_with_optional_set_value(
+            baseline_payload = _capture_controls_report_with_optional_set_value(
                 exe_path, state_path, tmp_path / f"{fractal_type}_{axis_id}_baseline_report.json", control_id, None
             )
-            edited_pixels, payload = _capture_controls_viewport_with_optional_set_value(
+            payload = _capture_controls_report_with_optional_set_value(
                 exe_path, state_path, tmp_path / f"{fractal_type}_{axis_id}_edited_report.json", control_id, active_value
             )
-            assert payload is not None
             assert payload.get("current_fractal_type") == fractal_type
-            changed_diff = _mean_abs_diff(baseline_pixels, edited_pixels)
-            assert changed_diff > 0.03, (
-                "No-mouse set-value automation for a visible Explaino registry control should change the live viewport; "
-                f"fractal_type={fractal_type!r} axis={axis_id!r} diff={changed_diff:.3f}"
+            baseline_hash = _require_rendered_frame_hash(baseline_payload)
+            edited_hash = _require_rendered_frame_hash(payload)
+            assert edited_hash != baseline_hash, (
+                "No-mouse set-value automation for a visible Explaino registry control should change the rendered frame; "
+                f"fractal_type={fractal_type!r} axis={axis_id!r} baseline_hash={baseline_hash} edited_hash={edited_hash}"
             )
 
 
@@ -579,14 +495,13 @@ def test_runtime_walk_viewer_no_mouse_schema_int_set_value_consumes_visible_cont
         str(exe_path), "--capture-diagnostic", "--fractal-type", "explaino_all", "--width", "320", "--height", "240"
     )
     state_path = _write_state_bundle(tmp_path / "schema_width_state", neutral_capture["state"])
-    _pixels, payload = _capture_controls_viewport_with_optional_set_value(
+    payload = _capture_controls_report_with_optional_set_value(
         exe_path,
         state_path,
         tmp_path / "schema_width_set_value_report.json",
         "fractal_control.width.primary",
         640.0,
     )
-    assert payload is not None
     assert payload.get("set_value_consumed") is True
     assert payload.get("set_value_error") is None
 
@@ -823,19 +738,19 @@ def test_runtime_walk_viewer_no_mouse_color_pipeline_set_value_changes_frame(tmp
     _write_state_json(state_path)
     _write_bundle_json(bundle_path)
     _write_request_json(request_path, state_path, bundle_path, out_dir)
-    baseline_pixels, _ = _capture_runtime_walk_color_pipeline_viewport(
+    baseline_payload = _capture_runtime_walk_color_pipeline_report(
         exe_path, request_path, tmp_path / "color_pipeline_baseline_report.json", None
     )
-    edited_pixels, payload = _capture_runtime_walk_color_pipeline_viewport(
+    payload = _capture_runtime_walk_color_pipeline_report(
         exe_path, request_path, tmp_path / "color_pipeline_edited_report.json", 1.65
     )
-    assert payload is not None
     assert payload.get("requested_set_control_id") == COLOR_PIPELINE_SCALE_CONTROL_ID
     assert payload.get("set_value_consumed") is True
-    changed_diff = _mean_abs_diff(baseline_pixels, edited_pixels)
-    assert changed_diff > 0.06, (
-        "No-mouse set-value automation for the Color Pipeline Source Scale control should visibly change the published runtime frame; "
-        f"diff={changed_diff:.3f}"
+    baseline_hash = _require_rendered_frame_hash(baseline_payload)
+    edited_hash = _require_rendered_frame_hash(payload)
+    assert edited_hash != baseline_hash, (
+        "No-mouse set-value automation for the Color Pipeline Source Scale control should change the published rendered frame; "
+        f"baseline_hash={baseline_hash} edited_hash={edited_hash}"
     )
 
 

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "top_down_architecture_repair",
+  "feature_id": "top_down_architecture_repair",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/top_down_architecture_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/top_down_architecture_repair.contract.json",
+    "docs/notes/top_down_architecture_repair_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "tools/viewer_host_architecture_audit.py",
+    "tests/test_viewer_host_architecture_audit.py",
+    "tests/test_fractal_runtime_explaino_escape_variants.py",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "ui_app/src/main.cpp",
+    "ui_app/src/viewer_ui_automation_report.cpp",
+    "ui_app/src/viewer_ui_automation_report.h",
+    "ui_app/tests/test_viewer_ui_automation_report.cpp"
+  ],
+  "required_operator_inputs": [
+    "extract a real automation/report seam from main.cpp instead of only documenting the architecture problem",
+    "add a repo-local architecture audit and ratchet so god-file growth, missing structural-analysis setup, and mainline CppDepend readiness are visible",
+    "use mainline CppDepend/NDepend-style tooling only as read-only input or inspiration; do not mutate C:\\code\\salticid-cuda",
+    "preserve Explaino, Color Pipeline, no-mouse harness, and smooth-escape behavior while changing shared viewer shell code",
+    "close with focused native/runtime proof, hostile audit, checkpoint, receipts, push, clean tree, and stale-plan cleanup"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the architecture is fully fixed after one extraction",
+    "edit C:\\code\\salticid-cuda from this repo slice",
+    "replace the renderer, redesign Color Pipeline, or rewrite the fractal family system in Phase 1",
+    "remove no-mouse runtime proof or fall back to OS mouse automation",
+    "rebreak Explaino selector/control behavior, Color Pipeline live behavior, or smooth-escape performance routing",
+    "leave the slice without a checkpoint, receipts, push, clean tree, or non-stale phased plan"
+  ],
+  "required_defaults": {
+    "mainline_repo_read_only": "required",
+    "architecture_audit_ratchet": "required",
+    "automation_report_extraction": "required",
+    "viewer_behavior_preserved": "required",
+    "hostile_audit": "required"
+  },
+  "forbidden_defaults": {
+    "mainline_repo_mutation": "forbidden",
+    "prose_only_architecture_fix": "forbidden",
+    "physical_mouse_runtime_test": "forbidden",
+    "broad_renderer_rewrite": "forbidden",
+    "stale_plan_closeout": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/top_down_architecture_repair.contract.json --out-json artifacts/validation/top_down_architecture_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/top_down_architecture_repair_PHASED_PLAN.md --out-json artifacts/validation/top_down_architecture_repair_hostile_audit.json"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "top_down_architecture_repair_contract_schema_valid",
+      "description": "The top-down architecture repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/top_down_architecture_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "top_down_architecture_repair_plan_sync_ok",
+      "description": "The top-down architecture repair phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "top_down_architecture_repair_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/top_down_architecture_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

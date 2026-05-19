@@ -136,3 +136,5 @@
 - `ck:21379132` 2026-05-18 21:45 UTC | score 97 — Checkpoint commit: Explaino-all standalone balance-void axis effect repair is green on full native, runtime publish, no-mouse published-runtime proof, all-seven smooth-escape timing, contract validation, and hostile audit.
 - `ck:2a8b7358` 2026-05-18 22:01 UTC — session-start | branch=master | head=11cf1e5 | status=dirty | profile=checkpoint | intent=recent Explaino harness perf registry hardening
 - `ck:2a8b7358` 2026-05-19 00:17 UTC | score 97 — Closed recent Explaino harness/perf/registry hardening: schema no-mouse set-value, renderer-owned smooth-escape proof, registry/device parity, JSON report escaping, code-quality baseline, Color Pipeline guards.
+- `ck:3a8e24fd` 2026-05-19 00:56 UTC — session-start | branch=master | head=b6690d7 | status=dirty | profile=checkpoint | intent=top-down architecture repair foundation
+- `ck:3a8e24fd` 2026-05-19 02:06 UTC | score 97 — Closed Phase 1 top-down architecture repair: extracted viewer UI automation report seam, added architecture ratchet, replaced blank-window slider proof with in-process rendered-frame hashes, preserved Explaino and Color Pipeline focused rails.

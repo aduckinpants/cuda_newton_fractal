@@ -64,6 +64,7 @@
 #include "viewer_render_pacing.h"
 #include "viewer_shutdown.h"
 #include "viewer_sweep.h"
+#include "viewer_ui_automation_report.h"
 #include "viewport_interaction.h"
 #include "view_hp_sync.h"
 
@@ -121,14 +122,6 @@ static std::string JoinPath(const std::string& a, const char* b) {
 static std::string HeadlessDiagnosticsErrorPath(const std::string& exeDir, const char* fileName) {
     return JoinPath(JoinPath(exeDir, "diagnostics\\last"), fileName);
 }
-
-struct ViewerUiAutomationRect {
-    std::string control_id;
-    int client_left = 0;
-    int client_top = 0;
-    int client_right = 0;
-    int client_bottom = 0;
-};
 
 static void NoteViewerUiAutomationRect(void* userData, const char* controlId) {
     if (!userData || !controlId || controlId[0] == '\0') {
@@ -1313,228 +1306,6 @@ static void PresentFrame() {
     g_pSwapChain->Present(1, 0);
 }
 
-static std::string JsonEscapeAutomationReportString(const std::string& s) {
-    std::string out;
-    out.reserve(s.size() + 8);
-    for (char c : s) {
-        switch (c) {
-        case '\\': out += "\\\\"; break;
-        case '"': out += "\\\""; break;
-        case '\n': out += "\\n"; break;
-        case '\r': out += "\\r"; break;
-        case '\t': out += "\\t"; break;
-        default:
-            if (static_cast<unsigned char>(c) < 0x20) {
-                constexpr char kHex[] = "0123456789abcdef";
-                const unsigned char value = static_cast<unsigned char>(c);
-                out += "\\u00";
-                out += kHex[(value >> 4) & 0x0f];
-                out += kHex[value & 0x0f];
-            } else {
-                out += c;
-            }
-            break;
-        }
-    }
-    return out;
-}
-
-static void WriteAutomationReportString(std::ofstream& out, const std::string& value) {
-    out << '"' << JsonEscapeAutomationReportString(value) << '"';
-}
-
-static bool ViewerUiAutomationControlIdVisible(
-    const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
-    const ColorPipelineWindowState& colorPipelineWindow,
-    const std::string& controlId) {
-    for (const ViewerUiAutomationRect& rect : viewerUiAutomationRects) {
-        if (rect.control_id == controlId) {
-            return true;
-        }
-    }
-    for (const ColorPipelineUiAutomationRect& rect : colorPipelineWindow.ui_automation_rects) {
-        if (rect.control_id == controlId) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static void FailClosedPendingUiAutomationSetValue(
-    const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
-    ColorPipelineWindowState& colorPipelineWindow) {
-    if (!colorPipelineWindow.ui_automation_set_pending ||
-        colorPipelineWindow.ui_automation_set_consumed ||
-        !colorPipelineWindow.ui_automation_set_error.empty() ||
-        colorPipelineWindow.ui_automation_set_control_id.empty()) {
-        return;
-    }
-
-    const std::string& controlId = colorPipelineWindow.ui_automation_set_control_id;
-    if (ViewerUiAutomationControlIdVisible(viewerUiAutomationRects, colorPipelineWindow, controlId)) {
-        colorPipelineWindow.ui_automation_set_error = std::string("set-value automation did not support visible control: ") + controlId;
-        return;
-    }
-
-    const bool wantsColorPipeline = controlId.rfind("color_pipeline.", 0) == 0;
-    const bool colorPipelineReady = colorPipelineWindow.open &&
-        colorPipelineWindow.initialized &&
-        !colorPipelineWindow.ui_automation_rects.empty();
-    if (!wantsColorPipeline || colorPipelineReady) {
-        colorPipelineWindow.ui_automation_set_error = std::string("requested set-value control is not visible or unsupported: ") + controlId;
-    }
-}
-
-static void WriteColorPipelineUiAutomationReport(
-    const std::string& reportPath,
-    HWND hwnd,
-    const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
-    const ColorPipelineWindowState& colorPipelineWindow,
-    const ViewState& view) {
-    if (reportPath.empty() || !hwnd) {
-        return;
-    }
-
-    std::error_code ignoredError;
-    const std::filesystem::path finalPath(reportPath);
-    if (finalPath.has_parent_path()) {
-        std::filesystem::create_directories(finalPath.parent_path(), ignoredError);
-    }
-
-    POINT clientOrigin{0, 0};
-    if (!ClientToScreen(hwnd, &clientOrigin)) {
-        return;
-    }
-
-    std::filesystem::path tempPath = finalPath;
-    tempPath += ".tmp";
-    std::ofstream out(tempPath, std::ios::binary | std::ios::trunc);
-    if (!out) {
-        return;
-    }
-
-    out << "{\n";
-    out << "  \"window_open\": " << (colorPipelineWindow.open ? "true" : "false") << ",\n";
-    out << "  \"initialized\": " << (colorPipelineWindow.initialized ? "true" : "false") << ",\n";
-    out << "  \"force_open_for_automation\": " << (colorPipelineWindow.force_open_for_automation ? "true" : "false") << ",\n";
-    const char* currentFractalTypeId = enum_id_utils::LookupEnumId(view.fractal_type, enum_id_utils::kFractalTypeIds);
-    out << "  \"current_fractal_type\": ";
-    WriteAutomationReportString(out, currentFractalTypeId ? currentFractalTypeId : "");
-    out << ",\n";
-    if (colorPipelineWindow.ui_automation_click_control_id.empty()) {
-        out << "  \"requested_click_control_id\": null,\n";
-    } else {
-        out << "  \"requested_click_control_id\": ";
-        WriteAutomationReportString(out, colorPipelineWindow.ui_automation_click_control_id);
-        out << ",\n";
-    }
-    out << "  \"click_consumed\": " << (colorPipelineWindow.ui_automation_click_consumed ? "true" : "false") << ",\n";
-    if (colorPipelineWindow.ui_automation_set_control_id.empty()) {
-        out << "  \"requested_set_control_id\": null,\n";
-    } else {
-        out << "  \"requested_set_control_id\": ";
-        WriteAutomationReportString(out, colorPipelineWindow.ui_automation_set_control_id);
-        out << ",\n";
-    }
-    out << "  \"requested_set_value\": " << std::setprecision(12) << colorPipelineWindow.ui_automation_set_control_value << ",\n";
-    out << "  \"set_value_consumed\": " << (colorPipelineWindow.ui_automation_set_consumed ? "true" : "false") << ",\n";
-    if (colorPipelineWindow.ui_automation_set_error.empty()) {
-        out << "  \"set_value_error\": null,\n";
-    } else {
-        out << "  \"set_value_error\": ";
-        WriteAutomationReportString(out, colorPipelineWindow.ui_automation_set_error);
-        out << ",\n";
-    }
-    out << "  \"lane_rows\": [";
-    bool firstLaneRow = true;
-    for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
-        for (const ColorPipelineRowState& row : lane.rows) {
-            if (!firstLaneRow) {
-                out << ',';
-            }
-            firstLaneRow = false;
-            out << "\n    ";
-            WriteAutomationReportString(out, lane.lane_id + std::string(":") + row.function_id);
-        }
-    }
-    if (!firstLaneRow) {
-        out << '\n';
-    }
-    out << "  ],\n";
-    out << "  \"rows\": [";
-    bool firstRowState = true;
-    for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {
-        for (const ColorPipelineRowState& row : lane.rows) {
-            if (!firstRowState) {
-                out << ",";
-            }
-            firstRowState = false;
-            out << "\n    {\"lane_id\": ";
-            WriteAutomationReportString(out, lane.lane_id);
-            out << ", \"ui_row_id\": " << row.ui_row_id << ", \"function_id\": ";
-            WriteAutomationReportString(out, row.function_id);
-            out << ", \"enabled\": " << (row.enabled ? "true" : "false") << "}";
-        }
-    }
-    if (!firstRowState) {
-        out << '\n';
-    }
-    out << "  ],\n";
-    out << "  \"validation_messages\": [";
-    for (std::size_t index = 0; index < colorPipelineWindow.validation_messages.size(); ++index) {
-        if (index > 0) {
-            out << ',';
-        }
-        out << "\n    ";
-        WriteAutomationReportString(out, colorPipelineWindow.validation_messages[index]);
-    }
-    if (!colorPipelineWindow.validation_messages.empty()) {
-        out << '\n';
-    }
-    out << "  ],\n";
-    out << "  \"controls\": [";
-    bool firstControl = true;
-    for (const ViewerUiAutomationRect& rect : viewerUiAutomationRects) {
-        if (!firstControl) {
-            out << ',';
-        }
-        firstControl = false;
-        out << "\n    {\"control_id\": ";
-        WriteAutomationReportString(out, rect.control_id);
-        out << ", \"screen_rect\": ["
-            << (clientOrigin.x + rect.client_left) << ", "
-            << (clientOrigin.y + rect.client_top) << ", "
-            << (clientOrigin.x + rect.client_right) << ", "
-            << (clientOrigin.y + rect.client_bottom) << "]}";
-    }
-    for (const ColorPipelineUiAutomationRect& rect : colorPipelineWindow.ui_automation_rects) {
-        if (!firstControl) {
-            out << ',';
-        }
-        firstControl = false;
-        out << "\n    {\"control_id\": ";
-        WriteAutomationReportString(out, rect.control_id);
-        out << ", \"screen_rect\": ["
-            << (clientOrigin.x + rect.client_left) << ", "
-            << (clientOrigin.y + rect.client_top) << ", "
-            << (clientOrigin.x + rect.client_right) << ", "
-            << (clientOrigin.y + rect.client_bottom) << "]}";
-    }
-    out << "\n  ]\n}\n";
-    out.close();
-    if (!out) {
-        std::filesystem::remove(tempPath, ignoredError);
-        return;
-    }
-
-    std::filesystem::remove(finalPath, ignoredError);
-    std::filesystem::rename(tempPath, finalPath, ignoredError);
-    if (ignoredError) {
-        ignoredError.clear();
-        std::filesystem::copy_file(tempPath, finalPath, std::filesystem::copy_options::overwrite_existing, ignoredError);
-        std::filesystem::remove(tempPath, ignoredError);
-    }
-}
 static int RunSampleSessionMode(const ViewerCliArgs& cli, const std::string& exePath) {
     if (cli.have_sample_session_pipe) {
         return RunNamedPipeSessionMode(cli.sample_session_pipe_name, exePath);
@@ -2612,11 +2383,6 @@ static void RunViewerFrame(
         PrimeRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
         actions.interactionChanged = true;
     }
-    RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
-    FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);
-    if (cli.have_ui_automation_report_json) {
-        WriteColorPipelineUiAutomationReport(cli.ui_automation_report_json_path, hwnd, viewerUiAutomationRects, colorPipelineWindow, view);
-    }
     if (!ProcessRuntimeWalkViewerImportPerFrame(
             hwnd,
             exeDir,
@@ -2663,6 +2429,9 @@ static void RunViewerFrame(
     } else {
         ApplyArrowKeySeedScrub(io, view, params, seedScrubAccel, dirty, actions.interactionChanged);
     }
+
+    RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
+    FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);
 
     if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
         dirty = true;
@@ -2731,6 +2500,16 @@ static void RunViewerFrame(
 
     ApplyAutoDivePerFrame(view, &dirty);
     PresentFrame();
+    if (cli.have_ui_automation_report_json) {
+        const ViewerUiAutomationFrameProbe frameProbe = BuildViewerUiAutomationFrameProbe(rgba, renderedFrame);
+        WriteColorPipelineUiAutomationReport(
+            cli.ui_automation_report_json_path,
+            hwnd,
+            viewerUiAutomationRects,
+            colorPipelineWindow,
+            view,
+            frameProbe);
+    }
 }
 
 static void CaptureLoadedStateFractalTypeIfAny(const std::string& loadedStatePath, const ViewState& view, FractalType& outFractalType) {
