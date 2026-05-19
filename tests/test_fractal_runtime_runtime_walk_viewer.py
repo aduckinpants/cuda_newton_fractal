@@ -516,6 +516,38 @@ def test_julia_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) 
         )
 
 
+def test_nova_poly_c4_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "nova", "--width", "320", "--height", "240"
+    )
+    state = neutral_capture["state"]
+    params = state["params"]
+    assert isinstance(params, dict)
+    params["poly_kind"] = 2
+    params["poly_coeffs"] = [-1.0, 0.0, 0.0, 1.0, 0.0]
+    params["coloring_mode"] = "smooth_escape"
+
+    state_path = _write_state_bundle(tmp_path / "nova_poly_c4_neutral", state)
+    control_id = "fractal_control.poly_c4.primary"
+    baseline_payload = _capture_controls_report_with_optional_set_value(
+        exe_path, state_path, tmp_path / "nova_poly_c4_baseline_report.json", control_id, None
+    )
+    payload = _capture_controls_report_with_optional_set_value(
+        exe_path, state_path, tmp_path / "nova_poly_c4_edited_report.json", control_id, 0.65
+    )
+    assert payload.get("current_fractal_type") == "nova"
+    baseline_hash = _require_rendered_frame_hash(baseline_payload)
+    edited_hash = _require_rendered_frame_hash(payload)
+    assert edited_hash != baseline_hash, (
+        "No-mouse set-value automation for Nova poly_c4 should change the rendered frame; "
+        f"baseline_hash={baseline_hash} edited_hash={edited_hash}"
+    )
+
+
 
 def test_runtime_walk_viewer_no_mouse_schema_int_set_value_consumes_visible_control(tmp_path: Path) -> None:
     if sys.platform != "win32":

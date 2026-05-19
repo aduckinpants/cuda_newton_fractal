@@ -2,12 +2,16 @@
 
 #include "../src/color_pipeline_core.h"
 #include "../src/color_pipeline_window.h"
+#include "../src/enum_id_utils.h"
 #include "../src/imgui_stack_editor.h"
 
 #include "../src/explaino_seed.h"
 #include "../third_party/imgui/imgui.h"
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
 namespace {
 
@@ -111,6 +115,211 @@ void SyncTestViewUiFromHp(ViewState& view) {
     view.zoom = static_cast<float>(zoom);
     view.center.x = static_cast<float>(view.center_hp_x);
     view.center.y = static_cast<float>(view.center_hp_y);
+}
+
+std::filesystem::path FindRepoRoot() {
+    std::filesystem::path cur = std::filesystem::current_path();
+    for (int index = 0; index < 8; ++index) {
+        if (std::filesystem::exists(cur / "ui" / "fractal_binding_surface_v1.ui_schema.json") &&
+            std::filesystem::exists(cur / "ui_app" / "src" / "schema_binding.cpp")) {
+            return cur;
+        }
+        if (!cur.has_parent_path() || cur.parent_path() == cur) {
+            break;
+        }
+        cur = cur.parent_path();
+    }
+    return {};
+}
+
+bool ReadTextFile(const std::filesystem::path& path, std::string* outText) {
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file) {
+        return false;
+    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    *outText = ss.str();
+    return true;
+}
+
+bool LoadCurrentSchemaJson(json_min::Value* outRoot) {
+    const std::filesystem::path root = FindRepoRoot();
+    if (root.empty()) {
+        std::cerr << "Could not locate repo root for schema-binding visible-control matrix\n";
+        return false;
+    }
+    std::string text;
+    const std::filesystem::path schemaPath = root / "ui" / "fractal_binding_surface_v1.ui_schema.json";
+    if (!ReadTextFile(schemaPath, &text)) {
+        std::cerr << "Could not read schema for schema-binding visible-control matrix: " << schemaPath.string() << "\n";
+        return false;
+    }
+    json_min::ParseResult parsed = json_min::Parse(text);
+    if (!parsed.error.empty()) {
+        std::cerr << "Could not parse schema for schema-binding visible-control matrix: " << parsed.error << "\n";
+        return false;
+    }
+    *outRoot = parsed.value;
+    return true;
+}
+
+bool GetJsonStringField(const json_min::Value& object, const char* key, std::string* outValue) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_string()) {
+        return false;
+    }
+    if (outValue) {
+        *outValue = value->as_string();
+    }
+    return true;
+}
+
+const json_min::Value* FindSchemaControlById(const json_min::Value& root, const char* controlId) {
+    const json_min::Value* panels = root.get("panels");
+    if (!panels || !panels->is_array()) {
+        return nullptr;
+    }
+    for (const json_min::Value& panel : panels->as_array()) {
+        if (!panel.is_object()) {
+            continue;
+        }
+        const json_min::Value* controls = panel.get("controls");
+        if (!controls || !controls->is_array()) {
+            continue;
+        }
+        for (const json_min::Value& control : controls->as_array()) {
+            if (!control.is_object()) {
+                continue;
+            }
+            std::string id;
+            if (GetJsonStringField(control, "id", &id) && id == controlId) {
+                return &control;
+            }
+        }
+    }
+    return nullptr;
+}
+
+bool ReadControlBindingAndType(
+    const json_min::Value& control,
+    std::string* outBindingPath,
+    std::string* outValueType) {
+    if (!GetJsonStringField(control, "value_type", outValueType)) {
+        return false;
+    }
+    const json_min::Value* binding = control.get("binding");
+    if (!binding || !binding->is_object()) {
+        return false;
+    }
+    std::string bindingKind;
+    if (!GetJsonStringField(*binding, "kind", &bindingKind) || bindingKind != "param") {
+        return false;
+    }
+    return GetJsonStringField(*binding, "path", outBindingPath);
+}
+
+bool IsControlVisibleForFractal(const json_min::Value& control, FractalType fractalType) {
+    const json_min::Value* visibleIf = control.get("visible_if");
+    if (!visibleIf || !visibleIf->is_object()) {
+        return true;
+    }
+    UISchemaPredicate predicate{};
+    if (!GetJsonStringField(*visibleIf, "op", &predicate.op) ||
+        !GetJsonStringField(*visibleIf, "path", &predicate.path) ||
+        !GetJsonStringField(*visibleIf, "value", &predicate.value)) {
+        return false;
+    }
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    view.fractal_type = fractalType;
+    BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+    return ctx.EvalVisibleIf(predicate);
+}
+
+bool ControlBindingResolves(const std::string& valueType, const std::string& bindingPath, BindingContext& ctx) {
+    if (valueType == "float") {
+        float* value = nullptr;
+        return ctx.BindFloat(bindingPath, &value) && value;
+    }
+    if (valueType == "double") {
+        double* value = nullptr;
+        return ctx.BindDouble(bindingPath, &value) && value;
+    }
+    if (valueType == "int") {
+        int* value = nullptr;
+        return ctx.BindInt(bindingPath, &value) && value;
+    }
+    if (valueType == "bool") {
+        bool* value = nullptr;
+        return ctx.BindBool(bindingPath, &value) && value;
+    }
+    if (valueType == "enum") {
+        return !ctx.GetEnumId(bindingPath).empty();
+    }
+    return false;
+}
+
+bool ValidateVisibleControlMatrix() {
+    json_min::Value schemaRoot;
+    if (!LoadCurrentSchemaJson(&schemaRoot)) {
+        return false;
+    }
+
+    struct MatrixCase {
+        const char* control_id;
+        FractalType fractal_type;
+        const char* binding_path;
+    };
+
+    const MatrixCase cases[] = {
+        {"julia_c_real", FractalType::julia, "fractal.params.julia_c_real"},
+        {"julia_c_imag", FractalType::julia, "fractal.params.julia_c_imag"},
+        {"poly_c0", FractalType::nova, "fractal.params.poly_coeffs.0"},
+        {"poly_c1", FractalType::nova, "fractal.params.poly_coeffs.1"},
+        {"poly_c2", FractalType::nova, "fractal.params.poly_coeffs.2"},
+        {"poly_c3", FractalType::nova, "fractal.params.poly_coeffs.3"},
+        {"poly_c4", FractalType::nova, "fractal.params.poly_coeffs.4"},
+        {"magnet_seed_real", FractalType::magnet, "fractal.params.magnet_seed_real"},
+        {"magnet_seed_imag", FractalType::magnet, "fractal.params.magnet_seed_imag"},
+        {"magnet_relaxation", FractalType::magnet, "fractal.params.magnet_relaxation"},
+        {"magnet_bailout", FractalType::magnet, "fractal.params.magnet_bailout"},
+    };
+
+    for (const MatrixCase& testCase : cases) {
+        const json_min::Value* control = FindSchemaControlById(schemaRoot, testCase.control_id);
+        if (!control) {
+            std::cerr << "Visible-control matrix missing control " << testCase.control_id << "\n";
+            return false;
+        }
+        std::string bindingPath;
+        std::string valueType;
+        if (!ReadControlBindingAndType(*control, &bindingPath, &valueType) || bindingPath != testCase.binding_path) {
+            std::cerr << "Visible-control matrix found wrong binding for " << testCase.control_id << "\n";
+            return false;
+        }
+        if (!IsControlVisibleForFractal(*control, testCase.fractal_type)) {
+            const char* fractalId = FractalTypeId(testCase.fractal_type);
+            std::cerr << "Visible-control matrix hid " << testCase.control_id
+                      << " on owner fractal " << (fractalId ? fractalId : "<unknown>") << "\n";
+            return false;
+        }
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        LensSettings lens{};
+        view.fractal_type = testCase.fractal_type;
+        BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+        if (!ControlBindingResolves(valueType, bindingPath, ctx)) {
+            std::cerr << "Visible-control matrix could not resolve binding for " << testCase.control_id << "\n";
+            return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace
@@ -881,6 +1090,10 @@ int main() {
             std::cerr << "Invalid visible_if numeric values should fail closed\n";
             return 1;
         }
+    }
+
+    if (!ValidateVisibleControlMatrix()) {
+        return 1;
     }
 
     {

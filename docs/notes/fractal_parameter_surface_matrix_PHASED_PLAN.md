@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 1 - standalone Julia constant-control repair is implemented and validated; Phase 2 Nova `poly_c4` is the next unresolved slice.
+Phase 2/3 batch is closed on this branch: standalone Nova `poly_c4` is visible and live, and a high-confidence schema-driven visible-control matrix seed now guards Julia, Nova, and Magnet owner controls. Phase 4/5/6 campaign work remains open.
 
 ## Explicit User Asks
 
@@ -11,13 +11,14 @@ Phase 1 - standalone Julia constant-control repair is implemented and validated;
 - [x] Add RED native/runtime coverage before the Julia repair and prove the no-mouse visible-control path after the repair.
 - [x] Keep this as cleanup and polish, not new feature expansion or a renderer rewrite.
 - [x] State unfinished work explicitly at the stop point.
+- [x] Batch the next repair work so one expensive closeout covers more than one tiny scalar.
 
 ## Phase Checklist
 
 - [x] Phase 0 - bootstrap, branch from the current repair baseline, and open this plan/contract.
 - [x] Phase 1 - standalone Julia constant controls: add RED native/runtime coverage, implement `julia_c_real` and `julia_c_imag`, prove no-mouse rendered-frame sensitivity, and preserve existing lanes.
-- [ ] Phase 2 - standalone Nova `poly_c4` policy repair: add RED coverage for quartic/custom authority, expose or explicitly block `poly_c4`, and prove runtime sensitivity.
-- [ ] Phase 3 - generated all-fractal visible-control matrix: enumerate schema-visible numeric controls per fractal, classify fixed-formula lanes, and produce no-mouse set-value REDs for missing proof rows.
+- [x] Phase 2 - standalone Nova `poly_c4` policy repair: add RED coverage for quartic/custom authority, expose `poly_c4`, and prove runtime sensitivity.
+- [x] Phase 3 - schema-driven visible-control matrix seed rail: read the checked-in schema, evaluate owner visibility through `BindingContext`, and fail when the high-confidence Julia/Nova/Magnet owner controls are absent or unbound.
 - [ ] Phase 4 - dead-slider repairs from the matrix, split by bounded family groups with one-at-a-time proof.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
@@ -44,6 +45,20 @@ Phase 1 - standalone Julia constant-control repair is implemented and validated;
 - Published-runtime Julia no-mouse proof green: `artifacts/pytest/fractal_parameter_surface_matrix_julia_controls.junit.xml`.
 - Published-runtime guardrails green: `artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml`.
 - `git diff --check` passed with line-ending warnings only.
+- Phase 2/3 batch starting head: `ffe80b4`.
+- Phase 2 required RED: standalone `nova` must fail because `poly_c4` is not visible for the shipped quartic/custom Nova authority.
+- Phase 3 required RED: a schema-driven matrix must fail if a high-confidence expected fractal-owned control is absent or unbound.
+- Phase 2 RED proof failed as expected before the schema repair: a live JSON assertion reported `poly_c4` visible only on `newton,halley`.
+- Phase 2 repair: `ui/fractal_binding_surface_v1.ui_schema.json` now exposes `poly_c4` on `newton,nova,halley` while preserving the same `fractal.params.poly_coeffs.4` binding.
+- Phase 3 repair: `test_schema_binding` now loads the checked-in schema JSON and evaluates Julia, Nova, and Magnet owner-control visibility through `BindingContext`.
+- Focused schema/color rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase2_3_focused_schema_binding.log 2>&1`.
+- Focused renderer rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd test_fractal_renderer > artifacts\logs\phase2_3_focused_fractal_renderer.log 2>&1`.
+- Runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase2_3_runtime_publish.log 2>&1`.
+- Published-runtime Nova plus Julia no-mouse proof green: `artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml`.
+- Published-runtime required guardrails green: `artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml`.
+- Published-runtime Color Pipeline guardrail green: `artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml`.
+- Full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase2_3_full_native.log 2>&1`.
+- Code-quality baseline green: `artifacts/logs/phase2_3_code_quality_audit.json`.
 
 ## Hostile Audit
 
@@ -57,12 +72,18 @@ Phase 1 - standalone Julia constant-control repair is implemented and validated;
 - [x] Pass 3 - inspected no-mouse harness proof and confirmed it compares renderer-owned frame hashes, not just chrome/state changes.
 - [x] Pass 4 - confirmed unfinished phases remain explicit and are not implied closed by the Julia repair.
 - [x] Clean re-read of the repaired state found no additional real defect in the Julia control path.
+- [x] Phase 2/3 pass 1 - inspected Nova `poly_c4` diff and confirmed it only extends the existing polynomial coefficient control to standalone `nova`; Newton and Halley visibility remain intact.
+- [x] Phase 2/3 pass 2 - inspected the matrix rail and confirmed it reads the checked-in schema JSON and evaluates visibility through `BindingContext`; it is a high-confidence seed matrix, not the full all-fractal enumeration.
+- [x] Phase 2/3 pass 3 - inspected no-mouse runtime proof and confirmed it compares renderer-owned frame hashes for Nova `poly_c4`.
+- [x] Phase 2/3 clean re-read - Julia controls, Explaino registry axes, Color Pipeline set-value automation, and animation applicability guardrails remain covered by focused or full validation.
 
 ## Audit Findings
 
 - [x] Real Phase 1 finding repaired: standalone Julia constant controls were missing from the current user surface.
 - [x] Audit repair: perturbation cache key now uses the user Julia constant only when the active fractal is standalone `julia`, avoiding unrelated Mandelbrot cache churn.
 - [x] Clean pass: no additional real issue found in Color Pipeline, Explaino-all registry, or animation-applicability guardrails after the repair.
+- [x] Phase 2 finding repaired: standalone Nova quartic/custom authority hid `poly_c4`; the control is now visible on Nova and proven to alter rendered pixels.
+- [x] Phase 3 finding repaired: the native binding rail lacked a schema-driven visible-control matrix seed; it now guards the high-confidence Julia/Nova/Magnet owner-control set.
 
 ## Boundaries
 
@@ -70,6 +91,7 @@ In scope:
 - one bounded first repair for standalone Julia constant controls
 - test harness additions needed to prove that first repair
 - plan entries for the later matrix/Nova/dead-slider phases
+- Phase 2/3 batch: standalone Nova `poly_c4` repair plus schema-driven visible-control matrix rail
 
 Out of scope for Phase 1:
 - implementing Nova `poly_c4`
@@ -79,10 +101,14 @@ Out of scope for Phase 1:
 - new fractal families or new animation features
 - broad renderer or Color Pipeline redesign
 
-## Remaining Work After Phase 1
+Out of scope for Phase 2/3 batch:
+- full all-fractal dead-slider repair
+- enum/combo harness support
+- Explaino common-control matrix expansion
+- new fractal families or renderer redesign
 
-- Phase 2: Nova `poly_c4` policy repair.
-- Phase 3: generated all-fractal visible-control matrix.
+## Remaining Work After Phase 2/3
+
 - Phase 4: dead-slider repairs from that matrix.
 - Phase 5: enum/combo harness support and combo rows.
 - Phase 6: Explaino common-control matrix expansion.

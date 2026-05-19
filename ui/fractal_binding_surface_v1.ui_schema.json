@@ -647,7 +647,7 @@
           "value_type": "float",
           "ui_min": -10.0, "ui_max": 10.0, "step": 0.01, "default": 0.0,
           "binding": { "kind": "param", "path": "fractal.params.poly_coeffs.4" },
-          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "newton,halley" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "newton,nova,halley" }
         },
         {
           "id": "explaino_seed",

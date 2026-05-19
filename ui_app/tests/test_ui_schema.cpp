@@ -694,6 +694,7 @@ int main() {
         bool foundParamAnimRateSoftMin = false;
         bool foundDiveSpeedUiCap = false;
         bool foundPolyCoeffUiRange = false;
+        bool foundNovaPolyC4Visible = false;
         bool foundExplainoPhaseUiRange = false;
         bool foundExplainoPhaseStrengthUiRange = false;
         bool foundExplainoPhaseVisibleForDual = false;
@@ -900,6 +901,13 @@ int main() {
                     ctrl.has_ui_min && ctrl.ui_min == -10.0 && ctrl.has_ui_max && ctrl.ui_max == 10.0 &&
                     !ctrl.has_min && !ctrl.has_max) {
                     foundPolyCoeffUiRange = true;
+                }
+                if (ctrl.id == "poly_c4" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.poly_coeffs.4" &&
+                    VisibleIfIncludesFractalType(ctrl, "newton") &&
+                    VisibleIfIncludesFractalType(ctrl, "nova") &&
+                    VisibleIfIncludesFractalType(ctrl, "halley")) {
+                    foundNovaPolyC4Visible = true;
                 }
                 if (ctrl.id == "explaino_phase" && ctrl.has_ui_min && ctrl.ui_min == -6.283185307179586 &&
                     ctrl.has_ui_max && ctrl.ui_max == 6.283185307179586 && !ctrl.has_min && !ctrl.has_max) {
@@ -1233,6 +1241,10 @@ int main() {
         }
         if (!foundJuliaCReal || !foundJuliaCImag) {
             std::cerr << "Did not find standalone Julia constant controls in schema\n";
+            return 1;
+        }
+        if (!foundNovaPolyC4Visible) {
+            std::cerr << "Did not find Nova-visible poly_c4 owner control in schema\n";
             return 1;
         }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||

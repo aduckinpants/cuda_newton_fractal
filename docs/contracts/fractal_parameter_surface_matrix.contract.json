@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contract_id": "fractal_parameter_surface_matrix",
-  "feature_id": "fractal_parameter_surface_matrix_phase1_julia_controls",
+  "feature_id": "fractal_parameter_surface_matrix_phase2_3_nova_poly_c4_matrix",
   "workflow_type": "viewer_first",
   "plan_path": "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -46,7 +46,7 @@
   ],
   "required_defaults": {
     "branch": "codex/fractal-parameter-surface-matrix",
-    "phase": "phase1_julia_constant_controls",
+    "phase": "phase2_3_nova_poly_c4_plus_matrix",
     "hostile_audit": "required",
     "no_physical_mouse_tests": true
   },
@@ -60,8 +60,9 @@
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
-    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"julia_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_julia_controls.junit.xml",
-    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"explaino_registry_controls_no_mouse_set_value_change_live_viewport or no_mouse_schema_int_set_value or unknown_set_value_fails_closed\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml"
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"nova_poly_c4_no_mouse_set_value_change_live_viewport or julia_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"explaino_registry_controls_no_mouse_set_value_change_live_viewport or no_mouse_schema_int_set_value or unknown_set_value_fails_closed\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"runtime_walk_viewer_no_mouse_color_pipeline_set_value_changes_frame\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml"
   ],
   "required_acceptance_assertions": [
     {
@@ -89,11 +90,11 @@
       "equals": true
     },
     {
-      "assertion_id": "fractal_parameter_surface_matrix_julia_runtime_pytest",
-      "description": "Published-runtime no-mouse Julia controls proof passes",
+      "assertion_id": "fractal_parameter_surface_matrix_nova_poly_c4_runtime_pytest",
+      "description": "Published-runtime no-mouse Nova poly_c4 proof passes",
       "evidence_kind": "runtime_junit_case",
-      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_julia_controls.junit.xml",
-      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_julia_controls_no_mouse_set_value_change_live_viewport"
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_nova_poly_c4_no_mouse_set_value_change_live_viewport"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_runtime_guardrails",
@@ -101,6 +102,13 @@
       "evidence_kind": "runtime_junit_case",
       "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml",
       "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_explaino_registry_controls_no_mouse_set_value_change_live_viewport"
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_color_pipeline_guardrail",
+      "description": "Color Pipeline no-mouse set-value guardrail passes",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_runtime_walk_viewer_no_mouse_color_pipeline_set_value_changes_frame"
     }
   ]
 }

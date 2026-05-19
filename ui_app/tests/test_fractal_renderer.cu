@@ -415,6 +415,66 @@ void TestJuliaRenderRespondsToVisibleControls() {
     CheckJuliaControlChangesPixels("Julia render should react to julia_c_imag changes", baselineParams, imagParams);
 }
 
+KernelParams BaseNovaParams() {
+    KernelParams params{};
+    params.max_iter = 180;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.poly_kind = PolyKind::custom;
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 1.0f;
+    params.poly_coeffs[4] = 0.0f;
+    params.nova_alpha = 0.50f;
+    return params;
+}
+
+bool RenderNovaPixels(
+    const KernelParams& params,
+    std::vector<uint32_t>* outPixels,
+    RenderStats* outStats,
+    const char** outError) {
+    ViewState view{};
+    RenderSettings render{};
+    view.fractal_type = FractalType::nova;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    outPixels->assign(64 * 48, 0u);
+    return RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, outStats, outError);
+}
+
+void TestNovaRenderRespondsToPolyC4() {
+    const KernelParams baselineParams = BaseNovaParams();
+    KernelParams changedParams = baselineParams;
+    changedParams.poly_coeffs[4] = 0.65f;
+
+    std::vector<uint32_t> baselinePixels;
+    std::vector<uint32_t> changedPixels;
+    RenderStats baselineStats{};
+    RenderStats changedStats{};
+    const char* baselineError = nullptr;
+    const char* changedError = nullptr;
+
+    const bool baselineOk = RenderNovaPixels(baselineParams, &baselinePixels, &baselineStats, &baselineError);
+    Check(baselineOk, baselineError ? baselineError : "Nova baseline smooth_escape render succeeds");
+    const bool changedOk = RenderNovaPixels(changedParams, &changedPixels, &changedStats, &changedError);
+    Check(changedOk, changedError ? changedError : "Nova changed smooth_escape render succeeds");
+    if (!baselineOk || !changedOk) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(baselinePixels) > 1, "Nova render should emit a non-flat smooth_escape field");
+    Check(baselinePixels != changedPixels, "Nova render should react to poly_c4 changes");
+    CleanupFractalCUDA();
+}
+
 void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
     ViewState view{};
     KernelParams tightParams{};
@@ -472,6 +532,7 @@ int main() {
     TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
     TestMagnetRenderRespondsToVisibleControls();
     TestJuliaRenderRespondsToVisibleControls();
+    TestNovaRenderRespondsToPolyC4();
     TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";
