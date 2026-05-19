@@ -357,6 +357,64 @@ void TestMagnetRenderRespondsToVisibleControls() {
     CheckMagnetControlChangesPixels("Magnet render should react to magnet_bailout changes", baselineParams, bailoutParams);
 }
 
+bool RenderJuliaPixels(
+    const KernelParams& params,
+    std::vector<uint32_t>* outPixels,
+    RenderStats* outStats,
+    const char** outError) {
+    ViewState view{};
+    RenderSettings render{};
+    view.fractal_type = FractalType::julia;
+    view.center_hp_x = 0.0;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    outPixels->assign(64 * 48, 0u);
+    return RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, outStats, outError);
+}
+
+void CheckJuliaControlChangesPixels(const char* label, const KernelParams& baselineParams, KernelParams changedParams) {
+    std::vector<uint32_t> baselinePixels;
+    std::vector<uint32_t> changedPixels;
+    RenderStats baselineStats{};
+    RenderStats changedStats{};
+    const char* baselineError = nullptr;
+    const char* changedError = nullptr;
+
+    const bool baselineOk = RenderJuliaPixels(baselineParams, &baselinePixels, &baselineStats, &baselineError);
+    Check(baselineOk, baselineError ? baselineError : "Julia baseline smooth_escape render succeeds");
+    const bool changedOk = RenderJuliaPixels(changedParams, &changedPixels, &changedStats, &changedError);
+    Check(changedOk, changedError ? changedError : "Julia changed smooth_escape render succeeds");
+    if (!baselineOk || !changedOk) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(baselinePixels) > 1, "Julia render should emit a non-flat smooth_escape field");
+    Check(baselinePixels != changedPixels, label);
+    CleanupFractalCUDA();
+}
+
+void TestJuliaRenderRespondsToVisibleControls() {
+    KernelParams baselineParams{};
+    baselineParams.max_iter = 180;
+    baselineParams.coloring_mode = ColoringMode::smooth_escape;
+    baselineParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    baselineParams.julia_c_real = -0.7f;
+    baselineParams.julia_c_imag = 0.27015f;
+
+    KernelParams realParams = baselineParams;
+    realParams.julia_c_real = 0.285f;
+    CheckJuliaControlChangesPixels("Julia render should react to julia_c_real changes", baselineParams, realParams);
+
+    KernelParams imagParams = baselineParams;
+    imagParams.julia_c_imag = 0.01f;
+    CheckJuliaControlChangesPixels("Julia render should react to julia_c_imag changes", baselineParams, imagParams);
+}
+
 void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
     ViewState view{};
     KernelParams tightParams{};
@@ -413,6 +471,7 @@ int main() {
     TestProjectionAndFlowNonUnitRadiusRenderDoesNotCollapseToThreeColors();
     TestProjectionAndFlowSmoothEscapeRenderKeepsStableClassesVisible();
     TestMagnetRenderRespondsToVisibleControls();
+    TestJuliaRenderRespondsToVisibleControls();
     TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";

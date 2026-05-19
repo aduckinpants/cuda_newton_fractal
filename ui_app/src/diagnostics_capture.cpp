@@ -608,6 +608,8 @@ std::string BuildStateJson(
     js << "    \"nova_alpha\": " << static_cast<double>(params.nova_alpha) << ",\n";
     js << "    \"phoenix_p_real\": " << static_cast<double>(params.phoenix_p_real) << ",\n";
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";
+    js << "    \"julia_c_real\": " << static_cast<double>(params.julia_c_real) << ",\n";
+    js << "    \"julia_c_imag\": " << static_cast<double>(params.julia_c_imag) << ",\n";
     js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
     js << "    \"multibrot_power_float\": " << static_cast<double>(params.multibrot_power_float) << ",\n";
     js << "    \"lambda_real\": " << static_cast<double>(params.lambda_real) << ",\n";

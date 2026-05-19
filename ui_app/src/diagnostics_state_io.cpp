@@ -1915,6 +1915,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double novaAlpha = 0.0;
     double phoenixPReal = 0.0;
     double phoenixPImag = 0.0;
+    double juliaCReal = static_cast<double>(nextParams.julia_c_real);
+    double juliaCImag = static_cast<double>(nextParams.julia_c_imag);
     int multibrotPower = 0;
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
@@ -1965,6 +1967,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetRequiredNumber(*paramsObject, "nova_alpha", &novaAlpha, outError)) return false;
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_real", &phoenixPReal, outError)) return false;
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_imag", &phoenixPImag, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "julia_c_real", &juliaCReal, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "julia_c_imag", &juliaCImag, nullptr, outError)) return false;
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
@@ -2055,6 +2059,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.nova_alpha = static_cast<float>(novaAlpha);
         nextParams.phoenix_p_real = static_cast<float>(phoenixPReal);
         nextParams.phoenix_p_imag = static_cast<float>(phoenixPImag);
+        nextParams.julia_c_real = static_cast<float>(juliaCReal);
+        nextParams.julia_c_imag = static_cast<float>(juliaCImag);
         nextParams.multibrot_power = multibrotPower;
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
         nextParams.lambda_real = static_cast<float>(lambdaReal);

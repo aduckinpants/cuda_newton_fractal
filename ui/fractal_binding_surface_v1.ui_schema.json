@@ -211,6 +211,8 @@
             { "id": "nova_alpha", "label": "Nova Alpha", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "nova,explaino_nova" } },
             { "id": "phoenix_p_real", "label": "Phoenix P (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "phoenix,explaino_phoenix,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension" } },
             { "id": "multibrot_power", "label": "Multibrot Power", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" } },
+            { "id": "julia_c_real", "label": "Julia C (Real)", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" } },
+            { "id": "julia_c_imag", "label": "Julia C (Imag)", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" } },
             { "id": "lambda_real", "label": "Lambda (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "lambda,explaino_lambda" } },
             { "id": "magnet_relaxation", "label": "Magnet Relaxation", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
             { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
@@ -273,6 +275,26 @@
           "binding": { "kind": "param", "path": "fractal.params.mcmullen_preset" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "mcmullen" },
           "help": "Select the (m, n, lambda) preset for the McMullen rational map z^m + lambda/z^n."
+        },
+        {
+          "id": "julia_c_real",
+          "type": "drag_float",
+          "label": "Julia C (Real)",
+          "value_type": "float",
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.001, "default": -0.7,
+          "binding": { "kind": "param", "path": "fractal.params.julia_c_real" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" },
+          "help": "Real part of the Julia constant c in z_{n+1} = z_n^2 + c."
+        },
+        {
+          "id": "julia_c_imag",
+          "type": "drag_float",
+          "label": "Julia C (Imag)",
+          "value_type": "float",
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.001, "default": 0.27015,
+          "binding": { "kind": "param", "path": "fractal.params.julia_c_imag" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" },
+          "help": "Imaginary part of the Julia constant c in z_{n+1} = z_n^2 + c."
         },
         {
           "id": "lambda_real",

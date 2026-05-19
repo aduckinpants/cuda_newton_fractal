@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "contract_id": "fractal_parameter_surface_matrix",
+  "feature_id": "fractal_parameter_surface_matrix_phase1_julia_controls",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_parameter_surface_matrix.contract.json",
+    "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/fractal_types.h",
+    "ui_app/src/fractal_derived_fields.cpp",
+    "ui_app/src/diagnostics_state_io.cpp",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/escape_time_direct_formulas.h",
+    "ui_app/src/perturbation_reference_orbit.h",
+    "ui_app/src/fractal_runtime_validation.h",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/src/diagnostics_capture.cpp",
+    "ui_app/src/runtime_walk_bootstrap.cpp",
+    "ui_app/src/safe_mode_schema.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_escape_time_direct_formulas.cpp",
+    "ui_app/tests/test_fractal_renderer.cu",
+    "ui_app/tests/test_fractal_runtime_validation.cpp",
+    "ui_app/tests/test_perturbation_reference_orbit.cpp",
+    "ui_app/tests/test_safe_mode_schema.cpp",
+    "tests/test_fractal_runtime_runtime_walk_viewer.py"
+  ],
+  "required_operator_inputs": [
+    "repair fractals that do not expose meaningful underlying parameters as user-adjustable controls",
+    "repair or classify sliders that are visible but do not affect output",
+    "add no-mouse UI/UX harness proof before claiming repairs",
+    "keep this cleanup/polish work bounded and explicitly call out unfinished phases"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the full all-fractal parameter surface is fixed after only the Julia phase",
+    "add new fractal families in this cleanup slice",
+    "use physical mouse automation as proof",
+    "silently hide a missing parameter instead of repairing or classifying it",
+    "mutate the Color Pipeline except to preserve existing guardrails"
+  ],
+  "required_defaults": {
+    "branch": "codex/fractal-parameter-surface-matrix",
+    "phase": "phase1_julia_constant_controls",
+    "hostile_audit": "required",
+    "no_physical_mouse_tests": true
+  },
+  "forbidden_defaults": {
+    "feature_expansion": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "color_pipeline_mutation": "forbidden",
+    "claim_all_items_done": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"julia_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_julia_controls.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"explaino_registry_controls_no_mouse_set_value_change_live_viewport or no_mouse_schema_int_set_value or unknown_set_value_fails_closed\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_contract_schema_valid",
+      "description": "The parameter-surface repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_plan_sync_ok",
+      "description": "The active phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_julia_runtime_pytest",
+      "description": "Published-runtime no-mouse Julia controls proof passes",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_julia_controls.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_julia_controls_no_mouse_set_value_change_live_viewport"
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_runtime_guardrails",
+      "description": "Existing no-mouse runtime guardrails pass",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_explaino_registry_controls_no_mouse_set_value_change_live_viewport"
+    }
+  ]
+}

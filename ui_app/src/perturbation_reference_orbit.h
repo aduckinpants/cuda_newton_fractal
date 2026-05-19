@@ -11,6 +11,8 @@ struct PerturbationReferenceOrbitRequest {
     FractalType fractalType{FractalType::newton};
     double refCx{0.0};
     double refCy{0.0};
+    double juliaCx{-0.7};
+    double juliaCy{0.27015};
     int refLen{0};
 };
 
@@ -18,6 +20,8 @@ struct PerturbationReferenceOrbitCacheKey {
     FractalType fractalType{FractalType::newton};
     double refCx{0.0};
     double refCy{0.0};
+    double juliaCx{-0.7};
+    double juliaCy{0.27015};
     int refLen{0};
 };
 
@@ -37,6 +41,10 @@ inline PerturbationReferenceOrbitRequest ResolvePerturbationReferenceOrbitReques
     request.fractalType = view.fractal_type;
     request.refCx = view.center_hp_x;
     request.refCy = view.center_hp_y;
+    if (view.fractal_type == FractalType::julia) {
+        request.juliaCx = static_cast<double>(params.julia_c_real);
+        request.juliaCy = static_cast<double>(params.julia_c_imag);
+    }
 
     if (SupportsPerturbationReferenceOrbit(view.fractal_type) && view.log2_zoom >= PerturbationLog2ZoomThreshold()) {
         request.enabled = true;
@@ -48,7 +56,7 @@ inline PerturbationReferenceOrbitRequest ResolvePerturbationReferenceOrbitReques
 
 inline PerturbationReferenceOrbitCacheKey MakePerturbationReferenceOrbitCacheKey(
     const PerturbationReferenceOrbitRequest& request) {
-    return {request.fractalType, request.refCx, request.refCy, request.refLen};
+    return {request.fractalType, request.refCx, request.refCy, request.juliaCx, request.juliaCy, request.refLen};
 }
 
 inline bool MatchesPerturbationReferenceOrbitCacheKey(
@@ -57,6 +65,8 @@ inline bool MatchesPerturbationReferenceOrbitCacheKey(
     return key.fractalType == request.fractalType &&
         key.refCx == request.refCx &&
         key.refCy == request.refCy &&
+        key.juliaCx == request.juliaCx &&
+        key.juliaCy == request.juliaCy &&
         key.refLen == request.refLen;
 }
 
@@ -81,8 +91,8 @@ inline void BuildPerturbationReferenceOrbit(
     if (request.fractalType == FractalType::julia) {
         zx = request.refCx;
         zy = request.refCy;
-        cx = -0.7;
-        cy = 0.27015;
+        cx = request.juliaCx;
+        cy = request.juliaCy;
     }
 
     (*outOrbit)[0] = {zx, zy};

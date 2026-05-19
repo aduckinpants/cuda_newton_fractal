@@ -79,7 +79,7 @@ int main() {
     }
 
     {
-        const PerturbationReferenceOrbitRequest request{true, FractalType::mandelbrot, 1.0, 0.0, 4};
+        const PerturbationReferenceOrbitRequest request{true, FractalType::mandelbrot, 1.0, 0.0, -0.7, 0.27015, 4};
         std::vector<D2> orbit;
         BuildPerturbationReferenceOrbit(request, &orbit);
         if (orbit.size() != 4 ||
@@ -93,13 +93,45 @@ int main() {
     }
 
     {
-        const PerturbationReferenceOrbitRequest request{true, FractalType::julia, 0.0, 0.0, 2};
+        const PerturbationReferenceOrbitRequest request{true, FractalType::julia, 0.0, 0.0, -0.7, 0.27015, 2};
         std::vector<D2> orbit;
         BuildPerturbationReferenceOrbit(request, &orbit);
         if (orbit.size() != 2 ||
             !NearlyEqualPoint(orbit[0], {0.0, 0.0}) ||
             !NearlyEqualPoint(orbit[1], {-0.7, 0.27015}, 1.0e-9)) {
             std::cerr << "Julia reference orbit should encode the reference z0 and the fixed Julia constant\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        view.fractal_type = FractalType::julia;
+        view.log2_zoom = PerturbationLog2ZoomThreshold();
+        view.center_hp_x = 0.0;
+        view.center_hp_y = 0.0;
+        KernelParams params{};
+        params.max_iter = 1;
+        params.julia_c_real = 0.285f;
+        params.julia_c_imag = 0.01f;
+
+        const PerturbationReferenceOrbitRequest request = ResolvePerturbationReferenceOrbitRequest(view, params);
+        std::vector<D2> orbit;
+        BuildPerturbationReferenceOrbit(request, &orbit);
+        if (!request.enabled ||
+            !NearlyEqual(request.juliaCx, 0.285, 1.0e-6) ||
+            !NearlyEqual(request.juliaCy, 0.01, 1.0e-6) ||
+            orbit.size() != 2 ||
+            !NearlyEqualPoint(orbit[1], {0.285, 0.01}, 1.0e-6)) {
+            std::cerr << "Julia perturbation reference orbit should use the user-owned Julia constant\n";
+            return 1;
+        }
+
+        PerturbationReferenceOrbitCacheKey key = MakePerturbationReferenceOrbitCacheKey(request);
+        PerturbationReferenceOrbitRequest changed = request;
+        changed.juliaCx += 0.25;
+        if (MatchesPerturbationReferenceOrbitCacheKey(key, changed)) {
+            std::cerr << "Julia perturbation cache key should reject changed Julia constants\n";
             return 1;
         }
     }

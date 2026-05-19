@@ -54,6 +54,16 @@ int main() {
     }
 
     {
+        const Cx coord{-0.5f, 0.25f};
+        const Cx juliaConst{0.285f, 0.01f};
+        const EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(FractalType::julia, coord, {0.0f, 0.0f}, juliaConst);
+        if (!NearlyEqualCx(state.z, coord) || !NearlyEqualCx(state.c, juliaConst)) {
+            std::cerr << "Julia direct-state init should accept the user-owned Julia constant\n";
+            return 1;
+        }
+    }
+
+    {
         const Cx coord{0.5f, 0.0f};
         const EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(FractalType::lambda_map, coord);
         if (!NearlyEqualCx(state.z, coord) || !NearlyEqualCx(state.c, {0.0f, 0.0f})) {

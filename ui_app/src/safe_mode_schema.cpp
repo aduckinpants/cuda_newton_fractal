@@ -336,6 +336,25 @@ UISchemaControl BuildMagnetFloatControl(
     return control;
 }
 
+UISchemaControl BuildJuliaFloatControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    double defaultValue) {
+    UISchemaControl control = MakeUiRangedParamControl(
+        id,
+        "drag_float",
+        label,
+        "float",
+        -2.0,
+        2.0,
+        0.001,
+        path,
+        json_min::Value{defaultValue});
+    SetVisibleForFractalType(&control, "julia");
+    return control;
+}
+
 UISchemaControl BuildMagnetBailoutControl() {
     UISchemaControl control = MakeRangedParamControl(
         "magnet_bailout",
@@ -432,6 +451,8 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildProjectionAndFlowRootFamilyControl(),
         BuildProjectionAndFlowTargetRadiusControl(),
         BuildProjectionAndFlowPressureThresholdControl(),
+        BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
+        BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
         BuildMagnetFloatControl("magnet_seed_real", "Magnet Seed Real", "fractal.params.magnet_seed_real", -2.0, 2.0, 0.01, 0.0),
         BuildMagnetFloatControl("magnet_seed_imag", "Magnet Seed Imag", "fractal.params.magnet_seed_imag", -2.0, 2.0, 0.01, 0.0),
         BuildMagnetFloatControl("magnet_relaxation", "Magnet Relaxation", "fractal.params.magnet_relaxation", 0.05, 1.5, 0.01, 1.0),

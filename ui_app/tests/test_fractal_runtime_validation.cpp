@@ -378,6 +378,25 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::julia;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.julia_c_real = 0.285f;
+        params.julia_c_imag = 0.01f;
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Julia validation to accept finite user-owned constants, got: " << error << "\n";
+            return 1;
+        }
+        params.julia_c_imag = std::numeric_limits<float>::quiet_NaN();
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "julia_c_real/imag must be finite") {
+            std::cerr << "Expected Julia validation to reject non-finite constants\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_fractal_runtime_validation: all passed\n";
     return 0;
 }

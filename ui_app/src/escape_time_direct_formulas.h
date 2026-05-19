@@ -122,13 +122,14 @@ template <typename Complex>
 ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirectState(
     FractalType fractalType,
     Complex coord,
-    Complex magnetSeed) {
+    Complex magnetSeed,
+    Complex juliaConst) {
     using Scalar = decltype(coord.x);
 
     EscapeTimeDirectState<Complex> state{};
     if (fractalType == FractalType::julia) {
         state.z = coord;
-        state.c = {static_cast<Scalar>(-0.7), static_cast<Scalar>(0.27015)};
+        state.c = juliaConst;
     } else if (fractalType == FractalType::lambda_map) {
         state.z = coord;
         state.c = {static_cast<Scalar>(0), static_cast<Scalar>(0)};
@@ -141,6 +142,19 @@ ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirect
     }
     state.z_prev = {static_cast<Scalar>(0), static_cast<Scalar>(0)};
     return state;
+}
+
+template <typename Complex>
+ESCAPE_TIME_DIRECT_HD inline EscapeTimeDirectState<Complex> InitEscapeTimeDirectState(
+    FractalType fractalType,
+    Complex coord,
+    Complex magnetSeed) {
+    using Scalar = decltype(coord.x);
+    return InitEscapeTimeDirectState(
+        fractalType,
+        coord,
+        magnetSeed,
+        {static_cast<Scalar>(-0.7), static_cast<Scalar>(0.27015)});
 }
 
 template <typename Complex>

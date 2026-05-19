@@ -633,6 +633,8 @@ int main() {
         bool foundMultibrotPowerFloat = false;
         bool foundLambdaReal = false;
         bool foundLambdaImag = false;
+        bool foundJuliaCReal = false;
+        bool foundJuliaCImag = false;
         bool foundFractalTypeCommonGroup = false;
         bool foundFractalTypeRootFindingGroup = false;
         bool foundCounterfactualPairRootFindingGroup = false;
@@ -750,6 +752,18 @@ int main() {
                 }
                 if (ctrl.id == "lambda_imag" && ctrl.has_binding && ctrl.binding.path == "fractal.params.lambda_imag") {
                     foundLambdaImag = true;
+                }
+                if (ctrl.id == "julia_c_real" && ctrl.has_binding && ctrl.binding.path == "fractal.params.julia_c_real" &&
+                    ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 &&
+                    !ctrl.has_min && !ctrl.has_max && VisibleIfIncludesFractalType(ctrl, "julia") &&
+                    !VisibleIfIncludesFractalType(ctrl, "explaino_julia")) {
+                    foundJuliaCReal = true;
+                }
+                if (ctrl.id == "julia_c_imag" && ctrl.has_binding && ctrl.binding.path == "fractal.params.julia_c_imag" &&
+                    ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 &&
+                    !ctrl.has_min && !ctrl.has_max && VisibleIfIncludesFractalType(ctrl, "julia") &&
+                    !VisibleIfIncludesFractalType(ctrl, "explaino_julia")) {
+                    foundJuliaCImag = true;
                 }
                 if (ctrl.id == "fractal_type") {
                     if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
@@ -1217,6 +1231,10 @@ int main() {
             std::cerr << "Did not find Lambda real/imag controls in schema\n";
             return 1;
         }
+        if (!foundJuliaCReal || !foundJuliaCImag) {
+            std::cerr << "Did not find standalone Julia constant controls in schema\n";
+            return 1;
+        }
         if (!foundFractalTypeCommonGroup || !foundFractalTypeRootFindingGroup || !foundCounterfactualPairRootFindingGroup ||
             !foundProjectionAndFlowRootFindingGroup || !foundFractalTypeEscapeTimeGroup ||
             !foundFractalTypeExplainoGroup || !foundFractalTypeExplainoAllGroup ||
@@ -1330,7 +1348,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 14) {
+            fractalPanel->controls.size() != 16) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }

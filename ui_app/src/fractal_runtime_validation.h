@@ -89,6 +89,10 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
          std::fabs(params.lambda_real) > 4.0f || std::fabs(params.lambda_imag) > 4.0f)) {
         return FailFractalRuntimeValidation("lambda_real/lambda_imag must be finite and in [-4,4]", outError);
     }
+    if (view.fractal_type == FractalType::julia &&
+        (!std::isfinite(params.julia_c_real) || !std::isfinite(params.julia_c_imag))) {
+        return FailFractalRuntimeValidation("julia_c_real/imag must be finite", outError);
+    }
     if (view.fractal_type == FractalType::nova || view.fractal_type == FractalType::explaino_nova) {
         if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 5.0f) {
             return FailFractalRuntimeValidation("nova_alpha must be finite and in (0,5]", outError);

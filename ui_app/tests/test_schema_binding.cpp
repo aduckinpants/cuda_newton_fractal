@@ -212,6 +212,17 @@ int main() {
             std::cerr << "Expected fractal type enum round-trip to accept magnet\n";
             return 1;
         }
+        float* juliaCReal = nullptr;
+        float* juliaCImag = nullptr;
+        if (!ctx.BindFloat("fractal.params.julia_c_real", &juliaCReal) ||
+            !ctx.BindFloat("fractal.params.julia_c_imag", &juliaCImag) ||
+            juliaCReal != &params.julia_c_real ||
+            juliaCImag != &params.julia_c_imag ||
+            !NearlyEqual(*juliaCReal, -0.7f) ||
+            !NearlyEqual(*juliaCImag, 0.27015f)) {
+            std::cerr << "Expected standalone Julia constant controls to bind to explicit KernelParams fields\n";
+            return 1;
+        }
         float* magnetSeedReal = nullptr;
         float* magnetSeedImag = nullptr;
         float* magnetRelaxation = nullptr;

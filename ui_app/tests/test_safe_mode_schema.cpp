@@ -90,6 +90,17 @@ static bool IsMagnetVisibleControl(const UISchemaControl* control, const char* b
         control->visible_if.value == "magnet";
 }
 
+static bool IsJuliaVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "eq" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        control->visible_if.value == "julia";
+}
+
 static bool IsProjectionAndFlowVisibleControl(const UISchemaControl* control, const char* bindingPath) {
     return control &&
         control->has_binding &&
@@ -110,7 +121,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 14,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 16,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 5,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -248,6 +259,24 @@ static void TestSafeModeSchemaExposesMagnetControls() {
     Check(IsMagnetVisibleControl(bailout, "fractal.params.magnet_bailout") && bailout->has_min && bailout->min == 2.0 && bailout->has_max && bailout->max == 64.0, "TestSafeModeSchemaExposesMagnetControls_Bailout");
 }
 
+static void TestSafeModeSchemaExposesJuliaControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesJuliaControls_FractalPanelPresent");
+    if (!fractalPanel) return;
+
+    const UISchemaControl* real = FindControlById(*fractalPanel, "julia_c_real");
+    const UISchemaControl* imag = FindControlById(*fractalPanel, "julia_c_imag");
+    Check(IsJuliaVisibleControl(real, "fractal.params.julia_c_real") &&
+            real->has_default && real->def.is_number() && real->def.as_number() == -0.7 &&
+            real->has_ui_min && real->ui_min == -2.0 && real->has_ui_max && real->ui_max == 2.0,
+        "TestSafeModeSchemaExposesJuliaControls_Real");
+    Check(IsJuliaVisibleControl(imag, "fractal.params.julia_c_imag") &&
+            imag->has_default && imag->def.is_number() && imag->def.as_number() == 0.27015 &&
+            imag->has_ui_min && imag->ui_min == -2.0 && imag->has_ui_max && imag->ui_max == 2.0,
+        "TestSafeModeSchemaExposesJuliaControls_Imag");
+}
+
 static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
@@ -280,6 +309,7 @@ int main() {
     TestSafeModeSchemaKeepsGroupedDefaults();
     TestSafeModeSchemaExposesCounterfactualPairControls();
     TestSafeModeSchemaExposesMagnetControls();
+    TestSafeModeSchemaExposesJuliaControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
 
     std::printf("test_safe_mode_schema: %d passed, %d failed\n", g_passed, g_failed);

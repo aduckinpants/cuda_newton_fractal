@@ -485,6 +485,37 @@ def test_explaino_registry_controls_no_mouse_set_value_change_live_viewport(tmp_
             )
 
 
+def test_julia_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "julia", "--width", "320", "--height", "240"
+    )
+    base_state = neutral_capture["state"]
+    controls = [
+        ("julia_c_real", "fractal_control.julia_c_real.primary", 0.285),
+        ("julia_c_imag", "fractal_control.julia_c_imag.primary", 0.01),
+    ]
+    for param_id, control_id, set_value in controls:
+        state = json.loads(json.dumps(base_state))
+        state_path = _write_state_bundle(tmp_path / f"julia_{param_id}_neutral", state)
+        baseline_payload = _capture_controls_report_with_optional_set_value(
+            exe_path, state_path, tmp_path / f"julia_{param_id}_baseline_report.json", control_id, None
+        )
+        payload = _capture_controls_report_with_optional_set_value(
+            exe_path, state_path, tmp_path / f"julia_{param_id}_edited_report.json", control_id, set_value
+        )
+        assert payload.get("current_fractal_type") == "julia"
+        baseline_hash = _require_rendered_frame_hash(baseline_payload)
+        edited_hash = _require_rendered_frame_hash(payload)
+        assert edited_hash != baseline_hash, (
+            "No-mouse set-value automation for standalone Julia constant controls should change the rendered frame; "
+            f"param={param_id!r} baseline_hash={baseline_hash} edited_hash={edited_hash}"
+        )
+
+
 
 def test_runtime_walk_viewer_no_mouse_schema_int_set_value_consumes_visible_control(tmp_path: Path) -> None:
     if sys.platform != "win32":

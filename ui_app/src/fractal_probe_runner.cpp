@@ -916,7 +916,8 @@ bool SamplePoint(const ProbeState& state,
 
     if (UsesSharedEscapeTimeDirectFormula(ft)) {
         const Cx magnetSeed{params.magnet_seed_real, params.magnet_seed_imag};
-        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed);
+        const Cx juliaConst{params.julia_c_real, params.julia_c_imag};
+        EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed, juliaConst);
         const float powerFloat = params.multibrot_power_float;
         const int powerInt = params.multibrot_power;
         const Cx lambdaConst{params.lambda_real, params.lambda_imag};

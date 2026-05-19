@@ -3051,7 +3051,8 @@
             // Standard direct escape-time iteration shared with the probe sampler.
             if (useFP64) {
                 const Cxd magnetSeedD{(double)params.magnet_seed_real, (double)params.magnet_seed_imag};
-                EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD, magnetSeedD);
+                const Cxd juliaConstD{(double)params.julia_c_real, (double)params.julia_c_imag};
+                EscapeTimeDirectState<Cxd> state = InitEscapeTimeDirectState(ft, coordD, magnetSeedD, juliaConstD);
                 const double powerFloat = (double)params.multibrot_power_float;
                 const Cxd lambdaConstD{(double)params.lambda_real, (double)params.lambda_imag};
                 const Cxd phoenixPD{(double)params.phoenix_p_real, (double)params.phoenix_p_imag};
@@ -3081,7 +3082,8 @@
                 z = {(float)state.z.x, (float)state.z.y};
             } else {
                 const Cx magnetSeed{params.magnet_seed_real, params.magnet_seed_imag};
-                EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed);
+                const Cx juliaConst{params.julia_c_real, params.julia_c_imag};
+                EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed, juliaConst);
                 const float powerFloat = params.multibrot_power_float;
                 const Cx lambdaConst{params.lambda_real, params.lambda_imag};
                 const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};

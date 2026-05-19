@@ -358,6 +358,8 @@ struct KernelParams {
     float nova_alpha{0.50f};
     float phoenix_p_real{0.0f};
     float phoenix_p_imag{0.0f};
+    float julia_c_real{-0.7f};
+    float julia_c_imag{0.27015f};
     PolyKind poly_kind{PolyKind::z3_minus_1};
     float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
     CounterfactualPairRootFamily counterfactual_pair_root_family{CounterfactualPairRootFamily::cubic_unit_roots};
