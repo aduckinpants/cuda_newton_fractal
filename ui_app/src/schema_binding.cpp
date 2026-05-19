@@ -554,6 +554,13 @@ NumericDragWidgetBounds ResolveFloatControlDragWidgetBounds(const UISchemaContro
     return ResolveNumericDragWidgetBounds(control);
 }
 
+static bool HasOptionVisibilityPredicates(const UISchemaControl& control) {
+    for (const UISchemaOption& option : control.options) {
+        if (option.has_visible_if) return true;
+    }
+    return false;
+}
+
 std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaControl& control, const BindingContext& ctx) {
     std::vector<const UISchemaOption*> options;
     options.reserve(control.options.size());
@@ -576,6 +583,9 @@ std::vector<const UISchemaOption*> ResolveVisibleEnumOptions(const UISchemaContr
         ctx.params;
 
     for (const auto& option : control.options) {
+        if (option.has_visible_if && !ctx.EvalVisibleIf(option.visible_if)) {
+            continue;
+        }
         if (filterColoringModeOptions) {
             ColoringMode mode = ColoringMode::smooth_escape;
             if (!TryParseColoringModeId(option.id, &mode)) {
@@ -934,14 +944,9 @@ bool IsValidBoolPredicateValue(const std::string& value) {
     return value == "true" || value == "false" || value == "1" || value == "0";
 }
 
-bool ValidateVisibleIfPredicate(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
-    if (!control.has_visible_if) {
-        return true;
-    }
-
-    const UISchemaPredicate& pred = control.visible_if;
+bool ValidateVisibleIfPredicate(const UISchemaPredicate& pred, const std::string& subject, BindingContext& ctx, std::string* outError) {
     if (pred.op.empty() || pred.path.empty()) {
-        if (outError) *outError = "Invalid visible_if predicate for control: " + control.id;
+        if (outError) *outError = "Invalid visible_if predicate for " + subject;
         return false;
     }
 
@@ -950,7 +955,7 @@ bool ValidateVisibleIfPredicate(const UISchemaControl& control, BindingContext& 
         if (pred.op == "eq" || pred.op == "neq" || pred.op == "in") {
             return true;
         }
-        if (outError) *outError = "Invalid visible_if enum operator for control: " + control.id + " (path: " + pred.path + ", op: " + pred.op + ")";
+        if (outError) *outError = "Invalid visible_if enum operator for " + subject + " (path: " + pred.path + ", op: " + pred.op + ")";
         return false;
     }
 
@@ -959,7 +964,7 @@ bool ValidateVisibleIfPredicate(const UISchemaControl& control, BindingContext& 
         if ((pred.op == "eq" || pred.op == "neq") && IsValidBoolPredicateValue(pred.value)) {
             return true;
         }
-        if (outError) *outError = "Invalid visible_if bool predicate for control: " + control.id + " (path: " + pred.path + ", op: " + pred.op + ", value: " + pred.value + ")";
+        if (outError) *outError = "Invalid visible_if bool predicate for " + subject + " (path: " + pred.path + ", op: " + pred.op + ", value: " + pred.value + ")";
         return false;
     }
 
@@ -968,20 +973,27 @@ bool ValidateVisibleIfPredicate(const UISchemaControl& control, BindingContext& 
     double doubleValue = 0.0;
     if (ctx.GetIntValue(pred.path, intValue) || ctx.GetFloatValue(pred.path, floatValue) || ctx.GetDoubleValue(pred.path, doubleValue)) {
         if (!(pred.op == "eq" || pred.op == "neq" || pred.op == "lt" || pred.op == "lte" || pred.op == "gt" || pred.op == "gte")) {
-            if (outError) *outError = "Invalid visible_if numeric operator for control: " + control.id + " (path: " + pred.path + ", op: " + pred.op + ")";
+            if (outError) *outError = "Invalid visible_if numeric operator for " + subject + " (path: " + pred.path + ", op: " + pred.op + ")";
             return false;
         }
         try {
             (void)std::stod(pred.value);
         } catch (...) {
-            if (outError) *outError = "Invalid visible_if numeric value for control: " + control.id + " (path: " + pred.path + ", value: " + pred.value + ")";
+            if (outError) *outError = "Invalid visible_if numeric value for " + subject + " (path: " + pred.path + ", value: " + pred.value + ")";
             return false;
         }
         return true;
     }
 
-    if (outError) *outError = "Unknown visible_if binding path: " + pred.path + " (control: " + control.id + ")";
+    if (outError) *outError = "Unknown visible_if binding path: " + pred.path + " (" + subject + ")";
     return false;
+}
+
+bool ValidateVisibleIfPredicate(const UISchemaControl& control, BindingContext& ctx, std::string* outError) {
+    if (!control.has_visible_if) {
+        return true;
+    }
+    return ValidateVisibleIfPredicate(control.visible_if, "control: " + control.id, ctx, outError);
 }
 
 bool ValidateIntComboOptions(const UISchemaControl& control, std::string* outError) {
@@ -1222,6 +1234,12 @@ bool ValidateSchemaBindings(const UISchema& schema, BindingContext& ctx, std::st
         for (const auto& c : panel.controls) {
             if (!ValidateVisibleIfPredicate(c, ctx, outError)) {
                 return false;
+            }
+            for (const UISchemaOption& option : c.options) {
+                if (!option.has_visible_if) continue;
+                if (!ValidateVisibleIfPredicate(option.visible_if, "option: " + c.id + "." + option.id, ctx, outError)) {
+                    return false;
+                }
             }
 
             if (!c.has_binding) continue;
@@ -1722,13 +1740,44 @@ bool RenderGroupedEnumComboControl(
     return groupChanged || valueChanged;
 }
 
+bool NormalizeHiddenEnumSelectionToVisibleDefault(
+    const UISchemaControl& control,
+    BindingContext& ctx,
+    const UISchemaBinding& binding,
+    const std::vector<const UISchemaOption*>& visibleOptions,
+    std::string* ioCurrentId) {
+    if (!ioCurrentId || !HasOptionVisibilityPredicates(control)) {
+        return false;
+    }
+
+    for (const UISchemaOption* option : visibleOptions) {
+        if (option && option->id == *ioCurrentId) {
+            return false;
+        }
+    }
+
+    if (!control.has_default || !control.def.is_string()) {
+        return false;
+    }
+
+    const std::string defaultId = control.def.as_string();
+    for (const UISchemaOption* option : visibleOptions) {
+        if (!option || option->id != defaultId) continue;
+        if (!ctx.SetEnumId(binding.path, defaultId)) return false;
+        *ioCurrentId = defaultId;
+        return true;
+    }
+
+    return false;
+}
+
 bool RenderEnumComboControl(
     const UISchemaControl& control,
     BindingContext& ctx,
     const UISchemaBinding& binding,
     bool* ioDirty,
     bool* ioInteracted) {
-    const std::string currentId = ctx.GetEnumId(binding.path);
+    std::string currentId = ctx.GetEnumId(binding.path);
     const std::vector<const UISchemaOption*> visibleOptions = ResolveVisibleEnumOptions(control, ctx);
     if (HasGroupedOptions(control)) {
         RenderGroupedEnumComboControl(control, ctx, binding, currentId, ioDirty, ioInteracted);
@@ -1739,6 +1788,7 @@ bool RenderEnumComboControl(
         return RenderDiagnosticLabel(control, "no visible options");
     }
 
+    bool changed = NormalizeHiddenEnumSelectionToVisibleDefault(control, ctx, binding, visibleOptions, &currentId);
     int currentIndex = 0;
     for (int index = 0; index < static_cast<int>(visibleOptions.size()); ++index) {
         if (visibleOptions[index]->id == currentId) {
@@ -1753,7 +1803,6 @@ bool RenderEnumComboControl(
         labels.push_back(option->label.c_str());
     }
 
-    bool changed = false;
     if (!labels.empty() && ImGui::Combo(control.label.c_str(), &currentIndex, labels.data(), static_cast<int>(labels.size()))) {
         if (currentIndex >= 0 && currentIndex < static_cast<int>(visibleOptions.size())) {
             changed = ctx.SetEnumId(binding.path, visibleOptions[currentIndex]->id);

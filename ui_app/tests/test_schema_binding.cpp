@@ -423,6 +423,41 @@ int main() {
             }
         }
 
+        UISchemaControl animTarget = MakeBoundControl("param_anim_target", "combo", "Animate Parameter", "enum", "param", "fractal.view.param_anim_target");
+        UISchemaOption noneTarget{"none", "None", ""};
+        UISchemaOption magnetTarget{"magnet_relaxation", "Magnet Relaxation", ""};
+        magnetTarget.has_visible_if = true;
+        magnetTarget.visible_if.op = "eq";
+        magnetTarget.visible_if.path = "fractal.view.fractal_type";
+        magnetTarget.visible_if.value = "magnet";
+        UISchemaOption rippleTarget{"ripple_amplitude", "Ripple Amplitude", ""};
+        rippleTarget.has_visible_if = true;
+        rippleTarget.visible_if.op = "in";
+        rippleTarget.visible_if.path = "fractal.view.fractal_type";
+        rippleTarget.visible_if.value = "explaino_all,explaino_ripple";
+        animTarget.options = { noneTarget, magnetTarget, rippleTarget };
+
+        view.fractal_type = FractalType::mandelbrot;
+        const std::vector<const UISchemaOption*> mandelbrotAnimOptions = ResolveVisibleEnumOptions(animTarget, ctx);
+        if (mandelbrotAnimOptions.size() != 1 || mandelbrotAnimOptions[0]->id != "none") {
+            std::cerr << "Expected option-level visible_if to hide inapplicable animation targets on Mandelbrot\n";
+            return 1;
+        }
+
+        view.fractal_type = FractalType::magnet;
+        const std::vector<const UISchemaOption*> magnetAnimOptions = ResolveVisibleEnumOptions(animTarget, ctx);
+        if (magnetAnimOptions.size() != 2 || magnetAnimOptions[1]->id != "magnet_relaxation") {
+            std::cerr << "Expected option-level visible_if to expose Magnet animation targets only on Magnet\n";
+            return 1;
+        }
+
+        view.fractal_type = FractalType::explaino_ripple;
+        const std::vector<const UISchemaOption*> rippleAnimOptions = ResolveVisibleEnumOptions(animTarget, ctx);
+        if (rippleAnimOptions.size() != 2 || rippleAnimOptions[1]->id != "ripple_amplitude") {
+            std::cerr << "Expected option-level visible_if to expose owner Explaino axis animation targets on owner lanes\n";
+            return 1;
+        }
+
         UISchemaControl colorSignal = MakeBoundControl("color_signal", "combo", "Color Signal", "enum", "param", "fractal.params.color_signal");
         colorSignal.options = {
             {"root_index", "Root Index", ""},
@@ -970,6 +1005,29 @@ int main() {
         }
         if (error.find("visible_if") == std::string::npos) {
             std::cerr << "Expected invalid visible_if validation error details\n";
+            return 1;
+        }
+
+        schema.panels.clear();
+        panel.controls.clear();
+        UISchemaControl invalidOptionVisibleIf = MakeBoundControl("bad_option_visible_if", "combo", "Bad Option VisibleIf", "enum", "param", "fractal.view.param_anim_target");
+        invalidOptionVisibleIf.options = {
+            {"none", "None", ""},
+            {"bad", "Bad", ""},
+        };
+        invalidOptionVisibleIf.options[1].has_visible_if = true;
+        invalidOptionVisibleIf.options[1].visible_if.op = "eq";
+        invalidOptionVisibleIf.options[1].visible_if.path = "fractal.view.not_real";
+        invalidOptionVisibleIf.options[1].visible_if.value = "magnet";
+        panel.controls.push_back(invalidOptionVisibleIf);
+        schema.panels.push_back(panel);
+        error.clear();
+        if (ValidateSchemaBindings(schema, ctx, &error)) {
+            std::cerr << "Invalid option visible_if predicates should fail schema validation\n";
+            return 1;
+        }
+        if (error.find("option: bad_option_visible_if.bad") == std::string::npos) {
+            std::cerr << "Expected invalid option visible_if validation error details\n";
             return 1;
         }
 

@@ -33,6 +33,28 @@ static bool get_bool(const json_min::Value& o, const char* key, bool& out) {
     return true;
 }
 
+static bool parse_visible_if_predicate(const json_min::Value& v, const char* subject, UISchemaPredicate* out, std::string* error) {
+    if (!v.is_object()) {
+        if (error) *error = type_error((std::string(subject) + " visible_if must be object").c_str());
+        return false;
+    }
+
+    UISchemaPredicate pred;
+    if (!get_string(v, "op", pred.op) || !get_string(v, "path", pred.path)) {
+        if (error) *error = type_error((std::string(subject) + " visible_if missing op/path").c_str());
+        return false;
+    }
+
+    if (auto* pv = v.get("value")) {
+        if (pv->is_string()) pred.value = pv->as_string();
+        else if (pv->is_number()) pred.value = std::to_string(pv->as_number());
+        else if (pv->is_bool()) pred.value = pv->as_bool() ? "true" : "false";
+    }
+
+    if (out) *out = std::move(pred);
+    return true;
+}
+
 static void parse_numeric_control_metadata(const json_min::Value& o, UISchemaControl* ctrl) {
     double n = 0.0;
     if (get_number(o, "ui_min", n)) { ctrl->ui_min = n; ctrl->has_ui_min = true; }
@@ -42,25 +64,41 @@ static void parse_numeric_control_metadata(const json_min::Value& o, UISchemaCon
     if (get_number(o, "step", n)) { ctrl->step = n; ctrl->has_step = true; }
 }
 
+static void apply_explaino_axis_visible_if(const ExplainoAxisDescriptor& axis, UISchemaPredicate* pred) {
+    if (!pred) return;
+
+    pred->op = "in";
+    pred->path = "fractal.view.fractal_type";
+    pred->value = FractalTypeId(ExplainoCanonicalFractalType());
+
+    const char* carrierId = FractalTypeId(axis.carrier_fractal_type);
+    if (!carrierId) return;
+
+    if (pred->value != carrierId) {
+        pred->value += ",";
+        pred->value += carrierId;
+    }
+}
+
 static void apply_explaino_axis_registry(UISchema* schema) {
     if (!schema) return;
     for (UISchemaPanel& panel : schema->panels) {
         for (UISchemaControl& control : panel.controls) {
+            if (control.id == "param_anim_target") {
+                for (UISchemaOption& option : control.options) {
+                    const ExplainoAxisDescriptor* optionAxis = FindExplainoAxisDescriptor(option.id);
+                    if (!optionAxis) continue;
+
+                    option.has_visible_if = true;
+                    apply_explaino_axis_visible_if(*optionAxis, &option.visible_if);
+                }
+            }
+
             const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(control.id);
             if (!axis) continue;
 
             control.has_visible_if = true;
-            control.visible_if.op = "in";
-            control.visible_if.path = "fractal.view.fractal_type";
-            control.visible_if.value = FractalTypeId(ExplainoCanonicalFractalType());
-
-            const char* carrierId = FractalTypeId(axis->carrier_fractal_type);
-            if (!carrierId) continue;
-
-            if (control.visible_if.value != carrierId) {
-                control.visible_if.value += ",";
-                control.visible_if.value += carrierId;
-            }
+            apply_explaino_axis_visible_if(*axis, &control.visible_if);
         }
     }
 }
@@ -169,6 +207,12 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
                     UISchemaOption o;
                     if (!get_string(opt, "id", o.id) || !get_string(opt, "label", o.label)) continue;
                     get_string(opt, "group", o.group);
+                    if (auto* vv = opt.get("visible_if")) {
+                        if (!parse_visible_if_predicate(*vv, "option", &o.visible_if, &r.error)) {
+                            return r;
+                        }
+                        o.has_visible_if = true;
+                    }
                     ctrl.options.push_back(std::move(o));
                 }
             }
@@ -191,22 +235,9 @@ UISchemaLoadResult LoadUISchemaFromJson(const json_min::Value& root) {
             }
 
             if (auto* vv = c.get("visible_if")) {
-                if (!vv->is_object()) {
-                    r.error = type_error("visible_if must be object");
+                if (!parse_visible_if_predicate(*vv, "control", &ctrl.visible_if, &r.error)) {
                     return r;
                 }
-                UISchemaPredicate pred;
-                if (!get_string(*vv, "op", pred.op) || !get_string(*vv, "path", pred.path)) {
-                    r.error = type_error("visible_if missing op/path");
-                    return r;
-                }
-                // value is stored as string for this demo (enums are string ids)
-                if (auto* pv = vv->get("value")) {
-                    if (pv->is_string()) pred.value = pv->as_string();
-                    else if (pv->is_number()) pred.value = std::to_string(pv->as_number());
-                    else if (pv->is_bool()) pred.value = pv->as_bool() ? "true" : "false";
-                }
-                ctrl.visible_if = std::move(pred);
                 ctrl.has_visible_if = true;
             }
 

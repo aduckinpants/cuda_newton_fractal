@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "contract_id": "fractal_control_surface_repair_campaign",
+  "feature_id": "fractal_control_surface_repair_campaign_phase1_animation_applicability",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/fractal_control_surface_repair_campaign_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts/fractal_control_surface_repair_campaign.contract.json",
+    "docs/notes/fractal_control_surface_repair_campaign_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/ui_schema.h",
+    "ui_app/src/ui_schema.cpp",
+    "ui_app/src/schema_binding.cpp",
+    "ui_app/tests/test_ui_schema.cpp",
+    "ui_app/tests/test_schema_binding.cpp",
+    "ui_app/tests/test_param_anim_generic.cpp",
+    "ui_app/tests/test_param_anim_dynamics.cpp"
+  ],
+  "required_operator_inputs": [
+    "repair documented fractal control-surface issues and associated testing problems",
+    "clean up existing animation targeting so it is applicable to the currently loaded fractal",
+    "do not treat this cleanup as permission to add unrelated new features"
+  ],
+  "forbidden_operator_prompts": [
+    "add unrelated new fractal families in this slice",
+    "add new animation targets beyond the current shipped option ids in phase 1",
+    "use physical mouse automation as proof",
+    "claim all surface issues are fixed after only the phase 1 animation cleanup"
+  ],
+  "required_defaults": {
+    "branch": "codex/fractal-control-surface-repair",
+    "phase": "animation_applicability_cleanup",
+    "hostile_audit": "required",
+    "no_physical_mouse_tests": true
+  },
+  "forbidden_defaults": {
+    "feature_expansion": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "color_pipeline_mutation": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_control_surface_repair_campaign.contract.json --out-json artifacts/validation/fractal_control_surface_repair_campaign_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_control_surface_repair_campaign_PHASED_PLAN.md --out-json artifacts/validation/fractal_control_surface_repair_campaign_hostile_audit.json",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"no_mouse_schema_int_set_value or unknown_set_value_fails_closed\" -q --junitxml artifacts/pytest/fractal_control_surface_repair_runtime_ui_harness.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fractal_control_surface_repair_contract_schema_valid",
+      "description": "The implementation campaign contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_control_surface_repair_campaign_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_control_surface_repair_plan_sync_ok",
+      "description": "The active phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fractal_control_surface_repair_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_control_surface_repair_campaign_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

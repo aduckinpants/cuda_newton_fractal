@@ -15,6 +15,9 @@ struct UISchemaOption {
     std::string id;
     std::string label;
     std::string group;
+
+    bool has_visible_if = false;
+    UISchemaPredicate visible_if;
 };
 
 struct UISchemaBinding {
