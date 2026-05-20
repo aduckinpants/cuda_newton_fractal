@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contract_id": "fractal_parameter_surface_matrix",
-  "feature_id": "fractal_parameter_surface_matrix_phase4d_nova_alpha_cap",
+  "feature_id": "fractal_parameter_surface_matrix_phase4e_projection_counterfactual_numeric_proof",
   "workflow_type": "viewer_first",
   "plan_path": "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -49,7 +49,7 @@
   ],
   "required_defaults": {
     "branch": "codex/fractal-parameter-surface-matrix",
-    "phase": "phase4d_nova_alpha_cap",
+    "phase": "phase4e_projection_counterfactual_numeric_proof",
     "hostile_audit": "required",
     "no_physical_mouse_tests": true
   },
@@ -64,13 +64,14 @@
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
     "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase4d_receipt_log_evidence.junit.xml",
-    "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts\\logs\\phase4d_full_native.log 2>&1",
-    "cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\\logs\\phase4d_focused_schema_binding.log 2>&1",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts\\logs\\phase4e_full_native.log 2>&1",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\\logs\\phase4e_focused_schema_binding.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"projection_counterfactual_numeric_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_projection_counterfactual_numeric.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"nova_alpha_no_mouse_set_value_above_two_matches_two_cap\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_alpha_cap.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"nova_remaining_polynomial_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_remaining_polynomial.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"newton_halley_polynomial_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_newton_halley_polynomial.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"standalone_scalar_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_standalone_scalars.junit.xml",
-    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4d_full_module.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4e_full_module.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"nova_poly_c4_no_mouse_set_value_change_live_viewport or julia_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"explaino_registry_controls_no_mouse_set_value_change_live_viewport or no_mouse_schema_int_set_value or unknown_set_value_fails_closed\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"runtime_walk_viewer_no_mouse_color_pipeline_set_value_changes_frame\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml"
@@ -108,6 +109,13 @@
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_redirected_log_command"
     },
     {
+      "assertion_id": "fractal_parameter_surface_matrix_projection_counterfactual_numeric_runtime_pytest",
+      "description": "Published-runtime no-mouse Projection-and-Flow and Counterfactual Pair numeric-control proof passes",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_projection_counterfactual_numeric.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_projection_counterfactual_numeric_controls_no_mouse_set_value_change_live_viewport"
+    },
+    {
       "assertion_id": "fractal_parameter_surface_matrix_nova_alpha_cap_runtime_pytest",
       "description": "Published-runtime no-mouse Nova Alpha over-cap set-value clamps to the kernel-valid maximum",
       "evidence_kind": "runtime_junit_case",
@@ -139,7 +147,7 @@
       "assertion_id": "fractal_parameter_surface_matrix_runtime_walk_viewer_full_module",
       "description": "Runtime-walk viewer module passes with serialized automation lock",
       "evidence_kind": "runtime_junit_case",
-      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4d_full_module.junit.xml",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4e_full_module.junit.xml",
       "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_standalone_scalar_controls_no_mouse_set_value_change_live_viewport"
     },
     {

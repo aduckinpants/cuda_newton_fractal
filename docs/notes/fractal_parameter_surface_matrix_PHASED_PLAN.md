@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across the schema, runtime validation, and no-mouse set-value path, matching the existing Nova kernel domain. The receipt-evidence parser also now treats redirected native build logs as parseable validation artifacts, so the required native rails are covered by the contract-proof receipt. Later matrix batches remain unfinished.
+Phase 4 batch E is closed on this branch: standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offsets / reconvergence ratio now have native matrix coverage plus no-mouse rendered-frame proof. Enum/combo controls and later Explaino common-control matrix expansion remain later checklist items.
 
 ## Explicit User Asks
 
@@ -16,6 +16,7 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - [x] Continue Phase 4 without another prompt by taking the next standalone root-finding proof batch.
 - [x] Continue Phase 4 without another prompt by taking the Nova remaining polynomial/epsilon proof batch.
 - [x] Cap Nova Alpha at the kernel-valid `2.0` maximum and prove over-cap UI set-value cannot drive the dead `>2.0` range.
+- [x] Continue Phase 4 by batching standalone Projection-and-Flow and Counterfactual Pair numeric-control proof instead of paying closeout cost for one slider at a time.
 
 ## Phase Checklist
 
@@ -29,6 +30,7 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
   - [x] Batch C - standalone Nova remaining controls: prove `epsilon` and `poly_c0` through `poly_c3` via no-mouse rendered-frame deltas.
   - [x] Batch D - Nova Alpha range cap: align schema/runtime validation with the kernel-valid `(0,2]` domain and prove no-mouse over-cap set-value clamps to `2.0`.
   - [x] Batch D receipt proof repair - make redirected native build logs parseable contract-proof evidence after the closure wrapper caught the gap.
+  - [x] Batch E - standalone Projection-and-Flow and Counterfactual Pair numeric controls: prove target radius, pressure threshold, offsets, and reconvergence ratio through no-mouse rendered-frame deltas.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
 - [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
@@ -119,6 +121,12 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - Phase 4 batch D full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase4d_full_native.log 2>&1` completed with `All helper tests passed`.
 - Phase 4 batch D receipt blocker: contract-proof writing initially failed because raw redirected native build commands had no parseable evidence spec.
 - Phase 4 batch D receipt repair: `tools/viewer_host_contract_proof.py` now recognizes redirected `.log` validation commands as text-log evidence, with unit proof in `artifacts/pytest/test_viewer_host_contract_proof_phase4d_receipt_log_evidence.junit.xml`.
+- Phase 4 batch E starting head: `6eafd4d`.
+- Phase 4 batch E named gap: standalone `projection_and_flow` target radius / pressure threshold and `counterfactual_pair` offsets / reconvergence ratio are visible numeric controls, but the runtime-walk no-mouse harness has no rendered-frame proof for them.
+- Phase 4 batch E first RED failed as expected: `py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k "projection_counterfactual_numeric_controls_no_mouse_set_value_change_live_viewport" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_projection_counterfactual_numeric_red.junit.xml` reported `18 deselected` because the proof rail does not exist yet.
+- Phase 4 batch E repair: `test_schema_binding` now includes standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offset / reconvergence numeric controls in the visible-control matrix.
+- Phase 4 batch E published-runtime no-mouse proof green: `artifacts/pytest/fractal_parameter_surface_matrix_projection_counterfactual_numeric.junit.xml` (`1 passed, 18 deselected`) proves all five grouped controls change rendered frame hashes.
+- Phase 4 batch E focused native schema/color rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase4e_focused_schema_binding.log 2>&1`.
 
 ## Hostile Audit
 
@@ -151,6 +159,9 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - [x] Phase 4 batch D pass 2 - confirmed the no-mouse proof compares capped rendered-frame behavior, not just schema text.
 - [x] Phase 4 batch D clean re-read - prior Nova, Newton/Halley, scalar, Explaino, Color Pipeline, and runtime harness guardrails remain green after the batch.
 - [x] Phase 4 batch D pass 3 - found and repaired a receipt-evidence parser gap that hid redirected native build logs from contract-proof receipts.
+- [x] Phase 4 batch E pass 1 - confirmed the batch stays on standalone Projection-and-Flow and Counterfactual Pair numeric controls, leaving enum/combo support to the later checklist item.
+- [x] Phase 4 batch E pass 2 - confirmed the no-mouse proof compares rendered frame hashes after the existing UI edit path consumes each control.
+- [x] Phase 4 batch E clean re-read - the new proof found no dead product control in this group; prior Explaino, Nova, Newton/Halley, scalar, and Color Pipeline guardrails remain required validation commands.
 
 ## Audit Findings
 
@@ -165,6 +176,7 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - [x] Phase 4 batch C finding repaired: standalone Nova `epsilon` and `poly_c0` through `poly_c3` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 - [x] Phase 4 batch D finding repaired: Nova Alpha exposed/accepted values above the kernel-valid maximum; schema and runtime validation now cap at `2.0`, and over-cap no-mouse set-value lands on the same frame as `2.0`.
 - [x] Phase 4 batch D receipt finding repaired: required native build logs were listed in validation receipts but were not parseable by contract-proof evidence collection; redirected `.log` commands are now hashed as text-log evidence.
+- [x] Phase 4 batch E finding repaired: standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offsets / reconvergence ratio were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 
 ## Boundaries
 
@@ -188,8 +200,9 @@ Out of scope for Phase 2/3 batch:
 - Explaino common-control matrix expansion
 - new fractal families or renderer redesign
 
-## Remaining Work After Phase 4D
+## Remaining Work After Phase 4E
 
 - Phase 4: further dead-slider/proof batches from the matrix.
 - Phase 5: enum/combo harness support and combo rows.
 - Phase 6: Explaino common-control matrix expansion.
+

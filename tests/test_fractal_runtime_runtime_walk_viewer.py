@@ -761,6 +761,55 @@ def test_newton_halley_polynomial_controls_no_mouse_set_value_change_live_viewpo
             )
 
 
+def test_projection_counterfactual_numeric_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    cases = [
+        ("projection_and_flow", "projection_and_flow_target_radius", "fractal_control.projection_and_flow_target_radius.primary", 1.5),
+        ("projection_and_flow", "projection_and_flow_pressure_threshold", "fractal_control.projection_and_flow_pressure_threshold.primary", 0.2),
+        ("counterfactual_pair", "counterfactual_pair_offset_x", "fractal_control.counterfactual_pair_offset_x.primary", -0.45),
+        ("counterfactual_pair", "counterfactual_pair_offset_y", "fractal_control.counterfactual_pair_offset_y.primary", 0.45),
+        ("counterfactual_pair", "counterfactual_pair_reconvergence_ratio", "fractal_control.counterfactual_pair_reconvergence_ratio.primary", 0.05),
+    ]
+    for fractal_type, param_id, control_id, set_value in cases:
+        neutral_capture = _run_headless_capture(
+            str(exe_path), "--capture-diagnostic", "--fractal-type", fractal_type, "--width", "320", "--height", "240"
+        )
+        state = neutral_capture["state"]
+        params = state["params"]
+        assert isinstance(params, dict)
+        params["coloring_mode"] = "root_basin"
+        params["color_signal"] = "root_index"
+        params["color_palette"] = "root_classic"
+        params["color_grading"] = "basin_default"
+
+        state_path = _write_state_bundle(tmp_path / f"{fractal_type}_{param_id}_neutral", state)
+        baseline_payload = _capture_controls_report_with_optional_set_value(
+            exe_path,
+            state_path,
+            tmp_path / f"{fractal_type}_{param_id}_baseline_report.json",
+            control_id,
+            None,
+        )
+        payload = _capture_controls_report_with_optional_set_value(
+            exe_path,
+            state_path,
+            tmp_path / f"{fractal_type}_{param_id}_edited_report.json",
+            control_id,
+            set_value,
+        )
+        assert payload.get("current_fractal_type") == fractal_type
+        baseline_hash = _require_rendered_frame_hash(baseline_payload)
+        edited_hash = _require_rendered_frame_hash(payload)
+        assert edited_hash != baseline_hash, (
+            "No-mouse set-value automation for Projection-and-Flow / Counterfactual Pair numeric controls "
+            "should change the rendered frame; "
+            f"fractal_type={fractal_type!r} param={param_id!r} baseline_hash={baseline_hash} edited_hash={edited_hash}"
+        )
+
+
 
 def test_runtime_walk_viewer_no_mouse_schema_int_set_value_consumes_visible_control(tmp_path: Path) -> None:
     if sys.platform != "win32":

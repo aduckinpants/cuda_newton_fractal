@@ -352,6 +352,11 @@ bool ValidateVisibleControlMatrix() {
         {"magnet_seed_imag", FractalType::magnet, "fractal.params.magnet_seed_imag"},
         {"magnet_relaxation", FractalType::magnet, "fractal.params.magnet_relaxation"},
         {"magnet_bailout", FractalType::magnet, "fractal.params.magnet_bailout"},
+        {"projection_and_flow_target_radius", FractalType::projection_and_flow, "fractal.params.projection_and_flow_target_radius"},
+        {"projection_and_flow_pressure_threshold", FractalType::projection_and_flow, "fractal.params.projection_and_flow_pressure_threshold"},
+        {"counterfactual_pair_offset_x", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_x"},
+        {"counterfactual_pair_offset_y", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_y"},
+        {"counterfactual_pair_reconvergence_ratio", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_reconvergence_ratio"},
     };
 
     for (const MatrixCase& testCase : cases) {
