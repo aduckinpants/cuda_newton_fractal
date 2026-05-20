@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 is in closeout: the exhaustive all-44 schema inventory and original 19-row dead-control follow-up are repaired or explicitly classified in the working tree, and the focused native, full native, runtime publish, persistent no-relaunch UI proof, contract, plan-sync, code-quality, and hostile-audit rails are green or ready to be written as receipts. Checkpoint commit, receipts, push, clean tree, and stale-plan recheck still remain before final closure.
+Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row dead-control follow-up are repaired or explicitly classified, and the focused native, full native, runtime publish, persistent no-relaunch UI proof, contract, plan-sync, code-quality, hostile-audit, validation-receipt, contract-proof, push, clean-tree, and stale-plan gates are complete for this slice.
 
 ## Explicit User Asks
 
@@ -17,7 +17,7 @@ Phase 8 is in closeout: the exhaustive all-44 schema inventory and original 19-r
 - [x] Continue Phase 4 without another prompt by taking the Nova remaining polynomial/epsilon proof batch.
 - [x] Cap Nova Alpha at the kernel-valid `2.0` maximum and prove over-cap UI set-value cannot drive the dead `>2.0` range.
 - [x] Continue Phase 4 by batching standalone Projection-and-Flow and Counterfactual Pair numeric-control proof instead of paying closeout cost for one slider at a time.
-- [ ] Finish the full remaining parameter-surface cleanup set instead of stopping after the harness sub-slice. Reopened for Phase 8 because the prior selected-matrix closeout was not an exhaustive all-44 fractal completion.
+- [x] Finish the full remaining parameter-surface cleanup set instead of stopping after the harness sub-slice. Reopened for Phase 8 because the prior selected-matrix closeout was not an exhaustive all-44 fractal completion.
 - [x] Audit all 44 defined fractals for missing owner parameters and visible dead controls, not a subset.
 - [x] Generate all-44 RED unit/UI harness coverage before claiming any all-fractal repair.
 - [x] Repair or explicitly classify every original all-44 gap found by the generated rails while preserving Color Pipeline, Explaino-all, smooth-escape performance, and the no-relaunch harness constraint.
@@ -43,11 +43,11 @@ Phase 8 is in closeout: the exhaustive all-44 schema inventory and original 19-r
   - [x] Batch I - harness truth repair: remove `tests/test_fractal_runtime_runtime_walk_viewer.py` from default required validation, make the E2E module explicit opt-in, and add unit guards that forbid relying on it again until a persistent no-relaunch harness exists.
 - [x] Phase 7 - persistent runtime viewer automation: add a file-driven command channel, run a focused one-process batch proof, and keep legacy relaunch tests opt-in.
 - [x] Phase 7 closeout guard - hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for the prior selected-matrix slice.
-- [ ] Phase 8 - exhaustive all-44 fractal parameter-surface audit and repair.
+- [x] Phase 8 - exhaustive all-44 fractal parameter-surface audit and repair.
   - [x] Batch J - generated schema/enum inventory proves exactly 44 fractal lanes and records every visible family control by lane.
   - [x] Batch K - RED tests prove current gaps for missing owner parameters and visible controls without render-sensitivity proof; first-pass headless sweep found 19 unchanged visible-control rows.
   - [x] Batch L - repair or explicitly classify every all-44 missing/dead-control gap found by the generated rails; the original 19 rows now split into 9 UI-proven visible controls and 10 intentionally hidden branch-dead controls.
-  - [ ] Batch M - focused native, runtime publish, persistent no-relaunch UI proof, Color Pipeline guardrails, hostile audit, receipts, checkpoint, push, and clean-tree closeout. Validation rails are green; checkpoint, receipts, push, clean tree, and stale-plan recheck remain.
+  - [x] Batch M - focused native, runtime publish, persistent no-relaunch UI proof, Color Pipeline guardrails, hostile audit, validation receipt, contract proof, push, clean-tree closeout, and stale-plan gate are complete.
 
 ## Proof Ledger
 
@@ -279,7 +279,7 @@ Phase 8 is in closeout: the exhaustive all-44 schema inventory and original 19-r
 - [x] Phase 5/6 finding repaired: remaining enum/combo rows, fixed-formula classifications, and Explaino common controls are covered by native/schema matrix proof without using physical mouse automation or repeated viewer launches.
 - [x] Phase 5/8 finding repaired: the previous harness closeout missed the code-quality baseline regression; the regression is fixed and the active contract now requires the code-quality guard.
 - [x] Phase 5/6 audit finding repaired: raw enum option visibility helper now treats missing predicates as intentional but malformed `visible_if` as fail-closed.
-- [x] Phase 8 finding repaired in working tree: prior closeout overstated completion by treating the selected matrix as exhaustive; the all-44 inventory now reconciles the original 19 unchanged rows with 9 UI-proven visible controls and 10 intentionally hidden branch-dead controls. Validation rails are green; checkpoint/receipt/push/clean-tree closeout remains.
+- [x] Phase 8 finding repaired: prior closeout overstated completion by treating the selected matrix as exhaustive; the all-44 inventory now reconciles the original 19 unchanged rows with 9 UI-proven visible controls and 10 intentionally hidden branch-dead controls, with validation and runtime proof recorded for the closed slice.
 - [x] Phase 8 receipt finding repaired: contract-proof receipt generation initially rejected the actual logged-command wrapper validation commands; `_dynamic_logged_command_spec(...)` now hashes those `--log artifacts/...` outputs as text-log evidence and the contract assertions point at the current Phase 8 JUnit artifact.
 
 ## Action Hostile Review
