@@ -244,6 +244,31 @@ def test_validation_evidence_spec_for_command_recognizes_redirected_log_command(
     assert spec.artifact_path == "artifacts/logs/phase4d_full_native.log"
 
 
+
+def test_fractal_parameter_surface_contract_uses_single_runtime_walk_pytest_command() -> None:
+    contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
+
+    runtime_commands = [
+        command for command in contract["required_validation_commands"]
+        if "tests/test_fractal_runtime_runtime_walk_viewer.py" in command
+    ]
+
+    assert len(runtime_commands) == 1
+    full_module_artifact = runtime_commands[0].split("--junitxml ", 1)[1].split()[0]
+    assert " -k " not in runtime_commands[0]
+    assert full_module_artifact.endswith("_full_module.junit.xml")
+
+    runtime_assertions = [
+        assertion for assertion in contract["required_acceptance_assertions"]
+        if assertion.get("evidence_kind") == "runtime_junit_case"
+        and str(assertion.get("test_nodeid", "")).startswith("tests/test_fractal_runtime_runtime_walk_viewer.py::")
+    ]
+
+    assert runtime_assertions
+    for assertion in runtime_assertions:
+        assert assertion["artifact_path"] == full_module_artifact
+
+
 def test_build_validation_evidence_entries_records_artifact_metadata(tmp_path: Path) -> None:
     artifact = tmp_path / "artifacts" / "validation" / "contract.json"
     artifact.parent.mkdir(parents=True)

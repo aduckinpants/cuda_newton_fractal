@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 batch E is closed on this branch: standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offsets / reconvergence ratio now have native matrix coverage plus no-mouse rendered-frame proof. Enum/combo controls and later Explaino common-control matrix expansion remain later checklist items.
+Phase 4 batch F is closed on this branch: the validation contract no longer requires repeated targeted runtime-walk viewer pytest launches plus a full-module rerun; all runtime-walk acceptance assertions now read from one full-module JUnit artifact, guarded by a unit test. Enum/combo controls and later Explaino common-control matrix expansion remain later checklist items.
 
 ## Explicit User Asks
 
@@ -31,6 +31,7 @@ Phase 4 batch E is closed on this branch: standalone Projection-and-Flow target 
   - [x] Batch D - Nova Alpha range cap: align schema/runtime validation with the kernel-valid `(0,2]` domain and prove no-mouse over-cap set-value clamps to `2.0`.
   - [x] Batch D receipt proof repair - make redirected native build logs parseable contract-proof evidence after the closure wrapper caught the gap.
   - [x] Batch E - standalone Projection-and-Flow and Counterfactual Pair numeric controls: prove target radius, pressure threshold, offsets, and reconvergence ratio through no-mouse rendered-frame deltas.
+  - [x] Batch F - validation de-duplication: replace repeated targeted runtime-walk viewer proof commands with one full-module JUnit source and unit-test that contract shape.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
 - [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
@@ -127,6 +128,10 @@ Phase 4 batch E is closed on this branch: standalone Projection-and-Flow target 
 - Phase 4 batch E repair: `test_schema_binding` now includes standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offset / reconvergence numeric controls in the visible-control matrix.
 - Phase 4 batch E published-runtime no-mouse proof green: `artifacts/pytest/fractal_parameter_surface_matrix_projection_counterfactual_numeric.junit.xml` (`1 passed, 18 deselected`) proves all five grouped controls change rendered frame hashes.
 - Phase 4 batch E focused native schema/color rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase4e_focused_schema_binding.log 2>&1`.
+- Phase 4 batch F RED failed as expected: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -k "fractal_parameter_surface_contract_uses_single_runtime_walk_pytest_command" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_unit_dedupe_red.junit.xml` reported `17 deselected` because the unit guard did not exist yet.
+- Phase 4 batch F repair: `docs/contracts/fractal_parameter_surface_matrix.contract.json` now requires one `tests/test_fractal_runtime_runtime_walk_viewer.py` full-module command instead of one command per focused runtime witness plus the full module.
+- Phase 4 batch F repair: all runtime-walk acceptance assertions now point at the single full-module JUnit artifact, so contract proof can check every case without opening and closing the viewer repeatedly.
+- Phase 4 batch F unit proof target: `tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_uses_single_runtime_walk_pytest_command`.
 
 ## Hostile Audit
 
@@ -162,6 +167,9 @@ Phase 4 batch E is closed on this branch: standalone Projection-and-Flow target 
 - [x] Phase 4 batch E pass 1 - confirmed the batch stays on standalone Projection-and-Flow and Counterfactual Pair numeric controls, leaving enum/combo support to the later checklist item.
 - [x] Phase 4 batch E pass 2 - confirmed the no-mouse proof compares rendered frame hashes after the existing UI edit path consumes each control.
 - [x] Phase 4 batch E clean re-read - the new proof found no dead product control in this group; prior Explaino, Nova, Newton/Halley, scalar, and Color Pipeline guardrails remain required validation commands.
+- [x] Phase 4 batch F pass 1 - found the validation anti-pattern: the contract required multiple targeted runtime-walk viewer pytest launches and then a full-module launch.
+- [x] Phase 4 batch F pass 2 - repaired the contract shape so runtime-walk acceptance checks share one full-module JUnit artifact.
+- [x] Phase 4 batch F clean re-read - this slice changed no runtime/viewer/product code and added a unit guard against reintroducing duplicated runtime-walk commands.
 
 ## Audit Findings
 
@@ -177,6 +185,7 @@ Phase 4 batch E is closed on this branch: standalone Projection-and-Flow target 
 - [x] Phase 4 batch D finding repaired: Nova Alpha exposed/accepted values above the kernel-valid maximum; schema and runtime validation now cap at `2.0`, and over-cap no-mouse set-value lands on the same frame as `2.0`.
 - [x] Phase 4 batch D receipt finding repaired: required native build logs were listed in validation receipts but were not parseable by contract-proof evidence collection; redirected `.log` commands are now hashed as text-log evidence.
 - [x] Phase 4 batch E finding repaired: standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offsets / reconvergence ratio were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
+- [x] Phase 4 batch F finding repaired: the active validation contract duplicated runtime-walk viewer pytest launches; unit coverage now enforces one full-module runtime-walk command with multiple assertion checks reading the same JUnit artifact.
 
 ## Boundaries
 
@@ -200,7 +209,7 @@ Out of scope for Phase 2/3 batch:
 - Explaino common-control matrix expansion
 - new fractal families or renderer redesign
 
-## Remaining Work After Phase 4E
+## Remaining Work After Phase 4F
 
 - Phase 4: further dead-slider/proof batches from the matrix.
 - Phase 5: enum/combo harness support and combo rows.
