@@ -257,6 +257,7 @@ Phase 8 is in closeout: the exhaustive all-44 schema inventory and original 19-r
 - [x] Phase 8 pass 2 - proved current missing/dead-control gaps with RED tests before repairs; the first-pass 19 unchanged rows are now handled by UI proof or hidden branch-dead classification.
 - [x] Phase 8 pass 3 - re-ran Color Pipeline, Explaino-all, smooth-escape/performance, persistent harness, runtime publish, and full native guards after repairs; the first full-native wrapper timed out, but the longer rerun completed with `All helper tests passed`.
 - [x] Phase 8 clean re-read - verified the original 19-row all-44 red set now has 9 UI-proven visible rows, 10 intentionally hidden branch-dead rows, 0 unresolved rows, no physical mouse proof, and no default legacy relaunching runtime-walk viewer dependency.
+- [x] Phase 8 receipt pass - repaired the contract-proof evidence parser so the actual `viewer_host_run_logged_command.py --log ...` validation commands are parseable text-log evidence instead of swapping in unrun redirected commands.
 
 ## Audit Findings
 
@@ -279,6 +280,7 @@ Phase 8 is in closeout: the exhaustive all-44 schema inventory and original 19-r
 - [x] Phase 5/8 finding repaired: the previous harness closeout missed the code-quality baseline regression; the regression is fixed and the active contract now requires the code-quality guard.
 - [x] Phase 5/6 audit finding repaired: raw enum option visibility helper now treats missing predicates as intentional but malformed `visible_if` as fail-closed.
 - [x] Phase 8 finding repaired in working tree: prior closeout overstated completion by treating the selected matrix as exhaustive; the all-44 inventory now reconciles the original 19 unchanged rows with 9 UI-proven visible controls and 10 intentionally hidden branch-dead controls. Validation rails are green; checkpoint/receipt/push/clean-tree closeout remains.
+- [x] Phase 8 receipt finding repaired: contract-proof receipt generation initially rejected the actual logged-command wrapper validation commands; `_dynamic_logged_command_spec(...)` now hashes those `--log artifacts/...` outputs as text-log evidence and the contract assertions point at the current Phase 8 JUnit artifact.
 
 ## Action Hostile Review
 

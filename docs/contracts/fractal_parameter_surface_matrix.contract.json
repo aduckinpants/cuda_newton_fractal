@@ -118,30 +118,30 @@
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_receipt_log_evidence_parser",
-      "description": "Contract-proof evidence parser recognizes redirected native build logs as validation artifacts",
+      "description": "Contract-proof evidence parser recognizes logged-command native build logs as validation artifacts",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
-      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_redirected_log_command"
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase8_dead_control_repair.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_logged_command_wrapper"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_code_quality_guard_required",
       "description": "The active contract requires code-quality baseline validation so harness refactors cannot regress silently",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase8_dead_control_repair.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_requires_code_quality_guard"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_no_relaunching_runtime_walk_contract_guard",
       "description": "The active contract does not require the relaunching runtime-walk viewer module as default proof until a persistent no-relaunch harness exists",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase8_dead_control_repair.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime_walk_viewer_module"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_runtime_walk_e2e_module_opt_in_guard",
       "description": "The runtime-walk viewer E2E module is skipped by default unless an explicit opt-in environment variable is set",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase8_dead_control_repair.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_runtime_walk_viewer_e2e_module_is_explicitly_opt_in"
     },
     {

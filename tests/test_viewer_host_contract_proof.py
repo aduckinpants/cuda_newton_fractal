@@ -245,6 +245,19 @@ def test_validation_evidence_spec_for_command_recognizes_redirected_log_command(
 
 
 
+def test_validation_evidence_spec_for_command_recognizes_logged_command_wrapper() -> None:
+    command = (
+        "py -3.14 tools/viewer_host_run_logged_command.py --label phase8_full_native_dead_control_repair_rerun "
+        "--log artifacts/logs/phase8_full_native_dead_control_repair_rerun.log -- ui_app/build_tests_vsdevcmd.cmd"
+    )
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "text_log"
+    assert spec.artifact_path == "artifacts/logs/phase8_full_native_dead_control_repair_rerun.log"
+
+
 def test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime_walk_viewer_module() -> None:
     contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
 
