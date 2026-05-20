@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across the schema, runtime validation, and no-mouse set-value path, matching the existing Nova kernel domain. Later matrix batches remain unfinished.
+Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across the schema, runtime validation, and no-mouse set-value path, matching the existing Nova kernel domain. The receipt-evidence parser also now treats redirected native build logs as parseable validation artifacts, so the required native rails are covered by the contract-proof receipt. Later matrix batches remain unfinished.
 
 ## Explicit User Asks
 
@@ -28,6 +28,7 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
   - [x] Batch B - standalone Newton/Halley controls: prove `epsilon` and `poly_c0` through `poly_c4` via no-mouse rendered-frame deltas.
   - [x] Batch C - standalone Nova remaining controls: prove `epsilon` and `poly_c0` through `poly_c3` via no-mouse rendered-frame deltas.
   - [x] Batch D - Nova Alpha range cap: align schema/runtime validation with the kernel-valid `(0,2]` domain and prove no-mouse over-cap set-value clamps to `2.0`.
+  - [x] Batch D receipt proof repair - make redirected native build logs parseable contract-proof evidence after the closure wrapper caught the gap.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
 - [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
@@ -116,6 +117,8 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - Phase 4 batch D prior proof guardrails green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_nova_remaining_polynomial.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_newton_halley_polynomial.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_standalone_scalars.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml`, and `artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml`.
 - Phase 4 batch D full runtime-walk viewer module green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4d_full_module.junit.xml` (`18 passed`).
 - Phase 4 batch D full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase4d_full_native.log 2>&1` completed with `All helper tests passed`.
+- Phase 4 batch D receipt blocker: contract-proof writing initially failed because raw redirected native build commands had no parseable evidence spec.
+- Phase 4 batch D receipt repair: `tools/viewer_host_contract_proof.py` now recognizes redirected `.log` validation commands as text-log evidence, with unit proof in `artifacts/pytest/test_viewer_host_contract_proof_phase4d_receipt_log_evidence.junit.xml`.
 
 ## Hostile Audit
 
@@ -147,6 +150,7 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - [x] Phase 4 batch D pass 1 - confirmed the change only narrows Nova Alpha's advertised/runtime domain and does not alter Nova math.
 - [x] Phase 4 batch D pass 2 - confirmed the no-mouse proof compares capped rendered-frame behavior, not just schema text.
 - [x] Phase 4 batch D clean re-read - prior Nova, Newton/Halley, scalar, Explaino, Color Pipeline, and runtime harness guardrails remain green after the batch.
+- [x] Phase 4 batch D pass 3 - found and repaired a receipt-evidence parser gap that hid redirected native build logs from contract-proof receipts.
 
 ## Audit Findings
 
@@ -160,6 +164,7 @@ Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across t
 - [x] Phase 4 batch B finding repaired: standalone Newton/Halley polynomial controls and `epsilon` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 - [x] Phase 4 batch C finding repaired: standalone Nova `epsilon` and `poly_c0` through `poly_c3` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 - [x] Phase 4 batch D finding repaired: Nova Alpha exposed/accepted values above the kernel-valid maximum; schema and runtime validation now cap at `2.0`, and over-cap no-mouse set-value lands on the same frame as `2.0`.
+- [x] Phase 4 batch D receipt finding repaired: required native build logs were listed in validation receipts but were not parseable by contract-proof evidence collection; redirected `.log` commands are now hashed as text-log evidence.
 
 ## Boundaries
 

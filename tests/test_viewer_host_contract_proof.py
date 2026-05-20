@@ -234,6 +234,16 @@ def test_validation_evidence_spec_for_command_recognizes_salt_ndepend_freeze_gat
     assert spec.artifact_path == "artifacts/salt_ndepend/latest/doctor.json"
 
 
+def test_validation_evidence_spec_for_command_recognizes_redirected_log_command() -> None:
+    command = "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts\\logs\\phase4d_full_native.log 2>&1"
+
+    spec = validation_evidence_spec_for_command(command)
+
+    assert spec is not None
+    assert spec.artifact_kind == "text_log"
+    assert spec.artifact_path == "artifacts/logs/phase4d_full_native.log"
+
+
 def test_build_validation_evidence_entries_records_artifact_metadata(tmp_path: Path) -> None:
     artifact = tmp_path / "artifacts" / "validation" / "contract.json"
     artifact.parent.mkdir(parents=True)

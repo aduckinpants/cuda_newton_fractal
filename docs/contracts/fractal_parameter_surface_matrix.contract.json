@@ -29,6 +29,8 @@
     "ui_app/tests/test_fractal_runtime_validation.cpp",
     "ui_app/tests/test_perturbation_reference_orbit.cpp",
     "ui_app/tests/test_safe_mode_schema.cpp",
+    "tools/viewer_host_contract_proof.py",
+    "tests/test_viewer_host_contract_proof.py",
     "tests/runtime_harness.py",
     "tests/test_fractal_runtime_runtime_walk_viewer.py"
   ],
@@ -61,6 +63,7 @@
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase4d_receipt_log_evidence.junit.xml",
     "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts\\logs\\phase4d_full_native.log 2>&1",
     "cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\\logs\\phase4d_focused_schema_binding.log 2>&1",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"nova_alpha_no_mouse_set_value_above_two_matches_two_cap\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_alpha_cap.junit.xml",
@@ -96,6 +99,13 @@
       "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
       "json_path": "ok",
       "equals": true
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_receipt_log_evidence_parser",
+      "description": "Contract-proof evidence parser recognizes redirected native build logs as validation artifacts",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase4d_receipt_log_evidence.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_redirected_log_command"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_nova_alpha_cap_runtime_pytest",

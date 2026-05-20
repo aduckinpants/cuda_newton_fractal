@@ -165,6 +165,23 @@ def _dynamic_salt_ndepend_freeze_gate_spec(command: str) -> ValidationEvidenceSp
     )
 
 
+def _dynamic_redirected_log_spec(command: str) -> ValidationEvidenceSpec | None:
+    normalized = command.replace("\\", "/").strip()
+    match = re.search(r">\s+(?P<artifact>\S+\.log)\s+2>&1\s*$", normalized)
+    if match is None:
+        return None
+    artifact_path = match.group("artifact")
+    if not artifact_path.startswith("artifacts/"):
+        return None
+    safe_suffix = re.sub(r"[^A-Za-z0-9]+", "_", artifact_path).strip("_") or "log"
+    return ValidationEvidenceSpec(
+        evidence_id=f"text_log_{safe_suffix}",
+        command=command,
+        artifact_kind="text_log",
+        artifact_path=artifact_path,
+    )
+
+
 def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec | None:
     spec = KNOWN_VALIDATION_EVIDENCE_BY_COMMAND.get(command)
     if spec is not None:
@@ -187,6 +204,9 @@ def validation_evidence_spec_for_command(command: str) -> ValidationEvidenceSpec
     if spec is not None:
         return spec
     spec = _dynamic_salt_ndepend_freeze_gate_spec(command)
+    if spec is not None:
+        return spec
+    spec = _dynamic_redirected_log_spec(command)
     if spec is not None:
         return spec
     return _dynamic_validator_json_spec(command)
