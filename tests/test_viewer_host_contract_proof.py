@@ -279,6 +279,17 @@ def test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime
     assert contract["required_defaults"].get("persistent_runtime_viewer_harness") == "required"
 
 
+def test_fractal_parameter_surface_contract_requires_code_quality_guard() -> None:
+    contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
+
+    quality_commands = [
+        command for command in contract["required_validation_commands"]
+        if "tools/code_quality_audit.py" in command and "--check-baseline" in command
+    ]
+
+    assert len(quality_commands) == 1
+
+
 
 
 def test_runtime_walk_viewer_e2e_module_is_explicitly_opt_in() -> None:

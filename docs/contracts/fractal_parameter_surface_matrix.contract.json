@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contract_id": "fractal_parameter_surface_matrix",
-  "feature_id": "fractal_parameter_surface_matrix_phase5_7_persistent_runtime_harness",
+  "feature_id": "fractal_parameter_surface_matrix_phase5_8_remaining_surface_completion",
   "workflow_type": "viewer_first",
   "plan_path": "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -56,9 +56,10 @@
   ],
   "required_defaults": {
     "branch": "codex/fractal-parameter-surface-matrix",
-    "phase": "phase5_7_persistent_runtime_harness",
+    "phase": "phase5_8_remaining_surface_completion",
     "hostile_audit": "required",
     "no_physical_mouse_tests": true,
+    "code_quality_guard": "required",
     "runtime_walk_viewer_default_proof": "forbidden_legacy_relaunch_module",
     "runtime_walk_viewer_e2e_module": "legacy_opt_in_only",
     "persistent_runtime_viewer_harness": "required"
@@ -70,14 +71,15 @@
     "claim_all_items_done": "forbidden"
   },
   "required_validation_commands": [
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/phase5_8_code_quality_green.json",
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
-    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase5_7_persistent_harness.junit.xml",
-    "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts\\logs\\phase5_7_full_native.log 2>&1",
-    "cmd /c ui_app\\build_vsdevcmd.cmd > artifacts\\logs\\phase5_7_runtime_publish.log 2>&1",
-    "cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\\logs\\phase5_7_focused_schema_binding.log 2>&1",
-    "py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase5_7.junit.xml"
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\\logs\\phase5_8_surface_matrix.log 2>&1",
+    "cmd /c ui_app\\build_tests_vsdevcmd.cmd > artifacts\\logs\\phase5_8_full_native.log 2>&1",
+    "cmd /c ui_app\\build_vsdevcmd.cmd > artifacts\\logs\\phase5_8_runtime_publish.log 2>&1",
+    "py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase5_8.junit.xml"
   ],
   "required_acceptance_assertions": [
     {
@@ -108,28 +110,35 @@
       "assertion_id": "fractal_parameter_surface_matrix_receipt_log_evidence_parser",
       "description": "Contract-proof evidence parser recognizes redirected native build logs as validation artifacts",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_7_persistent_harness.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_validation_evidence_spec_for_command_recognizes_redirected_log_command"
+    },
+    {
+      "assertion_id": "fractal_parameter_surface_matrix_code_quality_guard_required",
+      "description": "The active contract requires code-quality baseline validation so harness refactors cannot regress silently",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_requires_code_quality_guard"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_no_relaunching_runtime_walk_contract_guard",
       "description": "The active contract does not require the relaunching runtime-walk viewer module as default proof until a persistent no-relaunch harness exists",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_7_persistent_harness.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime_walk_viewer_module"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_runtime_walk_e2e_module_opt_in_guard",
       "description": "The runtime-walk viewer E2E module is skipped by default unless an explicit opt-in environment variable is set",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_7_persistent_harness.junit.xml",
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml",
       "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_runtime_walk_viewer_e2e_module_is_explicitly_opt_in"
     },
     {
       "assertion_id": "fractal_parameter_surface_matrix_persistent_runtime_viewer_single_launch",
       "description": "Persistent runtime viewer harness batches baseline and multiple set-value proofs through one viewer process",
       "evidence_kind": "runtime_junit_case",
-      "artifact_path": "artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase5_7.junit.xml",
+      "artifact_path": "artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase5_8.junit.xml",
       "test_nodeid": "tests/test_fractal_runtime_persistent_viewer_harness.py::test_persistent_runtime_viewer_batches_set_value_proofs_in_one_process"
     }
   ]

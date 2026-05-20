@@ -2640,6 +2640,40 @@ static void CaptureLoadedStateFractalTypeIfAny(const std::string& loadedStatePat
     if (!loadedStatePath.empty()) outFractalType = view.fractal_type;
 }
 
+static bool InitializeRuntimeWalkViewerOrShutdown(const ViewerCliArgs& cli,
+                                                  const std::string& exeDir,
+                                                  HWND hwnd,
+                                                  const WNDCLASSEX& wc,
+                                                  RuntimeWalkViewerImportPanelState& runtimeWalkImportPanel,
+                                                  RuntimeWalkViewerSession& runtimeWalkViewerSession,
+                                                  RuntimeWalkViewerPlaybackState& runtimeWalkPlayback,
+                                                  RenderSettings& render,
+                                                  ViewState& view,
+                                                  KernelParams& params,
+                                                  std::string& currentLoadedStatePath,
+                                                  FractalType& currentLoadedStateFractalType,
+                                                  bool& dirty) {
+    std::string runtimeWalkError;
+    if (InitializeRuntimeWalkViewerIfRequested(
+            cli,
+            exeDir,
+            &runtimeWalkImportPanel,
+            &runtimeWalkViewerSession,
+            &runtimeWalkPlayback,
+            &render,
+            &view,
+            &params,
+            &currentLoadedStatePath,
+            &currentLoadedStateFractalType,
+            &dirty,
+            &runtimeWalkError)) {
+        return true;
+    }
+    std::fprintf(stderr, "%s\n", runtimeWalkError.c_str());
+    ShutdownViewer(hwnd, wc);
+    return false;
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     std::vector<std::string> args = GetCommandLineArgsUtf8();
     ViewerCliArgs cli{};
@@ -2729,25 +2763,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ShutdownViewer(hwnd, wc);
         return 1;
     }
-    {
-        std::string runtimeWalkError;
-        if (!InitializeRuntimeWalkViewerIfRequested(
-                cli,
-                exeDir,
-                &runtimeWalkImportPanel,
-                &runtimeWalkViewerSession,
-                &runtimeWalkPlayback,
-                &render,
-                &view,
-                &params,
-                &currentLoadedStatePath,
-                &currentLoadedStateFractalType,
-                &dirty,
-                &runtimeWalkError)) {
-            std::fprintf(stderr, "%s\n", runtimeWalkError.c_str());
-            ShutdownViewer(hwnd, wc);
-            return 1;
-        }
+    if (!InitializeRuntimeWalkViewerOrShutdown(
+            cli, exeDir, hwnd, wc,
+            runtimeWalkImportPanel, runtimeWalkViewerSession, runtimeWalkPlayback,
+            render, view, params,
+            currentLoadedStatePath, currentLoadedStateFractalType, dirty)) {
+        return 1;
     }
     if (runtimeWalkViewerSession.loaded) {
         lastPolyKind = params.poly_kind;

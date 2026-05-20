@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 batched surface cleanup remains active on this branch. The persistent runtime harness sub-slice is implemented and has focused one-process runtime proof; remaining cleanup batches are still explicit below.
+Phase 5/6/7 parameter-surface cleanup is in closeout on this branch: the code-quality carryover, enum/combo matrix, Explaino common-control matrix, persistent harness, and no-relaunch guard are covered by focused or full validation. No checklist phase remains open in this plan.
 
 ## Explicit User Asks
 
@@ -17,6 +17,7 @@ Phase 5 batched surface cleanup remains active on this branch. The persistent ru
 - [x] Continue Phase 4 without another prompt by taking the Nova remaining polynomial/epsilon proof batch.
 - [x] Cap Nova Alpha at the kernel-valid `2.0` maximum and prove over-cap UI set-value cannot drive the dead `>2.0` range.
 - [x] Continue Phase 4 by batching standalone Projection-and-Flow and Counterfactual Pair numeric-control proof instead of paying closeout cost for one slider at a time.
+- [x] Finish the full remaining parameter-surface cleanup set instead of stopping after the harness sub-slice.
 
 ## Phase Checklist
 
@@ -32,10 +33,10 @@ Phase 5 batched surface cleanup remains active on this branch. The persistent ru
   - [x] Batch D receipt proof repair - make redirected native build logs parseable contract-proof evidence after the closure wrapper caught the gap.
   - [x] Batch E - standalone Projection-and-Flow and Counterfactual Pair numeric controls: prove target radius, pressure threshold, offsets, and reconvergence ratio through no-mouse rendered-frame deltas.
   - [x] Batch F - historical validation de-duplication: replaced repeated targeted runtime-walk viewer pytest commands with one full-module JUnit source, but Phase 5/6 review proved that this did not satisfy the no-relaunch requirement because the module still opens and closes the app internally.
-- [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
-  - [ ] Batch G - native enum/combo matrix proof for `mcmullen_preset`, `poly_kind`, Counterfactual Pair, Projection-and-Flow, and `transcendental_func`; classify McMullen as preset-only and fixed-formula lanes as intentionally control-free beyond global/color controls.
-- [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
-  - [ ] Batch H - native matrix proof that every canonical Explaino selector exposes the common controls and that animation applicability stays derived from the visible schema surface.
+- [x] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
+  - [x] Batch G - native enum/combo matrix proof for `mcmullen_preset`, `poly_kind`, Counterfactual Pair, Projection-and-Flow, and `transcendental_func`; classify McMullen as preset-only and fixed-formula lanes as intentionally control-free beyond global/color controls.
+- [x] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
+  - [x] Batch H - native matrix proof that every canonical Explaino selector exposes the common controls and that animation applicability stays derived from the visible schema surface.
   - [x] Batch I - harness truth repair: remove `tests/test_fractal_runtime_runtime_walk_viewer.py` from default required validation, make the E2E module explicit opt-in, and add unit guards that forbid relying on it again until a persistent no-relaunch harness exists.
 - [x] Phase 7 - persistent runtime viewer automation: add a file-driven command channel, run a focused one-process batch proof, and keep legacy relaunch tests opt-in.
 - [x] Phase 7 closeout guard - hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
@@ -157,6 +158,20 @@ Phase 5 batched surface cleanup remains active on this branch. The persistent ru
 - Phase 5/7 plan sync green: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
 - Phase 5/7 hostile-audit validation green: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json`.
 - Phase 5/7 diff hygiene green: `git diff --check` returned only expected CRLF working-tree warnings.
+- Phase 5/8 starting head: `39f9439`.
+- Phase 5/8 code-quality RED: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts\logs\phase5_8_code_quality_red.json` failed because `ui_app\src\main.cpp` `WinMain()` regressed from 189 to 191 lines.
+- Phase 5/8 code-quality repair: extracted runtime-walk viewer startup into `InitializeRuntimeWalkViewerOrShutdown(...)`, preserving behavior while reducing `WinMain()` to 178 lines.
+- Phase 5/8 code-quality green: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts\logs\phase5_8_code_quality_green.json` passed.
+- Phase 5/8 contract guard RED: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -k code_quality_guard -q --junitxml artifacts\pytest\test_viewer_host_contract_proof_phase5_8_code_quality_red.junit.xml` failed because the active contract did not require code-quality validation.
+- Phase 5/8 contract-proof guard green: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts\pytest\test_viewer_host_contract_proof_phase5_8_remaining_surface.junit.xml` (`20 passed`).
+- Phase 5/8 focused surface matrix green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase5_8_surface_matrix.log 2>&1`; log includes `test_schema_binding: all passed`, Color Pipeline core/window, escape-time coloring, diagnostics state IO, finding archive actions, and runtime reset.
+- Phase 5/8 runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase5_8_runtime_publish.log 2>&1` staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Phase 5/8 persistent harness green: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -q --junitxml artifacts\pytest\fractal_runtime_persistent_viewer_harness_phase5_8.junit.xml` (`1 passed`) used one viewer lifecycle against the rebuilt runtime.
+- Phase 5/8 full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase5_8_full_native.log 2>&1` ended with `All helper tests passed`; the log includes `test_schema_binding: all passed`, `test_ui_schema: all passed`, and `test_param_anim_generic`.
+- Phase 5/8 process hygiene proof: no `viewer`, `cuda`, `fractal`, or `newton` process remained after the focused persistent runtime proof.
+- Phase 5/8 contract validation green: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts\validation\fractal_parameter_surface_matrix_contract.json`.
+- Phase 5/8 plan sync green: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
+- Phase 5/8 hostile-audit validation green: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs\notes\fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts\validation\fractal_parameter_surface_matrix_hostile_audit.json`.
 
 ## Hostile Audit
 
@@ -202,6 +217,11 @@ Phase 5 batched surface cleanup remains active on this branch. The persistent ru
 - [x] Phase 5/7 pass 1 - `test_viewer_cli` is covered by full native and proves `--ui-automation-command-json` parses a persistent automation command file path.
 - [x] Phase 5/7 pass 2 - the published viewer accepts command-file set-value requests while already running and reports the consumed command sequence.
 - [x] Phase 5/7 pass 3 - focused runtime pytest batches baseline plus two set-value edits through one viewer process and closes once.
+- [x] Phase 5/8 pass 1 - proved and repaired the harness code-quality carryover; `code_quality_audit.py --check-baseline` is now a required contract rail.
+- [x] Phase 5/8 pass 2 - proved the enum/combo matrix for preset/root-family/function controls through `test_schema_binding`.
+- [x] Phase 5/8 pass 3 - proved fixed-formula lanes and McMullen preset-only classification through the same native schema/binding matrix.
+- [x] Phase 5/8 pass 4 - proved Explaino common controls across every canonical selector and animation-target applicability mirroring through native schema/binding and full native `test_param_anim_generic`.
+- [x] Phase 5/8 clean re-read - no physical mouse automation or legacy relaunching runtime-walk viewer module is required for closeout; the persistent one-process harness remains the only runtime UI proof rail.
 
 ## Audit Findings
 
@@ -220,16 +240,17 @@ Phase 5 batched surface cleanup remains active on this branch. The persistent ru
 - [x] Phase 4 batch F finding corrected: the active validation contract duplicated runtime-walk viewer pytest launches; the one-full-module replacement was later proven insufficient because it still relaunches the app internally.
 - [x] Phase 5/6 harness finding repaired: the active validation contract no longer requires the relaunching full runtime-walk viewer module as default proof, and the module itself now skips unless explicitly enabled with `VIEWER_HOST_ENABLE_RUNTIME_VIEWER_E2E=1` until persistent no-relaunch automation is built.
 - [x] Phase 5/7 finding repaired: persistent runtime viewer automation now uses command-file driven set-value automation against one already-running viewer and proves a one-process batch runtime test.
-- [ ] Phase 5/6 finding target: remaining enum/combo rows, fixed-formula classifications, and Explaino common controls must be covered by native/schema matrix proof without using physical mouse automation or repeated viewer launches.
+- [x] Phase 5/6 finding repaired: remaining enum/combo rows, fixed-formula classifications, and Explaino common controls are covered by native/schema matrix proof without using physical mouse automation or repeated viewer launches.
+- [x] Phase 5/8 finding repaired: the previous harness closeout missed the code-quality baseline regression; the regression is fixed and the active contract now requires the code-quality guard.
 - [x] Phase 5/6 audit finding repaired: raw enum option visibility helper now treats missing predicates as intentional but malformed `visible_if` as fail-closed.
 
 ## Action Hostile Review
 
-- Action ID: phase5_7_persistent_runtime_viewer_harness
-- Suspected Failure Mode: the previous checkpoint only disabled the repeated-launch proof path; it did not provide a real in-process/persistent automation path for live viewer set-value proof.
-- Correct Owner/Action: add a file-driven command channel to an already-running viewer, expose it through `tests/runtime_harness.py`, and add a focused runtime proof that launches one viewer process, captures a baseline, applies multiple set-value commands, and closes once.
-- Proof Surface: `test_viewer_cli`, focused persistent runtime pytest, contract validation, plan sync, hostile-audit validation, focused/native rails, runtime publish, and contract proof receipts.
-- Blocked Action: no physical mouse automation, no repeated viewer launch proof, no Color Pipeline product mutation, no schema ownership change.
+- Action ID: phase5_8_remaining_surface_completion
+- Suspected Failure Mode: the previous checkpoint closed the persistent harness sub-slice while leaving the broader cleanup set and the code-quality regression unresolved.
+- Correct Owner/Action: close the remaining enum/combo, fixed-lane, Explaino common-control, animation applicability, persistent harness, and code-quality guard surfaces without re-enabling legacy relaunching viewer tests.
+- Proof Surface: code-quality audit, `test_schema_binding`, `test_ui_schema`, `test_param_anim_generic`, focused persistent runtime pytest, contract validation, plan sync, hostile-audit validation, full native rails, runtime publish, and contract proof receipts.
+- Blocked Action: no physical mouse automation, no repeated viewer launch proof, no Color Pipeline product mutation, no new fractal families, no renderer rewrite.
 
 ## Boundaries
 
@@ -253,9 +274,7 @@ Out of scope for Phase 2/3 batch:
 - Explaino common-control matrix expansion
 - new fractal families or renderer redesign
 
-## Remaining Work After Phase 4F
+## Remaining Work After Phase 5/8
 
-- Phase 4: further dead-slider/proof batches from the matrix.
-- Phase 5 Batch G remains open for enum/combo rows and fixed-formula classifications.
-- Phase 6 Batch H remains open for Explaino common-control matrix expansion.
+- No remaining parameter-surface cleanup phase is open in this plan.
 - Future rendered-frame proofs must use the persistent command-file harness or another no-relaunch in-process path; do not re-enable the legacy runtime-walk viewer module as default validation.
