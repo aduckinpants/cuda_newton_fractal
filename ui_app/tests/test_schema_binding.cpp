@@ -289,6 +289,7 @@ bool ValidateVisibleControlMatrix() {
         {"poly_c2", FractalType::halley, "fractal.params.poly_coeffs.2"},
         {"poly_c3", FractalType::halley, "fractal.params.poly_coeffs.3"},
         {"poly_c4", FractalType::halley, "fractal.params.poly_coeffs.4"},
+        {"epsilon", FractalType::nova, "fractal.params.epsilon"},
         {"nova_alpha", FractalType::nova, "fractal.params.nova_alpha"},
         {"poly_c0", FractalType::nova, "fractal.params.poly_coeffs.0"},
         {"poly_c1", FractalType::nova, "fractal.params.poly_coeffs.1"},

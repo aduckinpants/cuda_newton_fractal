@@ -554,6 +554,69 @@ def test_nova_poly_c4_no_mouse_set_value_change_live_viewport(tmp_path: Path) ->
         f"baseline_hash={baseline_hash} edited_hash={edited_hash}"
     )
 
+def test_nova_remaining_polynomial_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    controls = [
+        ("epsilon", "fractal_control.epsilon.primary", 0.01),
+        ("poly_c0", "fractal_control.poly_c0.primary", -0.45),
+        ("poly_c1", "fractal_control.poly_c1.primary", 0.24),
+        ("poly_c2", "fractal_control.poly_c2.primary", -0.18),
+        ("poly_c3", "fractal_control.poly_c3.primary", 0.72),
+    ]
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "nova", "--width", "320", "--height", "240"
+    )
+    base_state = neutral_capture["state"]
+    view = base_state["view"]
+    assert isinstance(view, dict)
+    view["center_x"] = -0.2031297467797688
+    view["center_y"] = 0.3483956144889109
+    view["center_hp_x"] = -0.2031297467797688
+    view["center_hp_y"] = 0.3483956144889109
+    view["zoom"] = 16.0
+    view["log2_zoom"] = 4.0
+    view["auto_max_iter"] = False
+    params = base_state["params"]
+    assert isinstance(params, dict)
+    params["max_iter"] = 40
+    params["poly_kind"] = 2
+    params["poly_coeffs"] = [-1.0, 0.0, 0.0, 1.0, 0.0]
+    params["nova_alpha"] = 0.1
+    params["coloring_mode"] = "smooth_escape"
+    params["color_signal"] = "smooth_escape"
+    params["color_shape"] = "identity"
+    params["color_palette"] = "cyclic_escape"
+    params["color_grading"] = "escape_default"
+
+    for param_id, control_id, set_value in controls:
+        state = json.loads(json.dumps(base_state))
+        state_path = _write_state_bundle(tmp_path / f"nova_{param_id}_neutral", state)
+        baseline_payload = _capture_controls_report_with_optional_set_value(
+            exe_path,
+            state_path,
+            tmp_path / f"nova_{param_id}_baseline_report.json",
+            control_id,
+            None,
+        )
+        payload = _capture_controls_report_with_optional_set_value(
+            exe_path,
+            state_path,
+            tmp_path / f"nova_{param_id}_edited_report.json",
+            control_id,
+            set_value,
+        )
+        assert payload.get("current_fractal_type") == "nova"
+        baseline_hash = _require_rendered_frame_hash(baseline_payload)
+        edited_hash = _require_rendered_frame_hash(payload)
+        assert edited_hash != baseline_hash, (
+            "No-mouse set-value automation for a remaining Nova polynomial control should change the rendered frame; "
+            f"param={param_id!r} baseline_hash={baseline_hash} edited_hash={edited_hash}"
+        )
+
+
 
 def test_standalone_scalar_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
     if sys.platform != "win32":

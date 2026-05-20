@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 batch B is closed on this branch: standalone Newton/Halley polynomial coefficient controls plus `epsilon` now have native visibility/binding matrix coverage and no-mouse rendered-frame proof. Later matrix batches remain unfinished and must continue from the inventory.
+Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c0` through `poly_c3` now have no-mouse rendered-frame proof, and Nova `epsilon` has native visibility/binding matrix coverage. Later matrix batches remain unfinished.
 
 ## Explicit User Asks
 
@@ -14,6 +14,7 @@ Phase 4 batch B is closed on this branch: standalone Newton/Halley polynomial co
 - [x] Batch the next repair work so one expensive closeout covers more than one tiny scalar.
 - [x] Start Phase 4 with a bounded standalone scalar-control proof batch instead of waiting for another prompt.
 - [x] Continue Phase 4 without another prompt by taking the next standalone root-finding proof batch.
+- [x] Continue Phase 4 without another prompt by taking the Nova remaining polynomial/epsilon proof batch.
 
 ## Phase Checklist
 
@@ -24,6 +25,7 @@ Phase 4 batch B is closed on this branch: standalone Newton/Halley polynomial co
 - [ ] Phase 4 - dead-slider repairs from the matrix, split by bounded family groups with one-at-a-time proof.
   - [x] Batch A - standalone scalar controls: prove `nova_alpha`, Phoenix `p`, Lambda `lambda`, Multibrot power, and Multicorn power via no-mouse rendered-frame deltas.
   - [x] Batch B - standalone Newton/Halley controls: prove `epsilon` and `poly_c0` through `poly_c4` via no-mouse rendered-frame deltas.
+  - [x] Batch C - standalone Nova remaining controls: prove `epsilon` and `poly_c0` through `poly_c3` via no-mouse rendered-frame deltas.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
 - [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
@@ -87,6 +89,18 @@ Phase 4 batch B is closed on this branch: standalone Newton/Halley polynomial co
 - Phase 4 batch B runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase4b_runtime_publish.log 2>&1`.
 - Phase 4 batch B full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase4b_full_native.log 2>&1`.
 - Phase 4 batch B code-quality baseline green: `artifacts/logs/phase4b_code_quality_audit.json`.
+- Phase 4 batch C starting head: `223fcb6`.
+- Phase 4 batch C named gap: standalone Nova `poly_c4` and `nova_alpha` are already proven, but Nova `epsilon` and `poly_c0` through `poly_c3` still lack direct no-mouse rendered-frame proof.
+- Phase 4 batch C first RED failed as expected: `py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k "nova_remaining_polynomial_controls_no_mouse_set_value_change_live_viewport" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_remaining_polynomial_red.junit.xml` reported `16 deselected` because the test rail does not exist yet.
+- Phase 4 batch C first implemented proof failed usefully: `artifacts/pytest/fractal_parameter_surface_matrix_nova_remaining_polynomial.junit.xml` initially failed because Nova `epsilon` was consumed but produced the same frame hash under the default center/zoom witness.
+- Phase 4 batch C witness repair: a direct Nova iteration-model search found an epsilon-sensitive point near `c=(-0.2031297467797688, 0.3483956144889109)` with `nova_alpha=0.1` and `max_iter=40`; the runtime proof now sets `center_hp_x`, `center_hp_y`, and `log2_zoom` because those are the renderer-authoritative view fields.
+- Phase 4 batch C focused Nova proof green after witness repair and runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_nova_remaining_polynomial.junit.xml`.
+- Phase 4 batch C focused native schema/color rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase4c_focused_schema_binding.log 2>&1`.
+- Phase 4 batch C prior proof guardrails green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_newton_halley_polynomial.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_standalone_scalars.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml`, and `artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml`.
+- Phase 4 batch C full runtime-walk viewer module green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4c_full_module.junit.xml` (`17 passed`).
+- Phase 4 batch C runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase4c_runtime_publish.log 2>&1`.
+- Phase 4 batch C full native first run outlasted the 15-minute wrapper timeout and was not treated as green; the longer rerun completed with `All helper tests passed` in `artifacts/logs/phase4c_full_native.log`.
+- Phase 4 batch C code-quality baseline green: `artifacts/logs/phase4c_code_quality_audit.json`.
 
 ## Hostile Audit
 
@@ -112,6 +126,9 @@ Phase 4 batch B is closed on this branch: standalone Newton/Halley polynomial co
 - [x] Phase 4 batch B pass 2 - inspected the runtime proof and confirmed it compares rendered frame hashes, not only set-value consumption.
 - [x] Phase 4 batch B pass 3 - found and repaired a weak Newton `epsilon` witness by moving the proof state to smooth-escape coloring; no dead product control was proven in this group.
 - [x] Phase 4 batch B clean re-read - prior Julia, Nova, scalar, Explaino, Color Pipeline, and runtime harness guardrails remain green after the batch.
+- [x] Phase 4 batch C pass 1 - inspected the Nova proof list and confirmed it only covers the remaining standalone Nova numeric controls.
+- [x] Phase 4 batch C pass 2 - inspected the runtime proof and confirmed it compares rendered frame hashes, not only set-value consumption.
+- [x] Phase 4 batch C clean re-read - prior Newton/Halley, scalar, Julia/Nova, Explaino, Color Pipeline, and runtime harness guardrails remain green after the batch.
 
 ## Audit Findings
 
@@ -123,6 +140,7 @@ Phase 4 batch B is closed on this branch: standalone Newton/Halley polynomial co
 - [x] Phase 4 batch A finding repaired: standalone scalar controls were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead scalar found in this group.
 - [x] Phase 4 batch A harness finding repaired: runtime-walk viewer automation was unsafe under concurrent pytest command launches; a cross-process lock now serializes this module and the concurrent guard run passed.
 - [x] Phase 4 batch B finding repaired: standalone Newton/Halley polynomial controls and `epsilon` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
+- [x] Phase 4 batch C finding repaired: standalone Nova `epsilon` and `poly_c0` through `poly_c3` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 
 ## Boundaries
 
@@ -146,7 +164,7 @@ Out of scope for Phase 2/3 batch:
 - Explaino common-control matrix expansion
 - new fractal families or renderer redesign
 
-## Remaining Work After Phase 4B
+## Remaining Work After Phase 4C
 
 - Phase 4: further dead-slider/proof batches from the matrix.
 - Phase 5: enum/combo harness support and combo rows.
