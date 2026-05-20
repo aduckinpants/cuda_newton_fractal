@@ -187,8 +187,250 @@ Original 19-row disposition:
 | `explaino_tension` | `epsilon` | UI-proven visible control |
 | `explaino_projection_and_flow` | `epsilon` | UI-proven visible control |
 
-Still not claimed until closure validation completes: full native green, hostile audit validation, plan sync, checkpoint commit, receipts, push, and clean tree.
+Closure evidence for Phase 8 is recorded on the pushed head. The original all-44 audit and first-pass 19-row dead-control set are repaired or classified; future work below is optional exposure/expansion work, not unfinished Phase 8 cleanup.
 
+## Future Parameter Exposure Work Slices
+
+This section orders the remaining opportunities from simplest product wins to work that depends on broader backend authority refactors. It intentionally separates three classes:
+
+- Already harvested cleanup: missing or dead controls found by the all-44 audit and already repaired or hidden.
+- Low-hanging exposure opportunities: isolated formulas where a small number of new controls can be added with local runtime/schema/test work.
+- Refactor-dependent opportunities: controls that should not be exposed until the underlying authority model exists, because surfacing them now would create dead sliders or competing sources of truth.
+
+### Already Harvested From The Audit
+
+| Item | Current status | Why it is not a future slice |
+|---|---|---|
+| Standalone `julia` direct constant controls | `julia_c_real` and `julia_c_imag` are exposed and UI-proven. | The missing parameter bug is already fixed. Future work would be preset/library polish, not basic exposure. |
+| Standalone `nova` quartic/custom coefficient | `poly_c4` is exposed where Nova can use quartic/custom polynomial authority. | The schema/runtime contradiction is already fixed. |
+| Nova Alpha upper bound | `nova_alpha` is capped at the kernel-valid `2.0` range. | The dead over-cap range is already removed. |
+| Original Phase 8 19-row dead-control set | 9 visible rows are UI-proven; 10 branch-dead rows are hidden. | No unresolved dead row remains from that generated set. |
+| Explaino-all registry axes | The seven registry axes are visible on `explaino_all` and owner lanes, with persistent no-relaunch proof. | Keep as a guardrail, not a new exposure slice. |
+
+### Slice 1 - Guardrail Descriptor Export Before More Sliders
+
+Goal: make future exposure work deterministic and cheaper, not broader.
+
+Scope:
+
+- Export a single generated descriptor for each of the 44 fractal lanes: visible controls, owner lane, binding path, control type, default value, candidate value, and expected sensitivity class.
+- Keep the descriptor derived from C++/schema authority, not hand-maintained Python subsets.
+- Use it to generate native/schema checks and persistent no-relaunch runtime checks.
+
+Benefit:
+
+- Prevents a repeat of selected-subset closeout being mistaken for all-44 completion.
+- Makes new controls fail closed unless they are classified as render-sensitive, intentionally hidden, preset-only, fixed-formula, or generated/internal.
+
+Dependency level: low. This mostly formalizes artifacts already created for Phase 8.
+
+Validation:
+
+- `test_schema_binding` all-44 inventory rail.
+- Persistent no-relaunch runtime set-value matrix for a generated sample of render-sensitive controls.
+- Contract guard forbidding legacy relaunching viewer tests as default proof.
+
+### Slice 2 - McMullen Direct Controls
+
+Opportunity:
+
+- Current UI exposes `mcmullen_preset` only.
+- Formula authority has preset-backed `m`, `n`, and `lambda` values.
+- Direct `m`, `n`, and `lambda` controls could make McMullen substantially more explorable.
+
+Recommended shape:
+
+- Preserve `mcmullen_preset` as the simple default.
+- Add an explicit custom mode before showing direct controls, or treat direct edits as switching the preset to custom.
+- Use integer controls/steppers for `m` and `n`; numeric slider/input for `lambda` with bounded safe ranges.
+
+Why this is low hanging:
+
+- It is isolated to one family and one preset authority surface.
+- It does not require changing Explaino-all, Color Pipeline, or perturbation infrastructure.
+
+Risks:
+
+- Preset versus custom authority must be unambiguous.
+- Bad ranges can create expensive or blank renders, so candidate defaults and clamps matter.
+
+Validation:
+
+- Native schema/binding: preset mode hides direct controls unless custom, or direct edits force custom.
+- Runtime proof: each direct parameter changes the rendered frame from a stable witness.
+- Performance witness: a bounded McMullen custom case stays within expected frame time tier.
+
+### Slice 3 - Collatz Exploration Controls
+
+Opportunity:
+
+- Standalone `collatz` currently uses fixed constants inside its step function.
+- No Collatz-specific numeric controls are exposed.
+
+Recommended shape:
+
+- First decide whether the current lane should remain canonical/fixed or become exploratory.
+- If exploratory, expose only one or two stable parameters first, with conservative ranges.
+- If canonical, document it as fixed-formula and keep it out of missing-slider lists.
+
+Why this is low-to-medium hanging:
+
+- It is isolated to one formula, but the parameter choices are product/design choices rather than hidden existing fields.
+
+Risks:
+
+- Arbitrary Collatz knobs can produce non-useful or unstable output.
+- Too many knobs would look like churn instead of a better fractal lane.
+
+Validation:
+
+- Formula-level unit classification before UI work.
+- Native schema/binding for visible controls or fixed-formula classification.
+- Runtime proof for each exposed parameter.
+
+### Slice 4 - Canonical Fixed-Family Exploration Knobs
+
+Opportunity:
+
+- `mandelbrot`, `burning_ship`, `spider`, `celtic_mandelbrot`, and `perpendicular_burning_ship` are currently fixed-family lanes beyond global view/render/color settings.
+- This is probably correct for canonical names, but low-cost exploration variants could be useful if clearly named and bounded.
+
+Recommended shape:
+
+- Do not silently mutate canonical formulas under canonical labels.
+- Prefer explicit variant controls such as power/exponent, fold bias, bailout style, or seed-like perturbation only if the UI labels make the behavior clear.
+- Start with one family at a time; avoid a generic engine rewrite.
+
+Best first candidates:
+
+1. `burning_ship`: fold/bias or exponent variant if visually meaningful.
+2. `spider`: seed/feedback scalar if the current formula already has a natural recurrence hook.
+3. `celtic_mandelbrot` / `perpendicular_burning_ship`: fold-axis or power variants only after a quick formula audit.
+4. `mandelbrot`: keep canonical unless adding a clearly labeled variant; `multibrot` already owns power exploration.
+
+Dependency level: low-to-medium if done one family at a time, high if generalized prematurely.
+
+Validation:
+
+- One-family RED first: new control visible only on that lane, bound through schema, changes rendered frame, does not tank FPS.
+- Fixed-family guard: untouched canonical lanes remain unchanged unless the variant control is present and enabled.
+
+### Slice 5 - Explaino Rational-Escape Dedicated Parameter
+
+Opportunity:
+
+- `explaino_rational_escape` currently has common Explaino controls but no dedicated rational-escape numeric axis.
+- The audit did not prove a specific missing field; it flagged the lane for formula-level classification.
+
+Recommended shape:
+
+- Inspect the rational-escape formula and identify whether a meaningful scalar already exists conceptually, such as rational blend, pole strength, escape denominator bias, or bailout shaping.
+- Add exactly one dedicated control if it maps cleanly to formula behavior.
+- Otherwise document the lane as common-control-only.
+
+Dependency level: medium. It needs formula classification before UI work.
+
+Validation:
+
+- Formula unit proof that the parameter is consumed.
+- Persistent no-relaunch UI proof that the slider changes the frame.
+- Smooth-escape/performance guard because escape variants can move lanes onto expensive paths.
+
+### Slice 6 - Explaino Julia Direct Constant Decision
+
+Opportunity:
+
+- `explaino_julia` derives Julia-like behavior from Explaino seeded-root authority.
+- Direct `c_real` / `c_imag` sliders could be useful, but they may conflict with the Explaino seed/root model.
+
+Recommended shape:
+
+- Do not copy standalone Julia sliders blindly.
+- Decide whether direct constants become a custom override mode, a seed-derived readout only, or remain intentionally hidden.
+- If added, the UI must make it clear which authority wins: seed/root generation or direct constant override.
+
+Dependency level: medium-to-high because this is an authority-model choice, not a missing hidden field.
+
+Validation:
+
+- Native schema tests for mutually exclusive seed-derived versus direct-constant controls.
+- Runtime proof that direct constant edits change the frame and do not break `explaino_seed` semantics.
+- Existing Explaino-all registry-axis guards remain green.
+
+### Slice 7 - Re-Expose Currently Hidden Branch-Dead Explaino Controls Only After Runtime Ownership Exists
+
+Opportunity:
+
+- Phase 8 hid controls that the active runtime branch does not read: `explaino_nova` warp/damping, Transcendental/Lambda root spread, Julia/Lambda/Rational-Escape epsilon/damping, and related branch-dead common controls.
+- These are not current UI bugs after Phase 8 because they are hidden.
+- They could become useful if the backend branches are extended to consume them truthfully.
+
+Recommended grouping:
+
+1. Escape-time epsilon semantics: `explaino_julia`, `explaino_lambda`, `explaino_rational_escape`.
+2. Newton-style damping semantics: `explaino_julia`, `explaino_lambda`, `explaino_rational_escape`, possibly `explaino_nova`.
+3. Seed/root-spread semantics: `explaino_transcendental`, `explaino_lambda`.
+4. Warp semantics: `explaino_nova` and any escape lanes where warp is currently inactive.
+
+Dependency level: medium-to-high. The runtime must read the parameter before schema exposes it.
+
+Validation:
+
+- RED test first proves the hidden control is not visible today.
+- Runtime unit or renderer proof then proves the branch consumes the parameter.
+- Only after that does schema expose it.
+- Persistent UI proof confirms visible slider changes the frame.
+
+### Slice 8 - Generated/Internal Advanced Editors
+
+Opportunity:
+
+- Internal/generated surfaces include `explaino_roots`, `explaino_root_count`, `poly_coeffs`, `poly_coeffs_b`, and Color Pipeline stack internals.
+- These can become powerful expert editors, but they should not be treated as missing basic sliders.
+
+Recommended shape:
+
+- Build explicit editor surfaces, not ordinary sliders.
+- Keep generated defaults and direct overrides separate.
+- Use transaction/draft semantics where arrays or rows are edited.
+
+Dependency level: high. This needs a stronger parameter authority model and probably reusable editor components.
+
+Validation:
+
+- Round-trip state serialization tests.
+- Draft/live commit tests.
+- Runtime proof for generated default versus manual override.
+- Regression guard that generated internals do not appear as simple missing sliders in the all-44 audit.
+
+### Best Wins Without Major Backend Work
+
+Recommended order if the goal is tangible improvement with minimal churn:
+
+1. Finish the descriptor/export guardrail so every later slider is cheaper and safer to validate.
+2. Add McMullen custom direct controls behind a clear preset/custom authority rule.
+3. Classify Collatz as fixed or add one conservative Collatz exploration parameter.
+4. Add one fixed-family variant control only where the formula audit shows a natural hook, with `burning_ship` or `spider` as better candidates than canonical `mandelbrot`.
+5. Formula-audit `explaino_rational_escape` for one dedicated parameter.
+6. Defer Explaino Julia direct constants, branch-dead Explaino re-exposure, root editors, and polynomial-array editors until the backend authority model is intentionally extended.
+
+### What Is Possible Without Further Major Work
+
+Possible with local formula/schema/test slices:
+
+- McMullen direct controls.
+- Collatz classification or one conservative Collatz knob.
+- One-family fixed-formula exploration variants.
+- One dedicated `explaino_rational_escape` parameter if formula audit finds a clean scalar.
+- More generated UI proof coverage from the descriptor export.
+
+Not advisable without a deeper backend/refactor slice:
+
+- Direct editing of generated Explaino roots or root counts.
+- Direct editing of generated polynomial arrays across families.
+- Re-exposing branch-dead Explaino controls before the active branch consumes them.
+- Making every canonical fixed formula generically parameterized in one broad pass.
+- Any feature that silently changes canonical formula identity or forces expensive render paths without a perf gate.
 ## Next RED UI/UX Harness Series
 
 The next work should be test-first and registry-driven. Do not hard-code only the controls that have recently broken.
@@ -224,4 +466,4 @@ Recommended first RED/fix order:
 
 ## Closeout Position For This Slice
 
-Phase 8 no longer stops at research only. The original all-44 audit and first-pass 19-row dead-control set have been repaired or classified in the working tree, but the slice is not closed until full validation, hostile audit, checkpoint, receipts, push, and clean tree complete.
+Phase 8 is closed on the pushed head. The original all-44 audit and first-pass 19-row dead-control set have been repaired or classified; this document now carries future optional exposure slices separately from completed cleanup.
