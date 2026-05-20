@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contract_id": "fractal_parameter_surface_matrix",
-  "feature_id": "fractal_parameter_surface_matrix_phase4a_standalone_scalar_proof",
+  "feature_id": "fractal_parameter_surface_matrix_phase4b_newton_halley_proof",
   "workflow_type": "viewer_first",
   "plan_path": "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -47,7 +47,7 @@
   ],
   "required_defaults": {
     "branch": "codex/fractal-parameter-surface-matrix",
-    "phase": "phase4a_standalone_scalar_no_mouse_proof",
+    "phase": "phase4b_newton_halley_no_mouse_proof",
     "hostile_audit": "required",
     "no_physical_mouse_tests": true
   },
@@ -61,8 +61,9 @@
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
     "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"newton_halley_polynomial_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_newton_halley_polynomial.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"standalone_scalar_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_standalone_scalars.junit.xml",
-    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4a_full_module.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4b_full_module.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"nova_poly_c4_no_mouse_set_value_change_live_viewport or julia_controls_no_mouse_set_value_change_live_viewport\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"explaino_registry_controls_no_mouse_set_value_change_live_viewport or no_mouse_schema_int_set_value or unknown_set_value_fails_closed\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml",
     "py -3.14 -m pytest tests/test_fractal_runtime_runtime_walk_viewer.py -k \"runtime_walk_viewer_no_mouse_color_pipeline_set_value_changes_frame\" -q --junitxml artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml"
@@ -93,6 +94,13 @@
       "equals": true
     },
     {
+      "assertion_id": "fractal_parameter_surface_matrix_newton_halley_runtime_pytest",
+      "description": "Published-runtime no-mouse Newton/Halley polynomial-control proof passes",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_newton_halley_polynomial.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_newton_halley_polynomial_controls_no_mouse_set_value_change_live_viewport"
+    },
+    {
       "assertion_id": "fractal_parameter_surface_matrix_standalone_scalar_runtime_pytest",
       "description": "Published-runtime no-mouse standalone scalar-control proof passes",
       "evidence_kind": "runtime_junit_case",
@@ -103,7 +111,7 @@
       "assertion_id": "fractal_parameter_surface_matrix_runtime_walk_viewer_full_module",
       "description": "Runtime-walk viewer module passes with serialized automation lock",
       "evidence_kind": "runtime_junit_case",
-      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4a_full_module.junit.xml",
+      "artifact_path": "artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4b_full_module.junit.xml",
       "test_nodeid": "tests/test_fractal_runtime_runtime_walk_viewer.py::test_standalone_scalar_controls_no_mouse_set_value_change_live_viewport"
     },
     {

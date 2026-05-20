@@ -598,6 +598,60 @@ def test_standalone_scalar_controls_no_mouse_set_value_change_live_viewport(tmp_
         )
 
 
+def test_newton_halley_polynomial_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    controls = [
+        ("epsilon", "fractal_control.epsilon.primary", 0.01),
+        ("poly_c0", "fractal_control.poly_c0.primary", -0.45),
+        ("poly_c1", "fractal_control.poly_c1.primary", 0.24),
+        ("poly_c2", "fractal_control.poly_c2.primary", -0.18),
+        ("poly_c3", "fractal_control.poly_c3.primary", 0.72),
+        ("poly_c4", "fractal_control.poly_c4.primary", 0.46),
+    ]
+    for fractal_type in ("newton", "halley"):
+        neutral_capture = _run_headless_capture(
+            str(exe_path), "--capture-diagnostic", "--fractal-type", fractal_type, "--width", "320", "--height", "240"
+        )
+        base_state = neutral_capture["state"]
+        params = base_state["params"]
+        assert isinstance(params, dict)
+        params["poly_kind"] = 2
+        params["poly_coeffs"] = [-1.0, 0.0, 0.0, 1.0, 0.0]
+        params["coloring_mode"] = "smooth_escape"
+        params["color_signal"] = "smooth_escape"
+        params["color_shape"] = "identity"
+        params["color_palette"] = "cyclic_escape"
+        params["color_grading"] = "escape_default"
+
+        for param_id, control_id, set_value in controls:
+            state = json.loads(json.dumps(base_state))
+            state_path = _write_state_bundle(tmp_path / f"{fractal_type}_{param_id}_neutral", state)
+            baseline_payload = _capture_controls_report_with_optional_set_value(
+                exe_path,
+                state_path,
+                tmp_path / f"{fractal_type}_{param_id}_baseline_report.json",
+                control_id,
+                None,
+            )
+            payload = _capture_controls_report_with_optional_set_value(
+                exe_path,
+                state_path,
+                tmp_path / f"{fractal_type}_{param_id}_edited_report.json",
+                control_id,
+                set_value,
+            )
+            assert payload.get("current_fractal_type") == fractal_type
+            baseline_hash = _require_rendered_frame_hash(baseline_payload)
+            edited_hash = _require_rendered_frame_hash(payload)
+            assert edited_hash != baseline_hash, (
+                "No-mouse set-value automation for a Newton/Halley control should change the rendered frame; "
+                f"fractal_type={fractal_type!r} param={param_id!r} baseline_hash={baseline_hash} edited_hash={edited_hash}"
+            )
+
+
 
 def test_runtime_walk_viewer_no_mouse_schema_int_set_value_consumes_visible_control(tmp_path: Path) -> None:
     if sys.platform != "win32":
