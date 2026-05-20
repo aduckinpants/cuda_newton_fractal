@@ -617,6 +617,52 @@ def test_nova_remaining_polynomial_controls_no_mouse_set_value_change_live_viewp
         )
 
 
+def test_nova_alpha_no_mouse_set_value_above_two_matches_two_cap(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("runtime-walk viewer regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    neutral_capture = _run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "nova", "--width", "320", "--height", "240"
+    )
+    base_state = neutral_capture["state"]
+    params = base_state["params"]
+    assert isinstance(params, dict)
+    params["coloring_mode"] = "smooth_escape"
+    params["color_signal"] = "smooth_escape"
+    params["color_shape"] = "identity"
+    params["color_palette"] = "cyclic_escape"
+    params["color_grading"] = "escape_default"
+
+    control_id = "fractal_control.nova_alpha.primary"
+    baseline_state = json.loads(json.dumps(base_state))
+    baseline_path = _write_state_bundle(tmp_path / "nova_alpha_baseline", baseline_state)
+    baseline_payload = _capture_controls_report_with_optional_set_value(
+        exe_path, baseline_path, tmp_path / "nova_alpha_baseline_report.json", control_id, None
+    )
+    capped_state = json.loads(json.dumps(base_state))
+    capped_path = _write_state_bundle(tmp_path / "nova_alpha_cap", capped_state)
+    capped_payload = _capture_controls_report_with_optional_set_value(
+        exe_path, capped_path, tmp_path / "nova_alpha_cap_report.json", control_id, 2.0
+    )
+    over_cap_state = json.loads(json.dumps(base_state))
+    over_cap_path = _write_state_bundle(tmp_path / "nova_alpha_over_cap", over_cap_state)
+    over_cap_payload = _capture_controls_report_with_optional_set_value(
+        exe_path, over_cap_path, tmp_path / "nova_alpha_over_cap_report.json", control_id, 3.0
+    )
+
+    assert capped_payload.get("current_fractal_type") == "nova"
+    assert over_cap_payload.get("current_fractal_type") == "nova"
+    baseline_hash = _require_rendered_frame_hash(baseline_payload)
+    capped_hash = _require_rendered_frame_hash(capped_payload)
+    over_cap_hash = _require_rendered_frame_hash(over_cap_payload)
+    assert capped_hash != baseline_hash, "The Nova Alpha cap witness should still prove Nova Alpha changes the frame"
+    assert over_cap_hash == capped_hash, (
+        "No-mouse Nova Alpha set-value above 2.0 should clamp to the same rendered frame as the kernel-valid cap; "
+        f"capped_hash={capped_hash} over_cap_hash={over_cap_hash}"
+    )
+
+
 
 def test_standalone_scalar_controls_no_mouse_set_value_change_live_viewport(tmp_path: Path) -> None:
     if sys.platform != "win32":

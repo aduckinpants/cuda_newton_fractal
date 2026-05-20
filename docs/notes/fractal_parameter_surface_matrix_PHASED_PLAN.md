@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c0` through `poly_c3` now have no-mouse rendered-frame proof, and Nova `epsilon` has native visibility/binding matrix coverage. Later matrix batches remain unfinished.
+Phase 4 batch D is closed on this branch: Nova Alpha is capped at `2.0` across the schema, runtime validation, and no-mouse set-value path, matching the existing Nova kernel domain. Later matrix batches remain unfinished.
 
 ## Explicit User Asks
 
@@ -15,6 +15,7 @@ Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c
 - [x] Start Phase 4 with a bounded standalone scalar-control proof batch instead of waiting for another prompt.
 - [x] Continue Phase 4 without another prompt by taking the next standalone root-finding proof batch.
 - [x] Continue Phase 4 without another prompt by taking the Nova remaining polynomial/epsilon proof batch.
+- [x] Cap Nova Alpha at the kernel-valid `2.0` maximum and prove over-cap UI set-value cannot drive the dead `>2.0` range.
 
 ## Phase Checklist
 
@@ -26,6 +27,7 @@ Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c
   - [x] Batch A - standalone scalar controls: prove `nova_alpha`, Phoenix `p`, Lambda `lambda`, Multibrot power, and Multicorn power via no-mouse rendered-frame deltas.
   - [x] Batch B - standalone Newton/Halley controls: prove `epsilon` and `poly_c0` through `poly_c4` via no-mouse rendered-frame deltas.
   - [x] Batch C - standalone Nova remaining controls: prove `epsilon` and `poly_c0` through `poly_c3` via no-mouse rendered-frame deltas.
+  - [x] Batch D - Nova Alpha range cap: align schema/runtime validation with the kernel-valid `(0,2]` domain and prove no-mouse over-cap set-value clamps to `2.0`.
 - [ ] Phase 5 - enum/combo harness support for preset/root-family/function controls, then repair or classify combo rows.
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
 - [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
@@ -101,6 +103,19 @@ Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c
 - Phase 4 batch C runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase4c_runtime_publish.log 2>&1`.
 - Phase 4 batch C full native first run outlasted the 15-minute wrapper timeout and was not treated as green; the longer rerun completed with `All helper tests passed` in `artifacts/logs/phase4c_full_native.log`.
 - Phase 4 batch C code-quality baseline green: `artifacts/logs/phase4c_code_quality_audit.json`.
+- Phase 4 batch D starting head: `97cb847`.
+- Phase 4 batch D named gap: the Nova kernel rejects `nova_alpha > 2.0`, but the schema and runtime validation still advertise/accept `(0,5]`.
+- Phase 4 batch D first RED target: schema range proof must fail while `nova_alpha.max` is `5.0`, runtime validation must fail until `2.1` is rejected, and no-mouse over-cap set-value must fail until `3.0` clamps to the same rendered frame as `2.0`.
+- Phase 4 batch D native RED: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase4d_focused_schema_binding_red.log 2>&1` failed because `nova_alpha.max` was still `5.0`; an initial test-string typo was corrected before rerunning to this schema failure.
+- Phase 4 batch D runtime RED: `artifacts/pytest/fractal_parameter_surface_matrix_nova_alpha_cap_red.junit.xml` failed because no-mouse set-value `3.0` produced a different frame from `2.0`, proving the visible UI path could still drive the dead over-cap range.
+- Phase 4 batch D repair: `ui/fractal_binding_surface_v1.ui_schema.json` caps `nova_alpha` at `2.0`, `fractal_runtime_validation.h` rejects `nova_alpha > 2.0`, and schema set-value automation clamps over-cap float edits to the hard max.
+- Phase 4 batch D focused native schema/color rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase4d_focused_schema_binding.log 2>&1`.
+- Phase 4 batch D code-quality baseline green: `artifacts/logs/phase4d_code_quality_audit.json`.
+- Phase 4 batch D runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase4d_runtime_publish.log 2>&1`.
+- Phase 4 batch D Nova Alpha cap proof green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_nova_alpha_cap.junit.xml`.
+- Phase 4 batch D prior proof guardrails green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_nova_remaining_polynomial.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_newton_halley_polynomial.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_standalone_scalars.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_nova_julia_controls.junit.xml`, `artifacts/pytest/fractal_parameter_surface_matrix_runtime_guardrails.junit.xml`, and `artifacts/pytest/fractal_parameter_surface_matrix_color_pipeline_guardrail.junit.xml`.
+- Phase 4 batch D full runtime-walk viewer module green after runtime publish: `artifacts/pytest/fractal_parameter_surface_matrix_runtime_walk_viewer_phase4d_full_module.junit.xml` (`18 passed`).
+- Phase 4 batch D full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase4d_full_native.log 2>&1` completed with `All helper tests passed`.
 
 ## Hostile Audit
 
@@ -129,6 +144,9 @@ Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c
 - [x] Phase 4 batch C pass 1 - inspected the Nova proof list and confirmed it only covers the remaining standalone Nova numeric controls.
 - [x] Phase 4 batch C pass 2 - inspected the runtime proof and confirmed it compares rendered frame hashes, not only set-value consumption.
 - [x] Phase 4 batch C clean re-read - prior Newton/Halley, scalar, Julia/Nova, Explaino, Color Pipeline, and runtime harness guardrails remain green after the batch.
+- [x] Phase 4 batch D pass 1 - confirmed the change only narrows Nova Alpha's advertised/runtime domain and does not alter Nova math.
+- [x] Phase 4 batch D pass 2 - confirmed the no-mouse proof compares capped rendered-frame behavior, not just schema text.
+- [x] Phase 4 batch D clean re-read - prior Nova, Newton/Halley, scalar, Explaino, Color Pipeline, and runtime harness guardrails remain green after the batch.
 
 ## Audit Findings
 
@@ -141,6 +159,7 @@ Phase 4 batch C is closed on this branch: standalone Nova `epsilon` plus `poly_c
 - [x] Phase 4 batch A harness finding repaired: runtime-walk viewer automation was unsafe under concurrent pytest command launches; a cross-process lock now serializes this module and the concurrent guard run passed.
 - [x] Phase 4 batch B finding repaired: standalone Newton/Halley polynomial controls and `epsilon` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 - [x] Phase 4 batch C finding repaired: standalone Nova `epsilon` and `poly_c0` through `poly_c3` were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
+- [x] Phase 4 batch D finding repaired: Nova Alpha exposed/accepted values above the kernel-valid maximum; schema and runtime validation now cap at `2.0`, and over-cap no-mouse set-value lands on the same frame as `2.0`.
 
 ## Boundaries
 
@@ -164,7 +183,7 @@ Out of scope for Phase 2/3 batch:
 - Explaino common-control matrix expansion
 - new fractal families or renderer redesign
 
-## Remaining Work After Phase 4C
+## Remaining Work After Phase 4D
 
 - Phase 4: further dead-slider/proof batches from the matrix.
 - Phase 5: enum/combo harness support and combo rows.

@@ -175,6 +175,17 @@ bool GetJsonStringField(const json_min::Value& object, const char* key, std::str
     return true;
 }
 
+bool GetJsonNumberField(const json_min::Value& object, const char* key, double* outValue) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_number()) {
+        return false;
+    }
+    if (outValue) {
+        *outValue = value->as_number();
+    }
+    return true;
+}
+
 const json_min::Value* FindSchemaControlById(const json_min::Value& root, const char* controlId) {
     const json_min::Value* panels = root.get("panels");
     if (!panels || !panels->is_array()) {
@@ -260,6 +271,41 @@ bool ControlBindingResolves(const std::string& valueType, const std::string& bin
         return !ctx.GetEnumId(bindingPath).empty();
     }
     return false;
+}
+
+bool ValidateNovaAlphaSchemaRange() {
+    json_min::Value schemaRoot;
+    if (!LoadCurrentSchemaJson(&schemaRoot)) {
+        return false;
+    }
+    const json_min::Value* control = FindSchemaControlById(schemaRoot, "nova_alpha");
+    if (!control || !control->is_object()) {
+        std::cerr << "Nova Alpha schema range missing control\n";
+        return false;
+    }
+    std::string bindingPath;
+    std::string valueType;
+    if (!ReadControlBindingAndType(*control, &bindingPath, &valueType) ||
+        bindingPath != "fractal.params.nova_alpha" || valueType != "float") {
+        std::cerr << "Nova Alpha schema range found wrong binding/value type\n";
+        return false;
+    }
+    double minValue = 0.0;
+    double maxValue = 0.0;
+    if (!GetJsonNumberField(*control, "min", &minValue) || !GetJsonNumberField(*control, "max", &maxValue)) {
+        std::cerr << "Nova Alpha schema range must expose hard min/max\n";
+        return false;
+    }
+    if (!NearlyEqual(minValue, 0.01) || !NearlyEqual(maxValue, 2.0)) {
+        std::cerr << "Nova Alpha schema range must match the kernel-valid (0,2] domain\n";
+        return false;
+    }
+    if (!IsControlVisibleForFractal(*control, FractalType::nova) ||
+        !IsControlVisibleForFractal(*control, FractalType::explaino_nova)) {
+        std::cerr << "Nova Alpha schema range must stay visible on Nova owner lanes\n";
+        return false;
+    }
+    return true;
 }
 
 bool ValidateVisibleControlMatrix() {
@@ -1113,6 +1159,10 @@ int main() {
     }
 
     if (!ValidateVisibleControlMatrix()) {
+        return 1;
+    }
+
+    if (!ValidateNovaAlphaSchemaRange()) {
         return 1;
     }
 
@@ -3450,6 +3500,42 @@ int main() {
         }
         if (!automationConsumed || !automationDirty || !automationInteracted || !automationError.empty() || !NearlyEqual(params.ripple_amplitude, 0.375)) {
             std::cerr << "Schema-driven set-value automation should consume, dirty, interact, and write ripple_amplitude\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
+        bool novaAlphaDirty = false;
+        bool novaAlphaInteracted = false;
+        bool novaAlphaConsumed = false;
+        std::string novaAlphaError;
+        const std::string novaAlphaControlId = "fractal_control.nova_alpha.primary";
+        UISchemaControl novaAlphaCapControl = MakeBoundControl(
+            "nova_alpha",
+            "slider_float",
+            "Nova Alpha",
+            "float",
+            "param",
+            "fractal.params.nova_alpha");
+        novaAlphaCapControl.has_min = true;
+        novaAlphaCapControl.min = 0.01;
+        novaAlphaCapControl.has_max = true;
+        novaAlphaCapControl.max = 2.0;
+        params.nova_alpha = 0.5f;
+        ctx.ui_automation_set_control_id = &novaAlphaControlId;
+        ctx.ui_automation_set_control_value = 3.0;
+        ctx.ui_automation_set_consumed = &novaAlphaConsumed;
+        ctx.ui_automation_set_error = &novaAlphaError;
+        if (!RenderControlFromSchema(novaAlphaCapControl, ctx, &novaAlphaDirty, nullptr, &novaAlphaInteracted)) {
+            std::cerr << "Visible Nova Alpha set-value automation should apply through the float edit path\n";
+            return 1;
+        }
+        if (!novaAlphaConsumed || !novaAlphaDirty || !novaAlphaInteracted || !novaAlphaError.empty() ||
+            !NearlyEqual(params.nova_alpha, 2.0)) {
+            std::cerr << "Nova Alpha set-value automation should clamp over-cap values to 2.0\n";
             return 1;
         }
         ctx.ui_automation_set_control_id = nullptr;

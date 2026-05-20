@@ -57,8 +57,27 @@ int main() {
         params.coloring_mode = ColoringMode::smooth_escape;
         params.nova_alpha = 0.0f;
         if (ValidateFractalRuntimeState(view, params, &error) ||
-            error != "nova_alpha must be finite and in (0,5]") {
+            error != "nova_alpha must be finite and in (0,2]") {
             std::cerr << "Expected Explaino-Nova to share the Nova alpha validation contract\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::nova;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.nova_alpha = 2.0f;
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Nova validation to accept the kernel-valid alpha cap, got: " << error << "\n";
+            return 1;
+        }
+        params.nova_alpha = 2.1f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "nova_alpha must be finite and in (0,2]") {
+            std::cerr << "Expected Nova validation to reject alpha above the kernel-valid cap\n";
             return 1;
         }
     }

@@ -94,8 +94,8 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
         return FailFractalRuntimeValidation("julia_c_real/imag must be finite", outError);
     }
     if (view.fractal_type == FractalType::nova || view.fractal_type == FractalType::explaino_nova) {
-        if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 5.0f) {
-            return FailFractalRuntimeValidation("nova_alpha must be finite and in (0,5]", outError);
+        if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 2.0f) {
+            return FailFractalRuntimeValidation("nova_alpha must be finite and in (0,2]", outError);
         }
     }
     if (FindPhoenixStepCarrierSelectorDescriptor(view.fractal_type) != nullptr) {
