@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -1364,6 +1365,12 @@ static int TryDispatchCommandLineModes(const ViewerCliArgs& cli, const std::stri
     return -1;
 }
 
+static void ArmUiAutomationSetValue(ColorPipelineWindowState& colorPipelineWindow,
+                                    const std::string& controlId,
+                                    double value);
+static void ArmUiAutomationClick(ColorPipelineWindowState& colorPipelineWindow,
+                                 const std::string& controlId);
+
 static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
                                              const std::vector<std::string>& schemaCandidates,
                                              ViewState& view, KernelParams& params,
@@ -1414,24 +1421,137 @@ static int InitializeViewerSchemaAndDefaults(const ViewerCliArgs& cli,
         return applyCliRc;
     }
     if (cli.have_ui_automation_click_control_id) {
-        colorPipelineWindow.open = true;
-        colorPipelineWindow.force_open_for_automation = true;
-        colorPipelineWindow.ui_automation_click_control_id = cli.ui_automation_click_control_id;
-        colorPipelineWindow.ui_automation_click_pending = true;
-        colorPipelineWindow.ui_automation_click_consumed = false;
+        ArmUiAutomationClick(colorPipelineWindow, cli.ui_automation_click_control_id);
     }
     if (cli.have_ui_automation_set_control_value) {
-        colorPipelineWindow.ui_automation_set_control_id = cli.ui_automation_set_control_id;
-        colorPipelineWindow.ui_automation_set_control_value = cli.ui_automation_set_control_value;
-        colorPipelineWindow.ui_automation_set_pending = true;
-        colorPipelineWindow.ui_automation_set_consumed = false;
-        colorPipelineWindow.ui_automation_set_error.clear();
-        if (cli.ui_automation_set_control_id.rfind("color_pipeline.", 0) == 0) {
-            colorPipelineWindow.open = true;
-            colorPipelineWindow.force_open_for_automation = true;
-        }
+        ArmUiAutomationSetValue(colorPipelineWindow, cli.ui_automation_set_control_id, cli.ui_automation_set_control_value);
     }
     return 0;
+}
+
+struct ViewerUiAutomationCommandState {
+    std::int64_t last_sequence = -1;
+};
+
+static bool ReadUiAutomationJsonFile(const std::string& path, json_min::Value* outValue) {
+    if (path.empty() || !outValue) {
+        return false;
+    }
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return false;
+    }
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    json_min::ParseResult parsed = json_min::Parse(buffer.str());
+    if (!parsed.error.empty() || !parsed.value.is_object()) {
+        return false;
+    }
+    *outValue = std::move(parsed.value);
+    return true;
+}
+
+static bool ReadJsonInt64Field(const json_min::Value& object, const char* key, std::int64_t* outValue) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_number()) {
+        return false;
+    }
+    const double numeric = value->as_number();
+    if (!std::isfinite(numeric)) {
+        return false;
+    }
+    const auto asInteger = static_cast<std::int64_t>(numeric);
+    if (std::fabs(numeric - static_cast<double>(asInteger)) > 0.000001) {
+        return false;
+    }
+    if (outValue) {
+        *outValue = asInteger;
+    }
+    return true;
+}
+
+static bool ReadJsonStringFieldLocal(const json_min::Value& object, const char* key, std::string* outValue) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_string()) {
+        return false;
+    }
+    if (outValue) {
+        *outValue = value->as_string();
+    }
+    return true;
+}
+
+static bool ReadJsonNumberFieldLocal(const json_min::Value& object, const char* key, double* outValue) {
+    const json_min::Value* value = object.get(key);
+    if (!value || !value->is_number() || !std::isfinite(value->as_number())) {
+        return false;
+    }
+    if (outValue) {
+        *outValue = value->as_number();
+    }
+    return true;
+}
+
+static void ArmUiAutomationSetValue(ColorPipelineWindowState& colorPipelineWindow,
+                                    const std::string& controlId,
+                                    double value) {
+    colorPipelineWindow.ui_automation_set_control_id = controlId;
+    colorPipelineWindow.ui_automation_set_control_value = value;
+    colorPipelineWindow.ui_automation_set_pending = true;
+    colorPipelineWindow.ui_automation_set_consumed = false;
+    colorPipelineWindow.ui_automation_set_error.clear();
+    if (controlId.rfind("color_pipeline.", 0) == 0) {
+        colorPipelineWindow.open = true;
+        colorPipelineWindow.force_open_for_automation = true;
+    }
+}
+
+static void ArmUiAutomationClick(ColorPipelineWindowState& colorPipelineWindow,
+                                 const std::string& controlId) {
+    colorPipelineWindow.open = true;
+    colorPipelineWindow.force_open_for_automation = true;
+    colorPipelineWindow.ui_automation_click_control_id = controlId;
+    colorPipelineWindow.ui_automation_click_pending = true;
+    colorPipelineWindow.ui_automation_click_consumed = false;
+}
+
+static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
+                                                ViewerUiAutomationCommandState& commandState,
+                                                ColorPipelineWindowState& colorPipelineWindow) {
+    if (!cli.have_ui_automation_command_json) {
+        return;
+    }
+    json_min::Value commandRoot;
+    if (!ReadUiAutomationJsonFile(cli.ui_automation_command_json_path, &commandRoot)) {
+        return;
+    }
+    std::int64_t sequence = -1;
+    if (!ReadJsonInt64Field(commandRoot, "sequence", &sequence) || sequence <= commandState.last_sequence) {
+        return;
+    }
+
+    bool armedCommand = false;
+    if (const json_min::Value* setValue = commandRoot.get("set_control_value")) {
+        if (setValue->is_object()) {
+            std::string controlId;
+            double value = 0.0;
+            if (ReadJsonStringFieldLocal(*setValue, "control_id", &controlId) &&
+                ReadJsonNumberFieldLocal(*setValue, "value", &value) &&
+                !controlId.empty()) {
+                ArmUiAutomationSetValue(colorPipelineWindow, controlId, value);
+                armedCommand = true;
+            }
+        }
+    }
+    if (const json_min::Value* clickControl = commandRoot.get("click_control_id")) {
+        if (clickControl->is_string() && !clickControl->as_string().empty()) {
+            ArmUiAutomationClick(colorPipelineWindow, clickControl->as_string());
+            armedCommand = true;
+        }
+    }
+    if (armedCommand) {
+        commandState.last_sequence = sequence;
+    }
 }
 
 static bool InitializeViewerWindowAndImGui(HINSTANCE hInstance, const std::string& exeDir,
@@ -2347,7 +2467,10 @@ static void RunViewerFrame(
     RuntimeWalkFieldSlimeState& runtimeWalkFieldSlime,
     bool& runtimeWalkFieldSlimeValid,
     std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
+    ViewerUiAutomationCommandState& uiAutomationCommandState,
     bool& dirty) {
+    ApplyPendingUiAutomationCommandFile(cli, uiAutomationCommandState, colorPipelineWindow);
+
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
     }
@@ -2508,7 +2631,8 @@ static void RunViewerFrame(
             viewerUiAutomationRects,
             colorPipelineWindow,
             view,
-            frameProbe);
+            frameProbe,
+            uiAutomationCommandState.last_sequence);
     }
 }
 
@@ -2600,6 +2724,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     RuntimeWalkGradientOverlay runtimeWalkGradientOverlay{};
     RuntimeWalkFieldSlimeState runtimeWalkFieldSlime{}; bool runtimeWalkFieldSlimeValid = false;
     std::vector<ViewerUiAutomationRect> viewerUiAutomationRects;
+    ViewerUiAutomationCommandState uiAutomationCommandState{};
     if (!InitializeSweepIfEnabled(cli.sweep_config, sweepState, view, params, dirty)) {
         ShutdownViewer(hwnd, wc);
         return 1;
@@ -2699,6 +2824,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             runtimeWalkGradientOverlay,
             runtimeWalkFieldSlime, runtimeWalkFieldSlimeValid,
             viewerUiAutomationRects,
+            uiAutomationCommandState,
             dirty);
     }
 

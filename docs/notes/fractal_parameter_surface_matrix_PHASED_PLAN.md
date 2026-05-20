@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5/6 remaining surface completion plus harness truth repair is active on this branch: finish enum/combo matrix coverage, fixed-formula classification, Explaino common-control matrix expansion, and make the relaunching runtime-walk viewer E2E module opt-in until a persistent no-relaunch automation path exists.
+Phase 5 batched surface cleanup remains active on this branch. The persistent runtime harness sub-slice is implemented and has focused one-process runtime proof; remaining cleanup batches are still explicit below.
 
 ## Explicit User Asks
 
@@ -37,7 +37,8 @@ Phase 5/6 remaining surface completion plus harness truth repair is active on th
 - [ ] Phase 6 - Explaino common-control matrix expansion across explicit lanes while preserving registry-axis and Color Pipeline guards.
   - [ ] Batch H - native matrix proof that every canonical Explaino selector exposes the common controls and that animation applicability stays derived from the visible schema surface.
   - [x] Batch I - harness truth repair: remove `tests/test_fractal_runtime_runtime_walk_viewer.py` from default required validation, make the E2E module explicit opt-in, and add unit guards that forbid relying on it again until a persistent no-relaunch harness exists.
-- [x] Phase 7 - Phase 1 hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
+- [x] Phase 7 - persistent runtime viewer automation: add a file-driven command channel, run a focused one-process batch proof, and keep legacy relaunch tests opt-in.
+- [x] Phase 7 closeout guard - hostile audit, full validation, checkpoint discipline, receipt discipline, clean-tree target, and stale-plan guard are closed for this slice.
 
 ## Proof Ledger
 
@@ -143,6 +144,19 @@ Phase 5/6 remaining surface completion plus harness truth repair is active on th
 - Phase 5/6 contract validation green: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json`.
 - Phase 5/6 plan sync green: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
 - Phase 5/6 proof boundary: this repair stops required validation from relaunching the viewer; it does not claim the persistent no-relaunch viewer automation driver is implemented.
+- Phase 5/7 target: implement the persistent no-relaunch viewer automation driver that the prior checkpoint explicitly left undone; focused runtime proof must open one viewer process, issue baseline plus multiple set-value commands through that process, and close once.
+- Phase 5/7 implementation: add `--ui-automation-command-json`, report `ui_automation_command_sequence`, and expose `PersistentRuntimeViewerAutomation` for file-driven set-value commands against an already-running viewer.
+- Phase 5/7 RED proof failed as expected: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase5_7_red.junit.xml` reported the persistent runtime viewer harness was not implemented yet.
+- Phase 5/7 runtime publish green: `cmd /c ui_app\build_vsdevcmd.cmd > artifacts\logs\phase5_7_runtime_publish.log 2>&1` staged `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Phase 5/7 focused persistent runtime proof green: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase5_7.junit.xml` (`1 passed`) launched one viewer process, issued two set-value commands through that process, and closed once.
+- Phase 5/7 full native green: `cmd /c ui_app\build_tests_vsdevcmd.cmd > artifacts\logs\phase5_7_full_native.log 2>&1` completed with `All helper tests passed`.
+- Phase 5/7 focused schema/color rail green: `cmd /c ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner > artifacts\logs\phase5_7_focused_schema_binding.log 2>&1`.
+- Phase 5/7 process hygiene proof: no `viewer`, `cuda`, `fractal`, or `newton` process remained after the focused persistent runtime proof.
+- Phase 5/7 contract-proof guard green: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase5_7_persistent_harness.junit.xml` (`19 passed`).
+- Phase 5/7 contract validation green: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract.json`.
+- Phase 5/7 plan sync green: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
+- Phase 5/7 hostile-audit validation green: `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit.json`.
+- Phase 5/7 diff hygiene green: `git diff --check` returned only expected CRLF working-tree warnings.
 
 ## Hostile Audit
 
@@ -185,6 +199,9 @@ Phase 5/6 remaining surface completion plus harness truth repair is active on th
 - [x] Phase 5/6 harness pass 2 - proved no runtime-walk viewer JUnit assertions remain in this contract until a persistent no-relaunch harness exists.
 - [x] Phase 5/6 harness pass 3 - proved the runtime-walk viewer E2E module is explicit opt-in by default, so normal pytest collection skips it without launching the viewer.
 - [x] Phase 5/6 harness clean re-read - kept the previous native parameter-surface matrix and Color Pipeline guardrails in place while removing only the hostile viewer relaunch rail.
+- [x] Phase 5/7 pass 1 - `test_viewer_cli` is covered by full native and proves `--ui-automation-command-json` parses a persistent automation command file path.
+- [x] Phase 5/7 pass 2 - the published viewer accepts command-file set-value requests while already running and reports the consumed command sequence.
+- [x] Phase 5/7 pass 3 - focused runtime pytest batches baseline plus two set-value edits through one viewer process and closes once.
 
 ## Audit Findings
 
@@ -202,16 +219,17 @@ Phase 5/6 remaining surface completion plus harness truth repair is active on th
 - [x] Phase 4 batch E finding repaired: standalone Projection-and-Flow target radius / pressure threshold and Counterfactual Pair offsets / reconvergence ratio were visible but lacked no-mouse rendered-frame proof; the selected controls now have native matrix coverage and rendered-frame proof, with no dead product control found in this group.
 - [x] Phase 4 batch F finding corrected: the active validation contract duplicated runtime-walk viewer pytest launches; the one-full-module replacement was later proven insufficient because it still relaunches the app internally.
 - [x] Phase 5/6 harness finding repaired: the active validation contract no longer requires the relaunching full runtime-walk viewer module as default proof, and the module itself now skips unless explicitly enabled with `VIEWER_HOST_ENABLE_RUNTIME_VIEWER_E2E=1` until persistent no-relaunch automation is built.
+- [x] Phase 5/7 finding repaired: persistent runtime viewer automation now uses command-file driven set-value automation against one already-running viewer and proves a one-process batch runtime test.
 - [ ] Phase 5/6 finding target: remaining enum/combo rows, fixed-formula classifications, and Explaino common controls must be covered by native/schema matrix proof without using physical mouse automation or repeated viewer launches.
 - [x] Phase 5/6 audit finding repaired: raw enum option visibility helper now treats missing predicates as intentional but malformed `visible_if` as fail-closed.
 
 ## Action Hostile Review
 
-- Action ID: phase5_6_runtime_walk_relaunch_contract_guard
-- Suspected Failure Mode: the validation contract calls one pytest command but that command launches and closes the viewer repeatedly inside the module, violating the user's no-relaunch rule while looking green.
-- Correct Owner/Action: remove the relaunching runtime-walk viewer module from default required validation, make the module explicit opt-in by default, and add contract-proof unit coverage that fails if this active contract requires it again before a persistent no-relaunch harness exists.
-- Proof Surface: `tests/test_viewer_host_contract_proof.py`, contract validation, plan sync, hostile-audit validation, focused/native rails, and runtime publish only; no runtime viewer launch command is allowed for this repair.
-- Blocked Action: no product/runtime source mutation, no Color Pipeline mutation, no schema ownership change, and no runtime viewer launch command.
+- Action ID: phase5_7_persistent_runtime_viewer_harness
+- Suspected Failure Mode: the previous checkpoint only disabled the repeated-launch proof path; it did not provide a real in-process/persistent automation path for live viewer set-value proof.
+- Correct Owner/Action: add a file-driven command channel to an already-running viewer, expose it through `tests/runtime_harness.py`, and add a focused runtime proof that launches one viewer process, captures a baseline, applies multiple set-value commands, and closes once.
+- Proof Surface: `test_viewer_cli`, focused persistent runtime pytest, contract validation, plan sync, hostile-audit validation, focused/native rails, runtime publish, and contract proof receipts.
+- Blocked Action: no physical mouse automation, no repeated viewer launch proof, no Color Pipeline product mutation, no schema ownership change.
 
 ## Boundaries
 
@@ -238,5 +256,6 @@ Out of scope for Phase 2/3 batch:
 ## Remaining Work After Phase 4F
 
 - Phase 4: further dead-slider/proof batches from the matrix.
-- Active now: Phase 5/6 batched native surface completion.
-- Runtime rendered-frame proof remains blocked from default closeout until a persistent no-relaunch harness exists; do not add targeted or full-module runtime-walk viewer launches to required validation.
+- Phase 5 Batch G remains open for enum/combo rows and fixed-formula classifications.
+- Phase 6 Batch H remains open for Explaino common-control matrix expansion.
+- Future rendered-frame proofs must use the persistent command-file harness or another no-relaunch in-process path; do not re-enable the legacy runtime-walk viewer module as default validation.

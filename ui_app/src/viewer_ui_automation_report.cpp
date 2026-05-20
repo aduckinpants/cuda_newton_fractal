@@ -2,6 +2,7 @@
 
 #include "enum_id_utils.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -122,7 +123,8 @@ void WriteColorPipelineUiAutomationReport(
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
     const ViewState& view,
-    const ViewerUiAutomationFrameProbe& frameProbe) {
+    const ViewerUiAutomationFrameProbe& frameProbe,
+    std::int64_t uiAutomationCommandSequence) {
     if (reportPath.empty() || !hwnd) {
         return;
     }
@@ -149,6 +151,13 @@ void WriteColorPipelineUiAutomationReport(
     out << "  \"window_open\": " << (colorPipelineWindow.open ? "true" : "false") << ",\n";
     out << "  \"initialized\": " << (colorPipelineWindow.initialized ? "true" : "false") << ",\n";
     out << "  \"force_open_for_automation\": " << (colorPipelineWindow.force_open_for_automation ? "true" : "false") << ",\n";
+    out << "  \"ui_automation_command_sequence\": ";
+    if (uiAutomationCommandSequence >= 0) {
+        out << uiAutomationCommandSequence;
+    } else {
+        out << "null";
+    }
+    out << ",\n";
     const char* currentFractalTypeId = enum_id_utils::LookupEnumId(view.fractal_type, enum_id_utils::kFractalTypeIds);
     out << "  \"current_fractal_type\": ";
     WriteAutomationReportString(out, currentFractalTypeId ? currentFractalTypeId : "");

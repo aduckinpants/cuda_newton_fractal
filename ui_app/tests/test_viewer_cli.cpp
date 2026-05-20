@@ -378,6 +378,20 @@ static void TestUiAutomationReportJsonMissingValue() {
     Check(rc != 0, "TestUiAutomationReportJsonMissingValue_Fails");
 }
 
+static void TestUiAutomationCommandJsonFlag() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--ui-automation-command-json", "ui_command.json"}), &cli);
+    Check(rc == 0, "TestUiAutomationCommandJsonFlag_ReturnCode");
+    Check(cli.have_ui_automation_command_json, "TestUiAutomationCommandJsonFlag_Have");
+    Check(cli.ui_automation_command_json_path == "ui_command.json", "TestUiAutomationCommandJsonFlag_Path");
+}
+
+static void TestUiAutomationCommandJsonMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--ui-automation-command-json"}), &cli);
+    Check(rc != 0, "TestUiAutomationCommandJsonMissingValue_Fails");
+}
+
 static void TestUiAutomationClickControlIdFlag() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
@@ -637,6 +651,8 @@ int main() {
     TestLoadStateJson();
     TestUiAutomationReportFlags();
     TestUiAutomationReportJsonMissingValue();
+    TestUiAutomationCommandJsonFlag();
+    TestUiAutomationCommandJsonMissingValue();
     TestUiAutomationClickControlIdFlag();
     TestUiAutomationClickControlIdMissingValue();
     TestUiAutomationSetControlValueFlag();

@@ -262,11 +262,21 @@ def test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime
     ]
 
     assert runtime_assertions == []
-    assert contract["workflow_type"] == "headless_only"
-    assert (
-        contract["required_defaults"].get("runtime_walk_viewer_default_proof")
-        == "forbidden_until_persistent_no_relaunch_harness"
-    )
+    persistent_commands = [
+        command for command in contract["required_validation_commands"]
+        if "tests/test_fractal_runtime_persistent_viewer_harness.py" in command
+    ]
+    assert len(persistent_commands) == 1
+
+    persistent_assertions = [
+        assertion for assertion in contract["required_acceptance_assertions"]
+        if assertion.get("test_nodeid")
+        == "tests/test_fractal_runtime_persistent_viewer_harness.py::test_persistent_runtime_viewer_batches_set_value_proofs_in_one_process"
+    ]
+    assert len(persistent_assertions) == 1
+    assert contract["workflow_type"] == "viewer_first"
+    assert contract["required_defaults"].get("runtime_walk_viewer_default_proof") == "forbidden_legacy_relaunch_module"
+    assert contract["required_defaults"].get("persistent_runtime_viewer_harness") == "required"
 
 
 

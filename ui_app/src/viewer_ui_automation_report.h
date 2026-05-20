@@ -44,4 +44,5 @@ void WriteColorPipelineUiAutomationReport(
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
     const ViewState& view,
-    const ViewerUiAutomationFrameProbe& frameProbe);
+    const ViewerUiAutomationFrameProbe& frameProbe,
+    std::int64_t uiAutomationCommandSequence);

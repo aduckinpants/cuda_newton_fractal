@@ -10,6 +10,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -369,3 +370,106 @@ def wait_for_ui_automation_rect(
     raise AssertionError(
         f"UI automation report never exposed control '{control_id}' in {report_path}; last_payload={last_payload!r}"
     )
+
+
+class PersistentRuntimeViewerAutomation:
+    def __init__(
+        self,
+        *,
+        exe_path: Path,
+        state_path: Path,
+        report_path: Path,
+        command_path: Path,
+        open_color_pipeline: bool = False,
+    ) -> None:
+        self.exe_path = exe_path
+        self.state_path = state_path
+        self.report_path = report_path
+        self.command_path = command_path
+        self.open_color_pipeline = open_color_pipeline
+        self.proc: subprocess.Popen[object] | None = None
+        self.hwnd: int | None = None
+        self.sequence = 0
+        self.launch_count = 0
+
+    def __enter__(self) -> "PersistentRuntimeViewerAutomation":
+        self.report_path.unlink(missing_ok=True)
+        self.command_path.unlink(missing_ok=True)
+        args = [
+            str(self.exe_path),
+            "--load-state-json",
+            str(self.state_path),
+            "--ui-automation-report-json",
+            str(self.report_path),
+            "--ui-automation-command-json",
+            str(self.command_path),
+        ]
+        if self.open_color_pipeline:
+            args.append("--open-color-pipeline-window")
+        self.proc = subprocess.Popen(args, cwd=str(RUNTIME_DIR))
+        self.launch_count += 1
+        self.hwnd = wait_for_window(self.proc)
+        return self
+
+    def __exit__(self, _exc_type: object, _exc: object, _tb: object) -> None:
+        if self.proc is not None:
+            close_runtime(self.hwnd, self.proc)
+        self.proc = None
+        self.hwnd = None
+
+    def _load_report(self) -> dict[str, Any] | None:
+        try:
+            payload = json.loads(self.report_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def wait_for_report(self, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+        deadline = time.monotonic() + timeout_seconds
+        last_payload: dict[str, Any] | None = None
+        while time.monotonic() < deadline:
+            if self.proc is not None and self.proc.poll() is not None:
+                raise AssertionError(f"viewer exited while waiting for automation report; returncode={self.proc.returncode}")
+            payload = self._load_report()
+            if payload is not None:
+                last_payload = payload
+                if payload.get("rendered_frame_ready") is True and isinstance(payload.get("rendered_frame_hash"), str):
+                    return payload
+            time.sleep(0.05)
+        raise AssertionError(f"persistent viewer report never reached ready frame; last_payload={last_payload!r}")
+
+    def wait_for_control(self, control_id: str, *, timeout_seconds: float = 10.0) -> UiAutomationRect:
+        return wait_for_ui_automation_rect(self.report_path, control_id, timeout_seconds=timeout_seconds)
+
+    def set_control_value(self, control_id: str, value: float, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+        self.sequence += 1
+        command = {
+            "sequence": self.sequence,
+            "set_control_value": {
+                "control_id": control_id,
+                "value": value,
+            },
+        }
+        self.command_path.write_text(json.dumps(command, indent=2), encoding="utf-8")
+        deadline = time.monotonic() + timeout_seconds
+        last_payload: dict[str, Any] | None = None
+        while time.monotonic() < deadline:
+            if self.proc is not None and self.proc.poll() is not None:
+                raise AssertionError(f"viewer exited while waiting for command {self.sequence}; returncode={self.proc.returncode}")
+            payload = self._load_report()
+            if payload is None:
+                time.sleep(0.05)
+                continue
+            last_payload = payload
+            if payload.get("ui_automation_command_sequence") != self.sequence:
+                time.sleep(0.05)
+                continue
+            if payload.get("requested_set_control_id") != control_id:
+                time.sleep(0.05)
+                continue
+            set_error = payload.get("set_value_error")
+            assert not set_error, f"set-value automation failed for {control_id}: {set_error}"
+            if payload.get("set_value_consumed") is True and payload.get("rendered_frame_ready") is True:
+                return payload
+            time.sleep(0.05)
+        raise AssertionError(f"persistent viewer never consumed command {self.sequence} for {control_id}; last_payload={last_payload!r}")

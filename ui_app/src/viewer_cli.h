@@ -71,6 +71,8 @@ struct ViewerCliArgs {
     bool open_color_pipeline_window_on_startup = false;
     bool have_ui_automation_report_json = false;
     std::string ui_automation_report_json_path;
+    bool have_ui_automation_command_json = false;
+    std::string ui_automation_command_json_path;
     bool have_ui_automation_click_control_id = false;
     std::string ui_automation_click_control_id;
     bool have_ui_automation_set_control_value = false;
