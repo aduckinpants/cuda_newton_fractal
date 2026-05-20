@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 namespace {
 
@@ -308,6 +309,126 @@ bool ValidateNovaAlphaSchemaRange() {
     return true;
 }
 
+bool ValidateVisibleControlMatrixCase(
+    const json_min::Value& schemaRoot,
+    const char* controlId,
+    FractalType fractalType,
+    const char* bindingPath,
+    const char* expectedValueType) {
+    const json_min::Value* control = FindSchemaControlById(schemaRoot, controlId);
+    if (!control) {
+        std::cerr << "Visible-control matrix missing control " << controlId << "\n";
+        return false;
+    }
+    std::string actualBindingPath;
+    std::string actualValueType;
+    if (!ReadControlBindingAndType(*control, &actualBindingPath, &actualValueType) || actualBindingPath != bindingPath) {
+        std::cerr << "Visible-control matrix found wrong binding for " << controlId << "\n";
+        return false;
+    }
+    if (expectedValueType && actualValueType != expectedValueType) {
+        std::cerr << "Visible-control matrix found wrong value type for " << controlId << "\n";
+        return false;
+    }
+    if (!IsControlVisibleForFractal(*control, fractalType)) {
+        const char* fractalId = FractalTypeId(fractalType);
+        std::cerr << "Visible-control matrix hid " << controlId
+                  << " on owner fractal " << (fractalId ? fractalId : "<unknown>") << "\n";
+        return false;
+    }
+
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    view.fractal_type = fractalType;
+    BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+    if (!ControlBindingResolves(actualValueType, actualBindingPath, ctx)) {
+        std::cerr << "Visible-control matrix could not resolve binding for " << controlId << "\n";
+        return false;
+    }
+    return true;
+}
+
+bool StartsWith(const std::string& value, const char* prefix) {
+    return value.rfind(prefix, 0) == 0;
+}
+
+bool IsGlobalFixedFormulaBindingPath(const std::string& bindingPath) {
+    return bindingPath == "fractal.params.max_iter" ||
+        bindingPath == "fractal.params.coloring_mode" ||
+        bindingPath == "fractal.params.color_grading" ||
+        bindingPath == "fractal.params.exposure" ||
+        StartsWith(bindingPath, "fractal.params.color_") ||
+        StartsWith(bindingPath, "fractal.view.") ||
+        StartsWith(bindingPath, "fractal.render.") ||
+        StartsWith(bindingPath, "fractal.lens.");
+}
+
+bool ReadVisibleIfPredicate(const json_min::Value& object, UISchemaPredicate* outPredicate) {
+    const json_min::Value* visibleIf = object.get("visible_if");
+    if (!visibleIf || !visibleIf->is_object()) {
+        return false;
+    }
+    UISchemaPredicate predicate{};
+    if (!GetJsonStringField(*visibleIf, "op", &predicate.op) ||
+        !GetJsonStringField(*visibleIf, "path", &predicate.path) ||
+        !GetJsonStringField(*visibleIf, "value", &predicate.value)) {
+        return false;
+    }
+    if (outPredicate) {
+        *outPredicate = predicate;
+    }
+    return true;
+}
+
+bool EvalRawVisibleIfForFractal(const json_min::Value& object, FractalType fractalType) {
+    const json_min::Value* visibleIf = object.get("visible_if");
+    if (!visibleIf) {
+        return true;
+    }
+    UISchemaPredicate predicate{};
+    if (!ReadVisibleIfPredicate(object, &predicate)) {
+        return false;
+    }
+    ViewState view{};
+    KernelParams params{};
+    RenderSettings render{};
+    LensSettings lens{};
+    view.fractal_type = fractalType;
+    BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+    return ctx.EvalVisibleIf(predicate);
+}
+
+bool RawAnimationOptionVisibleForFractal(const json_min::Value& option, FractalType fractalType) {
+    std::string optionId;
+    if (!GetJsonStringField(option, "id", &optionId)) {
+        return false;
+    }
+    const ExplainoAxisDescriptor* axis = FindExplainoAxisDescriptor(optionId);
+    if (axis && !option.get("visible_if")) {
+        return fractalType == ExplainoCanonicalFractalType() || fractalType == axis->carrier_fractal_type;
+    }
+    return EvalRawVisibleIfForFractal(option, fractalType);
+}
+
+bool HasVisibleEnumOptionForFractal(const json_min::Value& control, const char* optionId, FractalType fractalType) {
+    const json_min::Value* options = control.get("options");
+    if (!options || !options->is_array()) {
+        return false;
+    }
+    for (const json_min::Value& option : options->as_array()) {
+        if (!option.is_object()) {
+            continue;
+        }
+        std::string id;
+        if (GetJsonStringField(option, "id", &id) && id == optionId) {
+            return RawAnimationOptionVisibleForFractal(option, fractalType);
+        }
+    }
+    return false;
+}
+
 bool ValidateVisibleControlMatrix() {
     json_min::Value schemaRoot;
     if (!LoadCurrentSchemaJson(&schemaRoot)) {
@@ -318,63 +439,126 @@ bool ValidateVisibleControlMatrix() {
         const char* control_id;
         FractalType fractal_type;
         const char* binding_path;
+        const char* value_type;
     };
 
     const MatrixCase cases[] = {
-        {"julia_c_real", FractalType::julia, "fractal.params.julia_c_real"},
-        {"julia_c_imag", FractalType::julia, "fractal.params.julia_c_imag"},
-        {"epsilon", FractalType::newton, "fractal.params.epsilon"},
-        {"poly_c0", FractalType::newton, "fractal.params.poly_coeffs.0"},
-        {"poly_c1", FractalType::newton, "fractal.params.poly_coeffs.1"},
-        {"poly_c2", FractalType::newton, "fractal.params.poly_coeffs.2"},
-        {"poly_c3", FractalType::newton, "fractal.params.poly_coeffs.3"},
-        {"poly_c4", FractalType::newton, "fractal.params.poly_coeffs.4"},
-        {"epsilon", FractalType::halley, "fractal.params.epsilon"},
-        {"poly_c0", FractalType::halley, "fractal.params.poly_coeffs.0"},
-        {"poly_c1", FractalType::halley, "fractal.params.poly_coeffs.1"},
-        {"poly_c2", FractalType::halley, "fractal.params.poly_coeffs.2"},
-        {"poly_c3", FractalType::halley, "fractal.params.poly_coeffs.3"},
-        {"poly_c4", FractalType::halley, "fractal.params.poly_coeffs.4"},
-        {"epsilon", FractalType::nova, "fractal.params.epsilon"},
-        {"nova_alpha", FractalType::nova, "fractal.params.nova_alpha"},
-        {"poly_c0", FractalType::nova, "fractal.params.poly_coeffs.0"},
-        {"poly_c1", FractalType::nova, "fractal.params.poly_coeffs.1"},
-        {"poly_c2", FractalType::nova, "fractal.params.poly_coeffs.2"},
-        {"poly_c3", FractalType::nova, "fractal.params.poly_coeffs.3"},
-        {"poly_c4", FractalType::nova, "fractal.params.poly_coeffs.4"},
-        {"phoenix_p_real", FractalType::phoenix, "fractal.params.phoenix_p_real"},
-        {"phoenix_p_imag", FractalType::phoenix, "fractal.params.phoenix_p_imag"},
-        {"lambda_real", FractalType::lambda_map, "fractal.params.lambda_real"},
-        {"lambda_imag", FractalType::lambda_map, "fractal.params.lambda_imag"},
-        {"multibrot_power_float", FractalType::multibrot, "fractal.params.multibrot_power_float"},
-        {"multicorn_power", FractalType::multicorn, "fractal.params.multibrot_power"},
-        {"magnet_seed_real", FractalType::magnet, "fractal.params.magnet_seed_real"},
-        {"magnet_seed_imag", FractalType::magnet, "fractal.params.magnet_seed_imag"},
-        {"magnet_relaxation", FractalType::magnet, "fractal.params.magnet_relaxation"},
-        {"magnet_bailout", FractalType::magnet, "fractal.params.magnet_bailout"},
-        {"projection_and_flow_target_radius", FractalType::projection_and_flow, "fractal.params.projection_and_flow_target_radius"},
-        {"projection_and_flow_pressure_threshold", FractalType::projection_and_flow, "fractal.params.projection_and_flow_pressure_threshold"},
-        {"counterfactual_pair_offset_x", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_x"},
-        {"counterfactual_pair_offset_y", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_y"},
-        {"counterfactual_pair_reconvergence_ratio", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_reconvergence_ratio"},
+        {"julia_c_real", FractalType::julia, "fractal.params.julia_c_real", "float"},
+        {"julia_c_imag", FractalType::julia, "fractal.params.julia_c_imag", "float"},
+        {"epsilon", FractalType::newton, "fractal.params.epsilon", "float"},
+        {"poly_kind", FractalType::newton, "fractal.params.poly_kind", "enum"},
+        {"poly_c0", FractalType::newton, "fractal.params.poly_coeffs.0", "float"},
+        {"poly_c1", FractalType::newton, "fractal.params.poly_coeffs.1", "float"},
+        {"poly_c2", FractalType::newton, "fractal.params.poly_coeffs.2", "float"},
+        {"poly_c3", FractalType::newton, "fractal.params.poly_coeffs.3", "float"},
+        {"poly_c4", FractalType::newton, "fractal.params.poly_coeffs.4", "float"},
+        {"epsilon", FractalType::halley, "fractal.params.epsilon", "float"},
+        {"poly_kind", FractalType::halley, "fractal.params.poly_kind", "enum"},
+        {"poly_c0", FractalType::halley, "fractal.params.poly_coeffs.0", "float"},
+        {"poly_c1", FractalType::halley, "fractal.params.poly_coeffs.1", "float"},
+        {"poly_c2", FractalType::halley, "fractal.params.poly_coeffs.2", "float"},
+        {"poly_c3", FractalType::halley, "fractal.params.poly_coeffs.3", "float"},
+        {"poly_c4", FractalType::halley, "fractal.params.poly_coeffs.4", "float"},
+        {"epsilon", FractalType::nova, "fractal.params.epsilon", "float"},
+        {"nova_alpha", FractalType::nova, "fractal.params.nova_alpha", "float"},
+        {"poly_kind", FractalType::nova, "fractal.params.poly_kind", "enum"},
+        {"poly_c0", FractalType::nova, "fractal.params.poly_coeffs.0", "float"},
+        {"poly_c1", FractalType::nova, "fractal.params.poly_coeffs.1", "float"},
+        {"poly_c2", FractalType::nova, "fractal.params.poly_coeffs.2", "float"},
+        {"poly_c3", FractalType::nova, "fractal.params.poly_coeffs.3", "float"},
+        {"poly_c4", FractalType::nova, "fractal.params.poly_coeffs.4", "float"},
+        {"phoenix_p_real", FractalType::phoenix, "fractal.params.phoenix_p_real", "float"},
+        {"phoenix_p_imag", FractalType::phoenix, "fractal.params.phoenix_p_imag", "float"},
+        {"lambda_real", FractalType::lambda_map, "fractal.params.lambda_real", "float"},
+        {"lambda_imag", FractalType::lambda_map, "fractal.params.lambda_imag", "float"},
+        {"multibrot_power_float", FractalType::multibrot, "fractal.params.multibrot_power_float", "float"},
+        {"multicorn_power", FractalType::multicorn, "fractal.params.multibrot_power", "int"},
+        {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "enum"},
+        {"magnet_seed_real", FractalType::magnet, "fractal.params.magnet_seed_real", "float"},
+        {"magnet_seed_imag", FractalType::magnet, "fractal.params.magnet_seed_imag", "float"},
+        {"magnet_relaxation", FractalType::magnet, "fractal.params.magnet_relaxation", "float"},
+        {"magnet_bailout", FractalType::magnet, "fractal.params.magnet_bailout", "float"},
+        {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "enum"},
+        {"projection_and_flow_target_radius", FractalType::projection_and_flow, "fractal.params.projection_and_flow_target_radius", "float"},
+        {"projection_and_flow_pressure_threshold", FractalType::projection_and_flow, "fractal.params.projection_and_flow_pressure_threshold", "float"},
+        {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "enum"},
+        {"projection_and_flow_target_radius", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_target_radius", "float"},
+        {"projection_and_flow_pressure_threshold", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_pressure_threshold", "float"},
+        {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
+        {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "enum"},
+        {"counterfactual_pair_offset_x", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_x", "float"},
+        {"counterfactual_pair_offset_y", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_y", "float"},
+        {"counterfactual_pair_reconvergence_ratio", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_reconvergence_ratio", "float"},
+        {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "enum"},
+        {"counterfactual_pair_offset_x", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_offset_x", "float"},
+        {"counterfactual_pair_offset_y", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_offset_y", "float"},
+        {"counterfactual_pair_reconvergence_ratio", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_reconvergence_ratio", "float"},
+        {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "enum"},
     };
 
     for (const MatrixCase& testCase : cases) {
-        const json_min::Value* control = FindSchemaControlById(schemaRoot, testCase.control_id);
-        if (!control) {
-            std::cerr << "Visible-control matrix missing control " << testCase.control_id << "\n";
+        if (!ValidateVisibleControlMatrixCase(schemaRoot, testCase.control_id, testCase.fractal_type, testCase.binding_path, testCase.value_type)) {
             return false;
         }
+    }
+
+    const MatrixCase explainoCommonCases[] = {
+        {"auto_increment_seed", FractalType::explaino, "fractal.view.auto_increment_seed", "bool"},
+        {"epsilon", FractalType::explaino, "fractal.params.epsilon", "float"},
+        {"explaino_seed", FractalType::explaino, "fractal.params.explaino_seed", "double"},
+        {"explaino_warp_strength", FractalType::explaino, "fractal.params.explaino_warp_strength", "float"},
+        {"explaino_root_spread", FractalType::explaino, "fractal.params.explaino_root_spread", "float"},
+        {"explaino_phase_strength", FractalType::explaino, "fractal.view.explaino_phase_strength", "float"},
+        {"explaino_damping", FractalType::explaino, "fractal.params.explaino_damping", "float"},
+        {"explaino_phase", FractalType::explaino, "fractal.view.explaino_phase", "float"},
+        {"explaino_seed_drift", FractalType::explaino, "fractal.view.explaino_seed_drift", "float"},
+        {"explaino_seed_tween", FractalType::explaino, "fractal.view.explaino_seed_tween", "bool"},
+    };
+
+    for (const ExplainoSelectorDescriptor& selector : kExplainoSelectorRegistry) {
+        for (const MatrixCase& commonCase : explainoCommonCases) {
+            if (!ValidateVisibleControlMatrixCase(schemaRoot, commonCase.control_id, selector.fractal_type, commonCase.binding_path, commonCase.value_type)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool ValidateEnumComboEditMatrix() {
+    json_min::Value schemaRoot;
+    if (!LoadCurrentSchemaJson(&schemaRoot)) {
+        return false;
+    }
+
+    struct EnumComboCase {
+        const char* control_id;
+        FractalType fractal_type;
+        const char* binding_path;
+        const char* edit_id;
+    };
+
+    const EnumComboCase cases[] = {
+        {"poly_kind", FractalType::newton, "fractal.params.poly_kind", "custom"},
+        {"poly_kind", FractalType::nova, "fractal.params.poly_kind", "custom"},
+        {"poly_kind", FractalType::halley, "fractal.params.poly_kind", "custom"},
+        {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "z4_z2"},
+        {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "quartic_unit_roots"},
+        {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
+        {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
+        {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
+        {"projection_and_flow_root_family", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
+        {"transcendental_func", FractalType::explaino_transcendental, "fractal.params.transcendental_func", "f_cosh"},
+    };
+
+    for (const EnumComboCase& testCase : cases) {
+        const json_min::Value* control = FindSchemaControlById(schemaRoot, testCase.control_id);
         std::string bindingPath;
         std::string valueType;
-        if (!ReadControlBindingAndType(*control, &bindingPath, &valueType) || bindingPath != testCase.binding_path) {
-            std::cerr << "Visible-control matrix found wrong binding for " << testCase.control_id << "\n";
-            return false;
-        }
-        if (!IsControlVisibleForFractal(*control, testCase.fractal_type)) {
-            const char* fractalId = FractalTypeId(testCase.fractal_type);
-            std::cerr << "Visible-control matrix hid " << testCase.control_id
-                      << " on owner fractal " << (fractalId ? fractalId : "<unknown>") << "\n";
+        if (!control || !ReadControlBindingAndType(*control, &bindingPath, &valueType) ||
+            valueType != "enum" || bindingPath != testCase.binding_path) {
+            std::cerr << "Enum/combo matrix found wrong schema control for " << testCase.control_id << "\n";
             return false;
         }
 
@@ -384,9 +568,162 @@ bool ValidateVisibleControlMatrix() {
         LensSettings lens{};
         view.fractal_type = testCase.fractal_type;
         BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
-        if (!ControlBindingResolves(valueType, bindingPath, ctx)) {
-            std::cerr << "Visible-control matrix could not resolve binding for " << testCase.control_id << "\n";
+        if (!IsControlVisibleForFractal(*control, testCase.fractal_type)) {
+            std::cerr << "Enum/combo matrix hid " << testCase.control_id << " on its owner lane\n";
             return false;
+        }
+        if (!HasVisibleEnumOptionForFractal(*control, testCase.edit_id, testCase.fractal_type)) {
+            std::cerr << "Enum/combo matrix did not expose option " << testCase.edit_id << " for " << testCase.control_id << "\n";
+            return false;
+        }
+        if (!ctx.SetEnumId(testCase.binding_path, testCase.edit_id) || ctx.GetEnumId(testCase.binding_path) != testCase.edit_id) {
+            std::cerr << "Enum/combo matrix edit did not round-trip through BindingContext for " << testCase.control_id << "\n";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool ValidateFixedAndPresetSurfaceClassifications() {
+    json_min::Value schemaRoot;
+    if (!LoadCurrentSchemaJson(&schemaRoot)) {
+        return false;
+    }
+    const json_min::Value* panels = schemaRoot.get("panels");
+    if (!panels || !panels->is_array()) {
+        std::cerr << "Fixed-formula classification could not read schema panels\n";
+        return false;
+    }
+
+    const FractalType fixedFormulaLanes[] = {
+        FractalType::mandelbrot,
+        FractalType::burning_ship,
+        FractalType::spider,
+        FractalType::celtic_mandelbrot,
+        FractalType::perpendicular_burning_ship,
+        FractalType::collatz,
+    };
+
+    for (FractalType fixedLane : fixedFormulaLanes) {
+        for (const json_min::Value& panel : panels->as_array()) {
+            if (!panel.is_object()) continue;
+            const json_min::Value* controls = panel.get("controls");
+            if (!controls || !controls->is_array()) continue;
+            for (const json_min::Value& control : controls->as_array()) {
+                if (!control.is_object() || !control.get("visible_if")) {
+                    continue;
+                }
+                std::string bindingPath;
+                std::string valueType;
+                if (!ReadControlBindingAndType(control, &bindingPath, &valueType)) {
+                    continue;
+                }
+                if (!IsControlVisibleForFractal(control, fixedLane)) {
+                    continue;
+                }
+                if (!IsGlobalFixedFormulaBindingPath(bindingPath)) {
+                    std::string controlId;
+                    GetJsonStringField(control, "id", &controlId);
+                    const char* fractalId = FractalTypeId(fixedLane);
+                    std::cerr << "Fixed-formula lane " << (fractalId ? fractalId : "<unknown>")
+                              << " unexpectedly exposes family control " << controlId << "\n";
+                    return false;
+                }
+            }
+        }
+    }
+
+    for (const json_min::Value& panel : panels->as_array()) {
+        if (!panel.is_object()) continue;
+        const json_min::Value* controls = panel.get("controls");
+        if (!controls || !controls->is_array()) continue;
+        for (const json_min::Value& control : controls->as_array()) {
+            if (!control.is_object() || !control.get("visible_if")) {
+                continue;
+            }
+            std::string bindingPath;
+            std::string valueType;
+            if (!ReadControlBindingAndType(control, &bindingPath, &valueType)) {
+                continue;
+            }
+            if (!IsControlVisibleForFractal(control, FractalType::mcmullen)) {
+                continue;
+            }
+            std::string controlId;
+            GetJsonStringField(control, "id", &controlId);
+            if (controlId != "mcmullen_preset" && !IsGlobalFixedFormulaBindingPath(bindingPath)) {
+                std::cerr << "McMullen preset-only classification found an unexpected direct family control: " << controlId << "\n";
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool ValidateAnimationTargetVisibilityMirrorsControls() {
+    json_min::Value schemaRoot;
+    if (!LoadCurrentSchemaJson(&schemaRoot)) {
+        return false;
+    }
+
+    const json_min::Value* animTarget = FindSchemaControlById(schemaRoot, "param_anim_target");
+    if (!animTarget) {
+        std::cerr << "Animation target visibility mirror could not find the param_anim_target combo\n";
+        return false;
+    }
+
+    struct MirrorCase {
+        const char* option_id;
+        const char* control_id;
+    };
+
+    const MirrorCase cases[] = {
+        {"seed", "explaino_seed"},
+        {"damping", "explaino_damping"},
+        {"warp_strength", "explaino_warp_strength"},
+        {"root_spread", "explaino_root_spread"},
+        {"mix", "explaino_mix"},
+        {"nova_alpha", "nova_alpha"},
+        {"phoenix_p_real", "phoenix_p_real"},
+        {"multibrot_power", "multibrot_power_float"},
+        {"julia_c_real", "julia_c_real"},
+        {"julia_c_imag", "julia_c_imag"},
+        {"lambda_real", "lambda_real"},
+        {"magnet_relaxation", "magnet_relaxation"},
+        {"magnet_bailout", "magnet_bailout"},
+        {"momentum_beta", "momentum_beta"},
+        {"joy_coupling", "joy_coupling"},
+        {"fold_coupling", "fold_coupling"},
+        {"bell_coupling", "bell_coupling"},
+        {"ripple_amplitude", "ripple_amplitude"},
+        {"splice_offset", "splice_offset"},
+        {"vortex_strength", "vortex_strength"},
+        {"tension_strength", "tension_strength"},
+        {"explaino_phase", "explaino_phase"},
+    };
+
+    for (const auto& fractalId : enum_id_utils::kFractalTypeIds) {
+        if (!HasVisibleEnumOptionForFractal(*animTarget, "none", fractalId.value)) {
+            std::cerr << "Animation target visibility mirror hid the None option\n";
+            return false;
+        }
+
+        for (const MirrorCase& testCase : cases) {
+            const json_min::Value* ownerControl = FindSchemaControlById(schemaRoot, testCase.control_id);
+            if (!ownerControl) {
+                std::cerr << "Animation target visibility mirror missing owner control " << testCase.control_id << "\n";
+                return false;
+            }
+            const bool optionVisible = HasVisibleEnumOptionForFractal(*animTarget, testCase.option_id, fractalId.value);
+            const bool ownerVisible = IsControlVisibleForFractal(*ownerControl, fractalId.value);
+            if (optionVisible != ownerVisible) {
+                std::cerr << "Animation target option " << testCase.option_id
+                          << " no longer mirrors owner control " << testCase.control_id
+                          << " on fractal " << fractalId.id << "\n";
+                return false;
+            }
         }
     }
 
@@ -1164,6 +1501,18 @@ int main() {
     }
 
     if (!ValidateVisibleControlMatrix()) {
+        return 1;
+    }
+
+    if (!ValidateEnumComboEditMatrix()) {
+        return 1;
+    }
+
+    if (!ValidateFixedAndPresetSurfaceClassifications()) {
+        return 1;
+    }
+
+    if (!ValidateAnimationTargetVisibilityMirrorsControls()) {
         return 1;
     }
 

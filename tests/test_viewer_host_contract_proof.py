@@ -245,7 +245,7 @@ def test_validation_evidence_spec_for_command_recognizes_redirected_log_command(
 
 
 
-def test_fractal_parameter_surface_contract_uses_single_runtime_walk_pytest_command() -> None:
+def test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime_walk_viewer_module() -> None:
     contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
 
     runtime_commands = [
@@ -253,10 +253,7 @@ def test_fractal_parameter_surface_contract_uses_single_runtime_walk_pytest_comm
         if "tests/test_fractal_runtime_runtime_walk_viewer.py" in command
     ]
 
-    assert len(runtime_commands) == 1
-    full_module_artifact = runtime_commands[0].split("--junitxml ", 1)[1].split()[0]
-    assert " -k " not in runtime_commands[0]
-    assert full_module_artifact.endswith("_full_module.junit.xml")
+    assert runtime_commands == []
 
     runtime_assertions = [
         assertion for assertion in contract["required_acceptance_assertions"]
@@ -264,9 +261,22 @@ def test_fractal_parameter_surface_contract_uses_single_runtime_walk_pytest_comm
         and str(assertion.get("test_nodeid", "")).startswith("tests/test_fractal_runtime_runtime_walk_viewer.py::")
     ]
 
-    assert runtime_assertions
-    for assertion in runtime_assertions:
-        assert assertion["artifact_path"] == full_module_artifact
+    assert runtime_assertions == []
+    assert contract["workflow_type"] == "headless_only"
+    assert (
+        contract["required_defaults"].get("runtime_walk_viewer_default_proof")
+        == "forbidden_until_persistent_no_relaunch_harness"
+    )
+
+
+
+
+def test_runtime_walk_viewer_e2e_module_is_explicitly_opt_in() -> None:
+    module_text = (REPO_ROOT / "tests" / "test_fractal_runtime_runtime_walk_viewer.py").read_text(encoding="utf-8")
+
+    assert "VIEWER_HOST_ENABLE_RUNTIME_VIEWER_E2E" in module_text
+    assert "pytestmark = pytest.mark.skipif" in module_text
+    assert "subprocess.Popen" in module_text
 
 
 def test_build_validation_evidence_entries_records_artifact_metadata(tmp_path: Path) -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -10,6 +11,15 @@ import time
 from pathlib import Path
 
 import pytest
+
+_RUNTIME_VIEWER_E2E_OPT_IN_ENV = "VIEWER_HOST_ENABLE_RUNTIME_VIEWER_E2E"
+pytestmark = pytest.mark.skipif(
+    os.environ.get(_RUNTIME_VIEWER_E2E_OPT_IN_ENV) != "1",
+    reason=(
+        "runtime-walk viewer E2E tests launch the viewer; set "
+        "VIEWER_HOST_ENABLE_RUNTIME_VIEWER_E2E=1 for an explicit opt-in run"
+    ),
+)
 
 from tests.runtime_harness import (
     HeadlessLoadedStateScenario as _HeadlessLoadedStateScenario,
