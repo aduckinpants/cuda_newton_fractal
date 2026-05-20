@@ -279,6 +279,42 @@ def test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime
     assert contract["required_defaults"].get("persistent_runtime_viewer_harness") == "required"
 
 
+
+def test_fractal_parameter_surface_contract_requires_all44_scope() -> None:
+    contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
+    plan_text = (REPO_ROOT / "docs" / "notes" / "fractal_parameter_surface_matrix_PHASED_PLAN.md").read_text(encoding="utf-8")
+    inventory_text = (REPO_ROOT / "docs" / "notes" / "fractal_control_surface_audit_inventory.md").read_text(encoding="utf-8")
+    schema = json.loads((REPO_ROOT / "ui" / "fractal_binding_surface_v1.ui_schema.json").read_text(encoding="utf-8"))
+
+    options = []
+    for panel in schema["panels"]:
+        for control in panel.get("controls", []):
+            if control.get("id") == "fractal_type":
+                options = [option["id"] for option in control["options"]]
+                break
+        if options:
+            break
+
+    enum_ids_text = (REPO_ROOT / "ui_app" / "src" / "enum_id_utils.h").read_text(encoding="utf-8")
+    enum_id_rows = [line for line in enum_ids_text.splitlines() if "{FractalType::" in line and line.count('"') >= 2]
+
+    assert len(options) == 44
+    assert len(enum_id_rows) == 44
+    assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase8_all44_exhaustive_repair"
+    assert contract["required_defaults"].get("all_fractal_count") == 44
+    assert contract["required_defaults"].get("selected_subset_closeout_is_insufficient") is True
+    assert contract["forbidden_defaults"].get("subset_matrix_closeout_as_all44_completion") == "forbidden"
+    assert contract["forbidden_defaults"].get("missing_control_omission") == "forbidden"
+    assert contract["forbidden_defaults"].get("dead_slider_omission") == "forbidden"
+    assert any("all 44" in item for item in contract["required_operator_inputs"])
+    assert any("selected subset" in item for item in contract["forbidden_operator_prompts"])
+    assert any("legacy relaunching runtime-walk viewer module" in item for item in contract["forbidden_operator_prompts"])
+    assert "Phase 8 is open" in plan_text
+    assert "all 44" in plan_text
+    assert "No remaining parameter-surface cleanup phase is open in this plan" not in plan_text
+    assert "FractalType` enum count: 44" in inventory_text
+    assert "fractal_type` schema option count: 44" in inventory_text
+
 def test_fractal_parameter_surface_contract_requires_code_quality_guard() -> None:
     contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
 

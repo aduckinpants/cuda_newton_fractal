@@ -112,6 +112,83 @@ These are not all proven bugs. They are the first places where current code sugg
 | `explaino_counterfactual_pair` | common Explaino numeric controls plus `counterfactual_pair_offset_x`, `counterfactual_pair_offset_y`, `counterfactual_pair_reconvergence_ratio` | `counterfactual_pair_frame`, common Explaino non-numeric controls | Root-family combo is not visible here; current Explaino carrier uses custom Explaino polynomial authority. | Headless/runtime coverage exists; direct UI proof missing. | Set offsets/ratio and common controls; add enum proof for frame. |
 | `explaino_projection_and_flow` | common Explaino numeric controls plus `projection_and_flow_target_radius`, `projection_and_flow_pressure_threshold` | `projection_and_flow_root_family`, common Explaino non-numeric controls | None obvious. | Headless/runtime coverage exists for several controls; direct full UI matrix missing. | Set radius/pressure and common controls; add enum proof for root-family. |
 
+## Phase 8 Generated Re-Audit - 2026-05-20
+
+This re-audit exists because the prior parameter-surface closeout treated a selected matrix as if it were the full all-44 ask. That was false. Current generated evidence from local head `696dabf` plus the Phase 8 working tree:
+
+- Schema/enum parity: 44 `FractalType` enum ids, 44 public enum ids, and 44 `fractal_type` schema selector options.
+- Generated visible family-control inventory: 224 visible family-control cells across the 44 lanes.
+- Existing `KernelParams` exposure audit: after excluding generated/internal Color Pipeline stacks, `poly_coeffs`, `poly_coeffs_b`, `explaino_roots`, and generated `explaino_root_count`, no existing runtime parameter root is silently hidden from the schema.
+- Static missing-control suspects that would require new runtime authority, not merely surfacing an existing hidden field: McMullen direct `(m,n,lambda)` and standalone Collatz coefficient controls. Those remain product decisions and must not be called fixed by the current cleanup.
+- Headless runtime sensitivity sweep artifact: `artifacts/analysis/phase8_headless_surface_sensitivity.json`. It used `--capture-diagnostic` and temporary `state.json` files; it did not use the OS mouse or launch the interactive viewer.
+- First-pass headless result: 205 / 224 visible family-control cells changed the rendered frame under the generated witness; 19 cells were unchanged and need either a stronger UI-path witness, a runtime repair, or an explicit non-rendering classification.
+
+Unchanged first-pass headless rows:
+
+| Fractal | Control | Binding |
+|---|---|---|
+| `nova` | `epsilon` | `fractal.params.epsilon` |
+| `nova` | `poly_kind` | `fractal.params.poly_kind` |
+| `explaino_y` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_nova` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_nova` | `explaino_warp_strength` | `fractal.params.explaino_warp_strength` |
+| `explaino_nova` | `explaino_damping` | `fractal.params.explaino_damping` |
+| `explaino_transcendental` | `explaino_seed` | `fractal.params.explaino_seed` |
+| `explaino_transcendental` | `explaino_root_spread` | `fractal.params.explaino_root_spread` |
+| `explaino_julia` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_julia` | `explaino_damping` | `fractal.params.explaino_damping` |
+| `explaino_lambda` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_lambda` | `explaino_seed` | `fractal.params.explaino_seed` |
+| `explaino_lambda` | `explaino_root_spread` | `fractal.params.explaino_root_spread` |
+| `explaino_lambda` | `explaino_damping` | `fractal.params.explaino_damping` |
+| `explaino_rational_escape` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_rational_escape` | `explaino_damping` | `fractal.params.explaino_damping` |
+| `explaino_joy` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_tension` | `epsilon` | `fractal.params.epsilon` |
+| `explaino_projection_and_flow` | `epsilon` | `fractal.params.epsilon` |
+
+Interpretation discipline:
+
+- These 19 rows are not automatically product-dead from this artifact alone, because the sweep mutates `state.json` directly and may bypass UI-only coherence work such as polynomial preset application.
+- These 19 rows are also not allowed to be called fixed. Each row now needs a stronger no-mouse UI-path witness, a runtime repair, or an explicit classification.
+- The old runtime-walk viewer E2E module is still not an acceptable default proof rail because it relaunches the interactive viewer repeatedly.
+
+
+## Phase 8 Repair Reconciliation - 2026-05-20
+
+Current after-repair evidence:
+
+- Current schema/enum parity artifact: `artifacts/analysis/phase8_all44_schema_inventory_after_repair.json`; it reports 44 enum ids, 44 public ids, 44 schema selector options, and 214 visible family-control cells after hiding branch-dead controls.
+- Original 19-row follow-up artifact: `artifacts/analysis/phase8_persistent_followup_19_after_repair.json`; it uses the persistent no-relaunch viewer harness and reports 9 visible controls with rendered-frame deltas, 10 branch-dead controls intentionally hidden, and 0 unresolved rows from the original first-pass set.
+- Runtime proof rail: `py -3.14 -m pytest tests\test_fractal_runtime_persistent_viewer_harness.py -q --junitxml artifacts\pytest\fractal_runtime_persistent_viewer_harness_phase8_dead_control_repair_after_schema.junit.xml` passed with 4 tests.
+- Native schema rail: `py -3.14 tools\viewer_host_run_logged_command.py --label phase8_native_dead_control_repair_focus2 --log artifacts\logs\phase8_native_dead_control_repair_focus2.log -- ui_app\build_tests_vsdevcmd.cmd advanced_color_grading_owner` passed, including Color Pipeline core/window, schema binding, escape-time coloring, diagnostics, finding archive, and runtime reset.
+
+Original 19-row disposition:
+
+| Fractal | Control | Disposition |
+|---|---|---|
+| `nova` | `epsilon` | UI-proven visible control |
+| `nova` | `poly_kind` | UI-proven enum control |
+| `explaino_y` | `epsilon` | UI-proven visible control |
+| `explaino_nova` | `epsilon` | UI-proven visible control |
+| `explaino_nova` | `explaino_warp_strength` | Hidden: branch does not read this control |
+| `explaino_nova` | `explaino_damping` | Hidden: branch does not read this control |
+| `explaino_transcendental` | `explaino_seed` | UI-proven visible control; default seed-driven warp is now active |
+| `explaino_transcendental` | `explaino_root_spread` | Hidden: branch does not read root-spread/polynomial roots |
+| `explaino_julia` | `epsilon` | Hidden: escape-time branch does not read convergence epsilon |
+| `explaino_julia` | `explaino_damping` | Hidden: branch does not read Newton damping |
+| `explaino_lambda` | `epsilon` | Hidden: escape-time branch does not read convergence epsilon |
+| `explaino_lambda` | `explaino_seed` | UI-proven visible control; default seed-driven warp is now active |
+| `explaino_lambda` | `explaino_root_spread` | Hidden: branch does not read root-spread/polynomial roots |
+| `explaino_lambda` | `explaino_damping` | Hidden: branch does not read Newton damping |
+| `explaino_rational_escape` | `epsilon` | Hidden: escape-time branch does not read convergence epsilon |
+| `explaino_rational_escape` | `explaino_damping` | Hidden: branch does not read Newton damping |
+| `explaino_joy` | `epsilon` | UI-proven visible control |
+| `explaino_tension` | `epsilon` | UI-proven visible control |
+| `explaino_projection_and_flow` | `epsilon` | UI-proven visible control |
+
+Still not claimed until closure validation completes: full native green, hostile audit validation, plan sync, checkpoint commit, receipts, push, and clean tree.
+
 ## Next RED UI/UX Harness Series
 
 The next work should be test-first and registry-driven. Do not hard-code only the controls that have recently broken.
@@ -147,4 +224,4 @@ Recommended first RED/fix order:
 
 ## Closeout Position For This Slice
 
-This document intentionally stops before RED tests and fixes. The actionable result is the current list above, with two high-confidence static missing-control suspects (`julia` c and Nova `poly_c4`) and a broad UI/UX proof gap for most visible non-Magnet/non-registry controls.
+Phase 8 no longer stops at research only. The original all-44 audit and first-pass 19-row dead-control set have been repaired or classified in the working tree, but the slice is not closed until full validation, hostile audit, checkpoint, receipts, push, and clean tree complete.

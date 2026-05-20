@@ -392,6 +392,32 @@ int main() {
         }
     }
 
+    // Explaino-Transcendental defaults
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_transcendental;
+        params.explaino_warp_strength = 0.99f;
+        params.coloring_mode = ColoringMode::smooth_escape;
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Transcendental defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::joy_basins) {
+            std::cerr << "Explaino-Transcendental should default to joy_basins\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.25f)) {
+            std::cerr << "Explaino-Transcendental should keep seed-driven warp active by default so the visible seed slider is not inert\n";
+            return 1;
+        }
+    }
+
     // Explaino-Lambda defaults
     {
         ViewState view{};
@@ -419,6 +445,10 @@ int main() {
         }
         if (!NearlyEqual(params.exposure, 1.4f)) {
             std::cerr << "Explaino-Lambda should use Lambda-tuned exposure (1.4)\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.25f)) {
+            std::cerr << "Explaino-Lambda should keep seed-driven warp active by default so the visible seed slider is not inert\n";
             return 1;
         }
         if (params.poly_kind != PolyKind::custom) {

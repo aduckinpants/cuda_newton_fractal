@@ -309,6 +309,46 @@ bool ValidateNovaAlphaSchemaRange() {
     return true;
 }
 
+bool ExplainoCommonControlExpectedVisible(const char* controlId, FractalType fractalType) {
+    if (std::string_view(controlId) == "epsilon") {
+        return fractalType != FractalType::explaino_julia &&
+            fractalType != FractalType::explaino_lambda &&
+            fractalType != FractalType::explaino_rational_escape;
+    }
+    if (std::string_view(controlId) == "explaino_warp_strength") {
+        return fractalType != FractalType::explaino_nova;
+    }
+    if (std::string_view(controlId) == "explaino_root_spread") {
+        return fractalType != FractalType::explaino_transcendental &&
+            fractalType != FractalType::explaino_lambda;
+    }
+    if (std::string_view(controlId) == "explaino_damping") {
+        return fractalType != FractalType::explaino_nova &&
+            fractalType != FractalType::explaino_julia &&
+            fractalType != FractalType::explaino_lambda &&
+            fractalType != FractalType::explaino_rational_escape;
+    }
+    return true;
+}
+
+bool ValidateHiddenControlMatrixCase(
+    const json_min::Value& schemaRoot,
+    const char* controlId,
+    FractalType fractalType) {
+    const json_min::Value* control = FindSchemaControlById(schemaRoot, controlId);
+    if (!control) {
+        std::cerr << "Hidden-control matrix missing control " << controlId << "\n";
+        return false;
+    }
+    if (IsControlVisibleForFractal(*control, fractalType)) {
+        const char* fractalId = FractalTypeId(fractalType);
+        std::cerr << "Hidden-control matrix still exposes dead control " << controlId
+                  << " on fractal " << (fractalId ? fractalId : "<unknown>") << "\n";
+        return false;
+    }
+    return true;
+}
+
 bool ValidateVisibleControlMatrixCase(
     const json_min::Value& schemaRoot,
     const char* controlId,
@@ -429,6 +469,129 @@ bool HasVisibleEnumOptionForFractal(const json_min::Value& control, const char* 
     return false;
 }
 
+
+const json_min::Value* FindFractalTypeControl(const json_min::Value& root) {
+    return FindSchemaControlById(root, "fractal_type");
+}
+
+bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
+    const json_min::Value* fractalTypeControl = FindFractalTypeControl(schemaRoot);
+    if (!fractalTypeControl) {
+        std::cerr << "All-fractal inventory could not find fractal_type selector\n";
+        return false;
+    }
+    const json_min::Value* options = fractalTypeControl->get("options");
+    if (!options || !options->is_array()) {
+        std::cerr << "All-fractal inventory found malformed fractal_type options\n";
+        return false;
+    }
+    std::vector<std::string> schemaIds;
+    for (const json_min::Value& option : options->as_array()) {
+        if (!option.is_object()) {
+            continue;
+        }
+        std::string id;
+        if (!GetJsonStringField(option, "id", &id)) {
+            std::cerr << "All-fractal inventory found a fractal_type option without an id\n";
+            return false;
+        }
+        schemaIds.push_back(id);
+    }
+    constexpr std::size_t kExpectedFractalCount = 44;
+    if (schemaIds.size() != kExpectedFractalCount || std::size(enum_id_utils::kFractalTypeIds) != kExpectedFractalCount) {
+        std::cerr << "All-fractal inventory expected exactly 44 schema and enum fractal ids\n";
+        return false;
+    }
+    for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
+        bool found = false;
+        for (const std::string& schemaId : schemaIds) {
+            if (schemaId == enumId.id) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cerr << "All-fractal inventory schema selector is missing enum id " << enumId.id << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool IsFamilySurfaceBindingPath(const std::string& bindingPath) {
+    if (bindingPath == "fractal.view.fractal_type") {
+        return false;
+    }
+    return !IsGlobalFixedFormulaBindingPath(bindingPath);
+}
+
+bool ValidateGeneratedAllFractalControlInventory() {
+    json_min::Value schemaRoot;
+    if (!LoadCurrentSchemaJson(&schemaRoot)) {
+        return false;
+    }
+    if (!SchemaFractalOptionsMatchEnumIds(schemaRoot)) {
+        return false;
+    }
+    const json_min::Value* panels = schemaRoot.get("panels");
+    if (!panels || !panels->is_array()) {
+        std::cerr << "All-fractal inventory could not read schema panels\n";
+        return false;
+    }
+
+    int laneCount = 0;
+    int visibleFamilyControlCells = 0;
+    for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
+        ++laneCount;
+        for (const json_min::Value& panel : panels->as_array()) {
+            if (!panel.is_object()) {
+                continue;
+            }
+            const json_min::Value* controls = panel.get("controls");
+            if (!controls || !controls->is_array()) {
+                continue;
+            }
+            for (const json_min::Value& control : controls->as_array()) {
+                if (!control.is_object()) {
+                    continue;
+                }
+                std::string bindingPath;
+                std::string valueType;
+                if (!ReadControlBindingAndType(control, &bindingPath, &valueType)) {
+                    continue;
+                }
+                if (!IsFamilySurfaceBindingPath(bindingPath) || !IsControlVisibleForFractal(control, enumId.value)) {
+                    continue;
+                }
+                ViewState view{};
+                KernelParams params{};
+                RenderSettings render{};
+                LensSettings lens{};
+                view.fractal_type = enumId.value;
+                BindingContext ctx = MakeBindingContext(&view, &params, &render, &lens);
+                if (!ControlBindingResolves(valueType, bindingPath, ctx)) {
+                    std::string controlId;
+                    GetJsonStringField(control, "id", &controlId);
+                    std::cerr << "All-fractal inventory found visible unbound family control "
+                              << controlId << " on " << enumId.id << " at " << bindingPath << "\n";
+                    return false;
+                }
+                ++visibleFamilyControlCells;
+            }
+        }
+    }
+    if (laneCount != 44) {
+        std::cerr << "All-fractal inventory did not visit all 44 fractal lanes\n";
+        return false;
+    }
+    if (visibleFamilyControlCells < 200) {
+        std::cerr << "All-fractal inventory visited too few visible family-control cells: "
+                  << visibleFamilyControlCells << "\n";
+        return false;
+    }
+    return true;
+}
+
 bool ValidateVisibleControlMatrix() {
     json_min::Value schemaRoot;
     if (!LoadCurrentSchemaJson(&schemaRoot)) {
@@ -517,7 +680,11 @@ bool ValidateVisibleControlMatrix() {
 
     for (const ExplainoSelectorDescriptor& selector : kExplainoSelectorRegistry) {
         for (const MatrixCase& commonCase : explainoCommonCases) {
-            if (!ValidateVisibleControlMatrixCase(schemaRoot, commonCase.control_id, selector.fractal_type, commonCase.binding_path, commonCase.value_type)) {
+            if (ExplainoCommonControlExpectedVisible(commonCase.control_id, selector.fractal_type)) {
+                if (!ValidateVisibleControlMatrixCase(schemaRoot, commonCase.control_id, selector.fractal_type, commonCase.binding_path, commonCase.value_type)) {
+                    return false;
+                }
+            } else if (!ValidateHiddenControlMatrixCase(schemaRoot, commonCase.control_id, selector.fractal_type)) {
                 return false;
             }
         }
@@ -1498,6 +1665,10 @@ int main() {
             std::cerr << "Invalid visible_if numeric values should fail closed\n";
             return 1;
         }
+    }
+
+    if (!ValidateGeneratedAllFractalControlInventory()) {
+        return 1;
     }
 
     if (!ValidateVisibleControlMatrix()) {

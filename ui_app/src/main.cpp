@@ -1517,7 +1517,16 @@ static void ArmUiAutomationClick(ColorPipelineWindowState& colorPipelineWindow,
 
 static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
                                                 ViewerUiAutomationCommandState& commandState,
-                                                ColorPipelineWindowState& colorPipelineWindow) {
+                                                ColorPipelineWindowState& colorPipelineWindow,
+                                                ViewState& view,
+                                                KernelParams& params,
+                                                RenderSettings& render,
+                                                LensSettings& lens,
+                                                std::string& currentLoadedStatePath,
+                                                FractalType& currentLoadedStateFractalType,
+                                                PolyKind& lastPolyKind,
+                                                FractalType& lastFractalType,
+                                                bool& dirty) {
     if (!cli.have_ui_automation_command_json) {
         return;
     }
@@ -1531,6 +1540,48 @@ static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
     }
 
     bool armedCommand = false;
+    if (const json_min::Value* loadState = commandRoot.get("load_state_json")) {
+        if (loadState->is_string() && !loadState->as_string().empty()) {
+            std::string loadError;
+            std::string loadedStatePath;
+            if (LoadFindingSelectionIntoRuntime(
+                    loadState->as_string(),
+                    &view,
+                    &params,
+                    &render,
+                    &colorPipelineWindow,
+                    &loadedStatePath,
+                    &loadError)) {
+                currentLoadedStatePath = loadedStatePath;
+                currentLoadedStateFractalType = view.fractal_type;
+                lastPolyKind = params.poly_kind;
+                lastFractalType = view.fractal_type;
+                dirty = true;
+                armedCommand = true;
+            }
+        }
+    }
+    if (const json_min::Value* setEnum = commandRoot.get("set_enum_id")) {
+        if (setEnum->is_object()) {
+            std::string path;
+            std::string id;
+            if (ReadJsonStringFieldLocal(*setEnum, "path", &path) &&
+                ReadJsonStringFieldLocal(*setEnum, "id", &id) &&
+                !path.empty() &&
+                !id.empty()) {
+                BindingContext commandBind;
+                commandBind.view = &view;
+                commandBind.params = &params;
+                commandBind.render = &render;
+                commandBind.lens = &lens;
+                if (commandBind.SetEnumId(path, id)) {
+                    ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
+                    dirty = true;
+                    armedCommand = true;
+                }
+            }
+        }
+    }
     if (const json_min::Value* setValue = commandRoot.get("set_control_value")) {
         if (setValue->is_object()) {
             std::string controlId;
@@ -2469,7 +2520,19 @@ static void RunViewerFrame(
     std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     ViewerUiAutomationCommandState& uiAutomationCommandState,
     bool& dirty) {
-    ApplyPendingUiAutomationCommandFile(cli, uiAutomationCommandState, colorPipelineWindow);
+    ApplyPendingUiAutomationCommandFile(
+        cli,
+        uiAutomationCommandState,
+        colorPipelineWindow,
+        view,
+        params,
+        render,
+        lens,
+        currentLoadedStatePath,
+        currentLoadedStateFractalType,
+        lastPolyKind,
+        lastFractalType,
+        dirty);
 
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);

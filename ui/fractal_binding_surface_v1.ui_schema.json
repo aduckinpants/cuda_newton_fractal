@@ -204,9 +204,9 @@
           "options": [
             { "id": "none", "label": "None" },
             { "id": "seed", "label": "Seed", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
-            { "id": "damping", "label": "Damping", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
-            { "id": "warp_strength", "label": "Warp Strength", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
-            { "id": "root_spread", "label": "Root Spread", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
+            { "id": "damping", "label": "Damping", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
+            { "id": "warp_strength", "label": "Warp Strength", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
+            { "id": "root_spread", "label": "Root Spread", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow" } },
             { "id": "mix", "label": "Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_dual" } },
             { "id": "nova_alpha", "label": "Nova Alpha", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "nova,explaino_nova" } },
             { "id": "phoenix_p_real", "label": "Phoenix P (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "phoenix,explaino_phoenix,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension" } },
@@ -419,7 +419,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "newton,nova,projection_and_flow,explaino_projection_and_flow,counterfactual_pair,explaino_counterfactual_pair,explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,halley"
+            "value": "newton,nova,projection_and_flow,explaino_projection_and_flow,counterfactual_pair,explaino_counterfactual_pair,explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,halley"
           }
         },
         {
@@ -715,7 +715,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -729,7 +729,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
@@ -757,7 +757,7 @@
           "visible_if": {
             "op": "in",
             "path": "fractal.view.fractal_type",
-            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_nova,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_julia,explaino_rational,explaino_collatz,explaino_lambda,explaino_rational_escape,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
+            "value": "explaino,explaino_all,explaino_y,explaino_fp,explaino_halley,explaino_dual,explaino_mult,explaino_phoenix,explaino_transcendental,explaino_inertial,explaino_rational,explaino_collatz,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension,explaino_balance_void,explaino_counterfactual_pair,explaino_projection_and_flow"
           }
         },
         {
