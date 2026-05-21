@@ -1,3 +1,4 @@
+#include "../src/fractal_family_rules.h"
 #include "../src/generic_equation_pack.h"
 #include "../src/generic_equation_pack_live.h"
 
@@ -52,7 +53,7 @@ GenericEquationPack LoadPack() {
     return parsed.pack;
 }
 
-bool RenderPack(GenericEquationPack pack, std::uint64_t* outHash, RenderStats* outStats) {
+bool RenderPack(GenericEquationPack pack, const KernelParams& params, std::uint64_t* outHash, RenderStats* outStats) {
     ViewState view{};
     view.fractal_type = FractalType::generic_equation_pack;
     view.center_hp_x = 0.0;
@@ -65,7 +66,7 @@ bool RenderPack(GenericEquationPack pack, std::uint64_t* outHash, RenderStats* o
 
     std::vector<std::uint32_t> pixels(static_cast<std::size_t>(render.resolution.x) * static_cast<std::size_t>(render.resolution.y));
     std::string error;
-    if (!RenderGenericEquationPackLiveFrame(pack, view, render, pixels.data(), nullptr, outStats, &error)) {
+    if (!RenderGenericEquationPackLiveFrame(pack, view, params, render, pixels.data(), nullptr, outStats, &error)) {
         std::cerr << "generic live render failed: " << error << std::endl;
         return false;
     }
@@ -75,9 +76,12 @@ bool RenderPack(GenericEquationPack pack, std::uint64_t* outHash, RenderStats* o
 
 bool TestGenericPackRendersMainViewportFrame() {
     GenericEquationPack pack = LoadPack();
+    KernelParams params{};
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
     std::uint64_t hash = 0;
     RenderStats stats{};
-    if (!RenderPack(pack, &hash, &stats)) return false;
+    if (!RenderPack(pack, params, &hash, &stats)) return false;
     if (hash == 0) {
         std::cerr << "generic live render produced an empty hash" << std::endl;
         return false;
@@ -93,15 +97,50 @@ bool TestGenericPackControlChangesMainViewportFrame() {
     GenericEquationPack baseline = LoadPack();
     GenericEquationPack edited = LoadPack();
     edited.params["c_real"] = 0.35;
+    KernelParams params{};
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
 
     std::uint64_t baselineHash = 0;
     std::uint64_t editedHash = 0;
     RenderStats baselineStats{};
     RenderStats editedStats{};
-    if (!RenderPack(baseline, &baselineHash, &baselineStats)) return false;
-    if (!RenderPack(edited, &editedHash, &editedStats)) return false;
+    if (!RenderPack(baseline, params, &baselineHash, &baselineStats)) return false;
+    if (!RenderPack(edited, params, &editedHash, &editedStats)) return false;
     if (baselineHash == editedHash) {
         std::cerr << "generic live render hash did not change after pack control edit" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool TestGenericPackUsesColorPipelineControls() {
+    GenericEquationPack pack = LoadPack();
+    KernelParams baselineParams{};
+    baselineParams.coloring_mode = ColoringMode::smooth_escape;
+    baselineParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+
+    KernelParams scaledParams = baselineParams;
+    scaledParams.color_smooth_escape_scale = 3.0f;
+
+    KernelParams phaseParams{};
+    phaseParams.coloring_mode = ColoringMode::phase;
+    phaseParams.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::phase);
+
+    std::uint64_t baselineHash = 0;
+    std::uint64_t scaledHash = 0;
+    std::uint64_t phaseHash = 0;
+    RenderStats stats{};
+    if (!RenderPack(pack, baselineParams, &baselineHash, &stats)) return false;
+    if (!RenderPack(pack, scaledParams, &scaledHash, &stats)) return false;
+    if (!RenderPack(pack, phaseParams, &phaseHash, &stats)) return false;
+
+    if (baselineHash == scaledHash) {
+        std::cerr << "generic live render ignored Color Pipeline smooth_escape scale" << std::endl;
+        return false;
+    }
+    if (baselineHash == phaseHash) {
+        std::cerr << "generic live render ignored Color Pipeline palette/signal selection" << std::endl;
         return false;
     }
     return true;
@@ -112,6 +151,7 @@ bool TestGenericPackControlChangesMainViewportFrame() {
 int main() {
     if (!TestGenericPackRendersMainViewportFrame()) return 1;
     if (!TestGenericPackControlChangesMainViewportFrame()) return 1;
+    if (!TestGenericPackUsesColorPipelineControls()) return 1;
     std::cout << "test_generic_equation_pack_live: passed" << std::endl;
     return 0;
 }

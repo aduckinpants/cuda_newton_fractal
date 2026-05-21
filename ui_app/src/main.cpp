@@ -726,6 +726,7 @@ static void DispatchRenderFrame(
             renderOk = RenderGenericEquationPackLiveFrame(
                 livePack,
                 view,
+                params,
                 dispatchRender,
                 rgba.data(),
                 maskPtr,

@@ -9,6 +9,7 @@
 bool RenderGenericEquationPackLiveFrame(
     const GenericEquationPack& pack,
     const ViewState& view,
+    const KernelParams& params,
     const RenderSettings& render,
     std::uint32_t* outRGBA,
     std::uint8_t* outMask,

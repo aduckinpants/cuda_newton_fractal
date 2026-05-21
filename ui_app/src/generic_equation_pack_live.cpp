@@ -1,5 +1,6 @@
 #include "generic_equation_pack_live.h"
 
+#include "escape_time_coloring.h"
 #include "generic_sample_core.h"
 
 #include <algorithm>
@@ -20,61 +21,73 @@ bool FailLiveRender(const std::string& message, std::string* outError) {
     return false;
 }
 
-double Saturate(double value) {
-    if (!std::isfinite(value)) {
-        return 0.0;
+struct GenericLiveColor {
+    unsigned char x;
+    unsigned char y;
+    unsigned char z;
+    unsigned char w;
+};
+
+struct GenericLiveComplex {
+    float x;
+    float y;
+};
+
+std::uint32_t PackRgba(GenericLiveColor color) {
+    return static_cast<std::uint32_t>(color.x) |
+        (static_cast<std::uint32_t>(color.y) << 8) |
+        (static_cast<std::uint32_t>(color.z) << 16) |
+        (static_cast<std::uint32_t>(color.w) << 24);
+}
+
+int ResolvePackMaxIter(const GenericEquationPack& pack, const GenericFunctionDesc& desc) {
+    int maxIter = desc.max_iterate > 0 ? desc.max_iterate : 1;
+    if (!pack.iteration_param.empty()) {
+        const auto it = pack.params.find(pack.iteration_param);
+        if (it != pack.params.end() && std::isfinite(it->second) && it->second >= 1.0) {
+            maxIter = static_cast<int>(std::lround(it->second));
+        }
     }
-    return (std::max)(0.0, (std::min)(1.0, value));
+    return (std::max)(1, maxIter);
 }
 
-std::uint8_t ToByte(double value) {
-    return static_cast<std::uint8_t>(std::lround(Saturate(value) * 255.0));
-}
-
-std::uint32_t PackRgba(std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint8_t a = 255) {
-    return static_cast<std::uint32_t>(r) |
-        (static_cast<std::uint32_t>(g) << 8) |
-        (static_cast<std::uint32_t>(b) << 16) |
-        (static_cast<std::uint32_t>(a) << 24);
-}
-
-double SafeMagnitudeSignal(const GenericSampleResult& result) {
-    if (std::isfinite(result.abs2) && result.abs2 >= 0.0) {
-        return std::log1p(std::sqrt(result.abs2));
+bool ValidateGenericEquationPackColorState(
+    const ViewState& view,
+    const KernelParams& params,
+    std::string* outError) {
+    if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
+        return FailLiveRender("selected coloring_mode is not valid for generic_equation_pack", outError);
     }
-    if (std::isfinite(result.value_x) && std::isfinite(result.value_y)) {
-        return std::log1p(std::hypot(result.value_x, result.value_y));
+    if (!IsColorPipelineAllowedForFractal(view.fractal_type, params.color_pipeline)) {
+        return FailLiveRender("selected Color Pipeline is not valid for generic_equation_pack", outError);
     }
-    return 0.0;
+    return true;
 }
 
-std::uint32_t LivePixelFromResult(const GenericSampleResult& result) {
+std::uint32_t ColorPipelinePixelFromResult(
+    const GenericSampleResult& result,
+    const KernelParams& params,
+    int maxIter) {
     if (!std::isfinite(result.value_x) ||
         !std::isfinite(result.value_y) ||
         !std::isfinite(result.abs2)) {
-        return PackRgba(190, 64, 220);
+        return PackRgba({255, 0, 255, 255});
     }
 
-    const double magnitude = Saturate(SafeMagnitudeSignal(result) / 5.0);
-    const double iteration = Saturate(static_cast<double>((std::max)(0, result.iterations)) / 128.0);
-    const double phase = Saturate((std::atan2(result.value_y, result.value_x) + kPi) / (2.0 * kPi));
-
-    if (result.converged) {
-        return PackRgba(
-            ToByte(0.12 + 0.55 * phase),
-            ToByte(0.45 + 0.25 * (1.0 - magnitude) + 0.25 * iteration),
-            ToByte(0.22 + 0.50 * magnitude));
-    }
-    if (result.diverged) {
-        return PackRgba(
-            ToByte(0.70 + 0.24 * iteration),
-            ToByte(0.24 + 0.42 * (1.0 - magnitude)),
-            ToByte(0.12 + 0.30 * phase));
-    }
-    return PackRgba(
-        ToByte(0.10 + 0.34 * magnitude + 0.20 * iteration),
-        ToByte(0.36 + 0.36 * phase),
-        ToByte(0.58 + 0.28 * (1.0 - magnitude)));
+    const GenericLiveComplex z{
+        static_cast<float>(result.value_x),
+        static_cast<float>(result.value_y),
+    };
+    GenericLiveColor color = MakeEscapeTimeBaseColor<GenericLiveColor>(
+        FractalType::generic_equation_pack,
+        params.coloring_mode,
+        result.diverged,
+        (std::max)(0, result.iterations),
+        (std::max)(1, maxIter),
+        z,
+        params);
+    color = ApplyFractalColorGrading(color, params);
+    return PackRgba(color);
 }
 
 std::vector<GFPoint> BuildViewportGrid(const ViewState& view, int width, int height) {
@@ -112,6 +125,7 @@ std::vector<GFPoint> BuildViewportGrid(const ViewState& view, int width, int hei
 bool RenderGenericEquationPackLiveFrame(
     const GenericEquationPack& pack,
     const ViewState& view,
+    const KernelParams& params,
     const RenderSettings& render,
     std::uint32_t* outRGBA,
     std::uint8_t* outMask,
@@ -125,6 +139,9 @@ bool RenderGenericEquationPackLiveFrame(
     }
     if (!outRGBA) {
         return FailLiveRender("outRGBA is null", outError);
+    }
+    if (!ValidateGenericEquationPackColorState(view, params, outError)) {
+        return false;
     }
     const int width = render.resolution.x;
     const int height = render.resolution.y;
@@ -157,11 +174,12 @@ bool RenderGenericEquationPackLiveFrame(
         return FailLiveRender(rawError ? rawError : "CUDA generic sample execution failed", outError);
     }
 
+    const int colorMaxIter = ResolvePackMaxIter(pack, lowered.desc);
     unsigned long long iterationSum = 0;
     for (std::size_t i = 0; i < results.size(); ++i) {
         const GenericSampleResult& result = results[i];
         iterationSum += static_cast<unsigned long long>((std::max)(0, result.iterations));
-        outRGBA[i] = LivePixelFromResult(result);
+        outRGBA[i] = ColorPipelinePixelFromResult(result, params, colorMaxIter);
         if (outMask) {
             outMask[i] = result.diverged ? 0 : 255;
         }

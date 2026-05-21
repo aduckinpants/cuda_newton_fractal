@@ -7,6 +7,8 @@ from typing import Any
 
 import pytest
 
+COLOR_PIPELINE_SCALE_CONTROL_ID = "color_pipeline.source.smooth_escape_ramp.signal.scale.primary"
+
 from tests.runtime_harness import (
     PersistentRuntimeViewerAutomation,
     active_runtime_exe,
@@ -190,6 +192,7 @@ def equation_pack_main_viewport_proof(tmp_path_factory: pytest.TempPathFactory) 
         state_path=state_path,
         report_path=tmp_path / "equation_pack_main_viewport_report.json",
         command_path=tmp_path / "equation_pack_main_viewport_command.json",
+        extra_args=["--open-color-pipeline-window"],
     ) as viewer:
         initial_payload = viewer.wait_for_report(timeout_seconds=15.0)
         initial_hash = initial_payload.get("rendered_frame_hash")
@@ -204,12 +207,17 @@ def equation_pack_main_viewport_proof(tmp_path_factory: pytest.TempPathFactory) 
         viewer.wait_for_control("equation_pack.json_text", timeout_seconds=15.0)
         viewer.wait_for_control("equation_pack.apply_json", timeout_seconds=15.0)
         viewer.wait_for_control("equation_pack.steps.primary", timeout_seconds=15.0)
+        viewer.wait_for_control(COLOR_PIPELINE_SCALE_CONTROL_ID, timeout_seconds=15.0)
         selected_hash = selected_payload.get("rendered_frame_hash")
         assert isinstance(selected_hash, str) and selected_hash
 
         edited_payload = viewer.set_control_value("equation_pack.steps.primary", 12.0, timeout_seconds=15.0)
         edited_hash = edited_payload.get("rendered_frame_hash")
         assert isinstance(edited_hash, str) and edited_hash
+
+        color_payload = viewer.set_control_value(COLOR_PIPELINE_SCALE_CONTROL_ID, 3.0, timeout_seconds=15.0)
+        color_hash = color_payload.get("rendered_frame_hash")
+        assert isinstance(color_hash, str) and color_hash
 
         return {
             "initial_payload": initial_payload,
@@ -218,6 +226,8 @@ def equation_pack_main_viewport_proof(tmp_path_factory: pytest.TempPathFactory) 
             "initial_hash": initial_hash,
             "selected_hash": selected_hash,
             "edited_hash": edited_hash,
+            "color_payload": color_payload,
+            "color_hash": color_hash,
             "launch_count": viewer.launch_count,
         }
 
@@ -233,4 +243,16 @@ def test_equation_pack_main_viewport_selector_and_left_panel_no_mouse(
     assert equation_pack_main_viewport_proof["selected_hash"] != equation_pack_main_viewport_proof["initial_hash"]
     assert edited_payload.get("set_value_consumed") is True
     assert equation_pack_main_viewport_proof["edited_hash"] != equation_pack_main_viewport_proof["selected_hash"]
+    assert equation_pack_main_viewport_proof["launch_count"] == 1
+
+
+def test_equation_pack_main_viewport_uses_color_pipeline_no_mouse(
+    equation_pack_main_viewport_proof: dict[str, Any],
+) -> None:
+    selected_payload = equation_pack_main_viewport_proof["selected_payload"]
+    color_payload = equation_pack_main_viewport_proof["color_payload"]
+
+    assert selected_payload.get("current_fractal_type") == "generic_equation_pack"
+    assert color_payload.get("set_value_consumed") is True
+    assert equation_pack_main_viewport_proof["color_hash"] != equation_pack_main_viewport_proof["edited_hash"]
     assert equation_pack_main_viewport_proof["launch_count"] == 1
