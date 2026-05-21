@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - checkpoint, receipts, push, clean tree, and stale-plan check.
+Complete - integer iteration-control repair is validated, hostile-audited, checkpointed, and represented by the final repo state.
 
 ## Explicit User Asks
 
@@ -18,7 +18,7 @@ Phase 5 - checkpoint, receipts, push, clean tree, and stale-plan check.
 - [x] Phase 2 - classify `formula.iteration_param` controls as integer-valued in the workbench and automation report.
 - [x] Phase 3 - normalize manual-equivalent and command-json set-value edits before preview execution while preserving raw lowerer strictness.
 - [x] Phase 4 - validate focused native/runtime rails, full native, runtime publish, and hostile audit.
-- [ ] Phase 5 - checkpoint, receipts, push, clean tree, and stale-plan check.
+- [x] Phase 5 - checkpoint, receipts, push, clean tree, and stale-plan check.
 
 ## Proof Ledger
 
@@ -39,8 +39,9 @@ Phase 5 - checkpoint, receipts, push, clean tree, and stale-plan check.
 - Code-quality proof: `artifacts/logs/generic_cuda_equation_pack_integer_control_repair_code_quality.json` reports baseline check passed with score 97/100.
 - Contract proof: `artifacts/validation/generic_cuda_equation_pack_integer_control_repair_contract.json` reports `ok: true`.
 - Scope proof: `git diff -- ui_app/src/fractal_renderer.cu ui_app/src/fractal_types.h ui_app/src/color_pipeline_window.h ui_app/src/color_pipeline_core.h docs/examples/equation_packs` is empty.
-- Hostile-audit proof: pending final validator run after this plan sync.
-- Plan-sync proof: pending final validator run after this plan sync.
+- Hostile-audit proof: `artifacts/validation/generic_cuda_equation_pack_integer_control_repair_hostile_audit.json` reports `ok: true`.
+- Plan-sync proof: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` reports `OK` for this plan and writes `artifacts/validation/viewer_host_assert_phased_plan_sync.json`.
+- First checkpoint commit: `c985e1c` (`Repair equation pack integer controls`).
 
 ## Hostile Audit
 
