@@ -7,7 +7,7 @@ Phase 5 complete - the validated Generic CUDA equation-pack branch has a durable
 ## Phase Checklist
 
 - [x] Phase 1 - open a bounded merge/pause-documentation slice on the validated feature branch
-- [x] Phase 2 - add a durable pause README that records shipped state, proof, deferred work, and resume boundaries
+- [x] Phase 2 - add a durable pause README that records shipped state, proof, deferred work, and continuation boundaries
 - [x] Phase 3 - update the root README/deferred surface so the next work starts from the correct pause point
 - [x] Phase 4 - validate docs/contract/plan/audit surfaces and checkpoint the feature branch
 - [x] Phase 5 - fast-forward master, push master, confirm clean/even state, and record stale-plan proof
@@ -22,9 +22,9 @@ Phase 5 complete - the validated Generic CUDA equation-pack branch has a durable
 
 - Bootstrap: complete from branch `codex/engine-architecture-review` at `72fa443`; repo clean and branch even with origin.
 - Prior feature proof: complete on earlier slices, including native, runtime publish, no-mouse runtime proof, Color Pipeline guard, full native, receipts, and push.
-- Pause README proof: complete. `docs/notes/generic_cuda_equation_pack_PAUSE_README.md` records shipped state, current product shape, proof surfaces, paused work, resume order, and do-not-reopen boundaries.
+- Pause README proof: complete. `docs/notes/generic_cuda_equation_pack_PAUSE_README.md` records shipped state, current product shape, proof surfaces, paused work, continuation order, and do-not-reopen boundaries.
 - Root README proof: complete. `README.md` links the pause README and states the shipped/deferred boundary.
-- Deferred-thread proof: complete. `DEFERRED_THREADS.md` now records the paused Generic CUDA equation-pack vertical and resume constraints.
+- Deferred-thread proof: complete. `DEFERRED_THREADS.md` now records the paused Generic CUDA equation-pack vertical and continuation constraints.
 - Contract validation: complete. `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_merge_pause.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_merge_pause_contract.json` passed.
 - Plan sync: complete. `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed for the dirty merge/pause plan.
 - Whitespace proof: complete. `git diff --check` passed.
