@@ -215,6 +215,7 @@ void WriteColorPipelineUiAutomationReport(
         WriteAutomationReportString(out, control.label);
         out << ",\n";
         out << "        \"value\": " << std::setprecision(12) << control.value << ",\n";
+        out << "        \"integer_value\": " << (control.integer_value ? "true" : "false") << ",\n";
         out << "        \"min\": ";
         WriteAutomationReportOptionalDouble(out, control.has_min, control.min_value);
         out << ",\n";

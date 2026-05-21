@@ -47,6 +47,7 @@ struct GenericEquationPackWorkbenchControlReport {
     std::string param;
     std::string label;
     double value = 0.0;
+    bool integer_value = false;
     bool has_min = false;
     bool has_max = false;
     bool has_step = false;

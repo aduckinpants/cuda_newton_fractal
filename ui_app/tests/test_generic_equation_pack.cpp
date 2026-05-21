@@ -161,6 +161,13 @@ static void TestRejections() {
     lowered = LowerGenericEquationPackToDesc(parsed.pack);
     CHECK(!lowered.ok, "bad iteration count rejects during lowering");
 
+    const char* fractionalSteps = R"json({"schema_version":1,"pack_id":"fractional_steps","name":"Fractional Steps","formula":{"kind":"iterate_map","iteration_param":"steps","ast":{"op":"var_z"}},"params":{"steps":67.565}})json";
+    parsed = ParseGenericEquationPackJson(fractionalSteps);
+    CHECK(parsed.ok, "raw fractional-step pack parses before lowering");
+    lowered = LowerGenericEquationPackToDesc(parsed.pack);
+    CHECK(!lowered.ok, "raw fractional iteration count remains rejected during lowering");
+    CHECK(lowered.error.find("integer") != std::string::npos, "raw fractional iteration rejection mentions integer");
+
     std::string tooLargeAst = "{\"schema_version\":1,\"pack_id\":\"too_large\",\"name\":\"Too Large\",\"formula\":{\"kind\":\"direct\",\"ast\":";
     for (int i = 0; i < MAX_GF_NODES + 4; ++i) {
         tooLargeAst += "{\"op\":\"add\",\"args\":[";

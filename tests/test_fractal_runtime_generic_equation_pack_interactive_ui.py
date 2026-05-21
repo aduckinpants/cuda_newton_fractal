@@ -105,6 +105,9 @@ def equation_pack_workbench_proof(tmp_path_factory: pytest.TempPathFactory) -> d
         baseline_payload = viewer.wait_for_report(timeout_seconds=15.0)
         baseline_result_hash, baseline_image_hash = _preview_hashes(baseline_payload)
 
+        fractional_steps_payload = viewer.set_control_value("equation_pack.steps.primary", 67.565, timeout_seconds=15.0)
+        fractional_steps_result_hash, fractional_steps_image_hash = _preview_hashes(fractional_steps_payload)
+
         edited_payload = viewer.set_control_value("equation_pack.c_real.primary", 0.35, timeout_seconds=15.0)
         edited_result_hash, edited_image_hash = _preview_hashes(edited_payload)
 
@@ -116,6 +119,9 @@ def equation_pack_workbench_proof(tmp_path_factory: pytest.TempPathFactory) -> d
             "baseline_payload": baseline_payload,
             "baseline_result_hash": baseline_result_hash,
             "baseline_image_hash": baseline_image_hash,
+            "fractional_steps_payload": fractional_steps_payload,
+            "fractional_steps_result_hash": fractional_steps_result_hash,
+            "fractional_steps_image_hash": fractional_steps_image_hash,
             "edited_payload": edited_payload,
             "edited_result_hash": edited_result_hash,
             "edited_image_hash": edited_image_hash,
@@ -139,6 +145,7 @@ def test_equation_pack_workbench_reports_controls_and_reset_defaults_no_mouse(
     equation_pack_workbench_proof: dict[str, Any],
 ) -> None:
     baseline_payload = equation_pack_workbench_proof["baseline_payload"]
+    fractional_steps_payload = equation_pack_workbench_proof["fractional_steps_payload"]
     edited_payload = equation_pack_workbench_proof["edited_payload"]
     reset_payload = equation_pack_workbench_proof["reset_payload"]
 
@@ -150,6 +157,10 @@ def test_equation_pack_workbench_reports_controls_and_reset_defaults_no_mouse(
     assert baseline_c_real.get("min") == pytest.approx(-2.0)
     assert baseline_c_real.get("max") == pytest.approx(2.0)
     assert baseline_c_real.get("step") == pytest.approx(0.01)
+
+    fractional_steps = _control_by_id(fractional_steps_payload, "equation_pack.steps.primary")
+    assert fractional_steps.get("integer_value") is True
+    assert fractional_steps.get("value") == pytest.approx(68.0)
 
     edited_c_real = _control_by_id(edited_payload, "equation_pack.c_real.primary")
     assert edited_c_real.get("value") == pytest.approx(0.35)

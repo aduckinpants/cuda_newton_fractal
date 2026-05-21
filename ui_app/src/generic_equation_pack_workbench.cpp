@@ -119,6 +119,14 @@ std::string HashPreviewPixels(const std::vector<std::uint32_t>& pixels, int widt
     return FormatHash(hash);
 }
 
+bool ControlIsIntegerValued(
+    const GenericEquationPack& pack,
+    const GenericEquationPackControl& control) {
+    return pack.formula_kind == "iterate_map" &&
+        !pack.iteration_param.empty() &&
+        control.param == pack.iteration_param;
+}
+
 bool HasDefaultedControl(const GenericEquationPack& pack) {
     for (const GenericEquationPackControl& control : pack.controls) {
         if (control.has_default_value) {
@@ -146,6 +154,22 @@ double ClampControlValue(const GenericEquationPackControl& control, double value
         value = control.max_value;
     }
     return value;
+}
+
+double NormalizeControlValue(
+    const GenericEquationPack& pack,
+    const GenericEquationPackControl& control,
+    double value) {
+    value = ClampControlValue(control, value);
+    if (!ControlIsIntegerValued(pack, control)) {
+        return value;
+    }
+
+    value = std::round(value);
+    if (control.param == pack.iteration_param) {
+        value = (std::max)(1.0, (std::min)(10000.0, value));
+    }
+    return ClampControlValue(control, value);
 }
 
 const GenericEquationPackControl* FindControlByAutomationId(
@@ -489,7 +513,7 @@ bool SetGenericEquationPackWorkbenchControlValue(
         return false;
     }
 
-    ioState->params[control->param] = ClampControlValue(*control, value);
+    ioState->params[control->param] = NormalizeControlValue(ioState->pack, *control, value);
     ioState->pack.params = ioState->params;
     ioState->preview_dirty = true;
     if (outError) outError->clear();
@@ -512,7 +536,7 @@ bool ResetGenericEquationPackWorkbenchControlsToDefaults(
         if (!control.has_default_value) {
             continue;
         }
-        ioState->params[control.param] = ClampControlValue(control, control.default_value);
+        ioState->params[control.param] = NormalizeControlValue(ioState->pack, control, control.default_value);
     }
     ioState->pack.params = ioState->params;
     ioState->preview_dirty = true;
@@ -583,6 +607,7 @@ GenericEquationPackWorkbenchAutomationReport BuildGenericEquationPackWorkbenchAu
             controlReport.param = control.param;
             controlReport.label = control.label.empty() ? control.id : control.label;
             controlReport.value = CurrentControlValue(control, state.params);
+            controlReport.integer_value = ControlIsIntegerValued(state.pack, control);
             controlReport.has_min = control.has_min;
             controlReport.has_max = control.has_max;
             controlReport.has_step = control.has_step;
@@ -641,12 +666,23 @@ void RenderGenericEquationPackWorkbench(
 
             const std::string controlId = GenericEquationPackWorkbenchControlAutomationId(control);
             const std::string label = control.label.empty() ? control.id : control.label;
+            const bool integerValue = ControlIsIntegerValued(ioState->pack, control);
             const float minValue = static_cast<float>(control.has_min ? control.min_value : value - 1.0);
             const float maxValue = static_cast<float>(control.has_max ? control.max_value : value + 1.0);
             float uiValue = static_cast<float>(value);
+            int uiIntValue = static_cast<int>(std::lround(value));
             ImGui::PushID(control.id.c_str());
             bool changed = false;
-            if (control.has_min && control.has_max && control.max_value > control.min_value) {
+            if (integerValue) {
+                const int minIntValue = static_cast<int>(std::lround(control.has_min ? control.min_value : value - 1.0));
+                const int maxIntValue = static_cast<int>(std::lround(control.has_max ? control.max_value : value + 1.0));
+                if (control.has_min && control.has_max && maxIntValue > minIntValue) {
+                    changed = ImGui::SliderInt(label.c_str(), &uiIntValue, minIntValue, maxIntValue);
+                } else {
+                    changed = ImGui::DragInt(label.c_str(), &uiIntValue, 1.0f);
+                }
+                uiValue = static_cast<float>(uiIntValue);
+            } else if (control.has_min && control.has_max && control.max_value > control.min_value) {
                 changed = ImGui::SliderFloat(label.c_str(), &uiValue, minValue, maxValue);
             } else {
                 const float speed = static_cast<float>(control.has_step ? control.step_value : 0.01);

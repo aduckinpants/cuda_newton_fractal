@@ -132,6 +132,7 @@ static void TestAutomationReportPublishesControlInventory() {
         Check(steps->has_max && std::fabs(steps->max_value - 80.0) < 1e-12, "steps report publishes max");
         Check(steps->has_step && std::fabs(steps->step_value - 1.0) < 1e-12, "steps report publishes step");
         Check(steps->has_default_value && std::fabs(steps->default_value - 12.0) < 1e-12, "steps report publishes default");
+        Check(steps->integer_value, "steps report marks iteration control as integer-valued");
     }
 
     Check(SetGenericEquationPackWorkbenchControlValue(&state, "equation_pack.c_real.primary", 0.5, &error),
@@ -172,6 +173,30 @@ static void TestResetControlsRestoresDefaultsAndMarksPreviewDirty() {
     }
 }
 
+
+static void TestIterationControlNormalizesFractionalUiValue() {
+    GenericEquationPackWorkbenchState state{};
+    std::string error;
+    Check(LoadGenericEquationPackWorkbenchJson(&state, kInteractivePack, "memory://interactive", &error),
+        "pack JSON loads before integer control normalization test");
+
+    Check(SetGenericEquationPackWorkbenchControlValue(&state, "equation_pack.steps.primary", 67.565, &error),
+        "fractional set-value automation is accepted for integer iteration control");
+    Check(std::fabs(state.params["steps"] - 68.0) < 1e-12,
+        "fractional iteration control value is rounded before entering workbench params");
+    Check(RunGenericEquationPackWorkbenchPreview(&state, &error),
+        "preview still runs after fractional iteration control edit");
+    Check(error.empty(), "preview does not report iterate integer error after normalization");
+
+    GenericEquationPackWorkbenchAutomationReport report = BuildGenericEquationPackWorkbenchAutomationReport(state);
+    const GenericEquationPackWorkbenchControlReport* steps = FindReportControl(report, "equation_pack.steps.primary");
+    Check(steps != nullptr, "steps still appears in report after fractional edit");
+    if (steps) {
+        Check(steps->integer_value, "report keeps integer classification after edit");
+        Check(std::fabs(steps->value - 68.0) < 1e-12, "report publishes rounded steps value");
+    }
+}
+
 static void TestPreviewRunsThroughSamplerAndReportChanges() {
     GenericEquationPackWorkbenchState state{};
     std::string error;
@@ -202,6 +227,7 @@ int main() {
     TestPackControlsAreSchemaDrivenAndEditable();
     TestAutomationReportPublishesControlInventory();
     TestResetControlsRestoresDefaultsAndMarksPreviewDirty();
+    TestIterationControlNormalizesFractionalUiValue();
     TestPreviewRunsThroughSamplerAndReportChanges();
     if (g_failed != 0) {
         std::printf("test_generic_equation_pack_workbench_ui: %d failure(s)\n", g_failed);
