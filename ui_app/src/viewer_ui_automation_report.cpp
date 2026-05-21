@@ -122,6 +122,7 @@ void WriteColorPipelineUiAutomationReport(
     HWND hwnd,
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
+    const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
     const ViewState& view,
     const ViewerUiAutomationFrameProbe& frameProbe,
     std::int64_t uiAutomationCommandSequence) {
@@ -162,6 +163,49 @@ void WriteColorPipelineUiAutomationReport(
     out << "  \"current_fractal_type\": ";
     WriteAutomationReportString(out, currentFractalTypeId ? currentFractalTypeId : "");
     out << ",\n";
+    out << "  \"equation_pack_workbench\": {\n";
+    const GenericEquationPackWorkbenchAutomationReport emptyEquationPackReport;
+    const GenericEquationPackWorkbenchAutomationReport& equationPack =
+        equationPackWorkbench ? *equationPackWorkbench : emptyEquationPackReport;
+    out << "    \"window_open\": " << (equationPack.window_open ? "true" : "false") << ",\n";
+    out << "    \"initialized\": " << (equationPack.initialized ? "true" : "false") << ",\n";
+    out << "    \"force_open_for_automation\": " << (equationPack.force_open_for_automation ? "true" : "false") << ",\n";
+    out << "    \"have_pack\": " << (equationPack.have_pack ? "true" : "false") << ",\n";
+    out << "    \"pack_path\": ";
+    WriteAutomationReportString(out, equationPack.pack_path);
+    out << ",\n";
+    out << "    \"pack_id\": ";
+    WriteAutomationReportString(out, equationPack.pack_id);
+    out << ",\n";
+    out << "    \"pack_name\": ";
+    WriteAutomationReportString(out, equationPack.pack_name);
+    out << ",\n";
+    out << "    \"preview_ok\": " << (equationPack.preview_ok ? "true" : "false") << ",\n";
+    out << "    \"preview_error\": ";
+    if (equationPack.preview_error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, equationPack.preview_error);
+    }
+    out << ",\n";
+    out << "    \"preview_backend_used\": ";
+    WriteAutomationReportString(out, equationPack.preview_backend_used);
+    out << ",\n";
+    out << "    \"preview_sample_count\": " << equationPack.preview_sample_count << ",\n";
+    out << "    \"preview_converged_count\": " << equationPack.preview_converged_count << ",\n";
+    out << "    \"preview_escaped_count\": " << equationPack.preview_escaped_count << ",\n";
+    out << "    \"preview_bounded_count\": " << equationPack.preview_bounded_count << ",\n";
+    out << "    \"preview_nonfinite_count\": " << equationPack.preview_nonfinite_count << ",\n";
+    out << "    \"preview_mean_iterations\": " << std::setprecision(12) << equationPack.preview_mean_iterations << ",\n";
+    out << "    \"preview_mean_abs2\": " << std::setprecision(12) << equationPack.preview_mean_abs2 << ",\n";
+    out << "    \"preview_result_hash\": ";
+    if (equationPack.preview_result_hash.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, equationPack.preview_result_hash);
+    }
+    out << "\n";
+    out << "  },\n";
     if (colorPipelineWindow.ui_automation_click_control_id.empty()) {
         out << "  \"requested_click_control_id\": null,\n";
     } else {

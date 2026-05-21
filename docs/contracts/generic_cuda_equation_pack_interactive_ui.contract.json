@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "contract_id": "generic_cuda_equation_pack_interactive_ui",
+  "feature_id": "generic_cuda_equation_pack_interactive_ui_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/generic_cuda_equation_pack_interactive_ui_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/examples",
+    "docs/callable_engine_dynamic_function_cheatsheet.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tools/reality_toolkit/fractal_explorer",
+    "tools/reality_toolkit/scripts",
+    "tests",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "add a first interactive viewer UI surface for Generic CUDA equation packs",
+    "drive visible pack controls from the loaded pack control schema",
+    "run a deterministic preview through the existing GenericFunctionDesc generic.sample/SampleGenericFunction execution path",
+    "provide in-process no-mouse automation for the new workbench controls",
+    "preserve the live enum renderer, Color Pipeline behavior, and existing generic.sample workbench runner"
+  ],
+  "forbidden_operator_prompts": [
+    "add a new FractalType in this slice",
+    "edit RenderFractalCUDA or claim live viewport renderer integration for custom packs",
+    "register or load dynamic CUDA kernels from request data",
+    "make raw expression text the pack execution authority",
+    "use physical mouse automation as proof",
+    "mutate Color Pipeline product behavior except shared automation-report plumbing if required",
+    "claim Salticid sample_fn or pipeline syntax is implemented in this slice"
+  ],
+  "required_defaults": {
+    "branch": "codex/engine-architecture-review",
+    "pack_schema_version": 1,
+    "pack_authority": "ast_json",
+    "interactive_surface": "viewer_equation_pack_workbench",
+    "execution_surface": "generic.sample_and_SampleGenericFunction",
+    "cuda_proof_required": true,
+    "live_viewport_renderer_integration": "deferred",
+    "dynamic_kernel_registration": "deferred",
+    "salticid_sample_fn_adapter": "deferred",
+    "no_physical_mouse_tests": true
+  },
+  "forbidden_defaults": {
+    "renderer_rewrite": "forbidden",
+    "new_fractal_type": "forbidden",
+    "raw_expression_authority": "forbidden",
+    "color_pipeline_product_mutation": "forbidden",
+    "viewer_relaunch_proof_loop": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/generic_cuda_equation_pack_interactive_ui_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_interactive_ui.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_interactive_ui_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_interactive_ui_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_interactive_ui_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_interactive_ui_native_final --log artifacts/logs/generic_cuda_equation_pack_interactive_ui_native_final.log -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_interactive_ui_runtime_publish_final --log artifacts/logs/generic_cuda_equation_pack_interactive_ui_runtime_publish_final.log -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py -q --junitxml artifacts/pytest/generic_cuda_equation_pack_interactive_ui_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "generic_cuda_equation_pack_interactive_ui_contract_schema_valid",
+      "description": "The interactive equation-pack UI contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_interactive_ui_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_interactive_ui_plan_sync_ok",
+      "description": "The interactive equation-pack UI phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_interactive_ui_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_interactive_ui_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_interactive_ui_native_control_model",
+      "description": "Native tests prove pack controls are loaded, editable, and previewable without live renderer changes",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/generic_cuda_equation_pack_interactive_ui_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py::test_equation_pack_workbench_no_mouse_set_value_changes_preview"
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_interactive_ui_runtime_cuda_preview",
+      "description": "Published viewer automation opens the equation-pack workbench, applies a control edit, and reports a CUDA preview",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/generic_cuda_equation_pack_interactive_ui_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py::test_equation_pack_workbench_no_mouse_set_value_changes_preview"
+    }
+  ]
+}

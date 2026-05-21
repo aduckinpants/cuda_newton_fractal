@@ -114,6 +114,8 @@ static bool TryParseRuntimeWalkArgs(const std::vector<std::string>& args, Viewer
     if (!TryStr(args, "--load-runtime-walk-request-json", &out->have_runtime_walk_viewer_request_json, &out->runtime_walk_viewer_request_json_path)) return false;
     if (!TryStr(args, "--load-runtime-walk-fits", &out->have_runtime_walk_viewer_fits_path, &out->runtime_walk_viewer_fits_path)) return false;
     out->open_color_pipeline_window_on_startup = HasArg(args, "--open-color-pipeline-window");
+    out->open_equation_pack_workbench_on_startup = HasArg(args, "--open-equation-pack-workbench");
+    if (!TryStr(args, "--equation-pack-workbench-pack-json", &out->have_equation_pack_workbench_pack_json, &out->equation_pack_workbench_pack_json_path)) return false;
     if (!TryStr(args, "--ui-automation-report-json", &out->have_ui_automation_report_json, &out->ui_automation_report_json_path)) return false;
     if (!TryStr(args, "--ui-automation-command-json", &out->have_ui_automation_command_json, &out->ui_automation_command_json_path)) return false;
     if (!TryStr(args, "--ui-automation-click-control-id", &out->have_ui_automation_click_control_id, &out->ui_automation_click_control_id)) return false;

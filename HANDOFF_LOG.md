@@ -191,3 +191,5 @@
 - `ck:5082007e` 2026-05-21 01:20 UTC | score 97 — Phase 11 parameter API hardening closed with McMullen state authority repair and descriptor read-back proof.
 - `ck:c07a8a38` 2026-05-21 01:51 UTC — session-start | branch=codex/engine-architecture-review | head=f4bed50 | status=dirty | profile=runtime | intent=generic CUDA equation pack workbench vertical
 - `ck:c07a8a38` 2026-05-21 03:43 UTC | score 97 — Generic CUDA equation-pack workbench vertical implemented: AST pack parser/lowerer, generic.sample AST runtime path, CUDA/workbench proof, docs/examples, no live renderer or mouse automation.
+- `ck:205ee136` 2026-05-21 04:11 UTC — session-start | branch=codex/engine-architecture-review | head=003e866 | status=dirty | profile=runtime | intent=generic CUDA equation-pack interactive UI
+- `ck:205ee136` 2026-05-21 05:32 UTC | score 97 — Generic CUDA equation-pack interactive UI implemented: Controls-window workbench entry point, pack-schema sliders, no-mouse set-value automation, CUDA preview report hash, final runtime publish, full native, runtime pytest, code-quality, contract validation, plan sync, and hostile-audit validation green.

@@ -69,6 +69,9 @@ struct ViewerCliArgs {
     bool have_runtime_walk_viewer_fits_path = false;
     std::string runtime_walk_viewer_fits_path;
     bool open_color_pipeline_window_on_startup = false;
+    bool open_equation_pack_workbench_on_startup = false;
+    bool have_equation_pack_workbench_pack_json = false;
+    std::string equation_pack_workbench_pack_json_path;
     bool have_ui_automation_report_json = false;
     std::string ui_automation_report_json_path;
     bool have_ui_automation_command_json = false;

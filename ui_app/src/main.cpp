@@ -47,6 +47,7 @@
 #include "fractal_probe_contract.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
+#include "generic_equation_pack_workbench.h"
 #include "headless_modes.h"
 #include "json_min.h"
 #include "lens_sdf.h"
@@ -771,6 +772,7 @@ struct UiActionFlags {
     bool loadState = false;
     bool loadFits = false;
     bool openColorPipelineWindow = false;
+    bool openEquationPackWorkbench = false;
     bool captureFinding = false;
     bool captureDiagnostic = false;
     bool nextSeed = false;
@@ -920,6 +922,10 @@ static UiActionFlags RenderControlsWindow(
     ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
     RenderStatusPanel(stats, render, renderedFrame, view, findingStatus, lastFindingPath);
     RenderSweepControls(sweepConfig, sweepState, sweepPaused, sweepSingleStep, view, params, dirty);
+    if (ImGui::Button("Equation Pack...")) {
+        actions.openEquationPackWorkbench = true;
+        actions.interactionChanged = true;
+    }
     ImGui::End();
     return actions;
 }
@@ -1513,6 +1519,96 @@ static void ArmUiAutomationClick(ColorPipelineWindowState& colorPipelineWindow,
     colorPipelineWindow.ui_automation_click_control_id = controlId;
     colorPipelineWindow.ui_automation_click_pending = true;
     colorPipelineWindow.ui_automation_click_consumed = false;
+}
+
+static std::string ReadTrimmedTextFile(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return std::string();
+    }
+    std::ostringstream buffer;
+    buffer << in.rdbuf();
+    std::string text = buffer.str();
+    while (!text.empty() && (text.back() == '\r' || text.back() == '\n' || text.back() == ' ' || text.back() == '\t')) {
+        text.pop_back();
+    }
+    return text;
+}
+
+static std::string ResolveDefaultEquationPackPath(const std::string& exeDir) {
+    const std::filesystem::path metadataPath = std::filesystem::path(exeDir) / "fractal_ui_repo_root.txt";
+    const std::string repoRoot = ReadTrimmedTextFile(metadataPath.string());
+    if (!repoRoot.empty()) {
+        const std::filesystem::path candidate =
+            std::filesystem::path(repoRoot) / "docs" / "examples" / "equation_packs" / "newton_z3_minus_1_pack.json";
+        if (std::filesystem::exists(candidate)) {
+            return candidate.string();
+        }
+    }
+
+    const std::filesystem::path cwdCandidate =
+        std::filesystem::current_path() / "docs" / "examples" / "equation_packs" / "newton_z3_minus_1_pack.json";
+    if (std::filesystem::exists(cwdCandidate)) {
+        return cwdCandidate.string();
+    }
+    return std::string();
+}
+
+static void InitializeEquationPackWorkbenchFromCli(
+    const ViewerCliArgs& cli,
+    const std::string& exeDir,
+    GenericEquationPackWorkbenchState& equationPackWorkbench) {
+    const bool wantsSetValue =
+        cli.have_ui_automation_set_control_value &&
+        GenericEquationPackWorkbenchWantsSetValueControl(cli.ui_automation_set_control_id);
+    const bool shouldOpen = cli.open_equation_pack_workbench_on_startup ||
+        cli.have_equation_pack_workbench_pack_json ||
+        wantsSetValue;
+    if (!shouldOpen) {
+        return;
+    }
+
+    equationPackWorkbench.open = true;
+    equationPackWorkbench.force_open_for_automation = wantsSetValue || cli.have_ui_automation_report_json;
+    const std::string packPath = cli.have_equation_pack_workbench_pack_json
+        ? cli.equation_pack_workbench_pack_json_path
+        : ResolveDefaultEquationPackPath(exeDir);
+    if (packPath.empty()) {
+        equationPackWorkbench.initialized = true;
+        equationPackWorkbench.pack_load_error = "unable to resolve default equation pack path";
+        return;
+    }
+    std::string error;
+    LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
+}
+
+static void OpenEquationPackWorkbenchWithDefault(
+    const std::string& exeDir,
+    GenericEquationPackWorkbenchState& equationPackWorkbench) {
+    equationPackWorkbench.open = true;
+    if (equationPackWorkbench.initialized && equationPackWorkbench.have_pack) {
+        return;
+    }
+    const std::string packPath = ResolveDefaultEquationPackPath(exeDir);
+    if (packPath.empty()) {
+        equationPackWorkbench.initialized = true;
+        equationPackWorkbench.pack_load_error = "unable to resolve default equation pack path";
+        return;
+    }
+    std::string error;
+    LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
+}
+
+static void OpenEquationPackWorkbenchForPendingSetValue(
+    const ColorPipelineWindowState& colorPipelineWindow,
+    GenericEquationPackWorkbenchState& equationPackWorkbench) {
+    if (!colorPipelineWindow.ui_automation_set_pending ||
+        colorPipelineWindow.ui_automation_set_control_id.empty() ||
+        !GenericEquationPackWorkbenchWantsSetValueControl(colorPipelineWindow.ui_automation_set_control_id)) {
+        return;
+    }
+    equationPackWorkbench.open = true;
+    equationPackWorkbench.force_open_for_automation = true;
 }
 
 static void ApplyPendingUiAutomationCommandFile(const ViewerCliArgs& cli,
@@ -2517,6 +2613,7 @@ static void RunViewerFrame(
     RuntimeWalkGradientOverlay& runtimeWalkGradientOverlay,
     RuntimeWalkFieldSlimeState& runtimeWalkFieldSlime,
     bool& runtimeWalkFieldSlimeValid,
+    GenericEquationPackWorkbenchState& equationPackWorkbench,
     std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     ViewerUiAutomationCommandState& uiAutomationCommandState,
     bool& dirty) {
@@ -2533,6 +2630,7 @@ static void RunViewerFrame(
         lastPolyKind,
         lastFractalType,
         dirty);
+    OpenEquationPackWorkbenchForPendingSetValue(colorPipelineWindow, equationPackWorkbench);
 
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
@@ -2564,6 +2662,9 @@ static void RunViewerFrame(
 
     if (actions.openColorPipelineWindow) {
         OpenColorPipelineWindow(&colorPipelineWindow);
+    }
+    if (actions.openEquationPackWorkbench) {
+        OpenEquationPackWorkbenchWithDefault(exeDir, equationPackWorkbench);
     }
     if (actions.loadFits) {
         PrimeRuntimeWalkViewerImportPanel(exeDir, currentLoadedStatePath, runtimeWalkViewerSession, &runtimeWalkImportPanel);
@@ -2617,6 +2718,20 @@ static void RunViewerFrame(
     }
 
     RenderColorPipelineWindow(&colorPipelineWindow, view.fractal_type, &params, &dirty, &actions.interactionChanged);
+    {
+        GenericEquationPackWorkbenchSetValueAutomation equationPackSetValue;
+        if (colorPipelineWindow.ui_automation_set_pending) {
+            equationPackSetValue.control_id = &colorPipelineWindow.ui_automation_set_control_id;
+            equationPackSetValue.value = colorPipelineWindow.ui_automation_set_control_value;
+            equationPackSetValue.consumed = &colorPipelineWindow.ui_automation_set_consumed;
+            equationPackSetValue.error = &colorPipelineWindow.ui_automation_set_error;
+        }
+        RenderGenericEquationPackWorkbench(
+            &equationPackWorkbench,
+            &viewerUiAutomationRects,
+            &equationPackSetValue,
+            &actions.interactionChanged);
+    }
     FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);
 
     if (ApplyExplainoSeedDynamics(stats, io.DeltaTime, view, params)) {
@@ -2688,11 +2803,14 @@ static void RunViewerFrame(
     PresentFrame();
     if (cli.have_ui_automation_report_json) {
         const ViewerUiAutomationFrameProbe frameProbe = BuildViewerUiAutomationFrameProbe(rgba, renderedFrame);
+        const GenericEquationPackWorkbenchAutomationReport equationPackReport =
+            BuildGenericEquationPackWorkbenchAutomationReport(equationPackWorkbench);
         WriteColorPipelineUiAutomationReport(
             cli.ui_automation_report_json_path,
             hwnd,
             viewerUiAutomationRects,
             colorPipelineWindow,
+            &equationPackReport,
             view,
             frameProbe,
             uiAutomationCommandState.last_sequence);
@@ -2772,6 +2890,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     SidecarAutoDemoMutationHistory sidecarMutationHistory; bool sidecarMutationHistoryValid = false;
     std::string currentLoadedStatePath; FractalType currentLoadedStateFractalType = FractalType::newton;
     ColorPipelineWindowState colorPipelineWindow{};
+    GenericEquationPackWorkbenchState equationPackWorkbench{};
 
         { int initRc = InitializeViewerSchemaAndDefaults(cli, schemaCandidates, view, params, render, lens, colorPipelineWindow,
             sidecarControllerPolicy,
@@ -2780,6 +2899,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
           currentLoadedStatePath,
           dirty, uiSchema, schemaPath, schemaWarning, engineCatalog);
       if (initRc != 0) return initRc; }
+    InitializeEquationPackWorkbenchFromCli(cli, exeDir, equationPackWorkbench);
     CaptureLoadedStateFractalTypeIfAny(currentLoadedStatePath, view, currentLoadedStateFractalType);
 
     BindingContext bind = BuildViewerBindingContext(view, params, render, lens);
@@ -2907,6 +3027,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
             runtimeWalkOverlayPath,
             runtimeWalkGradientOverlay,
             runtimeWalkFieldSlime, runtimeWalkFieldSlimeValid,
+            equationPackWorkbench,
             viewerUiAutomationRects,
             uiAutomationCommandState,
             dirty);

@@ -364,12 +364,23 @@ static void TestUiAutomationReportFlags() {
     ViewerCliArgs cli{};
     int rc = ParseViewerCli(Args({
         "--open-color-pipeline-window",
+        "--open-equation-pack-workbench",
+        "--equation-pack-workbench-pack-json", "pack.json",
         "--ui-automation-report-json", "ui_automation.json"
     }), &cli);
     Check(rc == 0, "TestUiAutomationReportFlags_ReturnCode");
     Check(cli.open_color_pipeline_window_on_startup, "TestUiAutomationReportFlags_OpenColorPipelineWindow");
+    Check(cli.open_equation_pack_workbench_on_startup, "TestUiAutomationReportFlags_OpenEquationPackWorkbench");
+    Check(cli.have_equation_pack_workbench_pack_json, "TestUiAutomationReportFlags_HaveEquationPackPath");
+    Check(cli.equation_pack_workbench_pack_json_path == "pack.json", "TestUiAutomationReportFlags_EquationPackPath");
     Check(cli.have_ui_automation_report_json, "TestUiAutomationReportFlags_HaveUiAutomationReport");
     Check(cli.ui_automation_report_json_path == "ui_automation.json", "TestUiAutomationReportFlags_Path");
+}
+
+static void TestEquationPackWorkbenchPackJsonMissingValue() {
+    ViewerCliArgs cli{};
+    int rc = ParseViewerCli(Args({"--equation-pack-workbench-pack-json"}), &cli);
+    Check(rc != 0, "TestEquationPackWorkbenchPackJsonMissingValue_Fails");
 }
 
 static void TestUiAutomationReportJsonMissingValue() {
@@ -650,6 +661,7 @@ int main() {
     TestDescribeFunctionsJsonMissingValue();
     TestLoadStateJson();
     TestUiAutomationReportFlags();
+    TestEquationPackWorkbenchPackJsonMissingValue();
     TestUiAutomationReportJsonMissingValue();
     TestUiAutomationCommandJsonFlag();
     TestUiAutomationCommandJsonMissingValue();

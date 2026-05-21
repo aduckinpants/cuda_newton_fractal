@@ -58,6 +58,7 @@ if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_vie
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
+if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack" goto focused_test_generic_equation_pack
 if /I "%FOCUSED_TEST%"=="test_generic_probe" goto focused_test_generic_probe
 if not "%FOCUSED_TEST%"=="" (
@@ -494,6 +495,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 goto full_test_run
+
+:focused_test_generic_equation_pack_workbench_ui
+cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /D GENERIC_EQUATION_PACK_WORKBENCH_NO_IMGUI /I. /I.\src ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_workbench.cpp .\tests\test_generic_equation_pack_workbench_ui.cpp ^
+  /Fe:"%TESTROOT%\test_generic_equation_pack_workbench_ui.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit /b 1
+exit /b 0
 
 :focused_test_generic_equation_pack
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
@@ -976,7 +985,13 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   /Fe:"%TESTROOT%\test_generic_equation_pack.exe"
 if errorlevel 1 exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /D GENERIC_EQUATION_PACK_WORKBENCH_NO_IMGUI /I. /I.\src ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_equation_pack_workbench.cpp .\tests\test_generic_equation_pack_workbench_ui.cpp ^
+  /Fe:"%TESTROOT%\test_generic_equation_pack_workbench_ui.exe"
+if errorlevel 1 exit /b 1
+
 call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_generic_equation_pack_workbench_ui.exe" || exit /b 1
 
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^

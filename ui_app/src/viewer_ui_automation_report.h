@@ -2,6 +2,7 @@
 
 #include "color_pipeline_window.h"
 #include "fractal_types.h"
+#include "generic_equation_pack_workbench.h"
 #include "render_capture_guard.h"
 
 #include <Windows.h>
@@ -43,6 +44,7 @@ void WriteColorPipelineUiAutomationReport(
     HWND hwnd,
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
+    const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
     const ViewState& view,
     const ViewerUiAutomationFrameProbe& frameProbe,
     std::int64_t uiAutomationCommandSequence);

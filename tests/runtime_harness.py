@@ -381,12 +381,14 @@ class PersistentRuntimeViewerAutomation:
         report_path: Path,
         command_path: Path,
         open_color_pipeline: bool = False,
+        extra_args: list[str] | None = None,
     ) -> None:
         self.exe_path = exe_path
         self.state_path = state_path
         self.report_path = report_path
         self.command_path = command_path
         self.open_color_pipeline = open_color_pipeline
+        self.extra_args = list(extra_args or [])
         self.proc: subprocess.Popen[object] | None = None
         self.hwnd: int | None = None
         self.sequence = 0
@@ -406,6 +408,7 @@ class PersistentRuntimeViewerAutomation:
         ]
         if self.open_color_pipeline:
             args.append("--open-color-pipeline-window")
+        args.extend(self.extra_args)
         self.proc = subprocess.Popen(args, cwd=str(RUNTIME_DIR))
         self.launch_count += 1
         self.hwnd = wait_for_window(self.proc)
