@@ -70,6 +70,8 @@ void TestEnumOrdinalContracts() {
         "FractalType explaino_projection_and_flow ordinal is stable");
     Check(static_cast<int>(FractalType::magnet) == 43,
         "FractalType magnet ordinal is stable");
+    Check(static_cast<int>(FractalType::generic_equation_pack) == 44,
+        "FractalType generic_equation_pack ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::cubic_unit_roots) == 0, "CounterfactualPairRootFamily cubic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairRootFamily::quartic_unit_roots) == 1, "CounterfactualPairRootFamily quartic ordinal is stable");
     Check(static_cast<int>(CounterfactualPairFrame::world_absolute) == 0, "CounterfactualPairFrame world-absolute ordinal is stable");

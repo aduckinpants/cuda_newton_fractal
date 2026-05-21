@@ -51,6 +51,9 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     if (!std::isfinite(params.epsilon) || params.epsilon <= 0.0f) {
         return FailFractalRuntimeValidation("epsilon must be finite and > 0", outError);
     }
+    if (view.fractal_type == FractalType::generic_equation_pack) {
+        return FailFractalRuntimeValidation("generic_equation_pack requires the Generic Equation Pack live render path", outError);
+    }
     if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
     }

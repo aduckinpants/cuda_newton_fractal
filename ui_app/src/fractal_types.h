@@ -240,6 +240,7 @@ enum class FractalType : int {
     projection_and_flow = 41,
     explaino_projection_and_flow = 42,
     magnet = 43,
+    generic_equation_pack = 44,
 };
 
 enum class CounterfactualPairRootFamily : int {

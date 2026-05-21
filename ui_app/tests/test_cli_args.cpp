@@ -288,6 +288,7 @@ bool TestParseFractalTypeAllValues() {
         {"celtic_mandelbrot", FractalType::celtic_mandelbrot},
         {"perpendicular_burning_ship", FractalType::perpendicular_burning_ship},
         {"magnet", FractalType::magnet},
+        {"generic_equation_pack", FractalType::generic_equation_pack},
     };
 
     for (const auto& c : cases) {

@@ -47,6 +47,7 @@
 #include "fractal_probe_contract.h"
 #include "fractal_probe_runner.h"
 #include "function_descriptor.h"
+#include "generic_equation_pack_live.h"
 #include "generic_equation_pack_workbench.h"
 #include "headless_modes.h"
 #include "json_min.h"
@@ -683,6 +684,7 @@ static void DispatchRenderFrame(
     bool renderOnce, bool captureDiag, bool captureFinding,
     std::vector<uint32_t>& rgba, std::vector<uint8_t>& maskBuffer,
     std::vector<uint32_t>& lensSdfRgba,
+    const GenericEquationPackWorkbenchState* equationPackWorkbench,
     RenderedFrameState& renderedFrame, RenderStats& stats, bool& dirtyOut) {
 
     if (!ShouldDispatchRender(autoRefresh, dirty, renderOnce, captureDiag, captureFinding, renderPacing.full_quality_due))
@@ -712,10 +714,31 @@ static void DispatchRenderFrame(
     }
 
     const char* err = nullptr;
+    std::string genericRenderError;
     RenderStats newStats{};
-    if (!RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err)) {
+    bool renderOk = false;
+    if (view.fractal_type == FractalType::generic_equation_pack) {
+        if (!equationPackWorkbench || !equationPackWorkbench->have_pack) {
+            genericRenderError = "no equation pack loaded for generic_equation_pack";
+        } else {
+            GenericEquationPack livePack = equationPackWorkbench->pack;
+            livePack.params = equationPackWorkbench->params;
+            renderOk = RenderGenericEquationPackLiveFrame(
+                livePack,
+                view,
+                dispatchRender,
+                rgba.data(),
+                maskPtr,
+                &newStats,
+                &genericRenderError);
+        }
+    } else {
+        renderOk = RenderFractalCUDA(view, params, dispatchRender, rgba.data(), maskPtr, &newStats, &err);
+    }
+    if (!renderOk) {
         ImGui::Begin("CUDA Error");
-        ImGui::TextWrapped("Render failed: %s", err ? err : "unknown error");
+        const char* message = !genericRenderError.empty() ? genericRenderError.c_str() : (err ? err : "unknown error");
+        ImGui::TextWrapped("Render failed: %s", message);
         ImGui::End();
     } else {
         stats = newStats;
@@ -874,17 +897,22 @@ static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& re
 static void RenderSweepControls(const SweepPlayerConfig& config, SweepPlayerState& sweepState,
                                 bool& sweepPaused, bool& sweepSingleStep,
                                 ViewState& view, KernelParams& params, bool& dirty);
+static bool EnsureEquationPackWorkbenchDefaultLoaded(
+    const std::string& exeDir,
+    GenericEquationPackWorkbenchState& equationPackWorkbench);
 
 static UiActionFlags RenderControlsWindow(
         const UISchema& schema, const std::string& schemaWarning, const std::string& schemaPath,
         ViewState& view, KernelParams& params, RenderSettings& render, LensSettings& lens,
         const RenderStats& stats, const RenderedFrameState& renderedFrame,
         const std::string& findingStatus, const std::string& lastFindingPath,
+        const std::string& exeDir,
         bool canLoadFits, const std::string& loadFitsHint,
         const SweepPlayerConfig& sweepConfig, SweepPlayerState& sweepState,
         bool& sweepPaused, bool& sweepSingleStep,
         std::vector<ViewerUiAutomationRect>* viewerUiAutomationRects,
         ColorPipelineWindowState& colorPipelineWindow,
+        GenericEquationPackWorkbenchState& equationPackWorkbench,
         FractalType& lastFractalType, PolyKind& lastPolyKind, bool& dirty) {
     ImGui::Begin("Controls");
     if (!schemaWarning.empty()) {
@@ -920,6 +948,38 @@ static UiActionFlags RenderControlsWindow(
         }
     }
     ApplyFractalTypeAndPolyCoherence(view, params, dirty, lastFractalType, lastPolyKind);
+    if (view.fractal_type == FractalType::generic_equation_pack) {
+        const bool hadPack = equationPackWorkbench.have_pack;
+        EnsureEquationPackWorkbenchDefaultLoaded(exeDir, equationPackWorkbench);
+        if (!hadPack && equationPackWorkbench.have_pack) {
+            dirty = true;
+        }
+
+        GenericEquationPackWorkbenchSetValueAutomation equationPackSetValue;
+        if (colorPipelineWindow.ui_automation_set_pending) {
+            equationPackSetValue.control_id = &colorPipelineWindow.ui_automation_set_control_id;
+            equationPackSetValue.value = colorPipelineWindow.ui_automation_set_control_value;
+            equationPackSetValue.consumed = &colorPipelineWindow.ui_automation_set_consumed;
+            equationPackSetValue.error = &colorPipelineWindow.ui_automation_set_error;
+        }
+        GenericEquationPackWorkbenchClickAutomation equationPackClick;
+        if (colorPipelineWindow.ui_automation_click_pending &&
+            GenericEquationPackWorkbenchWantsClickControl(colorPipelineWindow.ui_automation_click_control_id)) {
+            equationPackClick.control_id = &colorPipelineWindow.ui_automation_click_control_id;
+            equationPackClick.consumed = &colorPipelineWindow.ui_automation_click_consumed;
+        }
+        bool equationPackInteracted = false;
+        RenderGenericEquationPackInlinePanel(
+            &equationPackWorkbench,
+            viewerUiAutomationRects,
+            &equationPackSetValue,
+            &equationPackClick,
+            &equationPackInteracted);
+        if (equationPackInteracted) {
+            actions.interactionChanged = true;
+            dirty = true;
+        }
+    }
     RenderStatusPanel(stats, render, renderedFrame, view, findingStatus, lastFindingPath);
     RenderSweepControls(sweepConfig, sweepState, sweepPaused, sweepSingleStep, view, params, dirty);
     if (ImGui::Button("Equation Pack...")) {
@@ -1588,25 +1648,35 @@ static void InitializeEquationPackWorkbenchFromCli(
     LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
 }
 
-static void OpenEquationPackWorkbenchWithDefault(
+static bool EnsureEquationPackWorkbenchDefaultLoaded(
     const std::string& exeDir,
     GenericEquationPackWorkbenchState& equationPackWorkbench) {
-    equationPackWorkbench.open = true;
     if (equationPackWorkbench.initialized && equationPackWorkbench.have_pack) {
-        return;
+        return true;
+    }
+    if (equationPackWorkbench.initialized && !equationPackWorkbench.pack_load_error.empty()) {
+        return false;
     }
     const std::string packPath = ResolveDefaultEquationPackPath(exeDir);
     if (packPath.empty()) {
         equationPackWorkbench.initialized = true;
         equationPackWorkbench.pack_load_error = "unable to resolve default equation pack path";
-        return;
+        return false;
     }
     std::string error;
-    LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
+    return LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
+}
+
+static void OpenEquationPackWorkbenchWithDefault(
+    const std::string& exeDir,
+    GenericEquationPackWorkbenchState& equationPackWorkbench) {
+    equationPackWorkbench.open = true;
+    EnsureEquationPackWorkbenchDefaultLoaded(exeDir, equationPackWorkbench);
 }
 
 static void OpenEquationPackWorkbenchForPendingAutomation(
     const ColorPipelineWindowState& colorPipelineWindow,
+    FractalType currentFractalType,
     GenericEquationPackWorkbenchState& equationPackWorkbench) {
     const bool wantsSetValue = colorPipelineWindow.ui_automation_set_pending &&
         !colorPipelineWindow.ui_automation_set_control_id.empty() &&
@@ -1614,7 +1684,7 @@ static void OpenEquationPackWorkbenchForPendingAutomation(
     const bool wantsClick = colorPipelineWindow.ui_automation_click_pending &&
         !colorPipelineWindow.ui_automation_click_control_id.empty() &&
         GenericEquationPackWorkbenchWantsClickControl(colorPipelineWindow.ui_automation_click_control_id);
-    if (!wantsSetValue && !wantsClick) {
+    if ((!wantsSetValue && !wantsClick) || currentFractalType == FractalType::generic_equation_pack) {
         return;
     }
     equationPackWorkbench.open = true;
@@ -2640,7 +2710,7 @@ static void RunViewerFrame(
         lastPolyKind,
         lastFractalType,
         dirty);
-    OpenEquationPackWorkbenchForPendingAutomation(colorPipelineWindow, equationPackWorkbench);
+    OpenEquationPackWorkbenchForPendingAutomation(colorPipelineWindow, view.fractal_type, equationPackWorkbench);
 
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
@@ -2651,10 +2721,12 @@ static void RunViewerFrame(
     UiActionFlags actions = RenderControlsWindow(uiSchema, schemaWarning, schemaPath,
         view, params, render, lens, stats, renderedFrame,
         findingStatus, lastFindingPath,
+        exeDir,
         true, loadFitsHint,
         cli.sweep_config, sweepState, sweepPaused, sweepSingleStep,
         &viewerUiAutomationRects,
         colorPipelineWindow,
+        equationPackWorkbench,
         lastFractalType, lastPolyKind, dirty);
 
     DispatchUiActions(hwnd, actions.resetView, actions.resetAll, actions.loadState,
@@ -2742,12 +2814,19 @@ static void RunViewerFrame(
             equationPackClick.control_id = &colorPipelineWindow.ui_automation_click_control_id;
             equationPackClick.consumed = &colorPipelineWindow.ui_automation_click_consumed;
         }
+        bool equationPackWorkbenchInteracted = false;
         RenderGenericEquationPackWorkbench(
             &equationPackWorkbench,
             &viewerUiAutomationRects,
             &equationPackSetValue,
             &equationPackClick,
-            &actions.interactionChanged);
+            &equationPackWorkbenchInteracted);
+        if (equationPackWorkbenchInteracted) {
+            actions.interactionChanged = true;
+            if (view.fractal_type == FractalType::generic_equation_pack) {
+                dirty = true;
+            }
+        }
     }
     FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);
 
@@ -2778,7 +2857,7 @@ static void RunViewerFrame(
     DispatchRenderFrame(view, params, render, lens, renderPacing,
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,
-        rgba, maskBuffer, lensSdfRgba, renderedFrame, stats, dirty);
+        rgba, maskBuffer, lensSdfRgba, &equationPackWorkbench, renderedFrame, stats, dirty);
 
     RunPendingInLoopCaptures(exeDir, actions, view, params, render, stats, rgba,
         renderedFrame, colorPipelineWindow, sidecarState, sidecarStateValid,

@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "contract_id": "generic_cuda_equation_pack_main_viewport",
+  "feature_id": "generic_cuda_equation_pack_main_viewport_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/generic_cuda_equation_pack_main_viewport_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "continue from the temporary Equation Pack Workbench toward normal main viewport integration",
+    "add a selectable normal Fractal Type dropdown value for equation packs",
+    "expose the user-facing JSON/textbox and pack controls in the existing left-side Controls flow",
+    "render the selected pack through the main viewport using the existing Generic CUDA sampler",
+    "preserve existing shipped fractal RenderFractalCUDA behavior and prior Generic CUDA workbench behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "claim the detached workbench is the final product surface",
+    "rewrite RenderFractalCUDA for every fractal",
+    "register dynamic CUDA kernels from user JSON",
+    "make raw expression strings the pack execution authority",
+    "implement Salticid sample_fn or pipeline syntax in this slice",
+    "use physical mouse automation as proof",
+    "mutate Color Pipeline product behavior",
+    "silently fall back to a different fractal when the pack cannot render"
+  ],
+  "required_defaults": {
+    "branch": "codex/engine-architecture-review",
+    "pack_schema_version": 1,
+    "pack_authority": "ast_json",
+    "selector_id": "generic_equation_pack",
+    "interactive_surface": "normal_fractal_dropdown_and_left_controls_panel",
+    "execution_surface": "SampleGenericFunction",
+    "fixed_fractal_renderer": "RenderFractalCUDA_for_existing_fractals_only",
+    "dynamic_kernel_registration": "deferred",
+    "salticid_sample_fn_adapter": "deferred",
+    "no_physical_mouse_tests": true
+  },
+  "forbidden_defaults": {
+    "detached_workbench_final_claim": "forbidden",
+    "renderer_rewrite": "forbidden",
+    "raw_expression_authority": "forbidden",
+    "dynamic_kernel_registration": "forbidden",
+    "color_pipeline_product_mutation": "forbidden",
+    "viewer_relaunch_proof_loop": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/generic_cuda_equation_pack_main_viewport_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_main_viewport.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_main_viewport_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_main_viewport_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_main_viewport_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_main_viewport_native_final --log artifacts/logs/generic_cuda_equation_pack_main_viewport_native_final.log -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_main_viewport_runtime_publish_final --log artifacts/logs/generic_cuda_equation_pack_main_viewport_runtime_publish_final.log -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py -q --junitxml artifacts/pytest/generic_cuda_equation_pack_main_viewport_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "generic_cuda_equation_pack_main_viewport_contract_schema_valid",
+      "description": "The main viewport integration contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_main_viewport_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_main_viewport_plan_sync_ok",
+      "description": "The main viewport integration phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_main_viewport_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_main_viewport_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_main_viewport_runtime_no_mouse",
+      "description": "Published viewer proof selects generic_equation_pack in one persistent process, sees the left-panel pack controls, and proves a pack control changes the main viewport frame hash",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/generic_cuda_equation_pack_main_viewport_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py::test_equation_pack_main_viewport_selector_and_left_panel_no_mouse"
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -22,6 +23,8 @@ constexpr int kDefaultPreviewGridWidth = 32;
 constexpr int kDefaultPreviewGridHeight = 32;
 constexpr int kMaxPreviewGridDimension = 48;
 constexpr const char* kResetDefaultsControlId = "equation_pack.reset_defaults";
+constexpr const char* kJsonTextControlId = "equation_pack.json_text";
+constexpr const char* kApplyJsonControlId = "equation_pack.apply_json";
 
 std::uint64_t Fnv1aAppend(std::uint64_t hash, std::uint64_t value) {
     for (int byteIndex = 0; byteIndex < 8; ++byteIndex) {
@@ -144,6 +147,22 @@ double CurrentControlValue(
         return valueIt->second;
     }
     return control.has_default_value ? control.default_value : 0.0;
+}
+
+void SetPackJsonBuffer(GenericEquationPackWorkbenchState* ioState, const std::string& jsonText) {
+    if (!ioState) {
+        return;
+    }
+    ioState->pack_json_buffer.fill('\0');
+    const std::size_t maxCopy = ioState->pack_json_buffer.size() > 0 ? ioState->pack_json_buffer.size() - 1 : 0;
+    const std::size_t copyCount = (std::min)(maxCopy, jsonText.size());
+    if (copyCount > 0) {
+        std::memcpy(ioState->pack_json_buffer.data(), jsonText.data(), copyCount);
+    }
+}
+
+std::string CurrentPackJsonText(const GenericEquationPackWorkbenchState& state) {
+    return std::string(state.pack_json_buffer.data());
 }
 
 double ClampControlValue(const GenericEquationPackControl& control, double value) {
@@ -328,21 +347,45 @@ void NoteWorkbenchUiAutomationRect(
     automationRects->push_back(std::move(rect));
 }
 
-bool ConsumeResetClickIfRequested(
-    GenericEquationPackWorkbenchState* ioState,
+bool ConsumeClickIfRequested(
     const std::string& controlId,
     GenericEquationPackWorkbenchClickAutomation* clickAutomation) {
-    if (!ioState ||
-        !clickAutomation ||
+    if (!clickAutomation ||
         !clickAutomation->control_id ||
         clickAutomation->control_id->empty() ||
         (clickAutomation->consumed && *clickAutomation->consumed) ||
         *clickAutomation->control_id != controlId) {
         return false;
     }
+    return true;
+}
+
+bool ConsumeResetClickIfRequested(
+    GenericEquationPackWorkbenchState* ioState,
+    const std::string& controlId,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation) {
+    if (!ioState || !ConsumeClickIfRequested(controlId, clickAutomation)) {
+        return false;
+    }
 
     std::string error;
     const bool applied = ResetGenericEquationPackWorkbenchControlsToDefaults(ioState, &error);
+    if (clickAutomation->consumed) {
+        *clickAutomation->consumed = applied;
+    }
+    return applied;
+}
+
+bool ConsumeApplyJsonClickIfRequested(
+    GenericEquationPackWorkbenchState* ioState,
+    const std::string& controlId,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation) {
+    if (!ioState || !ConsumeClickIfRequested(controlId, clickAutomation)) {
+        return false;
+    }
+
+    std::string error;
+    const bool applied = ApplyGenericEquationPackWorkbenchJsonEdit(ioState, &error);
     if (clickAutomation->consumed) {
         *clickAutomation->consumed = applied;
     }
@@ -383,6 +426,85 @@ ImU32 ImGuiColorFromRgba(std::uint32_t rgba) {
         static_cast<int>((rgba >> 8) & 0xffu),
         static_cast<int>((rgba >> 16) & 0xffu),
         static_cast<int>((rgba >> 24) & 0xffu));
+}
+
+bool RenderPackJsonEditor(
+    GenericEquationPackWorkbenchState* ioState,
+    std::vector<ViewerUiAutomationRect>* automationRects,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation) {
+    if (!ioState) {
+        return false;
+    }
+
+    ImGui::TextUnformatted("Pack JSON");
+    ImGui::InputTextMultiline(
+        "##equation_pack_json_text",
+        ioState->pack_json_buffer.data(),
+        ioState->pack_json_buffer.size(),
+        ImVec2(-1.0f, ImGui::GetTextLineHeightWithSpacing() * 9.0f),
+        ImGuiInputTextFlags_AllowTabInput);
+    NoteWorkbenchUiAutomationRect(automationRects, kJsonTextControlId);
+
+    bool edited = false;
+    if (ImGui::Button("Apply Pack JSON")) {
+        std::string error;
+        edited = ApplyGenericEquationPackWorkbenchJsonEdit(ioState, &error);
+    }
+    NoteWorkbenchUiAutomationRect(automationRects, kApplyJsonControlId);
+    if (ConsumeApplyJsonClickIfRequested(ioState, kApplyJsonControlId, clickAutomation)) {
+        edited = true;
+    }
+    return edited;
+}
+
+bool RenderPackControlSliders(
+    GenericEquationPackWorkbenchState* ioState,
+    std::vector<ViewerUiAutomationRect>* automationRects,
+    GenericEquationPackWorkbenchSetValueAutomation* setValueAutomation) {
+    if (!ioState || !ioState->have_pack) {
+        return false;
+    }
+
+    bool edited = false;
+    for (const GenericEquationPackControl& control : ioState->pack.controls) {
+        const double value = CurrentControlValue(control, ioState->params);
+
+        const std::string controlId = GenericEquationPackWorkbenchControlAutomationId(control);
+        const std::string label = control.label.empty() ? control.id : control.label;
+        const bool integerValue = ControlIsIntegerValued(ioState->pack, control);
+        const float minValue = static_cast<float>(control.has_min ? control.min_value : value - 1.0);
+        const float maxValue = static_cast<float>(control.has_max ? control.max_value : value + 1.0);
+        float uiValue = static_cast<float>(value);
+        int uiIntValue = static_cast<int>(std::lround(value));
+        ImGui::PushID(control.id.c_str());
+        bool changed = false;
+        if (integerValue) {
+            const int minIntValue = static_cast<int>(std::lround(control.has_min ? control.min_value : value - 1.0));
+            const int maxIntValue = static_cast<int>(std::lround(control.has_max ? control.max_value : value + 1.0));
+            if (control.has_min && control.has_max && maxIntValue > minIntValue) {
+                changed = ImGui::SliderInt(label.c_str(), &uiIntValue, minIntValue, maxIntValue);
+            } else {
+                changed = ImGui::DragInt(label.c_str(), &uiIntValue, 1.0f);
+            }
+            uiValue = static_cast<float>(uiIntValue);
+        } else if (control.has_min && control.has_max && control.max_value > control.min_value) {
+            changed = ImGui::SliderFloat(label.c_str(), &uiValue, minValue, maxValue);
+        } else {
+            const float speed = static_cast<float>(control.has_step ? control.step_value : 0.01);
+            changed = ImGui::DragFloat(label.c_str(), &uiValue, speed);
+        }
+        NoteWorkbenchUiAutomationRect(automationRects, controlId);
+        if (ConsumeSetValueIfRequested(ioState, controlId, setValueAutomation)) {
+            edited = true;
+        } else if (changed) {
+            std::string error;
+            if (SetGenericEquationPackWorkbenchControlValue(ioState, controlId, static_cast<double>(uiValue), &error)) {
+                edited = true;
+            }
+        }
+        ImGui::PopID();
+    }
+    return edited;
 }
 
 void DrawPreviewCanvas(
@@ -441,12 +563,23 @@ std::string GenericEquationPackWorkbenchResetDefaultsAutomationId() {
     return kResetDefaultsControlId;
 }
 
+std::string GenericEquationPackWorkbenchJsonTextAutomationId() {
+    return kJsonTextControlId;
+}
+
+std::string GenericEquationPackWorkbenchApplyJsonAutomationId() {
+    return kApplyJsonControlId;
+}
+
 bool GenericEquationPackWorkbenchWantsSetValueControl(const std::string& controlId) {
-    return controlId.rfind("equation_pack.", 0) == 0;
+    return controlId.rfind("equation_pack.", 0) == 0 &&
+        controlId != kResetDefaultsControlId &&
+        controlId != kJsonTextControlId &&
+        controlId != kApplyJsonControlId;
 }
 
 bool GenericEquationPackWorkbenchWantsClickControl(const std::string& controlId) {
-    return controlId == kResetDefaultsControlId;
+    return controlId == kResetDefaultsControlId || controlId == kApplyJsonControlId;
 }
 
 bool LoadGenericEquationPackWorkbenchJson(
@@ -458,6 +591,7 @@ bool LoadGenericEquationPackWorkbenchJson(
         if (outError) *outError = "workbench state is required";
         return false;
     }
+    SetPackJsonBuffer(ioState, jsonText);
     GenericEquationPackParseResult parsed = ParseGenericEquationPackJson(jsonText);
     if (!parsed.ok) {
         ioState->pack_load_error = parsed.error;
@@ -467,6 +601,7 @@ bool LoadGenericEquationPackWorkbenchJson(
         return false;
     }
     InitializeStateFromPack(ioState, std::move(parsed.pack), sourcePath);
+    SetPackJsonBuffer(ioState, jsonText);
     if (outError) outError->clear();
     return true;
 }
@@ -540,6 +675,27 @@ bool ResetGenericEquationPackWorkbenchControlsToDefaults(
     }
     ioState->pack.params = ioState->params;
     ioState->preview_dirty = true;
+    if (outError) outError->clear();
+    return true;
+}
+
+bool ApplyGenericEquationPackWorkbenchJsonEdit(
+    GenericEquationPackWorkbenchState* ioState,
+    std::string* outError) {
+    if (!ioState) {
+        if (outError) *outError = "workbench state is required";
+        return false;
+    }
+    const std::string jsonText = CurrentPackJsonText(*ioState);
+    GenericEquationPackParseResult parsed = ParseGenericEquationPackJson(jsonText);
+    if (!parsed.ok) {
+        ioState->pack_load_error = parsed.error;
+        ioState->initialized = true;
+        if (outError) *outError = parsed.error;
+        return false;
+    }
+    InitializeStateFromPack(ioState, std::move(parsed.pack), "inline editor");
+    SetPackJsonBuffer(ioState, jsonText);
     if (outError) outError->clear();
     return true;
 }
@@ -656,49 +812,17 @@ void RenderGenericEquationPackWorkbench(
         ImGui::TextWrapped("%s", ioState->pack_load_error.c_str());
     }
 
+    bool jsonEdited = RenderPackJsonEditor(ioState, automationRects, clickAutomation);
+    if (jsonEdited && outInteracted) {
+        *outInteracted = true;
+    }
+
     if (ioState->have_pack) {
+        ImGui::Separator();
         ImGui::TextUnformatted(ioState->pack.name.c_str());
         ImGui::Text("Pack: %s", ioState->pack.pack_id.c_str());
 
-        bool edited = false;
-        for (const GenericEquationPackControl& control : ioState->pack.controls) {
-            const double value = CurrentControlValue(control, ioState->params);
-
-            const std::string controlId = GenericEquationPackWorkbenchControlAutomationId(control);
-            const std::string label = control.label.empty() ? control.id : control.label;
-            const bool integerValue = ControlIsIntegerValued(ioState->pack, control);
-            const float minValue = static_cast<float>(control.has_min ? control.min_value : value - 1.0);
-            const float maxValue = static_cast<float>(control.has_max ? control.max_value : value + 1.0);
-            float uiValue = static_cast<float>(value);
-            int uiIntValue = static_cast<int>(std::lround(value));
-            ImGui::PushID(control.id.c_str());
-            bool changed = false;
-            if (integerValue) {
-                const int minIntValue = static_cast<int>(std::lround(control.has_min ? control.min_value : value - 1.0));
-                const int maxIntValue = static_cast<int>(std::lround(control.has_max ? control.max_value : value + 1.0));
-                if (control.has_min && control.has_max && maxIntValue > minIntValue) {
-                    changed = ImGui::SliderInt(label.c_str(), &uiIntValue, minIntValue, maxIntValue);
-                } else {
-                    changed = ImGui::DragInt(label.c_str(), &uiIntValue, 1.0f);
-                }
-                uiValue = static_cast<float>(uiIntValue);
-            } else if (control.has_min && control.has_max && control.max_value > control.min_value) {
-                changed = ImGui::SliderFloat(label.c_str(), &uiValue, minValue, maxValue);
-            } else {
-                const float speed = static_cast<float>(control.has_step ? control.step_value : 0.01);
-                changed = ImGui::DragFloat(label.c_str(), &uiValue, speed);
-            }
-            NoteWorkbenchUiAutomationRect(automationRects, controlId);
-            if (ConsumeSetValueIfRequested(ioState, controlId, setValueAutomation)) {
-                edited = true;
-            } else if (changed) {
-                std::string error;
-                if (SetGenericEquationPackWorkbenchControlValue(ioState, controlId, static_cast<double>(uiValue), &error)) {
-                    edited = true;
-                }
-            }
-            ImGui::PopID();
-        }
+        bool edited = RenderPackControlSliders(ioState, automationRects, setValueAutomation);
 
         const std::string resetControlId = GenericEquationPackWorkbenchResetDefaultsAutomationId();
         if (ImGui::Button("Reset Defaults")) {
@@ -745,5 +869,48 @@ void RenderGenericEquationPackWorkbench(
     }
 
     ImGui::End();
+}
+
+void RenderGenericEquationPackInlinePanel(
+    GenericEquationPackWorkbenchState* ioState,
+    std::vector<ViewerUiAutomationRect>* automationRects,
+    GenericEquationPackWorkbenchSetValueAutomation* setValueAutomation,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation,
+    bool* outInteracted) {
+    if (!ioState) {
+        return;
+    }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Equation Pack");
+    if (!ioState->pack_load_error.empty()) {
+        ImGui::TextWrapped("%s", ioState->pack_load_error.c_str());
+    }
+
+    bool edited = RenderPackJsonEditor(ioState, automationRects, clickAutomation);
+
+    if (ioState->have_pack) {
+        ImGui::TextUnformatted(ioState->pack.name.c_str());
+        ImGui::Text("Pack: %s", ioState->pack.pack_id.c_str());
+        edited = RenderPackControlSliders(ioState, automationRects, setValueAutomation) || edited;
+
+        const std::string resetControlId = GenericEquationPackWorkbenchResetDefaultsAutomationId();
+        if (ImGui::Button("Reset Defaults")) {
+            std::string error;
+            if (ResetGenericEquationPackWorkbenchControlsToDefaults(ioState, &error)) {
+                edited = true;
+            }
+        }
+        NoteWorkbenchUiAutomationRect(automationRects, resetControlId);
+        if (ConsumeResetClickIfRequested(ioState, resetControlId, clickAutomation)) {
+            edited = true;
+        }
+    } else if (ioState->initialized) {
+        ImGui::TextUnformatted("No equation pack loaded.");
+    }
+
+    if (edited && outInteracted) {
+        *outInteracted = true;
+    }
 }
 #endif

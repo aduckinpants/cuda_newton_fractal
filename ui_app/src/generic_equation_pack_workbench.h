@@ -3,12 +3,15 @@
 #include "generic_equation_pack.h"
 #include "generic_function_types.h"
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
 
 struct ViewerUiAutomationRect;
+
+static constexpr std::size_t kGenericEquationPackWorkbenchJsonBufferSize = 65536;
 
 struct GenericEquationPackWorkbenchPreviewSummary {
     bool ok = false;
@@ -36,6 +39,7 @@ struct GenericEquationPackWorkbenchState {
     bool preview_dirty = false;
     std::string pack_path;
     std::string pack_load_error;
+    std::array<char, kGenericEquationPackWorkbenchJsonBufferSize> pack_json_buffer{};
     GenericEquationPack pack;
     std::map<std::string, double> params;
     GenericEquationPackWorkbenchPreviewSummary last_preview;
@@ -98,6 +102,8 @@ struct GenericEquationPackWorkbenchSetValueAutomation {
 
 std::string GenericEquationPackWorkbenchControlAutomationId(const GenericEquationPackControl& control);
 std::string GenericEquationPackWorkbenchResetDefaultsAutomationId();
+std::string GenericEquationPackWorkbenchJsonTextAutomationId();
+std::string GenericEquationPackWorkbenchApplyJsonAutomationId();
 bool GenericEquationPackWorkbenchWantsSetValueControl(const std::string& controlId);
 bool GenericEquationPackWorkbenchWantsClickControl(const std::string& controlId);
 
@@ -122,6 +128,10 @@ bool ResetGenericEquationPackWorkbenchControlsToDefaults(
     GenericEquationPackWorkbenchState* ioState,
     std::string* outError);
 
+bool ApplyGenericEquationPackWorkbenchJsonEdit(
+    GenericEquationPackWorkbenchState* ioState,
+    std::string* outError);
+
 bool RunGenericEquationPackWorkbenchPreview(
     GenericEquationPackWorkbenchState* ioState,
     std::string* outError);
@@ -131,6 +141,13 @@ GenericEquationPackWorkbenchAutomationReport BuildGenericEquationPackWorkbenchAu
 
 #ifndef GENERIC_EQUATION_PACK_WORKBENCH_NO_IMGUI
 void RenderGenericEquationPackWorkbench(
+    GenericEquationPackWorkbenchState* ioState,
+    std::vector<ViewerUiAutomationRect>* automationRects,
+    GenericEquationPackWorkbenchSetValueAutomation* setValueAutomation,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation,
+    bool* outInteracted);
+
+void RenderGenericEquationPackInlinePanel(
     GenericEquationPackWorkbenchState* ioState,
     std::vector<ViewerUiAutomationRect>* automationRects,
     GenericEquationPackWorkbenchSetValueAutomation* setValueAutomation,

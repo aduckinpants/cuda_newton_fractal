@@ -171,3 +171,66 @@ def test_equation_pack_workbench_reports_controls_and_reset_defaults_no_mouse(
     assert equation_pack_workbench_proof["reset_result_hash"] == equation_pack_workbench_proof["baseline_result_hash"]
     assert equation_pack_workbench_proof["reset_image_hash"] == equation_pack_workbench_proof["baseline_image_hash"]
     assert equation_pack_workbench_proof["launch_count"] == 1
+
+
+@pytest.fixture(scope="module")
+def equation_pack_main_viewport_proof(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
+    if sys.platform != "win32":
+        pytest.skip("viewer UI automation is Windows-only")
+
+    tmp_path = tmp_path_factory.mktemp("equation_pack_main_viewport")
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "julia", "--width", "320", "--height", "240"
+    )
+    state_path = write_state_bundle(tmp_path / "main_viewport_state", json.loads(json.dumps(neutral_capture["state"])))
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "equation_pack_main_viewport_report.json",
+        command_path=tmp_path / "equation_pack_main_viewport_command.json",
+    ) as viewer:
+        initial_payload = viewer.wait_for_report(timeout_seconds=15.0)
+        initial_hash = initial_payload.get("rendered_frame_hash")
+        assert isinstance(initial_hash, str) and initial_hash
+
+        selected_payload = viewer.set_enum_id(
+            "fractal.view.fractal_type",
+            "generic_equation_pack",
+            expected_fractal_type="generic_equation_pack",
+            timeout_seconds=15.0,
+        )
+        viewer.wait_for_control("equation_pack.json_text", timeout_seconds=15.0)
+        viewer.wait_for_control("equation_pack.apply_json", timeout_seconds=15.0)
+        viewer.wait_for_control("equation_pack.steps.primary", timeout_seconds=15.0)
+        selected_hash = selected_payload.get("rendered_frame_hash")
+        assert isinstance(selected_hash, str) and selected_hash
+
+        edited_payload = viewer.set_control_value("equation_pack.steps.primary", 12.0, timeout_seconds=15.0)
+        edited_hash = edited_payload.get("rendered_frame_hash")
+        assert isinstance(edited_hash, str) and edited_hash
+
+        return {
+            "initial_payload": initial_payload,
+            "selected_payload": selected_payload,
+            "edited_payload": edited_payload,
+            "initial_hash": initial_hash,
+            "selected_hash": selected_hash,
+            "edited_hash": edited_hash,
+            "launch_count": viewer.launch_count,
+        }
+
+
+def test_equation_pack_main_viewport_selector_and_left_panel_no_mouse(
+    equation_pack_main_viewport_proof: dict[str, Any],
+) -> None:
+    selected_payload = equation_pack_main_viewport_proof["selected_payload"]
+    edited_payload = equation_pack_main_viewport_proof["edited_payload"]
+
+    assert selected_payload.get("current_fractal_type") == "generic_equation_pack"
+    assert selected_payload.get("rendered_frame_ready") is True
+    assert equation_pack_main_viewport_proof["selected_hash"] != equation_pack_main_viewport_proof["initial_hash"]
+    assert edited_payload.get("set_value_consumed") is True
+    assert equation_pack_main_viewport_proof["edited_hash"] != equation_pack_main_viewport_proof["selected_hash"]
+    assert equation_pack_main_viewport_proof["launch_count"] == 1

@@ -34,6 +34,7 @@
             { "id": "mcmullen", "label": "McMullen", "group": "Escape-Time" },
             { "id": "lambda", "label": "Lambda", "group": "Escape-Time" },
             { "id": "magnet", "label": "Magnet Type I", "group": "Escape-Time" },
+            { "id": "generic_equation_pack", "label": "Equation Pack", "group": "Generic" },
             { "id": "explaino_all", "label": "Explaino-all", "group": "Explaino" },
             { "id": "explaino_y", "label": "Explaino Y", "group": "Explaino" },
             { "id": "explaino_fp", "label": "Explaino FP", "group": "Explaino" },

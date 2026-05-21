@@ -771,6 +771,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
         fractalType == FractalType::multicorn || fractalType == FractalType::collatz ||
         fractalType == FractalType::mcmullen || fractalType == FractalType::lambda_map ||
         fractalType == FractalType::magnet ||
+        fractalType == FractalType::generic_equation_pack ||
         fractalType == FractalType::explaino_lambda ||
         fractalType == FractalType::explaino_rational_escape ||
         fractalType == FractalType::spider ||

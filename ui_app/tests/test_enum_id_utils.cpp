@@ -87,6 +87,10 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_FractalTypeMagnetLookup");
     Check(TryParseFractalTypeId("magnet", &fractalType) && fractalType == FractalType::magnet,
         "TestConcreteEnumIdWrappers_FractalTypeMagnetParse");
+    Check(std::string_view(FractalTypeId(FractalType::generic_equation_pack)) == "generic_equation_pack",
+        "TestConcreteEnumIdWrappers_FractalTypeGenericEquationPackLookup");
+    Check(TryParseFractalTypeId("generic_equation_pack", &fractalType) && fractalType == FractalType::generic_equation_pack,
+        "TestConcreteEnumIdWrappers_FractalTypeGenericEquationPackParse");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,
         "TestConcreteEnumIdWrappers_FractalTypeParseAlias");
 
