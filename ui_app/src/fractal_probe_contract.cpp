@@ -765,17 +765,54 @@ bool ParseFractalProbeRequestFromValue(const json_min::Value& value,
             }
             const json_min::Object& funcObj = funcIt->second.as_object();
             if (!RejectUnknownKeys(funcObj,
-                    {"expression", "params", "epsilon", "escape_radius"},
+                    {"expression", "ast", "iterate", "params", "epsilon", "escape_radius"},
                     "function",
                     outError)) return false;
             request.has_function = true;
 
             auto exprIt = funcObj.find("expression");
-            if (exprIt == funcObj.end() || !exprIt->second.is_string()) {
-                if (outError) *outError = "function.expression must be a string";
+            auto astIt = funcObj.find("ast");
+            if (exprIt != funcObj.end() && astIt != funcObj.end()) {
+                if (outError) *outError = "function must provide expression or ast, not both";
                 return false;
             }
-            request.generic_expression = exprIt->second.as_string();
+            if (exprIt != funcObj.end()) {
+                if (!exprIt->second.is_string()) {
+                    if (outError) *outError = "function.expression must be a string";
+                    return false;
+                }
+                request.generic_expression = exprIt->second.as_string();
+            } else if (astIt != funcObj.end()) {
+                if (!astIt->second.is_object()) {
+                    if (outError) *outError = "function.ast must be an object";
+                    return false;
+                }
+                request.has_generic_ast = true;
+                request.generic_ast = astIt->second;
+            } else {
+                if (outError) *outError = "function must provide expression or ast";
+                return false;
+            }
+
+            auto iterateIt = funcObj.find("iterate");
+            if (iterateIt != funcObj.end()) {
+                if (!request.has_generic_ast) {
+                    if (outError) *outError = "function.iterate is only valid with function.ast";
+                    return false;
+                }
+                if (!iterateIt->second.is_object()) {
+                    if (outError) *outError = "function.iterate must be an object";
+                    return false;
+                }
+                const json_min::Object& iterateObj = iterateIt->second.as_object();
+                if (!RejectUnknownKeys(iterateObj, {"count_param"}, "function.iterate", outError)) return false;
+                auto countIt = iterateObj.find("count_param");
+                if (countIt == iterateObj.end() || !countIt->second.is_string()) {
+                    if (outError) *outError = "function.iterate.count_param must be a string";
+                    return false;
+                }
+                request.generic_iterate_count_param = countIt->second.as_string();
+            }
 
             auto paramsIt = funcObj.find("params");
             if (paramsIt != funcObj.end()) {

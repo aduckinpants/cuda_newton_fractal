@@ -11,6 +11,7 @@ If you need the short version: `generic.sample` lets you send a complex-valued e
 
 - `fractal.sample` samples one of the shipped fractal families through the existing viewer binding vocabulary.
 - `generic.sample` samples a request-supplied complex expression.
+- AST equation packs are a v1 workbench contract that lowers JSON directly to `GenericFunctionDesc` and then runs through `generic.sample`.
 - `--describe-functions` tells you which callable ids ship today.
 - `--sample-request-*` and `--sample-session` are transports, not new math surfaces.
 - `--explore-recommend` is an Explaino-only advisor mode, not a dynamic function surface.
@@ -141,6 +142,35 @@ Supported higher-level helpers:
 
 - `iterate(body, count)` where `count` is an integer literal or a bare scalar param name
 - `compose(f, g)`
+
+## AST Equation Packs
+
+Equation packs use `schema_version: 1` and put the execution authority in
+`formula.ast`, not in `function.expression`.
+
+Supported pack fields:
+
+- `pack_id` and `name`
+- `formula.kind`: `direct` or `iterate_map`
+- `formula.ast`: AST nodes that map to the current `GFNodeOp` surface
+- `formula.iteration_param`: required when `formula.kind` is `iterate_map`
+- `params`, `controls`, `epsilon`, `escape_radius`, and optional `region`
+
+Supported AST ops:
+
+- leaves: `var_z`, `var_z_conj`, `const`, `param`, `complex_param`
+- binary: `add`, `sub`, `mul`, `div`, `compose`
+- unary: `neg`, `conj`, `abs`, `sin`, `cos`, `exp`, `log`
+- powers: `pow_int`, `pow_real`
+
+The workbench runner emits normal `generic.sample` requests with
+`function.ast`, optional `function.iterate.count_param`, and `function.params`.
+It writes `pack.json`, `request.json`, `response.json`, `gallery_manifest.json`,
+and PNG frames using the existing generic sampler gallery.
+
+V1 does not add a new `FractalType`, does not edit `RenderFractalCUDA`, does not
+register dynamic CUDA kernels, and does not implement Salticid `sample_fn`
+lowering. Those are separate later slices.
 
 ## High-Level Request Recipe
 

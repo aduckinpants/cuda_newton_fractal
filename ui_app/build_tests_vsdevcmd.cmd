@@ -58,6 +58,8 @@ if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_vie
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
+if /I "%FOCUSED_TEST%"=="test_generic_equation_pack" goto focused_test_generic_equation_pack
+if /I "%FOCUSED_TEST%"=="test_generic_probe" goto focused_test_generic_probe
 if not "%FOCUSED_TEST%"=="" (
   echo [build_tests_vsdevcmd] Unknown focused test target "%FOCUSED_TEST%"
   exit /b 1
@@ -307,28 +309,28 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_fractal_probe.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_fractal_probe.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_fractal_sample_pipeline.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_fractal_sample_pipeline.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_fractal_probe_coverage.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_fractal_probe_coverage.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp .\src\flashlight_probe.cpp .\src\runtime_walk.cpp .\src\lens_sdf.cpp .\src\headless_modes.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp .\src\flashlight_probe.cpp .\src\runtime_walk.cpp .\src\lens_sdf.cpp .\src\headless_modes.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_headless_modes.cpp .\tests\test_flashlight_render_stub.cpp .\tests\test_flashlight_capture_stub.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_headless_modes.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
@@ -392,7 +394,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_fractal_probe_runner.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_fractal_probe_runner.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
@@ -411,7 +413,7 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_function_descriptor.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_function_descriptor.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
@@ -478,20 +480,55 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_explaino_sidecar_schema_contract.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_explaino_sidecar_schema_contract.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp .\src\safe_mode_schema.cpp .\src\schema_startup_policy.cpp .\src\viewer_schema_load.cpp .\src\explaino_sidecar_model.cpp .\src\explaino_sidecar_measurement.cpp .\src\explaino_sidecar_budget.cpp .\src\explaino_sidecar_lens.cpp .\src\explaino_sidecar_energy.cpp .\src\explaino_sidecar_action.cpp .\src\explaino_sidecar_trace.cpp .\src\explaino_sidecar_controller.cpp .\src\explaino_sidecar_divergence.cpp .\src\explaino_sidecar_completeness.cpp .\src\explaino_sidecar_window.cpp .\src\explaino_exploration_advisor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_explaino_exploration_advisor.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_explaino_exploration_advisor.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
 if errorlevel 1 exit /b 1
 
 goto full_test_run
+
+:focused_test_generic_equation_pack
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\tests\test_generic_equation_pack.cpp ^
+  /Fe:"%TESTROOT%\test_generic_equation_pack.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
+
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_sample_core.cu .\tests\test_generic_equation_pack_cuda.cu ^
+  -o "%TESTROOT%\test_generic_equation_pack_cuda.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_equation_pack_cuda.exe" || exit /b 1
+exit /b 0
+
+:focused_test_generic_probe
+set GENERIC_SAMPLE_CORE_OBJ=%TESTROOT%\generic_sample_core_runner.obj
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  -c .\src\generic_sample_core.cu -o "%GENERIC_SAMPLE_CORE_OBJ%"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_generic_probe.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
+  /Fe:"%TESTROOT%\test_generic_probe.exe" ^
+  /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_generic_probe.exe" || exit /b 1
+exit /b 0
 
 :focused_test_viewer_ui_automation_report
 cl /nologo /EHsc /MD /std:c++17 /O2 /D COLOR_PIPELINE_WINDOW_NO_IMGUI /I. /I.\src ^
@@ -934,6 +971,13 @@ if errorlevel 1 exit /b 1
 
 call :run_test "%TESTROOT%\test_generic_function_math.exe" || exit /b 1
 
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\tests\test_generic_equation_pack.cpp ^
+  /Fe:"%TESTROOT%\test_generic_equation_pack.exe"
+if errorlevel 1 exit /b 1
+
+call :run_test "%TESTROOT%\test_generic_equation_pack.exe" || exit /b 1
+
 nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
   -Xcompiler "/EHsc /MD" ^
@@ -964,6 +1008,16 @@ if errorlevel 1 exit /b 1
 
 call :run_test "%TESTROOT%\test_generic_sample_parity.exe" || exit /b 1
 
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\json_min.cpp .\src\generic_equation_pack.cpp .\src\generic_sample_core.cu .\tests\test_generic_equation_pack_cuda.cu ^
+  -o "%TESTROOT%\test_generic_equation_pack_cuda.exe"
+if errorlevel 1 exit /b 1
+
+call :run_test "%TESTROOT%\test_generic_equation_pack_cuda.exe" || exit /b 1
+
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
   .\tests\test_generic_function_parser.cpp ^
   /Fe:"%TESTROOT%\test_generic_function_parser.exe"
@@ -972,7 +1026,7 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_generic_function_parser.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_callable_engine_adversarial.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_callable_engine_adversarial.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib
@@ -981,7 +1035,7 @@ if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_callable_engine_adversarial.exe" || exit /b 1
 
 cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
-  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\function_descriptor.cpp ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\src\runtime_reset.cpp .\src\diagnostics_state_io.cpp .\src\finding_state_actions.cpp .\src\fractal_probe_contract.cpp .\src\fractal_probe_runner.cpp .\src\generic_equation_pack.cpp .\src\function_descriptor.cpp ^
   .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp .\tests\test_generic_probe.cpp "%GENERIC_SAMPLE_CORE_OBJ%" ^
   /Fe:"%TESTROOT%\test_generic_probe.exe" ^
   /link /LIBPATH:"%CUDA_PATH%\lib\x64" cudart.lib cuda.lib

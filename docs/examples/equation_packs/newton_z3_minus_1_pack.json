@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "pack_id": "newton_z3_minus_1",
+  "name": "Newton z^3 - 1",
+  "formula": {
+    "kind": "iterate_map",
+    "iteration_param": "steps",
+    "ast": {
+      "op": "sub",
+      "args": [
+        {"op": "var_z"},
+        {
+          "op": "div",
+          "args": [
+            {
+              "op": "sub",
+              "args": [
+                {"op": "pow_int", "base": {"op": "var_z"}, "exponent": 3},
+                {"op": "const", "value": 1.0}
+              ]
+            },
+            {
+              "op": "mul",
+              "args": [
+                {"op": "const", "value": 3.0},
+                {"op": "pow_int", "base": {"op": "var_z"}, "exponent": 2}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "params": {
+    "steps": 48.0
+  },
+  "controls": [
+    {"id": "steps", "param": "steps", "label": "Steps", "min": 1.0, "max": 200.0, "step": 1.0, "default": 48.0}
+  ],
+  "epsilon": 1e-10,
+  "escape_radius": 1000.0,
+  "region": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "span_x": 3.0,
+    "span_y": 3.0,
+    "grid_width": 256,
+    "grid_height": 256
+  }
+}

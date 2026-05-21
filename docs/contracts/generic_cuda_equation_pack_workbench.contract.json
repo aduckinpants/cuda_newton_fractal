@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "contract_id": "generic_cuda_equation_pack_workbench",
+  "feature_id": "generic_cuda_equation_pack_workbench_v1",
+  "workflow_type": "cli_first",
+  "plan_path": "docs/notes/generic_cuda_equation_pack_workbench_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "docs/examples",
+    "docs/callable_engine_dynamic_function_cheatsheet.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tools/reality_toolkit/fractal_explorer",
+    "tools/reality_toolkit/scripts",
+    "tests",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "implement the AST-defined equation-pack workbench vertical",
+    "treat AST JSON as the pack source of truth",
+    "lower packs deterministically into GenericFunctionDesc",
+    "prove Generic CUDA execution through SampleGenericFunction or the generic.sample CUDA backend",
+    "provide a no-mouse workbench runner that writes request, response, manifest, and PNG artifacts",
+    "preserve existing generic.sample, function descriptor, Color Pipeline, and no-mouse harness behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "add a new FractalType in this slice",
+    "edit RenderFractalCUDA or claim live viewport custom-renderer support",
+    "register or load dynamic CUDA kernels from request data",
+    "make raw expression text the equation-pack authority",
+    "use physical mouse automation as proof",
+    "mutate Color Pipeline product behavior",
+    "claim Salticid sample_fn or pipeline syntax is implemented in this slice"
+  ],
+  "required_defaults": {
+    "branch": "codex/engine-architecture-review",
+    "pack_schema_version": 1,
+    "pack_authority": "ast_json",
+    "execution_surface": "generic.sample_and_SampleGenericFunction",
+    "cuda_proof_required": true,
+    "live_viewport_renderer_integration": "deferred",
+    "dynamic_kernel_registration": "deferred",
+    "salticid_sample_fn_adapter": "deferred",
+    "no_physical_mouse_tests": true
+  },
+  "forbidden_defaults": {
+    "renderer_rewrite": "forbidden",
+    "new_fractal_type": "forbidden",
+    "raw_expression_authority": "forbidden",
+    "color_pipeline_mutation": "forbidden",
+    "viewer_relaunch_proof_loop": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/generic_cuda_equation_pack_workbench_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_workbench.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_workbench_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_workbench_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_workbench_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_workbench_native_final --log artifacts/logs/generic_cuda_equation_pack_workbench_native_final.log -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_workbench_runtime_publish_final_candidate --log artifacts/logs/generic_cuda_equation_pack_workbench_runtime_publish_final_candidate.log -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_generic_probe_cli.py tests/test_generic_equation_pack_workbench.py -q --junitxml artifacts/pytest/generic_cuda_equation_pack_workbench_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "generic_cuda_equation_pack_contract_schema_valid",
+      "description": "The equation-pack workbench contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_workbench_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_plan_sync_ok",
+      "description": "The equation-pack phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_workbench_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_runtime_ast_cuda_backend",
+      "description": "Published runtime accepts a pack-derived AST generic.sample request and reports the CUDA backend",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/generic_cuda_equation_pack_workbench_runtime.junit.xml",
+      "test_nodeid": "tests/test_generic_probe_cli.py::test_generic_sample_ast_pack_request_uses_cuda_backend"
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_workbench_outputs",
+      "description": "The workbench runner writes request, response, gallery manifest, and PNG output without live viewer automation",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/generic_cuda_equation_pack_workbench_runtime.junit.xml",
+      "test_nodeid": "tests/test_generic_equation_pack_workbench.py::test_workbench_writes_pack_request_response_manifest_and_png"
+    }
+  ]
+}

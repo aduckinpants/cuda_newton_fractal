@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "pack_id": "quadratic_mandelbrot_like",
+  "name": "Quadratic Mandelbrot-Like Fixed Map",
+  "formula": {
+    "kind": "iterate_map",
+    "iteration_param": "steps",
+    "ast": {
+      "op": "add",
+      "args": [
+        {"op": "pow_int", "base": {"op": "var_z"}, "exponent": 2},
+        {"op": "complex_param", "name": "c"}
+      ]
+    }
+  },
+  "params": {
+    "steps": 80.0,
+    "c_real": -0.75,
+    "c_imag": 0.1
+  },
+  "controls": [
+    {"id": "steps", "param": "steps", "label": "Steps", "min": 1.0, "max": 300.0, "step": 1.0, "default": 80.0},
+    {"id": "c_real", "param": "c_real", "label": "C Real", "min": -2.0, "max": 1.0, "step": 0.01, "default": -0.75},
+    {"id": "c_imag", "param": "c_imag", "label": "C Imag", "min": -1.5, "max": 1.5, "step": 0.01, "default": 0.1}
+  ],
+  "epsilon": 1e-9,
+  "escape_radius": 4.0,
+  "region": {
+    "center_x": 0.0,
+    "center_y": 0.0,
+    "span_x": 3.0,
+    "span_y": 3.0,
+    "grid_width": 256,
+    "grid_height": 256
+  }
+}

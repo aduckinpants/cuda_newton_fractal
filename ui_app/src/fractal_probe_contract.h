@@ -143,6 +143,9 @@ struct FractalProbeRequest {
     // Generic function fields (used when function_id == "generic.sample").
     bool has_function{false};
     std::string generic_expression;
+    bool has_generic_ast{false};
+    json_min::Value generic_ast;
+    std::string generic_iterate_count_param;
     std::map<std::string, double> generic_params;
     double generic_epsilon{1e-6};
     double generic_escape_radius{1000.0};

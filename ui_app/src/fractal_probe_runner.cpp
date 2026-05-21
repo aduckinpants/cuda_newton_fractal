@@ -21,6 +21,7 @@
 #include "generic_function_types.h"
 #include "generic_function_cpu_eval.h"
 #include "generic_sample_core.h"
+#include "generic_equation_pack.h"
 
 #include <algorithm>
 #include <chrono>
@@ -1976,8 +1977,8 @@ bool ResolveGenericSampleBackend(const FractalProbeRequest& request,
 bool PrepareGenericSampleRequest(const FractalProbeRequest& request,
     GenericSamplePreparedRequest* outPrepared,
     std::string* outError) {
-    if (!request.has_function || request.generic_expression.empty()) {
-        if (outError) *outError = "generic.sample requires a 'function' block with 'expression'";
+    if (!request.has_function || (request.generic_expression.empty() && !request.has_generic_ast)) {
+        if (outError) *outError = "generic.sample requires a 'function' block with 'expression' or 'ast'";
         return false;
     }
     if (request.has_sequence && request.sequence.mode == FractalProbeSequenceMode::variant_crossfade) {
@@ -2011,6 +2012,40 @@ bool PrepareGenericSampleRequest(const FractalProbeRequest& request,
     prepared.epsilon = request.generic_epsilon;
     prepared.escape_radius = request.generic_escape_radius;
     *outPrepared = std::move(prepared);
+    return true;
+}
+
+bool LowerGenericSampleFunctionForStep(
+    const FractalProbeRequest& request,
+    const std::map<std::string, double>& stepParams,
+    GenericFunctionDesc* outDesc,
+    std::string* outError) {
+    if (!outDesc) {
+        if (outError) *outError = "LowerGenericSampleFunctionForStep requires outDesc";
+        return false;
+    }
+
+    if (request.has_generic_ast) {
+        GenericEquationLowerResult lowered = request.generic_iterate_count_param.empty()
+            ? LowerGenericEquationAstToDesc(request.generic_ast, stepParams)
+            : LowerGenericEquationAstToDesc(request.generic_ast, stepParams, request.generic_iterate_count_param);
+        if (!lowered.ok) {
+            if (outError) *outError = "AST lower error: " + lowered.error;
+            return false;
+        }
+        *outDesc = lowered.desc;
+        return true;
+    }
+
+    GFParseResult parsed = ParseGenericFunctionExpression(request.generic_expression, stepParams);
+    if (!parsed.ok) {
+        if (outError) {
+            *outError = "Expression parse error: " + parsed.error +
+                " (pos " + std::to_string(parsed.error_pos) + ")";
+        }
+        return false;
+    }
+    *outDesc = parsed.desc;
     return true;
 }
 
@@ -2228,10 +2263,8 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
             request.generic_params,
             prepared.sequence_variants[sequenceIndex]);
 
-        // Parse expression with this step's params.
-        GFParseResult pr = ParseGenericFunctionExpression(request.generic_expression, stepParams);
-        if (!pr.ok) {
-            if (outError) *outError = "Expression parse error: " + pr.error + " (pos " + std::to_string(pr.error_pos) + ")";
+        GenericFunctionDesc desc{};
+        if (!LowerGenericSampleFunctionForStep(request, stepParams, &desc, outError)) {
             return false;
         }
 
@@ -2240,7 +2273,7 @@ bool RunGenericSampleRequest(const FractalProbeRequest& request,
 
         std::vector<GenericSampleResult> batchResults;
         std::string backendError;
-        if (!RunGenericSampleBatchEvaluation(pr.desc,
+        if (!RunGenericSampleBatchEvaluation(desc,
                 prepared.base_points,
                 backend,
                 eps,

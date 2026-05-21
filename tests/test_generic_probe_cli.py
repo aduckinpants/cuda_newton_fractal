@@ -451,6 +451,94 @@ def test_generic_sample_backend_preference_cpu_and_cuda() -> None:
     assert default_response["runtime"]["backend_used"] == "cpu"
 
 
+def test_generic_sample_ast_pack_request_uses_cuda_backend() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-ast-pack-cuda",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "cuda"},
+        "function": {
+            "ast": {
+                "op": "sub",
+                "args": [
+                    {"op": "var_z"},
+                    {
+                        "op": "div",
+                        "args": [
+                            {
+                                "op": "sub",
+                                "args": [
+                                    {"op": "pow_int", "base": {"op": "var_z"}, "exponent": 3},
+                                    {"op": "const", "value": 1.0},
+                                ],
+                            },
+                            {
+                                "op": "mul",
+                                "args": [
+                                    {"op": "const", "value": 3.0},
+                                    {"op": "pow_int", "base": {"op": "var_z"}, "exponent": 2},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            "iterate": {"count_param": "steps"},
+            "params": {"steps": 40.0},
+            "epsilon": 1e-10,
+            "escape_radius": 1000.0,
+        },
+        "points": [{"x": 1.1, "y": 0.05}],
+        "metrics": ["iterations", "status", "value", "abs2"],
+    }
+
+    response = _run_probe(request)
+    assert response["ok"] is True
+    assert response["runtime"]["backend_used"] == "cuda"
+    sample = response["samples"][0]
+    assert sample["status"] == "converged"
+    assert sample["value_x"] == pytest.approx(1.0, abs=1e-3)
+    assert sample["value_y"] == pytest.approx(0.0, abs=1e-3)
+
+
+def test_generic_sample_malformed_ast_fails_without_expression_fallback() -> None:
+    if sys.platform != "win32":
+        pytest.skip("probe CLI runtime regression is Windows-only")
+
+    request = {
+        "request_version": 1,
+        "request_id": "generic-ast-bad-op",
+        "function_id": "generic.sample",
+        "mode": "point_set",
+        "execution": {"backend_preference": "cuda"},
+        "function": {
+            "ast": {"op": "not_a_real_op"},
+            "params": {},
+        },
+        "points": [{"x": 1.0, "y": 0.0}],
+        "metrics": ["value"],
+    }
+
+    exe_path = active_runtime_exe()
+    result = subprocess.run(
+        [str(exe_path), "--sample-request-stdin", "--sample-response-stdout"],
+        cwd=str(RUNTIME_DIR),
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    response = json.loads(result.stdout)
+    assert response["ok"] is False
+    assert "AST lower error" in response["error"]
+    assert "unsupported AST op" in response["error"]
+
+
 # -- Error cases --
 
 
