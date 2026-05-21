@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-control slice are implemented and proven, while Collatz controls, fixed-family variants, Explaino rational escape, generated/internal editor refactors, perturbation zoom, and broader backend/refactor projects remain deferred.
+Phase 11 is closed: the parameter API hardening pass repaired the McMullen state/display/runtime authority mismatch, added descriptor artifact read-back proof, preserved the Phase 9/10 descriptor and direct-control baseline, and kept Collatz controls, fixed-family variants, Explaino rational escape, generated/internal editors, perturbation zoom, Color Pipeline product mutation, and broader backend/refactor projects deferred.
 
 ## Explicit User Asks
 
@@ -23,6 +23,7 @@ Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-contro
 - [x] Repair or explicitly classify every original all-44 gap found by the generated rails while preserving Color Pipeline, Explaino-all, smooth-escape performance, and the no-relaunch harness constraint.
 - [x] Work down only future-slice item 1, the descriptor/export guardrail, and item 2, McMullen direct controls.
 - [x] Defer Collatz controls, fixed-family variants, Explaino rational escape, generated/internal editors, perturbation zoom, and larger refactor projects.
+- [x] Run another hostile review and harden the parameter API until the system can honestly claim visible controls, descriptor output, state IO, and runtime authority agree.
 
 ## Phase Checklist
 
@@ -57,6 +58,10 @@ Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-contro
   - [x] Batch P - add RED native/schema/formula/runtime tests for McMullen direct `m`, `n`, and `lambda` authority.
   - [x] Batch Q - implement McMullen preset/custom authority, direct controls, state IO/capture, formula routing, and no-mouse persistent runtime proof.
   - [x] Batch R - focused native, full native, runtime publish, persistent no-relaunch UI proof, hostile audit, and stale-plan validation are complete for Phase 9/10.
+- [x] Phase 11 - parameter API hostile-review hardening.
+  - [x] Batch S - add RED hardening tests for McMullen preset/custom state authority mismatch and descriptor artifact read-back.
+  - [x] Batch T - implement the narrowest state-authority and descriptor-readback repairs without changing fractal behavior.
+  - [x] Batch U - run focused native, full native, runtime publish, persistent no-relaunch UI proof, code-quality, contract proof, hostile audit, receipts, push, and stale-plan validation.
 
 ## Proof Ledger
 
@@ -231,12 +236,28 @@ Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-contro
 - Phase 9/10 full native green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_full_native --log artifacts/logs/phase9_10_full_native.log -- ui_app/build_tests_vsdevcmd.cmd`; log ended with `All helper tests passed`.
 - Phase 9/10 runtime publish green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_runtime_publish --log artifacts/logs/phase9_10_runtime_publish.log -- ui_app/build_vsdevcmd.cmd`.
 - Phase 9/10 focused live UI proof green: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -k mcmullen_direct_controls_change_live_frame_in_one_process -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase9_10_mcmullen.junit.xml` (`1 passed, 4 deselected`).
+- Phase 11 starting head: `1f63837`.
+- Phase 11 named gap: a non-custom McMullen preset state can preserve conflicting direct `m`, `n`, and `lambda` fields, so visible direct values can disagree with the runtime preset authority; the descriptor export also needs read-back proof before it is used as a durable API artifact.
+- Phase 11 RED target: native state IO and descriptor tests must fail until non-custom McMullen state load overwrites conflicting direct fields from the preset, custom state preserves direct fields, and the descriptor artifact is parsed/read back with expected top-level fields.
+- Phase 11 RED proof: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_state_io_red --log artifacts/logs/phase11_parameter_api_state_io_red.log -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io` failed with `Expected non-custom McMullen preset state to seed direct fields from preset authority`.
+- Phase 11 implementation: `diagnostics_state_io.cpp` now seeds `mcmullen_m`, `mcmullen_n`, and `mcmullen_lambda` from `ResolveMcMullenPresetConfig(...)` whenever `mcmullen_preset` is non-custom, while custom state keeps direct authority.
+- Phase 11 descriptor hardening: `test_schema_binding` now closes, reads back, parses, and validates the all-44 descriptor artifact's top-level `ok`, `fractal_count`, and `mcmullen_direct_control_count` fields.
+- Phase 11 focused state IO green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_state_io_green --log artifacts/logs/phase11_parameter_api_state_io_green.log -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io`.
+- Phase 11 focused native green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_native --log artifacts/logs/phase11_parameter_api_native.log -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner`.
+- Phase 11 descriptor read-back artifact: `artifacts/analysis/phase9_10_all44_control_surface_descriptor.json` reports `ok=true`, `fractal_count=44`, and `mcmullen_direct_control_count=3` after the read-back rail.
+- Phase 11 contract proof green: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase11.junit.xml` (`23 passed`).
+- Phase 11 code-quality green: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/phase11_parameter_api_code_quality.json` (score 97/100).
+- Phase 11 contract validation green: `artifacts/validation/fractal_parameter_surface_matrix_contract_phase11.json`.
+- Phase 11 plan sync green: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
+- Phase 11 full native green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_full_native --log artifacts/logs/phase11_parameter_api_full_native.log -- ui_app/build_tests_vsdevcmd.cmd`; log ended with `All helper tests passed`.
+- Phase 11 runtime publish green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_runtime_publish --log artifacts/logs/phase11_parameter_api_runtime_publish.log -- ui_app/build_vsdevcmd.cmd`; active runtime `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Phase 11 persistent no-relaunch runtime proof green: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -k mcmullen_direct_controls_change_live_frame_in_one_process -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase11_mcmullen.junit.xml` (`1 passed, 4 deselected`).
 
 
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume the descriptor is a stale subset, every new McMullen slider is decorative, preset/custom ownership is ambiguous, and runtime proof is only chrome-state noise until native and published-runtime evidence disprove it.
+- Required posture: assume the parameter API is still lying wherever visible state, descriptor output, state IO, and runtime formula authority can disagree. For Phase 11 specifically, assume non-custom McMullen state can display stale direct values, descriptor export can be malformed or stale, runtime proof can be only chrome-state noise, and deferred-work boundaries can silently reopen until native and published-runtime evidence disprove it.
 
 ## Audit Passes
 
@@ -292,6 +313,10 @@ Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-contro
 - [x] Phase 10 pass 1 - proved McMullen direct controls are visible/bound and runtime-authoritative, not just stored fields.
 - [x] Phase 10 pass 2 - proved preset/custom authority is unambiguous and does not leave visible dead controls.
 - [x] Phase 10 pass 3 - proved no-mouse persistent runtime output changes for `m`, `n`, and `lambda`, with focused native Color Pipeline/schema rails and no Explaino-all scope mutation.
+- [x] Phase 11 pass 1 - inspected state IO and formula authority; found that non-custom preset loads could preserve conflicting direct McMullen display fields even though runtime preset authority ignored them.
+- [x] Phase 11 pass 2 - inspected descriptor/export proof; found the descriptor artifact was written but not read back and parsed before being treated as durable API evidence.
+- [x] Phase 11 pass 3 - reran focused native, full native, runtime publish, persistent no-relaunch runtime proof, code-quality, contract validation, plan sync, and contract proof after the repair.
+- [x] Phase 11 clean re-read - confirmed the repaired state keeps custom direct authority, non-custom preset authority, all-44 descriptor read-back, no physical mouse proof, no default legacy relaunching runtime-walk viewer dependency, and no deferred-scope expansion.
 
 ## Audit Findings
 
@@ -318,24 +343,27 @@ Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-contro
 - [x] Phase 9 finding repaired: descriptor/export guardrail now writes `phase9_10_all44_control_surface_descriptor.json` from the native schema-binding all-44 authority and contract tests forbid selected-subset closeout.
 - [x] Phase 10 finding repaired: McMullen direct `m`, `n`, and `lambda` controls are visible, bound, state-backed, and runtime-authoritative through custom mode without broad formula redesign.
 - [x] Phase 9 audit finding repaired: descriptor helper was initially inserted but not called by the inventory rail; hostile review caught the missing artifact, the call was wired, and the focused native rerun produced the descriptor.
+- [x] Phase 11 finding repaired: McMullen non-custom preset state no longer preserves conflicting direct `m`, `n`, and `lambda` display values; load now reseeds those fields from preset authority, and custom state still preserves direct fields.
+- [x] Phase 11 finding repaired: descriptor/export proof now parses the generated artifact after writing it and verifies expected top-level fields before using it as API evidence.
+- [x] Phase 11 clean pass: no additional real defect found after re-reading state IO, descriptor export, contract boundaries, and runtime proof surfaces.
 
 ## Action Hostile Review
 
-- Action ID: phase9_10_descriptor_export_mcmullen_direct_controls
-- Suspected Failure Mode: later parameter-surface work can again prove only a subset, and McMullen can gain visible controls that store values without driving the formula.
-- Correct Owner/Action: implement descriptor/export guardrail first, then McMullen direct controls with explicit preset/custom authority, no physical mouse proof, and no legacy relaunching runtime-walk viewer dependency.
-- Proof Surface: native descriptor/schema rail, contract-proof pytest, `test_schema_binding`, `test_escape_time_specialized_formulas`, diagnostics state IO, persistent no-relaunch runtime pytest, full native, runtime publish, plan sync, hostile-audit validation, and contract proof receipts.
+- Action ID: phase11_parameter_api_hardening
+- Suspected Failure Mode: the parameter API can look fixed while a loaded state shows direct McMullen values that the runtime ignores under a non-custom preset, or while the all-44 descriptor artifact is trusted without proving it is valid/readable.
+- Correct Owner/Action: harden state IO so non-custom presets seed the visible direct fields from preset authority, preserve custom direct authority, and require descriptor artifact read-back in the native schema rail.
+- Proof Surface: native descriptor/schema rail, diagnostics state IO tests, contract-proof pytest, persistent no-relaunch runtime pytest, full native, runtime publish, plan sync, hostile-audit validation, and contract proof receipts.
 - Blocked Action: no Collatz controls, no fixed-family variants, no Explaino rational expansion, no generated/internal editor refactor, no perturbation zoom, no Color Pipeline product mutation, and no renderer rewrite.
 
 ## Boundaries
 
-In scope for Phase 9/10:
-- descriptor/export guardrail for the all-44 fractal control surface
-- McMullen direct `m`, `n`, and `lambda` controls with unambiguous preset/custom authority
-- native/schema/formula/state/runtime tests needed to prove those two items
-- preserving the no-mouse persistent runtime harness, Color Pipeline guardrails, Explaino-all guardrails, and closed Phase 8 all-44 cleanup
+In scope for Phase 11:
+- hostile-review hardening for the existing parameter API
+- McMullen state-load consistency so preset authority and visible direct fields cannot disagree
+- descriptor artifact read-back proof for the all-44 schema/C++ export
+- preserving the no-mouse persistent runtime harness, Color Pipeline guardrails, Explaino-all guardrails, and closed Phase 8-10 cleanup
 
-Out of scope for Phase 9/10:
+Out of scope for Phase 11:
 - Collatz controls
 - fixed-family variants
 - Explaino rational escape exploration

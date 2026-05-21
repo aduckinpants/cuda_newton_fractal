@@ -2423,7 +2423,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         }
         nextParams.mcmullen_lambda = static_cast<float>(mcmullenLambda);
     }
-    if (!hasMcMullenM && !hasMcMullenN && !hasMcMullenLambda && nextParams.mcmullen_preset != McMullenPreset::custom) {
+    if (nextParams.mcmullen_preset != McMullenPreset::custom) {
         const McMullenPresetConfig config = ResolveMcMullenPresetConfig(nextParams.mcmullen_preset);
         nextParams.mcmullen_m = config.m;
         nextParams.mcmullen_n = config.n;

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contract_id": "fractal_parameter_surface_matrix",
-  "feature_id": "fractal_parameter_surface_matrix_phase9_descriptor_phase10_mcmullen",
+  "feature_id": "fractal_parameter_surface_matrix_phase11_parameter_api_hardening",
   "workflow_type": "viewer_first",
   "plan_path": "docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md",
   "allowed_mutation_scope": [
@@ -49,24 +49,26 @@
     "ui_app/tests/test_diagnostics_state_io.cpp"
   ],
   "required_operator_inputs": [
-    "work down the first two documented future exposure slices only: descriptor/export guardrail and McMullen direct controls",
-    "generate a deterministic all-44 fractal control-surface descriptor from the existing native schema-binding authority, not hand-maintained subsets",
-    "add McMullen direct m, n, and lambda controls with an unambiguous preset/custom authority rule",
-    "prove McMullen direct controls through native schema/binding/formula tests and no-mouse persistent runtime proof",
-    "defer Collatz controls, fixed-family variants, Explaino rational escape, generated/internal editors, perturbation zoom, and broader backend refactors"
+    "run another hostile review and harden the parameter API without widening into deferred fractal work",
+    "keep the all-44 descriptor/export guardrail and McMullen direct controls from Phase 9/10 intact",
+    "make McMullen state-load authority unambiguous so non-custom presets cannot preserve conflicting direct m, n, and lambda display values",
+    "add descriptor artifact read-back proof so the generated all-44 control-surface descriptor is valid JSON and contains the expected authority fields",
+    "prove the persistent no-mouse runtime path still changes the live frame for McMullen direct controls while deferring Collatz, fixed-family variants, Explaino rational escape, generated/internal editors, perturbation zoom, and broader backend refactors"
   ],
   "forbidden_operator_prompts": [
+    "claim the parameter API is fixed while a visible control can display a value that runtime authority ignores",
     "claim descriptor coverage from a hardcoded Python subset instead of checked-in schema/C++ authority",
     "add Collatz, fixed-family, Explaino rational escape, generated/internal editor, perturbation, or broad engine work in this slice",
     "use physical mouse automation as proof",
     "use the legacy relaunching runtime-walk viewer module as default proof",
-    "leave McMullen direct controls visible but not runtime-authoritative",
+    "leave McMullen direct controls visible but not runtime-authoritative in custom mode",
+    "leave non-custom McMullen preset state with stale conflicting direct values",
     "mutate the Color Pipeline except to preserve existing guardrails",
     "claim closure from a selected subset instead of the all-44 descriptor/schema authority"
   ],
   "required_defaults": {
     "branch": "codex/fractal-parameter-surface-matrix",
-    "phase": "phase9_descriptor_export_phase10_mcmullen_direct_controls",
+    "phase": "phase11_parameter_api_hardening",
     "hostile_audit": "required",
     "no_physical_mouse_tests": true,
     "code_quality_guard": "required",
@@ -79,10 +81,14 @@
     "descriptor_export": "required_all44_schema_cpp_derived",
     "mcmullen_direct_controls": "required",
     "mcmullen_custom_authority_rule": "required",
-    "defer_remaining_future_slices": true
+    "defer_remaining_future_slices": true,
+    "parameter_api_hardening": "required",
+    "mcmullen_state_authority_consistency": "required",
+    "descriptor_artifact_readback": "required",
+    "phase9_10_descriptor_and_mcmullen_baseline": "preserved"
   },
   "forbidden_defaults": {
-    "feature_expansion": "forbidden_except_bounded_descriptor_guardrail_and_mcmullen_direct_controls",
+    "feature_expansion": "forbidden_except_phase11_parameter_api_hardening",
     "renderer_rewrite": "forbidden",
     "color_pipeline_mutation": "forbidden",
     "claim_all_items_done": "forbidden",
@@ -93,57 +99,58 @@
     "fixed_family_variants": "deferred",
     "explaino_rational_escape_expansion": "deferred",
     "generated_internal_editor_refactor": "deferred",
-    "perturbation_zoom": "deferred"
+    "perturbation_zoom": "deferred",
+    "state_display_runtime_authority_mismatch": "forbidden"
   },
   "required_validation_commands": [
-    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/phase9_10_code_quality.json",
-    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract_phase9_10.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/phase11_parameter_api_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_parameter_surface_matrix.contract.json --out-json artifacts/validation/fractal_parameter_surface_matrix_contract_phase11.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit_phase9_10.json",
-    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase9_10.junit.xml",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_native_schema_mcmullen --log artifacts/logs/phase9_10_native_schema_mcmullen.log -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_full_native --log artifacts/logs/phase9_10_full_native.log -- ui_app/build_tests_vsdevcmd.cmd",
-    "py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_runtime_publish --log artifacts/logs/phase9_10_runtime_publish.log -- ui_app/build_vsdevcmd.cmd",
-    "py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -k mcmullen_direct_controls_change_live_frame_in_one_process -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase9_10_mcmullen.junit.xml"
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_parameter_surface_matrix_PHASED_PLAN.md --out-json artifacts/validation/fractal_parameter_surface_matrix_hostile_audit_phase11.json",
+    "py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase11.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_native --log artifacts/logs/phase11_parameter_api_native.log -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_full_native --log artifacts/logs/phase11_parameter_api_full_native.log -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label phase11_parameter_api_runtime_publish --log artifacts/logs/phase11_parameter_api_runtime_publish.log -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -k mcmullen_direct_controls_change_live_frame_in_one_process -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase11_mcmullen.junit.xml"
   ],
   "required_acceptance_assertions": [
     {
-      "assertion_id": "fractal_parameter_surface_matrix_contract_schema_valid_phase9_10",
-      "description": "The Phase 9/10 parameter-surface contract validates successfully",
+      "assertion_id": "fractal_parameter_surface_matrix_contract_schema_valid_phase11",
+      "description": "The Phase 11 parameter API hardening contract validates successfully",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_contract_phase9_10.json",
+      "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_contract_phase11.json",
       "json_path": "checks.contract_schema_valid",
       "equals": true
     },
     {
-      "assertion_id": "fractal_parameter_surface_matrix_plan_sync_ok_phase9_10",
-      "description": "The active phased plan stays synchronized for Phase 9/10",
+      "assertion_id": "fractal_parameter_surface_matrix_plan_sync_ok_phase11",
+      "description": "The active phased plan stays synchronized for Phase 11",
       "evidence_kind": "validator_json",
       "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
       "json_path": "ok",
       "equals": true
     },
     {
-      "assertion_id": "fractal_parameter_surface_matrix_hostile_audit_ok_phase9_10",
-      "description": "The hostile-audit validator passes before Phase 9/10 closure",
+      "assertion_id": "fractal_parameter_surface_matrix_hostile_audit_ok_phase11",
+      "description": "The hostile-audit validator passes before Phase 11 closure",
       "evidence_kind": "validator_json",
-      "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_hostile_audit_phase9_10.json",
+      "artifact_path": "artifacts/validation/fractal_parameter_surface_matrix_hostile_audit_phase11.json",
       "json_path": "ok",
       "equals": true
     },
     {
-      "assertion_id": "fractal_parameter_surface_mcmullen_direct_runtime_proof",
-      "description": "Persistent no-relaunch runtime proof shows McMullen m, n, and lambda controls alter rendered output",
+      "assertion_id": "fractal_parameter_surface_mcmullen_direct_runtime_proof_phase11",
+      "description": "Persistent no-relaunch runtime proof still shows McMullen m, n, and lambda controls alter rendered output after hardening",
       "evidence_kind": "runtime_junit_case",
-      "artifact_path": "artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase9_10_mcmullen.junit.xml",
+      "artifact_path": "artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase11_mcmullen.junit.xml",
       "test_nodeid": "tests/test_fractal_runtime_persistent_viewer_harness.py::test_mcmullen_direct_controls_change_live_frame_in_one_process"
     },
     {
-      "assertion_id": "fractal_parameter_surface_contract_phase9_10_guard",
-      "description": "The active contract requires descriptor export and McMullen direct controls while deferring later future slices",
+      "assertion_id": "fractal_parameter_surface_contract_phase11_guard",
+      "description": "The active contract requires parameter API hardening, McMullen state authority consistency, descriptor read-back, and preservation of deferred-work boundaries",
       "evidence_kind": "pytest_junit_case",
-      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase9_10.junit.xml",
-      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_requires_phase9_10_descriptor_and_mcmullen_scope"
+      "artifact_path": "artifacts/pytest/test_viewer_host_contract_proof_phase11.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_contract_proof.py::test_fractal_parameter_surface_contract_requires_phase11_parameter_api_hardening"
     }
   ]
 }

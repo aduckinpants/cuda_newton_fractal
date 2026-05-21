@@ -760,6 +760,11 @@ bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaR
     }
     out << "\n  ],\n  \"visible_family_control_cells\": " << visibleControlCells
         << ",\n  \"mcmullen_direct_control_count\": " << mcmullenDirectControlCount << "\n}\n";
+    out.close();
+    if (!out) {
+        std::cerr << "Descriptor export failed while writing " << outPath.string() << "\n";
+        return false;
+    }
 
     if (laneCount != kExpectedFractalCount) {
         std::cerr << "Descriptor export did not visit all 44 fractal lanes\n";
@@ -771,6 +776,28 @@ bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaR
     }
     if (mcmullenDirectControlCount != 3) {
         std::cerr << "Descriptor export expected McMullen m/n/lambda direct controls, found " << mcmullenDirectControlCount << "\n";
+        return false;
+    }
+
+    std::string descriptorText;
+    if (!ReadTextFile(outPath, &descriptorText)) {
+        std::cerr << "Descriptor export could not read back " << outPath.string() << "\n";
+        return false;
+    }
+    json_min::ParseResult parsedDescriptor = json_min::Parse(descriptorText);
+    if (!parsedDescriptor.error.empty()) {
+        std::cerr << "Descriptor export wrote malformed JSON: " << parsedDescriptor.error << "\n";
+        return false;
+    }
+    const json_min::Value* okValue = parsedDescriptor.value.get("ok");
+    double parsedFractalCount = 0.0;
+    double parsedMcMullenDirectCount = 0.0;
+    if (!okValue || !okValue->is_bool() || !okValue->as_bool() ||
+        !GetJsonNumberField(parsedDescriptor.value, "fractal_count", &parsedFractalCount) ||
+        !NearlyEqual(parsedFractalCount, static_cast<double>(kExpectedFractalCount)) ||
+        !GetJsonNumberField(parsedDescriptor.value, "mcmullen_direct_control_count", &parsedMcMullenDirectCount) ||
+        !NearlyEqual(parsedMcMullenDirectCount, 3.0)) {
+        std::cerr << "Descriptor export read-back did not preserve expected top-level authority fields\n";
         return false;
     }
     return true;

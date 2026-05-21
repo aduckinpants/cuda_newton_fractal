@@ -3299,6 +3299,32 @@ int main() {
       }
 
       {
+        const fs::path statePath = tempRoot / "valid_mcmullen_preset_overrides_conflicting_direct_state.json";
+        WriteMinimalStateWithExtraParams(
+          statePath,
+          "    \"mcmullen_preset\": \"z4_z2\",\n"
+          "    \"mcmullen_m\": 8,\n"
+          "    \"mcmullen_n\": 8,\n"
+          "    \"mcmullen_lambda\": 0.9");
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+          std::cerr << "Expected preset McMullen state with legacy direct fields to load: " << error << "\n";
+          return 1;
+        }
+        if (params.mcmullen_preset != McMullenPreset::z4_z2 ||
+            params.mcmullen_m != 4 ||
+            params.mcmullen_n != 2 ||
+            std::fabs(params.mcmullen_lambda + 0.05f) > 1.0e-6f) {
+          std::cerr << "Expected non-custom McMullen preset state to seed direct fields from preset authority\n";
+          return 1;
+        }
+      }
+
+      {
         const fs::path statePath = tempRoot / "bad_mcmullen_preset_type_state.json";
         WriteMinimalStateWithExtraParams(statePath, "    \"mcmullen_preset\": 7");
 
