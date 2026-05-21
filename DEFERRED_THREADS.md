@@ -170,9 +170,39 @@ Key references:
 - ui_app/src/headless_modes.h
 - tests/test_fractal_runtime_session.py
 
-## 8. Current Pause Point
+## 8. Generic CUDA Equation Pack Feature Vertical
 
-## 9. Explaino Replay Proof Expansion Follow-On
+Status: paused on 2026-05-21 after merge/pause documentation
+
+Why paused:
+- The first usable vertical is now shipped: v1 AST packs, native parser/lowerer, workbench scaffolding, normal `generic_equation_pack` dropdown lane, left Controls JSON/control flow, `SampleGenericFunction` main-viewport bridge, no-mouse automation, and Color Pipeline-backed viewport coloring.
+- The next work is productization and integration depth, not more quick scaffolding.
+- The user wants to switch to small viewer QoL items before resuming this feature line.
+
+Current safe state:
+- equation-pack formulas execute through the existing Generic CUDA evaluator path
+- generic equation-pack main viewport color routes through existing Color Pipeline helpers
+- runtime proof uses persistent no-mouse automation, not physical cursor tests
+- dynamic CUDA kernel registration and Salticid `sample_fn` lowering are not shipped
+
+Resume constraints:
+- read `docs/notes/generic_cuda_equation_pack_PAUSE_README.md` first
+- do persistence before catalog UX if the next slice needs saved user packs
+- do not describe dynamic kernel registration, Salticid lowering, or shared-CUDA ABI integration as already done
+- keep detached workbench scaffolding subordinate to the normal dropdown and left Controls product flow
+- keep Color Pipeline ownership intact for any viewport-visible coloring changes
+
+Key references:
+- docs/notes/generic_cuda_equation_pack_PAUSE_README.md
+- docs/notes/generic_cuda_equation_pack_color_pipeline_PHASED_PLAN.md
+- ui_app/src/generic_equation_pack.cpp
+- ui_app/src/generic_equation_pack_live.cpp
+- ui_app/src/generic_equation_pack_workbench.cpp
+- tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py
+
+## 9. Current Pause Point
+
+## 10. Explaino Replay Proof Expansion Follow-On
 
 Status: deferred on 2026-04-13
 

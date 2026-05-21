@@ -34,6 +34,13 @@ cmd /s /c build_vsdevcmd.cmd
 D:\salt-fractal\cuda_newton_fractal_clone\smoke\newton_fractal.exe --width 1024 --height 1024
 ```
 
+
+## Current Pause Point - Generic CUDA Equation Packs
+
+Generic CUDA equation packs are now paused after the first usable viewer vertical. The shipped path is a normal `generic_equation_pack` fractal dropdown lane with left Controls JSON/pack controls, `SampleGenericFunction` execution, no-mouse automation proof, and Color Pipeline-backed viewport coloring.
+
+The feature is intentionally not complete. Persistence, a curated pack catalog, Salticid `sample_fn` lowering, shared-CUDA/mainline ABI work, and dynamic kernel registration are deferred. See [Generic CUDA Equation Pack - Pause README](docs/notes/generic_cuda_equation_pack_PAUSE_README.md) before resuming that line of work.
+
 ## Repository Layout
 
 | Path | Purpose |
@@ -56,6 +63,7 @@ D:\salt-fractal\cuda_newton_fractal_clone\smoke\newton_fractal.exe --width 1024 
 | [HANDOFF_LOG.md](HANDOFF_LOG.md) | Agent-continuity audit trail — append-only session log |
 | [spec_intake/_STATUS.md](spec_intake/_STATUS.md) | Spec index: implemented / deferred / research |
 | [docs/callable_engine_surface.md](docs/callable_engine_surface.md) | Current reference for callable headless functions, transports, and advisor/report mode |
+| [docs/notes/generic_cuda_equation_pack_PAUSE_README.md](docs/notes/generic_cuda_equation_pack_PAUSE_README.md) | Current pause point for the Generic CUDA equation-pack viewer vertical |
 
 ## Fractal Types (27 advertised)
 
