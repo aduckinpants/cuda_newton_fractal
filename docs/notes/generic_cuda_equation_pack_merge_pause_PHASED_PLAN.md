@@ -28,7 +28,8 @@ Phase 5 complete - the validated Generic CUDA equation-pack branch has a durable
 - Contract validation: complete. `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_merge_pause.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_merge_pause_contract.json` passed.
 - Plan sync: complete. `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed for the dirty merge/pause plan.
 - Whitespace proof: complete. `git diff --check` passed.
-- Hostile audit proof: pending final validator rerun after this plan update.
+- Hostile audit proof: complete. `py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_merge_pause_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_merge_pause_hostile_audit.json` passed.
+- Receipt contract correction: complete. The first receipt attempt proved `git diff --check` and `git status --short --branch` are not parseable contract-proof commands, so they were removed from `required_validation_commands` and kept as plan/final proof instead.
 - Merge proof: completed by final git fast-forward and push commands after the checkpoint commit; the final session closeout records the exact branch/head/clean-tree state.
 
 ## Hostile Audit
@@ -45,10 +46,11 @@ Phase 5 complete - the validated Generic CUDA equation-pack branch has a durable
 
 - [x] Pass 1 - found a workflow defect: the first merge/pause contract used an invalid workflow type and lacked required `forbidden_defaults`; repaired the contract before locking the slice.
 - [x] Pass 2 - found documentation defects: the first pause README mangled the published-runtime Windows path and `DEFERRED_THREADS.md` had duplicate section numbering; repaired both before validation.
-- [x] Pass 3 - clean re-read of the repaired README/deferred/contract/plan surfaces found no additional real issue before checkpoint validation.
+- [x] Pass 3 - found a contract-proof issue: raw git status/diff commands were not parseable receipt evidence; repaired the contract and re-ran validation.
 
 ## Audit Findings
 
 - [x] Real workflow defect: the initial merge/pause contract was invalid (`documentation_merge` workflow type, missing `forbidden_defaults`, and missing pause README target at lock time); it was repaired to a valid `workflow_only` contract and then locked.
 - [x] Real documentation defect: the first pause README rendered the runtime path incorrectly because backslashes were interpreted as escapes, and the deferred-thread insertion duplicated section numbers; both were repaired.
+- [x] Real receipt-proof defect: the first receipt attempt could write the validation receipt but failed contract proof because raw git status/diff commands were listed as required validation commands without parseable artifacts; the contract was corrected.
 - [x] Clean re-read: after those repairs, no additional real issue found in the pause README, root README link, deferred-thread pause entry, contract, or plan text.

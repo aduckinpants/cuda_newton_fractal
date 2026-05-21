@@ -38,9 +38,7 @@
   "required_validation_commands": [
     "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_merge_pause.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_merge_pause_contract.json",
     "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
-    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_merge_pause_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_merge_pause_hostile_audit.json",
-    "git diff --check",
-    "git status --short --branch"
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_merge_pause_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_merge_pause_hostile_audit.json"
   ],
   "required_acceptance_assertions": [
     {
