@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "contract_id": "generic_cuda_equation_pack_controls_report_reset",
+  "feature_id": "generic_cuda_equation_pack_controls_report_reset_v1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/generic_cuda_equation_pack_controls_report_reset_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "ui_app/build_vsdevcmd.cmd",
+    "tests",
+    "HANDOFF_LOG.md"
+  ],
+  "required_operator_inputs": [
+    "harden the Generic CUDA equation-pack workbench control surface",
+    "publish loaded pack controls and current values in the in-process automation report",
+    "add an in-process reset-to-defaults path for visible pack controls",
+    "prove control edit and reset through one persistent no-mouse viewer process",
+    "preserve AST JSON pack authority, Generic CUDA execution, existing workbench runner behavior, Color Pipeline behavior, and the live enum renderer boundary"
+  ],
+  "forbidden_operator_prompts": [
+    "add a new FractalType in this slice",
+    "edit RenderFractalCUDA or claim live viewport renderer integration for custom packs",
+    "register or load dynamic CUDA kernels from request data",
+    "make raw expression text the pack execution authority",
+    "use physical mouse automation as proof",
+    "mutate Color Pipeline product behavior",
+    "claim Salticid sample_fn or pipeline syntax is implemented in this slice"
+  ],
+  "required_defaults": {
+    "branch": "codex/engine-architecture-review",
+    "pack_schema_version": 1,
+    "pack_authority": "ast_json",
+    "interactive_surface": "viewer_equation_pack_workbench_controls_report_reset",
+    "execution_surface": "SampleGenericFunction",
+    "control_report_source": "loaded_pack_controls_and_workbench_params",
+    "reset_surface": "in_process_ui_automation_click",
+    "live_viewport_renderer_integration": "deferred",
+    "dynamic_kernel_registration": "deferred",
+    "salticid_sample_fn_adapter": "deferred",
+    "no_physical_mouse_tests": true
+  },
+  "forbidden_defaults": {
+    "renderer_rewrite": "forbidden",
+    "new_fractal_type": "forbidden",
+    "raw_expression_authority": "forbidden",
+    "color_pipeline_product_mutation": "forbidden",
+    "viewer_relaunch_proof_loop": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/logs/generic_cuda_equation_pack_controls_report_reset_code_quality.json",
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/generic_cuda_equation_pack_controls_report_reset.contract.json --out-json artifacts/validation/generic_cuda_equation_pack_controls_report_reset_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/generic_cuda_equation_pack_controls_report_reset_PHASED_PLAN.md --out-json artifacts/validation/generic_cuda_equation_pack_controls_report_reset_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_controls_report_reset_native_final --log artifacts/logs/generic_cuda_equation_pack_controls_report_reset_native_final.log -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label generic_cuda_equation_pack_controls_report_reset_runtime_publish_final --log artifacts/logs/generic_cuda_equation_pack_controls_report_reset_runtime_publish_final.log -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py -q --junitxml artifacts/pytest/generic_cuda_equation_pack_controls_report_reset_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "generic_cuda_equation_pack_controls_report_reset_contract_schema_valid",
+      "description": "The controls-report/reset contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_controls_report_reset_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_controls_report_reset_plan_sync_ok",
+      "description": "The controls-report/reset phased plan stays synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_controls_report_reset_hostile_audit_ok",
+      "description": "The hostile-audit validator passes before closure",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/generic_cuda_equation_pack_controls_report_reset_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "generic_cuda_equation_pack_controls_report_reset_runtime_no_mouse",
+      "description": "Published viewer automation reports pack controls, edits a visible value, resets defaults, and keeps one persistent viewer process",
+      "evidence_kind": "runtime_junit_case",
+      "artifact_path": "artifacts/pytest/generic_cuda_equation_pack_controls_report_reset_runtime.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py::test_equation_pack_workbench_reports_controls_and_reset_defaults_no_mouse"
+    }
+  ]
+}

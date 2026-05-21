@@ -506,6 +506,34 @@ class PersistentRuntimeViewerAutomation:
             time.sleep(0.05)
         raise AssertionError(f"persistent viewer never consumed enum command {self.sequence} for {path}={enum_id}; last_payload={last_payload!r}")
 
+    def click_control(self, control_id: str, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+        self.sequence += 1
+        command = {
+            "sequence": self.sequence,
+            "click_control_id": control_id,
+        }
+        self.command_path.write_text(json.dumps(command, indent=2), encoding="utf-8")
+        deadline = time.monotonic() + timeout_seconds
+        last_payload: dict[str, Any] | None = None
+        while time.monotonic() < deadline:
+            if self.proc is not None and self.proc.poll() is not None:
+                raise AssertionError(f"viewer exited while waiting for click command {self.sequence}; returncode={self.proc.returncode}")
+            payload = self._load_report()
+            if payload is None:
+                time.sleep(0.05)
+                continue
+            last_payload = payload
+            if payload.get("ui_automation_command_sequence") != self.sequence:
+                time.sleep(0.05)
+                continue
+            if payload.get("requested_click_control_id") != control_id:
+                time.sleep(0.05)
+                continue
+            if payload.get("click_consumed") is True and payload.get("rendered_frame_ready") is True:
+                return payload
+            time.sleep(0.05)
+        raise AssertionError(f"persistent viewer never consumed click command {self.sequence} for {control_id}; last_payload={last_payload!r}")
+
     def set_control_value(self, control_id: str, value: float, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
         self.sequence += 1
         command = {

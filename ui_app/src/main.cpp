@@ -1514,8 +1514,10 @@ static void ArmUiAutomationSetValue(ColorPipelineWindowState& colorPipelineWindo
 
 static void ArmUiAutomationClick(ColorPipelineWindowState& colorPipelineWindow,
                                  const std::string& controlId) {
-    colorPipelineWindow.open = true;
-    colorPipelineWindow.force_open_for_automation = true;
+    if (controlId.rfind("color_pipeline.", 0) == 0) {
+        colorPipelineWindow.open = true;
+        colorPipelineWindow.force_open_for_automation = true;
+    }
     colorPipelineWindow.ui_automation_click_control_id = controlId;
     colorPipelineWindow.ui_automation_click_pending = true;
     colorPipelineWindow.ui_automation_click_consumed = false;
@@ -1561,15 +1563,19 @@ static void InitializeEquationPackWorkbenchFromCli(
     const bool wantsSetValue =
         cli.have_ui_automation_set_control_value &&
         GenericEquationPackWorkbenchWantsSetValueControl(cli.ui_automation_set_control_id);
+    const bool wantsClick =
+        cli.have_ui_automation_click_control_id &&
+        GenericEquationPackWorkbenchWantsClickControl(cli.ui_automation_click_control_id);
     const bool shouldOpen = cli.open_equation_pack_workbench_on_startup ||
         cli.have_equation_pack_workbench_pack_json ||
-        wantsSetValue;
+        wantsSetValue ||
+        wantsClick;
     if (!shouldOpen) {
         return;
     }
 
     equationPackWorkbench.open = true;
-    equationPackWorkbench.force_open_for_automation = wantsSetValue || cli.have_ui_automation_report_json;
+    equationPackWorkbench.force_open_for_automation = wantsSetValue || wantsClick || cli.have_ui_automation_report_json;
     const std::string packPath = cli.have_equation_pack_workbench_pack_json
         ? cli.equation_pack_workbench_pack_json_path
         : ResolveDefaultEquationPackPath(exeDir);
@@ -1599,12 +1605,16 @@ static void OpenEquationPackWorkbenchWithDefault(
     LoadGenericEquationPackWorkbenchPack(&equationPackWorkbench, packPath, &error);
 }
 
-static void OpenEquationPackWorkbenchForPendingSetValue(
+static void OpenEquationPackWorkbenchForPendingAutomation(
     const ColorPipelineWindowState& colorPipelineWindow,
     GenericEquationPackWorkbenchState& equationPackWorkbench) {
-    if (!colorPipelineWindow.ui_automation_set_pending ||
-        colorPipelineWindow.ui_automation_set_control_id.empty() ||
-        !GenericEquationPackWorkbenchWantsSetValueControl(colorPipelineWindow.ui_automation_set_control_id)) {
+    const bool wantsSetValue = colorPipelineWindow.ui_automation_set_pending &&
+        !colorPipelineWindow.ui_automation_set_control_id.empty() &&
+        GenericEquationPackWorkbenchWantsSetValueControl(colorPipelineWindow.ui_automation_set_control_id);
+    const bool wantsClick = colorPipelineWindow.ui_automation_click_pending &&
+        !colorPipelineWindow.ui_automation_click_control_id.empty() &&
+        GenericEquationPackWorkbenchWantsClickControl(colorPipelineWindow.ui_automation_click_control_id);
+    if (!wantsSetValue && !wantsClick) {
         return;
     }
     equationPackWorkbench.open = true;
@@ -2630,7 +2640,7 @@ static void RunViewerFrame(
         lastPolyKind,
         lastFractalType,
         dirty);
-    OpenEquationPackWorkbenchForPendingSetValue(colorPipelineWindow, equationPackWorkbench);
+    OpenEquationPackWorkbenchForPendingAutomation(colorPipelineWindow, equationPackWorkbench);
 
     if (!runtimeWalkViewerSession.loaded) {
         ApplySweepPlaybackPerFrame(cli.sweep_config, io.DeltaTime, sweepPaused, sweepSingleStep, sweepState, view, params, dirty);
@@ -2726,10 +2736,17 @@ static void RunViewerFrame(
             equationPackSetValue.consumed = &colorPipelineWindow.ui_automation_set_consumed;
             equationPackSetValue.error = &colorPipelineWindow.ui_automation_set_error;
         }
+        GenericEquationPackWorkbenchClickAutomation equationPackClick;
+        if (colorPipelineWindow.ui_automation_click_pending &&
+            GenericEquationPackWorkbenchWantsClickControl(colorPipelineWindow.ui_automation_click_control_id)) {
+            equationPackClick.control_id = &colorPipelineWindow.ui_automation_click_control_id;
+            equationPackClick.consumed = &colorPipelineWindow.ui_automation_click_consumed;
+        }
         RenderGenericEquationPackWorkbench(
             &equationPackWorkbench,
             &viewerUiAutomationRects,
             &equationPackSetValue,
+            &equationPackClick,
             &actions.interactionChanged);
     }
     FailClosedPendingUiAutomationSetValue(viewerUiAutomationRects, colorPipelineWindow);

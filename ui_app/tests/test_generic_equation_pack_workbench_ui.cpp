@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 static int g_passed = 0;
 static int g_failed = 0;
@@ -15,6 +16,18 @@ static void Check(bool condition, const char* message) {
         ++g_failed;
         std::printf("  FAIL: %s\n", message);
     }
+}
+
+
+static const GenericEquationPackWorkbenchControlReport* FindReportControl(
+    const GenericEquationPackWorkbenchAutomationReport& report,
+    const std::string& controlId) {
+    for (const GenericEquationPackWorkbenchControlReport& control : report.controls) {
+        if (control.control_id == controlId) {
+            return &control;
+        }
+    }
+    return nullptr;
 }
 
 static const char* kInteractivePack = R"json({
@@ -99,6 +112,66 @@ static void TestPackControlsAreSchemaDrivenAndEditable() {
     Check(error.find("unknown") != std::string::npos, "unknown control error is descriptive");
 }
 
+static void TestAutomationReportPublishesControlInventory() {
+    GenericEquationPackWorkbenchState state{};
+    std::string error;
+    Check(LoadGenericEquationPackWorkbenchJson(&state, kInteractivePack, "memory://interactive", &error),
+        "pack JSON loads before report inventory");
+    GenericEquationPackWorkbenchAutomationReport report = BuildGenericEquationPackWorkbenchAutomationReport(state);
+    Check(report.pack_load_error.empty(), "successful report keeps pack load error empty");
+    Check(report.controls.size() == 2, "automation report publishes loaded pack control inventory");
+
+    const GenericEquationPackWorkbenchControlReport* steps = FindReportControl(report, "equation_pack.steps.primary");
+    Check(steps != nullptr, "steps control appears in report");
+    if (steps) {
+        Check(steps->id == "steps", "steps report keeps pack control id");
+        Check(steps->param == "steps", "steps report keeps bound param");
+        Check(steps->label == "Steps", "steps report keeps label");
+        Check(std::fabs(steps->value - 12.0) < 1e-12, "steps report publishes current value");
+        Check(steps->has_min && std::fabs(steps->min_value - 1.0) < 1e-12, "steps report publishes min");
+        Check(steps->has_max && std::fabs(steps->max_value - 80.0) < 1e-12, "steps report publishes max");
+        Check(steps->has_step && std::fabs(steps->step_value - 1.0) < 1e-12, "steps report publishes step");
+        Check(steps->has_default_value && std::fabs(steps->default_value - 12.0) < 1e-12, "steps report publishes default");
+    }
+
+    Check(SetGenericEquationPackWorkbenchControlValue(&state, "equation_pack.c_real.primary", 0.5, &error),
+        "control edit succeeds before report value check");
+    report = BuildGenericEquationPackWorkbenchAutomationReport(state);
+    const GenericEquationPackWorkbenchControlReport* cReal = FindReportControl(report, "equation_pack.c_real.primary");
+    Check(cReal != nullptr, "c_real control appears in report");
+    if (cReal) {
+        Check(cReal->param == "c_real", "c_real report keeps bound param");
+        Check(cReal->label == "C Real", "c_real report keeps label");
+        Check(std::fabs(cReal->value - 0.5) < 1e-12, "c_real report reflects edited current value");
+        Check(cReal->has_default_value && std::fabs(cReal->default_value + 0.75) < 1e-12,
+            "c_real report publishes default value");
+    }
+}
+
+static void TestResetControlsRestoresDefaultsAndMarksPreviewDirty() {
+    GenericEquationPackWorkbenchState state{};
+    std::string error;
+    Check(LoadGenericEquationPackWorkbenchJson(&state, kInteractivePack, "memory://interactive", &error),
+        "pack JSON loads before reset test");
+    Check(SetGenericEquationPackWorkbenchControlValue(&state, "equation_pack.c_real.primary", 0.5, &error),
+        "control edit succeeds before reset");
+    Check(RunGenericEquationPackWorkbenchPreview(&state, &error), "preview runs before reset");
+    Check(!state.preview_dirty, "preview is clean before reset");
+
+    Check(ResetGenericEquationPackWorkbenchControlsToDefaults(&state, &error),
+        "reset-to-defaults succeeds for defaulted visible controls");
+    Check(std::fabs(state.params["steps"] - 12.0) < 1e-12, "reset restores steps default");
+    Check(std::fabs(state.params["c_real"] + 0.75) < 1e-12, "reset restores c_real default");
+    Check(state.preview_dirty, "reset marks preview dirty");
+
+    GenericEquationPackWorkbenchAutomationReport report = BuildGenericEquationPackWorkbenchAutomationReport(state);
+    const GenericEquationPackWorkbenchControlReport* cReal = FindReportControl(report, "equation_pack.c_real.primary");
+    Check(cReal != nullptr, "c_real still appears after reset");
+    if (cReal) {
+        Check(std::fabs(cReal->value + 0.75) < 1e-12, "report reflects reset current value");
+    }
+}
+
 static void TestPreviewRunsThroughSamplerAndReportChanges() {
     GenericEquationPackWorkbenchState state{};
     std::string error;
@@ -127,6 +200,8 @@ static void TestPreviewRunsThroughSamplerAndReportChanges() {
 
 int main() {
     TestPackControlsAreSchemaDrivenAndEditable();
+    TestAutomationReportPublishesControlInventory();
+    TestResetControlsRestoresDefaultsAndMarksPreviewDirty();
     TestPreviewRunsThroughSamplerAndReportChanges();
     if (g_failed != 0) {
         std::printf("test_generic_equation_pack_workbench_ui: %d failure(s)\n", g_failed);

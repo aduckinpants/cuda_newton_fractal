@@ -21,6 +21,7 @@ namespace {
 constexpr int kDefaultPreviewGridWidth = 32;
 constexpr int kDefaultPreviewGridHeight = 32;
 constexpr int kMaxPreviewGridDimension = 48;
+constexpr const char* kResetDefaultsControlId = "equation_pack.reset_defaults";
 
 std::uint64_t Fnv1aAppend(std::uint64_t hash, std::uint64_t value) {
     for (int byteIndex = 0; byteIndex < 8; ++byteIndex) {
@@ -116,6 +117,25 @@ std::string HashPreviewPixels(const std::vector<std::uint32_t>& pixels, int widt
         hash = Fnv1aAppend(hash, static_cast<std::uint64_t>(pixel));
     }
     return FormatHash(hash);
+}
+
+bool HasDefaultedControl(const GenericEquationPack& pack) {
+    for (const GenericEquationPackControl& control : pack.controls) {
+        if (control.has_default_value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+double CurrentControlValue(
+    const GenericEquationPackControl& control,
+    const std::map<std::string, double>& params) {
+    const auto valueIt = params.find(control.param);
+    if (valueIt != params.end()) {
+        return valueIt->second;
+    }
+    return control.has_default_value ? control.default_value : 0.0;
 }
 
 double ClampControlValue(const GenericEquationPackControl& control, double value) {
@@ -284,6 +304,27 @@ void NoteWorkbenchUiAutomationRect(
     automationRects->push_back(std::move(rect));
 }
 
+bool ConsumeResetClickIfRequested(
+    GenericEquationPackWorkbenchState* ioState,
+    const std::string& controlId,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation) {
+    if (!ioState ||
+        !clickAutomation ||
+        !clickAutomation->control_id ||
+        clickAutomation->control_id->empty() ||
+        (clickAutomation->consumed && *clickAutomation->consumed) ||
+        *clickAutomation->control_id != controlId) {
+        return false;
+    }
+
+    std::string error;
+    const bool applied = ResetGenericEquationPackWorkbenchControlsToDefaults(ioState, &error);
+    if (clickAutomation->consumed) {
+        *clickAutomation->consumed = applied;
+    }
+    return applied;
+}
+
 bool ConsumeSetValueIfRequested(
     GenericEquationPackWorkbenchState* ioState,
     const std::string& controlId,
@@ -372,8 +413,16 @@ std::string GenericEquationPackWorkbenchControlAutomationId(const GenericEquatio
     return std::string("equation_pack.") + control.id + ".primary";
 }
 
+std::string GenericEquationPackWorkbenchResetDefaultsAutomationId() {
+    return kResetDefaultsControlId;
+}
+
 bool GenericEquationPackWorkbenchWantsSetValueControl(const std::string& controlId) {
     return controlId.rfind("equation_pack.", 0) == 0;
+}
+
+bool GenericEquationPackWorkbenchWantsClickControl(const std::string& controlId) {
+    return controlId == kResetDefaultsControlId;
 }
 
 bool LoadGenericEquationPackWorkbenchJson(
@@ -447,6 +496,30 @@ bool SetGenericEquationPackWorkbenchControlValue(
     return true;
 }
 
+bool ResetGenericEquationPackWorkbenchControlsToDefaults(
+    GenericEquationPackWorkbenchState* ioState,
+    std::string* outError) {
+    if (!ioState || !ioState->have_pack) {
+        if (outError) *outError = "no equation pack loaded";
+        return false;
+    }
+    if (!HasDefaultedControl(ioState->pack)) {
+        if (outError) *outError = "no defaulted equation pack controls are available";
+        return false;
+    }
+
+    for (const GenericEquationPackControl& control : ioState->pack.controls) {
+        if (!control.has_default_value) {
+            continue;
+        }
+        ioState->params[control.param] = ClampControlValue(control, control.default_value);
+    }
+    ioState->pack.params = ioState->params;
+    ioState->preview_dirty = true;
+    if (outError) outError->clear();
+    return true;
+}
+
 bool RunGenericEquationPackWorkbenchPreview(
     GenericEquationPackWorkbenchState* ioState,
     std::string* outError) {
@@ -498,9 +571,28 @@ GenericEquationPackWorkbenchAutomationReport BuildGenericEquationPackWorkbenchAu
     report.force_open_for_automation = state.force_open_for_automation;
     report.have_pack = state.have_pack;
     report.pack_path = state.pack_path;
+    report.pack_load_error = state.pack_load_error;
     if (state.have_pack) {
         report.pack_id = state.pack.pack_id;
         report.pack_name = state.pack.name;
+        report.controls.reserve(state.pack.controls.size());
+        for (const GenericEquationPackControl& control : state.pack.controls) {
+            GenericEquationPackWorkbenchControlReport controlReport;
+            controlReport.control_id = GenericEquationPackWorkbenchControlAutomationId(control);
+            controlReport.id = control.id;
+            controlReport.param = control.param;
+            controlReport.label = control.label.empty() ? control.id : control.label;
+            controlReport.value = CurrentControlValue(control, state.params);
+            controlReport.has_min = control.has_min;
+            controlReport.has_max = control.has_max;
+            controlReport.has_step = control.has_step;
+            controlReport.has_default_value = control.has_default_value;
+            controlReport.min_value = control.min_value;
+            controlReport.max_value = control.max_value;
+            controlReport.step_value = control.step_value;
+            controlReport.default_value = control.default_value;
+            report.controls.push_back(std::move(controlReport));
+        }
     }
     report.preview_ok = state.last_preview.ok;
     report.preview_error = state.last_preview.error;
@@ -524,6 +616,7 @@ void RenderGenericEquationPackWorkbench(
     GenericEquationPackWorkbenchState* ioState,
     std::vector<ViewerUiAutomationRect>* automationRects,
     GenericEquationPackWorkbenchSetValueAutomation* setValueAutomation,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation,
     bool* outInteracted) {
     if (!ioState || !ioState->open) {
         return;
@@ -544,11 +637,7 @@ void RenderGenericEquationPackWorkbench(
 
         bool edited = false;
         for (const GenericEquationPackControl& control : ioState->pack.controls) {
-            double value = control.has_default_value ? control.default_value : 0.0;
-            auto valueIt = ioState->params.find(control.param);
-            if (valueIt != ioState->params.end()) {
-                value = valueIt->second;
-            }
+            const double value = CurrentControlValue(control, ioState->params);
 
             const std::string controlId = GenericEquationPackWorkbenchControlAutomationId(control);
             const std::string label = control.label.empty() ? control.id : control.label;
@@ -573,6 +662,18 @@ void RenderGenericEquationPackWorkbench(
                 }
             }
             ImGui::PopID();
+        }
+
+        const std::string resetControlId = GenericEquationPackWorkbenchResetDefaultsAutomationId();
+        if (ImGui::Button("Reset Defaults")) {
+            std::string error;
+            if (ResetGenericEquationPackWorkbenchControlsToDefaults(ioState, &error)) {
+                edited = true;
+            }
+        }
+        NoteWorkbenchUiAutomationRect(automationRects, resetControlId);
+        if (ConsumeResetClickIfRequested(ioState, resetControlId, clickAutomation)) {
+            edited = true;
         }
 
         if (edited) {

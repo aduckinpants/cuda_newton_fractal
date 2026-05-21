@@ -41,6 +41,22 @@ struct GenericEquationPackWorkbenchState {
     GenericEquationPackWorkbenchPreviewSummary last_preview;
 };
 
+struct GenericEquationPackWorkbenchControlReport {
+    std::string control_id;
+    std::string id;
+    std::string param;
+    std::string label;
+    double value = 0.0;
+    bool has_min = false;
+    bool has_max = false;
+    bool has_step = false;
+    bool has_default_value = false;
+    double min_value = 0.0;
+    double max_value = 0.0;
+    double step_value = 0.0;
+    double default_value = 0.0;
+};
+
 struct GenericEquationPackWorkbenchAutomationReport {
     bool window_open = false;
     bool initialized = false;
@@ -49,6 +65,8 @@ struct GenericEquationPackWorkbenchAutomationReport {
     std::string pack_path;
     std::string pack_id;
     std::string pack_name;
+    std::string pack_load_error;
+    std::vector<GenericEquationPackWorkbenchControlReport> controls;
     bool preview_ok = false;
     std::string preview_error;
     std::string preview_backend_used;
@@ -65,6 +83,11 @@ struct GenericEquationPackWorkbenchAutomationReport {
     std::string preview_image_hash;
 };
 
+struct GenericEquationPackWorkbenchClickAutomation {
+    const std::string* control_id = nullptr;
+    bool* consumed = nullptr;
+};
+
 struct GenericEquationPackWorkbenchSetValueAutomation {
     const std::string* control_id = nullptr;
     double value = 0.0;
@@ -73,7 +96,9 @@ struct GenericEquationPackWorkbenchSetValueAutomation {
 };
 
 std::string GenericEquationPackWorkbenchControlAutomationId(const GenericEquationPackControl& control);
+std::string GenericEquationPackWorkbenchResetDefaultsAutomationId();
 bool GenericEquationPackWorkbenchWantsSetValueControl(const std::string& controlId);
+bool GenericEquationPackWorkbenchWantsClickControl(const std::string& controlId);
 
 bool LoadGenericEquationPackWorkbenchJson(
     GenericEquationPackWorkbenchState* ioState,
@@ -92,6 +117,10 @@ bool SetGenericEquationPackWorkbenchControlValue(
     double value,
     std::string* outError);
 
+bool ResetGenericEquationPackWorkbenchControlsToDefaults(
+    GenericEquationPackWorkbenchState* ioState,
+    std::string* outError);
+
 bool RunGenericEquationPackWorkbenchPreview(
     GenericEquationPackWorkbenchState* ioState,
     std::string* outError);
@@ -104,5 +133,6 @@ void RenderGenericEquationPackWorkbench(
     GenericEquationPackWorkbenchState* ioState,
     std::vector<ViewerUiAutomationRect>* automationRects,
     GenericEquationPackWorkbenchSetValueAutomation* setValueAutomation,
+    GenericEquationPackWorkbenchClickAutomation* clickAutomation,
     bool* outInteracted);
 #endif

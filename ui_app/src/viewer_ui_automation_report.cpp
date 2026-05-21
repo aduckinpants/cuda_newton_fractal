@@ -54,6 +54,14 @@ void WriteAutomationReportString(std::ostream& out, const std::string& value) {
     out << '"' << JsonEscapeAutomationReportString(value) << '"';
 }
 
+void WriteAutomationReportOptionalDouble(std::ostream& out, bool hasValue, double value) {
+    if (!hasValue) {
+        out << "null";
+        return;
+    }
+    out << std::setprecision(12) << value;
+}
+
 ViewerUiAutomationFrameProbe BuildViewerUiAutomationFrameProbe(
     const std::vector<uint32_t>& rgba,
     const RenderedFrameState& renderedFrame) {
@@ -180,6 +188,50 @@ void WriteColorPipelineUiAutomationReport(
     out << "    \"pack_name\": ";
     WriteAutomationReportString(out, equationPack.pack_name);
     out << ",\n";
+    out << "    \"pack_load_error\": ";
+    if (equationPack.pack_load_error.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, equationPack.pack_load_error);
+    }
+    out << ",\n";
+    out << "    \"controls\": [";
+    for (std::size_t index = 0; index < equationPack.controls.size(); ++index) {
+        const GenericEquationPackWorkbenchControlReport& control = equationPack.controls[index];
+        if (index > 0) {
+            out << ',';
+        }
+        out << "\n      {\n";
+        out << "        \"control_id\": ";
+        WriteAutomationReportString(out, control.control_id);
+        out << ",\n";
+        out << "        \"id\": ";
+        WriteAutomationReportString(out, control.id);
+        out << ",\n";
+        out << "        \"param\": ";
+        WriteAutomationReportString(out, control.param);
+        out << ",\n";
+        out << "        \"label\": ";
+        WriteAutomationReportString(out, control.label);
+        out << ",\n";
+        out << "        \"value\": " << std::setprecision(12) << control.value << ",\n";
+        out << "        \"min\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_min, control.min_value);
+        out << ",\n";
+        out << "        \"max\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_max, control.max_value);
+        out << ",\n";
+        out << "        \"step\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_step, control.step_value);
+        out << ",\n";
+        out << "        \"default\": ";
+        WriteAutomationReportOptionalDouble(out, control.has_default_value, control.default_value);
+        out << "\n      }";
+    }
+    if (!equationPack.controls.empty()) {
+        out << "\n    ";
+    }
+    out << "],\n";
     out << "    \"preview_ok\": " << (equationPack.preview_ok ? "true" : "false") << ",\n";
     out << "    \"preview_error\": ";
     if (equationPack.preview_error.empty()) {
