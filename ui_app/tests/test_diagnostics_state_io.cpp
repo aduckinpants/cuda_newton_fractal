@@ -2299,6 +2299,7 @@ int main() {
     "phoenix_p_imag": 0.0,
     "multibrot_power": 3,
     "multibrot_power_float": 2.5,
+    "multibrot_power_imag": 0.75,
     "explaino_seed": 0,
     "explaino_warp_strength": 0.0,
     "explaino_root_count": 0,
@@ -2332,6 +2333,10 @@ int main() {
         }
         if (!NearlyEqual(params.multibrot_power_float, 2.5f, 1.0e-6)) {
             std::cerr << "Expected multibrot_power_float to round-trip from saved state\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.multibrot_power_imag, 0.75f, 1.0e-6)) {
+            std::cerr << "Expected multibrot_power_imag to round-trip from saved state\n";
             return 1;
         }
     }

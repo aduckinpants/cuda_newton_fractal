@@ -1920,6 +1920,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double juliaCImag = static_cast<double>(nextParams.julia_c_imag);
     int multibrotPower = 0;
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
+    double multibrotPowerImag = static_cast<double>(nextParams.multibrot_power_imag);
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
     double lambdaImag = static_cast<double>(nextParams.lambda_imag);
     double magnetSeedReal = static_cast<double>(nextParams.magnet_seed_real);
@@ -1972,6 +1973,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "julia_c_imag", &juliaCImag, nullptr, outError)) return false;
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "multibrot_power_imag", &multibrotPowerImag, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "magnet_seed_real", &magnetSeedReal, nullptr, outError)) return false;
@@ -2064,6 +2066,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.julia_c_imag = static_cast<float>(juliaCImag);
         nextParams.multibrot_power = multibrotPower;
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
+        nextParams.multibrot_power_imag = static_cast<float>(multibrotPowerImag);
         nextParams.lambda_real = static_cast<float>(lambdaReal);
         nextParams.lambda_imag = static_cast<float>(lambdaImag);
         nextParams.magnet_seed_real = static_cast<float>(magnetSeedReal);

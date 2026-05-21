@@ -920,6 +920,7 @@ bool SamplePoint(const ProbeState& state,
         const Cx juliaConst{params.julia_c_real, params.julia_c_imag};
         EscapeTimeDirectState<Cx> state = InitEscapeTimeDirectState(ft, coord, magnetSeed, juliaConst);
         const float powerFloat = params.multibrot_power_float;
+        const float powerImag = params.multibrot_power_imag;
         const int powerInt = params.multibrot_power;
         const Cx lambdaConst{params.lambda_real, params.lambda_imag};
         const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
@@ -928,7 +929,7 @@ bool SamplePoint(const ProbeState& state,
             : DirectEscapeTimeRadiusSquared<float>();
 
         for (; it < maxIter; ++it) {
-            StepEscapeTimeDirectState(ft, powerFloat, powerInt, lambdaConst, phoenixP, params.magnet_relaxation, &state);
+            StepEscapeTimeDirectState(ft, powerFloat, powerImag, powerInt, lambdaConst, phoenixP, params.magnet_relaxation, &state);
             z = state.z;
             if (!IsFiniteCx(state.z) || !IsFiniteCx(state.z_prev)) {
                 status = FractalProbeSampleStatus::nonfinite;

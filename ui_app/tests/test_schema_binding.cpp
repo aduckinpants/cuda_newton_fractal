@@ -846,6 +846,7 @@ bool ValidateVisibleControlMatrix() {
         {"lambda_real", FractalType::lambda_map, "fractal.params.lambda_real", "float"},
         {"lambda_imag", FractalType::lambda_map, "fractal.params.lambda_imag", "float"},
         {"multibrot_power_float", FractalType::multibrot, "fractal.params.multibrot_power_float", "float"},
+        {"multibrot_power_imag", FractalType::multibrot, "fractal.params.multibrot_power_imag", "float"},
         {"multicorn_power", FractalType::multicorn, "fractal.params.multibrot_power", "int"},
         {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "enum"},
         {"mcmullen_m", FractalType::mcmullen, "fractal.params.mcmullen_m", "int"},

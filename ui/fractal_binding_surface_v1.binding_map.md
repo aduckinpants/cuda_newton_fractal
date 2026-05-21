@@ -64,4 +64,6 @@ All bindings are under `fractal.*`.
 
 ## Multibrot
 
-- ractal.params.multibrot_power (int, >=2; used when ractal.view.fractal_type = multibrot)
+- `fractal.params.multibrot_power_float` -> `KernelParams.multibrot_power_float` (float real exponent; hard range [0.01, 32], normal UI range [0.01, 12], default 3.0; visible when `fractal.view.fractal_type = multibrot`)
+- `fractal.params.multibrot_power_imag` -> `KernelParams.multibrot_power_imag` (float imaginary exponent; range [-4, 4], default 0.0; visible when `fractal.view.fractal_type = multibrot`)
+- `fractal.params.multibrot_power` remains the legacy compatibility alias for the Multibrot real exponent in float binding paths and the integer power binding used by `multicorn_power` on the `multicorn` lane.

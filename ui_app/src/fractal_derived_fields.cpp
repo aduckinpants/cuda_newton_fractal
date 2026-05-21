@@ -182,6 +182,7 @@ static void MarkDirty(bool* ioDirty) {
 static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.multibrot_power = 3;
     params.multibrot_power_float = 3.0f;
+    params.multibrot_power_imag = 0.0f;
     params.lambda_real = 2.9685855f;
     params.lambda_imag = -0.27446103f;
     params.julia_c_real = -0.7f;
@@ -488,6 +489,7 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         ApplyEscapeTimePresetDefaults(view.fractal_type, params, 1200, 1.5f);
         params.multibrot_power = 2;
         params.multibrot_power_float = 2.0f;
+        params.multibrot_power_imag = 0.0f;
         break;
     case FractalType::halley:
         ApplyHalleyPresetDefaults(view.fractal_type, params);

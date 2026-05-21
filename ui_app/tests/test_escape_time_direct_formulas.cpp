@@ -109,6 +109,32 @@ int main() {
     }
 
     {
+        const Cx z{1.0f, 2.0f};
+        const Cx realPath = EscapeTimeDirectPowRealPrincipal(z, 1.5f);
+        const Cx complexZeroImagPath = EscapeTimeDirectPowComplexPrincipal(z, 1.5f, 0.0f);
+        const Cx complexImagPath = EscapeTimeDirectPowComplexPrincipal(z, 1.5f, 0.75f);
+        if (!NearlyEqualCx(realPath, complexZeroImagPath, 1.0e-5f)) {
+            std::cerr << "Multibrot complex exponent helper should preserve the existing real-power path when imaginary power is zero\n";
+            return 1;
+        }
+        if (NearlyEqualCx(realPath, complexImagPath, 1.0e-4f)) {
+            std::cerr << "Multibrot complex exponent helper should change when imaginary power is nonzero\n";
+            return 1;
+        }
+    }
+
+    {
+        EscapeTimeDirectState<Cx> realState{{1.0f, 2.0f}, {3.0f, 4.0f}, {0.0f, 0.0f}};
+        EscapeTimeDirectState<Cx> complexState = realState;
+        StepEscapeTimeDirectState(FractalType::multibrot, 1.5f, 0.0f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &realState);
+        StepEscapeTimeDirectState(FractalType::multibrot, 1.5f, 0.75f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &complexState);
+        if (NearlyEqualCx(realState.z, complexState.z, 1.0e-4f)) {
+            std::cerr << "Multibrot step should use the imaginary exponent instead of silently falling back to the old real-only power\n";
+            return 1;
+        }
+    }
+
+    {
         EscapeTimeDirectState<Cx> state{{1.0f, 2.0f}, {3.0f, 4.0f}, {5.0f, 6.0f}};
         StepEscapeTimeDirectState(FractalType::phoenix, 3.0f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &state);
         if (!NearlyEqualCx(state.z, {0.0f, 8.0f}) || !NearlyEqualCx(state.z_prev, {1.0f, 2.0f})) {

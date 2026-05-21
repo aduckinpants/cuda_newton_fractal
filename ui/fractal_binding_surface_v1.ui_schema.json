@@ -244,12 +244,23 @@
         {
           "id": "multibrot_power_float",
           "type": "slider_float",
-          "label": "Multibrot Power",
+          "label": "Multibrot Power Real",
           "value_type": "float",
-          "min": 2.0, "max": 12.0, "step": 0.01, "default": 3.0,
+          "min": 0.01, "max": 32.0, "ui_min": 0.01, "ui_max": 12.0, "step": 0.01, "default": 3.0,
+          "logarithmic": true,
           "binding": { "kind": "param", "path": "fractal.params.multibrot_power_float" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" },
-          "help": "Real exponent p in z_{n+1} = z_n^p + c using the principal branch, with 0^p defined as 0 for p > 0."
+          "help": "Real component a in z_{n+1} = z_n^(a+bi) + c using the principal branch. The slider covers 0.01..12; typed input and automation may set up to 32."
+        },
+        {
+          "id": "multibrot_power_imag",
+          "type": "slider_float",
+          "label": "Multibrot Power Imag",
+          "value_type": "float",
+          "min": -4.0, "max": 4.0, "step": 0.01, "default": 0.0,
+          "binding": { "kind": "param", "path": "fractal.params.multibrot_power_imag" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" },
+          "help": "Imaginary component b in z_{n+1} = z_n^(a+bi) + c. Zero preserves the existing real-exponent Multibrot path."
         },
         {
           "id": "multicorn_power",

@@ -315,6 +315,41 @@ UISchemaControl BuildProjectionAndFlowTargetRadiusControl() {
     return control;
 }
 
+UISchemaControl BuildMultibrotRealPowerControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "multibrot_power_float",
+        "slider_float",
+        "Multibrot Power Real",
+        "float",
+        0.01,
+        32.0,
+        0.01,
+        "fractal.params.multibrot_power_float",
+        json_min::Value{3.0});
+    control.ui_min = 0.01;
+    control.ui_max = 12.0;
+    control.has_ui_min = true;
+    control.has_ui_max = true;
+    control.logarithmic = true;
+    SetVisibleForFractalType(&control, "multibrot");
+    return control;
+}
+
+UISchemaControl BuildMultibrotImagPowerControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "multibrot_power_imag",
+        "slider_float",
+        "Multibrot Power Imag",
+        "float",
+        -4.0,
+        4.0,
+        0.01,
+        "fractal.params.multibrot_power_imag",
+        json_min::Value{0.0});
+    SetVisibleForFractalType(&control, "multibrot");
+    return control;
+}
+
 UISchemaControl BuildMagnetFloatControl(
     const char* id,
     const char* label,
@@ -452,6 +487,8 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildProjectionAndFlowRootFamilyControl(),
         BuildProjectionAndFlowTargetRadiusControl(),
         BuildProjectionAndFlowPressureThresholdControl(),
+        BuildMultibrotRealPowerControl(),
+        BuildMultibrotImagPowerControl(),
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
         BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
         BuildMagnetFloatControl("magnet_seed_real", "Magnet Seed Real", "fractal.params.magnet_seed_real", -2.0, 2.0, 0.01, 0.0),

@@ -81,6 +81,7 @@ std::vector<FractalProbeCase> AllProbeCases() {
         {"burning_ship", "burning_ship", false, true, {}},
         {"multibrot", "multibrot", false, true, {
             {"fractal.params.multibrot_power_float", FractalProbeScalar::Number(3.0)},
+            {"fractal.params.multibrot_power_imag", FractalProbeScalar::Number(0.0)},
         }},
         {"phoenix", "phoenix", false, true, {}},
         {"multicorn", "multicorn", false, true, {

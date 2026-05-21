@@ -728,6 +728,7 @@ int main() {
     "phoenix_p_imag": 0.0,
     "multibrot_power": 3,
     "multibrot_power_float": 3.0,
+    "multibrot_power_imag": 0.0,
     "lambda_real": 2.9685855,
     "lambda_imag": -0.27446103,
     "explaino_seed": 3.0,
@@ -808,6 +809,7 @@ int main() {
                 {
                     {"fractal.view.fractal_type", FractalProbeScalar::String("multibrot")},
                     {"fractal.params.multibrot_power_float", FractalProbeScalar::Number(3.0)},
+                    {"fractal.params.multibrot_power_imag", FractalProbeScalar::Number(0.0)},
                 },
             },
             {

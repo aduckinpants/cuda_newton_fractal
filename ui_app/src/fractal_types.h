@@ -374,6 +374,7 @@ struct KernelParams {
     float projection_and_flow_pressure_threshold{1.0f};
     int multibrot_power{3};
     float multibrot_power_float{3.0f};
+    float multibrot_power_imag{0.0f};
     float lambda_real{2.9685855f};
     float lambda_imag{-0.27446103f};
     float magnet_seed_real{0.0f};

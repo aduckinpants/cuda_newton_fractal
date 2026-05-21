@@ -129,9 +129,14 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     }
     if (view.fractal_type == FractalType::multibrot) {
         if (!std::isfinite(params.multibrot_power_float) ||
-            params.multibrot_power_float < 2.0f ||
-            params.multibrot_power_float > 12.0f) {
-            return FailFractalRuntimeValidation("multibrot_power_float must be finite and in [2,12]", outError);
+            params.multibrot_power_float < 0.01f ||
+            params.multibrot_power_float > 32.0f) {
+            return FailFractalRuntimeValidation("multibrot_power_float must be finite and in [0.01,32]", outError);
+        }
+        if (!std::isfinite(params.multibrot_power_imag) ||
+            params.multibrot_power_imag < -4.0f ||
+            params.multibrot_power_imag > 4.0f) {
+            return FailFractalRuntimeValidation("multibrot_power_imag must be finite and in [-4,4]", outError);
         }
     }
     if (view.fractal_type == FractalType::multicorn) {

@@ -475,6 +475,73 @@ void TestNovaRenderRespondsToPolyC4() {
     CleanupFractalCUDA();
 }
 
+KernelParams BaseMultibrotParams() {
+    KernelParams params{};
+    params.max_iter = 160;
+    params.coloring_mode = ColoringMode::smooth_escape;
+    params.color_pipeline = ColorPipelineForLegacyMode(ColoringMode::smooth_escape);
+    params.multibrot_power_float = 3.0f;
+    params.multibrot_power_imag = 0.0f;
+    return params;
+}
+
+bool RenderMultibrotPixels(
+    const KernelParams& params,
+    std::vector<uint32_t>* outPixels,
+    RenderStats* outStats,
+    const char** outError) {
+    ViewState view{};
+    RenderSettings render{};
+    view.fractal_type = FractalType::multibrot;
+    view.center_hp_x = -0.48;
+    view.center_hp_y = 0.0;
+    view.log2_zoom = 0.0;
+    render.resolution = {64, 48};
+    render.block_size = 64;
+    render.sample_tier = SampleTier::fast;
+
+    outPixels->assign(64 * 48, 0u);
+    return RenderFractalCUDA(view, params, render, outPixels->data(), nullptr, outStats, outError);
+}
+
+void CheckMultibrotControlChangesPixels(const char* label, const KernelParams& baselineParams, KernelParams changedParams) {
+    std::vector<uint32_t> baselinePixels;
+    std::vector<uint32_t> changedPixels;
+    RenderStats baselineStats{};
+    RenderStats changedStats{};
+    const char* baselineError = nullptr;
+    const char* changedError = nullptr;
+
+    const bool baselineOk = RenderMultibrotPixels(baselineParams, &baselinePixels, &baselineStats, &baselineError);
+    Check(baselineOk, baselineError ? baselineError : "Multibrot baseline smooth_escape render succeeds");
+    const bool changedOk = RenderMultibrotPixels(changedParams, &changedPixels, &changedStats, &changedError);
+    Check(changedOk, changedError ? changedError : "Multibrot changed smooth_escape render succeeds");
+    if (!baselineOk || !changedOk) {
+        CleanupFractalCUDA();
+        return;
+    }
+
+    Check(CountDistinctPixels(baselinePixels) > 1, "Multibrot render should emit a non-flat smooth_escape field");
+    Check(baselinePixels != changedPixels, label);
+    CleanupFractalCUDA();
+}
+
+void TestMultibrotRenderRespondsToRealAndImaginaryPower() {
+    const KernelParams baselineParams = BaseMultibrotParams();
+
+    KernelParams lowRealParams = baselineParams;
+    lowRealParams.multibrot_power_float = 1.5f;
+    CheckMultibrotControlChangesPixels("Multibrot render should react to a below-two real exponent", baselineParams, lowRealParams);
+
+    KernelParams highRealParams = baselineParams;
+    highRealParams.multibrot_power_float = 16.0f;
+    CheckMultibrotControlChangesPixels("Multibrot render should react to a real exponent above the old UI cap", baselineParams, highRealParams);
+
+    KernelParams imagParams = baselineParams;
+    imagParams.multibrot_power_imag = 0.75f;
+    CheckMultibrotControlChangesPixels("Multibrot render should react to a nonzero imaginary exponent", baselineParams, imagParams);
+}
+
 void TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold() {
     ViewState view{};
     KernelParams tightParams{};
@@ -533,6 +600,7 @@ int main() {
     TestMagnetRenderRespondsToVisibleControls();
     TestJuliaRenderRespondsToVisibleControls();
     TestNovaRenderRespondsToPolyC4();
+    TestMultibrotRenderRespondsToRealAndImaginaryPower();
     TestProjectionAndFlowSmoothEscapeRenderRespondsToPressureThreshold();
 
     std::cout << "test_fractal_renderer: passed=" << g_passed << " failed=" << g_failed << "\n";

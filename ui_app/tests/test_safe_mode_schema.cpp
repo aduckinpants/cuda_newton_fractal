@@ -90,6 +90,17 @@ static bool IsMagnetVisibleControl(const UISchemaControl* control, const char* b
         control->visible_if.value == "magnet";
 }
 
+static bool IsMultibrotVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "eq" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        control->visible_if.value == "multibrot";
+}
+
 static bool IsJuliaVisibleControl(const UISchemaControl* control, const char* bindingPath) {
     return control &&
         control->has_binding &&
@@ -121,7 +132,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 16,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 18,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 5,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -259,6 +270,25 @@ static void TestSafeModeSchemaExposesMagnetControls() {
     Check(IsMagnetVisibleControl(bailout, "fractal.params.magnet_bailout") && bailout->has_min && bailout->min == 2.0 && bailout->has_max && bailout->max == 64.0, "TestSafeModeSchemaExposesMagnetControls_Bailout");
 }
 
+static void TestSafeModeSchemaExposesMultibrotControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesMultibrotControls_FractalPanelPresent");
+    if (!fractalPanel) return;
+
+    const UISchemaControl* real = FindControlById(*fractalPanel, "multibrot_power_float");
+    const UISchemaControl* imag = FindControlById(*fractalPanel, "multibrot_power_imag");
+    Check(IsMultibrotVisibleControl(real, "fractal.params.multibrot_power_float") &&
+            real->has_min && real->min == 0.01 && real->has_max && real->max == 32.0 &&
+            real->has_ui_min && real->ui_min == 0.01 && real->has_ui_max && real->ui_max == 12.0 &&
+            real->logarithmic,
+        "TestSafeModeSchemaExposesMultibrotControls_Real");
+    Check(IsMultibrotVisibleControl(imag, "fractal.params.multibrot_power_imag") &&
+            imag->has_min && imag->min == -4.0 && imag->has_max && imag->max == 4.0 &&
+            imag->has_default && imag->def.is_number() && imag->def.as_number() == 0.0,
+        "TestSafeModeSchemaExposesMultibrotControls_Imag");
+}
+
 static void TestSafeModeSchemaExposesJuliaControls() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
@@ -309,6 +339,7 @@ int main() {
     TestSafeModeSchemaKeepsGroupedDefaults();
     TestSafeModeSchemaExposesCounterfactualPairControls();
     TestSafeModeSchemaExposesMagnetControls();
+    TestSafeModeSchemaExposesMultibrotControls();
     TestSafeModeSchemaExposesJuliaControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
 

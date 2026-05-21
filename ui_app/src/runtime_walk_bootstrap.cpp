@@ -654,6 +654,7 @@ std::string BuildSynthesizedStateJson(const ViewState& view, const KernelParams&
     js << "    \"julia_c_imag\": " << static_cast<double>(params.julia_c_imag) << ",\n";
     js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
     js << "    \"multibrot_power_float\": " << static_cast<double>(params.multibrot_power_float) << ",\n";
+    js << "    \"multibrot_power_imag\": " << static_cast<double>(params.multibrot_power_imag) << ",\n";
     js << "    \"lambda_real\": " << static_cast<double>(params.lambda_real) << ",\n";
     js << "    \"lambda_imag\": " << static_cast<double>(params.lambda_imag) << ",\n";
     js << "    \"explaino_seed\": " << params.explaino_seed << ",\n";

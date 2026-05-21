@@ -144,8 +144,8 @@ void TestKernelParamsDefaults() {
     Check(params.poly_kind == PolyKind::z3_minus_1, "KernelParams polynomial kind defaults to z^3-1");
     Check(Near(params.poly_coeffs[0], -1.0f) && Near(params.poly_coeffs[3], 1.0f) && Near(params.poly_coeffs[4], 0.0f),
         "KernelParams polynomial coefficients default to z^3-1");
-    Check(params.multibrot_power == 3 && Near(params.multibrot_power_float, 3.0f),
-        "KernelParams multibrot power defaults are stable");
+    Check(params.multibrot_power == 3 && Near(params.multibrot_power_float, 3.0f) && Near(params.multibrot_power_imag, 0.0f),
+        "KernelParams multibrot real and imaginary power defaults are stable");
     Check(Near(params.lambda_real, 2.9685855f) && Near(params.lambda_imag, -0.27446103f),
         "KernelParams lambda defaults are stable");
     Check(Near(params.magnet_seed_real, 0.0f) && Near(params.magnet_seed_imag, 0.0f) &&

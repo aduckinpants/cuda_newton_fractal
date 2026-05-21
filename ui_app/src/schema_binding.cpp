@@ -891,6 +891,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.mcmullen_lambda") { *outPtr = &params->mcmullen_lambda; return true; }
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
         if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
+        if (path == "fractal.params.multibrot_power_imag") { *outPtr = &params->multibrot_power_imag; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
         if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }

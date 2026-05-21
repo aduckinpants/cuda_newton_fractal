@@ -631,6 +631,7 @@ int main() {
         int colorPaletteControlCount = 0;
         int colorGradingControlCount = 0;
         bool foundMultibrotPowerFloat = false;
+        bool foundMultibrotPowerImag = false;
         bool foundLambdaReal = false;
         bool foundLambdaImag = false;
         bool foundJuliaCReal = false;
@@ -745,8 +746,18 @@ int main() {
                 if (ctrl.id == "explaino_seed_b") foundDualSeedB = true;
                 if (ctrl.id == "explaino_mix") foundDualSeedMix = true;
                 if (ctrl.id == "multibrot_power_float" && ctrl.type == "slider_float" && ctrl.has_binding &&
-                    ctrl.binding.path == "fractal.params.multibrot_power_float") {
+                    ctrl.binding.path == "fractal.params.multibrot_power_float" &&
+                    ctrl.has_min && ctrl.min == 0.01 && ctrl.has_max && ctrl.max == 32.0 &&
+                    ctrl.has_ui_min && ctrl.ui_min == 0.01 && ctrl.has_ui_max && ctrl.ui_max == 12.0 &&
+                    ctrl.logarithmic && VisibleIfIncludesFractalType(ctrl, "multibrot")) {
                     foundMultibrotPowerFloat = true;
+                }
+                if (ctrl.id == "multibrot_power_imag" && ctrl.type == "slider_float" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.params.multibrot_power_imag" &&
+                    ctrl.has_min && ctrl.min == -4.0 && ctrl.has_max && ctrl.max == 4.0 &&
+                    !ctrl.logarithmic && VisibleIfIncludesFractalType(ctrl, "multibrot") &&
+                    !VisibleIfIncludesFractalType(ctrl, "mandelbrot")) {
+                    foundMultibrotPowerImag = true;
                 }
                 if (ctrl.id == "lambda_real" && ctrl.has_binding && ctrl.binding.path == "fractal.params.lambda_real") {
                     foundLambdaReal = true;
@@ -1198,7 +1209,11 @@ int main() {
             return 1;
         }
         if (!foundMultibrotPowerFloat) {
-            std::cerr << "Did not find non-integer Multibrot power float control in schema\n";
+            std::cerr << "Did not find bounded logarithmic Multibrot real exponent control in schema\n";
+            return 1;
+        }
+        if (!foundMultibrotPowerImag) {
+            std::cerr << "Did not find Multibrot imaginary exponent control in schema\n";
             return 1;
         }
         if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
@@ -1360,7 +1375,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 16) {
+            fractalPanel->controls.size() != 18) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1408,6 +1423,8 @@ int main() {
         const UISchemaControl* projectionAndFlowRootFamily = FindControlById(*fractalPanel, "projection_and_flow_root_family");
         const UISchemaControl* projectionAndFlowTargetRadius = FindControlById(*fractalPanel, "projection_and_flow_target_radius");
         const UISchemaControl* projectionAndFlowPressureThreshold = FindControlById(*fractalPanel, "projection_and_flow_pressure_threshold");
+        const UISchemaControl* multibrotPowerReal = FindControlById(*fractalPanel, "multibrot_power_float");
+        const UISchemaControl* multibrotPowerImag = FindControlById(*fractalPanel, "multibrot_power_imag");
         if (!pairRootFamily || !pairFrame || !pairOffsetX || !pairOffsetY || !pairReconvergenceRatio) {
             std::cerr << "Safe-mode schema did not expose the Counterfactual Pair hardening controls\n";
             return 1;
@@ -1453,6 +1470,27 @@ int main() {
             !VisibleIfIncludesFractalType(*pairReconvergenceRatio, "counterfactual_pair") ||
             !VisibleIfIncludesFractalType(*pairReconvergenceRatio, "explaino_counterfactual_pair")) {
             std::cerr << "Safe-mode schema Counterfactual Pair reconvergence control did not expose the public class model\n";
+            return 1;
+        }
+        if (!multibrotPowerReal->has_binding || multibrotPowerReal->binding.path != "fractal.params.multibrot_power_float" ||
+            !multibrotPowerReal->has_default || !multibrotPowerReal->def.is_number() ||
+            multibrotPowerReal->def.as_number() != 3.0 ||
+            !multibrotPowerReal->has_min || multibrotPowerReal->min != 0.01 ||
+            !multibrotPowerReal->has_max || multibrotPowerReal->max != 32.0 ||
+            !multibrotPowerReal->has_ui_min || multibrotPowerReal->ui_min != 0.01 ||
+            !multibrotPowerReal->has_ui_max || multibrotPowerReal->ui_max != 12.0 ||
+            !multibrotPowerReal->logarithmic ||
+            !multibrotPowerReal->has_visible_if || multibrotPowerReal->visible_if.value != "multibrot") {
+            std::cerr << "Safe-mode schema Multibrot real exponent control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!multibrotPowerImag->has_binding || multibrotPowerImag->binding.path != "fractal.params.multibrot_power_imag" ||
+            !multibrotPowerImag->has_default || !multibrotPowerImag->def.is_number() ||
+            multibrotPowerImag->def.as_number() != 0.0 ||
+            !multibrotPowerImag->has_min || multibrotPowerImag->min != -4.0 ||
+            !multibrotPowerImag->has_max || multibrotPowerImag->max != 4.0 ||
+            !multibrotPowerImag->has_visible_if || multibrotPowerImag->visible_if.value != "multibrot") {
+            std::cerr << "Safe-mode schema Multibrot imaginary exponent control drifted from the bounded owner seam\n";
             return 1;
         }
         if (!projectionAndFlowRootFamily->has_binding ||

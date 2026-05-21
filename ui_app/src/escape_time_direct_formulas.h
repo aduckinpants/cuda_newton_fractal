@@ -23,6 +23,10 @@ ESCAPE_TIME_DIRECT_HD inline float EscapeTimeDirectAtan2(float y, float x) { ret
 ESCAPE_TIME_DIRECT_HD inline double EscapeTimeDirectAtan2(double y, double x) { return atan2(y, x); }
 ESCAPE_TIME_DIRECT_HD inline float EscapeTimeDirectPow(float base, float power) { return powf(base, power); }
 ESCAPE_TIME_DIRECT_HD inline double EscapeTimeDirectPow(double base, double power) { return pow(base, power); }
+ESCAPE_TIME_DIRECT_HD inline float EscapeTimeDirectExp(float value) { return expf(value); }
+ESCAPE_TIME_DIRECT_HD inline double EscapeTimeDirectExp(double value) { return exp(value); }
+ESCAPE_TIME_DIRECT_HD inline float EscapeTimeDirectLog(float value) { return logf(value); }
+ESCAPE_TIME_DIRECT_HD inline double EscapeTimeDirectLog(double value) { return log(value); }
 ESCAPE_TIME_DIRECT_HD inline float EscapeTimeDirectCos(float angle) { return cosf(angle); }
 ESCAPE_TIME_DIRECT_HD inline double EscapeTimeDirectCos(double angle) { return cos(angle); }
 ESCAPE_TIME_DIRECT_HD inline float EscapeTimeDirectSin(float angle) { return sinf(angle); }
@@ -104,6 +108,23 @@ ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectPowRealPrincipal(Complex va
     return {radiusPower * EscapeTimeDirectCos(angle), radiusPower * EscapeTimeDirectSin(angle)};
 }
 
+template <typename Complex, typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline Complex EscapeTimeDirectPowComplexPrincipal(Complex value, Scalar realPower, Scalar imagPower) {
+    const Scalar radius2 = EscapeTimeDirectAbs2(value);
+    if (radius2 <= static_cast<Scalar>(1.0e-30)) {
+        return {static_cast<Scalar>(0), static_cast<Scalar>(0)};
+    }
+    if (EscapeTimeDirectAbs(imagPower) <= static_cast<Scalar>(1.0e-12)) {
+        return EscapeTimeDirectPowRealPrincipal(value, realPower);
+    }
+
+    const Scalar logRadius = static_cast<Scalar>(0.5) * EscapeTimeDirectLog(radius2);
+    const Scalar theta = EscapeTimeDirectAtan2(value.y, value.x);
+    const Scalar magnitude = EscapeTimeDirectExp(realPower * logRadius - imagPower * theta);
+    const Scalar angle = imagPower * logRadius + realPower * theta;
+    return {magnitude * EscapeTimeDirectCos(angle), magnitude * EscapeTimeDirectSin(angle)};
+}
+
 ESCAPE_TIME_DIRECT_HD inline constexpr bool UsesSharedEscapeTimeDirectFormula(FractalType fractalType) {
     return fractalType == FractalType::mandelbrot ||
         fractalType == FractalType::julia ||
@@ -167,6 +188,7 @@ template <typename Complex, typename Scalar>
 ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     FractalType fractalType,
     Scalar multibrotPowerFloat,
+    Scalar multibrotPowerImag,
     int multibrotPowerInt,
     Complex lambdaConst,
     Complex phoenixP,
@@ -194,7 +216,7 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
         const Complex absZ = EscapeTimeDirectAbsComponents(z);
         z = EscapeTimeDirectAdd(EscapeTimeDirectMul(absZ, absZ), c);
     } else if (fractalType == FractalType::multibrot) {
-        z = EscapeTimeDirectAdd(EscapeTimeDirectPowRealPrincipal(z, static_cast<Real>(multibrotPowerFloat)), c);
+        z = EscapeTimeDirectAdd(EscapeTimeDirectPowComplexPrincipal(z, static_cast<Real>(multibrotPowerFloat), static_cast<Real>(multibrotPowerImag)), c);
     } else if (fractalType == FractalType::multicorn) {
         const Complex conjugateZ{z.x, -z.y};
         z = EscapeTimeDirectAdd(EscapeTimeDirectPowInt(conjugateZ, multibrotPowerInt), c);
@@ -226,11 +248,35 @@ template <typename Complex, typename Scalar>
 ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     FractalType fractalType,
     Scalar multibrotPowerFloat,
+    Scalar multibrotPowerImag,
     int multibrotPowerInt,
     Complex lambdaConst,
     Complex phoenixP,
     EscapeTimeDirectState<Complex>* ioState) {
-    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, multibrotPowerInt, lambdaConst, phoenixP, static_cast<Scalar>(1), ioState);
+    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, multibrotPowerImag, multibrotPowerInt, lambdaConst, phoenixP, static_cast<Scalar>(1), ioState);
+}
+
+template <typename Complex, typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
+    FractalType fractalType,
+    Scalar multibrotPowerFloat,
+    int multibrotPowerInt,
+    Complex lambdaConst,
+    Complex phoenixP,
+    EscapeTimeDirectState<Complex>* ioState) {
+    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, static_cast<Scalar>(0), multibrotPowerInt, lambdaConst, phoenixP, static_cast<Scalar>(1), ioState);
+}
+
+template <typename Complex, typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
+    FractalType fractalType,
+    Scalar multibrotPowerFloat,
+    int multibrotPowerInt,
+    Complex lambdaConst,
+    Complex phoenixP,
+    Scalar magnetRelaxation,
+    EscapeTimeDirectState<Complex>* ioState) {
+    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, static_cast<Scalar>(0), multibrotPowerInt, lambdaConst, phoenixP, magnetRelaxation, ioState);
 }
 
 template <typename Complex>

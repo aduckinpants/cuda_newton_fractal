@@ -102,10 +102,54 @@ int main() {
         std::string error;
         view.fractal_type = FractalType::multibrot;
         params.coloring_mode = ColoringMode::smooth_escape;
-        params.multibrot_power_float = 13.0f;
+        const float acceptedRealPowers[] = {0.01f, 1.5f, 12.0f, 32.0f};
+        for (float power : acceptedRealPowers) {
+            params.multibrot_power_float = power;
+            params.multibrot_power_imag = 0.0f;
+            error.clear();
+            if (!ValidateFractalRuntimeState(view, params, &error)) {
+                std::cerr << "Expected Multibrot validation to accept real power " << power << ", got: " << error << "\n";
+                return 1;
+            }
+        }
+
+        params.multibrot_power_float = 0.0f;
+        error.clear();
         if (ValidateFractalRuntimeState(view, params, &error) ||
-            error != "multibrot_power_float must be finite and in [2,12]") {
-            std::cerr << "Expected Multibrot validation to enforce the shared power range contract\n";
+            error != "multibrot_power_float must be finite and in [0.01,32]") {
+            std::cerr << "Expected Multibrot validation to reject zero real power\n";
+            return 1;
+        }
+        params.multibrot_power_float = -0.1f;
+        error.clear();
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "multibrot_power_float must be finite and in [0.01,32]") {
+            std::cerr << "Expected Multibrot validation to reject negative real power\n";
+            return 1;
+        }
+        params.multibrot_power_float = 32.1f;
+        error.clear();
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "multibrot_power_float must be finite and in [0.01,32]") {
+            std::cerr << "Expected Multibrot validation to reject real power above the hard cap\n";
+            return 1;
+        }
+
+        params.multibrot_power_float = 3.0f;
+        const float acceptedImagPowers[] = {-4.0f, 0.0f, 4.0f};
+        for (float power : acceptedImagPowers) {
+            params.multibrot_power_imag = power;
+            error.clear();
+            if (!ValidateFractalRuntimeState(view, params, &error)) {
+                std::cerr << "Expected Multibrot validation to accept imaginary power " << power << ", got: " << error << "\n";
+                return 1;
+            }
+        }
+        params.multibrot_power_imag = 4.1f;
+        error.clear();
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "multibrot_power_imag must be finite and in [-4,4]") {
+            std::cerr << "Expected Multibrot validation to reject imaginary power above the hard cap\n";
             return 1;
         }
     }
