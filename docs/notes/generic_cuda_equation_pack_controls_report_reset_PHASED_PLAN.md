@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 - record final evidence, machine receipts, push, clean tree, and stale-plan check.
+Complete - controls report/reset slice is validated, hostile-audited, checkpointed, and represented by the final repo state.
 
 ## Explicit User Asks
 
@@ -18,7 +18,7 @@ Phase 5 - record final evidence, machine receipts, push, clean tree, and stale-p
 - [x] Phase 2 - publish pack controls and current values in the automation report.
 - [x] Phase 3 - add an in-process reset-to-defaults UI/automation path using existing workbench edit semantics.
 - [x] Phase 4 - validate focused native/runtime rails, full native, runtime publish, and hostile audit.
-- [ ] Phase 5 - record final evidence, machine receipts, push, clean tree, and stale-plan check.
+- [x] Phase 5 - record final evidence, machine proof, push, clean tree, and stale-plan check.
 
 ## Proof Ledger
 
@@ -40,8 +40,9 @@ Phase 5 - record final evidence, machine receipts, push, clean tree, and stale-p
 - Contract proof: `artifacts/validation/generic_cuda_equation_pack_controls_report_reset_contract.json` reports `ok: true`.
 - Scope proof: `git diff -- ui_app/src/fractal_renderer.cu ui_app/src/fractal_types.h ui_app/src/color_pipeline_window.h ui_app/src/color_pipeline_core.h docs/examples/equation_packs` is empty.
 - No-physical-mouse proof: `rg "SetCursorPos|GetCursorPos|mouse_event|MOUSEEVENTF|SendInput|drag_screen_rect" tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py tests/runtime_harness.py ui_app/src/generic_equation_pack_workbench.cpp ui_app/src/main.cpp -n` found no matches in the touched proof path.
-- Hostile-audit proof: pending final validator run after this plan sync.
-- Plan-sync proof: pending final validator run after this plan sync.
+- Hostile-audit proof: `artifacts/validation/generic_cuda_equation_pack_controls_report_reset_hostile_audit.json` reports `ok: true`.
+- Plan-sync proof: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` reports `OK` for this plan and writes `artifacts/validation/viewer_host_assert_phased_plan_sync.json`.
+- First checkpoint commit: `d092e47` (`Harden equation pack workbench controls`).
 
 ## Hostile Audit
 
