@@ -50,6 +50,45 @@ int main() {
     }
 
     {
+        KernelParams params{};
+        params.mcmullen_preset = McMullenPreset::z4_z2;
+        params.mcmullen_m = 6;
+        params.mcmullen_n = 7;
+        params.mcmullen_lambda = 0.75f;
+        const McMullenPresetConfig config = ResolveMcMullenRuntimeConfig(params);
+        if (config.m != 4 || config.n != 2 || !NearlyEqual(config.lambda, -0.05f)) {
+            std::cerr << "Expected non-custom McMullen runtime config to keep preset authority\n";
+            return 1;
+        }
+    }
+
+    {
+        KernelParams params{};
+        params.mcmullen_preset = McMullenPreset::custom;
+        params.mcmullen_m = 5;
+        params.mcmullen_n = 1;
+        params.mcmullen_lambda = 0.25f;
+        const McMullenPresetConfig config = ResolveMcMullenRuntimeConfig(params);
+        if (config.m != 5 || config.n != 1 || !NearlyEqual(config.lambda, 0.25f)) {
+            std::cerr << "Expected custom McMullen runtime config to use direct controls\n";
+            return 1;
+        }
+    }
+
+    {
+        KernelParams params{};
+        params.mcmullen_preset = McMullenPreset::custom;
+        params.mcmullen_m = -4;
+        params.mcmullen_n = 40;
+        params.mcmullen_lambda = 3.0f;
+        const McMullenPresetConfig config = ResolveMcMullenRuntimeConfig(params);
+        if (config.m != 2 || config.n != 8 || !NearlyEqual(config.lambda, 1.0f)) {
+            std::cerr << "Expected custom McMullen runtime config to clamp unsafe direct ranges\n";
+            return 1;
+        }
+    }
+
+    {
         const McMullenPresetConfig config = ResolveMcMullenPresetConfig(McMullenPreset::z3_z3);
         Cx z{1.0f, 0.0f};
         const SpecializedEscapeStepResult result = StepMcMullenEscapeState(config, &z);

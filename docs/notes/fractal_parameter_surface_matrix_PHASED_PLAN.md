@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row dead-control follow-up are repaired or explicitly classified, and the focused native, full native, runtime publish, persistent no-relaunch UI proof, contract, plan-sync, code-quality, hostile-audit, validation-receipt, contract-proof, push, clean-tree, and stale-plan gates are complete for this slice.
+Phase 9/10 is closed: the descriptor/export guardrail and McMullen direct-control slice are implemented and proven, while Collatz controls, fixed-family variants, Explaino rational escape, generated/internal editor refactors, perturbation zoom, and broader backend/refactor projects remain deferred.
 
 ## Explicit User Asks
 
@@ -21,6 +21,8 @@ Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row de
 - [x] Audit all 44 defined fractals for missing owner parameters and visible dead controls, not a subset.
 - [x] Generate all-44 RED unit/UI harness coverage before claiming any all-fractal repair.
 - [x] Repair or explicitly classify every original all-44 gap found by the generated rails while preserving Color Pipeline, Explaino-all, smooth-escape performance, and the no-relaunch harness constraint.
+- [x] Work down only future-slice item 1, the descriptor/export guardrail, and item 2, McMullen direct controls.
+- [x] Defer Collatz controls, fixed-family variants, Explaino rational escape, generated/internal editors, perturbation zoom, and larger refactor projects.
 
 ## Phase Checklist
 
@@ -48,6 +50,13 @@ Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row de
   - [x] Batch K - RED tests prove current gaps for missing owner parameters and visible controls without render-sensitivity proof; first-pass headless sweep found 19 unchanged visible-control rows.
   - [x] Batch L - repair or explicitly classify every all-44 missing/dead-control gap found by the generated rails; the original 19 rows now split into 9 UI-proven visible controls and 10 intentionally hidden branch-dead controls.
   - [x] Batch M - focused native, runtime publish, persistent no-relaunch UI proof, Color Pipeline guardrails, hostile audit, validation receipt, contract proof, push, clean-tree closeout, and stale-plan gate are complete.
+- [x] Phase 9 - descriptor/export guardrail.
+  - [x] Batch N - add an all-44 descriptor export in the native schema-binding rail derived from checked-in schema/C++ authority with visible controls, owner lane, binding path, control type, default/candidate value, and sensitivity class.
+  - [x] Batch O - add contract and Python guardrails proving the descriptor is not a hardcoded subset and preserves the no-physical-mouse/no-legacy-relaunch proof boundary.
+- [x] Phase 10 - McMullen direct controls.
+  - [x] Batch P - add RED native/schema/formula/runtime tests for McMullen direct `m`, `n`, and `lambda` authority.
+  - [x] Batch Q - implement McMullen preset/custom authority, direct controls, state IO/capture, formula routing, and no-mouse persistent runtime proof.
+  - [x] Batch R - focused native, full native, runtime publish, persistent no-relaunch UI proof, hostile audit, and stale-plan validation are complete for Phase 9/10.
 
 ## Proof Ledger
 
@@ -204,10 +213,30 @@ Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row de
 - Phase 8 full native attempted: `py -3.14 tools\viewer_host_run_logged_command.py --label phase8_full_native_dead_control_repair --log artifacts\logs\phase8_full_native_dead_control_repair.log -- ui_app\build_tests_vsdevcmd.cmd` timed out after 20 minutes while compiling CUDA tests; this is not green and remains a closeout blocker.
 
 
+- Phase 9/10 starting head: `2f80956`.
+- Phase 9 named gap: future exposure work lacks a deterministic descriptor/export surface; without it, later work can regress into hardcoded subsets or selected-matrix closeout again.
+- Phase 9 RED target: descriptor tests must fail until all 44 lanes are exported from checked-in schema/C++ authority with visible controls and sensitivity classification.
+- Phase 10 named gap: standalone `mcmullen` is preset-only even though formula authority has `m`, `n`, and `lambda`; direct controls are a low-hanging exploration repair if preset/custom authority is unambiguous.
+- Phase 10 RED target: native schema/formula/runtime tests must fail until `mcmullen_m`, `mcmullen_n`, and `mcmullen_lambda` are visible, bound, runtime-authoritative, state-backed, and no-mouse UI-proven.
+- Deferred work for this slice: Collatz controls, fixed-family variants, ExplainO rational escape exploration, generated/internal editor refactors, perturbation zoom, and broader backend/refactor projects stay out of scope.
+
+- Phase 9/10 RED proof: `phase9_10_native_schema_mcmullen_red` failed in `test_schema_binding` with `Visible-control matrix missing control mcmullen_m`, proving McMullen direct controls were absent before the repair.
+- Phase 9/10 contract-proof RED/correction: the first Phase 9/10 contract proof run failed stale Phase 8 assertions; the contract tests now require descriptor/McMullen scope and focused persistent runtime proof.
+- Phase 9 descriptor green: `artifacts/analysis/phase9_10_all44_control_surface_descriptor.json` reports `ok=true`, `fractal_count=44`, `visible_family_control_cells=217`, and `mcmullen_direct_control_count=3`.
+- Phase 10 implementation: `mcmullen_preset` has a `custom` mode; preset selection seeds direct `m`, `n`, and `lambda` fields, direct UI edits mark the preset `custom`, state capture/load persists the direct fields, and the device path resolves `ResolveMcMullenRuntimeConfig(params)`.
+- Phase 9/10 focused native green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_native_schema_mcmullen --log artifacts/logs/phase9_10_native_schema_mcmullen.log -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner`.
+- Phase 9/10 contract proof green: `py -3.14 -m pytest tests/test_viewer_host_contract_proof.py -q --junitxml artifacts/pytest/test_viewer_host_contract_proof_phase9_10.junit.xml` (`23 passed`).
+- Phase 9/10 contract validation green: `artifacts/validation/fractal_parameter_surface_matrix_contract_phase9_10.json`.
+- Phase 9/10 code-quality green: `artifacts/logs/phase9_10_code_quality.json`.
+- Phase 9/10 full native green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_full_native --log artifacts/logs/phase9_10_full_native.log -- ui_app/build_tests_vsdevcmd.cmd`; log ended with `All helper tests passed`.
+- Phase 9/10 runtime publish green: `py -3.14 tools/viewer_host_run_logged_command.py --label phase9_10_runtime_publish --log artifacts/logs/phase9_10_runtime_publish.log -- ui_app/build_vsdevcmd.cmd`.
+- Phase 9/10 focused live UI proof green: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py -k mcmullen_direct_controls_change_live_frame_in_one_process -q --junitxml artifacts/pytest/fractal_runtime_persistent_viewer_harness_phase9_10_mcmullen.junit.xml` (`1 passed, 4 deselected`).
+
+
 ## Hostile Audit
 
 - Status: complete
-- Required posture: assume each new slider is decorative, hidden, stale, routed to the wrong fractal, or expensive until native and published-runtime proof disprove it.
+- Required posture: assume the descriptor is a stale subset, every new McMullen slider is decorative, preset/custom ownership is ambiguous, and runtime proof is only chrome-state noise until native and published-runtime evidence disprove it.
 
 ## Audit Passes
 
@@ -258,6 +287,11 @@ Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row de
 - [x] Phase 8 pass 3 - re-ran Color Pipeline, Explaino-all, smooth-escape/performance, persistent harness, runtime publish, and full native guards after repairs; the first full-native wrapper timed out, but the longer rerun completed with `All helper tests passed`.
 - [x] Phase 8 clean re-read - verified the original 19-row all-44 red set now has 9 UI-proven visible rows, 10 intentionally hidden branch-dead rows, 0 unresolved rows, no physical mouse proof, and no default legacy relaunching runtime-walk viewer dependency.
 - [x] Phase 8 receipt pass - repaired the contract-proof evidence parser so the actual `viewer_host_run_logged_command.py --log ...` validation commands are parseable text-log evidence instead of swapping in unrun redirected commands.
+- [x] Phase 9 pass 1 - proved the native descriptor/export guardrail derives all 44 lanes from schema/C++ authority, not a selected Python subset.
+- [x] Phase 9 pass 2 - inspected descriptor output for owner lanes, binding paths, candidate values, and sensitivity classifications before using it as proof.
+- [x] Phase 10 pass 1 - proved McMullen direct controls are visible/bound and runtime-authoritative, not just stored fields.
+- [x] Phase 10 pass 2 - proved preset/custom authority is unambiguous and does not leave visible dead controls.
+- [x] Phase 10 pass 3 - proved no-mouse persistent runtime output changes for `m`, `n`, and `lambda`, with focused native Color Pipeline/schema rails and no Explaino-all scope mutation.
 
 ## Audit Findings
 
@@ -281,39 +315,37 @@ Phase 8 is closed: the exhaustive all-44 schema inventory and original 19-row de
 - [x] Phase 5/6 audit finding repaired: raw enum option visibility helper now treats missing predicates as intentional but malformed `visible_if` as fail-closed.
 - [x] Phase 8 finding repaired: prior closeout overstated completion by treating the selected matrix as exhaustive; the all-44 inventory now reconciles the original 19 unchanged rows with 9 UI-proven visible controls and 10 intentionally hidden branch-dead controls, with validation and runtime proof recorded for the closed slice.
 - [x] Phase 8 receipt finding repaired: contract-proof receipt generation initially rejected the actual logged-command wrapper validation commands; `_dynamic_logged_command_spec(...)` now hashes those `--log artifacts/...` outputs as text-log evidence and the contract assertions point at the current Phase 8 JUnit artifact.
+- [x] Phase 9 finding repaired: descriptor/export guardrail now writes `phase9_10_all44_control_surface_descriptor.json` from the native schema-binding all-44 authority and contract tests forbid selected-subset closeout.
+- [x] Phase 10 finding repaired: McMullen direct `m`, `n`, and `lambda` controls are visible, bound, state-backed, and runtime-authoritative through custom mode without broad formula redesign.
+- [x] Phase 9 audit finding repaired: descriptor helper was initially inserted but not called by the inventory rail; hostile review caught the missing artifact, the call was wired, and the focused native rerun produced the descriptor.
 
 ## Action Hostile Review
 
-- Action ID: phase5_8_remaining_surface_completion
-- Suspected Failure Mode: the previous checkpoint closed the persistent harness sub-slice while leaving the broader cleanup set and the code-quality regression unresolved.
-- Correct Owner/Action: close the remaining enum/combo, fixed-lane, Explaino common-control, animation applicability, persistent harness, and code-quality guard surfaces without re-enabling legacy relaunching viewer tests.
-- Proof Surface: code-quality audit, `test_schema_binding`, `test_ui_schema`, `test_param_anim_generic`, focused persistent runtime pytest, contract validation, plan sync, hostile-audit validation, full native rails, runtime publish, and contract proof receipts.
-- Blocked Action: no physical mouse automation, no repeated viewer launch proof, no Color Pipeline product mutation, no new fractal families, no renderer rewrite.
+- Action ID: phase9_10_descriptor_export_mcmullen_direct_controls
+- Suspected Failure Mode: later parameter-surface work can again prove only a subset, and McMullen can gain visible controls that store values without driving the formula.
+- Correct Owner/Action: implement descriptor/export guardrail first, then McMullen direct controls with explicit preset/custom authority, no physical mouse proof, and no legacy relaunching runtime-walk viewer dependency.
+- Proof Surface: native descriptor/schema rail, contract-proof pytest, `test_schema_binding`, `test_escape_time_specialized_formulas`, diagnostics state IO, persistent no-relaunch runtime pytest, full native, runtime publish, plan sync, hostile-audit validation, and contract proof receipts.
+- Blocked Action: no Collatz controls, no fixed-family variants, no Explaino rational expansion, no generated/internal editor refactor, no perturbation zoom, no Color Pipeline product mutation, and no renderer rewrite.
 
 ## Boundaries
 
-In scope:
-- one bounded first repair for standalone Julia constant controls
-- test harness additions needed to prove that first repair
-- plan entries for the later matrix/Nova/dead-slider phases
-- Phase 2/3 batch: standalone Nova `poly_c4` repair plus schema-driven visible-control matrix rail
+In scope for Phase 9/10:
+- descriptor/export guardrail for the all-44 fractal control surface
+- McMullen direct `m`, `n`, and `lambda` controls with unambiguous preset/custom authority
+- native/schema/formula/state/runtime tests needed to prove those two items
+- preserving the no-mouse persistent runtime harness, Color Pipeline guardrails, Explaino-all guardrails, and closed Phase 8 all-44 cleanup
 
-Out of scope for Phase 1:
-- implementing Nova `poly_c4`
-- full all-fractal dead-slider repair
-- enum/combo proof expansion
-- Explaino common-control matrix expansion
-- new fractal families or new animation features
-- broad renderer or Color Pipeline redesign
+Out of scope for Phase 9/10:
+- Collatz controls
+- fixed-family variants
+- Explaino rational escape exploration
+- generated/internal editor refactors
+- perturbation zoom
+- broader backend authority refactors
+- new fractal families
+- renderer rewrite
+- Color Pipeline product mutation
 
-Out of scope for Phase 2/3 batch:
-- full all-fractal dead-slider repair
-- enum/combo harness support
-- Explaino common-control matrix expansion
-- new fractal families or renderer redesign
+## Deferred Work After Phase 9/10
 
-## Remaining Work After Phase 5/8
-
-- Phase 8 is open because the previous selected-matrix closeout was not an exhaustive all-44 fractal cleanup.
-- Future rendered-frame proofs must use the persistent command-file harness or another no-relaunch in-process path; do not re-enable the legacy runtime-walk viewer module as default validation.
-- The slice is not complete until all 44 fractal lanes are generated into the inventory/test matrix and every missing/dead-control row is repaired or explicitly classified.
+The remaining future-slice items stay deferred for later larger work projects: Collatz exploration controls, fixed-family variants, Explaino rational escape audit, generated/internal editor refactor, broader descriptor-generated runtime matrices, and perturbation-based zoom. This slice is not allowed to claim those are done.

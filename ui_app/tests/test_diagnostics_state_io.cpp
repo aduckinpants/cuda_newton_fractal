@@ -3271,6 +3271,33 @@ int main() {
         }
       }
 
+
+      {
+        const fs::path statePath = tempRoot / "valid_mcmullen_custom_direct_state.json";
+        WriteMinimalStateWithExtraParams(
+          statePath,
+          "    \"mcmullen_preset\": \"custom\",\n"
+          "    \"mcmullen_m\": 5,\n"
+          "    \"mcmullen_n\": 2,\n"
+          "    \"mcmullen_lambda\": -0.25");
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+          std::cerr << "Expected custom McMullen direct params to load: " << error << "\n";
+          return 1;
+        }
+        if (params.mcmullen_preset != McMullenPreset::custom ||
+            params.mcmullen_m != 5 ||
+            params.mcmullen_n != 2 ||
+            std::fabs(params.mcmullen_lambda + 0.25f) > 1.0e-6f) {
+          std::cerr << "Expected custom McMullen direct params to survive state load\n";
+          return 1;
+        }
+      }
+
       {
         const fs::path statePath = tempRoot / "bad_mcmullen_preset_type_state.json";
         WriteMinimalStateWithExtraParams(statePath, "    \"mcmullen_preset\": 7");

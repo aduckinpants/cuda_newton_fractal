@@ -1,6 +1,7 @@
 #include "schema_binding.h"
 
 #include "enum_id_utils.h"
+#include "escape_time_specialized_formulas.h"
 #include "explaino_seed.h"
 #include "fractal_family_rules.h"
 #include "imgui.h"
@@ -21,6 +22,25 @@ std::string EnumIdOrEmpty(const char* id) {
 template <typename EnumT, typename ParseFn>
 bool ParseAndAssignEnumId(const std::string& id, EnumT* outValue, ParseFn parseFn) {
     return outValue && parseFn(id, outValue);
+}
+
+void ApplyMcMullenPresetToDirectParams(KernelParams& params, McMullenPreset preset) {
+    const McMullenPresetConfig config = ResolveMcMullenPresetConfig(preset);
+    params.mcmullen_m = config.m;
+    params.mcmullen_n = config.n;
+    params.mcmullen_lambda = config.lambda;
+}
+
+bool IsMcMullenDirectParamPath(const std::string& path) {
+    return path == "fractal.params.mcmullen_m" ||
+           path == "fractal.params.mcmullen_n" ||
+           path == "fractal.params.mcmullen_lambda";
+}
+
+void MarkMcMullenDirectEdit(BindingContext& ctx, const std::string& path) {
+    if (ctx.params && IsMcMullenDirectParamPath(path)) {
+        ctx.params->mcmullen_preset = McMullenPreset::custom;
+    }
 }
 
 template <typename T>
@@ -421,6 +441,7 @@ bool ApplyIntControlEdit(const UISchemaBinding& binding, BindingContext& ctx, co
     int nextValue = static_cast<int>(std::lround(value));
     ClampNumericValue(&nextValue, range);
     *target = nextValue;
+    MarkMcMullenDirectEdit(ctx, binding.path);
     return true;
 }
 
@@ -480,6 +501,7 @@ bool ApplyFloatControlEdit(const UISchemaBinding& binding, BindingContext& ctx, 
     float nextFloat = static_cast<float>(nextValue);
     ClampNumericValue(&nextFloat, range);
     *target = nextFloat;
+    MarkMcMullenDirectEdit(ctx, binding.path);
     return true;
 }
 
@@ -700,7 +722,15 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         return ParseAndAssignEnumId(id, &params->transcendental_func, TryParseTranscendentalFuncId);
     }
     if (params && path == "fractal.params.mcmullen_preset") {
-        return ParseAndAssignEnumId(id, &params->mcmullen_preset, TryParseMcMullenPresetId);
+        McMullenPreset preset{};
+        if (!TryParseMcMullenPresetId(id, &preset)) {
+            return false;
+        }
+        params->mcmullen_preset = preset;
+        if (preset != McMullenPreset::custom) {
+            ApplyMcMullenPresetToDirectParams(*params, preset);
+        }
+        return true;
     }
     if (params && path == "fractal.params.coloring_mode") {
         return SetColoringMode(this, id);
@@ -858,6 +888,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.magnet_seed_imag") { *outPtr = &params->magnet_seed_imag; return true; }
         if (path == "fractal.params.magnet_relaxation") { *outPtr = &params->magnet_relaxation; return true; }
         if (path == "fractal.params.magnet_bailout") { *outPtr = &params->magnet_bailout; return true; }
+        if (path == "fractal.params.mcmullen_lambda") { *outPtr = &params->mcmullen_lambda; return true; }
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
         if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }
@@ -912,6 +943,8 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
     if (params) {
         if (path == "fractal.params.max_iter") { *outPtr = &params->max_iter; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
+        if (path == "fractal.params.mcmullen_m") { *outPtr = &params->mcmullen_m; return true; }
+        if (path == "fractal.params.mcmullen_n") { *outPtr = &params->mcmullen_n; return true; }
     }
     if (render) {
         if (path == "fractal.render.resolution.x") { *outPtr = &render->resolution.x; return true; }

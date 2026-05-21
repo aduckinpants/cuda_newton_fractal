@@ -270,3 +270,50 @@ def test_persistent_runtime_viewer_phase8_followup_controls_change_frames_in_one
                 f"baseline_hash={baseline_hash} edited_hash={edited_hash}"
             )
         assert viewer.launch_count == 1
+
+
+def test_mcmullen_direct_controls_change_live_frame_in_one_process(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("persistent runtime viewer harness is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "mcmullen", "--width", "320", "--height", "240"
+    )
+    state = json.loads(json.dumps(neutral_capture["state"]))
+    _configure_view(state, center_x=0.22, center_y=-0.14, zoom=3.0)
+    _configure_smooth_escape_color(state, max_iter=80)
+    params = state["params"]
+    assert isinstance(params, dict)
+    params.update({"mcmullen_preset": "z3_z3", "mcmullen_m": 3, "mcmullen_n": 3, "mcmullen_lambda": -0.125})
+    state_path = write_state_bundle(tmp_path / "mcmullen_direct", state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "persistent_mcmullen_report.json",
+        command_path=tmp_path / "persistent_mcmullen_command.json",
+    ) as viewer:
+        for control_id in (
+            "fractal_control.mcmullen_m.primary",
+            "fractal_control.mcmullen_n.primary",
+            "fractal_control.mcmullen_lambda.primary",
+        ):
+            viewer.wait_for_control(control_id, timeout_seconds=15.0)
+
+        baseline_hash = _require_rendered_frame_hash(viewer.wait_for_report())
+        m_payload = viewer.set_control_value("fractal_control.mcmullen_m.primary", 4, timeout_seconds=15.0)
+        m_hash = _require_rendered_frame_hash(m_payload)
+        n_payload = viewer.set_control_value("fractal_control.mcmullen_n.primary", 2, timeout_seconds=15.0)
+        n_hash = _require_rendered_frame_hash(n_payload)
+        lambda_payload = viewer.set_control_value("fractal_control.mcmullen_lambda.primary", -0.05, timeout_seconds=15.0)
+        lambda_hash = _require_rendered_frame_hash(lambda_payload)
+
+        assert viewer.launch_count == 1
+        assert m_payload.get("ui_automation_command_sequence") == 1
+        assert n_payload.get("ui_automation_command_sequence") == 2
+        assert lambda_payload.get("ui_automation_command_sequence") == 3
+
+    assert m_hash != baseline_hash, "McMullen direct m edit should change the rendered frame"
+    assert n_hash != m_hash, "McMullen direct n edit should change the rendered frame"
+    assert lambda_hash != n_hash, "McMullen direct lambda edit should change the rendered frame"

@@ -192,6 +192,7 @@ enum class McMullenPreset : int {
     z2_z2 = 1,   // z^2 + lambda/z^2, lambda=-0.10
     z4_z2 = 2,   // z^4 + lambda/z^2, lambda=-0.05
     z3_z2 = 3,   // z^3 + lambda/z^2, lambda=-0.10
+    custom = 4,  // direct m/n/lambda controls own the formula
 };
 
 enum class FractalType : int {
@@ -459,6 +460,9 @@ struct KernelParams {
     float vortex_strength{0.0f};
     float tension_strength{0.0f};
     McMullenPreset mcmullen_preset{McMullenPreset::z3_z3};
+    int mcmullen_m{3};
+    int mcmullen_n{3};
+    float mcmullen_lambda{-0.125f};
 };
 
 struct RenderSettings {

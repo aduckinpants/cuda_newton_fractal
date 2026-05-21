@@ -16,6 +16,8 @@
 
 namespace {
 
+constexpr std::size_t kExpectedFractalCount = 44;
+
 struct ImGuiTestContext {
     ImGuiContext* context = nullptr;
 
@@ -497,7 +499,6 @@ bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
         }
         schemaIds.push_back(id);
     }
-    constexpr std::size_t kExpectedFractalCount = 44;
     if (schemaIds.size() != kExpectedFractalCount || std::size(enum_id_utils::kFractalTypeIds) != kExpectedFractalCount) {
         std::cerr << "All-fractal inventory expected exactly 44 schema and enum fractal ids\n";
         return false;
@@ -517,6 +518,8 @@ bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
     }
     return true;
 }
+
+bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaRoot);
 
 bool IsFamilySurfaceBindingPath(const std::string& bindingPath) {
     if (bindingPath == "fractal.view.fractal_type") {
@@ -589,6 +592,187 @@ bool ValidateGeneratedAllFractalControlInventory() {
                   << visibleFamilyControlCells << "\n";
         return false;
     }
+    return ValidateAndExportAllFractalControlDescriptor(schemaRoot);
+}
+
+
+void WriteJsonEscapedString(std::ostream& out, const std::string& value) {
+    out << '"';
+    for (char ch : value) {
+        if (ch == '"' || ch == '\\') {
+            out << '\\' << ch;
+        } else if (ch == '\n') {
+            out << "\\n";
+        } else if (ch == '\r') {
+            out << "\\r";
+        } else if (ch == '\t') {
+            out << "\\t";
+        } else {
+            out << ch;
+        }
+    }
+    out << '"';
+}
+
+std::string JsonScalarAsDescriptorValue(const json_min::Value* value) {
+    if (!value) {
+        return "null";
+    }
+    if (value->is_string()) {
+        return value->as_string();
+    }
+    if (value->is_number()) {
+        std::ostringstream ss;
+        ss << value->as_number();
+        return ss.str();
+    }
+    if (value->is_bool()) {
+        return value->as_bool() ? "true" : "false";
+    }
+    return "null";
+}
+
+std::string CandidateValueForControl(const json_min::Value& control, const std::string& valueType) {
+    const json_min::Value* defaultValue = control.get("default");
+    if (valueType == "enum") {
+        const std::string defaultId = JsonScalarAsDescriptorValue(defaultValue);
+        const json_min::Value* options = control.get("options");
+        if (options && options->is_array()) {
+            for (const json_min::Value& option : options->as_array()) {
+                std::string optionId;
+                if (option.is_object() && GetJsonStringField(option, "id", &optionId) && optionId != defaultId) {
+                    return optionId;
+                }
+            }
+        }
+        return defaultId;
+    }
+    double defaultNumber = 0.0;
+    GetJsonNumberField(control, "default", &defaultNumber);
+    double step = 1.0;
+    GetJsonNumberField(control, "step", &step);
+    double candidate = defaultNumber + step;
+    double maxValue = 0.0;
+    if (GetJsonNumberField(control, "max", &maxValue) || GetJsonNumberField(control, "ui_max", &maxValue)) {
+        if (candidate > maxValue) {
+            candidate = defaultNumber - step;
+        }
+    }
+    std::ostringstream ss;
+    ss << candidate;
+    return ss.str();
+}
+
+const char* SensitivityClassForControl(const std::string& controlId, const std::string& valueType) {
+    if (controlId == "mcmullen_preset") {
+        return "preset_switch";
+    }
+    if (valueType == "enum") {
+        return "enum_or_mode";
+    }
+    return "render_sensitive";
+}
+
+bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaRoot) {
+    const std::filesystem::path root = FindRepoRoot();
+    if (root.empty()) {
+        std::cerr << "Descriptor export could not locate repo root\n";
+        return false;
+    }
+    const json_min::Value* panels = schemaRoot.get("panels");
+    if (!panels || !panels->is_array()) {
+        std::cerr << "Descriptor export could not read schema panels\n";
+        return false;
+    }
+
+    const std::filesystem::path outPath = root / "artifacts" / "analysis" / "phase9_10_all44_control_surface_descriptor.json";
+    std::filesystem::create_directories(outPath.parent_path());
+    std::ofstream out(outPath, std::ios::out | std::ios::binary);
+    if (!out) {
+        std::cerr << "Descriptor export could not open " << outPath.string() << "\n";
+        return false;
+    }
+
+    int laneCount = 0;
+    int visibleControlCells = 0;
+    int mcmullenDirectControlCount = 0;
+    out << "{\n  \"ok\": true,\n  \"fractal_count\": " << kExpectedFractalCount << ",\n  \"lanes\": [\n";
+    bool firstLane = true;
+    for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
+        if (!firstLane) {
+            out << ",\n";
+        }
+        firstLane = false;
+        ++laneCount;
+        out << "    { \"fractal_id\": ";
+        WriteJsonEscapedString(out, enumId.id);
+        out << ", \"controls\": [";
+        bool firstControl = true;
+        for (const json_min::Value& panel : panels->as_array()) {
+            if (!panel.is_object()) continue;
+            const json_min::Value* controls = panel.get("controls");
+            if (!controls || !controls->is_array()) continue;
+            for (const json_min::Value& control : controls->as_array()) {
+                if (!control.is_object()) continue;
+                std::string controlId;
+                std::string controlType;
+                std::string bindingPath;
+                std::string valueType;
+                if (!GetJsonStringField(control, "id", &controlId) ||
+                    !GetJsonStringField(control, "type", &controlType) ||
+                    !ReadControlBindingAndType(control, &bindingPath, &valueType) ||
+                    !IsFamilySurfaceBindingPath(bindingPath) ||
+                    !IsControlVisibleForFractal(control, enumId.value)) {
+                    continue;
+                }
+                ++visibleControlCells;
+                if (enumId.value == FractalType::mcmullen &&
+                    (controlId == "mcmullen_m" || controlId == "mcmullen_n" || controlId == "mcmullen_lambda")) {
+                    ++mcmullenDirectControlCount;
+                }
+                if (!firstControl) {
+                    out << ",";
+                }
+                firstControl = false;
+                out << "\n        { \"id\": ";
+                WriteJsonEscapedString(out, controlId);
+                out << ", \"owner_lane\": ";
+                WriteJsonEscapedString(out, enumId.id);
+                out << ", \"binding_path\": ";
+                WriteJsonEscapedString(out, bindingPath);
+                out << ", \"control_type\": ";
+                WriteJsonEscapedString(out, controlType);
+                out << ", \"value_type\": ";
+                WriteJsonEscapedString(out, valueType);
+                out << ", \"default_value\": ";
+                WriteJsonEscapedString(out, JsonScalarAsDescriptorValue(control.get("default")));
+                out << ", \"candidate_value\": ";
+                WriteJsonEscapedString(out, CandidateValueForControl(control, valueType));
+                out << ", \"expected_sensitivity\": ";
+                WriteJsonEscapedString(out, SensitivityClassForControl(controlId, valueType));
+                out << " }";
+            }
+        }
+        if (!firstControl) {
+            out << "\n      ";
+        }
+        out << "] }";
+    }
+    out << "\n  ],\n  \"visible_family_control_cells\": " << visibleControlCells
+        << ",\n  \"mcmullen_direct_control_count\": " << mcmullenDirectControlCount << "\n}\n";
+
+    if (laneCount != kExpectedFractalCount) {
+        std::cerr << "Descriptor export did not visit all 44 fractal lanes\n";
+        return false;
+    }
+    if (visibleControlCells < 200) {
+        std::cerr << "Descriptor export visited too few visible family controls: " << visibleControlCells << "\n";
+        return false;
+    }
+    if (mcmullenDirectControlCount != 3) {
+        std::cerr << "Descriptor export expected McMullen m/n/lambda direct controls, found " << mcmullenDirectControlCount << "\n";
+        return false;
+    }
     return true;
 }
 
@@ -637,6 +821,9 @@ bool ValidateVisibleControlMatrix() {
         {"multibrot_power_float", FractalType::multibrot, "fractal.params.multibrot_power_float", "float"},
         {"multicorn_power", FractalType::multicorn, "fractal.params.multibrot_power", "int"},
         {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "enum"},
+        {"mcmullen_m", FractalType::mcmullen, "fractal.params.mcmullen_m", "int"},
+        {"mcmullen_n", FractalType::mcmullen, "fractal.params.mcmullen_n", "int"},
+        {"mcmullen_lambda", FractalType::mcmullen, "fractal.params.mcmullen_lambda", "float"},
         {"magnet_seed_real", FractalType::magnet, "fractal.params.magnet_seed_real", "float"},
         {"magnet_seed_imag", FractalType::magnet, "fractal.params.magnet_seed_imag", "float"},
         {"magnet_relaxation", FractalType::magnet, "fractal.params.magnet_relaxation", "float"},
@@ -710,7 +897,7 @@ bool ValidateEnumComboEditMatrix() {
         {"poly_kind", FractalType::newton, "fractal.params.poly_kind", "custom"},
         {"poly_kind", FractalType::nova, "fractal.params.poly_kind", "custom"},
         {"poly_kind", FractalType::halley, "fractal.params.poly_kind", "custom"},
-        {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "z4_z2"},
+        {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "custom"},
         {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "quartic_unit_roots"},
         {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
         {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
@@ -819,8 +1006,13 @@ bool ValidateFixedAndPresetSurfaceClassifications() {
             }
             std::string controlId;
             GetJsonStringField(control, "id", &controlId);
-            if (controlId != "mcmullen_preset" && !IsGlobalFixedFormulaBindingPath(bindingPath)) {
-                std::cerr << "McMullen preset-only classification found an unexpected direct family control: " << controlId << "\n";
+            const bool isExpectedMcMullenControl =
+                controlId == "mcmullen_preset" ||
+                controlId == "mcmullen_m" ||
+                controlId == "mcmullen_n" ||
+                controlId == "mcmullen_lambda";
+            if (!isExpectedMcMullenControl && !IsGlobalFixedFormulaBindingPath(bindingPath)) {
+                std::cerr << "McMullen direct-control classification found an unexpected family control: " << controlId << "\n";
                 return false;
             }
         }

@@ -97,6 +97,29 @@ ESCAPE_TIME_SPECIALIZED_HD inline constexpr McMullenPresetConfig ResolveMcMullen
     }
 }
 
+ESCAPE_TIME_SPECIALIZED_HD inline constexpr int ClampMcMullenM(int value) {
+    return value < 2 ? 2 : (value > 8 ? 8 : value);
+}
+
+ESCAPE_TIME_SPECIALIZED_HD inline constexpr int ClampMcMullenN(int value) {
+    return value < 1 ? 1 : (value > 8 ? 8 : value);
+}
+
+ESCAPE_TIME_SPECIALIZED_HD inline constexpr float ClampMcMullenLambda(float value) {
+    return value < -1.0f ? -1.0f : (value > 1.0f ? 1.0f : value);
+}
+
+ESCAPE_TIME_SPECIALIZED_HD inline constexpr McMullenPresetConfig ResolveMcMullenDirectConfig(int m, int n, float lambda) {
+    return {ClampMcMullenM(m), ClampMcMullenN(n), ClampMcMullenLambda(lambda)};
+}
+
+ESCAPE_TIME_SPECIALIZED_HD inline constexpr McMullenPresetConfig ResolveMcMullenRuntimeConfig(const KernelParams& params) {
+    if (params.mcmullen_preset != McMullenPreset::custom) {
+        return ResolveMcMullenPresetConfig(params.mcmullen_preset);
+    }
+    return ResolveMcMullenDirectConfig(params.mcmullen_m, params.mcmullen_n, params.mcmullen_lambda);
+}
+
 template <typename Complex>
 ESCAPE_TIME_SPECIALIZED_HD inline SpecializedEscapeStepResult StepMcMullenEscapeState(
     const McMullenPresetConfig& config,

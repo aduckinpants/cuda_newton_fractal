@@ -284,7 +284,7 @@ def test_fractal_parameter_surface_contract_does_not_require_relaunching_runtime
     persistent_assertions = [
         assertion for assertion in contract["required_acceptance_assertions"]
         if assertion.get("test_nodeid")
-        == "tests/test_fractal_runtime_persistent_viewer_harness.py::test_persistent_runtime_viewer_batches_set_value_proofs_in_one_process"
+        == "tests/test_fractal_runtime_persistent_viewer_harness.py::test_mcmullen_direct_controls_change_live_frame_in_one_process"
     ]
     assert len(persistent_assertions) == 1
     assert contract["workflow_type"] == "viewer_first"
@@ -313,20 +313,37 @@ def test_fractal_parameter_surface_contract_requires_all44_scope() -> None:
 
     assert len(options) == 44
     assert len(enum_id_rows) == 44
-    assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase8_all44_exhaustive_repair"
+    assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase9_descriptor_phase10_mcmullen"
     assert contract["required_defaults"].get("all_fractal_count") == 44
     assert contract["required_defaults"].get("selected_subset_closeout_is_insufficient") is True
     assert contract["forbidden_defaults"].get("subset_matrix_closeout_as_all44_completion") == "forbidden"
     assert contract["forbidden_defaults"].get("missing_control_omission") == "forbidden"
     assert contract["forbidden_defaults"].get("dead_slider_omission") == "forbidden"
-    assert any("all 44" in item for item in contract["required_operator_inputs"])
+    assert any("all 44" in item or "all-44" in item for item in contract["required_operator_inputs"])
     assert any("selected subset" in item for item in contract["forbidden_operator_prompts"])
     assert any("legacy relaunching runtime-walk viewer module" in item for item in contract["forbidden_operator_prompts"])
-    assert "Phase 8 is open" in plan_text
+    assert "Phase 9/10 is closed" in plan_text
     assert "all 44" in plan_text
     assert "No remaining parameter-surface cleanup phase is open in this plan" not in plan_text
     assert "FractalType` enum count: 44" in inventory_text
     assert "fractal_type` schema option count: 44" in inventory_text
+
+
+def test_fractal_parameter_surface_contract_requires_phase9_10_descriptor_and_mcmullen_scope() -> None:
+    contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))
+    plan_text = (REPO_ROOT / "docs" / "notes" / "fractal_parameter_surface_matrix_PHASED_PLAN.md").read_text(encoding="utf-8")
+
+    assert contract["feature_id"] == "fractal_parameter_surface_matrix_phase9_descriptor_phase10_mcmullen"
+    assert contract["required_defaults"].get("descriptor_export") == "required_all44_schema_cpp_derived"
+    assert contract["required_defaults"].get("mcmullen_direct_controls") == "required"
+    assert contract["required_defaults"].get("defer_remaining_future_slices") is True
+    assert contract["forbidden_defaults"].get("collatz_controls") == "deferred"
+    assert contract["forbidden_defaults"].get("perturbation_zoom") == "deferred"
+    assert any("phase9_10_native_schema_mcmullen" in command for command in contract["required_validation_commands"])
+    assert any("fractal_runtime_persistent_viewer_harness_phase9_10_mcmullen" in command for command in contract["required_validation_commands"])
+    assert "Phase 9/10 is closed" in plan_text
+    assert "Collatz controls" in plan_text and "deferred" in plan_text
+
 
 def test_fractal_parameter_surface_contract_requires_code_quality_guard() -> None:
     contract = json.loads((REPO_ROOT / "docs" / "contracts" / "fractal_parameter_surface_matrix.contract.json").read_text(encoding="utf-8"))

@@ -4,6 +4,7 @@
 #include "color_pipeline_window.h"
 #undef COLOR_PIPELINE_WINDOW_NO_IMGUI
 #include "enum_id_utils.h"
+#include "escape_time_specialized_formulas.h"
 #include "explaino_seed.h"
 #include "fractal_family_rules.h"
 #include "json_min.h"
@@ -2381,15 +2382,52 @@ bool LoadDiagnosticsStateJson(const std::string& text,
                 return false;
             }
             std::string mpStr = mpVal->as_string();
-            if (mpStr == "z3_z3") nextParams.mcmullen_preset = McMullenPreset::z3_z3;
-            else if (mpStr == "z2_z2") nextParams.mcmullen_preset = McMullenPreset::z2_z2;
-            else if (mpStr == "z4_z2") nextParams.mcmullen_preset = McMullenPreset::z4_z2;
-            else if (mpStr == "z3_z2") nextParams.mcmullen_preset = McMullenPreset::z3_z2;
-            else {
+            if (!TryParseMcMullenPresetId(mpStr, &nextParams.mcmullen_preset)) {
                 if (outError) *outError = "Unknown mcmullen_preset: " + mpStr;
                 return false;
             }
         }
+    }
+
+    bool hasMcMullenM = false;
+    bool hasMcMullenN = false;
+    bool hasMcMullenLambda = false;
+    double mcmullenM = static_cast<double>(nextParams.mcmullen_m);
+    double mcmullenN = static_cast<double>(nextParams.mcmullen_n);
+    double mcmullenLambda = static_cast<double>(nextParams.mcmullen_lambda);
+    if (!GetOptionalNumber(*paramsObject, "mcmullen_m", &mcmullenM, &hasMcMullenM, outError) ||
+        !GetOptionalNumber(*paramsObject, "mcmullen_n", &mcmullenN, &hasMcMullenN, outError) ||
+        !GetOptionalNumber(*paramsObject, "mcmullen_lambda", &mcmullenLambda, &hasMcMullenLambda, outError)) {
+        return false;
+    }
+    if (hasMcMullenM) {
+        const int rounded = static_cast<int>(std::lround(mcmullenM));
+        if (std::fabs(mcmullenM - static_cast<double>(rounded)) > 1.0e-6 || rounded < 2 || rounded > 8) {
+            if (outError) *outError = "Invalid mcmullen_m field";
+            return false;
+        }
+        nextParams.mcmullen_m = rounded;
+    }
+    if (hasMcMullenN) {
+        const int rounded = static_cast<int>(std::lround(mcmullenN));
+        if (std::fabs(mcmullenN - static_cast<double>(rounded)) > 1.0e-6 || rounded < 1 || rounded > 8) {
+            if (outError) *outError = "Invalid mcmullen_n field";
+            return false;
+        }
+        nextParams.mcmullen_n = rounded;
+    }
+    if (hasMcMullenLambda) {
+        if (mcmullenLambda < -1.0 || mcmullenLambda > 1.0) {
+            if (outError) *outError = "Invalid mcmullen_lambda field";
+            return false;
+        }
+        nextParams.mcmullen_lambda = static_cast<float>(mcmullenLambda);
+    }
+    if (!hasMcMullenM && !hasMcMullenN && !hasMcMullenLambda && nextParams.mcmullen_preset != McMullenPreset::custom) {
+        const McMullenPresetConfig config = ResolveMcMullenPresetConfig(nextParams.mcmullen_preset);
+        nextParams.mcmullen_m = config.m;
+        nextParams.mcmullen_n = config.n;
+        nextParams.mcmullen_lambda = config.lambda;
     }
 
     if (!ParseFixedFloatArray(*polyCoeffsArray, "poly_coeffs", nextParams.poly_coeffs, 5, outError)) return false;

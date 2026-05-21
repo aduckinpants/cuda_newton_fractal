@@ -156,6 +156,7 @@ const char* CaptureMcMullenPresetId(McMullenPreset preset) {
     case McMullenPreset::z2_z2: return "z2_z2";
     case McMullenPreset::z4_z2: return "z4_z2";
     case McMullenPreset::z3_z2: return "z3_z2";
+    case McMullenPreset::custom: return "custom";
     }
     return "unknown";
 }
@@ -640,6 +641,9 @@ std::string BuildStateJson(
     js << "    \"transcendental_func\": \"" << CaptureTranscendentalFuncId(params.transcendental_func) << "\",\n";
     js << "    \"momentum_beta\": " << static_cast<double>(params.momentum_beta) << ",\n";
     js << "    \"mcmullen_preset\": \"" << CaptureMcMullenPresetId(params.mcmullen_preset) << "\",\n";
+    js << "    \"mcmullen_m\": " << params.mcmullen_m << ",\n";
+    js << "    \"mcmullen_n\": " << params.mcmullen_n << ",\n";
+    js << "    \"mcmullen_lambda\": " << static_cast<double>(params.mcmullen_lambda) << ",\n";
     js << "    \"poly_coeffs\": [";
     for (int i = 0; i < 5; ++i) {
         if (i > 0) js << ", ";

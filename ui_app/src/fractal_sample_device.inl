@@ -2953,7 +2953,7 @@
         }
     } else if (UsesSpecializedEscapeTimeFormula(ft)) {
         z = coord;
-        const McMullenPresetConfig mcmullenConfig = ResolveMcMullenPresetConfig(params.mcmullen_preset);
+        const McMullenPresetConfig mcmullenConfig = ResolveMcMullenRuntimeConfig(params);
 
         for (; it < maxIter; ++it) {
             if (ft == FractalType::mcmullen) {

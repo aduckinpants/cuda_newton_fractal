@@ -64,6 +64,7 @@ inline constexpr EnumIdPair<McMullenPreset> kMcMullenPresetIds[] = {
     {McMullenPreset::z2_z2, "z2_z2"},
     {McMullenPreset::z4_z2, "z4_z2"},
     {McMullenPreset::z3_z2, "z3_z2"},
+    {McMullenPreset::custom, "custom"},
 };
 
 inline constexpr EnumIdPair<ColoringMode> kColoringModeIds[] = {

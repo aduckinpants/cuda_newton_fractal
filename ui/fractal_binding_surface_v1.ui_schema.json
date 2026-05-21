@@ -270,11 +270,42 @@
             { "id": "z3_z3", "label": "z^3 + lambda/z^3" },
             { "id": "z2_z2", "label": "z^2 + lambda/z^2" },
             { "id": "z4_z2", "label": "z^4 + lambda/z^2" },
-            { "id": "z3_z2", "label": "z^3 + lambda/z^2" }
+            { "id": "z3_z2", "label": "z^3 + lambda/z^2" },
+            { "id": "custom", "label": "Custom m/n/lambda" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.mcmullen_preset" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "mcmullen" },
-          "help": "Select the (m, n, lambda) preset for the McMullen rational map z^m + lambda/z^n."
+          "help": "Select the (m, n, lambda) preset for the McMullen rational map z^m + lambda/z^n. Direct edits switch to Custom."
+        },
+        {
+          "id": "mcmullen_m",
+          "type": "slider_int",
+          "label": "McMullen m",
+          "value_type": "int",
+          "min": 2, "max": 8, "step": 1, "default": 3,
+          "binding": { "kind": "param", "path": "fractal.params.mcmullen_m" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "mcmullen" },
+          "help": "Integer exponent m in the custom McMullen rational map z^m + lambda/z^n."
+        },
+        {
+          "id": "mcmullen_n",
+          "type": "slider_int",
+          "label": "McMullen n",
+          "value_type": "int",
+          "min": 1, "max": 8, "step": 1, "default": 3,
+          "binding": { "kind": "param", "path": "fractal.params.mcmullen_n" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "mcmullen" },
+          "help": "Integer exponent n in the custom McMullen rational map z^m + lambda/z^n."
+        },
+        {
+          "id": "mcmullen_lambda",
+          "type": "drag_float",
+          "label": "McMullen Lambda",
+          "value_type": "float",
+          "min": -1.0, "max": 1.0, "step": 0.001, "default": -0.125,
+          "binding": { "kind": "param", "path": "fractal.params.mcmullen_lambda" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "mcmullen" },
+          "help": "Lambda coefficient in the custom McMullen rational map z^m + lambda/z^n."
         },
         {
           "id": "julia_c_real",
