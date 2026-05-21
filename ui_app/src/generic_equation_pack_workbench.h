@@ -22,6 +22,10 @@ struct GenericEquationPackWorkbenchPreviewSummary {
     double mean_iterations = 0.0;
     double mean_abs2 = 0.0;
     std::string result_hash;
+    int image_width = 0;
+    int image_height = 0;
+    std::vector<std::uint32_t> pixels_rgba;
+    std::string image_hash;
 };
 
 struct GenericEquationPackWorkbenchState {
@@ -56,6 +60,9 @@ struct GenericEquationPackWorkbenchAutomationReport {
     double preview_mean_iterations = 0.0;
     double preview_mean_abs2 = 0.0;
     std::string preview_result_hash;
+    int preview_image_width = 0;
+    int preview_image_height = 0;
+    std::string preview_image_hash;
 };
 
 struct GenericEquationPackWorkbenchSetValueAutomation {

@@ -41,14 +41,18 @@ def _interactive_pack() -> dict[str, object]:
     }
 
 
-def _preview_hash(payload: dict[str, object]) -> str:
+def _preview_hashes(payload: dict[str, object]) -> tuple[str, str]:
     workbench = payload.get("equation_pack_workbench")
     assert isinstance(workbench, dict), payload
     assert workbench.get("preview_ok") is True, workbench
     assert workbench.get("preview_backend_used") == "cuda", workbench
+    assert workbench.get("preview_image_width") == 8, workbench
+    assert workbench.get("preview_image_height") == 6, workbench
     result_hash = workbench.get("preview_result_hash")
     assert isinstance(result_hash, str) and result_hash.startswith("fnv1a64:"), workbench
-    return result_hash
+    image_hash = workbench.get("preview_image_hash")
+    assert isinstance(image_hash, str) and image_hash.startswith("fnv1a64:"), workbench
+    return result_hash, image_hash
 
 
 def test_equation_pack_workbench_no_mouse_set_value_changes_preview(tmp_path: Path) -> None:
@@ -75,12 +79,14 @@ def test_equation_pack_workbench_no_mouse_set_value_changes_preview(tmp_path: Pa
         ],
     ) as viewer:
         viewer.wait_for_control("equation_pack.c_real.primary", timeout_seconds=15.0)
+        viewer.wait_for_control("equation_pack.preview_canvas", timeout_seconds=15.0)
         baseline_payload = viewer.wait_for_report(timeout_seconds=15.0)
-        baseline_hash = _preview_hash(baseline_payload)
+        baseline_result_hash, baseline_image_hash = _preview_hashes(baseline_payload)
 
         edited_payload = viewer.set_control_value("equation_pack.c_real.primary", 0.35, timeout_seconds=15.0)
-        edited_hash = _preview_hash(edited_payload)
+        edited_result_hash, edited_image_hash = _preview_hashes(edited_payload)
 
         assert viewer.launch_count == 1
         assert edited_payload.get("set_value_consumed") is True
-        assert edited_hash != baseline_hash
+        assert edited_result_hash != baseline_result_hash
+        assert edited_image_hash != baseline_image_hash

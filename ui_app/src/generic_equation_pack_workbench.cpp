@@ -50,6 +50,74 @@ std::string FormatHash(std::uint64_t hash) {
     return out.str();
 }
 
+double Saturate(double value) {
+    if (!std::isfinite(value)) {
+        return 0.0;
+    }
+    return (std::max)(0.0, (std::min)(1.0, value));
+}
+
+std::uint8_t ToByte(double value) {
+    return static_cast<std::uint8_t>(std::lround(Saturate(value) * 255.0));
+}
+
+std::uint32_t PackRgba(std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint8_t a = 255) {
+    return static_cast<std::uint32_t>(r) |
+        (static_cast<std::uint32_t>(g) << 8) |
+        (static_cast<std::uint32_t>(b) << 16) |
+        (static_cast<std::uint32_t>(a) << 24);
+}
+
+double SafeMagnitudeSignal(const GenericSampleResult& result) {
+    if (std::isfinite(result.abs2) && result.abs2 >= 0.0) {
+        return std::log1p(std::sqrt(result.abs2));
+    }
+    if (std::isfinite(result.value_x) && std::isfinite(result.value_y)) {
+        return std::log1p(std::hypot(result.value_x, result.value_y));
+    }
+    return 0.0;
+}
+
+std::uint32_t PreviewPixelFromResult(const GenericSampleResult& result) {
+    if (!std::isfinite(result.value_x) ||
+        !std::isfinite(result.value_y) ||
+        !std::isfinite(result.abs2)) {
+        return PackRgba(190, 64, 220);
+    }
+
+    constexpr double kPi = 3.14159265358979323846;
+    const double magnitude = Saturate(SafeMagnitudeSignal(result) / 5.0);
+    const double iteration = Saturate(static_cast<double>((std::max)(0, result.iterations)) / 128.0);
+    const double phase = Saturate((std::atan2(result.value_y, result.value_x) + kPi) / (2.0 * kPi));
+
+    if (result.converged) {
+        return PackRgba(
+            ToByte(0.15 + 0.55 * phase),
+            ToByte(0.55 + 0.35 * (1.0 - magnitude)),
+            ToByte(0.20 + 0.55 * magnitude));
+    }
+    if (result.diverged) {
+        return PackRgba(
+            ToByte(0.75 + 0.20 * iteration),
+            ToByte(0.28 + 0.45 * (1.0 - magnitude)),
+            ToByte(0.10 + 0.25 * phase));
+    }
+    return PackRgba(
+        ToByte(0.12 + 0.35 * magnitude),
+        ToByte(0.40 + 0.35 * phase),
+        ToByte(0.60 + 0.30 * (1.0 - magnitude)));
+}
+
+std::string HashPreviewPixels(const std::vector<std::uint32_t>& pixels, int width, int height) {
+    std::uint64_t hash = 1469598103934665603ull;
+    hash = Fnv1aAppend(hash, static_cast<std::uint64_t>(static_cast<std::uint32_t>(width)));
+    hash = Fnv1aAppend(hash, static_cast<std::uint64_t>(static_cast<std::uint32_t>(height)));
+    for (std::uint32_t pixel : pixels) {
+        hash = Fnv1aAppend(hash, static_cast<std::uint64_t>(pixel));
+    }
+    return FormatHash(hash);
+}
+
 double ClampControlValue(const GenericEquationPackControl& control, double value) {
     if (control.has_min && value < control.min_value) {
         value = control.min_value;
@@ -121,11 +189,16 @@ std::vector<GFPoint> BuildPreviewGrid(const GenericEquationPackRegion& region) {
 }
 
 GenericEquationPackWorkbenchPreviewSummary SummarizeResults(
-    const std::vector<GenericSampleResult>& results) {
+    const std::vector<GenericSampleResult>& results,
+    int width,
+    int height) {
     GenericEquationPackWorkbenchPreviewSummary summary;
     summary.ok = true;
     summary.backend_used = "cuda";
     summary.sample_count = static_cast<int>(results.size());
+    summary.image_width = width;
+    summary.image_height = height;
+    summary.pixels_rgba.reserve(results.size());
 
     double iterationSum = 0.0;
     double abs2Sum = 0.0;
@@ -156,6 +229,7 @@ GenericEquationPackWorkbenchPreviewSummary SummarizeResults(
         hash = Fnv1aAppend(hash, static_cast<std::uint64_t>(static_cast<std::int64_t>(result.iterations)));
         hash = Fnv1aAppend(hash, result.converged ? 1ull : 0ull);
         hash = Fnv1aAppend(hash, result.diverged ? 1ull : 0ull);
+        summary.pixels_rgba.push_back(PreviewPixelFromResult(result));
     }
 
     if (!results.empty()) {
@@ -165,6 +239,7 @@ GenericEquationPackWorkbenchPreviewSummary SummarizeResults(
         summary.mean_abs2 = abs2Sum / static_cast<double>(finiteAbs2Count);
     }
     summary.result_hash = FormatHash(hash);
+    summary.image_hash = HashPreviewPixels(summary.pixels_rgba, summary.image_width, summary.image_height);
     return summary;
 }
 
@@ -235,6 +310,59 @@ bool ConsumeSetValueIfRequested(
         *setValueAutomation->error = applied ? std::string() : error;
     }
     return applied;
+}
+
+ImU32 ImGuiColorFromRgba(std::uint32_t rgba) {
+    return IM_COL32(
+        static_cast<int>(rgba & 0xffu),
+        static_cast<int>((rgba >> 8) & 0xffu),
+        static_cast<int>((rgba >> 16) & 0xffu),
+        static_cast<int>((rgba >> 24) & 0xffu));
+}
+
+void DrawPreviewCanvas(
+    const GenericEquationPackWorkbenchPreviewSummary& preview,
+    std::vector<ViewerUiAutomationRect>* automationRects) {
+    if (preview.image_width <= 0 ||
+        preview.image_height <= 0 ||
+        preview.pixels_rgba.size() <
+            static_cast<std::size_t>(preview.image_width) * static_cast<std::size_t>(preview.image_height)) {
+        return;
+    }
+
+    const float availableWidth = ImGui::GetContentRegionAvail().x;
+    float canvasWidth = availableWidth > 0.0f ? (std::min)(availableWidth, 320.0f) : 260.0f;
+    canvasWidth = (std::max)(32.0f, canvasWidth);
+    float canvasHeight = canvasWidth *
+        static_cast<float>(preview.image_height) / static_cast<float>(preview.image_width);
+    if (canvasHeight > 240.0f) {
+        const float scale = 240.0f / canvasHeight;
+        canvasWidth *= scale;
+        canvasHeight = 240.0f;
+    }
+
+    const ImVec2 origin = ImGui::GetCursorScreenPos();
+    const ImVec2 size(canvasWidth, canvasHeight);
+    ImGui::InvisibleButton("##equation_pack_preview_canvas", size);
+    NoteWorkbenchUiAutomationRect(automationRects, "equation_pack.preview_canvas");
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    const ImVec2 rectMax(origin.x + canvasWidth, origin.y + canvasHeight);
+    drawList->AddRectFilled(origin, rectMax, IM_COL32(14, 16, 22, 255));
+
+    for (int y = 0; y < preview.image_height; ++y) {
+        const float y0 = origin.y + canvasHeight * static_cast<float>(y) / static_cast<float>(preview.image_height);
+        const float y1 = origin.y + canvasHeight * static_cast<float>(y + 1) / static_cast<float>(preview.image_height);
+        for (int x = 0; x < preview.image_width; ++x) {
+            const float x0 = origin.x + canvasWidth * static_cast<float>(x) / static_cast<float>(preview.image_width);
+            const float x1 = origin.x + canvasWidth * static_cast<float>(x + 1) / static_cast<float>(preview.image_width);
+            const std::uint32_t pixel = preview.pixels_rgba[
+                static_cast<std::size_t>(y) * static_cast<std::size_t>(preview.image_width) +
+                static_cast<std::size_t>(x)];
+            drawList->AddRectFilled(ImVec2(x0, y0), ImVec2(x1, y1), ImGuiColorFromRgba(pixel));
+        }
+    }
+    drawList->AddRect(origin, rectMax, IM_COL32(220, 226, 236, 180));
 }
 #endif
 
@@ -336,6 +464,8 @@ bool RunGenericEquationPackWorkbenchPreview(
         return false;
     }
 
+    const int previewWidth = EffectiveGridWidth(ioState->pack.region);
+    const int previewHeight = EffectiveGridHeight(ioState->pack.region);
     std::vector<GFPoint> coords = BuildPreviewGrid(ioState->pack.region);
     std::vector<GenericSampleResult> results(coords.size());
     const char* rawError = nullptr;
@@ -354,7 +484,7 @@ bool RunGenericEquationPackWorkbenchPreview(
         return false;
     }
 
-    ioState->last_preview = SummarizeResults(results);
+    ioState->last_preview = SummarizeResults(results, previewWidth, previewHeight);
     ioState->preview_dirty = false;
     if (outError) outError->clear();
     return true;
@@ -383,6 +513,9 @@ GenericEquationPackWorkbenchAutomationReport BuildGenericEquationPackWorkbenchAu
     report.preview_mean_iterations = state.last_preview.mean_iterations;
     report.preview_mean_abs2 = state.last_preview.mean_abs2;
     report.preview_result_hash = state.last_preview.result_hash;
+    report.preview_image_width = state.last_preview.image_width;
+    report.preview_image_height = state.last_preview.image_height;
+    report.preview_image_hash = state.last_preview.image_hash;
     return report;
 }
 
@@ -466,7 +599,9 @@ void RenderGenericEquationPackWorkbench(
                 preview.backend_used.c_str(),
                 preview.sample_count,
                 preview.mean_iterations);
-            ImGui::Text("Hash: %s", preview.result_hash.c_str());
+            DrawPreviewCanvas(preview, automationRects);
+            ImGui::Text("Result Hash: %s", preview.result_hash.c_str());
+            ImGui::Text("Image Hash: %s", preview.image_hash.c_str());
         } else if (!preview.error.empty()) {
             ImGui::TextWrapped("%s", preview.error.c_str());
         }

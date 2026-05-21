@@ -204,6 +204,15 @@ void WriteColorPipelineUiAutomationReport(
     } else {
         WriteAutomationReportString(out, equationPack.preview_result_hash);
     }
+    out << ",\n";
+    out << "    \"preview_image_width\": " << equationPack.preview_image_width << ",\n";
+    out << "    \"preview_image_height\": " << equationPack.preview_image_height << ",\n";
+    out << "    \"preview_image_hash\": ";
+    if (equationPack.preview_image_hash.empty()) {
+        out << "null";
+    } else {
+        WriteAutomationReportString(out, equationPack.preview_image_hash);
+    }
     out << "\n";
     out << "  },\n";
     if (colorPipelineWindow.ui_automation_click_control_id.empty()) {

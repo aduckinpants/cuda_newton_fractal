@@ -110,13 +110,19 @@ static void TestPreviewRunsThroughSamplerAndReportChanges() {
     Check(firstReport.preview_backend_used == "cuda", "preview report identifies CUDA sampler path");
     Check(firstReport.preview_sample_count == 12, "preview grid respects pack region dimensions");
     Check(!firstReport.preview_result_hash.empty(), "preview report includes deterministic result hash");
+    Check(firstReport.preview_image_width == 4, "preview report image width follows pack region");
+    Check(firstReport.preview_image_height == 3, "preview report image height follows pack region");
+    Check(!firstReport.preview_image_hash.empty(), "preview report includes deterministic image hash");
+    Check(state.last_preview.pixels_rgba.size() == 12, "preview stores one RGBA pixel per sample");
 
     const std::string firstHash = firstReport.preview_result_hash;
+    const std::string firstImageHash = firstReport.preview_image_hash;
     Check(SetGenericEquationPackWorkbenchControlValue(&state, "equation_pack.c_real.primary", 0.75, &error),
         "second control edit succeeds");
     Check(RunGenericEquationPackWorkbenchPreview(&state, &error), "second preview runs");
     GenericEquationPackWorkbenchAutomationReport secondReport = BuildGenericEquationPackWorkbenchAutomationReport(state);
     Check(secondReport.preview_result_hash != firstHash, "control edit changes preview result hash");
+    Check(secondReport.preview_image_hash != firstImageHash, "control edit changes preview image hash");
 }
 
 int main() {
