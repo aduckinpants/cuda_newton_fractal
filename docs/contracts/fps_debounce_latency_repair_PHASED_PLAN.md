@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 complete - FPS debounce latency repair is implemented and validated. Closeout requires the checkpoint commit, receipts, push, and clean-tree proof recorded by the repo workflow, with no additional repair work pending in this plan.
+Phase 4 complete - FPS debounce latency repair is implemented and validated. The checkpoint commit, receipts, push, and clean-tree proof are recorded by the repo workflow; this plan has no additional repair work.
 
 ## Phase Checklist
 

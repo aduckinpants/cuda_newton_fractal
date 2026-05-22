@@ -138,3 +138,4 @@
 - `ck:2403c11c` 2026-05-22 17:56 UTC — session-start | branch=codex/fps-debounce-latency-repair | head=550f4c7 | status=dirty | profile=runtime | intent=measure and repair severe FPS debounce interaction latency
 - `ck:2403c11c` 2026-05-22 18:30 UTC | score 97 — FPS debounce latency repair: measured severe f64 failure, fixed stale interaction aging, severe emergency preview scale, preview-time sidecar deferral, and active-preview recovery; native pacing, runtime publish, runtime resolution pacing pytest, code-quality audit, contract validation, plan sync, and hostile audit passed.
 - `ck:2403c11c` 2026-05-22 18:31 UTC | score 97 — FPS debounce latency repair closed with measured severe f64 latency reduction and no-mouse runtime proof.
+- `ck:2403c11c` 2026-05-22 18:32 UTC | score 97 — FPS debounce latency repair stale-plan closeout text cleaned after push gate.
