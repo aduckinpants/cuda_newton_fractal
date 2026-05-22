@@ -85,9 +85,10 @@ Phase 0 is closed: the campaign branch and checked-in campaign plan/contract are
 - Sprint holder branch: `codex/parameter-functionality-campaign`.
 - Prior closed baseline: `parameter_functionality_followup_batch1` closed and pushed; this campaign starts after that baseline.
 - Contract validation: `artifacts/validation/parameter_functionality_campaign_contract.json`.
-- Phased-plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py docs/contracts/parameter_functionality_campaign_PHASED_PLAN.md`.
+- Phased-plan sync: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py`.
 - Code-quality baseline: `artifacts/validation/parameter_functionality_campaign_code_quality.json`, score 97/100, baseline check passed.
-- Whitespace check: `git diff --check`, passed.
+- Whitespace check: `py -3.14 tools/viewer_host_run_logged_command.py --label parameter_functionality_campaign_diff_check --log artifacts/logs/parameter_functionality_campaign_diff_check.log --out-json artifacts/validation/parameter_functionality_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`, passed.
+- Receipt gate finding: the first receipt attempt found that explicit-path plan sync and raw `git diff --check` were not parseable evidence commands for contract proof; repaired by switching to the repo-recognized plan-sync command and a logged diff-check command.
 - Hostile-audit validation: `artifacts/validation/parameter_functionality_campaign_hostile_audit.json`.
 
 ## Hostile Audit
@@ -103,10 +104,12 @@ Phase 0 is closed: the campaign branch and checked-in campaign plan/contract are
 
 - [done] Pass 1: clean re-read confirmed the campaign order covers step 1 through step 9 and defers steps beyond 9.
 - [done] Pass 2: no additional real issue found in branch state; the sprint branch exists and no inactive `codex/pfc-*` feature branch was created.
-- [done] Pass 3: no additional workflow mistake found after contract, plan-sync, code-quality, and whitespace validation.
+- [done] Pass 3: receipt-gate review found a real workflow mistake: two required validation commands did not have parseable contract-proof evidence. Repaired the contract command list and re-ran validation.
+- [done] Pass 4: clean re-read confirmed the repaired command list has parseable evidence for contract validation, plan sync, hostile audit, code-quality, and diff-check proof.
 
 ## Audit Findings
 
 - [x] Clean re-read confirmed no implementation file was touched during this workflow-only setup slice.
 - [x] No additional real issue found in the campaign branch model: feature branches are named and sequenced, but not pre-created.
-- [x] No additional workflow mistake found in the setup contract: it requires contract validation, plan sync, hostile audit, code-quality baseline, and whitespace proof.
+- [x] Real finding 1: the initial setup contract required explicit-path plan sync and raw `git diff --check`, which the contract-proof receipt could not parse as evidence. Repaired with the recognized plan-sync command and a logged diff-check command.
+- [x] Clean re-read confirmed the repaired setup contract requires parseable evidence for every required validation command.
