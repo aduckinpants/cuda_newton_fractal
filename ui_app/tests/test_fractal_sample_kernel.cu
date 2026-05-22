@@ -803,6 +803,54 @@ void TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls() {
         sawWarpStrengthDifference);
 }
 
+void TestExplainoLambdaPhaseStrengthControlsWarpedMap() {
+    constexpr int N = 25;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -2; yi <= 2; ++yi) {
+        for (int xi = -2; xi <= 2; ++xi) {
+            coords[next++] = MakeDouble2(0.45 * static_cast<double>(xi), 0.45 * static_cast<double>(yi));
+        }
+    }
+
+    ViewState neutralView{};
+    ViewState activeView{};
+    KernelParams neutralParams{};
+    KernelParams activeParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::explaino_lambda, neutralView, neutralParams, render);
+    MakeDefaults(FractalType::explaino_lambda, activeView, activeParams, render);
+    neutralView.explaino_phase = 1.2f;
+    activeView.explaino_phase = 1.2f;
+    neutralView.explaino_phase_strength = 0.0f;
+    activeView.explaino_phase_strength = 7.0f;
+    neutralParams.explaino_warp_strength = 0.25f;
+    activeParams.explaino_warp_strength = 0.25f;
+    neutralParams.max_iter = 1200;
+    activeParams.max_iter = 1200;
+
+    FractalSampleResult neutralResults[N]{};
+    FractalSampleResult activeResults[N]{};
+    const char* error = nullptr;
+    CHECK("explaino lambda neutral phase-strength sample ok",
+        SampleFractalPoints(coords, N, neutralView, neutralParams, render, neutralResults, &error));
+    CHECK("explaino lambda active phase-strength sample ok",
+        SampleFractalPoints(coords, N, activeView, activeParams, render, activeResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    bool sawPhaseStrengthDifference = false;
+    for (int i = 0; i < N; ++i) {
+        if (!SameFractalSampleResult(neutralResults[i], activeResults[i])) {
+            sawPhaseStrengthDifference = true;
+            break;
+        }
+    }
+    CHECK("explaino lambda phase strength changes SampleFractalPoints results",
+        sawPhaseStrengthDifference);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -928,6 +976,7 @@ int main() {
     TestCounterfactualPairReconvergenceRatioControlsOnlyTheSameBasinSplit();
     TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls();
     TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls();
+    TestExplainoLambdaPhaseStrengthControlsWarpedMap();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

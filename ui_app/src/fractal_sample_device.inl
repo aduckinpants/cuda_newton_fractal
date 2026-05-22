@@ -2763,10 +2763,11 @@
         // Explaino-Lambda bridge: escape-time logistic map with warp start.
         // z_{n+1} = lambda * z * (1 - z), seeded z from explaino polynomial surface.
         float phase = view.explaino_phase;
+        float phaseStrength = isfinite(view.explaino_phase_strength) ? view.explaino_phase_strength : 1.0f;
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
         double seed = LogisticAreaUToSeed(combinedSeed);
-        z = explaino_warp_start(coord, seed, phase, strength);
+        z = explaino_warp_start(coord, seed, phase * phaseStrength, strength);
 
         Cx lambdaC{params.lambda_real, params.lambda_imag};
 

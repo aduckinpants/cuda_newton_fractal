@@ -11,6 +11,7 @@ import pytest
 
 from tests.runtime_harness import (
     DIAGNOSTICS_STATE_FILE,
+    PersistentRuntimeViewerAutomation,
     RUNTIME_DIR,
     HeadlessLoadedStateScenario as _HeadlessLoadedStateScenario,
     HeadlessLoadedStateScenarioResult as _HeadlessLoadedStateScenarioResult,
@@ -18,6 +19,7 @@ from tests.runtime_harness import (
     capture_explaino_runtime_baseline as _capture_explaino_runtime_baseline,
     run_headless_capture as _run_headless_capture,
     run_headless_loaded_state_scenario as _run_headless_loaded_state_scenario,
+    runtime_automation_lock,
     write_state_bundle as _write_state_bundle,
 )
 
@@ -509,6 +511,49 @@ def test_explaino_lambda_cli_overrides_survive_headless_capture() -> None:
     assert state["params"]["explaino_warp_strength"] == pytest.approx(0.2, abs=1e-6)
     assert state["params"]["coloring_mode"] == "smooth_escape"
 
+
+def test_explaino_lambda_phase_strength_changes_live_output_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino-Lambda live runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_lambda",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+    state = json.loads(json.dumps(capture["state"]))
+    state["view"]["explaino_phase"] = 1.2
+    state["view"]["explaino_phase_strength"] = 0.0
+    state["params"]["explaino_warp_strength"] = 0.25
+    state_path = _write_state_bundle(tmp_path / "explaino_lambda_phase_strength", state)
+
+    with runtime_automation_lock(timeout_seconds=20.0):
+        with PersistentRuntimeViewerAutomation(
+            exe_path=exe_path,
+            state_path=state_path,
+            report_path=tmp_path / "explaino_lambda_phase_strength_report.json",
+            command_path=tmp_path / "explaino_lambda_phase_strength_command.json",
+        ) as viewer:
+            baseline_payload = viewer.wait_for_report(timeout_seconds=15.0)
+            baseline_hash = baseline_payload.get("rendered_frame_hash")
+            assert baseline_payload.get("current_fractal_type") == "explaino_lambda"
+            assert isinstance(baseline_hash, str) and baseline_hash
+
+            control_id = "fractal_control.explaino_phase_strength.primary"
+            viewer.wait_for_control(control_id, timeout_seconds=15.0)
+            edited_payload = viewer.set_control_value(control_id, 7.0, timeout_seconds=15.0)
+            edited_hash = edited_payload.get("rendered_frame_hash")
+
+            assert edited_payload.get("current_fractal_type") == "explaino_lambda"
+            assert edited_payload.get("set_value_consumed") is True
+            assert isinstance(edited_hash, str) and edited_hash
+            assert edited_hash != baseline_hash
 
 
 def test_explaino_counterfactual_pair_loaded_state_has_explicit_runtime_identity(tmp_path: Path) -> None:

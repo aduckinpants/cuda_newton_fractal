@@ -141,3 +141,5 @@
 - `ck:2403c11c` 2026-05-22 18:32 UTC | score 97 — FPS debounce latency repair stale-plan closeout text cleaned after push gate.
 - `ck:b177a216` 2026-05-22 18:36 UTC — session-start | branch=codex/explaino-counterfactual-regression | head=f5e845b | status=dirty | profile=runtime | intent=investigate and repair suspected Explaino counterfactual regression
 - `ck:b177a216` 2026-05-22 19:36 UTC | score 97 — Closed Explaino Counterfactual regression repair: root-family authority restored for explaino_counterfactual_pair, stale root-count/poly drift guarded, focused native/sample-kernel/runtime rails green.
+- `ck:8229b433` 2026-05-22 20:21 UTC — session-start | branch=master | head=8e03619 | status=dirty | profile=runtime | intent=repair explaino_lambda phase strength and audit parameter exposure opportunities
+- `ck:8229b433` 2026-05-22 20:44 UTC | score 97 — Closed Explaino Lambda phase-strength repair: no-mouse runtime proof now shows the visible control changes the live frame, native sample proof covers SampleFractalPoints, and the follow-on parameter opportunity audit is documented.

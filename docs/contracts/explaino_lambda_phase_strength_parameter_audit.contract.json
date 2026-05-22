@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "contract_id": "explaino_lambda_phase_strength_parameter_audit",
+  "feature_id": "explaino_lambda_phase_strength_parameter_audit",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/explaino_lambda_phase_strength_parameter_audit_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts/audit"
+  ],
+  "required_operator_inputs": [
+    "repair the confirmed explaino_lambda phase-strength no-op as functionality, not by hiding the control",
+    "preserve the existing no-mouse persistent runtime proof pattern",
+    "audit for additional parameter exposure and functionality opportunities after the repair"
+  ],
+  "forbidden_operator_prompts": [
+    "introduce OS mouse or physical cursor automation",
+    "broaden into FPS pacing, capture finding, Color Pipeline redesign, or generic renderer rewrite",
+    "claim epsilon or other weak default witnesses are broken without a stronger tuned proof"
+  ],
+  "required_defaults": {
+    "runtime_or_public_path_proof": "required",
+    "hostile_audit": "required",
+    "parameter_exposure_audit": "required"
+  },
+  "forbidden_defaults": {
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "hide_confirmed_control_instead_of_repair": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_lambda_phase_strength_parameter_audit.contract.json --out-json artifacts/validation/explaino_lambda_phase_strength_parameter_audit_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/explaino_lambda_phase_strength_parameter_audit_PHASED_PLAN.md --out-json artifacts/validation/explaino_lambda_phase_strength_parameter_audit_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_lambda_phase_strength_parameter_audit_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_lambda_phase_strength_native --log artifacts/logs/explaino_lambda_phase_strength_native.log --out-json artifacts/validation/explaino_lambda_phase_strength_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_lambda_phase_strength_publish_runtime --log artifacts/logs/explaino_lambda_phase_strength_publish_runtime.log --out-json artifacts/validation/explaino_lambda_phase_strength_publish_runtime.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py::test_explaino_lambda_phase_strength_changes_live_output_no_mouse -q --junitxml artifacts/pytest/test_explaino_lambda_phase_strength_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Explaino Lambda phase-strength repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_lambda_phase_strength_parameter_audit_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Explaino Lambda phase-strength hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_lambda_phase_strength_parameter_audit_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
