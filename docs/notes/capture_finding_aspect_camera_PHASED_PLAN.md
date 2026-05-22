@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 complete - capture finding now derives high-resolution archive aspect from the visible/rendered source frame when available and from the requested render size for headless capture; checkpoint, receipts, and push remain.
+Phase 4 complete - user-reported viewport resolution fighting during slider redraws is repaired and covered by headless viewport layout smoke tests.
 
 ## Phase Checklist
 
@@ -10,6 +10,7 @@ Phase 3 complete - capture finding now derives high-resolution archive aspect fr
 - [x] Phase 1 - add focused RED coverage that wide visible viewport capture keeps the same aspect-derived camera framing at high resolution.
 - [x] Phase 2 - repair manual finding capture so high-res output derives its aspect from the visible viewport while preserving center/zoom.
 - [x] Phase 3 - validate native capture seams, publish runtime, run a no-mouse runtime proof, and complete hostile audit/receipts/checkpoint.
+- [x] Phase 4 - repair viewport resolution fighting during slider-driven redraws and add the missing unit/smoke coverage.
 
 ## Explicit User Asks
 
@@ -17,6 +18,8 @@ Phase 3 complete - capture finding now derives high-resolution archive aspect fr
 - [done] Preserve high-resolution capture behavior and the existing capture outputs.
 - [done] Stop left/right clipping caused by capture using the wrong aspect.
 - [done] Keep this slice narrow; do not reopen unrelated fractal, color pipeline, or parameter work.
+- [done] Repair the introduced viewport resolution fighting regression when slider interaction redraws the viewport.
+- [done] Add the missing unit/smoke coverage for that viewport sizing path.
 
 ## Presumption Loop
 
@@ -37,6 +40,17 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - Validated: `py -3.14 tools/code_quality_audit.py --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passed with score `97/100`, no critical/errors.
 - Validated: `py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/capture_finding_aspect_camera.contract.json --out-json artifacts/validation/capture_finding_aspect_camera_contract.json` passed.
 - Validated: `py -3.14 tools/viewer_host_assert_phased_plan_sync.py` passed.
+- Regression report: after the first pushed capture fix, slider-driven redraws visibly fought over viewport resolution.
+- Found: `RenderFractalViewport(...)` tracked `g_viewportPixels` from the entire available content region, while the actual image draw rect was fitted to the render/frame aspect. That allowed settle renders to adopt the wrong available-region aspect and fight the displayed image aspect.
+- Landed: `ComputeViewportDisplayLayout(...)` now makes the fitted displayed image rect a headless-testable seam.
+- Landed: `RenderFractalViewport(...)` now records `g_viewportPixels` from the fitted image rect and uses that same rect for zoom/pan interaction math.
+- RED/green: `ui_app/tests/test_viewport_interaction.cpp` now proves a wide available region with a 4:3 source settles to `1536x1152`, not `2048x1152`, and that preview frames scale into the same displayed rect.
+- Validated: direct one-shell focused build/run of `test_viewport_interaction.exe` and `test_viewer_render_pacing.exe` passed.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_finding_archive_actions` passed after the viewport repair.
+- Validated: `ui_app\build_vsdevcmd.cmd` passed after the viewport repair and republished `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed after the viewport repair.
+- Validated: `py -3.14 tools/code_quality_audit.py --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passed after the viewport repair with score `97/100`, no critical/errors.
+- Blocked rail: a full `ui_app\build_tests_vsdevcmd.cmd` run exceeded a 15-minute timeout during CUDA-heavy native tests; orphaned compiler processes were stopped and this slice did not claim full-native-suite closure.
 
 ## Hostile Audit
 
@@ -52,11 +66,13 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] Pass 1: reviewed the initial diff and found it fixed headless/configured render aspect but did not explicitly wire the in-loop button path to `RenderedFrameState`.
 - [done] Pass 2: repaired that omission by adding `BuildFindingArchiveCaptureRenderForSource(...)` and routing button capture through the rendered frame dimensions when available.
 - [done] Pass 3: clean re-read of the repaired diff found no renderer math, color pipeline, parameter schema, or physical mouse automation change.
+- [done] Pass 4: regression audit found viewport settle used the whole content region instead of the fitted image rect; repair added headless layout coverage and routed live viewport sizing through it.
 
 ## Audit Findings
 
 - [done] Finding repaired: finding archive capture used a fixed square `4096x4096` output, which changed aspect and clipped wide views horizontally. The helper now derives a 4096-long-edge size from the source render aspect.
 - [done] Audit finding repaired: the first implementation still risked button-path mismatch if the current rendered frame dimensions differed from configured render dimensions. The in-loop capture path now uses `RenderedFrameState` dimensions when they are valid.
+- [done] Regression finding repaired: slider redraws could make adaptive settle render at the full available content-region aspect instead of the fitted image rect aspect. `g_viewportPixels` now tracks the displayed image rect.
 
 ## Notes
 

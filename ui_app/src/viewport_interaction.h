@@ -58,3 +58,12 @@ bool ApplyDragPanStep(
     float drag_dy,
     int resolution_x,
     int resolution_y);
+
+struct ViewportDisplayLayout {
+    Int2 source_resolution{0, 0};
+    Int2 image_size{0, 0};
+};
+
+ViewportDisplayLayout ComputeViewportDisplayLayout(
+    const Int2& availablePixels,
+    const Int2& sourceResolution);

@@ -6,6 +6,7 @@
   "plan_path": "docs/notes/capture_finding_aspect_camera_PHASED_PLAN.md",
   "allowed_mutation_scope": [
     "docs/contracts",
+    "docs/handoffs/archive",
     "docs/notes/capture_finding_aspect_camera_PHASED_PLAN.md",
     "HANDOFF_LOG.md",
     "ui",

@@ -331,6 +331,36 @@ bool TestApplyDragPanStepUpdatesView() {
     return true;
 }
 
+// --- Viewport display layout ---
+
+bool TestViewportLayoutUsesFittedImageRectForWideAvailableRegion() {
+    ViewportDisplayLayout layout = ComputeViewportDisplayLayout({2048, 1152}, {2048, 1536});
+    ASSERT(layout.image_size.x == 1536, "4:3 source in a 16:9 region should fit to displayed image width, not full available width");
+    ASSERT(layout.image_size.y == 1152, "4:3 source in a 16:9 region should use full available height");
+    return true;
+}
+
+bool TestViewportLayoutKeepsWideSourceAtFullWideRegion() {
+    ViewportDisplayLayout layout = ComputeViewportDisplayLayout({2048, 1152}, {2048, 1152});
+    ASSERT(layout.image_size.x == 2048, "matching wide source should use full available width");
+    ASSERT(layout.image_size.y == 1152, "matching wide source should use full available height");
+    return true;
+}
+
+bool TestViewportLayoutScalesPreviewFrameToSameDisplayedRect() {
+    ViewportDisplayLayout layout = ComputeViewportDisplayLayout({2048, 1152}, {1024, 768});
+    ASSERT(layout.image_size.x == 1536, "half-res 4:3 preview should draw into the same 4:3 image rect");
+    ASSERT(layout.image_size.y == 1152, "half-res 4:3 preview should preserve displayed image height");
+    return true;
+}
+
+bool TestViewportLayoutRejectsInvalidInput() {
+    ViewportDisplayLayout layout = ComputeViewportDisplayLayout({2048, 1152}, {0, 768});
+    ASSERT(layout.image_size.x == 0, "invalid source width should produce no image width");
+    ASSERT(layout.image_size.y == 0, "invalid source width should produce no image height");
+    return true;
+}
+
 // --- Combined interaction tests ---
 
 bool TestZoomThenPanConsistency() {
@@ -402,6 +432,12 @@ int main() {
     RUN(TestDragPanReversibility);
     RUN(TestApplyDragPanStepZeroDeltaNoOp);
     RUN(TestApplyDragPanStepUpdatesView);
+
+    // Viewport display layout
+    RUN(TestViewportLayoutUsesFittedImageRectForWideAvailableRegion);
+    RUN(TestViewportLayoutKeepsWideSourceAtFullWideRegion);
+    RUN(TestViewportLayoutScalesPreviewFrameToSameDisplayedRect);
+    RUN(TestViewportLayoutRejectsInvalidInput);
     
     // Combined
     RUN(TestZoomThenPanConsistency);

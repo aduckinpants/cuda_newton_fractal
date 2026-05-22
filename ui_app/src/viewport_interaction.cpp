@@ -2,6 +2,33 @@
 
 #include <cmath>
 
+ViewportDisplayLayout ComputeViewportDisplayLayout(
+    const Int2& availablePixels,
+    const Int2& sourceResolution) {
+    ViewportDisplayLayout layout{};
+    layout.source_resolution = sourceResolution;
+
+    if (availablePixels.x <= 0 || availablePixels.y <= 0 ||
+        sourceResolution.x <= 0 || sourceResolution.y <= 0) {
+        return layout;
+    }
+
+    const double sx = static_cast<double>(availablePixels.x) / static_cast<double>(sourceResolution.x);
+    const double sy = static_cast<double>(availablePixels.y) / static_cast<double>(sourceResolution.y);
+    double scale = sx < sy ? sx : sy;
+    if (!std::isfinite(scale) || scale <= 0.0) {
+        scale = 1.0;
+    }
+
+    layout.image_size.x = static_cast<int>(std::floor(static_cast<double>(sourceResolution.x) * scale + 0.5));
+    layout.image_size.y = static_cast<int>(std::floor(static_cast<double>(sourceResolution.y) * scale + 0.5));
+    if (layout.image_size.x > availablePixels.x) layout.image_size.x = availablePixels.x;
+    if (layout.image_size.y > availablePixels.y) layout.image_size.y = availablePixels.y;
+    if (layout.image_size.x < 0) layout.image_size.x = 0;
+    if (layout.image_size.y < 0) layout.image_size.y = 0;
+    return layout;
+}
+
 bool ApplyAutoDiveStep(ViewState& view) {
     if (!view.auto_dive) return false;
     if (view.camera_behavior == CameraBehavior::manual || view.camera_behavior == CameraBehavior::off) return false;

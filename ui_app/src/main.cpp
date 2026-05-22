@@ -590,6 +590,7 @@ static bool RunInLoopFindingCapture(
 
 static void RenderFractalViewport(
     const ImGuiIO& io, const RenderSettings& render,
+    const RenderedFrameState& renderedFrame,
     ViewState& view, bool& dirty, bool& interactionChanged,
     const RuntimeWalkViewerPlaybackState* runtimeWalkPlayback,
     const RuntimeWalkOverlayPath* runtimeWalkPath,
@@ -597,18 +598,18 @@ static void RenderFractalViewport(
     ImGui::Begin("Fractal");
     if (g_fractalSRV) {
         ImVec2 avail = ImGui::GetContentRegionAvail();
-        // Track viewport pixel dimensions for adaptive-resolution settle.
-        if (avail.x >= 64.0f && avail.y >= 64.0f) {
-            g_viewportPixels = {(int)avail.x, (int)avail.y};
+        const Int2 sourceResolution =
+            (renderedFrame.ready && renderedFrame.width > 0 && renderedFrame.height > 0)
+                ? Int2{renderedFrame.width, renderedFrame.height}
+                : render.resolution;
+        const ViewportDisplayLayout layout = ComputeViewportDisplayLayout(
+            Int2{(int)avail.x, (int)avail.y},
+            sourceResolution);
+        // Track the displayed image rectangle, not the whole content region, for adaptive-resolution settle.
+        if (layout.image_size.x >= 64 && layout.image_size.y >= 64) {
+            g_viewportPixels = layout.image_size;
         }
-        float scale = 1.0f;
-        if (render.resolution.x > 0 && render.resolution.y > 0) {
-            float sx = avail.x / (float)render.resolution.x;
-            float sy = avail.y / (float)render.resolution.y;
-            scale = (sx < sy) ? sx : sy;
-            if (scale <= 0.0f) scale = 1.0f;
-        }
-        ImVec2 size((float)render.resolution.x * scale, (float)render.resolution.y * scale);
+        ImVec2 size((float)layout.image_size.x, (float)layout.image_size.y);
 
         ImGui::InvisibleButton("##viewport", size, ImGuiButtonFlags_MouseButtonLeft);
         ImVec2 rectMin = ImGui::GetItemRectMin();
@@ -633,7 +634,7 @@ static void RenderFractalViewport(
                 ImVec2 mp = ImGui::GetMousePos();
                 float u = ClampF((mp.x - rectMin.x) / size.x, 0.0f, 1.0f);
                 float v = ClampF((mp.y - rectMin.y) / size.y, 0.0f, 1.0f);
-                double aspect = (render.resolution.y > 0) ? (double)render.resolution.x / (double)render.resolution.y : 1.0;
+                double aspect = (layout.image_size.y > 0) ? (double)layout.image_size.x / (double)layout.image_size.y : 1.0;
 
                 auto zr = ComputeZoomAroundCursor(
                     view.center_hp_x, view.center_hp_y, view.log2_zoom,
@@ -646,11 +647,11 @@ static void RenderFractalViewport(
                 interactionChanged = true;
             }
 
-            if (active && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && render.resolution.x > 0 && render.resolution.y > 0) {
+            if (active && ImGui::IsMouseDragging(ImGuiMouseButton_Left) && layout.image_size.x > 0 && layout.image_size.y > 0) {
                 ImVec2 dpx = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
                 ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
 
-                if (ApplyDragPanStep(view, dpx.x, dpx.y, render.resolution.x, render.resolution.y)) {
+                if (ApplyDragPanStep(view, dpx.x, dpx.y, layout.image_size.x, layout.image_size.y)) {
                     dirty = true;
                     interactionChanged = true;
                 }
@@ -2891,7 +2892,7 @@ static void RunViewerFrame(
         runtimeWalkFieldSlimeValid = false;
     }
 
-    RenderFractalViewport(io, render, view, dirty, actions.interactionChanged,
+    RenderFractalViewport(io, render, renderedFrame, view, dirty, actions.interactionChanged,
         runtimeWalkViewerSession.loaded ? &runtimeWalkPlayback : nullptr,
         runtimeWalkViewerSession.loaded ? &runtimeWalkOverlayPath : nullptr,
         runtimeWalkViewerSession.loaded ? &runtimeWalkGradientOverlay : nullptr);
