@@ -14,6 +14,22 @@ namespace {
 
 constexpr int kFindingArchiveCaptureResolution = 4096;
 
+Int2 FindingArchiveCaptureResolutionForSource(const Int2& sourceResolution) {
+    if (sourceResolution.x <= 0 || sourceResolution.y <= 0) {
+        return {kFindingArchiveCaptureResolution, kFindingArchiveCaptureResolution};
+    }
+
+    if (sourceResolution.x >= sourceResolution.y) {
+        const long long scaledHeight =
+            (static_cast<long long>(kFindingArchiveCaptureResolution) * sourceResolution.y + sourceResolution.x / 2) / sourceResolution.x;
+        return {kFindingArchiveCaptureResolution, static_cast<int>(scaledHeight > 0 ? scaledHeight : 1)};
+    }
+
+    const long long scaledWidth =
+        (static_cast<long long>(kFindingArchiveCaptureResolution) * sourceResolution.x + sourceResolution.y / 2) / sourceResolution.y;
+    return {static_cast<int>(scaledWidth > 0 ? scaledWidth : 1), kFindingArchiveCaptureResolution};
+}
+
 std::string SanitizeFindingLabel(const std::string& text) {
     std::string cleaned;
     cleaned.reserve(text.size());
@@ -465,8 +481,14 @@ FindingArchiveIdentity BuildUniqueFindingIdentity(
 }
 
 RenderSettings BuildFindingArchiveCaptureRender(const RenderSettings& render) {
+    return BuildFindingArchiveCaptureRenderForSource(render, render.resolution);
+}
+
+RenderSettings BuildFindingArchiveCaptureRenderForSource(
+    const RenderSettings& render,
+    const Int2& sourceResolution) {
     RenderSettings captureRender = render;
-    captureRender.resolution = {kFindingArchiveCaptureResolution, kFindingArchiveCaptureResolution};
+    captureRender.resolution = FindingArchiveCaptureResolutionForSource(sourceResolution);
     captureRender.benchmark = true;
     return captureRender;
 }

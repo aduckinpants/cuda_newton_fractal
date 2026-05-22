@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "contract_id": "capture_finding_aspect_camera",
+  "feature_id": "capture_finding_aspect_camera",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/notes/capture_finding_aspect_camera_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "docs/notes/capture_finding_aspect_camera_PHASED_PLAN.md",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests"
+  ],
+  "required_operator_inputs": [
+    "manual finding capture must preserve the camera framing the operator sees",
+    "high resolution capture behavior must remain high resolution",
+    "wide viewport aspect must not clip left and right sides during capture",
+    "no physical mouse automation may be introduced"
+  ],
+  "forbidden_operator_prompts": [
+    "replace the renderer or camera model for this slice",
+    "change capture to low resolution to avoid the mismatch",
+    "use OS cursor automation as proof",
+    "widen into unrelated QoL, color-pipeline, or fractal parameter work"
+  ],
+  "required_defaults": {
+    "capture_finding_aspect": "derived_from_visible_viewport",
+    "capture_camera": "preserves_visible_center_and_zoom",
+    "capture_quality": "high_resolution",
+    "automation": "no_physical_mouse"
+  },
+  "forbidden_defaults": {
+    "fixed_capture_aspect": "forbidden",
+    "camera_recenter_for_capture": "forbidden",
+    "low_res_capture_workaround": "forbidden",
+    "os_mouse_test_harness": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/capture_finding_aspect_camera.contract.json --out-json artifacts/validation/capture_finding_aspect_camera_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "capture_finding_aspect_camera_contract_schema_valid",
+      "description": "The capture finding aspect/camera contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/capture_finding_aspect_camera_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "capture_finding_aspect_camera_plan_sync_ok",
+      "description": "The capture finding aspect/camera phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

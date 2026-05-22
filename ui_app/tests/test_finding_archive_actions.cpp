@@ -568,8 +568,8 @@ int main() {
         render.preview_target_fps = 48.0f;
 
         const RenderSettings captureRender = BuildFindingArchiveCaptureRender(render);
-        if (captureRender.resolution.x != 4096 || captureRender.resolution.y != 4096) {
-            std::cerr << "Expected finding archive capture to force a 4k square frame\n";
+        if (captureRender.resolution.x != 4096 || captureRender.resolution.y != 2731) {
+            std::cerr << "Expected finding archive capture to preserve source aspect at a high-res long edge\n";
             return 1;
         }
         if (!captureRender.benchmark || render.benchmark) {
@@ -578,7 +578,43 @@ int main() {
         }
         if (captureRender.block_size != render.block_size || captureRender.device_id != render.device_id ||
             captureRender.preview_target_fps != render.preview_target_fps) {
-            std::cerr << "Expected 4k finding archive render to preserve non-resolution settings except capture benchmark timing\n";
+            std::cerr << "Expected high-res finding archive render to preserve non-resolution settings except capture benchmark timing\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings wideRender{};
+        wideRender.resolution = {2048, 1152};
+        const RenderSettings wideCapture = BuildFindingArchiveCaptureRender(wideRender);
+        if (wideCapture.resolution.x != 4096 || wideCapture.resolution.y != 2304) {
+            std::cerr << "Expected 16:9 finding archive capture to emit 4096x2304 instead of clipping to a square frame\n";
+            return 1;
+        }
+
+        RenderSettings configuredRender{};
+        configuredRender.resolution = {1536, 1024};
+        configuredRender.block_size = 128;
+        configuredRender.device_id = 2;
+        configuredRender.preview_target_fps = 48.0f;
+        const RenderSettings visibleFrameCapture =
+            BuildFindingArchiveCaptureRenderForSource(configuredRender, {2048, 1152});
+        if (visibleFrameCapture.resolution.x != 4096 || visibleFrameCapture.resolution.y != 2304) {
+            std::cerr << "Expected in-loop finding archive capture to prefer the rendered frame aspect over configured render aspect\n";
+            return 1;
+        }
+        if (visibleFrameCapture.block_size != configuredRender.block_size ||
+            visibleFrameCapture.device_id != configuredRender.device_id ||
+            visibleFrameCapture.preview_target_fps != configuredRender.preview_target_fps) {
+            std::cerr << "Expected rendered-frame aspect capture to preserve configured non-resolution settings\n";
+            return 1;
+        }
+
+        RenderSettings portraitRender{};
+        portraitRender.resolution = {900, 1600};
+        const RenderSettings portraitCapture = BuildFindingArchiveCaptureRender(portraitRender);
+        if (portraitCapture.resolution.x != 2304 || portraitCapture.resolution.y != 4096) {
+            std::cerr << "Expected portrait finding archive capture to preserve source aspect with a 4096 high edge\n";
             return 1;
         }
     }

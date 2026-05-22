@@ -553,6 +553,7 @@ static void RunInLoopDiagnosticCapture(
 static bool RunInLoopFindingCapture(
     const std::string& exeDir, ViewState& view, KernelParams& params,
     const RenderSettings& render,
+    const RenderedFrameState& renderedFrame,
     const ColorPipelineWindowState* colorPipelineWindow,
     const SidecarOrientationVector* sidecarOrientation,
     const SidecarAutoDemoMutationHistory* sidecarMutationHistory,
@@ -561,7 +562,11 @@ static bool RunInLoopFindingCapture(
     std::string findingDir;
     std::string captureError;
     const bool invalidateCaches = PrepareFindingCaptureRuntimeState(view, params);
-    RenderSettings findingRender = BuildFindingArchiveCaptureRender(render);
+    const Int2 captureSourceResolution =
+        (renderedFrame.ready && renderedFrame.width > 0 && renderedFrame.height > 0)
+            ? Int2{renderedFrame.width, renderedFrame.height}
+            : render.resolution;
+    RenderSettings findingRender = BuildFindingArchiveCaptureRenderForSource(render, captureSourceResolution);
     std::vector<uint32_t> findingRgba;
     findingRgba.resize((size_t)findingRender.resolution.x * (size_t)findingRender.resolution.y);
     const char* err = nullptr;
@@ -1897,7 +1902,7 @@ static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFl
     }
 
     if (actions.captureFinding) {
-        if (RunInLoopFindingCapture(exeDir, view, params, render, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
+        if (RunInLoopFindingCapture(exeDir, view, params, render, renderedFrame, &colorPipelineWindow, sidecarOrientation, mutationHistory, sidecarControllerPolicy, findingStatus, lastFindingPath)) {
             ioSidecarStateValid = false;
             ioSidecarBudgetStateValid = false;
         }

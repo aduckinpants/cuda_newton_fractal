@@ -93,6 +93,91 @@ def test_manual_explaino_inertial_capture_reloads_to_detailed_frame() -> None:
     assert not failures, "\n".join(failures)
 
 
+def test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution() -> None:
+    image_module = pytest.importorskip("PIL.Image")
+    exe_path = _active_runtime_exe()
+    DIAGNOSTICS_STATE_FILE.unlink(missing_ok=True)
+    DIAGNOSTICS_FRAME_FILE.unlink(missing_ok=True)
+    seed = subprocess.run(
+        [
+            str(exe_path),
+            "--width",
+            "640",
+            "--height",
+            "360",
+            "--capture-diagnostic",
+        ],
+        cwd=str(RUNTIME_DIR),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert seed.returncode == 0, seed.stderr or seed.stdout
+    assert DIAGNOSTICS_STATE_FILE.exists(), f"missing seed diagnostics state file: {DIAGNOSTICS_STATE_FILE}"
+
+    seeded_state = json.loads(DIAGNOSTICS_STATE_FILE.read_text(encoding="utf-8"))
+    seeded_state["view"]["center_x"] = 0.125
+    seeded_state["view"]["center_y"] = -0.25
+    seeded_state["view"]["zoom"] = 8.0
+    seeded_state["view"]["center_hp_x"] = 0.125
+    seeded_state["view"]["center_hp_y"] = -0.25
+    seeded_state["view"]["log2_zoom"] = 3.0
+    source_state_dir = RUNTIME_DIR / f"wide_camera_state_{uuid.uuid4().hex}"
+    source_state_dir.mkdir(parents=True, exist_ok=True)
+    source_state_path = source_state_dir / "state.json"
+    source_state_path.write_text(json.dumps(seeded_state), encoding="utf-8")
+
+    finding_group = f"runtime_capture_aspect_{uuid.uuid4().hex}"
+    finding_group_root = RUNTIME_DIR.parent / "findings" / finding_group
+    shutil.rmtree(finding_group_root, ignore_errors=True)
+    try:
+        result = subprocess.run(
+            [
+                str(exe_path),
+                "--load-state-json",
+                str(source_state_path),
+                "--width",
+                "2048",
+                "--height",
+                "1152",
+                "--capture-finding",
+                "--finding-group",
+                finding_group,
+                "--finding-why",
+                "runtime no-mouse capture aspect proof",
+            ],
+            cwd=str(RUNTIME_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr or result.stdout
+
+        finding_dirs = sorted(path for path in finding_group_root.glob("*/*") if path.is_dir())
+        assert len(finding_dirs) == 1
+        finding_dir = finding_dirs[0]
+        archived_state_path = finding_dir / "state.json"
+        archived_frame_path = finding_dir / "frame.png"
+        assert archived_state_path.exists()
+        assert archived_frame_path.exists()
+
+        archived_state = json.loads(archived_state_path.read_text(encoding="utf-8"))
+        assert archived_state["render"]["width"] == 4096
+        assert archived_state["render"]["height"] == 2304
+        assert archived_state["view"]["center_hp_x"] == pytest.approx(0.125)
+        assert archived_state["view"]["center_hp_y"] == pytest.approx(-0.25)
+        assert archived_state["view"]["log2_zoom"] == pytest.approx(3.0)
+        assert archived_state["view"]["center_x"] == pytest.approx(0.125)
+        assert archived_state["view"]["center_y"] == pytest.approx(-0.25)
+        assert archived_state["view"]["zoom"] == pytest.approx(8.0)
+
+        with image_module.open(archived_frame_path) as archived_frame:
+            assert archived_frame.size == (4096, 2304)
+    finally:
+        shutil.rmtree(source_state_dir, ignore_errors=True)
+        shutil.rmtree(finding_group_root, ignore_errors=True)
+
+
 def test_current_explaino_inertial_capture_finding_archive_replays_its_pixels() -> None:
     image_module = pytest.importorskip("PIL.Image")
     if not MANUAL_CAPTURE_STATE.exists():

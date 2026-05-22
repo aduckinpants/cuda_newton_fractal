@@ -28,6 +28,10 @@ std::filesystem::path FindRepoRootFromRuntimeMetadata(const std::filesystem::pat
 
 RenderSettings BuildFindingArchiveCaptureRender(const RenderSettings& render);
 
+RenderSettings BuildFindingArchiveCaptureRenderForSource(
+    const RenderSettings& render,
+    const Int2& sourceResolution);
+
 std::wstring BuildArchiveScriptCommandLine(
     const std::filesystem::path& pythonLauncher,
     const std::filesystem::path& scriptPath,
