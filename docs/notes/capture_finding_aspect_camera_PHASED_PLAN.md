@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 complete - preview downscale now requires measured slow-frame evidence; unknown or within-budget interaction remains full resolution.
+Phase 6 complete - active-preview debounce UX is hardened, the focused pacing harness target exists, and extended native/runtime validation passed.
 
 ## Phase Checklist
 
@@ -12,6 +12,7 @@ Phase 5 complete - preview downscale now requires measured slow-frame evidence; 
 - [x] Phase 3 - validate native capture seams, publish runtime, run a no-mouse runtime proof, and complete hostile audit/receipts/checkpoint.
 - [x] Phase 4 - repair viewport resolution fighting during slider-driven redraws and add the missing unit/smoke coverage.
 - [x] Phase 5 - repair preview downscale policy so common fast/unknown-timing interaction stays full resolution, with focused render-pacing tests.
+- [x] Phase 6 - harden active-preview UX when debounce is needed, repair the code-quality baseline regression, add the missing focused pacing harness target, and run extended validation.
 
 ## Explicit User Asks
 
@@ -22,6 +23,7 @@ Phase 5 complete - preview downscale now requires measured slow-frame evidence; 
 - [done] Repair the introduced viewport resolution fighting regression when slider interaction redraws the viewport.
 - [done] Add the missing unit/smoke coverage for that viewport sizing path.
 - [done] Repair lower-resolution preview kicking in too hard when there is no measured FPS loss, especially common low-iteration float32 interaction.
+- [done] Hostile-review the viewport preview UX when debounce is actually needed, and fix low-hanging defects not already documented/deferred.
 
 ## Presumption Loop
 
@@ -63,6 +65,19 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - Validated: `py -3.14 -m pytest tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed after the preview policy repair.
 - Validated: `py -3.14 tools/code_quality_audit.py --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passed after the preview policy repair with score `97/100`, no critical/errors.
 - Noted validation miss: `ui_app\build_tests_vsdevcmd.cmd test_viewer_render_pacing` is not a supported focused target in the checked-in script, so the focused pacing rail was run through the direct one-shell MSVC command instead.
+- Phase 6 review found: bootstrap code-quality baseline rejects the previous helper shape with `viewer_render_pacing.cpp max_fn_lines 9 -> 10`.
+- Phase 6 review found: active preview recovery ignores `step_up_hysteresis` and treats preview-frame timing as if it were full-resolution timing, which can pump resolution during needed debounce.
+- Phase 6 review found: the checked native helper script compiles `test_viewer_render_pacing` in the full suite but lacks a focused `test_viewer_render_pacing` target, forcing ad hoc validation commands for this seam.
+- Phase 6 RED observed: the added active-preview tests failed first with `Expected active preview with unknown timing to hold the current preview scale`.
+- Landed: active preview now interprets render timing relative to the preview scale that produced it; unknown active-preview timing holds scale, middling timing holds through the recovery hysteresis band, and clearly fast preview frames recover gradually.
+- Landed: `TargetPreviewScale(...)` was split into smaller helpers so `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passes the baseline.
+- Landed: `ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing` is now a checked focused target for the pacing seam.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_viewer_render_pacing` passed.
+- Validated: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passed with score `97/100` and baseline check passed.
+- Validated: `py -3.14 tools/viewer_host_run_logged_command.py --label pacing_qol_native_full --log artifacts/logs/pacing_qol_native_full.log -- ui_app/build_tests_vsdevcmd.cmd` passed with `All helper tests passed`.
+- Validated: `ui_app\build_vsdevcmd.cmd` passed and republished `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed with `2 passed`.
+- Validated: `git diff --check` passed.
 
 ## Hostile Audit
 
@@ -73,6 +88,9 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - Did any test use physical mouse automation?
 - Did the slice avoid unrelated fractal/color/parameter changes?
 - Did preview downscale now require measured slow-frame evidence instead of reducing resolution on common fast or unknown-timing interaction?
+- When preview is already active, does recovery use measured preview scale and `step_up_hysteresis` so needed debounce does not pump resolution?
+- Does the pacing seam satisfy the repo code-quality baseline after the QoL pass?
+- Can `test_viewer_render_pacing` run through the checked-in native helper harness instead of an ad hoc MSVC command?
 
 ## Audit Passes
 
@@ -81,6 +99,7 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] Pass 3: clean re-read of the repaired diff found no renderer math, color pipeline, parameter schema, or physical mouse automation change.
 - [done] Pass 4: regression audit found viewport settle used the whole content region instead of the fitted image rect; repair added headless layout coverage and routed live viewport sizing through it.
 - [done] Pass 5: audit preview downscale policy confirmed the repair changes only pacing policy/tests/contract docs, keeps capture/camera/fractal/color paths untouched, and preserves slow-frame preview behavior.
+- [done] Pass 6: audit confirmed active-preview recovery now uses measured preview scale plus step-up/step-down hysteresis, code quality baseline passes, and the focused pacing harness target runs through the checked native helper.
 
 ## Audit Findings
 
@@ -88,6 +107,9 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] Audit finding repaired: the first implementation still risked button-path mismatch if the current rendered frame dimensions differed from configured render dimensions. The in-loop capture path now uses `RenderedFrameState` dimensions when they are valid.
 - [done] Regression finding repaired: slider redraws could make adaptive settle render at the full available content-region aspect instead of the fitted image rect aspect. `g_viewportPixels` now tracks the displayed image rect.
 - [done] Regression finding repaired: preview downscale no longer engages for unknown timing or near-budget full-resolution frames; it requires measured slow-frame evidence past the step-down hysteresis.
+- [done] QoL finding repaired: active-preview recovery now uses current preview scale and `step_up_hysteresis`, holding scale for unknown/middling timings and recovering only on clearly fast preview frames.
+- [done] QoL finding repaired: pacing helpers were split so the repo code-quality baseline passes.
+- [done] Test-harness finding repaired: `ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing` now compiles and runs the focused pacing unit rail.
 
 ## Notes
 

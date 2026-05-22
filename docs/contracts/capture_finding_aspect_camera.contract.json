@@ -12,6 +12,7 @@
     "ui",
     "ui_app/src",
     "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
     "tests"
   ],
   "required_operator_inputs": [
@@ -19,7 +20,9 @@
     "high resolution capture behavior must remain high resolution",
     "wide viewport aspect must not clip left and right sides during capture",
     "no physical mouse automation may be introduced",
-    "viewport preview downscale must require measured slow-frame evidence instead of triggering from unknown timing alone"
+    "viewport preview downscale must require measured slow-frame evidence instead of triggering from unknown timing alone",
+    "active preview recovery must be stable when debounce is needed and must satisfy the repo code-quality baseline",
+    "focused pacing tests must be runnable through the checked-in native helper harness"
   ],
   "forbidden_operator_prompts": [
     "replace the renderer or camera model for this slice",
@@ -32,7 +35,8 @@
     "capture_camera": "preserves_visible_center_and_zoom",
     "capture_quality": "high_resolution",
     "automation": "no_physical_mouse",
-    "preview_downscale": "requires_slow_frame_evidence"
+    "preview_downscale": "requires_slow_frame_evidence",
+    "active_preview_recovery": "uses_measured_scale_and_step_up_hysteresis"
   },
   "forbidden_defaults": {
     "fixed_capture_aspect": "forbidden",

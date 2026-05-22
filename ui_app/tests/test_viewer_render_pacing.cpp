@@ -164,6 +164,60 @@ int main() {
         RenderSettings render{};
         render.resolution = {1024, 768};
         RenderStats stats{};
+        stats.last_render_ms = 0.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.05;
+        state.active_preview_scale = 0.50;
+        state.settle_render_pending = true;
+
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.50)) {
+            std::cerr << "Expected active preview with unknown timing to hold the current preview scale\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {1024, 768};
+        RenderStats stats{};
+        stats.last_render_ms = 30.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.05;
+        state.active_preview_scale = 0.50;
+        state.settle_render_pending = true;
+
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.50)) {
+            std::cerr << "Expected active preview to hold scale inside the recovery hysteresis band\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {1024, 768};
+        RenderStats stats{};
+        stats.last_render_ms = 45.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.05;
+        state.active_preview_scale = 0.50;
+        state.settle_render_pending = true;
+
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.50)) {
+            std::cerr << "Expected slow active-preview timing to stay at the current bounded preview scale\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {1024, 768};
+        RenderStats stats{};
         stats.last_render_ms = 8.0f;
         ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
         ViewerRenderPacingState state{};

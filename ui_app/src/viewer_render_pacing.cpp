@@ -38,20 +38,41 @@ bool HasUsableRenderTiming(float renderMs) {
     return std::isfinite(renderMs) && renderMs > 0.0f;
 }
 
-double PreviewScaleFromTiming(float renderMs, double targetFrameMs, double minScale) {
-    const double target = std::sqrt(targetFrameMs / static_cast<double>(renderMs));
+bool IsActivePreviewScale(double scale) {
+    return scale < 0.999;
+}
+
+double TimingThreshold(double targetFrameMs, double hysteresis, double minValue, double maxValue, double fallback) {
+    return targetFrameMs * ClampFinite(hysteresis, minValue, maxValue, fallback);
+}
+
+double PreviewScaleFromTiming(float renderMs, double targetFrameMs, double measuredScale, double minScale) {
+    measuredScale = ClampPreviewScale(measuredScale, minScale);
+    const double target = measuredScale * std::sqrt(targetFrameMs / static_cast<double>(renderMs));
     return ClampPreviewScale(target, minScale);
 }
 
-double TargetPreviewScale(const RenderStats& lastStats, const ViewerRenderPacingConfig& config) {
+double TargetFullPreviewScale(float renderMs, const ViewerRenderPacingConfig& config, double minScale) {
+    const double stepDown = TimingThreshold(config.target_frame_ms, config.step_down_hysteresis, 1.0, 4.0, 1.10);
+    if (static_cast<double>(renderMs) <= stepDown) return 1.0;
+    return PreviewScaleFromTiming(renderMs, config.target_frame_ms, 1.0, minScale);
+}
+
+double TargetActivePreviewScale(float renderMs, const ViewerRenderPacingConfig& config, double currentScale, double minScale) {
+    const double stepDown = TimingThreshold(config.target_frame_ms, config.step_down_hysteresis, 1.0, 4.0, 1.10);
+    if (static_cast<double>(renderMs) > stepDown) return PreviewScaleFromTiming(renderMs, config.target_frame_ms, currentScale, minScale);
+    const double stepUp = TimingThreshold(config.target_frame_ms, config.step_up_hysteresis, 0.1, 1.0, 0.75);
+    if (static_cast<double>(renderMs) < stepUp) return PreviewScaleFromTiming(renderMs, config.target_frame_ms, currentScale, minScale);
+    return currentScale;
+}
+
+double TargetPreviewScale(const RenderStats& lastStats, const ViewerRenderPacingConfig& config, double currentPreviewScale) {
     const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
+    const double currentScale = ClampPreviewScale(currentPreviewScale, minScale);
     if (!std::isfinite(config.target_frame_ms) || config.target_frame_ms <= 0.0) return 1.0;
-    if (!HasUsableRenderTiming(lastStats.last_render_ms)) return 1.0;
-
-    const double stepDownThreshold = config.target_frame_ms * ClampFinite(config.step_down_hysteresis, 1.0, 4.0, 1.10);
-    if (static_cast<double>(lastStats.last_render_ms) <= stepDownThreshold) return 1.0;
-
-    return PreviewScaleFromTiming(lastStats.last_render_ms, config.target_frame_ms, minScale);
+    if (!HasUsableRenderTiming(lastStats.last_render_ms)) return IsActivePreviewScale(currentScale) ? currentScale : 1.0;
+    if (IsActivePreviewScale(currentScale)) return TargetActivePreviewScale(lastStats.last_render_ms, config, currentScale, minScale);
+    return TargetFullPreviewScale(lastStats.last_render_ms, config, minScale);
 }
 
 double ClampRecoveredPreviewScale(double value, double minScale) {
@@ -121,7 +142,7 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
 
     ioState->seconds_since_interaction = ageAfterFrame;
     const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
-    const double targetScale = TargetPreviewScale(lastStats, config);
+    const double targetScale = TargetPreviewScale(lastStats, config, ioState->active_preview_scale);
     const double previewScale = RecoverPreviewScale(ioState->active_preview_scale, targetScale, minScale);
     ioState->active_preview_scale = previewScale;
 
