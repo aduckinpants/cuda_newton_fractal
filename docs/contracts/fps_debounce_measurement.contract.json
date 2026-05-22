@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "contract_id": "fps_debounce_measurement",
+  "feature_id": "fps_debounce_measurement",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/fps_debounce_measurement_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui_app/src",
+    "ui_app/tests",
+    "ui_app/build_tests_vsdevcmd.cmd",
+    "tests",
+    "tools"
+  ],
+  "required_operator_inputs": [
+    "measure fast f32 and slow f64 interaction behavior before changing debounce policy",
+    "repair only the measured viewer pacing/reporting seam",
+    "preserve capture finding quality and unrelated color/fractal behavior",
+    "use no physical mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "change capture finding output quality under this slice",
+    "change color pipeline behavior under this slice",
+    "rewrite renderer or fractal math under this slice",
+    "tune debounce constants without measurement evidence",
+    "introduce OS mouse/cursor automation"
+  ],
+  "required_defaults": {
+    "measurement_first": "required",
+    "runtime_publish": "required",
+    "published_runtime_proof": "required",
+    "settle_render": "preserved"
+  },
+  "forbidden_defaults": {
+    "guessing": "forbidden",
+    "capture_quality_regression": "forbidden",
+    "physical_mouse": "forbidden",
+    "renderer_rewrite": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fps_debounce_measurement.contract.json --out-json artifacts/validation/fps_debounce_measurement_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/fps_debounce_measurement_PHASED_PLAN.md --out-json artifacts/validation/fps_debounce_measurement_hostile_audit.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fps_debounce_native_pacing --log artifacts/logs/fps_debounce_native_pacing.log --out-json artifacts/validation/fps_debounce_native_pacing.json --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fps_debounce_native_report --log artifacts/logs/fps_debounce_native_report.log --out-json artifacts/validation/fps_debounce_native_report.json --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_ui_automation_report",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fps_debounce_publish_runtime --log artifacts/logs/fps_debounce_publish_runtime.log --out-json artifacts/validation/fps_debounce_publish_runtime.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py -q --junitxml artifacts/pytest/test_fractal_runtime_resolution_pacing.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "fps_debounce_contract_schema_valid",
+      "description": "The FPS debounce measurement contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fps_debounce_measurement_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "fps_debounce_plan_sync_ok",
+      "description": "The FPS debounce measurement phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fps_debounce_hostile_audit_ok",
+      "description": "The FPS debounce hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fps_debounce_measurement_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "fps_debounce_runtime_pytest_green",
+      "description": "The published runtime pacing proof passes",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_fractal_runtime_resolution_pacing.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_resolution_pacing.py::test_camera_center_edits_enter_preview_when_measured_frames_are_slow_no_mouse"
+    },
+    {
+      "assertion_id": "fps_debounce_default_target_fast_slow_runtime_pytest_green",
+      "description": "The published runtime keeps moderate f32 interaction full-resolution and still previews slow f64 interaction",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_fractal_runtime_resolution_pacing.junit.xml",
+      "test_nodeid": "tests/test_fractal_runtime_resolution_pacing.py::test_default_target_fast_f32_stays_full_but_slow_f64_enters_preview_no_mouse"
+    }
+  ]
+}

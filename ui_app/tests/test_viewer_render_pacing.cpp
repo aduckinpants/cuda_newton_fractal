@@ -64,6 +64,26 @@ int main() {
 
     {
         RenderSettings render{};
+        render.resolution = {4096, 4096};
+        RenderStats stats{};
+        stats.last_render_ms = 55.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
+        if (decision.preview_active) {
+            std::cerr << "Expected moderately slow full-resolution frames to stay full resolution until the FPS loss is material\n";
+            return 1;
+        }
+        if (decision.render_resolution.x != 4096 || decision.render_resolution.y != 4096) {
+            std::cerr << "Expected moderate f32 interaction to preserve the base render resolution\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
         render.resolution = {2048, 1536};
         RenderStats stats{};
         stats.last_render_ms = 90.0f;

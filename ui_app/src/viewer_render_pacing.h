@@ -7,7 +7,7 @@ struct ViewerRenderPacingConfig {
     double target_frame_ms{1000.0 / static_cast<double>(RenderSettings::kDefaultPreviewTargetFps)};
     double min_preview_scale{static_cast<double>(RenderSettings::kDefaultPreviewMinScale)};
     int preview_step_count{4};
-    double step_down_hysteresis{1.10};
+    double step_down_hysteresis{2.0};
     double step_up_hysteresis{0.75};
 };
 
