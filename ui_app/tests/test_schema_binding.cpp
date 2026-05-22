@@ -863,6 +863,7 @@ bool ValidateVisibleControlMatrix() {
         {"projection_and_flow_target_radius", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_target_radius", "float"},
         {"projection_and_flow_pressure_threshold", FractalType::explaino_projection_and_flow, "fractal.params.projection_and_flow_pressure_threshold", "float"},
         {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
+        {"counterfactual_pair_root_family", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "enum"},
         {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "enum"},
         {"counterfactual_pair_offset_x", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_x", "float"},
         {"counterfactual_pair_offset_y", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_offset_y", "float"},
@@ -927,6 +928,7 @@ bool ValidateEnumComboEditMatrix() {
         {"poly_kind", FractalType::halley, "fractal.params.poly_kind", "custom"},
         {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "custom"},
         {"counterfactual_pair_root_family", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "quartic_unit_roots"},
+        {"counterfactual_pair_root_family", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_root_family", "quartic_unit_roots"},
         {"counterfactual_pair_frame", FractalType::counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
         {"counterfactual_pair_frame", FractalType::explaino_counterfactual_pair, "fractal.params.counterfactual_pair_frame", "view_relative"},
         {"projection_and_flow_root_family", FractalType::projection_and_flow, "fractal.params.projection_and_flow_root_family", "quartic_unit_roots"},
@@ -1261,6 +1263,16 @@ int main() {
         if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_counterfactual_pair") ||
             ctx.GetEnumId("fractal.view.fractal_type") != "explaino_counterfactual_pair") {
             std::cerr << "Expected fractal type enum round-trip to preserve explaino_counterfactual_pair as an explicit Explaino carrier\n";
+            return 1;
+        }
+        params.poly_kind = PolyKind::custom;
+        params.explaino_root_count = 3;
+        if (!ctx.SetEnumId("fractal.params.counterfactual_pair_root_family", "quartic_unit_roots") ||
+            ctx.GetEnumId("fractal.params.counterfactual_pair_root_family") != "quartic_unit_roots" ||
+            ctx.GetEnumId("fractal.view.fractal_type") != "explaino_counterfactual_pair" ||
+            params.poly_kind != PolyKind::custom ||
+            params.explaino_root_count != 3) {
+            std::cerr << "Expected Explaino Counterfactual root-family binding edits to stay on the explicit Explaino carrier until derived-field refresh\n";
             return 1;
         }
         if (!ctx.SetEnumId("fractal.view.fractal_type", "explaino_projection_and_flow") ||

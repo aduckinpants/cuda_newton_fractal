@@ -258,11 +258,13 @@ bool ValidateCounterfactualPairControlSurface(const UISchema& schema) {
         rootFamily->def.as_string() == "cubic_unit_roots" &&
         rootFamily->options.size() == 2 &&
         rootFamily->has_visible_if &&
-        rootFamily->visible_if.op == "eq" &&
+        rootFamily->visible_if.op == "in" &&
         rootFamily->visible_if.path == "fractal.view.fractal_type" &&
-        rootFamily->visible_if.value == "counterfactual_pair";
+        VisibleIfIncludesFractalType(*rootFamily, "counterfactual_pair") &&
+        VisibleIfIncludesFractalType(*rootFamily, "explaino_counterfactual_pair") &&
+        CsvTokenCount(rootFamily->visible_if.value) == 2u;
     if (!rootFamilyOk) {
-        std::cerr << "Main schema Counterfactual Pair root-family control drifted from the bounded owner seam\n";
+        std::cerr << "Main schema Counterfactual Pair root-family control must be shared by standalone and Explaino carriers\n";
         return false;
     }
 
@@ -1455,8 +1457,10 @@ int main() {
         }
         if (!pairRootFamily->has_binding || pairRootFamily->binding.path != "fractal.params.counterfactual_pair_root_family" ||
             !pairRootFamily->has_default || !pairRootFamily->def.is_string() || pairRootFamily->def.as_string() != "cubic_unit_roots" ||
-            !pairRootFamily->has_visible_if || pairRootFamily->visible_if.value != "counterfactual_pair") {
-            std::cerr << "Safe-mode schema Counterfactual Pair root-family control drifted from the bounded owner seam\n";
+            !pairRootFamily->has_visible_if || pairRootFamily->visible_if.op != "in" ||
+            !VisibleIfIncludesFractalType(*pairRootFamily, "counterfactual_pair") ||
+            !VisibleIfIncludesFractalType(*pairRootFamily, "explaino_counterfactual_pair")) {
+            std::cerr << "Safe-mode schema Counterfactual Pair root-family control must be shared by standalone and Explaino carriers\n";
             return 1;
         }
         if (!pairFrame->has_binding || pairFrame->binding.path != "fractal.params.counterfactual_pair_frame" ||

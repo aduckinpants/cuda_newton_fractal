@@ -690,6 +690,27 @@ static void SetExplainoProjectionAndFlowRootsForShape(ProjectionAndFlowRootFamil
     SetDegree3PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
 }
 
+static void SetExplainoCounterfactualPairRootsForShape(CounterfactualPairRootFamily rootFamily,
+                                                       const ExplainoSeedShape& shape,
+                                                       KernelParams& params) {
+    for (Float2& root : params.explaino_roots) {
+        root = {0.0f, 0.0f};
+    }
+
+    if (rootFamily == CounterfactualPairRootFamily::quartic_unit_roots) {
+        params.explaino_root_count = 4;
+        SetExplainoRootsForShape(FractalType::explaino_counterfactual_pair, params.explaino_cluster_radius, shape, params);
+        SetDegree4PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
+        return;
+    }
+
+    params.explaino_root_count = 3;
+    params.explaino_roots[0] = {shape.a, shape.b};
+    params.explaino_roots[1] = {shape.a, -shape.b};
+    params.explaino_roots[2] = {ClampF(shape.c, -4.0f, 4.0f), 0.0f};
+    SetDegree3PolynomialCoefficientsFromRoots(params.explaino_roots, params.poly_coeffs);
+}
+
 static void UpdateExplainoSplicePolynomial(const ViewState& view, const KernelParams& params,
                                            float phase, float spread, float phaseStrength,
                                            float coeffs[5]) {
@@ -753,6 +774,13 @@ void UpdateExplainoPolynomial(const ViewState& view, KernelParams& params, bool*
     if (view.fractal_type == FractalType::explaino_projection_and_flow) {
         params.poly_kind = PolyKind::custom;
         SetExplainoProjectionAndFlowRootsForShape(params.projection_and_flow_root_family, shape, params);
+        ClearPolynomialCoefficients(params.poly_coeffs_b);
+        if (ioDirty) *ioDirty = true;
+        return;
+    }
+    if (view.fractal_type == FractalType::explaino_counterfactual_pair) {
+        params.poly_kind = PolyKind::custom;
+        SetExplainoCounterfactualPairRootsForShape(params.counterfactual_pair_root_family, shape, params);
         ClearPolynomialCoefficients(params.poly_coeffs_b);
         if (ioDirty) *ioDirty = true;
         return;

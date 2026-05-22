@@ -5,6 +5,14 @@
 #include <string>
 
 namespace {
+void SetCounterfactualPairQuarticPreset(KernelParams& params) {
+    params.poly_coeffs[0] = -1.0f;
+    params.poly_coeffs[1] = 0.0f;
+    params.poly_coeffs[2] = 0.0f;
+    params.poly_coeffs[3] = 0.0f;
+    params.poly_coeffs[4] = 1.0f;
+}
+
 void SetProjectionAndFlowQuarticPreset(KernelParams& params) {
     params.poly_coeffs[0] = -1.0f;
     params.poly_coeffs[1] = 0.0f;
@@ -246,6 +254,73 @@ int main() {
         if (ValidateFractalRuntimeState(view, params, &error) ||
             error != "explaino_warp_strength must be finite and in [0,1]") {
             std::cerr << "Expected Explaino warp validation to enforce the shared [0,1] contract\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::counterfactual_pair;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::z4_minus_1;
+        SetCounterfactualPairQuarticPreset(params);
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Counterfactual Pair validation to accept the quartic root-family preset, got: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::counterfactual_pair;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::z3_minus_1;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "counterfactual_pair root family and poly_kind must agree") {
+            std::cerr << "Expected Counterfactual Pair validation to reject root-family/poly-kind drift\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino_counterfactual_pair;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::custom;
+        params.explaino_root_count = 4;
+        params.poly_coeffs[0] = 1.0f;
+        params.poly_coeffs[1] = 0.0f;
+        params.poly_coeffs[2] = 0.0f;
+        params.poly_coeffs[3] = 1.0f;
+        params.poly_coeffs[4] = 1.0f;
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Explaino Counterfactual validation to accept a quartic custom carrier polynomial, got: " << error << "\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino_counterfactual_pair;
+        params.coloring_mode = ColoringMode::root_basin;
+        params.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+        params.poly_kind = PolyKind::custom;
+        params.explaino_root_count = 3;
+        params.poly_coeffs[3] = 1.0f;
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "explaino_counterfactual_pair root family and explaino_root_count must agree") {
+            std::cerr << "Expected Explaino Counterfactual validation to reject stale cubic custom state under quartic root-family authority\n";
             return 1;
         }
     }

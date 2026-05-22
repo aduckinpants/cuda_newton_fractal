@@ -139,3 +139,5 @@
 - `ck:2403c11c` 2026-05-22 18:30 UTC | score 97 — FPS debounce latency repair: measured severe f64 failure, fixed stale interaction aging, severe emergency preview scale, preview-time sidecar deferral, and active-preview recovery; native pacing, runtime publish, runtime resolution pacing pytest, code-quality audit, contract validation, plan sync, and hostile audit passed.
 - `ck:2403c11c` 2026-05-22 18:31 UTC | score 97 — FPS debounce latency repair closed with measured severe f64 latency reduction and no-mouse runtime proof.
 - `ck:2403c11c` 2026-05-22 18:32 UTC | score 97 — FPS debounce latency repair stale-plan closeout text cleaned after push gate.
+- `ck:b177a216` 2026-05-22 18:36 UTC — session-start | branch=codex/explaino-counterfactual-regression | head=f5e845b | status=dirty | profile=runtime | intent=investigate and repair suspected Explaino counterfactual regression
+- `ck:b177a216` 2026-05-22 19:36 UTC | score 97 — Closed Explaino Counterfactual regression repair: root-family authority restored for explaino_counterfactual_pair, stale root-count/poly drift guarded, focused native/sample-kernel/runtime rails green.

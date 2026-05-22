@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "contract_id": "explaino_counterfactual_regression",
+  "feature_id": "explaino_counterfactual_regression",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/explaino_counterfactual_regression_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "tools"
+  ],
+  "required_operator_inputs": [
+    "reproduce the suspected Explaino counterfactual regression before changing behavior",
+    "add a failing focused test for the real counterfactual path",
+    "preserve unrelated Explaino selector/control, color pipeline, capture, and FPS pacing behavior"
+  ],
+  "forbidden_operator_prompts": [
+    "claim a counterfactual fix without a failing reproduction",
+    "change FPS debounce, capture finding, color pipeline, or renderer architecture under this slice",
+    "introduce OS mouse/cursor automation",
+    "broaden into generic Explaino redesign"
+  ],
+  "required_defaults": {
+    "reproduction_first": "required",
+    "runtime_or_public_path_proof": "required",
+    "hostile_audit": "required"
+  },
+  "forbidden_defaults": {
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "broad_renderer_rewrite": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/explaino_counterfactual_regression.contract.json --out-json artifacts/validation/explaino_counterfactual_regression_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/explaino_counterfactual_regression_PHASED_PLAN.md --out-json artifacts/validation/explaino_counterfactual_regression_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/explaino_counterfactual_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_counterfactual_native --log artifacts/logs/explaino_counterfactual_native.log --out-json artifacts/validation/explaino_counterfactual_native.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_tests_vsdevcmd.cmd test_explaino_counterfactual_repair",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_counterfactual_sample_kernel --log artifacts/logs/explaino_counterfactual_sample_kernel.log --out-json artifacts/validation/explaino_counterfactual_sample_kernel.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label explaino_counterfactual_publish_runtime --log artifacts/logs/explaino_counterfactual_publish_runtime.log --out-json artifacts/validation/explaino_counterfactual_publish_runtime.json --heartbeat-seconds 30 --timeout-seconds 600 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_explaino_escape_variants.py::test_explaino_counterfactual_pair_root_family_changes_live_output tests/test_fractal_runtime_explaino_escape_variants.py::test_explaino_counterfactual_pair_loaded_state_has_explicit_runtime_identity -q --junitxml artifacts/pytest/test_explaino_counterfactual_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "counterfactual_contract_schema_valid",
+      "description": "The Explaino counterfactual regression contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_counterfactual_regression_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "counterfactual_hostile_audit_ok",
+      "description": "The Explaino counterfactual hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/explaino_counterfactual_regression_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -257,7 +257,7 @@ static void TestSafeModeSchemaExposesCounterfactualPairControls() {
     const UISchemaControl* offsetY = FindControlById(*fractalPanel, "counterfactual_pair_offset_y");
     const UISchemaControl* reconvergenceRatio = FindControlById(*fractalPanel, "counterfactual_pair_reconvergence_ratio");
 
-    Check(IsCounterfactualPairVisibleControl(rootFamily, "fractal.params.counterfactual_pair_root_family") &&
+    Check(IsCounterfactualPairCarrierVisibleControl(rootFamily, "fractal.params.counterfactual_pair_root_family") &&
             rootFamily->has_default && rootFamily->def.is_string() && rootFamily->def.as_string() == "cubic_unit_roots" &&
             rootFamily->options.size() == 2,
         "TestSafeModeSchemaExposesCounterfactualPairControls_RootFamily");

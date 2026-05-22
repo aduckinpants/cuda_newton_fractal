@@ -157,12 +157,16 @@ void MakeDefaults(FractalType ft, ViewState& view, KernelParams& params, RenderS
 
     if (ft == FractalType::explaino_counterfactual_pair) {
         params.max_iter = 96;
-        params.poly_kind = PolyKind::z3_minus_1;
+        params.poly_kind = PolyKind::custom;
         params.poly_coeffs[0] = -1.0f;
         params.poly_coeffs[1] = 0.0f;
         params.poly_coeffs[2] = 0.0f;
         params.poly_coeffs[3] = 1.0f;
         params.poly_coeffs[4] = 0.0f;
+        params.explaino_root_count = 3;
+        params.explaino_roots[0] = {1.0f, 0.0f};
+        params.explaino_roots[1] = {-0.5f, 0.8660254f};
+        params.explaino_roots[2] = {-0.5f, -0.8660254f};
         params.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
         params.counterfactual_pair_frame = CounterfactualPairFrame::world_absolute;
         params.counterfactual_pair_offset_x = 0.16f;

@@ -477,7 +477,7 @@
             { "id": "quartic_unit_roots", "label": "Quartic Unit Roots" }
           ],
           "binding": { "kind": "param", "path": "fractal.params.counterfactual_pair_root_family" },
-          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "counterfactual_pair" }
+          "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "counterfactual_pair,explaino_counterfactual_pair" }
         },
         {
           "id": "counterfactual_pair_frame",

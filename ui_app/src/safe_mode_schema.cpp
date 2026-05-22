@@ -218,7 +218,7 @@ UISchemaControl BuildCounterfactualPairRootFamilyControl() {
     };
     control.help = "Choose the paired Newton family used by both orbits.";
     control.has_help = true;
-    SetVisibleForFractalType(&control, "counterfactual_pair");
+    SetVisibleForFractalTypes(&control, "counterfactual_pair,explaino_counterfactual_pair");
     return control;
 }
 

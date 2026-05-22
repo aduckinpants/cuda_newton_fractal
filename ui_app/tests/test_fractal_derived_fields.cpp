@@ -392,6 +392,46 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams cubic{};
+        KernelParams quartic{};
+        view.fractal_type = FractalType::explaino_counterfactual_pair;
+        view.explaino_phase = 1.0f;
+        view.explaino_phase_strength = 1.0f;
+        ExplainoSeedSetCombined(view, cubic, 3.25);
+        ExplainoSeedSetCombined(view, quartic, 3.25);
+        cubic.counterfactual_pair_root_family = CounterfactualPairRootFamily::cubic_unit_roots;
+        quartic.counterfactual_pair_root_family = CounterfactualPairRootFamily::quartic_unit_roots;
+        cubic.explaino_root_spread = 0.5f;
+        quartic.explaino_root_spread = 0.5f;
+
+        UpdateExplainoPolynomial(view, cubic, nullptr);
+        UpdateExplainoPolynomial(view, quartic, nullptr);
+
+        if (cubic.poly_kind != PolyKind::custom ||
+            quartic.poly_kind != PolyKind::custom ||
+            cubic.explaino_root_count != 3 ||
+            quartic.explaino_root_count != 4 ||
+            !NearlyEqual(cubic.poly_coeffs[4], 0.0f) ||
+            !NearlyEqual(quartic.poly_coeffs[4], 1.0f)) {
+            std::cerr << "Explaino Counterfactual root-family authority should derive cubic/quartic custom carrier polynomials\n";
+            return 1;
+        }
+
+        bool sawRootFamilyDifference = false;
+        for (int coeffIndex = 0; coeffIndex < 5; ++coeffIndex) {
+            if (!NearlyEqual(cubic.poly_coeffs[coeffIndex], quartic.poly_coeffs[coeffIndex], 1.0e-6f)) {
+                sawRootFamilyDifference = true;
+                break;
+            }
+        }
+        if (!sawRootFamilyDifference) {
+            std::cerr << "Explaino Counterfactual root-family edits should rewrite the runtime polynomial instead of staying inert\n";
+            return 1;
+        }
+    }
+
     // Explaino-Transcendental defaults
     {
         ViewState view{};

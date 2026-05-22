@@ -637,6 +637,68 @@ def test_explaino_counterfactual_pair_capture_round_trips_shared_and_explaino_co
     assert mutated_capture["frame_hash"] != baseline_capture["frame_hash"]
 
 
+def test_explaino_counterfactual_pair_root_family_changes_live_output(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("Explaino Counterfactual Pair runtime regression is Windows-only")
+
+    exe_path = _active_runtime_exe()
+    baseline_capture = _run_headless_capture(
+        str(exe_path),
+        "--capture-diagnostic",
+        "--fractal-type",
+        "explaino_counterfactual_pair",
+        "--width",
+        "320",
+        "--height",
+        "240",
+    )
+
+    cubic_state = json.loads(json.dumps(baseline_capture["state"]))
+    cubic_state["fractal_type"] = "explaino_counterfactual_pair"
+    cubic_state["view"]["explaino_phase"] = 1.0
+    cubic_state["view"]["explaino_phase_strength"] = 1.0
+    cubic_state["params"].update(
+        {
+            "counterfactual_pair_root_family": "cubic_unit_roots",
+            "counterfactual_pair_frame": "view_relative",
+            "counterfactual_pair_offset_x": 0.125,
+            "counterfactual_pair_offset_y": -0.0625,
+            "counterfactual_pair_reconvergence_ratio": 0.4,
+            "poly_kind": 2,
+            "explaino_root_count": 0,
+            "explaino_roots": [],
+            "explaino_seed": 3.25,
+            "explaino_warp_strength": 0.25,
+            "explaino_damping": 0.75,
+        }
+    )
+    quartic_state = json.loads(json.dumps(cubic_state))
+    quartic_state["params"]["counterfactual_pair_root_family"] = "quartic_unit_roots"
+
+    cubic_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_counterfactual_cubic", cubic_state)),
+        "--capture-diagnostic",
+    )
+    quartic_capture = _run_headless_capture(
+        str(exe_path),
+        "--load-state-json",
+        str(_write_state_bundle(tmp_path / "explaino_counterfactual_quartic", quartic_state)),
+        "--capture-diagnostic",
+    )
+
+    assert cubic_capture["state"]["fractal_type"] == "explaino_counterfactual_pair"
+    assert quartic_capture["state"]["fractal_type"] == "explaino_counterfactual_pair"
+    assert cubic_capture["state"]["params"]["counterfactual_pair_root_family"] == "cubic_unit_roots"
+    assert quartic_capture["state"]["params"]["counterfactual_pair_root_family"] == "quartic_unit_roots"
+    assert cubic_capture["state"]["params"]["poly_kind"] == 2
+    assert quartic_capture["state"]["params"]["poly_kind"] == 2
+    assert cubic_capture["state"]["params"]["explaino_root_count"] == 3
+    assert quartic_capture["state"]["params"]["explaino_root_count"] == 4
+    assert cubic_capture["frame_hash"] != quartic_capture["frame_hash"]
+
+
 def test_explaino_projection_and_flow_loaded_state_has_explicit_runtime_identity(tmp_path: Path) -> None:
     if sys.platform != "win32":
         pytest.skip("Explaino Projection-and-Flow runtime regression is Windows-only")

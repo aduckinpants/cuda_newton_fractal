@@ -60,6 +60,8 @@ if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
+if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
+if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" goto focused_test_explaino_counterfactual_repair
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" goto focused_test_generic_equation_pack_live
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack" goto focused_test_generic_equation_pack
@@ -616,6 +618,56 @@ nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
   -o "%TESTROOT%\test_fractal_renderer.exe"
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_fractal_renderer.exe" || exit /b 1
+exit /b 0
+
+:focused_test_fractal_sample_kernel
+nvcc -allow-unsupported-compiler -O2 -std=c++17 ^
+  -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_120,code=sm_120 -gencode=arch=compute_121,code=sm_121 ^
+  -Xcompiler "/EHsc /MD" ^
+  -I. -I.\src ^
+  .\src\fractal_renderer.cu .\src\fractal_sample_core.cu .\src\sample_tier_resolver.cpp .\tests\test_fractal_sample_kernel.cu ^
+  -o "%TESTROOT%\test_fractal_sample_kernel.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_fractal_sample_kernel.exe" || exit /b 1
+exit /b 0
+
+:focused_test_explaino_counterfactual_repair
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\view_hp_sync.cpp .\src\explaino_seed.cpp .\src\fractal_derived_fields.cpp .\tests\test_fractal_derived_fields.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_derived_fields.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_schema_binding.cpp ^
+  /Fe:"%TESTROOT%\test_schema_binding.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\tests\test_fractal_runtime_validation.cpp ^
+  /Fe:"%TESTROOT%\test_fractal_runtime_validation.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_ui_schema.cpp ^
+  /Fe:"%TESTROOT%\test_ui_schema.exe"
+if errorlevel 1 exit /b 1
+
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_safe_mode_schema.cpp ^
+  /Fe:"%TESTROOT%\test_safe_mode_schema.exe"
+if errorlevel 1 exit /b 1
+
+call :run_test "%TESTROOT%\test_fractal_derived_fields.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_fractal_runtime_validation.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_ui_schema.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_safe_mode_schema.exe" || exit /b 1
 exit /b 0
 
 :focused_advanced_color_grading_red

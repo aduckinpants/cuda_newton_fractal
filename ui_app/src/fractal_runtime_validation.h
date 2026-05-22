@@ -15,6 +15,34 @@ inline bool FailFractalRuntimeValidation(const char* message, const char** outEr
     return false;
 }
 
+inline PolyKind CounterfactualPairRequiredPolyKind(CounterfactualPairRootFamily rootFamily) {
+    return rootFamily == CounterfactualPairRootFamily::quartic_unit_roots ? PolyKind::z4_minus_1 : PolyKind::z3_minus_1;
+}
+
+inline int CounterfactualPairExpectedExplainoRootCount(CounterfactualPairRootFamily rootFamily) {
+    return rootFamily == CounterfactualPairRootFamily::quartic_unit_roots ? 4 : 3;
+}
+
+inline bool CounterfactualPairExplainoPolyDegreeMatchesRootFamily(const KernelParams& params) {
+    return params.counterfactual_pair_root_family == CounterfactualPairRootFamily::quartic_unit_roots ?
+        params.poly_coeffs[4] != 0.0f : params.poly_coeffs[4] == 0.0f && params.poly_coeffs[3] != 0.0f;
+}
+
+inline bool CounterfactualPairCubicPresetMatches(const KernelParams& params) {
+    return params.poly_coeffs[0] == -1.0f && params.poly_coeffs[1] == 0.0f &&
+        params.poly_coeffs[2] == 0.0f && params.poly_coeffs[3] == 1.0f && params.poly_coeffs[4] == 0.0f;
+}
+
+inline bool CounterfactualPairQuarticPresetMatches(const KernelParams& params) {
+    return params.poly_coeffs[0] == -1.0f && params.poly_coeffs[1] == 0.0f &&
+        params.poly_coeffs[2] == 0.0f && params.poly_coeffs[3] == 0.0f && params.poly_coeffs[4] == 1.0f;
+}
+
+inline bool CounterfactualPairPolyPresetMatchesRootFamily(const KernelParams& params) {
+    return params.counterfactual_pair_root_family == CounterfactualPairRootFamily::cubic_unit_roots ?
+        CounterfactualPairCubicPresetMatches(params) : CounterfactualPairQuarticPresetMatches(params);
+}
+
 inline PolyKind ProjectionAndFlowRequiredPolyKind(ProjectionAndFlowRootFamily rootFamily) {
     return rootFamily == ProjectionAndFlowRootFamily::quartic_unit_roots ? PolyKind::z4_minus_1 : PolyKind::z3_minus_1;
 }
@@ -56,6 +84,25 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
     }
     if (!IsColoringModeAllowedForFractal(view.fractal_type, params.coloring_mode)) {
         return FailFractalRuntimeValidation("selected coloring_mode is not valid for fractal_type", outError);
+    }
+    if (view.fractal_type == FractalType::counterfactual_pair) {
+        if (params.poly_kind != CounterfactualPairRequiredPolyKind(params.counterfactual_pair_root_family)) {
+            return FailFractalRuntimeValidation("counterfactual_pair root family and poly_kind must agree", outError);
+        }
+        if (!CounterfactualPairPolyPresetMatchesRootFamily(params)) {
+            return FailFractalRuntimeValidation("counterfactual_pair root family must own the shipped polynomial preset", outError);
+        }
+    }
+    if (view.fractal_type == FractalType::explaino_counterfactual_pair) {
+        if (params.poly_kind != PolyKind::custom) {
+            return FailFractalRuntimeValidation("explaino_counterfactual_pair must preserve custom Explaino polynomial authority", outError);
+        }
+        if (params.explaino_root_count != CounterfactualPairExpectedExplainoRootCount(params.counterfactual_pair_root_family)) {
+            return FailFractalRuntimeValidation("explaino_counterfactual_pair root family and explaino_root_count must agree", outError);
+        }
+        if (!CounterfactualPairExplainoPolyDegreeMatchesRootFamily(params)) {
+            return FailFractalRuntimeValidation("explaino_counterfactual_pair root family must match the custom carrier polynomial degree", outError);
+        }
     }
     if (IsProjectionAndFlowCarrier(view.fractal_type)) {
         if (view.fractal_type == FractalType::projection_and_flow) {
