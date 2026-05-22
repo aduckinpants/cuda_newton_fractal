@@ -135,6 +135,18 @@ def _wait_for_pacing_payload(viewer: PersistentRuntimeViewerAutomation, predicat
     raise AssertionError(f"pacing report predicate was not satisfied; last_payload={last_payload!r}")
 
 
+def _timed_set_control_value(
+    viewer: PersistentRuntimeViewerAutomation,
+    control_id: str,
+    value: float,
+    *,
+    timeout_seconds: float,
+) -> tuple[dict[str, object], float]:
+    started = time.monotonic()
+    payload = viewer.set_control_value(control_id, value, timeout_seconds=timeout_seconds)
+    return payload, (time.monotonic() - started) * 1000.0
+
+
 def _assert_pacing_report_fields(payload: dict[str, object], *, target_width: int = 1280, target_height: int = 960) -> None:
     assert payload.get("target_render_width") == target_width, payload
     assert payload.get("target_render_height") == target_height, payload
@@ -264,6 +276,58 @@ def test_camera_center_edits_enter_preview_when_measured_frames_are_slow_no_mous
         )
         _assert_pacing_report_fields(settled_payload)
         assert int(settled_payload["rendered_frame_width"]) >= int(center_y_payload["rendered_frame_width"]), settled_payload
+        assert viewer.launch_count == 1
+
+
+def test_severe_slow_f64_preview_materially_reduces_interaction_latency_no_mouse(tmp_path: Path) -> None:
+    if sys.platform != "win32":
+        pytest.skip("persistent runtime viewer harness is Windows-only")
+
+    exe_path = active_runtime_exe()
+    neutral_capture = run_headless_capture(
+        str(exe_path), "--capture-diagnostic", "--fractal-type", "multibrot", "--width", "320", "--height", "240"
+    )
+    state = json.loads(json.dumps(neutral_capture["state"]))
+    _configure_slow_camera_pacing_state(state)
+    params = state["params"]
+    assert isinstance(params, dict)
+    params["max_iter"] = 2200
+    render = state["render"]
+    assert isinstance(render, dict)
+    render.update(
+        {
+            "width": 2048,
+            "height": 1536,
+            "preview_target_fps": 30.0,
+            "preview_min_scale": 0.5,
+        }
+    )
+    state_path = write_state_bundle(tmp_path / "severe_latency_pacing", state)
+
+    with PersistentRuntimeViewerAutomation(
+        exe_path=exe_path,
+        state_path=state_path,
+        report_path=tmp_path / "severe_latency_report.json",
+        command_path=tmp_path / "severe_latency_command.json",
+    ) as viewer:
+        viewer.wait_for_control("fractal_control.center_x.primary", timeout_seconds=20.0)
+        baseline = viewer.wait_for_report(timeout_seconds=60.0)
+        _assert_pacing_report_fields(baseline, target_width=2048, target_height=1536)
+        baseline_render_ms = float(baseline["last_render_ms"])
+        assert baseline_render_ms > 800.0, baseline
+
+        center_x_payload, center_x_roundtrip_ms = _timed_set_control_value(
+            viewer,
+            "fractal_control.center_x.primary",
+            -0.14500000596046448,
+            timeout_seconds=90.0,
+        )
+        _assert_pacing_report_fields(center_x_payload, target_width=2048, target_height=1536)
+        assert center_x_payload.get("ui_automation_command_sequence") == 1, center_x_payload
+        assert center_x_payload.get("render_pacing_preview_active") is True, center_x_payload
+        assert float(center_x_payload["render_pacing_preview_scale"]) < 0.25, center_x_payload
+        assert float(center_x_payload["last_render_ms"]) < baseline_render_ms * 0.15, center_x_payload
+        assert center_x_roundtrip_ms < min(300.0, baseline_render_ms * 0.35), center_x_payload
         assert viewer.launch_count == 1
 
 

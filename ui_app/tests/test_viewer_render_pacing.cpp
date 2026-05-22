@@ -113,6 +113,57 @@ int main() {
         }
     }
 
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        render.preview_min_scale = 0.50f;
+        RenderStats stats{};
+        stats.last_render_ms = 1500.0f;
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 1.50, config, &state);
+        const double expectedScale = std::sqrt(DefaultTargetFrameMs() / 1500.0);
+
+        if (!decision.preview_active) {
+            std::cerr << "Expected a newly observed interaction to enter preview even when the previous frame was very slow\n";
+            return 1;
+        }
+        if (!NearlyEqual(decision.preview_scale, expectedScale, 1.0e-6)) {
+            std::cerr << "Expected severe slow interaction to use the measured budget scale instead of the stale 0.5 floor\n";
+            return 1;
+        }
+        if (decision.render_resolution.x != ScaledDimension(render.resolution.x, expectedScale) ||
+            decision.render_resolution.y != ScaledDimension(render.resolution.y, expectedScale)) {
+            std::cerr << "Expected severe slow interaction to render at the emergency budget dimensions\n";
+            return 1;
+        }
+        if (decision.full_quality_due) {
+            std::cerr << "Expected stale frame time not to force an immediate full-quality settle on new input\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        render.preview_min_scale = 0.50f;
+        RenderStats stats{};
+        stats.last_render_ms = 1500.0f;
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.02;
+        state.active_preview_scale = 1.0;
+
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        if (!decision.preview_active || decision.preview_scale >= 0.25) {
+            std::cerr << "Expected severe active interaction to bypass the normal preview floor when 0.5 remains too slow\n";
+            return 1;
+        }
+    }
+
     {
         RenderSettings render{};
         render.resolution = {2048, 1536};
@@ -176,6 +227,26 @@ int main() {
         ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
         if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.5)) {
             std::cerr << "Expected slow preview frames to drop directly to the computed/clamped budget scale\n";
+            return 1;
+        }
+    }
+
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        render.preview_min_scale = 0.50f;
+        RenderStats stats{};
+        stats.last_render_ms = 72.0f;
+        const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.02;
+        state.active_preview_scale = 0.15;
+        state.settle_render_pending = true;
+
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        if (!decision.preview_active || decision.preview_scale > 0.151) {
+            std::cerr << "Expected severe active preview to hold its emergency scale instead of snapping back to the normal floor\n";
             return 1;
         }
     }

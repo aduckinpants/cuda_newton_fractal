@@ -1879,6 +1879,22 @@ static void RefreshSidecarStateIfNeeded(bool dirty, ViewState& view, KernelParam
     }
 }
 
+
+static bool DeferSidecarRefreshDuringPreview(
+    const ViewerRenderPacingDecision& renderPacing,
+    bool refreshNeeded,
+    bool& sidecarStateValid,
+    SidecarBudgetState& sidecarBudgetState,
+    bool& sidecarBudgetStateValid) {
+    if (!renderPacing.preview_active || !refreshNeeded) {
+        return false;
+    }
+    sidecarStateValid = false;
+    sidecarBudgetState = {};
+    sidecarBudgetStateValid = false;
+    return true;
+}
+
 static void RunPendingInLoopCaptures(const std::string& exeDir, const UiActionFlags& actions,
                                      ViewState& view, KernelParams& params,
                                      const RenderSettings& render, const RenderStats& stats,
@@ -2856,11 +2872,15 @@ static void RunViewerFrame(
         &renderPacingState);
 
     const bool forceFullQualityRender = actions.renderOnce || actions.captureDiagnostic || actions.captureFinding || renderPacing.full_quality_due;
-    RefreshSidecarStateIfNeeded(dirty || !sidecarStateValid, view, params, engineCatalog,
-        bind, sidecarControllerPolicy, sidecarMeasurementHost,
-        loadedOrientationBaseline, loadedOrientationBaselineValid,
-        sidecarState, sidecarStateValid,
-        sidecarBudgetState, sidecarBudgetStateValid);
+    const bool sidecarRefreshNeeded = dirty || !sidecarStateValid;
+    if (!DeferSidecarRefreshDuringPreview(renderPacing, sidecarRefreshNeeded,
+            sidecarStateValid, sidecarBudgetState, sidecarBudgetStateValid)) {
+        RefreshSidecarStateIfNeeded(sidecarRefreshNeeded, view, params, engineCatalog,
+            bind, sidecarControllerPolicy, sidecarMeasurementHost,
+            loadedOrientationBaseline, loadedOrientationBaselineValid,
+            sidecarState, sidecarStateValid,
+            sidecarBudgetState, sidecarBudgetStateValid);
+    }
     DispatchRenderFrame(view, params, render, lens, renderPacing,
         forceFullQualityRender, view.auto_refresh, dirty,
         actions.renderOnce, actions.captureDiagnostic, actions.captureFinding,

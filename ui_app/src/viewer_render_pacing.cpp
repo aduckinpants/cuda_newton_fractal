@@ -4,9 +4,11 @@
 
 namespace {
 
+constexpr double kEmergencyPreviewMinScale = 0.125;
 constexpr double kNoRecentInteraction = 1.0e30;
 constexpr int kDefaultPreviewStepCount = 4;
 constexpr double kPreviewRecoveryBlend = 0.25;
+constexpr double kSevereSlowFrameMultiplier = 8.0;
 
 double ClampFinite(double value, double minValue, double maxValue, double fallback) {
     if (!std::isfinite(value)) return fallback;
@@ -38,6 +40,17 @@ bool HasUsableRenderTiming(float renderMs) {
     return std::isfinite(renderMs) && renderMs > 0.0f;
 }
 
+bool HasUsableTargetFrameMs(double targetFrameMs) {
+    return std::isfinite(targetFrameMs) && targetFrameMs > 0.0;
+}
+
+double EffectivePreviewMinScale(float renderMs, const ViewerRenderPacingConfig& config) {
+    const double normalMin = ClampPreviewScale(config.min_preview_scale, kEmergencyPreviewMinScale);
+    if (!HasUsableRenderTiming(renderMs) || !HasUsableTargetFrameMs(config.target_frame_ms)) return normalMin;
+    const double severeThreshold = config.target_frame_ms * kSevereSlowFrameMultiplier;
+    return (static_cast<double>(renderMs) >= severeThreshold) ? kEmergencyPreviewMinScale : normalMin;
+}
+
 bool IsActivePreviewScale(double scale) {
     return scale < 0.999;
 }
@@ -66,13 +79,18 @@ double TargetActivePreviewScale(float renderMs, const ViewerRenderPacingConfig& 
     return currentScale;
 }
 
+double TargetMeasuredPreviewScale(float renderMs, const ViewerRenderPacingConfig& config, double currentScale) {
+    const double configuredMinScale = EffectivePreviewMinScale(renderMs, config);
+    if (!IsActivePreviewScale(currentScale)) return TargetFullPreviewScale(renderMs, config, configuredMinScale);
+    const double activeMinScale = (currentScale < configuredMinScale) ? currentScale : configuredMinScale;
+    return TargetActivePreviewScale(renderMs, config, currentScale, activeMinScale);
+}
+
 double TargetPreviewScale(const RenderStats& lastStats, const ViewerRenderPacingConfig& config, double currentPreviewScale) {
-    const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
-    const double currentScale = ClampPreviewScale(currentPreviewScale, minScale);
-    if (!std::isfinite(config.target_frame_ms) || config.target_frame_ms <= 0.0) return 1.0;
+    const double currentScale = ClampPreviewScale(currentPreviewScale, kEmergencyPreviewMinScale);
+    if (!HasUsableTargetFrameMs(config.target_frame_ms)) return 1.0;
     if (!HasUsableRenderTiming(lastStats.last_render_ms)) return IsActivePreviewScale(currentScale) ? currentScale : 1.0;
-    if (IsActivePreviewScale(currentScale)) return TargetActivePreviewScale(lastStats.last_render_ms, config, currentScale, minScale);
-    return TargetFullPreviewScale(lastStats.last_render_ms, config, minScale);
+    return TargetMeasuredPreviewScale(lastStats.last_render_ms, config, currentScale);
 }
 
 double ClampRecoveredPreviewScale(double value, double minScale) {
@@ -103,7 +121,7 @@ ViewerRenderPacingConfig BuildViewerRenderPacingConfig(const RenderSettings& ren
     config.debounce_seconds = ClampFinite(static_cast<double>(render.interaction_debounce_ms) / 1000.0, 0.0, 5.0, DefaultDebounceSeconds());
     const double previewTargetFps = ClampFinite(static_cast<double>(render.preview_target_fps), 1.0, 240.0, DefaultPreviewTargetFps());
     config.target_frame_ms = 1000.0 / previewTargetFps;
-    config.min_preview_scale = ClampPreviewScale(static_cast<double>(render.preview_min_scale), 0.125);
+    config.min_preview_scale = ClampPreviewScale(static_cast<double>(render.preview_min_scale), kEmergencyPreviewMinScale);
     config.preview_step_count = kDefaultPreviewStepCount;
     return config;
 }
@@ -111,6 +129,7 @@ ViewerRenderPacingConfig BuildViewerRenderPacingConfig(const RenderSettings& ren
 void NoteViewerInteraction(ViewerRenderPacingState* ioState) {
     if (!ioState) return;
     ioState->seconds_since_interaction = 0.0;
+    ioState->interaction_just_noted = true;
 }
 
 ViewerRenderPacingDecision AdvanceViewerRenderPacing(
@@ -126,7 +145,9 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
     if (ioState->seconds_since_interaction >= kNoRecentInteraction) return decision;
 
     const double debounceSeconds = std::fmax(0.0, config.debounce_seconds);
-    const double delta = (std::isfinite(deltaSeconds) && deltaSeconds > 0.0) ? deltaSeconds : 0.0;
+    const bool justNoted = ioState->interaction_just_noted;
+    ioState->interaction_just_noted = false;
+    const double delta = (!justNoted && std::isfinite(deltaSeconds) && deltaSeconds > 0.0) ? deltaSeconds : 0.0;
     const double ageAfterFrame = ioState->seconds_since_interaction + delta;
 
     if (debounceSeconds <= 0.0 || ageAfterFrame >= debounceSeconds) {
@@ -141,8 +162,9 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
     }
 
     ioState->seconds_since_interaction = ageAfterFrame;
-    const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
     const double targetScale = TargetPreviewScale(lastStats, config, ioState->active_preview_scale);
+    const double configuredMinScale = EffectivePreviewMinScale(lastStats.last_render_ms, config);
+    const double minScale = (targetScale < configuredMinScale) ? targetScale : configuredMinScale;
     const double previewScale = RecoverPreviewScale(ioState->active_preview_scale, targetScale, minScale);
     ioState->active_preview_scale = previewScale;
 
