@@ -2,6 +2,7 @@
 
 #include "enum_id_utils.h"
 
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -20,6 +21,40 @@ std::uint64_t HashAutomationFrameBytes(const std::vector<uint32_t>& rgba, std::s
         hash *= 1099511628211ull;
     }
     return hash;
+}
+
+
+void WriteRenderPacingAndFrameReportFields(
+    std::ostream& out,
+    const ViewerUiAutomationRenderPacingProbe& pacingProbe,
+    const ViewerUiAutomationFrameProbe& frameProbe) {
+    out << "  \"target_render_width\": " << pacingProbe.target_width << ",\n";
+    out << "  \"target_render_height\": " << pacingProbe.target_height << ",\n";
+    out << "  \"last_render_ms\": " << std::setprecision(12) << pacingProbe.last_render_ms << ",\n";
+    out << "  \"last_render_fps\": ";
+    if (pacingProbe.has_last_render_fps) {
+        out << std::setprecision(12) << pacingProbe.last_render_fps;
+    } else {
+        out << "null";
+    }
+    out << ",\n";
+    out << "  \"render_pacing_preview_active\": " << (pacingProbe.pacing_preview_active ? "true" : "false") << ",\n";
+    out << "  \"render_pacing_preview_scale\": " << std::setprecision(12) << pacingProbe.pacing_preview_scale << ",\n";
+    out << "  \"render_pacing_full_quality_due\": " << (pacingProbe.pacing_full_quality_due ? "true" : "false") << ",\n";
+    out << "  \"render_pacing_render_width\": " << pacingProbe.pacing_render_width << ",\n";
+    out << "  \"render_pacing_render_height\": " << pacingProbe.pacing_render_height << ",\n";
+    out << "  \"rendered_frame_ready\": " << (frameProbe.ready ? "true" : "false") << ",\n";
+    out << "  \"rendered_frame_width\": " << frameProbe.width << ",\n";
+    out << "  \"rendered_frame_height\": " << frameProbe.height << ",\n";
+    out << "  \"rendered_frame_hash\": ";
+    if (frameProbe.ready) {
+        std::ostringstream hashText;
+        hashText << "fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << frameProbe.hash;
+        WriteAutomationReportString(out, hashText.str());
+    } else {
+        out << "null";
+    }
+    out << ",\n";
 }
 
 } // namespace
@@ -83,6 +118,24 @@ ViewerUiAutomationFrameProbe BuildViewerUiAutomationFrameProbe(
     return probe;
 }
 
+ViewerUiAutomationRenderPacingProbe BuildViewerUiAutomationRenderPacingProbe(
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ViewerRenderPacingDecision& renderPacing) {
+    ViewerUiAutomationRenderPacingProbe probe{};
+    probe.target_width = render.resolution.x;
+    probe.target_height = render.resolution.y;
+    probe.last_render_ms = stats.last_render_ms;
+    probe.has_last_render_fps = std::isfinite(stats.last_render_ms) && stats.last_render_ms > 0.0f;
+    probe.last_render_fps = probe.has_last_render_fps ? 1000.0 / static_cast<double>(stats.last_render_ms) : 0.0;
+    probe.pacing_preview_active = renderPacing.preview_active;
+    probe.pacing_preview_scale = renderPacing.preview_scale;
+    probe.pacing_full_quality_due = renderPacing.full_quality_due;
+    probe.pacing_render_width = renderPacing.render_resolution.x;
+    probe.pacing_render_height = renderPacing.render_resolution.y;
+    return probe;
+}
+
 bool ViewerUiAutomationControlIdVisible(
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
@@ -132,6 +185,9 @@ void WriteColorPipelineUiAutomationReport(
     const ColorPipelineWindowState& colorPipelineWindow,
     const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
     const ViewState& view,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ViewerRenderPacingDecision& renderPacing,
     const ViewerUiAutomationFrameProbe& frameProbe,
     std::int64_t uiAutomationCommandSequence) {
     if (reportPath.empty() || !hwnd) {
@@ -292,18 +348,8 @@ void WriteColorPipelineUiAutomationReport(
         WriteAutomationReportString(out, colorPipelineWindow.ui_automation_set_error);
         out << ",\n";
     }
-    out << "  \"rendered_frame_ready\": " << (frameProbe.ready ? "true" : "false") << ",\n";
-    out << "  \"rendered_frame_width\": " << frameProbe.width << ",\n";
-    out << "  \"rendered_frame_height\": " << frameProbe.height << ",\n";
-    out << "  \"rendered_frame_hash\": ";
-    if (frameProbe.ready) {
-        std::ostringstream hashText;
-        hashText << "fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << frameProbe.hash;
-        WriteAutomationReportString(out, hashText.str());
-    } else {
-        out << "null";
-    }
-    out << ",\n";
+    const ViewerUiAutomationRenderPacingProbe pacingProbe = BuildViewerUiAutomationRenderPacingProbe(render, stats, renderPacing);
+    WriteRenderPacingAndFrameReportFields(out, pacingProbe, frameProbe);
     out << "  \"lane_rows\": [";
     bool firstLaneRow = true;
     for (const ColorPipelineLaneState& lane : colorPipelineWindow.lanes) {

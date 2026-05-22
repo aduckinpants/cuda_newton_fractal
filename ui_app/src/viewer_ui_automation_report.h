@@ -4,6 +4,7 @@
 #include "fractal_types.h"
 #include "generic_equation_pack_workbench.h"
 #include "render_capture_guard.h"
+#include "viewer_render_pacing.h"
 
 #include <Windows.h>
 
@@ -27,11 +28,28 @@ struct ViewerUiAutomationFrameProbe {
     std::uint64_t hash = 0;
 };
 
+struct ViewerUiAutomationRenderPacingProbe {
+    int target_width = 0;
+    int target_height = 0;
+    float last_render_ms = 0.0f;
+    bool has_last_render_fps = false;
+    double last_render_fps = 0.0;
+    bool pacing_preview_active = false;
+    double pacing_preview_scale = 1.0;
+    bool pacing_full_quality_due = false;
+    int pacing_render_width = 0;
+    int pacing_render_height = 0;
+};
+
 std::string JsonEscapeAutomationReportString(const std::string& value);
 void WriteAutomationReportString(std::ostream& out, const std::string& value);
 ViewerUiAutomationFrameProbe BuildViewerUiAutomationFrameProbe(
     const std::vector<uint32_t>& rgba,
     const RenderedFrameState& renderedFrame);
+ViewerUiAutomationRenderPacingProbe BuildViewerUiAutomationRenderPacingProbe(
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ViewerRenderPacingDecision& renderPacing);
 bool ViewerUiAutomationControlIdVisible(
     const std::vector<ViewerUiAutomationRect>& viewerUiAutomationRects,
     const ColorPipelineWindowState& colorPipelineWindow,
@@ -46,5 +64,8 @@ void WriteColorPipelineUiAutomationReport(
     const ColorPipelineWindowState& colorPipelineWindow,
     const GenericEquationPackWorkbenchAutomationReport* equationPackWorkbench,
     const ViewState& view,
+    const RenderSettings& render,
+    const RenderStats& stats,
+    const ViewerRenderPacingDecision& renderPacing,
     const ViewerUiAutomationFrameProbe& frameProbe,
     std::int64_t uiAutomationCommandSequence);

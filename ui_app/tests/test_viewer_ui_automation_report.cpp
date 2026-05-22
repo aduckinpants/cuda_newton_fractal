@@ -72,6 +72,26 @@ void TestVisibleControlLookupAndFailClosedErrors() {
         "ready color pipeline control set fails closed when requested control is absent");
 }
 
+void TestRenderPacingProbeReportsTimingAndDecision() {
+    RenderSettings render{};
+    render.resolution = {2048, 1536};
+    RenderStats stats{};
+    stats.last_render_ms = 40.0f;
+    ViewerRenderPacingDecision pacing{};
+    pacing.preview_active = true;
+    pacing.preview_scale = 0.5;
+    pacing.full_quality_due = false;
+    pacing.render_resolution = {1024, 768};
+
+    ViewerUiAutomationRenderPacingProbe probe = BuildViewerUiAutomationRenderPacingProbe(render, stats, pacing);
+    Check(probe.target_width == 2048 && probe.target_height == 1536,
+        "render pacing probe reports target render dimensions");
+    Check(probe.has_last_render_fps && probe.last_render_fps > 24.9 && probe.last_render_fps < 25.1,
+        "render pacing probe reports measured FPS from last_render_ms");
+    Check(probe.pacing_preview_active && probe.pacing_render_width == 1024 && probe.pacing_render_height == 768,
+        "render pacing probe reports preview decision dimensions");
+}
+
 void TestRenderedFrameProbeHash() {
     RenderedFrameState frame{};
     std::vector<uint32_t> rgba = {0xff000000u, 0xff112233u, 0xff445566u, 0xff778899u};
@@ -98,6 +118,7 @@ void TestRenderedFrameProbeHash() {
 int main() {
     TestJsonStringEscaping();
     TestVisibleControlLookupAndFailClosedErrors();
+    TestRenderPacingProbeReportsTimingAndDecision();
     TestRenderedFrameProbeHash();
     if (g_failed != 0) {
         std::printf("test_viewer_ui_automation_report: %d failure(s)\n", g_failed);

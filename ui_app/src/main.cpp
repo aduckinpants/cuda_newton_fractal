@@ -2892,10 +2892,15 @@ static void RunViewerFrame(
         runtimeWalkFieldSlimeValid = false;
     }
 
-    RenderFractalViewport(io, render, renderedFrame, view, dirty, actions.interactionChanged,
+    bool viewportInteractionChanged = false;
+    RenderFractalViewport(io, render, renderedFrame, view, dirty, viewportInteractionChanged,
         runtimeWalkViewerSession.loaded ? &runtimeWalkPlayback : nullptr,
         runtimeWalkViewerSession.loaded ? &runtimeWalkOverlayPath : nullptr,
         runtimeWalkViewerSession.loaded ? &runtimeWalkGradientOverlay : nullptr);
+    if (viewportInteractionChanged) {
+        actions.interactionChanged = true;
+        NoteViewerInteraction(&renderPacingState);
+    }
 
     if (lens.enabled) {
         RenderAuxImageWindow("Mask", g_maskSRV, renderedFrame);
@@ -2915,6 +2920,9 @@ static void RunViewerFrame(
             colorPipelineWindow,
             &equationPackReport,
             view,
+            render,
+            stats,
+            renderPacing,
             frameProbe,
             uiAutomationCommandState.last_sequence);
     }

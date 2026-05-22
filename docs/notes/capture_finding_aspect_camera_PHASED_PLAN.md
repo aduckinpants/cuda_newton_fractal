@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 7 complete - Capture Finding is standard/f64 again and live preview recovery sees measured non-benchmark frame time.
+Phase 8 complete - no-mouse camera-center pacing proof is green, runtime report exposes pacing/timing evidence, and late viewport drag interaction now feeds the next pacing decision.
 
 ## Phase Checklist
 
@@ -14,6 +14,7 @@ Phase 7 complete - Capture Finding is standard/f64 again and live preview recove
 - [x] Phase 5 - repair preview downscale policy so common fast/unknown-timing interaction stays full resolution, with focused render-pacing tests.
 - [x] Phase 6 - harden active-preview UX when debounce is needed, repair the code-quality baseline regression, add the missing focused pacing harness target, and run extended validation.
 - [x] Phase 7 - restore Capture Finding standard/f64 output and make live preview recovery see non-benchmark frame time during slow interaction.
+- [x] Phase 8 - prove camera center changes enter adaptive preview through no-mouse runtime automation, expose truthful pacing report fields, and repair lost viewport interaction feedback if confirmed.
 
 ## Explicit User Asks
 
@@ -27,6 +28,7 @@ Phase 7 complete - Capture Finding is standard/f64 again and live preview recove
 - [done] Hostile-review the viewport preview UX when debounce is actually needed, and fix low-hanging defects not already documented/deferred.
 - [done] Restore Capture Finding to f64/standard quality after the aspect/camera repair.
 - [done] Fix the slow-interaction FPS recovery path so high-resolution low-FPS drag and slider edits actually enter preview.
+- [done] Emulate the remaining pacing regression by changing camera X/Y through in-process automation, reading FPS/timing and live resolution, and responding with a fix when the report proves pacing is still wrong.
 
 ## Presumption Loop
 
@@ -97,6 +99,23 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - Validated: `py -3.14 -m pytest tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed with `1 passed`; the runtime archive asserted `sample_tier=standard`, `resolved_backend=float64`, nonzero `last_render_ms`, aspect, and camera.
 - Validated: `py -3.14 tools/viewer_host_run_logged_command.py --label capture_pacing_phase7_native_full --log artifacts/logs/capture_pacing_phase7_native_full.log -- ui_app/build_tests_vsdevcmd.cmd` passed with `All helper tests passed`.
 - Validated: `py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py -q` passed with `1 passed`.
+- Phase 8 RED target: runtime automation must change `fractal_control.center_x.primary` / `center_y` without physical mouse input, observe measured `last_render_ms`, and prove slow measured frames reduce the live rendered frame below the target render resolution while fast/unknown cases remain full resolution.
+- Phase 8 inspection finding: `RenderFractalViewport(...)` reports wheel/drag interaction after the pacing decision and render dispatch, and the resulting flag is not fed back into `NoteViewerInteraction(...)`, so direct viewport drag can be lost before the next frame's pacing decision.
+- Landed: the UI automation report now publishes `target_render_width`, `target_render_height`, `last_render_ms`, `last_render_fps`, `render_pacing_preview_active`, `render_pacing_preview_scale`, and pacing render dimensions so runtime tests can read actual FPS/pacing state.
+- Landed: `RunViewerFrame(...)` now records viewport wheel/drag interaction after `RenderFractalViewport(...)` and calls `NoteViewerInteraction(...)` so direct camera drag influences the next frame's pacing decision instead of being discarded.
+- Runtime proof: `tests/test_fractal_runtime_resolution_pacing.py::test_camera_center_edits_enter_preview_when_measured_frames_are_slow_no_mouse` launches one viewer, edits `center_x` and `center_y` via set-value automation, observes a measured slow full-resolution frame, proves preview active with lower live dimensions, then observes non-preview settle.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_viewer_ui_automation_report` passed.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_viewer_render_pacing` passed.
+- Validated: `ui_app\build_vsdevcmd.cmd` passed and republished `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py::test_camera_center_edits_enter_preview_when_measured_frames_are_slow_no_mouse -q` passed with `1 passed`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py -q` passed with `2 passed`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_persistent_viewer_harness.py::test_persistent_runtime_viewer_batches_set_value_proofs_in_one_process -q` passed with `1 passed`.
+- Validated: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passed with score `97/100` and baseline check passed.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_finding_archive_actions` passed.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed with `1 passed`.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_fractal_renderer` passed with `test_fractal_renderer: passed=76 failed=0`.
+- Attempted but not green: `py -3.14 tools/viewer_host_run_logged_command.py --label capture_pacing_phase8_native_full --log artifacts/logs/capture_pacing_phase8_native_full.log -- ui_app/build_tests_vsdevcmd.cmd` exceeded a 20-minute timeout while compiling CUDA-heavy tests; leftover child build processes were stopped.
+- Validated: `git diff --check` passed with only the existing line-ending warning for `HANDOFF_LOG.md`.
 
 ## Hostile Audit
 
@@ -112,6 +131,8 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - Can `test_viewer_render_pacing` run through the checked-in native helper harness instead of an ad hoc MSVC command?
 - Does Capture Finding force standard/f64 independently of the current live viewport tier?
 - Does the normal live renderer report nonzero frame timing so pacing can react without `benchmark=true`?
+- Does no-mouse camera-center automation prove slow measured interaction enters preview and later settles back to full quality?
+- Does direct viewport wheel/drag interaction update pacing state for the next frame instead of being detected too late and discarded?
 
 ## Audit Passes
 
@@ -122,6 +143,7 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] Pass 5: audit preview downscale policy confirmed the repair changes only pacing policy/tests/contract docs, keeps capture/camera/fractal/color paths untouched, and preserves slow-frame preview behavior.
 - [done] Pass 6: audit confirmed active-preview recovery now uses measured preview scale plus step-up/step-down hysteresis, code quality baseline passes, and the focused pacing harness target runs through the checked native helper.
 - [done] Pass 7: audit confirmed Capture Finding forces standard/f64 independent of live tier, normal live renders report nonzero timing for pacing, no OS-mouse automation was added, and capture aspect/camera behavior stayed covered.
+- [done] Pass 8: audit confirmed no-mouse camera-center automation enters preview on slow measured frames, the report carries timing/pacing evidence, direct viewport interaction now feeds the next pacing decision, and no OS-mouse automation was added.
 
 ## Audit Findings
 
@@ -134,6 +156,7 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] Test-harness finding repaired: `ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing` now compiles and runs the focused pacing unit rail.
 - [done] Regression finding repaired: Capture Finding now forces `SampleTier::standard`, and runtime archive proof confirms `sample_tier=standard` with `resolved_backend=float64`.
 - [done] Regression finding repaired: normal non-benchmark live renders now report elapsed frame time, so preview pacing can react to slow drag/slider frames without requiring benchmark mode.
+- [done] Regression finding repaired: camera X/Y set-value automation now proves slow measured interaction enters preview and settles; late viewport wheel/drag interaction is fed into pacing state for the next frame instead of being dropped after render dispatch.
 
 ## Notes
 
