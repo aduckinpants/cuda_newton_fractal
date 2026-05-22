@@ -18,7 +18,8 @@
     "manual finding capture must preserve the camera framing the operator sees",
     "high resolution capture behavior must remain high resolution",
     "wide viewport aspect must not clip left and right sides during capture",
-    "no physical mouse automation may be introduced"
+    "no physical mouse automation may be introduced",
+    "viewport preview downscale must require measured slow-frame evidence instead of triggering from unknown timing alone"
   ],
   "forbidden_operator_prompts": [
     "replace the renderer or camera model for this slice",
@@ -30,7 +31,8 @@
     "capture_finding_aspect": "derived_from_visible_viewport",
     "capture_camera": "preserves_visible_center_and_zoom",
     "capture_quality": "high_resolution",
-    "automation": "no_physical_mouse"
+    "automation": "no_physical_mouse",
+    "preview_downscale": "requires_slow_frame_evidence"
   },
   "forbidden_defaults": {
     "fixed_capture_aspect": "forbidden",

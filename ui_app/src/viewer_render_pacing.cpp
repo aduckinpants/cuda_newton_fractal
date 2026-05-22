@@ -7,7 +7,6 @@ namespace {
 constexpr double kNoRecentInteraction = 1.0e30;
 constexpr int kDefaultPreviewStepCount = 4;
 constexpr double kPreviewRecoveryBlend = 0.25;
-constexpr int kLargeRenderPixelThreshold = 1024 * 768;
 
 double ClampFinite(double value, double minValue, double maxValue, double fallback) {
     if (!std::isfinite(value)) return fallback;
@@ -35,11 +34,6 @@ int ScaleDimension(int value, double scale) {
     return result;
 }
 
-bool IsLargeRenderResolution(const Int2& resolution) {
-    if (resolution.x <= 0 || resolution.y <= 0) return false;
-    return static_cast<long long>(resolution.x) * static_cast<long long>(resolution.y) >= kLargeRenderPixelThreshold;
-}
-
 bool HasUsableRenderTiming(float renderMs) {
     return std::isfinite(renderMs) && renderMs > 0.0f;
 }
@@ -49,12 +43,14 @@ double PreviewScaleFromTiming(float renderMs, double targetFrameMs, double minSc
     return ClampPreviewScale(target, minScale);
 }
 
-double TargetPreviewScale(const RenderSettings& baseRender, const RenderStats& lastStats, const ViewerRenderPacingConfig& config) {
+double TargetPreviewScale(const RenderStats& lastStats, const ViewerRenderPacingConfig& config) {
     const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
     if (!std::isfinite(config.target_frame_ms) || config.target_frame_ms <= 0.0) return 1.0;
-    if (!HasUsableRenderTiming(lastStats.last_render_ms)) {
-        return IsLargeRenderResolution(baseRender.resolution) ? minScale : 1.0;
-    }
+    if (!HasUsableRenderTiming(lastStats.last_render_ms)) return 1.0;
+
+    const double stepDownThreshold = config.target_frame_ms * ClampFinite(config.step_down_hysteresis, 1.0, 4.0, 1.10);
+    if (static_cast<double>(lastStats.last_render_ms) <= stepDownThreshold) return 1.0;
+
     return PreviewScaleFromTiming(lastStats.last_render_ms, config.target_frame_ms, minScale);
 }
 
@@ -125,7 +121,7 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
 
     ioState->seconds_since_interaction = ageAfterFrame;
     const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
-    const double targetScale = TargetPreviewScale(baseRender, lastStats, config);
+    const double targetScale = TargetPreviewScale(lastStats, config);
     const double previewScale = RecoverPreviewScale(ioState->active_preview_scale, targetScale, minScale);
     ioState->active_preview_scale = previewScale;
 

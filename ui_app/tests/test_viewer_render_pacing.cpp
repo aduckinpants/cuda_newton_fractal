@@ -103,12 +103,41 @@ int main() {
 
         NoteViewerInteraction(&state);
         ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.01, config, &state);
-        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.5)) {
-            std::cerr << "Expected unknown timing on a large render to start at the preview floor\n";
+        if (decision.preview_active) {
+            std::cerr << "Expected unknown timing to stay full resolution until a slow frame is measured\n";
             return 1;
         }
-        if (decision.render_resolution.x != 1024 || decision.render_resolution.y != 768) {
-            std::cerr << "Expected unknown large-render timing to produce a half-resolution preview\n";
+        if (!NearlyEqual(decision.preview_scale, 1.0) ||
+            decision.render_resolution.x != 2048 || decision.render_resolution.y != 1536) {
+            std::cerr << "Expected unknown timing to preserve full-resolution output\n";
+            return 1;
+        }
+        if (state.settle_render_pending) {
+            std::cerr << "Expected unknown timing without preview to avoid scheduling a settle render\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {2048, 1536};
+        RenderStats stats{};
+        stats.last_render_ms = 35.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+
+        NoteViewerInteraction(&state);
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
+        if (decision.preview_active) {
+            std::cerr << "Expected near-budget full-resolution frames to stay full resolution during interaction\n";
+            return 1;
+        }
+        if (decision.render_resolution.x != 2048 || decision.render_resolution.y != 1536) {
+            std::cerr << "Expected near-budget interaction to preserve the base render resolution\n";
+            return 1;
+        }
+        if (state.settle_render_pending) {
+            std::cerr << "Expected near-budget interaction to avoid scheduling an extra settle render\n";
             return 1;
         }
     }
