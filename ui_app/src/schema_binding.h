@@ -25,6 +25,7 @@ struct BindingContext {
     bool GetBoolValue(const std::string& path, bool& out) const;
     bool GetIntValue(const std::string& path, int& out) const;
     bool GetFloatValue(const std::string& path, float& out) const;
+    bool SetIntValue(const std::string& path, int value);
     bool GetDoubleValue(const std::string& path, double& out) const;
 
     bool EvalVisibleIf(const UISchemaPredicate& pred) const;

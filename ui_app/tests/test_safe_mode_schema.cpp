@@ -134,7 +134,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
     Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 18,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
-    Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 5,
+    Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
 
     if (!viewPanel) return;
@@ -155,6 +155,8 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
     UISchema safeMode = BuildSafeModeSchema();
     bool foundRenderWidthDefault = false;
     bool foundRenderHeightDefault = false;
+    bool foundResolutionAspectPresetDefault = false;
+    bool foundResolutionLongEdgeDefault = false;
     bool foundFractalTypeCommonGroup = false;
     bool foundFractalTypeRootFindingGroup = false;
     bool foundCounterfactualPairRootFindingGroup = false;
@@ -183,10 +185,26 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
                     if (option.id == "explaino_projection_and_flow" && option.group == "Explaino") foundExplainoProjectionAndFlowGroup = true;
                 }
             }
-            if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+            if (ctrl.id == "resolution_aspect_preset" && ctrl.type == "combo" && ctrl.has_binding &&
+                ctrl.binding.path == "fractal.render.resolution.aspect_preset" &&
+                ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "4:3" &&
+                ctrl.options.size() == 6 && ctrl.options[0].id == "custom" && ctrl.options[1].id == "1:1" &&
+                ctrl.options[2].id == "4:3" && ctrl.options[3].id == "16:9" &&
+                ctrl.options[4].id == "16:10" && ctrl.options[5].id == "21:9") {
+                foundResolutionAspectPresetDefault = true;
+            }
+            if (ctrl.id == "resolution_long_edge" && ctrl.type == "slider_int" && ctrl.has_binding &&
+                ctrl.binding.path == "fractal.render.resolution.long_edge" &&
+                ctrl.has_min && ctrl.min == 256.0 && ctrl.has_max && ctrl.max == 4096.0 &&
+                ctrl.has_step && ctrl.step == 16.0 && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                foundResolutionLongEdgeDefault = true;
+            }
+            if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0 &&
+                ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.path == "fractal.render.resolution.aspect_preset" && ctrl.visible_if.value == "custom") {
                 foundRenderWidthDefault = true;
             }
-            if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
+            if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0 &&
+                ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.path == "fractal.render.resolution.aspect_preset" && ctrl.visible_if.value == "custom") {
                 foundRenderHeightDefault = true;
             }
             if (ctrl.id == "auto_refresh" && ctrl.label == "Continuous Render" && ctrl.has_default && ctrl.def.is_bool() && !ctrl.def.as_bool()) {
@@ -195,10 +213,14 @@ static void TestSafeModeSchemaKeepsGroupedDefaults() {
         }
     }
 
+    Check(foundResolutionAspectPresetDefault,
+        "TestSafeModeSchemaKeepsGroupedDefaults_ResolutionAspectPresetDefault");
+    Check(foundResolutionLongEdgeDefault,
+        "TestSafeModeSchemaKeepsGroupedDefaults_ResolutionLongEdgeDefault");
     Check(foundRenderWidthDefault,
-        "TestSafeModeSchemaKeepsGroupedDefaults_RenderWidthDefault");
+        "TestSafeModeSchemaKeepsGroupedDefaults_RenderWidthCustomOnly");
     Check(foundRenderHeightDefault,
-        "TestSafeModeSchemaKeepsGroupedDefaults_RenderHeightDefault");
+        "TestSafeModeSchemaKeepsGroupedDefaults_RenderHeightCustomOnly");
     Check(foundFractalTypeCommonGroup,
         "TestSafeModeSchemaKeepsGroupedDefaults_CommonFractalGroup");
     Check(foundFractalTypeRootFindingGroup,

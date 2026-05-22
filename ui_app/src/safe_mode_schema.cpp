@@ -499,6 +499,58 @@ UISchemaPanel BuildSafeModeFractalPanel() {
     return panel;
 }
 
+UISchemaControl BuildResolutionAspectPresetControl() {
+    UISchemaControl control = MakeParamControl(
+        "resolution_aspect_preset",
+        "combo",
+        "Aspect",
+        "enum",
+        "fractal.render.resolution.aspect_preset",
+        json_min::Value{std::string("4:3")});
+    control.options = {
+        {"custom", "Custom", ""},
+        {"1:1", "1:1", ""},
+        {"4:3", "4:3", ""},
+        {"16:9", "16:9", ""},
+        {"16:10", "16:10", ""},
+        {"21:9", "21:9", ""},
+    };
+    return control;
+}
+
+UISchemaControl BuildResolutionLongEdgeControl() {
+    return MakeRangedParamControl(
+        "resolution_long_edge",
+        "slider_int",
+        "Long Edge",
+        "int",
+        256.0,
+        4096.0,
+        16.0,
+        "fractal.render.resolution.long_edge",
+        json_min::Value{static_cast<double>(RenderSettings::kDefaultWidth)});
+}
+
+UISchemaControl BuildResolutionDimensionControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    int defaultValue) {
+    UISchemaControl control = MakeRangedParamControl(
+        id,
+        "slider_int",
+        label,
+        "int",
+        64.0,
+        4096.0,
+        1.0,
+        path,
+        json_min::Value{static_cast<double>(defaultValue)});
+    control.has_visible_if = true;
+    control.visible_if = MakeEqVisibleIf("fractal.render.resolution.aspect_preset", "custom");
+    return control;
+}
+
 UISchemaPanel BuildSafeModeRenderPanel() {
     UISchemaPanel panel;
     panel.id = "render";
@@ -506,8 +558,10 @@ UISchemaPanel BuildSafeModeRenderPanel() {
     panel.order = 30;
     panel.has_order = true;
     panel.controls = {
-        MakeRangedParamControl("width", "slider_int", "Width", "int", 64.0, 4096.0, 1.0, "fractal.render.resolution.x", json_min::Value{static_cast<double>(RenderSettings::kDefaultWidth)}),
-        MakeRangedParamControl("height", "slider_int", "Height", "int", 64.0, 4096.0, 1.0, "fractal.render.resolution.y", json_min::Value{static_cast<double>(RenderSettings::kDefaultHeight)}),
+        BuildResolutionAspectPresetControl(),
+        BuildResolutionLongEdgeControl(),
+        BuildResolutionDimensionControl("width", "Width", "fractal.render.resolution.x", RenderSettings::kDefaultWidth),
+        BuildResolutionDimensionControl("height", "Height", "fractal.render.resolution.y", RenderSettings::kDefaultHeight),
         MakeRangedParamControl("interaction_debounce_ms", "slider_int", "Interaction Debounce (ms)", "int", 0.0, 1000.0, 10.0, "fractal.render.interaction_debounce_ms", json_min::Value{static_cast<double>(RenderSettings::kDefaultInteractionDebounceMs)}),
         MakeRangedParamControl("preview_target_fps", "slider_float", "Preview Target FPS", "float", 5.0, 120.0, 1.0, "fractal.render.preview_target_fps", json_min::Value{static_cast<double>(RenderSettings::kDefaultPreviewTargetFps)}),
         MakeRangedParamControl("preview_min_scale", "slider_float", "Preview Min Scale", "float", 0.25, 1.0, 0.05, "fractal.render.preview_min_scale", json_min::Value{static_cast<double>(RenderSettings::kDefaultPreviewMinScale)}),

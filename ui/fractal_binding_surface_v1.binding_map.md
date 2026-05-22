@@ -34,8 +34,10 @@ All bindings are under `fractal.*`.
 
 ## Render (host + device)
 
-- `fractal.render.resolution.x` → `RenderSettings.resolution.x` (int)
-- `fractal.render.resolution.y` → `RenderSettings.resolution.y` (int)
+- `fractal.render.resolution.aspect_preset` -> computed from `RenderSettings.resolution.x/y`; fixed-preset writes update `resolution.x/y`, and `custom` is derived from non-preset dimensions
+- `fractal.render.resolution.long_edge` -> computed from `RenderSettings.resolution.x/y`; writes preserve the active computed aspect and update `resolution.x/y`
+- `fractal.render.resolution.x` -> `RenderSettings.resolution.x` (int; runtime/saved-state authority, visible only for computed `custom` aspect)
+- `fractal.render.resolution.y` -> `RenderSettings.resolution.y` (int; runtime/saved-state authority, visible only for computed `custom` aspect)
 - `fractal.render.block_size` → `RenderSettings.block_size` (int; engine validates/clamps)
 - `fractal.render.device_id` → `RenderSettings.device_id` (int, optional; engine clamps)
 - `fractal.render.benchmark` → `RenderSettings.benchmark` (bool)

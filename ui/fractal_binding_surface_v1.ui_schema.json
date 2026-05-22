@@ -1060,11 +1060,36 @@
       "order": 30,
       "controls": [
         {
+          "id": "resolution_aspect_preset",
+          "type": "combo",
+          "label": "Aspect",
+          "value_type": "enum",
+          "default": "4:3",
+          "options": [
+            { "id": "custom", "label": "Custom" },
+            { "id": "1:1", "label": "1:1" },
+            { "id": "4:3", "label": "4:3" },
+            { "id": "16:9", "label": "16:9" },
+            { "id": "16:10", "label": "16:10" },
+            { "id": "21:9", "label": "21:9" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.render.resolution.aspect_preset" }
+        },
+        {
+          "id": "resolution_long_edge",
+          "type": "slider_int",
+          "label": "Long Edge",
+          "value_type": "int",
+          "min": 256, "max": 4096, "step": 16, "default": 2048,
+          "binding": { "kind": "param", "path": "fractal.render.resolution.long_edge" }
+        },
+        {
           "id": "width",
           "type": "slider_int",
           "label": "Width",
           "value_type": "int",
           "min": 64, "max": 4096, "step": 1, "default": 2048,
+          "visible_if": { "op": "eq", "path": "fractal.render.resolution.aspect_preset", "value": "custom" },
           "binding": { "kind": "param", "path": "fractal.render.resolution.x" }
         },
         {
@@ -1073,6 +1098,7 @@
           "label": "Height",
           "value_type": "int",
           "min": 64, "max": 4096, "step": 1, "default": 1536,
+          "visible_if": { "op": "eq", "path": "fractal.render.resolution.aspect_preset", "value": "custom" },
           "binding": { "kind": "param", "path": "fractal.render.resolution.y" }
         },
         {

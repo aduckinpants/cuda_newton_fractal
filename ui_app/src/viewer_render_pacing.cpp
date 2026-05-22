@@ -6,18 +6,14 @@ namespace {
 
 constexpr double kNoRecentInteraction = 1.0e30;
 constexpr int kDefaultPreviewStepCount = 4;
+constexpr double kPreviewRecoveryBlend = 0.25;
+constexpr int kLargeRenderPixelThreshold = 1024 * 768;
 
 double ClampFinite(double value, double minValue, double maxValue, double fallback) {
     if (!std::isfinite(value)) return fallback;
     if (value < minValue) return minValue;
     if (value > maxValue) return maxValue;
     return value;
-}
-
-int ClampStepIndex(int stepIndex, int maxStepCount) {
-    if (stepIndex < 0) return 0;
-    if (stepIndex > maxStepCount) return maxStepCount;
-    return stepIndex;
 }
 
 double ClampPreviewScale(double value, double minScale) {
@@ -30,42 +26,6 @@ double ClampPreviewScale(double value, double minScale) {
     return value;
 }
 
-double PreviewScaleForStep(int stepIndex, int stepCount, double minScale) {
-    if (stepIndex <= 0) return 1.0;
-    if (stepCount <= 0) return 1.0;
-    if (stepIndex >= stepCount) return ClampPreviewScale(minScale, minScale);
-
-    const double t = static_cast<double>(stepIndex) / static_cast<double>(stepCount);
-    const double logMinScale = std::log(ClampPreviewScale(minScale, minScale));
-    return std::exp(logMinScale * t);
-}
-
-int AdvancePreviewStep(int currentStep,
-    float lastRenderMs,
-    const ViewerRenderPacingConfig& config) {
-    const int maxStepCount = (config.preview_step_count > 0) ? config.preview_step_count : kDefaultPreviewStepCount;
-    currentStep = ClampStepIndex(currentStep, maxStepCount);
-
-    if (!std::isfinite(config.target_frame_ms) || config.target_frame_ms <= 0.0) {
-        return 0;
-    }
-    if (!std::isfinite(lastRenderMs) || lastRenderMs <= 0.0f) {
-        return currentStep;
-    }
-
-    const double lastFrameMs = static_cast<double>(lastRenderMs);
-    const double stepDownThreshold = config.target_frame_ms * ClampFinite(config.step_down_hysteresis, 1.0, 4.0, 1.10);
-    const double stepUpThreshold = config.target_frame_ms * ClampFinite(config.step_up_hysteresis, 0.10, 1.0, 0.75);
-
-    if (lastFrameMs > stepDownThreshold) {
-        return ClampStepIndex(currentStep + 1, maxStepCount);
-    }
-    if (lastFrameMs < stepUpThreshold) {
-        return ClampStepIndex(currentStep - 1, maxStepCount);
-    }
-    return currentStep;
-}
-
 int ScaleDimension(int value, double scale) {
     if (value <= 0) return 0;
     const double scaled = std::floor(static_cast<double>(value) * scale + 0.5);
@@ -75,8 +35,40 @@ int ScaleDimension(int value, double scale) {
     return result;
 }
 
-bool IsPositiveResolution(const Int2& resolution) {
-    return resolution.x > 0 && resolution.y > 0;
+bool IsLargeRenderResolution(const Int2& resolution) {
+    if (resolution.x <= 0 || resolution.y <= 0) return false;
+    return static_cast<long long>(resolution.x) * static_cast<long long>(resolution.y) >= kLargeRenderPixelThreshold;
+}
+
+bool HasUsableRenderTiming(float renderMs) {
+    return std::isfinite(renderMs) && renderMs > 0.0f;
+}
+
+double PreviewScaleFromTiming(float renderMs, double targetFrameMs, double minScale) {
+    const double target = std::sqrt(targetFrameMs / static_cast<double>(renderMs));
+    return ClampPreviewScale(target, minScale);
+}
+
+double TargetPreviewScale(const RenderSettings& baseRender, const RenderStats& lastStats, const ViewerRenderPacingConfig& config) {
+    const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
+    if (!std::isfinite(config.target_frame_ms) || config.target_frame_ms <= 0.0) return 1.0;
+    if (!HasUsableRenderTiming(lastStats.last_render_ms)) {
+        return IsLargeRenderResolution(baseRender.resolution) ? minScale : 1.0;
+    }
+    return PreviewScaleFromTiming(lastStats.last_render_ms, config.target_frame_ms, minScale);
+}
+
+double ClampRecoveredPreviewScale(double value, double minScale) {
+    if (value > 0.995) return 1.0;
+    return ClampPreviewScale(value, minScale);
+}
+
+double RecoverPreviewScale(double currentScale, double targetScale, double minScale) {
+    currentScale = ClampPreviewScale(currentScale, minScale);
+    targetScale = ClampPreviewScale(targetScale, minScale);
+    if (targetScale < currentScale) return targetScale;
+    const double recovered = currentScale + (targetScale - currentScale) * kPreviewRecoveryBlend;
+    return ClampRecoveredPreviewScale(recovered, minScale);
 }
 
 double DefaultDebounceSeconds() {
@@ -119,7 +111,6 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
     const double debounceSeconds = std::fmax(0.0, config.debounce_seconds);
     const double delta = (std::isfinite(deltaSeconds) && deltaSeconds > 0.0) ? deltaSeconds : 0.0;
     const double ageAfterFrame = ioState->seconds_since_interaction + delta;
-    const int previewStepCount = (config.preview_step_count > 0) ? config.preview_step_count : kDefaultPreviewStepCount;
 
     if (debounceSeconds <= 0.0 || ageAfterFrame >= debounceSeconds) {
         ioState->seconds_since_interaction = kNoRecentInteraction;
@@ -133,21 +124,23 @@ ViewerRenderPacingDecision AdvanceViewerRenderPacing(
     }
 
     ioState->seconds_since_interaction = ageAfterFrame;
-    ioState->preview_step_index = AdvancePreviewStep(ioState->preview_step_index, lastStats.last_render_ms, config);
-    decision.preview_step_index = ioState->preview_step_index;
+    const double minScale = ClampPreviewScale(config.min_preview_scale, 0.125);
+    const double targetScale = TargetPreviewScale(baseRender, lastStats, config);
+    const double previewScale = RecoverPreviewScale(ioState->active_preview_scale, targetScale, minScale);
+    ioState->active_preview_scale = previewScale;
 
-    if (ioState->preview_step_index > 0) {
-        const double previewScale = PreviewScaleForStep(ioState->preview_step_index, previewStepCount, config.min_preview_scale);
+    if (previewScale < 0.999) {
         decision.preview_active = true;
         decision.preview_scale = previewScale;
+        decision.preview_step_index = 1;
         decision.render_resolution = {
             ScaleDimension(baseRender.resolution.x, previewScale),
             ScaleDimension(baseRender.resolution.y, previewScale)};
+        ioState->preview_step_index = 1;
         ioState->settle_render_pending = true;
-        ioState->active_preview_scale = previewScale;
     } else {
-        ioState->active_preview_scale = 1.0;
-        ioState->settle_render_pending = false;
+        decision.preview_scale = 1.0;
+        ioState->preview_step_index = 0;
     }
 
     return decision;

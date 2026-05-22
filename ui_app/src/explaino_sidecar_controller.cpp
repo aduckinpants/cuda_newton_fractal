@@ -197,16 +197,19 @@ bool ApplyIntMutation(const SidecarAutoDemoControllerDecision& decision,
         return false;
     }
 
-    int* value = nullptr;
-    if (!ctx.BindInt(decision.path, &value) || !value) {
+    int currentValue = 0;
+    if (!ctx.GetIntValue(decision.path, currentValue)) {
         if (outError) *outError = UnsupportedMutationTypePathPair(decision);
         return false;
     }
     const int nextValue = static_cast<int>(std::lround(decision.target_value));
-    if (*value == nextValue) {
+    if (currentValue == nextValue) {
         return true;
     }
-    *value = nextValue;
+    if (!ctx.SetIntValue(decision.path, nextValue)) {
+        if (outError) *outError = UnsupportedMutationTypePathPair(decision);
+        return false;
+    }
     if (outChanged) *outChanged = true;
     return true;
 }

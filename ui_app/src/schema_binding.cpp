@@ -56,6 +56,136 @@ void ClampNumericValue(T* value, const NumericControlRange& range) {
     }
 }
 
+constexpr const char* kResolutionAspectPresetPath = "fractal.render.resolution.aspect_preset";
+constexpr const char* kResolutionLongEdgePath = "fractal.render.resolution.long_edge";
+constexpr const char* kResolutionAspectCustomId = "custom";
+constexpr int kResolutionLongEdgeMin = 256;
+constexpr int kResolutionLongEdgeMax = 4096;
+
+struct ResolutionAspectPresetDef {
+    const char* id;
+    int x;
+    int y;
+};
+
+constexpr ResolutionAspectPresetDef kResolutionAspectPresetDefs[] = {
+    {"1:1", 1, 1},
+    {"4:3", 4, 3},
+    {"16:9", 16, 9},
+    {"16:10", 16, 10},
+    {"21:9", 21, 9},
+};
+
+int ClampIntValue(int value, int minValue, int maxValue) {
+    if (value < minValue) return minValue;
+    if (value > maxValue) return maxValue;
+    return value;
+}
+
+int GreatestCommonDivisorPositive(int left, int right) {
+    if (left < 0) left = -left;
+    if (right < 0) right = -right;
+    while (right != 0) {
+        const int next = left % right;
+        left = right;
+        right = next;
+    }
+    return left > 0 ? left : 1;
+}
+
+int RoundRatioDimension(int longEdge, int numerator, int denominator) {
+    if (denominator <= 0) return longEdge;
+    const double scaled = static_cast<double>(longEdge) * static_cast<double>(numerator) / static_cast<double>(denominator);
+    int result = static_cast<int>(std::floor(scaled + 0.5));
+    if (result < 64) result = 64;
+    if (result > kResolutionLongEdgeMax) result = kResolutionLongEdgeMax;
+    return result;
+}
+
+const ResolutionAspectPresetDef* FindResolutionAspectPreset(const std::string& id) {
+    for (const ResolutionAspectPresetDef& preset : kResolutionAspectPresetDefs) {
+        if (id == preset.id) {
+            return &preset;
+        }
+    }
+    return nullptr;
+}
+
+Int2 ResolutionFromAspectPreset(const ResolutionAspectPresetDef& preset, int longEdge) {
+    longEdge = ClampIntValue(longEdge, kResolutionLongEdgeMin, kResolutionLongEdgeMax);
+    if (preset.x >= preset.y) {
+        return {longEdge, RoundRatioDimension(longEdge, preset.y, preset.x)};
+    }
+    return {RoundRatioDimension(longEdge, preset.x, preset.y), longEdge};
+}
+
+int ResolutionLongEdge(const RenderSettings& render) {
+    const int x = render.resolution.x;
+    const int y = render.resolution.y;
+    if (x <= 0 || y <= 0) {
+        return RenderSettings::kDefaultWidth;
+    }
+    return (x > y) ? x : y;
+}
+
+std::string ResolveResolutionAspectPresetId(const RenderSettings& render) {
+    const int x = render.resolution.x;
+    const int y = render.resolution.y;
+    if (x <= 0 || y <= 0) {
+        return kResolutionAspectCustomId;
+    }
+    const int gcd = GreatestCommonDivisorPositive(x, y);
+    const int reducedX = x / gcd;
+    const int reducedY = y / gcd;
+    for (const ResolutionAspectPresetDef& preset : kResolutionAspectPresetDefs) {
+        if (preset.x == reducedX && preset.y == reducedY) {
+            return preset.id;
+        }
+    }
+    return kResolutionAspectCustomId;
+}
+
+bool ApplyResolutionAspectPreset(RenderSettings& render, const std::string& id) {
+    if (id == kResolutionAspectCustomId) {
+        return render.resolution.x > 0 && render.resolution.y > 0;
+    }
+    const ResolutionAspectPresetDef* preset = FindResolutionAspectPreset(id);
+    if (!preset) {
+        return false;
+    }
+    render.resolution = ResolutionFromAspectPreset(*preset, ResolutionLongEdge(render));
+    return true;
+}
+
+bool ApplyResolutionLongEdge(RenderSettings& render, int longEdge) {
+    longEdge = ClampIntValue(longEdge, kResolutionLongEdgeMin, kResolutionLongEdgeMax);
+    const std::string aspectId = ResolveResolutionAspectPresetId(render);
+    if (const ResolutionAspectPresetDef* preset = FindResolutionAspectPreset(aspectId)) {
+        render.resolution = ResolutionFromAspectPreset(*preset, longEdge);
+        return true;
+    }
+
+    const int currentX = render.resolution.x;
+    const int currentY = render.resolution.y;
+    if (currentX <= 0 || currentY <= 0) {
+        if (const ResolutionAspectPresetDef* fallback = FindResolutionAspectPreset("4:3")) {
+            render.resolution = ResolutionFromAspectPreset(*fallback, longEdge);
+            return true;
+        }
+        return false;
+    }
+    if (currentX >= currentY) {
+        render.resolution = {longEdge, RoundRatioDimension(longEdge, currentY, currentX)};
+    } else {
+        render.resolution = {RoundRatioDimension(longEdge, currentX, currentY), longEdge};
+    }
+    return true;
+}
+
+bool IsResolutionLongEdgePath(const std::string& path) {
+    return path == kResolutionLongEdgePath;
+}
+
 bool IsCameraFloatBindingPath(const std::string& path) {
     return path == "fractal.view.center.x" ||
         path == "fractal.view.center.y" ||
@@ -433,15 +563,13 @@ bool TryGetFloatControlDragValue(const UISchemaBinding& binding, const BindingCo
 }
 
 bool ApplyIntControlEdit(const UISchemaBinding& binding, BindingContext& ctx, const NumericControlRange& range, double value) {
-    int* target = nullptr;
-    if (!ctx.BindInt(binding.path, &target) || !target) {
+    int nextValue = static_cast<int>(std::lround(value));
+    ClampNumericValue(&nextValue, range);
+
+    if (!ctx.SetIntValue(binding.path, nextValue)) {
         return false;
     }
 
-    int nextValue = static_cast<int>(std::lround(value));
-    ClampNumericValue(&nextValue, range);
-    *target = nextValue;
-    MarkMcMullenDirectEdit(ctx, binding.path);
     return true;
 }
 
@@ -696,6 +824,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (view && path == "fractal.view.camera_behavior") {
         return EnumIdOrEmpty(CameraBehaviorId(view->camera_behavior));
     }
+    if (render && path == kResolutionAspectPresetPath) {
+        return ResolveResolutionAspectPresetId(*render);
+    }
     if (render && path == "fractal.render.sample_tier") {
         return EnumIdOrEmpty(SampleTierId(render->sample_tier));
     }
@@ -750,6 +881,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
     if (view && path == "fractal.view.camera_behavior") {
         return ParseAndAssignEnumId(id, &view->camera_behavior, TryParseCameraBehaviorId);
     }
+    if (render && path == kResolutionAspectPresetPath) {
+        return ApplyResolutionAspectPreset(*render, id);
+    }
     if (render && path == "fractal.render.sample_tier") {
         return ParseAndAssignEnumId(id, &render->sample_tier, TryParseSampleTierId);
     }
@@ -770,10 +904,29 @@ bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
 }
 
 bool BindingContext::GetIntValue(const std::string& path, int& out) const {
+    if (render && IsResolutionLongEdgePath(path)) {
+        out = ResolutionLongEdge(*render);
+        return true;
+    }
     int* ptr = nullptr;
     BindingContext* self = const_cast<BindingContext*>(this);
     if (!self->BindInt(path, &ptr) || !ptr) return false;
     out = *ptr;
+    return true;
+}
+
+bool BindingContext::SetIntValue(const std::string& path, int value) {
+    if (render && IsResolutionLongEdgePath(path)) {
+        return ApplyResolutionLongEdge(*render, value);
+    }
+
+    int* ptr = nullptr;
+    if (!BindInt(path, &ptr) || !ptr) {
+        return false;
+    }
+
+    *ptr = value;
+    MarkMcMullenDirectEdit(*this, path);
     return true;
 }
 
@@ -1065,6 +1218,30 @@ bool ApplyBoolSchemaDefault(const UISchemaControl& control, BindingContext& ctx,
 }
 
 bool ApplyIntSchemaDefault(const UISchemaControl& control, BindingContext& ctx, bool* ioDirty) {
+    if (IsResolutionLongEdgePath(control.binding.path)) {
+        int currentValue = 0;
+        if (!ctx.GetIntValue(control.binding.path, currentValue)) return false;
+
+        int newValue = currentValue;
+        if (control.def.is_number()) newValue = static_cast<int>(control.def.as_number());
+        else if (control.def.is_string()) {
+            try {
+                newValue = std::stoi(control.def.as_string());
+            } catch (...) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        if (currentValue == newValue) return false;
+        if (!ApplyIntControlEdit(control.binding, ctx, ResolveNumericControlRange(control), newValue)) {
+            return false;
+        }
+        if (ioDirty) *ioDirty = true;
+        return true;
+    }
+
     int* value = nullptr;
     if (!ctx.BindInt(control.binding.path, &value) || !value) return false;
 
@@ -1215,8 +1392,8 @@ bool ValidateParamBinding(const UISchemaControl& control, BindingContext& ctx, s
         return true;
     }
     if (control.value_type == "int") {
-        int* value = nullptr;
-        if (!ctx.BindInt(path, &value) || !value) {
+        int value = 0;
+        if (!ctx.GetIntValue(path, value)) {
             if (outError) *outError = "Bind failed for int path: " + path + " (control: " + control.id + ")";
             return false;
         }
@@ -1436,8 +1613,8 @@ bool RenderIntControl(
     const UISchemaBinding& binding,
     bool* ioDirty,
     bool* ioInteracted) {
-    int* value = nullptr;
-    if (!ctx.BindInt(binding.path, &value) || !value) {
+    int editValue = 0;
+    if (!ctx.GetIntValue(binding.path, editValue)) {
         return RenderDiagnosticLabel(control, "bind failed");
     }
 
@@ -1446,25 +1623,24 @@ bool RenderIntControl(
     const int maxValue = range.has_widget_max ? static_cast<int>(range.widget_max) : (control.type == "slider_int" ? 100 : 0);
     const NumericDragWidgetBounds dragBounds = ResolveNumericDragWidgetBounds(control);
 
-    bool changed = false;
+    bool widgetChanged = false;
     if (control.type == "slider_int") {
-        changed = ImGui::SliderInt(control.label.c_str(), value, minValue, maxValue);
+        widgetChanged = ImGui::SliderInt(control.label.c_str(), &editValue, minValue, maxValue);
     } else {
         const float speed = control.has_step ? static_cast<float>(control.step) : 1.0f;
         const int dragMin = dragBounds.has_bounds ? static_cast<int>(dragBounds.min) : 0;
         const int dragMax = dragBounds.has_bounds ? static_cast<int>(dragBounds.max) : 0;
-        changed = ImGui::DragInt(control.label.c_str(), value, speed, dragMin, dragMax);
+        widgetChanged = ImGui::DragInt(control.label.c_str(), &editValue, speed, dragMin, dragMax);
     }
     MaybeNotePrimaryUiAutomationRect(ctx, control);
     const bool automationChanged = TryApplyPrimaryUiAutomationSetValue(ctx, control, binding, range, ioDirty, ioInteracted);
     ImGui::SameLine();
     const std::string inputLabel = "##value_input_" + control.id;
-    const bool typedChanged = ImGui::InputInt(inputLabel.c_str(), value, 0, 0);
-    if (changed || typedChanged) {
-        ClampNumericValue(value, range);
-        changed = true;
+    const bool typedChanged = ImGui::InputInt(inputLabel.c_str(), &editValue, 0, 0);
+    bool changed = automationChanged;
+    if (widgetChanged || typedChanged) {
+        changed = ApplyIntControlEdit(binding, ctx, range, editValue) || changed;
     }
-    changed = changed || automationChanged;
     MarkDirtyIfChanged(changed, ioDirty);
     MarkCurrentItemInteraction(changed, ioInteracted);
     return changed;

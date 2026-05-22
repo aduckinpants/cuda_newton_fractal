@@ -181,12 +181,12 @@ bool ApplyNumericValue(const SidecarParamSurfaceEntry& entry,
 
     BindingContext ctx = BindMeasurementState(ioState);
     if (entry.type == "int") {
-        int* ptr = nullptr;
-        if (!ctx.BindInt(entry.path, &ptr) || !ptr) {
+        const int nextValue = static_cast<int>(std::lround(value));
+        if (!ctx.SetIntValue(entry.path, nextValue)) {
             if (outError) *outError = "Unknown numeric binding path for sidecar measurement: " + entry.path;
             return false;
         }
-        *ptr = static_cast<int>(std::lround(value));
+        RefreshDerivedState(ioState);
         return true;
     }
 

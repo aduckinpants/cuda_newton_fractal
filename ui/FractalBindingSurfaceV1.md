@@ -45,8 +45,10 @@ All bindings live under the `fractal.*` namespace.
 
 ## Render (host + device)
 
-- `fractal.render.resolution.x` : int, range [64, 4096], step 1, default 1024
-- `fractal.render.resolution.y` : int, range [64, 4096], step 1, default 768
+- `fractal.render.resolution.aspect_preset` : computed enum {`custom`, `1:1`, `4:3`, `16:9`, `16:10`, `21:9`}, default-derived `4:3`; writes update `resolution.x/y` and are not persisted separately
+- `fractal.render.resolution.long_edge` : computed int, range [256, 4096], step 16, default-derived 2048; writes update the active aspect through `resolution.x/y`
+- `fractal.render.resolution.x` : int, range [64, 4096], step 1, default 2048; runtime/saved-state authority, visible only when the computed aspect is `custom`
+- `fractal.render.resolution.y` : int, range [64, 4096], step 1, default 1536; runtime/saved-state authority, visible only when the computed aspect is `custom`
 - `fractal.render.block_size` : int, range [32, 1024], step 32, default 256 (engine MUST validate/clamp to supported values)
 - `fractal.render.device_id` : int, range [0, 7], step 1, default 0 (optional feature; engine clamps to available devices)
 - `fractal.render.benchmark` : bool, default false

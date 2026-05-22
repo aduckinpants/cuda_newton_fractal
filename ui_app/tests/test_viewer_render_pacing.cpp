@@ -1,13 +1,24 @@
 #include "../src/viewer_render_pacing.h"
 
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 
 namespace {
 
 bool NearlyEqual(double a, double b, double eps = 1.0e-6) {
     return std::fabs(a - b) <= eps;
+}
+
+double DefaultTargetFrameMs() {
+    return 1000.0 / static_cast<double>(RenderSettings::kDefaultPreviewTargetFps);
+}
+
+int ScaledDimension(int value, double scale) {
+    int result = static_cast<int>(std::floor(static_cast<double>(value) * scale + 0.5));
+    if (result < 64) result = 64;
+    if (result > value) result = value;
+    return result;
 }
 
 } // namespace
@@ -20,7 +31,7 @@ int main() {
             std::cerr << "Expected default render pacing config to preserve the 200ms interaction debounce\n";
             return 1;
         }
-        if (!NearlyEqual(config.target_frame_ms, 1000.0 / 30.0)) {
+        if (!NearlyEqual(config.target_frame_ms, DefaultTargetFrameMs())) {
             std::cerr << "Expected default render pacing config to preserve the 30 FPS preview target\n";
             return 1;
         }
@@ -61,17 +72,23 @@ int main() {
 
         NoteViewerInteraction(&state);
         ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
+        const double expectedScale = std::sqrt(DefaultTargetFrameMs() / 90.0);
 
-        if (!decision.preview_active || decision.preview_step_index != 1) {
-            std::cerr << "Expected the restored 2048x1536 baseline to enter the first preview step under slow interaction frames\n";
+        if (!decision.preview_active) {
+            std::cerr << "Expected slow interaction frames to enter preview immediately\n";
             return 1;
         }
-        if (decision.render_resolution.x <= 1024 || decision.render_resolution.y <= 768) {
-            std::cerr << "Expected the first preview step to stay above the old low-resolution baseline\n";
+        if (!NearlyEqual(decision.preview_scale, expectedScale, 1.0e-6)) {
+            std::cerr << "Expected preview scale to come from sqrt(target_frame_ms / last_render_ms)\n";
             return 1;
         }
-        if (decision.render_resolution.x >= render.resolution.x || decision.render_resolution.y >= render.resolution.y) {
-            std::cerr << "Expected the first preview step to remain below the full-quality baseline\n";
+        if (decision.render_resolution.x != ScaledDimension(render.resolution.x, expectedScale) ||
+            decision.render_resolution.y != ScaledDimension(render.resolution.y, expectedScale)) {
+            std::cerr << "Expected budget scale to drive the preview render resolution\n";
+            return 1;
+        }
+        if (!state.settle_render_pending) {
+            std::cerr << "Expected preview mode to require one restoring full-quality render\n";
             return 1;
         }
     }
@@ -80,22 +97,36 @@ int main() {
         RenderSettings render{};
         render.resolution = {2048, 1536};
         RenderStats stats{};
-        stats.last_render_ms = 90.0f;
+        stats.last_render_ms = 0.0f;
         const ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
         ViewerRenderPacingState state{};
 
         NoteViewerInteraction(&state);
-        ViewerRenderPacingDecision decision{};
-        for (int index = 0; index < 4; ++index) {
-            decision = AdvanceViewerRenderPacing(render, stats, 0.03, config, &state);
-        }
-
-        if (!decision.preview_active || decision.preview_step_index != 4) {
-            std::cerr << "Expected repeated slow preview frames to reach the configured preview floor\n";
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.01, config, &state);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.5)) {
+            std::cerr << "Expected unknown timing on a large render to start at the preview floor\n";
             return 1;
         }
         if (decision.render_resolution.x != 1024 || decision.render_resolution.y != 768) {
-            std::cerr << "Expected the default preview floor to bottom out at the old 1024x768 baseline\n";
+            std::cerr << "Expected unknown large-render timing to produce a half-resolution preview\n";
+            return 1;
+        }
+    }
+
+    {
+        RenderSettings render{};
+        render.resolution = {1600, 900};
+        RenderStats stats{};
+        stats.last_render_ms = 180.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
+        ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.02;
+        state.active_preview_scale = 0.90;
+        state.settle_render_pending = true;
+
+        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.02, config, &state);
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.5)) {
+            std::cerr << "Expected slow preview frames to drop directly to the computed/clamped budget scale\n";
             return 1;
         }
     }
@@ -104,62 +135,20 @@ int main() {
         RenderSettings render{};
         render.resolution = {1024, 768};
         RenderStats stats{};
-        stats.last_render_ms = 120.0f;
-        ViewerRenderPacingConfig config{};
+        stats.last_render_ms = 8.0f;
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
         ViewerRenderPacingState state{};
+        state.seconds_since_interaction = 0.05;
+        state.settle_render_pending = true;
+        state.active_preview_scale = 0.50;
 
-        NoteViewerInteraction(&state);
         ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
-
-        if (!decision.preview_active) {
-            std::cerr << "Expected slow interaction to enter preview mode\n";
-            return 1;
-        }
-        if (decision.render_resolution.x >= render.resolution.x || decision.render_resolution.y >= render.resolution.y) {
-            std::cerr << "Expected preview resolution to be smaller than the base resolution\n";
+        if (!decision.preview_active || !NearlyEqual(decision.preview_scale, 0.625)) {
+            std::cerr << "Expected fast preview timing to recover gradually instead of jumping to full quality\n";
             return 1;
         }
         if (!state.settle_render_pending) {
-            std::cerr << "Expected preview mode to require one restoring full-quality render\n";
-            return 1;
-        }
-        if (state.preview_step_index != 1 || decision.preview_step_index != 1) {
-            std::cerr << "Expected a stepped controller to enter the first preview level before dropping further\n";
-            return 1;
-        }
-        const long long aspectError = std::llabs(
-            static_cast<long long>(decision.render_resolution.x) * static_cast<long long>(render.resolution.y) -
-            static_cast<long long>(decision.render_resolution.y) * static_cast<long long>(render.resolution.x));
-        if (aspectError > render.resolution.x) {
-            std::cerr << "Expected preview scaling to preserve the aspect ratio within integer rounding\n";
-            return 1;
-        }
-    }
-
-    {
-        RenderSettings render{};
-        render.resolution = {1024, 768};
-        RenderStats slowStats{};
-        slowStats.last_render_ms = 120.0f;
-        RenderStats stillSlowPreviewStats{};
-        stillSlowPreviewStats.last_render_ms = 90.0f;
-        ViewerRenderPacingConfig config{};
-        ViewerRenderPacingState state{};
-
-        NoteViewerInteraction(&state);
-        ViewerRenderPacingDecision first = AdvanceViewerRenderPacing(render, slowStats, 0.05, config, &state);
-        ViewerRenderPacingDecision second = AdvanceViewerRenderPacing(render, stillSlowPreviewStats, 0.05, config, &state);
-
-        if (!first.preview_active || !second.preview_active) {
-            std::cerr << "Expected slow preview timing to keep preview mode active\n";
-            return 1;
-        }
-        if (second.preview_step_index <= first.preview_step_index) {
-            std::cerr << "Expected stepped preview controller to drop another level when preview frames stay slow\n";
-            return 1;
-        }
-        if (second.render_resolution.x >= first.render_resolution.x || second.render_resolution.y >= first.render_resolution.y) {
-            std::cerr << "Expected a deeper preview step to reduce resolution further\n";
+            std::cerr << "Expected gradual recovery to preserve the pending settle render\n";
             return 1;
         }
     }
@@ -169,22 +158,17 @@ int main() {
         render.resolution = {1024, 768};
         RenderStats stats{};
         stats.last_render_ms = 10.0f;
-        ViewerRenderPacingConfig config{};
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
         ViewerRenderPacingState state{};
 
         NoteViewerInteraction(&state);
         ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
-
         if (decision.preview_active) {
-            std::cerr << "Expected fast frames to stay at full resolution during interaction\n";
+            std::cerr << "Expected comfortably fast full-resolution frames to stay full resolution during interaction\n";
             return 1;
         }
-        if (decision.full_quality_due) {
-            std::cerr << "Did not expect an immediate settle render for full-resolution interaction frames\n";
-            return 1;
-        }
-        if (state.settle_render_pending) {
-            std::cerr << "Full-resolution interaction should not schedule an extra settle render\n";
+        if (decision.full_quality_due || state.settle_render_pending) {
+            std::cerr << "Expected full-resolution interaction to avoid scheduling an extra settle render\n";
             return 1;
         }
     }
@@ -194,7 +178,7 @@ int main() {
         render.resolution = {2048, 1536};
         RenderStats stats{};
         stats.last_render_ms = 90.0f;
-        ViewerRenderPacingConfig config{};
+        ViewerRenderPacingConfig config = BuildViewerRenderPacingConfig(render);
         ViewerRenderPacingState state{};
 
         NoteViewerInteraction(&state);
@@ -217,35 +201,14 @@ int main() {
             std::cerr << "Expected settle render request to clear after it is issued\n";
             return 1;
         }
-        if (!NearlyEqual(state.active_preview_scale, 1.0)) {
-            std::cerr << "Expected settle render to reset the active preview scale\n";
+        if (!NearlyEqual(state.active_preview_scale, 1.0) || state.preview_step_index != 0) {
+            std::cerr << "Expected settle render to reset preview state\n";
             return 1;
         }
-        if (state.preview_step_index != 0) {
-            std::cerr << "Expected settle render to reset the preview step index\n";
-            return 1;
-        }
-    }
 
-    {
-        RenderSettings render{};
-        render.resolution = {1024, 768};
-        RenderStats stats{};
-        stats.last_render_ms = 8.0f;
-        ViewerRenderPacingConfig config{};
-        ViewerRenderPacingState state{};
-        state.seconds_since_interaction = 0.05;
-        state.settle_render_pending = true;
-        state.preview_step_index = 3;
-        state.active_preview_scale = 0.625;
-
-        ViewerRenderPacingDecision decision = AdvanceViewerRenderPacing(render, stats, 0.05, config, &state);
-        if (!decision.preview_active) {
-            std::cerr << "Expected fast preview timing during the debounce window to keep preview mode active while stepping up\n";
-            return 1;
-        }
-        if (decision.preview_step_index >= 3 || state.preview_step_index >= 3) {
-            std::cerr << "Expected stepped preview controller to move back toward higher resolution when preview timing is comfortably fast\n";
+        ViewerRenderPacingDecision idle = AdvanceViewerRenderPacing(render, stats, 0.20, config, &state);
+        if (idle.preview_active || idle.full_quality_due) {
+            std::cerr << "Expected settle render to be issued only once\n";
             return 1;
         }
     }

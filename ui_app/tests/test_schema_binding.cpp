@@ -1942,6 +1942,38 @@ int main() {
             return 1;
         }
 
+        render.resolution = {2048, 1536};
+        int longEdge = 0;
+        if (ctx.GetEnumId("fractal.render.resolution.aspect_preset") != "4:3" ||
+            !ctx.GetIntValue("fractal.render.resolution.long_edge", longEdge) || longEdge != 2048) {
+            std::cerr << "Expected computed resolution bindings to derive 4:3 and long edge 2048 from default resolution\n";
+            return 1;
+        }
+        if (!ctx.SetEnumId("fractal.render.resolution.aspect_preset", "16:9") ||
+            render.resolution.x != 2048 || render.resolution.y != 1152) {
+            std::cerr << "Expected aspect preset writes to update RenderSettings.resolution without a second persisted source\n";
+            return 1;
+        }
+        UISchemaControl longEdgeDefault = MakeBoundControl("resolution_long_edge", "slider_int", "Long Edge", "int", "param", "fractal.render.resolution.long_edge");
+        longEdgeDefault.has_min = true;
+        longEdgeDefault.min = 256.0;
+        longEdgeDefault.has_max = true;
+        longEdgeDefault.max = 4096.0;
+        longEdgeDefault.has_default = true;
+        longEdgeDefault.def = json_min::Value{1280.0};
+        dirty = false;
+        if (!ApplySchemaDefaultForControl(longEdgeDefault, ctx, &dirty) ||
+            render.resolution.x != 1280 || render.resolution.y != 720 || !dirty) {
+            std::cerr << "Expected computed long-edge defaults to preserve the active aspect and write resolution.x/y\n";
+            return 1;
+        }
+        render.resolution = {1000, 700};
+        if (ctx.GetEnumId("fractal.render.resolution.aspect_preset") != "custom" ||
+            !ctx.GetIntValue("fractal.render.resolution.long_edge", longEdge) || longEdge != 1000) {
+            std::cerr << "Expected non-preset dimensions to derive the Custom aspect mode and current long edge\n";
+            return 1;
+        }
+
         dirty = false;
         UISchemaControl seedControl = MakeBoundControl("seed", "drag_double", "Seed", "double", "param", "fractal.params.explaino_seed");
         seedControl.has_default = true;
@@ -4321,6 +4353,44 @@ int main() {
         }
         if (!intAutomationConsumed || !intAutomationDirty || !intAutomationInteracted || !intAutomationError.empty() || render.resolution.x != 640) {
             std::cerr << "Schema-driven int set-value automation should consume, dirty, interact, and write width\n";
+            return 1;
+        }
+        ctx.ui_automation_set_control_id = nullptr;
+        ctx.ui_automation_set_consumed = nullptr;
+        ctx.ui_automation_set_error = nullptr;
+        EndFrame();
+
+        BeginFrame();
+        bool longEdgeAutomationDirty = false;
+        bool longEdgeAutomationInteracted = false;
+        bool longEdgeAutomationConsumed = false;
+        std::string longEdgeAutomationError;
+        const std::string longEdgeAutomationControlId = "fractal_control.resolution_long_edge.primary";
+        UISchemaControl longEdgeControl = MakeBoundControl(
+            "resolution_long_edge",
+            "slider_int",
+            "Long Edge",
+            "int",
+            "param",
+            "fractal.render.resolution.long_edge");
+        longEdgeControl.has_min = true;
+        longEdgeControl.min = 256.0;
+        longEdgeControl.has_max = true;
+        longEdgeControl.max = 4096.0;
+        longEdgeControl.has_step = true;
+        longEdgeControl.step = 16.0;
+        render.resolution = {2048, 1152};
+        ctx.ui_automation_set_control_id = &longEdgeAutomationControlId;
+        ctx.ui_automation_set_control_value = 1280.0;
+        ctx.ui_automation_set_consumed = &longEdgeAutomationConsumed;
+        ctx.ui_automation_set_error = &longEdgeAutomationError;
+        if (!RenderControlFromSchema(longEdgeControl, ctx, &longEdgeAutomationDirty, nullptr, &longEdgeAutomationInteracted)) {
+            std::cerr << "Visible schema-driven long-edge set-value automation should apply through the computed int edit path\n";
+            return 1;
+        }
+        if (!longEdgeAutomationConsumed || !longEdgeAutomationDirty || !longEdgeAutomationInteracted || !longEdgeAutomationError.empty() ||
+            render.resolution.x != 1280 || render.resolution.y != 720) {
+            std::cerr << "Computed long-edge automation should consume, dirty, interact, and write resolution.x/y\n";
             return 1;
         }
         ctx.ui_automation_set_control_id = nullptr;

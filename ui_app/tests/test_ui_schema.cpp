@@ -674,6 +674,8 @@ int main() {
         std::size_t explainoAllVisibleNonAxisCount = 0;
         bool foundRenderWidthDefault = false;
         bool foundRenderHeightDefault = false;
+        bool foundResolutionAspectPresetDefault = false;
+        bool foundResolutionLongEdgeDefault = false;
         bool foundInteractionDebounceDefault = false;
         bool foundPreviewTargetFpsDefault = false;
         bool foundPreviewMinScaleDefault = false;
@@ -826,10 +828,26 @@ int main() {
                     ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.value == "magnet") {
                     foundMagnetBailout = true;
                 }
-                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
+                if (ctrl.id == "resolution_aspect_preset" && ctrl.type == "combo" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.render.resolution.aspect_preset" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "4:3" &&
+                    ctrl.options.size() == 6 && ctrl.options[0].id == "custom" && ctrl.options[1].id == "1:1" &&
+                    ctrl.options[2].id == "4:3" && ctrl.options[3].id == "16:9" &&
+                    ctrl.options[4].id == "16:10" && ctrl.options[5].id == "21:9") {
+                    foundResolutionAspectPresetDefault = true;
+                }
+                if (ctrl.id == "resolution_long_edge" && ctrl.type == "slider_int" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.render.resolution.long_edge" &&
+                    ctrl.has_min && ctrl.min == 256.0 && ctrl.has_max && ctrl.max == 4096.0 &&
+                    ctrl.has_step && ctrl.step == 16.0 && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                    foundResolutionLongEdgeDefault = true;
+                }
+                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.path == "fractal.render.resolution.aspect_preset" && ctrl.visible_if.value == "custom") {
                     foundRenderHeightDefault = true;
                 }
-                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.path == "fractal.render.resolution.aspect_preset" && ctrl.visible_if.value == "custom") {
                     foundRenderWidthDefault = true;
                 }
                 if (ctrl.id == "interaction_debounce_ms" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 200.0) {
@@ -1216,8 +1234,8 @@ int main() {
             std::cerr << "Did not find Multibrot imaginary exponent control in schema\n";
             return 1;
         }
-        if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
-            std::cerr << "Did not find exploration-first render resolution defaults in schema\n";
+        if (!foundResolutionAspectPresetDefault || !foundResolutionLongEdgeDefault || !foundRenderWidthDefault || !foundRenderHeightDefault) {
+            std::cerr << "Did not find computed aspect/long-edge render resolution controls with Custom-only exact dimensions in schema\n";
             return 1;
         }
         if (!foundInteractionDebounceDefault || !foundPreviewTargetFpsDefault || !foundPreviewMinScaleDefault) {
@@ -1360,6 +1378,8 @@ int main() {
         bool foundFractalTypeDefaultExplainoAll = false;
         bool foundInteractionDebounceDefault = false;
         bool foundPreviewTargetFpsDefault = false;
+        bool foundResolutionAspectPresetDefault = false;
+        bool foundResolutionLongEdgeDefault = false;
         bool foundPreviewMinScaleDefault = false;
         bool foundContinuousRenderDefaultFalse = false;
         bool foundSafeModeCenterXUiRange = false;
@@ -1380,7 +1400,7 @@ int main() {
             return 1;
         }
         if (!renderPanel || renderPanel->label != "Render (Safe Mode)" || !renderPanel->has_order || renderPanel->order != 30 ||
-            renderPanel->controls.size() != 5) {
+            renderPanel->controls.size() != 7) {
             std::cerr << "Safe-mode schema did not expose the expected render panel shape\n";
             return 1;
         }
@@ -1585,10 +1605,26 @@ int main() {
                         if (option.id == "magnet" && option.group == "Escape-Time") foundMagnetSafeModeEscapeTimeGroup = true;
                     }
                 }
-                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                if (ctrl.id == "resolution_aspect_preset" && ctrl.type == "combo" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.render.resolution.aspect_preset" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "4:3" &&
+                    ctrl.options.size() == 6 && ctrl.options[0].id == "custom" && ctrl.options[1].id == "1:1" &&
+                    ctrl.options[2].id == "4:3" && ctrl.options[3].id == "16:9" &&
+                    ctrl.options[4].id == "16:10" && ctrl.options[5].id == "21:9") {
+                    foundResolutionAspectPresetDefault = true;
+                }
+                if (ctrl.id == "resolution_long_edge" && ctrl.type == "slider_int" && ctrl.has_binding &&
+                    ctrl.binding.path == "fractal.render.resolution.long_edge" &&
+                    ctrl.has_min && ctrl.min == 256.0 && ctrl.has_max && ctrl.max == 4096.0 &&
+                    ctrl.has_step && ctrl.step == 16.0 && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0) {
+                    foundResolutionLongEdgeDefault = true;
+                }
+                if (ctrl.id == "width" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 2048.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.path == "fractal.render.resolution.aspect_preset" && ctrl.visible_if.value == "custom") {
                     foundRenderWidthDefault = true;
                 }
-                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0) {
+                if (ctrl.id == "height" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 1536.0 &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" && ctrl.visible_if.path == "fractal.render.resolution.aspect_preset" && ctrl.visible_if.value == "custom") {
                     foundRenderHeightDefault = true;
                 }
                 if (ctrl.id == "interaction_debounce_ms" && ctrl.has_default && ctrl.def.is_number() && ctrl.def.as_number() == 200.0) {
@@ -1623,8 +1659,8 @@ int main() {
                 }
             }
         }
-        if (!foundRenderWidthDefault || !foundRenderHeightDefault) {
-            std::cerr << "Safe-mode schema did not inherit exploration-first render resolution defaults\n";
+        if (!foundResolutionAspectPresetDefault || !foundResolutionLongEdgeDefault || !foundRenderWidthDefault || !foundRenderHeightDefault) {
+            std::cerr << "Safe-mode schema did not expose computed aspect/long-edge resolution controls with Custom-only exact dimensions\n";
             return 1;
         }
         if (!foundInteractionDebounceDefault || !foundPreviewTargetFpsDefault || !foundPreviewMinScaleDefault) {
