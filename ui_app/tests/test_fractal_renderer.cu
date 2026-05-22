@@ -135,7 +135,7 @@ void TestTinyRenderProducesPixelsMaskAndStats() {
         "Render stats iteration sum stays within max_iter times pixel count");
     Check(stats.resolved_eval.backend == NumericBackend::float32 && stats.resolved_eval.strategy == IterationStrategy::direct,
         "Render stats record resolved fast direct mode");
-    Check(stats.last_render_ms == 0.0f, "Non-benchmark render leaves elapsed milliseconds at zero");
+    Check(stats.last_render_ms > 0.0f, "Non-benchmark live render reports elapsed milliseconds for viewport pacing");
 
     CleanupFractalCUDA();
     CleanupFractalCUDA();

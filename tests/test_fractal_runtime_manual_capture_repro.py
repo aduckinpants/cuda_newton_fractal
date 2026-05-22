@@ -119,6 +119,7 @@ def test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution() -> 
     seeded_state["view"]["center_x"] = 0.125
     seeded_state["view"]["center_y"] = -0.25
     seeded_state["view"]["zoom"] = 8.0
+    seeded_state["render"]["sample_tier"] = "fast"
     seeded_state["view"]["center_hp_x"] = 0.125
     seeded_state["view"]["center_hp_y"] = -0.25
     seeded_state["view"]["log2_zoom"] = 3.0
@@ -164,6 +165,9 @@ def test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution() -> 
         archived_state = json.loads(archived_state_path.read_text(encoding="utf-8"))
         assert archived_state["render"]["width"] == 4096
         assert archived_state["render"]["height"] == 2304
+        assert archived_state["render"]["sample_tier"] == "standard"
+        assert archived_state["stats"]["resolved_backend"] == "float64"
+        assert archived_state["stats"]["last_render_ms"] > 0.0
         assert archived_state["view"]["center_hp_x"] == pytest.approx(0.125)
         assert archived_state["view"]["center_hp_y"] == pytest.approx(-0.25)
         assert archived_state["view"]["log2_zoom"] == pytest.approx(3.0)

@@ -1001,7 +1001,7 @@ static void RenderStatusPanel(const RenderStats& stats, const RenderSettings& re
                               const RenderedFrameState& renderedFrame, const ViewState& view,
                               const std::string& findingStatus, const std::string& lastFindingPath) {
     ImGui::Separator();
-    ImGui::Text("Last render: %.3f ms (benchmark), avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
+    ImGui::Text("Last render: %.3f ms, avg iters ~ %d, device %d", stats.last_render_ms, stats.last_iters_avg, stats.last_device_id);
     ImGui::Text("Target render: %d x %d", render.resolution.x, render.resolution.y);
     {
         int liveWidth = renderedFrame.ready ? renderedFrame.width : render.resolution.x;

@@ -566,6 +566,7 @@ int main() {
         render.block_size = 128;
         render.device_id = 2;
         render.preview_target_fps = 48.0f;
+        render.sample_tier = SampleTier::fast;
 
         const RenderSettings captureRender = BuildFindingArchiveCaptureRender(render);
         if (captureRender.resolution.x != 4096 || captureRender.resolution.y != 2731) {
@@ -576,9 +577,13 @@ int main() {
             std::cerr << "Expected finding archive capture to enable benchmark timing without changing the source render defaults\n";
             return 1;
         }
+        if (captureRender.sample_tier != SampleTier::standard) {
+            std::cerr << "Expected finding archive capture to force the standard float64 sample tier even from a fast live viewport\n";
+            return 1;
+        }
         if (captureRender.block_size != render.block_size || captureRender.device_id != render.device_id ||
             captureRender.preview_target_fps != render.preview_target_fps) {
-            std::cerr << "Expected high-res finding archive render to preserve non-resolution settings except capture benchmark timing\n";
+            std::cerr << "Expected high-res finding archive render to preserve non-resolution settings except capture benchmark timing and standard sample tier\n";
             return 1;
         }
     }
@@ -597,16 +602,21 @@ int main() {
         configuredRender.block_size = 128;
         configuredRender.device_id = 2;
         configuredRender.preview_target_fps = 48.0f;
+        configuredRender.sample_tier = SampleTier::fast;
         const RenderSettings visibleFrameCapture =
             BuildFindingArchiveCaptureRenderForSource(configuredRender, {2048, 1152});
         if (visibleFrameCapture.resolution.x != 4096 || visibleFrameCapture.resolution.y != 2304) {
             std::cerr << "Expected in-loop finding archive capture to prefer the rendered frame aspect over configured render aspect\n";
             return 1;
         }
+        if (visibleFrameCapture.sample_tier != SampleTier::standard) {
+            std::cerr << "Expected rendered-frame aspect capture to force standard float64 sample tier\n";
+            return 1;
+        }
         if (visibleFrameCapture.block_size != configuredRender.block_size ||
             visibleFrameCapture.device_id != configuredRender.device_id ||
             visibleFrameCapture.preview_target_fps != configuredRender.preview_target_fps) {
-            std::cerr << "Expected rendered-frame aspect capture to preserve configured non-resolution settings\n";
+            std::cerr << "Expected rendered-frame aspect capture to preserve configured non-resolution settings except standard sample tier\n";
             return 1;
         }
 

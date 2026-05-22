@@ -17,6 +17,7 @@
 #include <math_constants.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <vector>
 
@@ -390,6 +391,8 @@ bool RenderFractalCUDA(
 
     dim3 grid((w + block.x - 1) / block.x, (h + block.y - 1) / block.y, 1);
 
+    const auto renderWallStart = std::chrono::steady_clock::now();
+    float measuredKernelMs = 0.0f;
     cudaEvent_t start = nullptr, stop = nullptr;
     if (render.benchmark) {
         cudaEventCreate(&start);
@@ -421,9 +424,7 @@ bool RenderFractalCUDA(
     if (render.benchmark && start && stop) {
         cudaEventRecord(stop);
         cudaEventSynchronize(stop);
-        float ms = 0.0f;
-        cudaEventElapsedTime(&ms, start, stop);
-        if (outStats) outStats->last_render_ms = ms;
+        cudaEventElapsedTime(&measuredKernelMs, start, stop);
         cudaEventDestroy(start);
         cudaEventDestroy(stop);
     }
@@ -444,7 +445,13 @@ bool RenderFractalCUDA(
         outStats->last_iters_sum = itersSum;
         outStats->last_pixel_count = pixelCount;
         outStats->last_iters_avg = ComputeRenderStatsIterationAverage(itersSum, pixelCount);
-        if (!render.benchmark) outStats->last_render_ms = 0.0f;
+        if (render.benchmark && measuredKernelMs > 0.0f) {
+            outStats->last_render_ms = measuredKernelMs;
+        } else {
+            const auto renderWallStop = std::chrono::steady_clock::now();
+            const double elapsedMs = std::chrono::duration<double, std::milli>(renderWallStop - renderWallStart).count();
+            outStats->last_render_ms = static_cast<float>(elapsedMs);
+        }
         outStats->resolved_eval = resolvedRender.resolved_eval;
     }
 

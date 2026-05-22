@@ -490,6 +490,7 @@ RenderSettings BuildFindingArchiveCaptureRenderForSource(
     RenderSettings captureRender = render;
     captureRender.resolution = FindingArchiveCaptureResolutionForSource(sourceResolution);
     captureRender.benchmark = true;
+    captureRender.sample_tier = SampleTier::standard;
     return captureRender;
 }
 

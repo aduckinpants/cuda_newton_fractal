@@ -22,7 +22,9 @@
     "no physical mouse automation may be introduced",
     "viewport preview downscale must require measured slow-frame evidence instead of triggering from unknown timing alone",
     "active preview recovery must be stable when debounce is needed and must satisfy the repo code-quality baseline",
-    "focused pacing tests must be runnable through the checked-in native helper harness"
+    "focused pacing tests must be runnable through the checked-in native helper harness",
+    "Capture Finding must render through the standard float64 tier even when the live viewport is using fast float32",
+    "live viewport pacing must use measured non-benchmark frame time so slow interaction actually enters preview"
   ],
   "forbidden_operator_prompts": [
     "replace the renderer or camera model for this slice",
@@ -36,7 +38,9 @@
     "capture_quality": "high_resolution",
     "automation": "no_physical_mouse",
     "preview_downscale": "requires_slow_frame_evidence",
-    "active_preview_recovery": "uses_measured_scale_and_step_up_hysteresis"
+    "active_preview_recovery": "uses_measured_scale_and_step_up_hysteresis",
+    "capture_finding_sample_tier": "standard_float64",
+    "live_render_timing": "measured_for_non_benchmark_viewport_renders"
   },
   "forbidden_defaults": {
     "fixed_capture_aspect": "forbidden",

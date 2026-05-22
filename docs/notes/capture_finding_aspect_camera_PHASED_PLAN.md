@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 complete - active-preview debounce UX is hardened, the focused pacing harness target exists, and extended native/runtime validation passed.
+Phase 7 complete - Capture Finding is standard/f64 again and live preview recovery sees measured non-benchmark frame time.
 
 ## Phase Checklist
 
@@ -13,6 +13,7 @@ Phase 6 complete - active-preview debounce UX is hardened, the focused pacing ha
 - [x] Phase 4 - repair viewport resolution fighting during slider-driven redraws and add the missing unit/smoke coverage.
 - [x] Phase 5 - repair preview downscale policy so common fast/unknown-timing interaction stays full resolution, with focused render-pacing tests.
 - [x] Phase 6 - harden active-preview UX when debounce is needed, repair the code-quality baseline regression, add the missing focused pacing harness target, and run extended validation.
+- [x] Phase 7 - restore Capture Finding standard/f64 output and make live preview recovery see non-benchmark frame time during slow interaction.
 
 ## Explicit User Asks
 
@@ -24,6 +25,8 @@ Phase 6 complete - active-preview debounce UX is hardened, the focused pacing ha
 - [done] Add the missing unit/smoke coverage for that viewport sizing path.
 - [done] Repair lower-resolution preview kicking in too hard when there is no measured FPS loss, especially common low-iteration float32 interaction.
 - [done] Hostile-review the viewport preview UX when debounce is actually needed, and fix low-hanging defects not already documented/deferred.
+- [done] Restore Capture Finding to f64/standard quality after the aspect/camera repair.
+- [done] Fix the slow-interaction FPS recovery path so high-resolution low-FPS drag and slider edits actually enter preview.
 
 ## Presumption Loop
 
@@ -78,6 +81,22 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - Validated: `ui_app\build_vsdevcmd.cmd` passed and republished `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
 - Validated: `py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed with `2 passed`.
 - Validated: `git diff --check` passed.
+- Phase 7 regression report: Capture Finding should remain f64/standard, but the current high-resolution aspect repair preserves the live viewport sample tier, so a fast/f32 viewport archives a fast/f32 finding.
+- Phase 7 regression report: high-resolution slow interaction still does not recover; renderer inspection found normal non-benchmark `RenderFractalCUDA(...)` writes `last_render_ms = 0`, leaving preview pacing blind outside benchmark/capture paths.
+- Phase 7 RED targets: native capture helper must reject f32 Capture Finding output, native renderer stats must reject zero non-benchmark live timing, and runtime Capture Finding must archive `sample_tier=standard` with `resolved_backend=float64`.
+- Phase 7 RED observed: `ui_app\build_tests_vsdevcmd.cmd test_finding_archive_actions` failed with `Expected finding archive capture to force the standard float64 sample tier even from a fast live viewport`.
+- Phase 7 RED observed: `ui_app\build_tests_vsdevcmd.cmd test_fractal_renderer` failed with `FAIL: Non-benchmark live render reports elapsed milliseconds for viewport pacing`.
+- Landed: `BuildFindingArchiveCaptureRenderForSource(...)` now forces `captureRender.sample_tier = SampleTier::standard` while preserving high-resolution aspect, benchmark timing, block size, device id, and preview settings.
+- Landed: `RenderFractalCUDA(...)` now reports elapsed frame time for non-benchmark live renders; benchmark renders still prefer CUDA event timing when available.
+- Landed: the status panel no longer labels all `last_render_ms` values as benchmark-only.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_finding_archive_actions` passed.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_fractal_renderer` passed with `test_fractal_renderer: passed=76 failed=0`.
+- Validated: `ui_app\build_tests_vsdevcmd.cmd test_viewer_render_pacing` passed.
+- Validated: `py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/capture_finding_aspect_camera_code_quality.json` passed with score `97/100` and baseline check passed.
+- Validated: `ui_app\build_vsdevcmd.cmd` passed and republished `D:\salt-fractal\cuda_newton_fractal_clone\runtime\fractal_ui.exe`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_manual_capture_repro.py::test_capture_finding_preserves_wide_viewport_aspect_at_high_resolution -q` passed with `1 passed`; the runtime archive asserted `sample_tier=standard`, `resolved_backend=float64`, nonzero `last_render_ms`, aspect, and camera.
+- Validated: `py -3.14 tools/viewer_host_run_logged_command.py --label capture_pacing_phase7_native_full --log artifacts/logs/capture_pacing_phase7_native_full.log -- ui_app/build_tests_vsdevcmd.cmd` passed with `All helper tests passed`.
+- Validated: `py -3.14 -m pytest tests/test_fractal_runtime_resolution_pacing.py -q` passed with `1 passed`.
 
 ## Hostile Audit
 
@@ -91,6 +110,8 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - When preview is already active, does recovery use measured preview scale and `step_up_hysteresis` so needed debounce does not pump resolution?
 - Does the pacing seam satisfy the repo code-quality baseline after the QoL pass?
 - Can `test_viewer_render_pacing` run through the checked-in native helper harness instead of an ad hoc MSVC command?
+- Does Capture Finding force standard/f64 independently of the current live viewport tier?
+- Does the normal live renderer report nonzero frame timing so pacing can react without `benchmark=true`?
 
 ## Audit Passes
 
@@ -100,6 +121,7 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] Pass 4: regression audit found viewport settle used the whole content region instead of the fitted image rect; repair added headless layout coverage and routed live viewport sizing through it.
 - [done] Pass 5: audit preview downscale policy confirmed the repair changes only pacing policy/tests/contract docs, keeps capture/camera/fractal/color paths untouched, and preserves slow-frame preview behavior.
 - [done] Pass 6: audit confirmed active-preview recovery now uses measured preview scale plus step-up/step-down hysteresis, code quality baseline passes, and the focused pacing harness target runs through the checked native helper.
+- [done] Pass 7: audit confirmed Capture Finding forces standard/f64 independent of live tier, normal live renders report nonzero timing for pacing, no OS-mouse automation was added, and capture aspect/camera behavior stayed covered.
 
 ## Audit Findings
 
@@ -110,6 +132,8 @@ The reported screenshot is wide, while the capture bundle appears to be rendered
 - [done] QoL finding repaired: active-preview recovery now uses current preview scale and `step_up_hysteresis`, holding scale for unknown/middling timings and recovering only on clearly fast preview frames.
 - [done] QoL finding repaired: pacing helpers were split so the repo code-quality baseline passes.
 - [done] Test-harness finding repaired: `ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing` now compiles and runs the focused pacing unit rail.
+- [done] Regression finding repaired: Capture Finding now forces `SampleTier::standard`, and runtime archive proof confirms `sample_tier=standard` with `resolved_backend=float64`.
+- [done] Regression finding repaired: normal non-benchmark live renders now report elapsed frame time, so preview pacing can react to slow drag/slider frames without requiring benchmark mode.
 
 ## Notes
 
