@@ -2785,9 +2785,9 @@
             }
         }
     } else if (ft == FractalType::explaino_rational_escape) {
-        // Explaino-Rational-Escape: escape-time iteration of Laurent polynomial P(z)/z^3.
-        // z_{n+1} = P(z) / z^3 where P is the deg-4 seed polynomial.
-        // Decomposes to: c0/z^3 + c1/z^2 + c2/z + c3 + c4*z (mixed positive/negative powers).
+        // Explaino-Rational-Escape: escape-time iteration of Laurent polynomial P(z)/z^d.
+        // z_{n+1} = P(z) / z^d where P is the deg-4 seed polynomial.
+        // Default d=3 decomposes to: c0/z^3 + c1/z^2 + c2/z + c3 + c4*z.
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
@@ -2797,6 +2797,9 @@
         float coeffs[5];
         #pragma unroll
         for (int k = 0; k < 5; ++k) coeffs[k] = params.poly_coeffs[k];
+        int denominatorPower = params.explaino_rational_escape_denominator_power;
+        if (denominatorPower < 1) denominatorPower = 1;
+        if (denominatorPower > 6) denominatorPower = 6;
 
         for (; it < maxIter; ++it) {
             float zAbs2 = cx_abs2(z);
@@ -2810,12 +2813,15 @@
             Cx P, dP;
             poly_eval_real_coeffs_deg4(coeffs, z, &P, &dP);
 
-            // Compute z^3 = z * z * z
-            Cx z2 = cx_mul(z, z);
-            Cx z3 = cx_mul(z2, z);
+            Cx denominator = z;
+            #pragma unroll
+            for (int power = 1; power < 6; ++power) {
+                if (power < denominatorPower) {
+                    denominator = cx_mul(denominator, z);
+                }
+            }
 
-            // z_{n+1} = P(z) / z^3
-            z = cx_div(P, z3);
+            z = cx_div(P, denominator);
 
             if (cx_abs2(z) > 10000.0f) {
                 escaped = true;
@@ -2892,7 +2898,16 @@
         const Cx phoenixP{params.phoenix_p_real, params.phoenix_p_imag};
 
         for (; it < maxIter; ++it) {
-            StepEscapeTimeDirectState(ft, params.multibrot_power_float, params.multibrot_power_imag, params.multibrot_power, lambdaConst, phoenixP, &state);
+            StepEscapeTimeDirectState(
+                ft,
+                params.multibrot_power_float,
+                params.multibrot_power_imag,
+                params.multibrot_power,
+                lambdaConst,
+                phoenixP,
+                static_cast<float>(1),
+                params.spider_feedback,
+                &state);
             z = state.z;
 
             if (cx_abs2(state.z) > DirectEscapeTimeRadiusSquared<float>()) {
@@ -3063,7 +3078,16 @@
                     : DirectEscapeTimeRadiusSquared<double>();
 
                 for (; it < maxIter; ++it) {
-                    StepEscapeTimeDirectState(ft, powerFloat, powerImag, params.multibrot_power, lambdaConstD, phoenixPD, (double)params.magnet_relaxation, &state);
+                    StepEscapeTimeDirectState(
+                        ft,
+                        powerFloat,
+                        powerImag,
+                        params.multibrot_power,
+                        lambdaConstD,
+                        phoenixPD,
+                        (double)params.magnet_relaxation,
+                        (double)params.spider_feedback,
+                        &state);
                     if (ft == FractalType::magnet) {
                         const double residualSquaredD = EscapeTimeDirectMagnetResidualSquared(state.z);
                         pAbs = (float)sqrt(residualSquaredD);
@@ -3095,7 +3119,16 @@
                     : DirectEscapeTimeRadiusSquared<float>();
 
                 for (; it < maxIter; ++it) {
-                    StepEscapeTimeDirectState(ft, powerFloat, powerImag, params.multibrot_power, lambdaConst, phoenixP, params.magnet_relaxation, &state);
+                    StepEscapeTimeDirectState(
+                        ft,
+                        powerFloat,
+                        powerImag,
+                        params.multibrot_power,
+                        lambdaConst,
+                        phoenixP,
+                        params.magnet_relaxation,
+                        params.spider_feedback,
+                        &state);
                     if (ft == FractalType::magnet) {
                         const float residualSquared = EscapeTimeDirectMagnetResidualSquared(state.z);
                         pAbs = sqrt(residualSquared);

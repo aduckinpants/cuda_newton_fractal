@@ -166,6 +166,61 @@ int main() {
         ViewState view{};
         KernelParams params{};
         std::string error;
+        view.fractal_type = FractalType::spider;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        const float acceptedFeedback[] = {-2.0f, 0.5f, 2.0f};
+        for (float feedback : acceptedFeedback) {
+            params.spider_feedback = feedback;
+            error.clear();
+            if (!ValidateFractalRuntimeState(view, params, &error)) {
+                std::cerr << "Expected Spider validation to accept feedback " << feedback << ", got: " << error << "\n";
+                return 1;
+            }
+        }
+        params.spider_feedback = 2.1f;
+        error.clear();
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "spider_feedback must be finite and in [-2,2]") {
+            std::cerr << "Expected Spider validation to reject feedback above the hard cap\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino_rational_escape;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        const int acceptedPowers[] = {1, 3, 6};
+        for (int power : acceptedPowers) {
+            params.explaino_rational_escape_denominator_power = power;
+            error.clear();
+            if (!ValidateFractalRuntimeState(view, params, &error)) {
+                std::cerr << "Expected Explaino Rational Escape validation to accept denominator power " << power << ", got: " << error << "\n";
+                return 1;
+            }
+        }
+        params.explaino_rational_escape_denominator_power = 0;
+        error.clear();
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "explaino_rational_escape_denominator_power must be in [1,6]") {
+            std::cerr << "Expected Explaino Rational Escape validation to reject denominator power below the hard floor\n";
+            return 1;
+        }
+        params.explaino_rational_escape_denominator_power = 7;
+        error.clear();
+        if (ValidateFractalRuntimeState(view, params, &error) ||
+            error != "explaino_rational_escape_denominator_power must be in [1,6]") {
+            std::cerr << "Expected Explaino Rational Escape validation to reject denominator power above the hard cap\n";
+            return 1;
+        }
+    }
+
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
         view.fractal_type = FractalType::phoenix;
         params.coloring_mode = ColoringMode::smooth_escape;
         params.phoenix_p_real = 1.5f;

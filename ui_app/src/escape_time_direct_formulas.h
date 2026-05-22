@@ -193,6 +193,7 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex lambdaConst,
     Complex phoenixP,
     Scalar magnetRelaxation,
+    Scalar spiderFeedback,
     EscapeTimeDirectState<Complex>* ioState) {
     if (!ioState) return;
 
@@ -205,7 +206,8 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     if (fractalType == FractalType::spider) {
         const Complex z2 = EscapeTimeDirectMul(z, z);
         z = EscapeTimeDirectAdd(z2, c);
-        c = EscapeTimeDirectAdd(EscapeTimeDirectScale(c, static_cast<Real>(0.5)), z);
+        const Real feedback = EscapeTimeDirectClamp(static_cast<Real>(spiderFeedback), static_cast<Real>(-2), static_cast<Real>(2));
+        c = EscapeTimeDirectAdd(EscapeTimeDirectScale(c, feedback), z);
     } else if (fractalType == FractalType::celtic_mandelbrot) {
         const Complex z2{EscapeTimeDirectAbs(z.x * z.x - z.y * z.y), static_cast<Real>(2) * z.x * z.y};
         z = EscapeTimeDirectAdd(z2, c);
@@ -253,7 +255,16 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex lambdaConst,
     Complex phoenixP,
     EscapeTimeDirectState<Complex>* ioState) {
-    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, multibrotPowerImag, multibrotPowerInt, lambdaConst, phoenixP, static_cast<Scalar>(1), ioState);
+    StepEscapeTimeDirectState(
+        fractalType,
+        multibrotPowerFloat,
+        multibrotPowerImag,
+        multibrotPowerInt,
+        lambdaConst,
+        phoenixP,
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(0.5),
+        ioState);
 }
 
 template <typename Complex, typename Scalar>
@@ -264,7 +275,16 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex lambdaConst,
     Complex phoenixP,
     EscapeTimeDirectState<Complex>* ioState) {
-    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, static_cast<Scalar>(0), multibrotPowerInt, lambdaConst, phoenixP, static_cast<Scalar>(1), ioState);
+    StepEscapeTimeDirectState(
+        fractalType,
+        multibrotPowerFloat,
+        static_cast<Scalar>(0),
+        multibrotPowerInt,
+        lambdaConst,
+        phoenixP,
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(0.5),
+        ioState);
 }
 
 template <typename Complex, typename Scalar>
@@ -276,7 +296,16 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex phoenixP,
     Scalar magnetRelaxation,
     EscapeTimeDirectState<Complex>* ioState) {
-    StepEscapeTimeDirectState(fractalType, multibrotPowerFloat, static_cast<Scalar>(0), multibrotPowerInt, lambdaConst, phoenixP, magnetRelaxation, ioState);
+    StepEscapeTimeDirectState(
+        fractalType,
+        multibrotPowerFloat,
+        static_cast<Scalar>(0),
+        multibrotPowerInt,
+        lambdaConst,
+        phoenixP,
+        magnetRelaxation,
+        static_cast<Scalar>(0.5),
+        ioState);
 }
 
 template <typename Complex>

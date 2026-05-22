@@ -217,6 +217,7 @@
             { "id": "lambda_real", "label": "Lambda (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "lambda,explaino_lambda" } },
             { "id": "magnet_relaxation", "label": "Magnet Relaxation", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
             { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
+            { "id": "spider_feedback", "label": "Spider Feedback", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "spider" } },
             { "id": "momentum_beta", "label": "Momentum Beta", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_inertial" } },
             { "id": "joy_coupling", "label": "Joy Coupling", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_joy" } },
             { "id": "fold_coupling", "label": "Fold Coupling", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_fold" } },
@@ -271,6 +272,26 @@
           "binding": { "kind": "param", "path": "fractal.params.multibrot_power" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multicorn" },
           "help": "Integer exponent p in z_{n+1} = conj(z_n)^p + c."
+        },
+        {
+          "id": "spider_feedback",
+          "type": "slider_float",
+          "label": "Spider Feedback",
+          "value_type": "float",
+          "min": -2.0, "max": 2.0, "ui_min": 0.0, "ui_max": 1.0, "step": 0.01, "default": 0.5,
+          "binding": { "kind": "param", "path": "fractal.params.spider_feedback" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "spider" },
+          "help": "Feedback scale in c_{n+1} = feedback * c_n + z_{n+1}. The default 0.5 preserves the canonical Spider formula."
+        },
+        {
+          "id": "explaino_rational_escape_denominator_power",
+          "type": "slider_int",
+          "label": "Denominator Power",
+          "value_type": "int",
+          "min": 1, "max": 6, "step": 1, "default": 3,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_rational_escape_denominator_power" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_rational_escape" },
+          "help": "Integer denominator power d in z_{n+1} = P(z) / z^d. The default 3 preserves the current rational-escape formula."
         },
         {
           "id": "mcmullen_preset",

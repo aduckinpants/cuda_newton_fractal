@@ -191,6 +191,19 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("multibrot_power must be in [2,12]", outError);
         }
     }
+    if (view.fractal_type == FractalType::spider) {
+        if (!std::isfinite(params.spider_feedback) ||
+            params.spider_feedback < -2.0f ||
+            params.spider_feedback > 2.0f) {
+            return FailFractalRuntimeValidation("spider_feedback must be finite and in [-2,2]", outError);
+        }
+    }
+    if (view.fractal_type == FractalType::explaino_rational_escape) {
+        if (params.explaino_rational_escape_denominator_power < 1 ||
+            params.explaino_rational_escape_denominator_power > 6) {
+            return FailFractalRuntimeValidation("explaino_rational_escape_denominator_power must be in [1,6]", outError);
+        }
+    }
     if (IsExplainoFamily(view.fractal_type)) {
         if (!std::isfinite(params.explaino_seed) || !std::isfinite(params.explaino_seed_b)) {
             return FailFractalRuntimeValidation("explaino_seed and explaino_seed_b must be finite", outError);

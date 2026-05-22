@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "contract_id": "parameter_functionality_followup_batch1",
+  "feature_id": "parameter_functionality_followup_batch1",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/parameter_functionality_followup_batch1_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts/audit"
+  ],
+  "required_operator_inputs": [
+    "classify or prove the weak nova/explaino_y epsilon witnesses without hiding the controls",
+    "add default-preserving spider_feedback on the spider lane",
+    "add default-preserving explaino_rational_escape_denominator_power on the explaino_rational_escape lane",
+    "use persistent no-mouse runtime proof and avoid physical cursor automation"
+  ],
+  "forbidden_operator_prompts": [
+    "change Color Pipeline behavior",
+    "add owner-specific controls to explaino_all",
+    "reopen FPS pacing or capture finding work",
+    "broaden into Collatz/fixed-family controls before this batch is green",
+    "use OS mouse or legacy viewer relaunch loops as default proof"
+  ],
+  "required_defaults": {
+    "spider_feedback": 0.5,
+    "explaino_rational_escape_denominator_power": 3,
+    "runtime_or_public_path_proof": "required",
+    "hostile_audit": "required"
+  },
+  "forbidden_defaults": {
+    "explaino_all_owner_controls": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/parameter_functionality_followup_batch1.contract.json --out-json artifacts/validation/parameter_functionality_followup_batch1_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/parameter_functionality_followup_batch1_PHASED_PLAN.md --out-json artifacts/validation/parameter_functionality_followup_batch1_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/parameter_functionality_followup_batch1_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label parameter_functionality_batch1_schema --log artifacts/logs/parameter_functionality_batch1_schema.log --out-json artifacts/validation/parameter_functionality_batch1_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label parameter_functionality_batch1_sample --log artifacts/logs/parameter_functionality_batch1_sample.log --out-json artifacts/validation/parameter_functionality_batch1_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label parameter_functionality_batch1_runtime_publish --log artifacts/logs/parameter_functionality_batch1_runtime_publish.log --out-json artifacts/validation/parameter_functionality_batch1_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_parameter_functionality.py -q --junitxml artifacts/pytest/parameter_functionality_batch1_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The parameter functionality batch 1 contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_functionality_followup_batch1_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The parameter functionality batch 1 hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/parameter_functionality_followup_batch1_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

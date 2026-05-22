@@ -1397,7 +1397,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 18) {
+            fractalPanel->controls.size() != 20) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1447,6 +1447,8 @@ int main() {
         const UISchemaControl* projectionAndFlowPressureThreshold = FindControlById(*fractalPanel, "projection_and_flow_pressure_threshold");
         const UISchemaControl* multibrotPowerReal = FindControlById(*fractalPanel, "multibrot_power_float");
         const UISchemaControl* multibrotPowerImag = FindControlById(*fractalPanel, "multibrot_power_imag");
+        const UISchemaControl* spiderFeedback = FindControlById(*fractalPanel, "spider_feedback");
+        const UISchemaControl* rationalEscapeDenominatorPower = FindControlById(*fractalPanel, "explaino_rational_escape_denominator_power");
         if (!pairRootFamily || !pairFrame || !pairOffsetX || !pairOffsetY || !pairReconvergenceRatio) {
             std::cerr << "Safe-mode schema did not expose the Counterfactual Pair hardening controls\n";
             return 1;
@@ -1515,6 +1517,32 @@ int main() {
             !multibrotPowerImag->has_max || multibrotPowerImag->max != 4.0 ||
             !multibrotPowerImag->has_visible_if || multibrotPowerImag->visible_if.value != "multibrot") {
             std::cerr << "Safe-mode schema Multibrot imaginary exponent control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!spiderFeedback || !spiderFeedback->has_binding ||
+            spiderFeedback->binding.path != "fractal.params.spider_feedback" ||
+            !spiderFeedback->has_default || !spiderFeedback->def.is_number() ||
+            spiderFeedback->def.as_number() != 0.5 ||
+            !spiderFeedback->has_min || spiderFeedback->min != -2.0 ||
+            !spiderFeedback->has_max || spiderFeedback->max != 2.0 ||
+            !spiderFeedback->has_ui_min || spiderFeedback->ui_min != 0.0 ||
+            !spiderFeedback->has_ui_max || spiderFeedback->ui_max != 1.0 ||
+            !spiderFeedback->has_visible_if || spiderFeedback->visible_if.value != "spider") {
+            std::cerr << "Safe-mode schema Spider feedback control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!rationalEscapeDenominatorPower || !rationalEscapeDenominatorPower->has_binding ||
+            rationalEscapeDenominatorPower->binding.path != "fractal.params.explaino_rational_escape_denominator_power" ||
+            !rationalEscapeDenominatorPower->has_default ||
+            !rationalEscapeDenominatorPower->def.is_number() ||
+            rationalEscapeDenominatorPower->def.as_number() != 3.0 ||
+            !rationalEscapeDenominatorPower->has_min ||
+            rationalEscapeDenominatorPower->min != 1.0 ||
+            !rationalEscapeDenominatorPower->has_max ||
+            rationalEscapeDenominatorPower->max != 6.0 ||
+            !rationalEscapeDenominatorPower->has_visible_if ||
+            rationalEscapeDenominatorPower->visible_if.value != "explaino_rational_escape") {
+            std::cerr << "Safe-mode schema rational-escape denominator control drifted from the bounded owner seam\n";
             return 1;
         }
         if (!projectionAndFlowRootFamily->has_binding ||

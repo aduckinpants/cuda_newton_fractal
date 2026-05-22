@@ -132,7 +132,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 18,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 20,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -311,6 +311,40 @@ static void TestSafeModeSchemaExposesMultibrotControls() {
         "TestSafeModeSchemaExposesMultibrotControls_Imag");
 }
 
+static void TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls_FractalPanelPresent");
+    if (!fractalPanel) return;
+
+    const UISchemaControl* spiderFeedback = FindControlById(*fractalPanel, "spider_feedback");
+    const UISchemaControl* rationalDenominatorPower = FindControlById(*fractalPanel, "explaino_rational_escape_denominator_power");
+    Check(spiderFeedback != nullptr &&
+            spiderFeedback->has_binding &&
+            spiderFeedback->binding.path == "fractal.params.spider_feedback" &&
+            spiderFeedback->has_visible_if &&
+            spiderFeedback->visible_if.value == "spider" &&
+            spiderFeedback->has_min && spiderFeedback->min == -2.0 &&
+            spiderFeedback->has_max && spiderFeedback->max == 2.0 &&
+            spiderFeedback->has_ui_min && spiderFeedback->ui_min == 0.0 &&
+            spiderFeedback->has_ui_max && spiderFeedback->ui_max == 1.0 &&
+            spiderFeedback->has_default &&
+            spiderFeedback->def.is_number() &&
+            spiderFeedback->def.as_number() == 0.5,
+        "TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls_SpiderFeedback");
+    Check(rationalDenominatorPower != nullptr &&
+            rationalDenominatorPower->has_binding &&
+            rationalDenominatorPower->binding.path == "fractal.params.explaino_rational_escape_denominator_power" &&
+            rationalDenominatorPower->has_visible_if &&
+            rationalDenominatorPower->visible_if.value == "explaino_rational_escape" &&
+            rationalDenominatorPower->has_min && rationalDenominatorPower->min == 1.0 &&
+            rationalDenominatorPower->has_max && rationalDenominatorPower->max == 6.0 &&
+            rationalDenominatorPower->has_default &&
+            rationalDenominatorPower->def.is_number() &&
+            rationalDenominatorPower->def.as_number() == 3.0,
+        "TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls_RationalDenominatorPower");
+}
+
 static void TestSafeModeSchemaExposesJuliaControls() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
@@ -362,6 +396,7 @@ int main() {
     TestSafeModeSchemaExposesCounterfactualPairControls();
     TestSafeModeSchemaExposesMagnetControls();
     TestSafeModeSchemaExposesMultibrotControls();
+    TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls();
     TestSafeModeSchemaExposesJuliaControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
 

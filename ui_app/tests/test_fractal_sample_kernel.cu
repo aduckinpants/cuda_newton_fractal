@@ -851,6 +851,94 @@ void TestExplainoLambdaPhaseStrengthControlsWarpedMap() {
         sawPhaseStrengthDifference);
 }
 
+void TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults() {
+    constexpr int N = 49;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -3; yi <= 3; ++yi) {
+        for (int xi = -3; xi <= 3; ++xi) {
+            coords[next++] = MakeDouble2(0.32 * static_cast<double>(xi), 0.32 * static_cast<double>(yi));
+        }
+    }
+
+    RenderSettings render{};
+    const char* error = nullptr;
+
+    {
+        ViewState canonicalView{};
+        ViewState explicitDefaultView{};
+        ViewState activeView{};
+        KernelParams canonicalParams{};
+        KernelParams explicitDefaultParams{};
+        KernelParams activeParams{};
+        MakeDefaults(FractalType::spider, canonicalView, canonicalParams, render);
+        MakeDefaults(FractalType::spider, explicitDefaultView, explicitDefaultParams, render);
+        MakeDefaults(FractalType::spider, activeView, activeParams, render);
+        explicitDefaultParams.spider_feedback = 0.5f;
+        activeParams.spider_feedback = 0.9f;
+        canonicalParams.max_iter = 700;
+        explicitDefaultParams.max_iter = 700;
+        activeParams.max_iter = 700;
+
+        FractalSampleResult canonicalResults[N]{};
+        FractalSampleResult explicitDefaultResults[N]{};
+        FractalSampleResult activeResults[N]{};
+        CHECK("spider canonical sample ok", SampleFractalPoints(coords, N, canonicalView, canonicalParams, render, canonicalResults, &error));
+        CHECK("spider explicit default sample ok", SampleFractalPoints(coords, N, explicitDefaultView, explicitDefaultParams, render, explicitDefaultResults, &error));
+        CHECK("spider active feedback sample ok", SampleFractalPoints(coords, N, activeView, activeParams, render, activeResults, &error));
+
+        bool defaultParity = true;
+        bool sawDifference = false;
+        for (int i = 0; i < N; ++i) {
+            if (!SameFractalSampleResult(canonicalResults[i], explicitDefaultResults[i])) {
+                defaultParity = false;
+            }
+            if (!SameFractalSampleResult(canonicalResults[i], activeResults[i])) {
+                sawDifference = true;
+            }
+        }
+        CHECK("spider feedback default preserves canonical samples", defaultParity);
+        CHECK("spider feedback changes SampleFractalPoints results", sawDifference);
+    }
+
+    {
+        ViewState canonicalView{};
+        ViewState explicitDefaultView{};
+        ViewState activeView{};
+        KernelParams canonicalParams{};
+        KernelParams explicitDefaultParams{};
+        KernelParams activeParams{};
+        MakeDefaults(FractalType::explaino_rational_escape, canonicalView, canonicalParams, render);
+        MakeDefaults(FractalType::explaino_rational_escape, explicitDefaultView, explicitDefaultParams, render);
+        MakeDefaults(FractalType::explaino_rational_escape, activeView, activeParams, render);
+        canonicalParams.max_iter = 800;
+        explicitDefaultParams.max_iter = 800;
+        activeParams.max_iter = 800;
+        explicitDefaultParams.explaino_rational_escape_denominator_power = 3;
+        activeParams.explaino_rational_escape_denominator_power = 5;
+
+        FractalSampleResult canonicalResults[N]{};
+        FractalSampleResult explicitDefaultResults[N]{};
+        FractalSampleResult activeResults[N]{};
+        CHECK("rational escape canonical sample ok", SampleFractalPoints(coords, N, canonicalView, canonicalParams, render, canonicalResults, &error));
+        CHECK("rational escape explicit default sample ok", SampleFractalPoints(coords, N, explicitDefaultView, explicitDefaultParams, render, explicitDefaultResults, &error));
+        CHECK("rational escape active denominator power sample ok", SampleFractalPoints(coords, N, activeView, activeParams, render, activeResults, &error));
+
+        bool defaultParity = true;
+        bool sawDifference = false;
+        for (int i = 0; i < N; ++i) {
+            if (!SameFractalSampleResult(canonicalResults[i], explicitDefaultResults[i])) {
+                defaultParity = false;
+            }
+            if (!SameFractalSampleResult(canonicalResults[i], activeResults[i])) {
+                sawDifference = true;
+            }
+        }
+        CHECK("rational escape denominator power default preserves canonical samples", defaultParity);
+        CHECK("rational escape denominator power changes SampleFractalPoints results", sawDifference);
+    }
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -977,6 +1065,7 @@ int main() {
     TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls();
     TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls();
     TestExplainoLambdaPhaseStrengthControlsWarpedMap();
+    TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

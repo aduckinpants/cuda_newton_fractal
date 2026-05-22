@@ -350,6 +350,40 @@ UISchemaControl BuildMultibrotImagPowerControl() {
     return control;
 }
 
+UISchemaControl BuildSpiderFeedbackControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "spider_feedback",
+        "slider_float",
+        "Spider Feedback",
+        "float",
+        -2.0,
+        2.0,
+        0.01,
+        "fractal.params.spider_feedback",
+        json_min::Value{0.5});
+    control.ui_min = 0.0;
+    control.ui_max = 1.0;
+    control.has_ui_min = true;
+    control.has_ui_max = true;
+    SetVisibleForFractalType(&control, "spider");
+    return control;
+}
+
+UISchemaControl BuildExplainoRationalEscapeDenominatorPowerControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "explaino_rational_escape_denominator_power",
+        "slider_int",
+        "Denominator Power",
+        "int",
+        1.0,
+        6.0,
+        1.0,
+        "fractal.params.explaino_rational_escape_denominator_power",
+        json_min::Value{3.0});
+    SetVisibleForFractalType(&control, "explaino_rational_escape");
+    return control;
+}
+
 UISchemaControl BuildMagnetFloatControl(
     const char* id,
     const char* label,
@@ -489,6 +523,8 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildProjectionAndFlowPressureThresholdControl(),
         BuildMultibrotRealPowerControl(),
         BuildMultibrotImagPowerControl(),
+        BuildSpiderFeedbackControl(),
+        BuildExplainoRationalEscapeDenominatorPowerControl(),
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
         BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
         BuildMagnetFloatControl("magnet_seed_real", "Magnet Seed Real", "fractal.params.magnet_seed_real", -2.0, 2.0, 0.01, 0.0),

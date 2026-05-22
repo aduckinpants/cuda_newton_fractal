@@ -1045,6 +1045,7 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.exposure") { *outPtr = &params->exposure; return true; }
         if (path == "fractal.params.multibrot_power_float") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.multibrot_power_imag") { *outPtr = &params->multibrot_power_imag; return true; }
+        if (path == "fractal.params.spider_feedback") { *outPtr = &params->spider_feedback; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
         if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }
@@ -1097,6 +1098,7 @@ bool BindingContext::BindInt(const std::string& path, int** outPtr) {
     if (params) {
         if (path == "fractal.params.max_iter") { *outPtr = &params->max_iter; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power; return true; }
+        if (path == "fractal.params.explaino_rational_escape_denominator_power") { *outPtr = &params->explaino_rational_escape_denominator_power; return true; }
         if (path == "fractal.params.mcmullen_m") { *outPtr = &params->mcmullen_m; return true; }
         if (path == "fractal.params.mcmullen_n") { *outPtr = &params->mcmullen_n; return true; }
     }

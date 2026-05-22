@@ -929,7 +929,16 @@ bool SamplePoint(const ProbeState& state,
             : DirectEscapeTimeRadiusSquared<float>();
 
         for (; it < maxIter; ++it) {
-            StepEscapeTimeDirectState(ft, powerFloat, powerImag, powerInt, lambdaConst, phoenixP, params.magnet_relaxation, &state);
+            StepEscapeTimeDirectState(
+                ft,
+                powerFloat,
+                powerImag,
+                powerInt,
+                lambdaConst,
+                phoenixP,
+                params.magnet_relaxation,
+                params.spider_feedback,
+                &state);
             z = state.z;
             if (!IsFiniteCx(state.z) || !IsFiniteCx(state.z_prev)) {
                 status = FractalProbeSampleStatus::nonfinite;

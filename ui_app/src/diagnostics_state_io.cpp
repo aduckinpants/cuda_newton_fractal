@@ -1921,6 +1921,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     int multibrotPower = 0;
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
     double multibrotPowerImag = static_cast<double>(nextParams.multibrot_power_imag);
+    double spiderFeedback = static_cast<double>(nextParams.spider_feedback);
+    int explainoRationalEscapeDenominatorPower = nextParams.explaino_rational_escape_denominator_power;
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
     double lambdaImag = static_cast<double>(nextParams.lambda_imag);
     double magnetSeedReal = static_cast<double>(nextParams.magnet_seed_real);
@@ -1974,6 +1976,18 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_imag", &multibrotPowerImag, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "spider_feedback", &spiderFeedback, nullptr, outError)) return false;
+        if (const json_min::Value* rationalDenominatorPowerValue = paramsObject->get("explaino_rational_escape_denominator_power")) {
+            if (!rationalDenominatorPowerValue->is_number() ||
+                !std::isfinite(rationalDenominatorPowerValue->as_number()) ||
+                std::floor(rationalDenominatorPowerValue->as_number()) != rationalDenominatorPowerValue->as_number() ||
+                rationalDenominatorPowerValue->as_number() < static_cast<double>(INT_MIN) ||
+                rationalDenominatorPowerValue->as_number() > static_cast<double>(INT_MAX)) {
+                if (outError) *outError = "Invalid explaino_rational_escape_denominator_power field";
+                return false;
+            }
+            explainoRationalEscapeDenominatorPower = static_cast<int>(rationalDenominatorPowerValue->as_number());
+        }
         if (!GetOptionalNumber(*paramsObject, "lambda_real", &lambdaReal, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "lambda_imag", &lambdaImag, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "magnet_seed_real", &magnetSeedReal, nullptr, outError)) return false;
@@ -2067,6 +2081,8 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.multibrot_power = multibrotPower;
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
         nextParams.multibrot_power_imag = static_cast<float>(multibrotPowerImag);
+        nextParams.spider_feedback = static_cast<float>(spiderFeedback);
+        nextParams.explaino_rational_escape_denominator_power = explainoRationalEscapeDenominatorPower;
         nextParams.lambda_real = static_cast<float>(lambdaReal);
         nextParams.lambda_imag = static_cast<float>(lambdaImag);
         nextParams.magnet_seed_real = static_cast<float>(magnetSeedReal);
