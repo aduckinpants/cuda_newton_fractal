@@ -58,6 +58,7 @@ if /I "%FOCUSED_TEST%"=="test_viewer_ui_automation_report" goto focused_test_vie
 if /I "%FOCUSED_TEST%"=="test_diagnostics_state_io" goto focused_test_diagnostics_state_io
 if /I "%FOCUSED_TEST%"=="test_finding_archive_actions" goto focused_test_finding_archive_actions
 if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_render_pacing
+if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" goto focused_test_generic_equation_pack_live
@@ -596,6 +597,14 @@ cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
 if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_diagnostics_state_io.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_finding_archive_actions.exe" || exit /b 1
+exit /b 0
+
+:focused_test_sample_tier_resolver
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src ^
+  .\src\sample_tier_resolver.cpp .\tests\test_sample_tier_resolver.cpp ^
+  /Fe:"%TESTROOT%\test_sample_tier_resolver.exe"
+if errorlevel 1 exit /b 1
+call :run_test "%TESTROOT%\test_sample_tier_resolver.exe" || exit /b 1
 exit /b 0
 
 :focused_test_fractal_renderer

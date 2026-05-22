@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract_id": "native_helper_build_measurement",
+  "feature_id": "native_helper_build_measurement",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/contracts/native_helper_build_measurement_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "tools",
+    "tests",
+    "ui_app/build_tests_vsdevcmd.cmd"
+  ],
+  "required_operator_inputs": [
+    "measure native helper build timing before changing timeouts or targets",
+    "fix full native helper timeout caused by repeated CUDA compile churn or missing focused target surfaces",
+    "keep viewer/runtime FPS debounce work queued for the next slice, not mixed into this tooling slice",
+    "preserve native and CUDA coverage instead of skipping tests to make the suite appear green"
+  ],
+  "forbidden_operator_prompts": [
+    "change viewer FPS debounce behavior under this tooling slice",
+    "hide full-suite timeout by only widening wrapper timeout without measurement",
+    "delete or skip native CUDA coverage to make the suite look green",
+    "replace the build system wholesale",
+    "introduce physical mouse automation or repeated viewer open/close loops"
+  ],
+  "required_defaults": {
+    "measurement_first": "required",
+    "process_tree_cleanup": "required",
+    "focused_targets": "preferred_over_full_suite_for_slice_proof",
+    "fps_debounce": "queued_after_this_slice"
+  },
+  "forbidden_defaults": {
+    "timeout_only_fix": "forbidden",
+    "coverage_deletion": "forbidden",
+    "fps_guessing": "forbidden",
+    "viewer_open_close_loop": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/native_helper_build_measurement.contract.json --out-json artifacts/validation/native_helper_build_measurement_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label native_measure_pacing_target --log artifacts/logs/native_helper_measure_pacing_target.log --out-json artifacts/validation/native_helper_measure_pacing_target.json --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label native_measure_sample_tier_target --log artifacts/logs/native_helper_measure_sample_tier_target.log --out-json artifacts/validation/native_helper_measure_sample_tier_target.json --timeout-seconds 180 -- ui_app/build_tests_vsdevcmd.cmd test_sample_tier_resolver",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label native_measure_fractal_renderer_target --log artifacts/logs/native_helper_measure_fractal_renderer_target.log --out-json artifacts/validation/native_helper_measure_fractal_renderer_target.json --heartbeat-seconds 20 --timeout-seconds 420 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_renderer",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label native_helper_full_measured --log artifacts/logs/native_helper_full_measured.log --out-json artifacts/validation/native_helper_full_measured.json --heartbeat-seconds 60 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_validate_native_helper_build.py --out-json artifacts/validation/native_helper_build_measurement.json",
+    "py -3.14 -m pytest tests/test_viewer_host_run_logged_command.py -q --junitxml artifacts/pytest/test_viewer_host_run_logged_command.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "native_helper_build_measurement_contract_schema_valid",
+      "description": "The native helper build measurement contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/native_helper_build_measurement_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "native_helper_build_measurement_plan_sync_ok",
+      "description": "The native helper build measurement phased plan remains synchronized",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/viewer_host_assert_phased_plan_sync.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "native_helper_measurement_artifact_ok",
+      "description": "The native helper measurement validator writes a successful artifact",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/native_helper_build_measurement.json",
+      "json_path": "ok",
+      "equals": true
+    },
+    {
+      "assertion_id": "run_logged_command_tests_green",
+      "description": "The logged command timeout/process-tree tests pass",
+      "evidence_kind": "pytest_junit_case",
+      "artifact_path": "artifacts/pytest/test_viewer_host_run_logged_command.junit.xml",
+      "test_nodeid": "tests/test_viewer_host_run_logged_command.py::test_timeout_kills_child_process_tree"
+    }
+  ]
+}
