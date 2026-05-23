@@ -121,8 +121,12 @@ Remaining seams:
 - The future categorized dropdown/view-preset work needs cleaner catalog metadata than historical hardcoded defaults.
 - The all-fractal control-surface proof expansion remains open after animation applicability Phase 1.
 
+Prepared next slices:
+- Slice A: `docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md` creates a behavior-preserving catalog metadata authority and fail-closed coverage for every current `FractalType`.
+- Slice B: `docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md` depends on Slice A and moves current view defaults into catalog authority without changing visible defaults.
+
 Timing rule:
-- Do this before 3D, IFS, distance-estimator, Mandelbulb, or density-field work.
+- Do this before 3D, IFS, distance-estimator, Mandelbulb, density-field work, or broad perturbation expansion.
 
 ## 5. Lens SDF Follow-Ups
 

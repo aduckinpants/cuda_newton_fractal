@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "fractal_catalog_authority_inventory",
+  "feature_id": "fractal_catalog_authority_inventory",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md",
+    "docs/contracts/fractal_catalog_authority_inventory.contract.json",
+    "docs/notes",
+    "docs/contracts",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "ui",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "make selector-default authority and engine simplification the next major foundation",
+    "make future supported fractal additions easier and safer",
+    "start with Slice A inventory and behavior-preservation proof before moving defaults"
+  ],
+  "forbidden_operator_prompts": [
+    "move view defaults before inventory proof exists",
+    "start perturbation zoom implementation",
+    "add new fractal formulas or substrate families",
+    "change Color Pipeline behavior",
+    "change FPS pacing or capture finding behavior",
+    "replace renderer architecture or runtime state authority"
+  ],
+  "required_defaults": {
+    "behavior_change": "forbidden_except_fail_closed_catalog_tests",
+    "default_preservation": "required",
+    "future_fractal_growth": "formula_plus_catalog_row_target_for_supported_2d_types"
+  },
+  "forbidden_defaults": {
+    "new_fractal_type": "forbidden",
+    "perturbation_zoom": "deferred",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_catalog_authority_inventory.contract.json --out-json artifacts/validation/fractal_catalog_authority_inventory_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md --out-json artifacts/validation/fractal_catalog_authority_inventory_hostile_audit.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_fractal_types test_fractal_derived_fields test_fractal_family_rules test_fractal_parameter_surface_descriptor test_schema_binding",
+    "py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py -q",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_catalog_authority_inventory_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_authority_inventory_diff_check --log artifacts/logs/fractal_catalog_authority_inventory_diff_check.log --out-json artifacts/validation/fractal_catalog_authority_inventory_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "slice_a_contract_schema_valid",
+      "description": "The Slice A catalog authority inventory contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_catalog_authority_inventory_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "slice_a_hostile_audit_ok",
+      "description": "The Slice A hostile audit is complete before closeout",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_catalog_authority_inventory_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

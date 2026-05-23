@@ -50,6 +50,7 @@ These are planned for dedicated future branches, not this docs reconciliation sl
 | CliBridgeV2_GpuSampleFn | **K1-K5 ALL DONE. V2-A/V2-B/V2-C/V2-D/V2-E/V2-F/V2-G DONE.** CLI session V2 has batch, keep-alive, state-token diffing, response cost metadata, NDJSON streaming, describe-functions sensitivity metadata, and Windows named-pipe alternate transport. Broader multi-client/socket transport remains deferred. | No remaining active phases in this repo; broader transport stays deferred |
 | FractalControlSurfaceRepairCampaign | Phase 1 animation applicability is closed. Remaining phases are descriptor/test-harness expansion, high-confidence Julia/Nova control-surface policy, and broader no-mouse proof expansion. Later parameter campaign work closed many related issues but did not automatically close every phase in that older campaign plan. | See `docs/notes/fractal_control_surface_repair_campaign_PHASED_PLAN.md` and the parameter functionality campaign docs |
 | DeferredBacklogReprioritization | Current docs-only reconciliation of deferred issues by difficulty-to-reward ratio. | See `docs/notes/deferred_backlog_reprioritization_PHASED_PLAN.md` |
+| FractalCatalogAuthoritySlices | Prepared Slice A and Slice B for catalog/default authority cleanup before further catalog growth or perturbation expansion. | Slice A: `docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md`; Slice B: `docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md` |
 
 ### K4 Diagnostic Findings (investigation backlog, prioritized)
 

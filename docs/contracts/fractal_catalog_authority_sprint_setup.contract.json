@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "contract_id": "fractal_catalog_authority_sprint_setup",
+  "feature_id": "fractal_catalog_authority_sprint_setup",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/fractal_catalog_authority_sprint_setup_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/fractal_catalog_authority_sprint_setup_PHASED_PLAN.md",
+    "docs/contracts/fractal_catalog_authority_sprint_setup.contract.json",
+    "docs/notes/fractal_catalog_authority_inventory_PHASED_PLAN.md",
+    "docs/contracts/fractal_catalog_authority_inventory.contract.json",
+    "docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md",
+    "docs/contracts/fractal_view_defaults_catalog_migration.contract.json",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "merge the parameter functionality campaign into master first",
+    "prepare Slice A documentation and contract",
+    "prepare Slice B documentation and contract",
+    "keep future fractal additions simpler rather than adding more scattered wiring"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code or tests",
+    "start perturbation zoom implementation",
+    "add new fractal types or formulas",
+    "change Color Pipeline behavior",
+    "change FPS pacing or capture finding behavior",
+    "claim Slice A or Slice B implementation is complete"
+  ],
+  "required_defaults": {
+    "scope": "documentation_setup_only",
+    "branch_integration": "master_fast_forward_first",
+    "next_slice_order": "slice_a_before_slice_b"
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "runtime_publish": "not_required_for_docs_only",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_catalog_authority_sprint_setup.contract.json --out-json artifacts/validation/fractal_catalog_authority_sprint_setup_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_catalog_authority_sprint_setup_PHASED_PLAN.md --out-json artifacts/validation/fractal_catalog_authority_sprint_setup_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_catalog_authority_sprint_setup_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_catalog_authority_sprint_setup_diff_check --log artifacts/logs/fractal_catalog_authority_sprint_setup_diff_check.log --out-json artifacts/validation/fractal_catalog_authority_sprint_setup_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "setup_contract_schema_valid",
+      "description": "The fractal catalog authority sprint setup contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_catalog_authority_sprint_setup_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "setup_hostile_audit_ok",
+      "description": "The fractal catalog authority sprint setup hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_catalog_authority_sprint_setup_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

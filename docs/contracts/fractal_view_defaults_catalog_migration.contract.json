@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "fractal_view_defaults_catalog_migration",
+  "feature_id": "fractal_view_defaults_catalog_migration",
+  "workflow_type": "headless_only",
+  "plan_path": "docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md",
+    "docs/contracts/fractal_view_defaults_catalog_migration.contract.json",
+    "docs/notes",
+    "docs/contracts",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "ui",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start only after Slice A closes on master",
+    "move current view defaults into catalog authority without behavior changes",
+    "preserve current default views while preparing later view preset UI"
+  ],
+  "forbidden_operator_prompts": [
+    "start before Slice A catalog authority is present",
+    "add categorized selector UI or visible view preset dropdown",
+    "change startup default policy",
+    "start perturbation zoom implementation",
+    "add new fractal formulas or substrate families",
+    "change Color Pipeline, FPS pacing, or capture finding behavior"
+  ],
+  "required_defaults": {
+    "slice_dependency": "fractal_catalog_authority_inventory_closed_first",
+    "view_default_preservation": "required",
+    "compatibility_function": "ApplyFractalViewPresetDefaults remains callable"
+  },
+  "forbidden_defaults": {
+    "visible_view_preset_ui": "forbidden_in_this_slice",
+    "new_startup_policy": "forbidden_in_this_slice",
+    "perturbation_zoom": "deferred",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/fractal_view_defaults_catalog_migration.contract.json --out-json artifacts/validation/fractal_view_defaults_catalog_migration_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/fractal_view_defaults_catalog_migration_PHASED_PLAN.md --out-json artifacts/validation/fractal_view_defaults_catalog_migration_hostile_audit.json",
+    "ui_app/build_tests_vsdevcmd.cmd test_fractal_derived_fields test_diagnostics_state_io test_schema_binding",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/fractal_view_defaults_catalog_migration_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label fractal_view_defaults_catalog_migration_diff_check --log artifacts/logs/fractal_view_defaults_catalog_migration_diff_check.log --out-json artifacts/validation/fractal_view_defaults_catalog_migration_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "slice_b_contract_schema_valid",
+      "description": "The Slice B view-default migration contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_view_defaults_catalog_migration_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "slice_b_hostile_audit_ok",
+      "description": "The Slice B hostile audit is complete before closeout",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/fractal_view_defaults_catalog_migration_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -189,3 +189,5 @@
 - `ck:e633e19b` 2026-05-23 18:26 UTC — session-start | branch=codex/parameter-functionality-campaign | head=55be8c8 | status=dirty | intent=deferred backlog reprioritization docs refresh
 - `ck:e633e19b` 2026-05-23 18:41 UTC | score 95 — Deferred backlog reprioritization docs refresh closed: reconciled stale deferred/current planning surfaces, ranked backlog by difficulty-to-reward, preserved docs-only scope, and validated contract/plan-sync/hostile-audit/code-quality/diff hygiene.
 - `ck:e633e19b` 2026-05-23 18:42 UTC | score 95 — Deferred backlog reprioritization stale-plan cleanup closed: removed post-checkpoint stale wording from the active plan and reran contract, plan-sync, hostile-audit, code-quality, and diff-hygiene validation.
+- `ck:a931885b` 2026-05-23 19:03 UTC — session-start | branch=master | head=8785da0 | status=dirty | intent=fractal catalog authority slice planning setup
+- `ck:a931885b` 2026-05-23 19:04 UTC | score 95 — Fractal catalog authority planning setup closed: master fast-forwarded and pushed to 8785da0, Slice A and Slice B plans/contracts prepared, planning indexes cross-linked, and docs-only validation passed.
