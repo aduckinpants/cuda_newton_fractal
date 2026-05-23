@@ -158,3 +158,5 @@
 - `ck:b6b0ed5f` 2026-05-23 03:14 UTC — session-start | branch=codex/pfc-parameter-descriptor-export | head=2463241 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 4 parameter descriptor export
 - `ck:b6b0ed5f` 2026-05-23 04:04 UTC | score 97 — Closed PFC parameter descriptor export: reusable schema/binding-derived parameter surface descriptor added with runtime CLI export, owner-lane guardrails, no-mouse proof, full native, code-quality, and hostile audit.
 - `ck:b6b0ed5f` 2026-05-23 04:07 UTC | score 97 — Closed PFC parameter descriptor export plan cleanup after sprint-holder integration; stale closeout text removed and validators remain green.
+- `ck:b05463e2` 2026-05-23 04:24 UTC — session-start | branch=codex/pfc-explaino-y-epsilon | head=940065c | status=dirty | profile=runtime | intent=parameter functionality campaign slice 5 explaino_y epsilon witness
+- `ck:b05463e2` 2026-05-23 04:46 UTC | score 96 — Closed PFC Explaino-Y epsilon witness: replaced sparse weak sample proof with viewport-mapped native coverage, added preview-stable no-mouse runtime proof, preserved formulas and later campaign boundaries.

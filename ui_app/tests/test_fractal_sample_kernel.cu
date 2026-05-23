@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 static Double2 MakeDouble2(double x, double y) { return {x, y}; }
 
@@ -1127,6 +1128,63 @@ void TestFixedFamilyFoldMixControlsAffectSamplesAndPreserveDefaults() {
     }
 }
 
+void TestExplainoYEpsilonTunedWitnessAffectsSamples() {
+    constexpr int width = 320;
+    constexpr int height = 240;
+    constexpr int N = width * height;
+    constexpr double centerX = 0.25;
+    constexpr double centerY = -0.10;
+    constexpr double zoom = 2.0;
+    constexpr double aspect = static_cast<double>(width) / static_cast<double>(height);
+    constexpr double base = 2.0 / zoom;
+
+    std::vector<Double2> coords;
+    coords.reserve(N);
+    for (int py = 0; py < height; ++py) {
+        for (int px = 0; px < width; ++px) {
+            const double nx = ((static_cast<double>(px) + 0.5) / static_cast<double>(width) - 0.5) * 2.0;
+            const double ny = ((static_cast<double>(py) + 0.5) / static_cast<double>(height) - 0.5) * 2.0;
+            coords.push_back(MakeDouble2(
+                centerX + nx * base * aspect,
+                centerY + ny * base));
+        }
+    }
+
+    RenderSettings render{};
+    ViewState tightView{};
+    ViewState looseView{};
+    KernelParams tightParams{};
+    KernelParams looseParams{};
+    MakeDefaults(FractalType::explaino_y, tightView, tightParams, render);
+    MakeDefaults(FractalType::explaino_y, looseView, looseParams, render);
+    tightView.center_hp_x = centerX;
+    tightView.center_hp_y = centerY;
+    tightView.zoom = static_cast<float>(zoom);
+    tightView.log2_zoom = 1.0;
+    tightView.auto_max_iter = false;
+    looseView = tightView;
+    render.resolution = {width, height};
+    tightParams.max_iter = 64;
+    looseParams.max_iter = 64;
+    tightParams.epsilon = 1.0e-6f;
+    looseParams.epsilon = 0.01f;
+
+    std::vector<FractalSampleResult> tightResults(static_cast<size_t>(N));
+    std::vector<FractalSampleResult> looseResults(static_cast<size_t>(N));
+    const char* error = nullptr;
+    CHECK("explaino_y epsilon tight sample ok", SampleFractalPoints(coords.data(), N, tightView, tightParams, render, tightResults.data(), &error));
+    CHECK("explaino_y epsilon loose sample ok", SampleFractalPoints(coords.data(), N, looseView, looseParams, render, looseResults.data(), &error));
+
+    bool sawDifference = false;
+    for (int i = 0; i < N; ++i) {
+        if (!SameFractalSampleResult(tightResults[static_cast<size_t>(i)], looseResults[static_cast<size_t>(i)])) {
+            sawDifference = true;
+            break;
+        }
+    }
+    CHECK("explaino_y epsilon tuned witness changes SampleFractalPoints results", sawDifference);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -1257,6 +1315,7 @@ int main() {
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();
     TestFixedFamilyFoldMixControlsAffectSamplesAndPreserveDefaults();
+    TestExplainoYEpsilonTunedWitnessAffectsSamples();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "contract_id": "pfc_explaino_y_epsilon",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_explaino_y_epsilon_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue parameter functionality campaign step 5 from the sprint holder branch",
+    "revisit explaino_y epsilon with bounded tuned witness proof",
+    "either prove live sensitivity or keep the control honestly classified as unresolved weak",
+    "use runtime proof without opening repeated viewer processes or using OS mouse automation"
+  ],
+  "forbidden_operator_prompts": [
+    "change fractal formulas during this witness classification slice",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, generated editors, Explaino Collatz, Explaino Julia authority, or renderer architecture",
+    "claim explaino_y epsilon is fixed or dead without current native and published-runtime proof",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "fractal_type": "explaino_y",
+    "control_id": "epsilon",
+    "runtime_control_id": "fractal_control.epsilon.primary",
+    "formula_change": "forbidden",
+    "runtime_proof": "required_no_mouse"
+  },
+  "forbidden_defaults": {
+    "formula_rewrite": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "feature_behavior_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_explaino_y_epsilon.contract.json --out-json artifacts/validation/pfc_explaino_y_epsilon_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_explaino_y_epsilon_PHASED_PLAN.md --out-json artifacts/validation/pfc_explaino_y_epsilon_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_explaino_y_epsilon_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_y_epsilon_sample --log artifacts/logs/pfc_explaino_y_epsilon_sample.log --out-json artifacts/validation/pfc_explaino_y_epsilon_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_y_epsilon_runtime_publish --log artifacts/logs/pfc_explaino_y_epsilon_runtime_publish.log --out-json artifacts/validation/pfc_explaino_y_epsilon_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_explaino_y_epsilon.py -q --junitxml artifacts/pytest/pfc_explaino_y_epsilon_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Explaino-Y epsilon contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_y_epsilon_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Explaino-Y epsilon hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_y_epsilon_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
