@@ -11,7 +11,7 @@
 
 ## Current Phase
 
-Phase 0 is closed: the campaign branch and checked-in campaign plan/contract are set up through step 9. No feature implementation has started.
+Sprint holder is integrated through Step 5 at `5b6950c`. The next implementation slice is Step 6, `codex/pfc-branch-dead-explaino-controls`.
 
 ## Phase Checklist
 
@@ -30,16 +30,16 @@ Phase 0 is closed: the campaign branch and checked-in campaign plan/contract are
 - Feature branches are created from the sprint holder when their slice begins.
 - Each feature branch gets its own plan, contract, focused tests, hostile audit, commit, receipts, push, clean-tree closeout, and merge back into the sprint holder.
 - The sprint holder is the integration branch for this campaign only. It is not a license to combine unrelated feature work.
-- The first feature branch to start after this setup is `codex/pfc-collatz-transition-strength`.
+- The next feature branch to start after the current integrated holder is `codex/pfc-branch-dead-explaino-controls`.
 
 ## Campaign Steps Through Step 9
 
-1. `codex/pfc-collatz-transition-strength`: add standalone `collatz_transition_strength` with default-preserving behavior, owner-lane visibility, state IO, validation, native sample proof, and no-mouse runtime proof.
-2. `codex/pfc-phoenix-parameterization`: expose the existing Phoenix `p` / seed-like parameterization only if code proves the runtime path already has a stable authority seam; otherwise stop with a documented blocker.
-3. `codex/pfc-fixed-family-fold-mix`: add default-preserving fold/mix controls for fixed families, starting with `burning_ship_fold_mix`, `celtic_abs_mix`, and `perpendicular_fold_mix`, with explicit owner-lane visibility and no `explaino_all` ownership leakage.
-4. `codex/pfc-parameter-descriptor-export`: add a deterministic parameter surface descriptor/export guardrail so future slider audits compare schema, binding, validation, state IO, runtime params, and animation applicability from one machine-readable surface.
-5. `codex/pfc-explaino-y-epsilon`: revisit `explaino_y::epsilon` with a bounded tuned witness search and either prove live sensitivity, narrow the witness, or leave it honestly classified as unresolved/weak.
-6. `codex/pfc-branch-dead-explaino-controls`: audit and repair branch-dead Explaino controls where public sliders exist but the active runtime branch does not authoritatively consume them.
+1. [closed] `codex/pfc-collatz-transition-strength`: add standalone `collatz_transition_strength` with default-preserving behavior, owner-lane visibility, state IO, validation, native sample proof, and no-mouse runtime proof.
+2. [closed] `codex/pfc-phoenix-parameterization`: expose the existing Phoenix `p` / seed-like parameterization only if code proves the runtime path already has a stable authority seam; otherwise stop with a documented blocker.
+3. [closed] `codex/pfc-fixed-family-fold-mix`: add default-preserving fold/mix controls for fixed families, starting with `burning_ship_fold_mix`, `celtic_abs_mix`, and `perpendicular_fold_mix`, with explicit owner-lane visibility and no `explaino_all` ownership leakage.
+4. [closed] `codex/pfc-parameter-descriptor-export`: add a deterministic parameter surface descriptor/export guardrail so future slider audits compare schema, binding, validation, state IO, runtime params, and animation applicability from one machine-readable surface.
+5. [closed] `codex/pfc-explaino-y-epsilon`: revisited `explaino_y::epsilon`; current proof shows live sensitivity on the tuned native sample surface and a preview-stable no-mouse published runtime surface.
+6. [next] `codex/pfc-branch-dead-explaino-controls`: audit and repair branch-dead Explaino controls where public sliders exist but the active runtime branch does not authoritatively consume them.
 7. `codex/pfc-explaino-collatz-direct`: add an Explaino Collatz direct variant only after standalone Collatz control behavior is proven, with explicit selector identity and no umbrella ownership confusion.
 8. `codex/pfc-explaino-julia-authority`: design and implement Explaino Julia direct constants behind an explicit seeded/custom authority mode instead of silently repurposing current defaults.
 9. `codex/pfc-generated-internal-editors`: expose generated/internal editor authority through a safe override-mode UI, not raw array dumping, and prove saved-state compatibility plus runtime authority.
@@ -70,13 +70,13 @@ Phase 0 is closed: the campaign branch and checked-in campaign plan/contract are
 - Owner-specific controls must not be added to `explaino_all` unless the slice explicitly proves they are registry/common-axis controls.
 - Color Pipeline, capture finding, and FPS pacing must not regress when shared schema or automation harness paths are touched.
 
-## First Slice Entry Criteria
+## Next Slice Entry Criteria
 
-- Campaign branch pushed and clean.
-- Active setup contract closed with receipts.
-- New feature branch created from `codex/parameter-functionality-campaign`: `codex/pfc-collatz-transition-strength`.
-- New checked-in first-slice plan and contract created before code mutation.
-- RED tests prove `collatz_transition_strength` is missing from schema/binding/state/runtime proof before implementation.
+- Campaign branch pushed and clean at the integrated holder head.
+- Active Step 5 contract closed with receipts.
+- New feature branch created from `codex/parameter-functionality-campaign`: `codex/pfc-branch-dead-explaino-controls`.
+- New checked-in Step 6 plan and contract created before code mutation.
+- RED/classification work must identify which public Explaino controls are branch-dead through schema/binding/runtime proof before implementation.
 
 ## Proof Ledger
 
@@ -90,6 +90,7 @@ Phase 0 is closed: the campaign branch and checked-in campaign plan/contract are
 - Whitespace check: `py -3.14 tools/viewer_host_run_logged_command.py --label parameter_functionality_campaign_diff_check --log artifacts/logs/parameter_functionality_campaign_diff_check.log --out-json artifacts/validation/parameter_functionality_campaign_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check`, passed.
 - Receipt gate finding: the first receipt attempt found that explicit-path plan sync and raw `git diff --check` were not parseable evidence commands for contract proof; repaired by switching to the repo-recognized plan-sync command and a logged diff-check command.
 - Hostile-audit validation: `artifacts/validation/parameter_functionality_campaign_hostile_audit.json`.
+- Integrated through Step 5: `5b6950c` closed `pfc_explaino_y_epsilon` with native viewport-mapped sample proof and preview-stable no-mouse runtime proof.
 
 ## Hostile Audit
 
