@@ -446,6 +446,7 @@ static void ApplyCollatzPresetDefaults(FractalType fractalType, KernelParams& pa
     params.max_iter = 200;
     ApplyDefaultColoringSelection(fractalType, params);
     params.exposure = 1.0f;
+    params.collatz_transition_strength = 1.0f;
 }
 
 static void ApplyMcMullenPresetDefaults(FractalType fractalType, KernelParams& params) {

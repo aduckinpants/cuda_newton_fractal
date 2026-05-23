@@ -1397,7 +1397,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 20) {
+            fractalPanel->controls.size() != 21) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }
@@ -1447,6 +1447,7 @@ int main() {
         const UISchemaControl* projectionAndFlowPressureThreshold = FindControlById(*fractalPanel, "projection_and_flow_pressure_threshold");
         const UISchemaControl* multibrotPowerReal = FindControlById(*fractalPanel, "multibrot_power_float");
         const UISchemaControl* multibrotPowerImag = FindControlById(*fractalPanel, "multibrot_power_imag");
+        const UISchemaControl* collatzTransitionStrength = FindControlById(*fractalPanel, "collatz_transition_strength");
         const UISchemaControl* spiderFeedback = FindControlById(*fractalPanel, "spider_feedback");
         const UISchemaControl* rationalEscapeDenominatorPower = FindControlById(*fractalPanel, "explaino_rational_escape_denominator_power");
         if (!pairRootFamily || !pairFrame || !pairOffsetX || !pairOffsetY || !pairReconvergenceRatio) {
@@ -1529,6 +1530,18 @@ int main() {
             !spiderFeedback->has_ui_max || spiderFeedback->ui_max != 1.0 ||
             !spiderFeedback->has_visible_if || spiderFeedback->visible_if.value != "spider") {
             std::cerr << "Safe-mode schema Spider feedback control drifted from the bounded owner seam\n";
+            return 1;
+        }
+        if (!collatzTransitionStrength || !collatzTransitionStrength->has_binding ||
+            collatzTransitionStrength->binding.path != "fractal.params.collatz_transition_strength" ||
+            !collatzTransitionStrength->has_default || !collatzTransitionStrength->def.is_number() ||
+            collatzTransitionStrength->def.as_number() != 1.0 ||
+            !collatzTransitionStrength->has_min || collatzTransitionStrength->min != 0.0 ||
+            !collatzTransitionStrength->has_max || collatzTransitionStrength->max != 4.0 ||
+            !collatzTransitionStrength->has_ui_min || collatzTransitionStrength->ui_min != 0.0 ||
+            !collatzTransitionStrength->has_ui_max || collatzTransitionStrength->ui_max != 2.0 ||
+            !collatzTransitionStrength->has_visible_if || collatzTransitionStrength->visible_if.value != "collatz") {
+            std::cerr << "Safe-mode schema Collatz transition-strength control drifted from the bounded owner seam\n";
             return 1;
         }
         if (!rationalEscapeDenominatorPower || !rationalEscapeDenominatorPower->has_binding ||

@@ -852,6 +852,7 @@ bool ValidateVisibleControlMatrix() {
         {"mcmullen_m", FractalType::mcmullen, "fractal.params.mcmullen_m", "int"},
         {"mcmullen_n", FractalType::mcmullen, "fractal.params.mcmullen_n", "int"},
         {"mcmullen_lambda", FractalType::mcmullen, "fractal.params.mcmullen_lambda", "float"},
+        {"collatz_transition_strength", FractalType::collatz, "fractal.params.collatz_transition_strength", "float"},
         {"spider_feedback", FractalType::spider, "fractal.params.spider_feedback", "float"},
         {"explaino_rational_escape_denominator_power", FractalType::explaino_rational_escape, "fractal.params.explaino_rational_escape_denominator_power", "int"},
         {"magnet_seed_real", FractalType::magnet, "fractal.params.magnet_seed_real", "float"},
@@ -1011,9 +1012,12 @@ bool ValidateFixedAndPresetSurfaceClassifications() {
                 std::string controlId;
                 GetJsonStringField(control, "id", &controlId);
                 const bool isExpectedOwnerControl =
-                    fixedLane == FractalType::spider &&
-                    controlId == "spider_feedback" &&
-                    bindingPath == "fractal.params.spider_feedback";
+                    (fixedLane == FractalType::spider &&
+                        controlId == "spider_feedback" &&
+                        bindingPath == "fractal.params.spider_feedback") ||
+                    (fixedLane == FractalType::collatz &&
+                        controlId == "collatz_transition_strength" &&
+                        bindingPath == "fractal.params.collatz_transition_strength");
                 if (!isExpectedOwnerControl && !IsGlobalFixedFormulaBindingPath(bindingPath)) {
                     const char* fractalId = FractalTypeId(fixedLane);
                     std::cerr << "Fixed-formula lane " << (fractalId ? fractalId : "<unknown>")
@@ -1088,6 +1092,7 @@ bool ValidateAnimationTargetVisibilityMirrorsControls() {
         {"lambda_real", "lambda_real"},
         {"magnet_relaxation", "magnet_relaxation"},
         {"magnet_bailout", "magnet_bailout"},
+        {"collatz_transition_strength", "collatz_transition_strength"},
         {"momentum_beta", "momentum_beta"},
         {"joy_coupling", "joy_coupling"},
         {"fold_coupling", "fold_coupling"},

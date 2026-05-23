@@ -141,7 +141,7 @@ ESCAPE_TIME_SPECIALIZED_HD inline SpecializedEscapeStepResult StepMcMullenEscape
 }
 
 template <typename Complex>
-ESCAPE_TIME_SPECIALIZED_HD inline void StepCollatzEscapeState(Complex* ioZ) {
+ESCAPE_TIME_SPECIALIZED_HD inline void StepCollatzEscapeState(Complex* ioZ, float transitionStrength = 1.0f) {
     if (!ioZ) return;
 
     using Scalar = decltype(ioZ->x);
@@ -149,9 +149,8 @@ ESCAPE_TIME_SPECIALIZED_HD inline void StepCollatzEscapeState(Complex* ioZ) {
     const Complex cosPi = SpecializedEscapeCosPi(*ioZ);
     const Complex linear{static_cast<Scalar>(2) + static_cast<Scalar>(5) * ioZ->x, static_cast<Scalar>(5) * ioZ->y};
     const Complex affine{static_cast<Scalar>(2) + static_cast<Scalar>(7) * ioZ->x, static_cast<Scalar>(7) * ioZ->y};
-    *ioZ = SpecializedEscapeScale(
-        SpecializedEscapeSub(affine, SpecializedEscapeMul(linear, cosPi)),
-        static_cast<Scalar>(0.25));
+    const Complex transition = SpecializedEscapeScale(SpecializedEscapeMul(linear, cosPi), static_cast<Scalar>(transitionStrength));
+    *ioZ = SpecializedEscapeScale(SpecializedEscapeSub(affine, transition), static_cast<Scalar>(0.25));
 }
 
 ESCAPE_TIME_SPECIALIZED_HD inline constexpr float SpecializedEscapeRadiusSquared() {

@@ -974,7 +974,7 @@ bool SamplePoint(const ProbeState& state,
                     break;
                 }
             } else {
-                StepCollatzEscapeState(&z);
+                StepCollatzEscapeState(&z, params.collatz_transition_strength);
             }
 
             if (!IsFiniteCx(z)) {

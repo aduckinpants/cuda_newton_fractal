@@ -939,6 +939,56 @@ void TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults() 
     }
 }
 
+void TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults() {
+    constexpr int N = 7;
+    Double2 coords[N] = {
+        MakeDouble2(-1.0, 0.0),
+        MakeDouble2(-0.5, 0.0),
+        MakeDouble2(-0.25, 0.0),
+        MakeDouble2(0.0, 0.0),
+        MakeDouble2(0.25, 0.0),
+        MakeDouble2(0.5, 0.0),
+        MakeDouble2(1.0, 0.0),
+    };
+
+    RenderSettings render{};
+    ViewState canonicalView{};
+    ViewState explicitDefaultView{};
+    ViewState activeView{};
+    KernelParams canonicalParams{};
+    KernelParams explicitDefaultParams{};
+    KernelParams activeParams{};
+    MakeDefaults(FractalType::collatz, canonicalView, canonicalParams, render);
+    MakeDefaults(FractalType::collatz, explicitDefaultView, explicitDefaultParams, render);
+    MakeDefaults(FractalType::collatz, activeView, activeParams, render);
+    canonicalParams.max_iter = 500;
+    explicitDefaultParams.max_iter = 500;
+    activeParams.max_iter = 500;
+    explicitDefaultParams.collatz_transition_strength = 1.0f;
+    activeParams.collatz_transition_strength = 0.35f;
+
+    FractalSampleResult canonicalResults[N]{};
+    FractalSampleResult explicitDefaultResults[N]{};
+    FractalSampleResult activeResults[N]{};
+    const char* error = nullptr;
+    CHECK("collatz canonical sample ok", SampleFractalPoints(coords, N, canonicalView, canonicalParams, render, canonicalResults, &error));
+    CHECK("collatz explicit default sample ok", SampleFractalPoints(coords, N, explicitDefaultView, explicitDefaultParams, render, explicitDefaultResults, &error));
+    CHECK("collatz active transition-strength sample ok", SampleFractalPoints(coords, N, activeView, activeParams, render, activeResults, &error));
+
+    bool defaultParity = true;
+    bool sawDifference = false;
+    for (int i = 0; i < N; ++i) {
+        if (!SameFractalSampleResult(canonicalResults[i], explicitDefaultResults[i])) {
+            defaultParity = false;
+        }
+        if (!SameFractalSampleResult(canonicalResults[i], activeResults[i])) {
+            sawDifference = true;
+        }
+    }
+    CHECK("collatz transition strength default preserves canonical samples", defaultParity);
+    CHECK("collatz transition strength changes SampleFractalPoints results", sawDifference);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -1066,6 +1116,7 @@ int main() {
     TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls();
     TestExplainoLambdaPhaseStrengthControlsWarpedMap();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
+    TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

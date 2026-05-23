@@ -217,6 +217,7 @@
             { "id": "lambda_real", "label": "Lambda (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "lambda,explaino_lambda" } },
             { "id": "magnet_relaxation", "label": "Magnet Relaxation", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
             { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
+            { "id": "collatz_transition_strength", "label": "Collatz Transition Strength", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "collatz" } },
             { "id": "spider_feedback", "label": "Spider Feedback", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "spider" } },
             { "id": "momentum_beta", "label": "Momentum Beta", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_inertial" } },
             { "id": "joy_coupling", "label": "Joy Coupling", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_joy" } },
@@ -272,6 +273,16 @@
           "binding": { "kind": "param", "path": "fractal.params.multibrot_power" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multicorn" },
           "help": "Integer exponent p in z_{n+1} = conj(z_n)^p + c."
+        },
+        {
+          "id": "collatz_transition_strength",
+          "type": "slider_float",
+          "label": "Transition Strength",
+          "value_type": "float",
+          "min": 0.0, "max": 4.0, "ui_min": 0.0, "ui_max": 2.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.collatz_transition_strength" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "collatz" },
+          "help": "Multiplier on the cosine transition term in the continuous Collatz map. The default 1.0 preserves the canonical Collatz formula."
         },
         {
           "id": "spider_feedback",

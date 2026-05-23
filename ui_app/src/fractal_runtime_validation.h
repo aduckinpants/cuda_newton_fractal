@@ -191,6 +191,13 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("multibrot_power must be in [2,12]", outError);
         }
     }
+    if (view.fractal_type == FractalType::collatz) {
+        if (!std::isfinite(params.collatz_transition_strength) ||
+            params.collatz_transition_strength < 0.0f ||
+            params.collatz_transition_strength > 4.0f) {
+            return FailFractalRuntimeValidation("collatz_transition_strength must be finite and in [0,4]", outError);
+        }
+    }
     if (view.fractal_type == FractalType::spider) {
         if (!std::isfinite(params.spider_feedback) ||
             params.spider_feedback < -2.0f ||

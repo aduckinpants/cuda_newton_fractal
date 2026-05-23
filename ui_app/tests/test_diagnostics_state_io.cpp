@@ -4671,6 +4671,7 @@ int main() {
         params.color_explaino_palette_seed_scale = 1.5f;
         params.color_explaino_palette_seed_phase = 0.25f;
         params.color_explaino_palette_colorfulness = 0.8f;
+        params.collatz_transition_strength = 0.625f;
         params.spider_feedback = 0.875f;
         params.explaino_rational_escape_denominator_power = 5;
         if (!SetDraftRowNumberParam(&draft.lanes[0].rows[0], "signal.scale", preciseSmoothScale) ||
@@ -4720,13 +4721,14 @@ int main() {
             serializedState.find("\"explaino_damping\": 0.73000001907348633") == std::string::npos ||
             serializedState.find("\"explaino_roots\"") == std::string::npos ||
             serializedState.find("\"poly_coeffs_b\"") == std::string::npos ||
+            serializedState.find("\"collatz_transition_strength\": 0.625") == std::string::npos ||
             serializedState.find("\"spider_feedback\": 0.875") == std::string::npos ||
             serializedState.find("\"explaino_rational_escape_denominator_power\": 5") == std::string::npos ||
             serializedState.find("\"blend_weight\": 0.34999999403953552") == std::string::npos ||
             serializedState.find("\"blend_mode\": \"normal\"") == std::string::npos ||
             serializedState.find("\"color_grading_stack\"") == std::string::npos ||
             serializedState.find("\"import_signature\": \"9475387712945145731\"") == std::string::npos) {
-            std::cerr << "Expected capture-backed serialization regression to emit low-resolution render settings, new batch-1 params, ExplainO damping, draft state, grading stack, and 64-bit sidecar hashes\n";
+            std::cerr << "Expected capture-backed serialization regression to emit low-resolution render settings, formula controls, ExplainO damping, draft state, grading stack, and 64-bit sidecar hashes\n";
             return 1;
         }
 
@@ -4792,9 +4794,10 @@ int main() {
             std::cerr << "Expected capture-backed serialization regression to reload secondary ExplainO polynomial coefficients from emitted state.json\n";
             return 1;
         }
-        if (!NearlyEqual(roundTripParams.spider_feedback, 0.875f, 1.0e-6) ||
+        if (!NearlyEqual(roundTripParams.collatz_transition_strength, 0.625f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.spider_feedback, 0.875f, 1.0e-6) ||
             roundTripParams.explaino_rational_escape_denominator_power != 5) {
-            std::cerr << "Expected capture-backed serialization regression to reload batch-1 formula controls from emitted state.json\n";
+            std::cerr << "Expected capture-backed serialization regression to reload formula controls from emitted state.json\n";
             return 1;
         }
         if (roundTripParams.color_palette_stack_count != 2 ||

@@ -43,6 +43,15 @@ def test_batch1_new_formula_controls_change_live_output_no_mouse(tmp_path: Path)
     rational_state["params"]["max_iter"] = 800
     rational_state_path = write_state_bundle(tmp_path / "rational_escape_denominator_power", rational_state)
 
+    collatz_state = _capture_state(exe_path, "collatz")
+    collatz_state["params"]["collatz_transition_strength"] = 1.0
+    collatz_state["params"]["max_iter"] = 500
+    collatz_state["params"]["coloring_mode"] = "smooth_escape"
+    collatz_state["params"]["color_signal"] = "smooth_escape"
+    collatz_state["params"]["color_palette"] = "cyclic_escape"
+    collatz_state["params"]["color_grading"] = "escape_default"
+    collatz_state_path = write_state_bundle(tmp_path / "collatz_transition_strength", collatz_state)
+
     nova_state = _capture_state(exe_path, "nova")
     nova_state["view"]["center_x"] = -0.5
     nova_state["view"]["center_y"] = 0.0
@@ -95,6 +104,23 @@ def test_batch1_new_formula_controls_change_live_output_no_mouse(tmp_path: Path)
             assert rational_edited.get("set_value_consumed") is True
             assert isinstance(rational_edited_hash, str) and rational_edited_hash
             assert rational_edited_hash != rational_baseline_hash
+
+            collatz_baseline = viewer.load_state_json(
+                collatz_state_path,
+                expected_fractal_type="collatz",
+                timeout_seconds=15.0,
+            )
+            collatz_baseline_hash = collatz_baseline.get("rendered_frame_hash")
+            assert isinstance(collatz_baseline_hash, str) and collatz_baseline_hash
+
+            collatz_control = "fractal_control.collatz_transition_strength.primary"
+            viewer.wait_for_control(collatz_control, timeout_seconds=15.0)
+            collatz_edited = viewer.set_control_value(collatz_control, 0.35, timeout_seconds=15.0)
+            collatz_edited_hash = collatz_edited.get("rendered_frame_hash")
+            assert collatz_edited.get("current_fractal_type") == "collatz"
+            assert collatz_edited.get("set_value_consumed") is True
+            assert isinstance(collatz_edited_hash, str) and collatz_edited_hash
+            assert collatz_edited_hash != collatz_baseline_hash
 
             nova_baseline = viewer.load_state_json(
                 nova_state_path,

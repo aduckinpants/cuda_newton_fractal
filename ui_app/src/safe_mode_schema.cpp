@@ -369,6 +369,25 @@ UISchemaControl BuildSpiderFeedbackControl() {
     return control;
 }
 
+UISchemaControl BuildCollatzTransitionStrengthControl() {
+    UISchemaControl control = MakeRangedParamControl(
+        "collatz_transition_strength",
+        "slider_float",
+        "Transition Strength",
+        "float",
+        0.0,
+        4.0,
+        0.01,
+        "fractal.params.collatz_transition_strength",
+        json_min::Value{1.0});
+    control.ui_min = 0.0;
+    control.ui_max = 2.0;
+    control.has_ui_min = true;
+    control.has_ui_max = true;
+    SetVisibleForFractalType(&control, "collatz");
+    return control;
+}
+
 UISchemaControl BuildExplainoRationalEscapeDenominatorPowerControl() {
     UISchemaControl control = MakeRangedParamControl(
         "explaino_rational_escape_denominator_power",
@@ -523,6 +542,7 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildProjectionAndFlowPressureThresholdControl(),
         BuildMultibrotRealPowerControl(),
         BuildMultibrotImagPowerControl(),
+        BuildCollatzTransitionStrengthControl(),
         BuildSpiderFeedbackControl(),
         BuildExplainoRationalEscapeDenominatorPowerControl(),
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),

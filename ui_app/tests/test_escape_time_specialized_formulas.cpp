@@ -117,6 +117,23 @@ int main() {
         }
     }
 
+    {
+        Cx canonical{1.0f, 0.0f};
+        Cx explicitDefault{1.0f, 0.0f};
+        Cx zeroTransition{1.0f, 0.0f};
+        StepCollatzEscapeState(&canonical);
+        StepCollatzEscapeState(&explicitDefault, 1.0f);
+        StepCollatzEscapeState(&zeroTransition, 0.0f);
+        if (!NearlyEqualCx(canonical, explicitDefault)) {
+            std::cerr << "Collatz transition strength default should preserve canonical map semantics\n";
+            return 1;
+        }
+        if (NearlyEqualCx(canonical, zeroTransition)) {
+            std::cerr << "Collatz transition strength should alter the cosine transition term\n";
+            return 1;
+        }
+    }
+
     if (!NearlyEqual(SpecializedEscapeRadiusSquared(), 10000.0f)) {
         std::cerr << "Specialized escape-time helper should use the 10000 escape-radius contract\n";
         return 1;

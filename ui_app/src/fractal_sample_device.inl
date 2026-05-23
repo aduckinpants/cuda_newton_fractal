@@ -2978,7 +2978,7 @@
                     break;
                 }
             } else {
-                StepCollatzEscapeState(&z);
+                StepCollatzEscapeState(&z, params.collatz_transition_strength);
             }
 
             if (cx_abs2(z) > SpecializedEscapeRadiusSquared()) {

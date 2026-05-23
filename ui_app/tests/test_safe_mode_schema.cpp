@@ -132,7 +132,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 20,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 21,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -319,6 +319,7 @@ static void TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls() {
 
     const UISchemaControl* spiderFeedback = FindControlById(*fractalPanel, "spider_feedback");
     const UISchemaControl* rationalDenominatorPower = FindControlById(*fractalPanel, "explaino_rational_escape_denominator_power");
+    const UISchemaControl* collatzTransitionStrength = FindControlById(*fractalPanel, "collatz_transition_strength");
     Check(spiderFeedback != nullptr &&
             spiderFeedback->has_binding &&
             spiderFeedback->binding.path == "fractal.params.spider_feedback" &&
@@ -343,6 +344,19 @@ static void TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls() {
             rationalDenominatorPower->def.is_number() &&
             rationalDenominatorPower->def.as_number() == 3.0,
         "TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls_RationalDenominatorPower");
+    Check(collatzTransitionStrength != nullptr &&
+            collatzTransitionStrength->has_binding &&
+            collatzTransitionStrength->binding.path == "fractal.params.collatz_transition_strength" &&
+            collatzTransitionStrength->has_visible_if &&
+            collatzTransitionStrength->visible_if.value == "collatz" &&
+            collatzTransitionStrength->has_min && collatzTransitionStrength->min == 0.0 &&
+            collatzTransitionStrength->has_max && collatzTransitionStrength->max == 4.0 &&
+            collatzTransitionStrength->has_ui_min && collatzTransitionStrength->ui_min == 0.0 &&
+            collatzTransitionStrength->has_ui_max && collatzTransitionStrength->ui_max == 2.0 &&
+            collatzTransitionStrength->has_default &&
+            collatzTransitionStrength->def.is_number() &&
+            collatzTransitionStrength->def.as_number() == 1.0,
+        "TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls_CollatzTransitionStrength");
 }
 
 static void TestSafeModeSchemaExposesJuliaControls() {

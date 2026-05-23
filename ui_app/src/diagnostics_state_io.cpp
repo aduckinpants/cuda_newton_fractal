@@ -1921,6 +1921,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     int multibrotPower = 0;
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
     double multibrotPowerImag = static_cast<double>(nextParams.multibrot_power_imag);
+    double collatzTransitionStrength = static_cast<double>(nextParams.collatz_transition_strength);
     double spiderFeedback = static_cast<double>(nextParams.spider_feedback);
     int explainoRationalEscapeDenominatorPower = nextParams.explaino_rational_escape_denominator_power;
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
@@ -1976,6 +1977,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_imag", &multibrotPowerImag, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "collatz_transition_strength", &collatzTransitionStrength, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "spider_feedback", &spiderFeedback, nullptr, outError)) return false;
         if (const json_min::Value* rationalDenominatorPowerValue = paramsObject->get("explaino_rational_escape_denominator_power")) {
             if (!rationalDenominatorPowerValue->is_number() ||
@@ -2081,6 +2083,7 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.multibrot_power = multibrotPower;
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
         nextParams.multibrot_power_imag = static_cast<float>(multibrotPowerImag);
+        nextParams.collatz_transition_strength = static_cast<float>(collatzTransitionStrength);
         nextParams.spider_feedback = static_cast<float>(spiderFeedback);
         nextParams.explaino_rational_escape_denominator_power = explainoRationalEscapeDenominatorPower;
         nextParams.lambda_real = static_cast<float>(lambdaReal);

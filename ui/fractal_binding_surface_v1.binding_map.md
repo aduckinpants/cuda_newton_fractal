@@ -69,3 +69,7 @@ All bindings are under `fractal.*`.
 - `fractal.params.multibrot_power_float` -> `KernelParams.multibrot_power_float` (float real exponent; hard range [0.01, 32], normal UI range [0.01, 12], default 3.0; visible when `fractal.view.fractal_type = multibrot`)
 - `fractal.params.multibrot_power_imag` -> `KernelParams.multibrot_power_imag` (float imaginary exponent; range [-4, 4], default 0.0; visible when `fractal.view.fractal_type = multibrot`)
 - `fractal.params.multibrot_power` remains the legacy compatibility alias for the Multibrot real exponent in float binding paths and the integer power binding used by `multicorn_power` on the `multicorn` lane.
+
+## Collatz
+
+- `fractal.params.collatz_transition_strength` -> `KernelParams.collatz_transition_strength` (float multiplier on the cosine transition term; hard range [0, 4], normal UI range [0, 2], default 1.0; visible when `fractal.view.fractal_type = collatz`)

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "contract_id": "pfc_collatz_transition_strength",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_collatz_transition_strength_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start from codex/parameter-functionality-campaign on a feature branch",
+    "add standalone collatz_transition_strength on the collatz lane",
+    "preserve the current Collatz formula at the default value 1.0",
+    "use no-mouse persistent runtime proof and avoid repeated viewer relaunch loops"
+  ],
+  "forbidden_operator_prompts": [
+    "change explaino_collatz authority in this slice",
+    "add collatz_transition_strength to explaino_all",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, or generated editors",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "collatz_transition_strength": 1.0,
+    "hard_range": "[0,4]",
+    "ui_range": "[0,2]",
+    "owner_lane": "collatz",
+    "runtime_or_public_path_proof": "required"
+  },
+  "forbidden_defaults": {
+    "explaino_all_owner_control": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "default_behavior_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_collatz_transition_strength.contract.json --out-json artifacts/validation/pfc_collatz_transition_strength_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_collatz_transition_strength_PHASED_PLAN.md --out-json artifacts/validation/pfc_collatz_transition_strength_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_collatz_transition_strength_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_collatz_schema --log artifacts/logs/pfc_collatz_schema.log --out-json artifacts/validation/pfc_collatz_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_collatz_sample --log artifacts/logs/pfc_collatz_sample.log --out-json artifacts/validation/pfc_collatz_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_collatz_full_native --log artifacts/logs/pfc_collatz_full_native.log --out-json artifacts/validation/pfc_collatz_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_collatz_runtime_publish --log artifacts/logs/pfc_collatz_runtime_publish.log --out-json artifacts/validation/pfc_collatz_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_parameter_functionality.py -q --junitxml artifacts/pytest/pfc_collatz_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Collatz transition strength contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_collatz_transition_strength_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Collatz transition strength hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_collatz_transition_strength_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}
