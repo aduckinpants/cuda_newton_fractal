@@ -12,7 +12,7 @@
 
 ## Current Phase
 
-Validation complete: the Explaino Nova warp/damping repair is landed with focused native, full native, published no-mouse runtime, descriptor CLI, code-quality, contract, plan-sync, whitespace, and hostile-audit evidence. Checkpoint, receipts, holder integration, push, and stale-plan cleanup remain.
+Closed: the Explaino Nova warp/damping repair is landed, checkpointed, receipted, pushed on the feature branch, integrated into `codex/parameter-functionality-campaign`, and covered by focused native, full native, published no-mouse runtime, descriptor CLI, code-quality, contract, plan-sync, whitespace, and hostile-audit evidence.
 
 ## Phase Checklist
 
@@ -27,7 +27,7 @@ Validation complete: the Explaino Nova warp/damping repair is landed with focuse
 - [x] Add native schema/descriptor/sample tests for Explaino Nova visibility, selector ownership, default parity, and non-default sensitivity.
 - [x] Add a no-mouse published-runtime proof that sets the repaired controls in one viewer process, keeps `explaino_nova` selected, and changes the rendered frame.
 - [x] Validate full/focused native/runtime rails, code quality, contract, plan sync, and hostile audit.
-- [ ] Checkpoint, write receipts, push feature branch, fast-forward sprint holder, push sprint holder, stale-plan grep, and verify clean tree.
+- [x] Checkpoint, write receipts, push feature branch, fast-forward sprint holder, push sprint holder, stale-plan grep, and verify clean tree.
 
 ## Owner Seams
 
@@ -84,7 +84,7 @@ Validation complete: the Explaino Nova warp/damping repair is landed with focuse
 - [done] Pass 1: classified hidden branch-dead rows and verified only the high-confidence Explaino Nova warp/damping rows were re-exposed.
 - [done] Pass 2: reviewed runtime and host-probe diffs as if the two paths diverged; both now apply Explaino Nova warp to the Nova `c` coordinate and damping to the Newton step scale.
 - [done] Pass 3: reviewed published-runtime proof as if the frame change came from selector churn, preview resolution churn, or a stale executable; the test asserts `current_fractal_type == "explaino_nova"`, `preview_min_scale == 1.0`, `render_pacing_preview_active is False`, consumed set-value writes, and runs after the runtime publish.
-- [done] Pass 4: final clean re-read after full validation found no further implementation defect; remaining work is workflow closure only.
+- [done] Pass 4: final clean re-read after full validation and holder integration found no further implementation defect or stale closeout text.
 
 ## Audit Findings
 
