@@ -444,6 +444,24 @@ UISchemaControl BuildJuliaFloatControl(
     return control;
 }
 
+UISchemaControl BuildPhoenixFloatControl(
+    const char* id,
+    const char* label,
+    const char* path) {
+    UISchemaControl control = MakeRangedParamControl(
+        id,
+        "drag_float",
+        label,
+        "float",
+        -1.0,
+        1.0,
+        0.01,
+        path,
+        json_min::Value{0.0});
+    SetVisibleForFractalTypes(&control, "phoenix,explaino_phoenix,explaino_joy,explaino_fold,explaino_bell,explaino_ripple,explaino_splice,explaino_vortex,explaino_tension");
+    return control;
+}
+
 UISchemaControl BuildMagnetBailoutControl() {
     UISchemaControl control = MakeRangedParamControl(
         "magnet_bailout",
@@ -547,6 +565,8 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildExplainoRationalEscapeDenominatorPowerControl(),
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
         BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
+        BuildPhoenixFloatControl("phoenix_p_real", "Phoenix p (real)", "fractal.params.phoenix_p_real"),
+        BuildPhoenixFloatControl("phoenix_p_imag", "Phoenix p (imag)", "fractal.params.phoenix_p_imag"),
         BuildMagnetFloatControl("magnet_seed_real", "Magnet Seed Real", "fractal.params.magnet_seed_real", -2.0, 2.0, 0.01, 0.0),
         BuildMagnetFloatControl("magnet_seed_imag", "Magnet Seed Imag", "fractal.params.magnet_seed_imag", -2.0, 2.0, 0.01, 0.0),
         BuildMagnetFloatControl("magnet_relaxation", "Magnet Relaxation", "fractal.params.magnet_relaxation", 0.05, 1.5, 0.01, 1.0),

@@ -989,6 +989,79 @@ void TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults() {
     CHECK("collatz transition strength changes SampleFractalPoints results", sawDifference);
 }
 
+void TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults() {
+    constexpr int N = 9;
+    Double2 coords[N] = {
+        MakeDouble2(-0.9, -0.5),
+        MakeDouble2(-0.45, -0.25),
+        MakeDouble2(0.0, -0.5),
+        MakeDouble2(0.35, -0.15),
+        MakeDouble2(0.6, 0.0),
+        MakeDouble2(-0.75, 0.2),
+        MakeDouble2(-0.25, 0.35),
+        MakeDouble2(0.1, 0.45),
+        MakeDouble2(0.55, 0.35),
+    };
+
+    RenderSettings render{};
+    ViewState canonicalView{};
+    ViewState explicitDefaultView{};
+    ViewState realActiveView{};
+    ViewState imagActiveView{};
+    KernelParams canonicalParams{};
+    KernelParams explicitDefaultParams{};
+    KernelParams realActiveParams{};
+    KernelParams imagActiveParams{};
+    MakeDefaults(FractalType::phoenix, canonicalView, canonicalParams, render);
+    MakeDefaults(FractalType::phoenix, explicitDefaultView, explicitDefaultParams, render);
+    MakeDefaults(FractalType::phoenix, realActiveView, realActiveParams, render);
+    MakeDefaults(FractalType::phoenix, imagActiveView, imagActiveParams, render);
+    const PhoenixStepCarrierSelectorDescriptor* phoenixCarrier = FindPhoenixStepCarrierSelectorDescriptor(FractalType::phoenix);
+    const float defaultPhoenixP = phoenixCarrier ? static_cast<float>(phoenixCarrier->default_value) : 0.0f;
+    canonicalParams.max_iter = 900;
+    explicitDefaultParams.max_iter = 900;
+    realActiveParams.max_iter = 900;
+    imagActiveParams.max_iter = 900;
+    canonicalParams.phoenix_p_real = defaultPhoenixP;
+    explicitDefaultParams.phoenix_p_real = defaultPhoenixP;
+    realActiveParams.phoenix_p_real = defaultPhoenixP;
+    imagActiveParams.phoenix_p_real = defaultPhoenixP;
+    canonicalParams.phoenix_p_imag = 0.0f;
+    explicitDefaultParams.phoenix_p_imag = 0.0f;
+    realActiveParams.phoenix_p_imag = 0.0f;
+    imagActiveParams.phoenix_p_imag = 0.0f;
+    realActiveParams.phoenix_p_real = 0.25f;
+    imagActiveParams.phoenix_p_imag = 0.35f;
+
+    FractalSampleResult canonicalResults[N]{};
+    FractalSampleResult explicitDefaultResults[N]{};
+    FractalSampleResult realActiveResults[N]{};
+    FractalSampleResult imagActiveResults[N]{};
+    const char* error = nullptr;
+    CHECK("phoenix canonical sample ok", SampleFractalPoints(coords, N, canonicalView, canonicalParams, render, canonicalResults, &error));
+    CHECK("phoenix explicit default sample ok", SampleFractalPoints(coords, N, explicitDefaultView, explicitDefaultParams, render, explicitDefaultResults, &error));
+    CHECK("phoenix active real-p sample ok", SampleFractalPoints(coords, N, realActiveView, realActiveParams, render, realActiveResults, &error));
+    CHECK("phoenix active imag-p sample ok", SampleFractalPoints(coords, N, imagActiveView, imagActiveParams, render, imagActiveResults, &error));
+
+    bool defaultParity = true;
+    bool sawRealDifference = false;
+    bool sawImagDifference = false;
+    for (int i = 0; i < N; ++i) {
+        if (!SameFractalSampleResult(canonicalResults[i], explicitDefaultResults[i])) {
+            defaultParity = false;
+        }
+        if (!SameFractalSampleResult(canonicalResults[i], realActiveResults[i])) {
+            sawRealDifference = true;
+        }
+        if (!SameFractalSampleResult(canonicalResults[i], imagActiveResults[i])) {
+            sawImagDifference = true;
+        }
+    }
+    CHECK("phoenix p default preserves canonical samples", defaultParity);
+    CHECK("phoenix p real changes SampleFractalPoints results", sawRealDifference);
+    CHECK("phoenix p imag changes SampleFractalPoints results", sawImagDifference);
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -1117,6 +1190,7 @@ int main() {
     TestExplainoLambdaPhaseStrengthControlsWarpedMap();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
+    TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

@@ -112,6 +112,19 @@ static bool IsJuliaVisibleControl(const UISchemaControl* control, const char* bi
         control->visible_if.value == "julia";
 }
 
+static bool IsPhoenixVisibleControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "in" &&
+        control->visible_if.path == "fractal.view.fractal_type" &&
+        ContainsCsvToken(control->visible_if.value, "phoenix") &&
+        ContainsCsvToken(control->visible_if.value, "explaino_phoenix") &&
+        !ContainsCsvToken(control->visible_if.value, "explaino_all");
+}
+
 static bool IsProjectionAndFlowVisibleControl(const UISchemaControl* control, const char* bindingPath) {
     return control &&
         control->has_binding &&
@@ -132,7 +145,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 21,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 23,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -377,6 +390,24 @@ static void TestSafeModeSchemaExposesJuliaControls() {
         "TestSafeModeSchemaExposesJuliaControls_Imag");
 }
 
+static void TestSafeModeSchemaExposesPhoenixControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesPhoenixControls_FractalPanelPresent");
+    if (!fractalPanel) return;
+
+    const UISchemaControl* real = FindControlById(*fractalPanel, "phoenix_p_real");
+    const UISchemaControl* imag = FindControlById(*fractalPanel, "phoenix_p_imag");
+    Check(IsPhoenixVisibleControl(real, "fractal.params.phoenix_p_real") &&
+            real->has_min && real->min == -1.0 && real->has_max && real->max == 1.0 &&
+            real->has_default && real->def.is_number() && real->def.as_number() == 0.0,
+        "TestSafeModeSchemaExposesPhoenixControls_Real");
+    Check(IsPhoenixVisibleControl(imag, "fractal.params.phoenix_p_imag") &&
+            imag->has_min && imag->min == -1.0 && imag->has_max && imag->max == 1.0 &&
+            imag->has_default && imag->def.is_number() && imag->def.as_number() == 0.0,
+        "TestSafeModeSchemaExposesPhoenixControls_Imag");
+}
+
 static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
@@ -412,6 +443,7 @@ int main() {
     TestSafeModeSchemaExposesMultibrotControls();
     TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls();
     TestSafeModeSchemaExposesJuliaControls();
+    TestSafeModeSchemaExposesPhoenixControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
 
     std::printf("test_safe_mode_schema: %d passed, %d failed\n", g_passed, g_failed);

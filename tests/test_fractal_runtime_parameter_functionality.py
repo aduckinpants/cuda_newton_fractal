@@ -52,6 +52,12 @@ def test_batch1_new_formula_controls_change_live_output_no_mouse(tmp_path: Path)
     collatz_state["params"]["color_grading"] = "escape_default"
     collatz_state_path = write_state_bundle(tmp_path / "collatz_transition_strength", collatz_state)
 
+    phoenix_state = _capture_state(exe_path, "phoenix")
+    phoenix_state["params"]["phoenix_p_real"] = 0.5667
+    phoenix_state["params"]["phoenix_p_imag"] = 0.0
+    phoenix_state["params"]["max_iter"] = 900
+    phoenix_state_path = write_state_bundle(tmp_path / "phoenix_parameterization", phoenix_state)
+
     nova_state = _capture_state(exe_path, "nova")
     nova_state["view"]["center_x"] = -0.5
     nova_state["view"]["center_y"] = 0.0
@@ -121,6 +127,32 @@ def test_batch1_new_formula_controls_change_live_output_no_mouse(tmp_path: Path)
             assert collatz_edited.get("set_value_consumed") is True
             assert isinstance(collatz_edited_hash, str) and collatz_edited_hash
             assert collatz_edited_hash != collatz_baseline_hash
+
+            phoenix_baseline = viewer.load_state_json(
+                phoenix_state_path,
+                expected_fractal_type="phoenix",
+                timeout_seconds=15.0,
+            )
+            phoenix_baseline_hash = phoenix_baseline.get("rendered_frame_hash")
+            assert isinstance(phoenix_baseline_hash, str) and phoenix_baseline_hash
+
+            phoenix_real_control = "fractal_control.phoenix_p_real.primary"
+            viewer.wait_for_control(phoenix_real_control, timeout_seconds=15.0)
+            phoenix_real_edited = viewer.set_control_value(phoenix_real_control, 0.25, timeout_seconds=15.0)
+            phoenix_real_hash = phoenix_real_edited.get("rendered_frame_hash")
+            assert phoenix_real_edited.get("current_fractal_type") == "phoenix"
+            assert phoenix_real_edited.get("set_value_consumed") is True
+            assert isinstance(phoenix_real_hash, str) and phoenix_real_hash
+            assert phoenix_real_hash != phoenix_baseline_hash
+
+            phoenix_imag_control = "fractal_control.phoenix_p_imag.primary"
+            viewer.wait_for_control(phoenix_imag_control, timeout_seconds=15.0)
+            phoenix_imag_edited = viewer.set_control_value(phoenix_imag_control, 0.35, timeout_seconds=15.0)
+            phoenix_imag_hash = phoenix_imag_edited.get("rendered_frame_hash")
+            assert phoenix_imag_edited.get("current_fractal_type") == "phoenix"
+            assert phoenix_imag_edited.get("set_value_consumed") is True
+            assert isinstance(phoenix_imag_hash, str) and phoenix_imag_hash
+            assert phoenix_imag_hash != phoenix_real_hash
 
             nova_baseline = viewer.load_state_json(
                 nova_state_path,

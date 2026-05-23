@@ -151,3 +151,5 @@
 - `ck:8976b022` 2026-05-22 22:53 UTC | score 96 — Parameter functionality campaign setup contract repaired: required validation commands now use parseable contract-proof evidence and validators are green.
 - `ck:c6814db7` 2026-05-22 23:02 UTC — session-start | branch=codex/pfc-collatz-transition-strength | head=a745eca | status=dirty | profile=runtime | intent=parameter functionality campaign slice 1 collatz transition strength
 - `ck:c6814db7` 2026-05-23 00:42 UTC | score 97 — Closed PFC Collatz transition strength: owner-lane control added with default parity, sample/runtime sensitivity, no-mouse proof, full native, and hostile audit.
+- `ck:e9ae289e` 2026-05-23 00:51 UTC — session-start | branch=codex/pfc-phoenix-parameterization | head=694e4b8 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 2 phoenix parameterization
+- `ck:e9ae289e` 2026-05-23 01:42 UTC | score 97 — Closed PFC Phoenix parameterization: existing phoenix_p runtime authority proven, safe-mode controls restored, sample/runtime no-mouse proof added, full native and hostile audit passed.

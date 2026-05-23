@@ -61,6 +61,7 @@ if /I "%FOCUSED_TEST%"=="test_viewer_render_pacing" goto focused_test_viewer_ren
 if /I "%FOCUSED_TEST%"=="test_sample_tier_resolver" goto focused_test_sample_tier_resolver
 if /I "%FOCUSED_TEST%"=="test_fractal_renderer" goto focused_test_fractal_renderer
 if /I "%FOCUSED_TEST%"=="test_fractal_sample_kernel" goto focused_test_fractal_sample_kernel
+if /I "%FOCUSED_TEST%"=="test_safe_mode_schema" goto focused_test_safe_mode_schema
 if /I "%FOCUSED_TEST%"=="test_explaino_counterfactual_repair" goto focused_test_explaino_counterfactual_repair
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_workbench_ui" goto focused_test_generic_equation_pack_workbench_ui
 if /I "%FOCUSED_TEST%"=="test_generic_equation_pack_live" goto focused_test_generic_equation_pack_live
@@ -667,6 +668,16 @@ call :run_test "%TESTROOT%\test_fractal_derived_fields.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_schema_binding.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_fractal_runtime_validation.exe" || exit /b 1
 call :run_test "%TESTROOT%\test_ui_schema.exe" || exit /b 1
+call :run_test "%TESTROOT%\test_safe_mode_schema.exe" || exit /b 1
+exit /b 0
+
+:focused_test_safe_mode_schema
+cl /nologo /EHsc /MD /std:c++17 /O2 /I. /I.\src /I.\third_party\imgui ^
+  .\src\json_min.cpp .\src\ui_schema.cpp .\src\schema_binding.cpp .\src\explaino_seed.cpp .\src\safe_mode_schema.cpp ^
+  .\third_party\imgui\imgui.cpp .\third_party\imgui\imgui_draw.cpp .\third_party\imgui\imgui_tables.cpp .\third_party\imgui\imgui_widgets.cpp ^
+  .\tests\test_safe_mode_schema.cpp ^
+  /Fe:"%TESTROOT%\test_safe_mode_schema.exe"
+if errorlevel 1 exit /b 1
 call :run_test "%TESTROOT%\test_safe_mode_schema.exe" || exit /b 1
 exit /b 0
 
