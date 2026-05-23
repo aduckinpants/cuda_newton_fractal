@@ -9,7 +9,7 @@
 
 ## Current Phase
 
-Phase 5 is open: closure validators, checkpoint, receipts, push, and holder integration are next.
+Closed: seed responsiveness repair landed at `40faf61`, was integrated into holder at `56dea4b`, and Step 9 remains next from `codex/parameter-functionality-campaign`.
 
 ## Phase Checklist
 
@@ -22,7 +22,7 @@ Phase 5 is open: closure validators, checkpoint, receipts, push, and holder inte
 - [x] Implement the narrowest default/authority repair.
 - [x] Add native sample/default tests proving Seed affects `explaino_julia` in seeded and custom constant modes.
 - [x] Add or update no-mouse published-runtime proof for the visible Seed slider on `explaino_julia`.
-- [ ] Validate focused native rails, runtime publish, no-mouse runtime proof, full native helper suite if focused rails pass, hostile audit, receipts, push, and holder integration. Focused/native/runtime rails are green; hostile-audit validators, receipts, push, and holder integration remain.
+- [x] Validate focused native rails, runtime publish, no-mouse runtime proof, full native helper suite if focused rails pass, hostile audit, receipts, push, and holder integration.
 
 ## Owner Seams
 
@@ -56,7 +56,7 @@ Phase 5 is open: closure validators, checkpoint, receipts, push, and holder inte
 - Runtime publish: `pfc_explaino_seed_responsiveness_repair_runtime_publish` passed.
 - No-mouse runtime proof: `pfc_explaino_seed_responsiveness_repair_runtime_pytest` passed.
 - Full native helper suite: `pfc_explaino_seed_responsiveness_repair_full_native` passed.
-- Hostile audit findings: two real findings recorded below; repaired-state clean re-read complete; final validators pending.
+- Hostile audit findings: two real findings recorded below; repaired-state clean re-read, contract validators, receipts, push, and holder integration completed.
 
 ## Hostile Audit
 
