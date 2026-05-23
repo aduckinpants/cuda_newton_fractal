@@ -83,9 +83,51 @@ int main() {
 
     {
         EscapeTimeDirectState<Cx> state{{1.0f, 2.0f}, {3.0f, 4.0f}, {0.0f, 0.0f}};
+        StepEscapeTimeDirectState(
+            FractalType::celtic_mandelbrot,
+            3.0f,
+            0.0f,
+            3,
+            {0.0f, 0.0f},
+            {0.0f, 0.0f},
+            1.0f,
+            0.5f,
+            1.0f,
+            0.0f,
+            1.0f,
+            &state);
+        if (!NearlyEqualCx(state.z, {0.0f, 8.0f})) {
+            std::cerr << "Celtic abs mix 0 should expose the unfolded quadratic real term\n";
+            return 1;
+        }
+    }
+
+    {
+        EscapeTimeDirectState<Cx> state{{-1.0f, 2.0f}, {3.0f, 4.0f}, {0.0f, 0.0f}};
         StepEscapeTimeDirectState(FractalType::perpendicular_burning_ship, 3.0f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &state);
         if (!NearlyEqualCx(state.z, {0.0f, 8.0f})) {
             std::cerr << "Perpendicular Burning Ship step should absolute only the real factor in the imaginary term\n";
+            return 1;
+        }
+    }
+
+    {
+        EscapeTimeDirectState<Cx> state{{-1.0f, 2.0f}, {3.0f, 4.0f}, {0.0f, 0.0f}};
+        StepEscapeTimeDirectState(
+            FractalType::perpendicular_burning_ship,
+            3.0f,
+            0.0f,
+            3,
+            {0.0f, 0.0f},
+            {0.0f, 0.0f},
+            1.0f,
+            0.5f,
+            1.0f,
+            1.0f,
+            0.0f,
+            &state);
+        if (!NearlyEqualCx(state.z, {0.0f, 0.0f})) {
+            std::cerr << "Perpendicular fold mix 0 should expose the signed real factor in the imaginary term\n";
             return 1;
         }
     }
@@ -95,6 +137,27 @@ int main() {
         StepEscapeTimeDirectState(FractalType::burning_ship, 3.0f, 3, {0.0f, 0.0f}, {0.0f, 0.0f}, &state);
         if (!NearlyEqualCx(state.z, {0.0f, 8.0f})) {
             std::cerr << "Burning Ship step should square the abs-components form before adding c\n";
+            return 1;
+        }
+    }
+
+    {
+        EscapeTimeDirectState<Cx> state{{1.0f, -2.0f}, {3.0f, 4.0f}, {0.0f, 0.0f}};
+        StepEscapeTimeDirectState(
+            FractalType::burning_ship,
+            3.0f,
+            0.0f,
+            3,
+            {0.0f, 0.0f},
+            {0.0f, 0.0f},
+            1.0f,
+            0.5f,
+            0.0f,
+            1.0f,
+            1.0f,
+            &state);
+        if (!NearlyEqualCx(state.z, {0.0f, 0.0f})) {
+            std::cerr << "Burning Ship fold mix 0 should expose the unfolded quadratic step\n";
             return 1;
         }
     }

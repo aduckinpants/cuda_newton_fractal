@@ -616,6 +616,9 @@ std::string BuildStateJson(
     js << "    \"multibrot_power_imag\": " << static_cast<double>(params.multibrot_power_imag) << ",\n";
     js << "    \"collatz_transition_strength\": " << static_cast<double>(params.collatz_transition_strength) << ",\n";
     js << "    \"spider_feedback\": " << static_cast<double>(params.spider_feedback) << ",\n";
+    js << "    \"burning_ship_fold_mix\": " << static_cast<double>(params.burning_ship_fold_mix) << ",\n";
+    js << "    \"celtic_abs_mix\": " << static_cast<double>(params.celtic_abs_mix) << ",\n";
+    js << "    \"perpendicular_fold_mix\": " << static_cast<double>(params.perpendicular_fold_mix) << ",\n";
     js << "    \"explaino_rational_escape_denominator_power\": " << params.explaino_rational_escape_denominator_power << ",\n";
     js << "    \"lambda_real\": " << static_cast<double>(params.lambda_real) << ",\n";
     js << "    \"lambda_imag\": " << static_cast<double>(params.lambda_imag) << ",\n";

@@ -4673,6 +4673,9 @@ int main() {
         params.color_explaino_palette_colorfulness = 0.8f;
         params.collatz_transition_strength = 0.625f;
         params.spider_feedback = 0.875f;
+        params.burning_ship_fold_mix = 0.25f;
+        params.celtic_abs_mix = 0.5f;
+        params.perpendicular_fold_mix = 0.75f;
         params.explaino_rational_escape_denominator_power = 5;
         if (!SetDraftRowNumberParam(&draft.lanes[0].rows[0], "signal.scale", preciseSmoothScale) ||
             !SetDraftRowNumberParam(&draft.lanes[3].rows[0], "grade.exposure", preciseGradeExposure)) {
@@ -4723,6 +4726,9 @@ int main() {
             serializedState.find("\"poly_coeffs_b\"") == std::string::npos ||
             serializedState.find("\"collatz_transition_strength\": 0.625") == std::string::npos ||
             serializedState.find("\"spider_feedback\": 0.875") == std::string::npos ||
+            serializedState.find("\"burning_ship_fold_mix\": 0.25") == std::string::npos ||
+            serializedState.find("\"celtic_abs_mix\": 0.5") == std::string::npos ||
+            serializedState.find("\"perpendicular_fold_mix\": 0.75") == std::string::npos ||
             serializedState.find("\"explaino_rational_escape_denominator_power\": 5") == std::string::npos ||
             serializedState.find("\"blend_weight\": 0.34999999403953552") == std::string::npos ||
             serializedState.find("\"blend_mode\": \"normal\"") == std::string::npos ||
@@ -4796,6 +4802,9 @@ int main() {
         }
         if (!NearlyEqual(roundTripParams.collatz_transition_strength, 0.625f, 1.0e-6) ||
             !NearlyEqual(roundTripParams.spider_feedback, 0.875f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.burning_ship_fold_mix, 0.25f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.celtic_abs_mix, 0.5f, 1.0e-6) ||
+            !NearlyEqual(roundTripParams.perpendicular_fold_mix, 0.75f, 1.0e-6) ||
             roundTripParams.explaino_rational_escape_denominator_power != 5) {
             std::cerr << "Expected capture-backed serialization regression to reload formula controls from emitted state.json\n";
             return 1;

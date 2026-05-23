@@ -2907,6 +2907,9 @@
                 phoenixP,
                 static_cast<float>(1),
                 params.spider_feedback,
+                params.burning_ship_fold_mix,
+                params.celtic_abs_mix,
+                params.perpendicular_fold_mix,
                 &state);
             z = state.z;
 
@@ -3087,6 +3090,9 @@
                         phoenixPD,
                         (double)params.magnet_relaxation,
                         (double)params.spider_feedback,
+                        (double)params.burning_ship_fold_mix,
+                        (double)params.celtic_abs_mix,
+                        (double)params.perpendicular_fold_mix,
                         &state);
                     if (ft == FractalType::magnet) {
                         const double residualSquaredD = EscapeTimeDirectMagnetResidualSquared(state.z);
@@ -3128,6 +3134,9 @@
                         phoenixP,
                         params.magnet_relaxation,
                         params.spider_feedback,
+                        params.burning_ship_fold_mix,
+                        params.celtic_abs_mix,
+                        params.perpendicular_fold_mix,
                         &state);
                     if (ft == FractalType::magnet) {
                         const float residualSquared = EscapeTimeDirectMagnetResidualSquared(state.z);

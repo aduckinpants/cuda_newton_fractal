@@ -185,6 +185,9 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.multibrot_power_imag = 0.0f;
     params.lambda_real = 2.9685855f;
     params.lambda_imag = -0.27446103f;
+    params.burning_ship_fold_mix = 1.0f;
+    params.celtic_abs_mix = 1.0f;
+    params.perpendicular_fold_mix = 1.0f;
     params.julia_c_real = -0.7f;
     params.julia_c_imag = 0.27015f;
     params.magnet_seed_real = 0.0f;

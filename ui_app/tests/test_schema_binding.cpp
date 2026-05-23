@@ -847,6 +847,9 @@ bool ValidateVisibleControlMatrix() {
         {"lambda_imag", FractalType::lambda_map, "fractal.params.lambda_imag", "float"},
         {"multibrot_power_float", FractalType::multibrot, "fractal.params.multibrot_power_float", "float"},
         {"multibrot_power_imag", FractalType::multibrot, "fractal.params.multibrot_power_imag", "float"},
+        {"burning_ship_fold_mix", FractalType::burning_ship, "fractal.params.burning_ship_fold_mix", "float"},
+        {"celtic_abs_mix", FractalType::celtic_mandelbrot, "fractal.params.celtic_abs_mix", "float"},
+        {"perpendicular_fold_mix", FractalType::perpendicular_burning_ship, "fractal.params.perpendicular_fold_mix", "float"},
         {"multicorn_power", FractalType::multicorn, "fractal.params.multibrot_power", "int"},
         {"mcmullen_preset", FractalType::mcmullen, "fractal.params.mcmullen_preset", "enum"},
         {"mcmullen_m", FractalType::mcmullen, "fractal.params.mcmullen_m", "int"},
@@ -1017,7 +1020,16 @@ bool ValidateFixedAndPresetSurfaceClassifications() {
                         bindingPath == "fractal.params.spider_feedback") ||
                     (fixedLane == FractalType::collatz &&
                         controlId == "collatz_transition_strength" &&
-                        bindingPath == "fractal.params.collatz_transition_strength");
+                        bindingPath == "fractal.params.collatz_transition_strength") ||
+                    (fixedLane == FractalType::burning_ship &&
+                        controlId == "burning_ship_fold_mix" &&
+                        bindingPath == "fractal.params.burning_ship_fold_mix") ||
+                    (fixedLane == FractalType::celtic_mandelbrot &&
+                        controlId == "celtic_abs_mix" &&
+                        bindingPath == "fractal.params.celtic_abs_mix") ||
+                    (fixedLane == FractalType::perpendicular_burning_ship &&
+                        controlId == "perpendicular_fold_mix" &&
+                        bindingPath == "fractal.params.perpendicular_fold_mix");
                 if (!isExpectedOwnerControl && !IsGlobalFixedFormulaBindingPath(bindingPath)) {
                     const char* fractalId = FractalTypeId(fixedLane);
                     std::cerr << "Fixed-formula lane " << (fractalId ? fractalId : "<unknown>")
@@ -1086,6 +1098,9 @@ bool ValidateAnimationTargetVisibilityMirrorsControls() {
         {"mix", "explaino_mix"},
         {"nova_alpha", "nova_alpha"},
         {"phoenix_p_real", "phoenix_p_real"},
+        {"burning_ship_fold_mix", "burning_ship_fold_mix"},
+        {"celtic_abs_mix", "celtic_abs_mix"},
+        {"perpendicular_fold_mix", "perpendicular_fold_mix"},
         {"multibrot_power", "multibrot_power_float"},
         {"julia_c_real", "julia_c_real"},
         {"julia_c_imag", "julia_c_imag"},

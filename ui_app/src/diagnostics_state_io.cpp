@@ -1923,6 +1923,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double multibrotPowerImag = static_cast<double>(nextParams.multibrot_power_imag);
     double collatzTransitionStrength = static_cast<double>(nextParams.collatz_transition_strength);
     double spiderFeedback = static_cast<double>(nextParams.spider_feedback);
+    double burningShipFoldMix = static_cast<double>(nextParams.burning_ship_fold_mix);
+    double celticAbsMix = static_cast<double>(nextParams.celtic_abs_mix);
+    double perpendicularFoldMix = static_cast<double>(nextParams.perpendicular_fold_mix);
     int explainoRationalEscapeDenominatorPower = nextParams.explaino_rational_escape_denominator_power;
     double lambdaReal = static_cast<double>(nextParams.lambda_real);
     double lambdaImag = static_cast<double>(nextParams.lambda_imag);
@@ -1979,6 +1982,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_imag", &multibrotPowerImag, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "collatz_transition_strength", &collatzTransitionStrength, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "spider_feedback", &spiderFeedback, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "burning_ship_fold_mix", &burningShipFoldMix, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "celtic_abs_mix", &celticAbsMix, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "perpendicular_fold_mix", &perpendicularFoldMix, nullptr, outError)) return false;
         if (const json_min::Value* rationalDenominatorPowerValue = paramsObject->get("explaino_rational_escape_denominator_power")) {
             if (!rationalDenominatorPowerValue->is_number() ||
                 !std::isfinite(rationalDenominatorPowerValue->as_number()) ||
@@ -2085,6 +2091,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.multibrot_power_imag = static_cast<float>(multibrotPowerImag);
         nextParams.collatz_transition_strength = static_cast<float>(collatzTransitionStrength);
         nextParams.spider_feedback = static_cast<float>(spiderFeedback);
+        nextParams.burning_ship_fold_mix = static_cast<float>(burningShipFoldMix);
+        nextParams.celtic_abs_mix = static_cast<float>(celticAbsMix);
+        nextParams.perpendicular_fold_mix = static_cast<float>(perpendicularFoldMix);
         nextParams.explaino_rational_escape_denominator_power = explainoRationalEscapeDenominatorPower;
         nextParams.lambda_real = static_cast<float>(lambdaReal);
         nextParams.lambda_imag = static_cast<float>(lambdaImag);

@@ -205,6 +205,27 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("spider_feedback must be finite and in [-2,2]", outError);
         }
     }
+    if (view.fractal_type == FractalType::burning_ship) {
+        if (!std::isfinite(params.burning_ship_fold_mix) ||
+            params.burning_ship_fold_mix < 0.0f ||
+            params.burning_ship_fold_mix > 1.0f) {
+            return FailFractalRuntimeValidation("burning_ship_fold_mix must be finite and in [0,1]", outError);
+        }
+    }
+    if (view.fractal_type == FractalType::celtic_mandelbrot) {
+        if (!std::isfinite(params.celtic_abs_mix) ||
+            params.celtic_abs_mix < 0.0f ||
+            params.celtic_abs_mix > 1.0f) {
+            return FailFractalRuntimeValidation("celtic_abs_mix must be finite and in [0,1]", outError);
+        }
+    }
+    if (view.fractal_type == FractalType::perpendicular_burning_ship) {
+        if (!std::isfinite(params.perpendicular_fold_mix) ||
+            params.perpendicular_fold_mix < 0.0f ||
+            params.perpendicular_fold_mix > 1.0f) {
+            return FailFractalRuntimeValidation("perpendicular_fold_mix must be finite and in [0,1]", outError);
+        }
+    }
     if (view.fractal_type == FractalType::explaino_rational_escape) {
         if (params.explaino_rational_escape_denominator_power < 1 ||
             params.explaino_rational_escape_denominator_power > 6) {

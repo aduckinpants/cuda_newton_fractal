@@ -145,7 +145,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 23,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 26,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -408,6 +408,40 @@ static void TestSafeModeSchemaExposesPhoenixControls() {
         "TestSafeModeSchemaExposesPhoenixControls_Imag");
 }
 
+static void TestSafeModeSchemaExposesFixedFamilyFoldMixControls() {
+    UISchema safeMode = BuildSafeModeSchema();
+    const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
+    Check(fractalPanel != nullptr, "TestSafeModeSchemaExposesFixedFamilyFoldMixControls_FractalPanelPresent");
+    if (!fractalPanel) return;
+
+    struct FoldMixCase {
+        const char* controlId;
+        const char* bindingPath;
+        const char* fractalTypeId;
+    };
+    const FoldMixCase cases[] = {
+        {"burning_ship_fold_mix", "fractal.params.burning_ship_fold_mix", "burning_ship"},
+        {"celtic_abs_mix", "fractal.params.celtic_abs_mix", "celtic_mandelbrot"},
+        {"perpendicular_fold_mix", "fractal.params.perpendicular_fold_mix", "perpendicular_burning_ship"},
+    };
+    for (const FoldMixCase& testCase : cases) {
+        const UISchemaControl* control = FindControlById(*fractalPanel, testCase.controlId);
+        Check(control != nullptr &&
+                control->has_binding &&
+                control->binding.path == testCase.bindingPath &&
+                control->has_visible_if &&
+                control->visible_if.op == "eq" &&
+                control->visible_if.path == "fractal.view.fractal_type" &&
+                control->visible_if.value == testCase.fractalTypeId &&
+                control->has_min && control->min == 0.0 &&
+                control->has_max && control->max == 1.0 &&
+                control->has_default &&
+                control->def.is_number() &&
+                control->def.as_number() == 1.0,
+            testCase.controlId);
+    }
+}
+
 static void TestSafeModeSchemaExposesProjectionAndFlowControls() {
     UISchema safeMode = BuildSafeModeSchema();
     const UISchemaPanel* fractalPanel = FindPanelById(safeMode, "fractal");
@@ -444,6 +478,7 @@ int main() {
     TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls();
     TestSafeModeSchemaExposesJuliaControls();
     TestSafeModeSchemaExposesPhoenixControls();
+    TestSafeModeSchemaExposesFixedFamilyFoldMixControls();
     TestSafeModeSchemaExposesProjectionAndFlowControls();
 
     std::printf("test_safe_mode_schema: %d passed, %d failed\n", g_passed, g_failed);

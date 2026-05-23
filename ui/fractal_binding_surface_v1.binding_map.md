@@ -73,3 +73,9 @@ All bindings are under `fractal.*`.
 ## Collatz
 
 - `fractal.params.collatz_transition_strength` -> `KernelParams.collatz_transition_strength` (float multiplier on the cosine transition term; hard range [0, 4], normal UI range [0, 2], default 1.0; visible when `fractal.view.fractal_type = collatz`)
+
+## Fixed-Family Fold Mix
+
+- `fractal.params.burning_ship_fold_mix` -> `KernelParams.burning_ship_fold_mix` (float mix from unfolded quadratic step to canonical Burning Ship abs-component fold; range [0, 1], default 1.0; visible when `fractal.view.fractal_type = burning_ship`)
+- `fractal.params.celtic_abs_mix` -> `KernelParams.celtic_abs_mix` (float mix from signed quadratic real term to canonical Celtic absolute real term; range [0, 1], default 1.0; visible when `fractal.view.fractal_type = celtic_mandelbrot`)
+- `fractal.params.perpendicular_fold_mix` -> `KernelParams.perpendicular_fold_mix` (float mix from signed real factor to canonical Perpendicular Burning Ship folded real factor; range [0, 1], default 1.0; visible when `fractal.view.fractal_type = perpendicular_burning_ship`)

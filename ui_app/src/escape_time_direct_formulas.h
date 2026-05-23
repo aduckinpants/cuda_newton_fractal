@@ -72,6 +72,11 @@ ESCAPE_TIME_DIRECT_HD inline Scalar EscapeTimeDirectClamp(Scalar value, Scalar l
     return value < lo ? lo : (value > hi ? hi : value);
 }
 
+template <typename Scalar>
+ESCAPE_TIME_DIRECT_HD inline Scalar EscapeTimeDirectMix(Scalar left, Scalar right, Scalar mix) {
+    return left + (right - left) * mix;
+}
+
 template <typename Complex>
 ESCAPE_TIME_DIRECT_HD inline auto EscapeTimeDirectAbs2(Complex value) -> decltype(value.x * value.x + value.y * value.y) {
     return value.x * value.x + value.y * value.y;
@@ -194,6 +199,9 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
     Complex phoenixP,
     Scalar magnetRelaxation,
     Scalar spiderFeedback,
+    Scalar burningShipFoldMix,
+    Scalar celticAbsMix,
+    Scalar perpendicularFoldMix,
     EscapeTimeDirectState<Complex>* ioState) {
     if (!ioState) return;
 
@@ -209,14 +217,22 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
         const Real feedback = EscapeTimeDirectClamp(static_cast<Real>(spiderFeedback), static_cast<Real>(-2), static_cast<Real>(2));
         c = EscapeTimeDirectAdd(EscapeTimeDirectScale(c, feedback), z);
     } else if (fractalType == FractalType::celtic_mandelbrot) {
-        const Complex z2{EscapeTimeDirectAbs(z.x * z.x - z.y * z.y), static_cast<Real>(2) * z.x * z.y};
+        const Real mix = EscapeTimeDirectClamp(static_cast<Real>(celticAbsMix), static_cast<Real>(0), static_cast<Real>(1));
+        const Real realTerm = z.x * z.x - z.y * z.y;
+        const Complex z2{EscapeTimeDirectMix(realTerm, EscapeTimeDirectAbs(realTerm), mix), static_cast<Real>(2) * z.x * z.y};
         z = EscapeTimeDirectAdd(z2, c);
     } else if (fractalType == FractalType::perpendicular_burning_ship) {
-        const Complex z2{z.x * z.x - z.y * z.y, static_cast<Real>(2) * EscapeTimeDirectAbs(z.x) * z.y};
+        const Real mix = EscapeTimeDirectClamp(static_cast<Real>(perpendicularFoldMix), static_cast<Real>(0), static_cast<Real>(1));
+        const Real foldedX = EscapeTimeDirectMix(z.x, EscapeTimeDirectAbs(z.x), mix);
+        const Complex z2{z.x * z.x - z.y * z.y, static_cast<Real>(2) * foldedX * z.y};
         z = EscapeTimeDirectAdd(z2, c);
     } else if (fractalType == FractalType::burning_ship) {
+        const Real mix = EscapeTimeDirectClamp(static_cast<Real>(burningShipFoldMix), static_cast<Real>(0), static_cast<Real>(1));
         const Complex absZ = EscapeTimeDirectAbsComponents(z);
-        z = EscapeTimeDirectAdd(EscapeTimeDirectMul(absZ, absZ), c);
+        const Complex foldedZ{
+            EscapeTimeDirectMix(z.x, absZ.x, mix),
+            EscapeTimeDirectMix(z.y, absZ.y, mix)};
+        z = EscapeTimeDirectAdd(EscapeTimeDirectMul(foldedZ, foldedZ), c);
     } else if (fractalType == FractalType::multibrot) {
         z = EscapeTimeDirectAdd(EscapeTimeDirectPowComplexPrincipal(z, static_cast<Real>(multibrotPowerFloat), static_cast<Real>(multibrotPowerImag)), c);
     } else if (fractalType == FractalType::multicorn) {
@@ -264,6 +280,9 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
         phoenixP,
         static_cast<Scalar>(1),
         static_cast<Scalar>(0.5),
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(1),
         ioState);
 }
 
@@ -284,6 +303,9 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
         phoenixP,
         static_cast<Scalar>(1),
         static_cast<Scalar>(0.5),
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(1),
         ioState);
 }
 
@@ -305,6 +327,9 @@ ESCAPE_TIME_DIRECT_HD inline void StepEscapeTimeDirectState(
         phoenixP,
         magnetRelaxation,
         static_cast<Scalar>(0.5),
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(1),
+        static_cast<Scalar>(1),
         ioState);
 }
 

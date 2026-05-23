@@ -938,6 +938,9 @@ bool SamplePoint(const ProbeState& state,
                 phoenixP,
                 params.magnet_relaxation,
                 params.spider_feedback,
+                params.burning_ship_fold_mix,
+                params.celtic_abs_mix,
+                params.perpendicular_fold_mix,
                 &state);
             z = state.z;
             if (!IsFiniteCx(state.z) || !IsFiniteCx(state.z_prev)) {

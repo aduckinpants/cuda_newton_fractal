@@ -58,6 +58,48 @@ int main() {
     }
 
     {
+        struct FoldMixCase {
+            FractalType fractalType;
+            float KernelParams::*field;
+            const char* expectedError;
+        };
+        const FoldMixCase cases[] = {
+            {FractalType::burning_ship, &KernelParams::burning_ship_fold_mix, "burning_ship_fold_mix must be finite and in [0,1]"},
+            {FractalType::celtic_mandelbrot, &KernelParams::celtic_abs_mix, "celtic_abs_mix must be finite and in [0,1]"},
+            {FractalType::perpendicular_burning_ship, &KernelParams::perpendicular_fold_mix, "perpendicular_fold_mix must be finite and in [0,1]"},
+        };
+        for (const FoldMixCase& testCase : cases) {
+            ViewState view{};
+            KernelParams params{};
+            std::string error;
+            view.fractal_type = testCase.fractalType;
+            params.coloring_mode = ColoringMode::smooth_escape;
+            params.*(testCase.field) = 0.0f;
+            if (!ValidateFractalRuntimeState(view, params, &error)) {
+                std::cerr << "Expected fixed-family fold/mix validation to accept lower bound: " << error << "\n";
+                return 1;
+            }
+            params.*(testCase.field) = 1.0f;
+            if (!ValidateFractalRuntimeState(view, params, &error)) {
+                std::cerr << "Expected fixed-family fold/mix validation to accept default upper bound: " << error << "\n";
+                return 1;
+            }
+            params.*(testCase.field) = -0.01f;
+            error.clear();
+            if (ValidateFractalRuntimeState(view, params, &error) || error != testCase.expectedError) {
+                std::cerr << "Expected fixed-family fold/mix validation to reject below range\n";
+                return 1;
+            }
+            params.*(testCase.field) = 1.01f;
+            error.clear();
+            if (ValidateFractalRuntimeState(view, params, &error) || error != testCase.expectedError) {
+                std::cerr << "Expected fixed-family fold/mix validation to reject above range\n";
+                return 1;
+            }
+        }
+    }
+
+    {
         ViewState view{};
         KernelParams params{};
         std::string error;

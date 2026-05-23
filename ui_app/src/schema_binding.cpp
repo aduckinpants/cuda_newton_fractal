@@ -1047,6 +1047,9 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.multibrot_power_imag") { *outPtr = &params->multibrot_power_imag; return true; }
         if (path == "fractal.params.collatz_transition_strength") { *outPtr = &params->collatz_transition_strength; return true; }
         if (path == "fractal.params.spider_feedback") { *outPtr = &params->spider_feedback; return true; }
+        if (path == "fractal.params.burning_ship_fold_mix") { *outPtr = &params->burning_ship_fold_mix; return true; }
+        if (path == "fractal.params.celtic_abs_mix") { *outPtr = &params->celtic_abs_mix; return true; }
+        if (path == "fractal.params.perpendicular_fold_mix") { *outPtr = &params->perpendicular_fold_mix; return true; }
         if (path == "fractal.params.multibrot_power") { *outPtr = &params->multibrot_power_float; return true; }
         if (path == "fractal.params.color_saturation") { *outPtr = &params->color_saturation; return true; }
         if (path == "fractal.params.color_contrast") { *outPtr = &params->color_contrast; return true; }

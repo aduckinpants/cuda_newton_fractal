@@ -388,6 +388,25 @@ UISchemaControl BuildCollatzTransitionStrengthControl() {
     return control;
 }
 
+UISchemaControl BuildFixedFamilyFoldMixControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    const char* fractalTypeId) {
+    UISchemaControl control = MakeRangedParamControl(
+        id,
+        "slider_float",
+        label,
+        "float",
+        0.0,
+        1.0,
+        0.01,
+        path,
+        json_min::Value{1.0});
+    SetVisibleForFractalType(&control, fractalTypeId);
+    return control;
+}
+
 UISchemaControl BuildExplainoRationalEscapeDenominatorPowerControl() {
     UISchemaControl control = MakeRangedParamControl(
         "explaino_rational_escape_denominator_power",
@@ -540,14 +559,8 @@ UISchemaPanel BuildSafeModeViewPanel() {
     return panel;
 }
 
-UISchemaPanel BuildSafeModeFractalPanel() {
-    UISchemaPanel panel;
-    panel.id = "fractal";
-    panel.label = "Fractal (Safe Mode)";
-    panel.order = 20;
-    panel.has_order = true;
-
-    panel.controls = {
+std::vector<UISchemaControl> BuildSafeModeFractalControls() {
+    return {
         MakeSoftMinParamControl("max_iter", "slider_int", "Max Iterations", "int", 1.0, 1.0, 5000.0, 1.0, "fractal.params.max_iter", json_min::Value{500.0}),
         MakeRangedParamControl("exposure", "slider_float", "Exposure", "float", 0.1, 5.0, 0.01, "fractal.params.exposure", json_min::Value{1.0}),
         BuildCounterfactualPairRootFamilyControl(),
@@ -562,6 +575,9 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildMultibrotImagPowerControl(),
         BuildCollatzTransitionStrengthControl(),
         BuildSpiderFeedbackControl(),
+        BuildFixedFamilyFoldMixControl("burning_ship_fold_mix", "Burning Ship Fold Mix", "fractal.params.burning_ship_fold_mix", "burning_ship"),
+        BuildFixedFamilyFoldMixControl("celtic_abs_mix", "Celtic Abs Mix", "fractal.params.celtic_abs_mix", "celtic_mandelbrot"),
+        BuildFixedFamilyFoldMixControl("perpendicular_fold_mix", "Perpendicular Fold Mix", "fractal.params.perpendicular_fold_mix", "perpendicular_burning_ship"),
         BuildExplainoRationalEscapeDenominatorPowerControl(),
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
         BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
@@ -572,6 +588,15 @@ UISchemaPanel BuildSafeModeFractalPanel() {
         BuildMagnetFloatControl("magnet_relaxation", "Magnet Relaxation", "fractal.params.magnet_relaxation", 0.05, 1.5, 0.01, 1.0),
         BuildMagnetBailoutControl(),
     };
+}
+
+UISchemaPanel BuildSafeModeFractalPanel() {
+    UISchemaPanel panel;
+    panel.id = "fractal";
+    panel.label = "Fractal (Safe Mode)";
+    panel.order = 20;
+    panel.has_order = true;
+    panel.controls = BuildSafeModeFractalControls();
     return panel;
 }
 

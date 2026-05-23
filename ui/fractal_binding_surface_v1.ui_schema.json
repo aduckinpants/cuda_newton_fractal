@@ -219,6 +219,9 @@
             { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
             { "id": "collatz_transition_strength", "label": "Collatz Transition Strength", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "collatz" } },
             { "id": "spider_feedback", "label": "Spider Feedback", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "spider" } },
+            { "id": "burning_ship_fold_mix", "label": "Burning Ship Fold Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "burning_ship" } },
+            { "id": "celtic_abs_mix", "label": "Celtic Abs Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "celtic_mandelbrot" } },
+            { "id": "perpendicular_fold_mix", "label": "Perpendicular Fold Mix", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "perpendicular_burning_ship" } },
             { "id": "momentum_beta", "label": "Momentum Beta", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_inertial" } },
             { "id": "joy_coupling", "label": "Joy Coupling", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_joy" } },
             { "id": "fold_coupling", "label": "Fold Coupling", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_fold" } },
@@ -293,6 +296,36 @@
           "binding": { "kind": "param", "path": "fractal.params.spider_feedback" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "spider" },
           "help": "Feedback scale in c_{n+1} = feedback * c_n + z_{n+1}. The default 0.5 preserves the canonical Spider formula."
+        },
+        {
+          "id": "burning_ship_fold_mix",
+          "type": "slider_float",
+          "label": "Burning Ship Fold Mix",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.burning_ship_fold_mix" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "burning_ship" },
+          "help": "Mixes between the unfolded quadratic step and the canonical Burning Ship absolute-component fold. The default 1.0 preserves the current formula."
+        },
+        {
+          "id": "celtic_abs_mix",
+          "type": "slider_float",
+          "label": "Celtic Abs Mix",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.celtic_abs_mix" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "celtic_mandelbrot" },
+          "help": "Mixes the quadratic real term toward the canonical Celtic absolute-value real term. The default 1.0 preserves the current formula."
+        },
+        {
+          "id": "perpendicular_fold_mix",
+          "type": "slider_float",
+          "label": "Perpendicular Fold Mix",
+          "value_type": "float",
+          "min": 0.0, "max": 1.0, "step": 0.01, "default": 1.0,
+          "binding": { "kind": "param", "path": "fractal.params.perpendicular_fold_mix" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "perpendicular_burning_ship" },
+          "help": "Mixes the imaginary-term real factor toward the canonical Perpendicular Burning Ship folded real factor. The default 1.0 preserves the current formula."
         },
         {
           "id": "explaino_rational_escape_denominator_power",

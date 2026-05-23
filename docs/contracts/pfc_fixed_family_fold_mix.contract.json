@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "contract_id": "pfc_fixed_family_fold_mix",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_fixed_family_fold_mix_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start from codex/parameter-functionality-campaign after the Phoenix feature branch is integrated",
+    "add default-preserving fold/mix controls for burning_ship, celtic_mandelbrot, and perpendicular_burning_ship",
+    "keep controls owner-lane only and off explaino_all",
+    "use no-mouse persistent runtime proof and avoid repeated viewer relaunch loops"
+  ],
+  "forbidden_operator_prompts": [
+    "add fixed-family controls to explaino_all",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, or generated editors",
+    "replace the renderer or redesign the escape-time engine",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "burning_ship_fold_mix": 1.0,
+    "celtic_abs_mix": 1.0,
+    "perpendicular_fold_mix": 1.0,
+    "hard_range": "[0,1]",
+    "owner_lane": "owning fixed-family lane only",
+    "runtime_or_public_path_proof": "required"
+  },
+  "forbidden_defaults": {
+    "explaino_all_owner_control": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "default_behavior_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_fixed_family_fold_mix.contract.json --out-json artifacts/validation/pfc_fixed_family_fold_mix_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_fixed_family_fold_mix_PHASED_PLAN.md --out-json artifacts/validation/pfc_fixed_family_fold_mix_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_fixed_family_fold_mix_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_fold_mix_schema --log artifacts/logs/pfc_fold_mix_schema.log --out-json artifacts/validation/pfc_fold_mix_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_fold_mix_safe_mode --log artifacts/logs/pfc_fold_mix_safe_mode.log --out-json artifacts/validation/pfc_fold_mix_safe_mode.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_safe_mode_schema",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_fold_mix_sample --log artifacts/logs/pfc_fold_mix_sample.log --out-json artifacts/validation/pfc_fold_mix_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_fold_mix_full_native --log artifacts/logs/pfc_fold_mix_full_native.log --out-json artifacts/validation/pfc_fold_mix_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_fold_mix_runtime_publish --log artifacts/logs/pfc_fold_mix_runtime_publish.log --out-json artifacts/validation/pfc_fold_mix_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_parameter_functionality.py -q --junitxml artifacts/pytest/pfc_fold_mix_runtime.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The fixed-family fold/mix contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_fixed_family_fold_mix_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The fixed-family fold/mix hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_fixed_family_fold_mix_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -1062,6 +1062,71 @@ void TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults() {
     CHECK("phoenix p imag changes SampleFractalPoints results", sawImagDifference);
 }
 
+void TestFixedFamilyFoldMixControlsAffectSamplesAndPreserveDefaults() {
+    constexpr int N = 9;
+    Double2 coords[N] = {
+        MakeDouble2(-1.1, -0.7),
+        MakeDouble2(-0.8, -0.35),
+        MakeDouble2(-0.45, -0.2),
+        MakeDouble2(-0.2, 0.1),
+        MakeDouble2(0.0, -0.55),
+        MakeDouble2(0.25, 0.2),
+        MakeDouble2(0.45, -0.35),
+        MakeDouble2(0.75, 0.15),
+        MakeDouble2(1.0, -0.5),
+    };
+
+    struct FoldMixCase {
+        FractalType fractalType;
+        float KernelParams::*field;
+        const char* label;
+    };
+    const FoldMixCase cases[] = {
+        {FractalType::burning_ship, &KernelParams::burning_ship_fold_mix, "burning ship fold mix"},
+        {FractalType::celtic_mandelbrot, &KernelParams::celtic_abs_mix, "celtic abs mix"},
+        {FractalType::perpendicular_burning_ship, &KernelParams::perpendicular_fold_mix, "perpendicular fold mix"},
+    };
+
+    for (const FoldMixCase& testCase : cases) {
+        RenderSettings render{};
+        ViewState canonicalView{};
+        ViewState explicitDefaultView{};
+        ViewState activeView{};
+        KernelParams canonicalParams{};
+        KernelParams explicitDefaultParams{};
+        KernelParams activeParams{};
+        MakeDefaults(testCase.fractalType, canonicalView, canonicalParams, render);
+        MakeDefaults(testCase.fractalType, explicitDefaultView, explicitDefaultParams, render);
+        MakeDefaults(testCase.fractalType, activeView, activeParams, render);
+        canonicalParams.max_iter = 900;
+        explicitDefaultParams.max_iter = 900;
+        activeParams.max_iter = 900;
+        explicitDefaultParams.*(testCase.field) = 1.0f;
+        activeParams.*(testCase.field) = 0.25f;
+
+        FractalSampleResult canonicalResults[N]{};
+        FractalSampleResult explicitDefaultResults[N]{};
+        FractalSampleResult activeResults[N]{};
+        const char* error = nullptr;
+        CHECK(testCase.label, SampleFractalPoints(coords, N, canonicalView, canonicalParams, render, canonicalResults, &error));
+        CHECK(testCase.label, SampleFractalPoints(coords, N, explicitDefaultView, explicitDefaultParams, render, explicitDefaultResults, &error));
+        CHECK(testCase.label, SampleFractalPoints(coords, N, activeView, activeParams, render, activeResults, &error));
+
+        bool defaultParity = true;
+        bool sawDifference = false;
+        for (int i = 0; i < N; ++i) {
+            if (!SameFractalSampleResult(canonicalResults[i], explicitDefaultResults[i])) {
+                defaultParity = false;
+            }
+            if (!SameFractalSampleResult(canonicalResults[i], activeResults[i])) {
+                sawDifference = true;
+            }
+        }
+        CHECK("fixed-family fold mix default preserves canonical samples", defaultParity);
+        CHECK("fixed-family fold mix changes SampleFractalPoints results", sawDifference);
+    }
+}
+
 // Test 4: Widened evidence projects back to legacy semantics.
 void TestWidenedEvidenceProjectsToLegacyResults() {
     ViewState view{};
@@ -1191,6 +1256,7 @@ int main() {
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();
+    TestFixedFamilyFoldMixControlsAffectSamplesAndPreserveDefaults();
     TestWidenedEvidenceProjectsToLegacyResults();
     TestCrossValidation();
     TestEdgeCases();

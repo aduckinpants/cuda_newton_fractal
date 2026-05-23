@@ -377,6 +377,9 @@ struct KernelParams {
     float multibrot_power_imag{0.0f};
     float collatz_transition_strength{1.0f};
     float spider_feedback{0.5f};
+    float burning_ship_fold_mix{1.0f};
+    float celtic_abs_mix{1.0f};
+    float perpendicular_fold_mix{1.0f};
     int explaino_rational_escape_denominator_power{3};
     float lambda_real{2.9685855f};
     float lambda_imag{-0.27446103f};

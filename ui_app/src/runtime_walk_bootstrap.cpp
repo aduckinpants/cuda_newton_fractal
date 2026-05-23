@@ -655,6 +655,9 @@ std::string BuildSynthesizedStateJson(const ViewState& view, const KernelParams&
     js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
     js << "    \"multibrot_power_float\": " << static_cast<double>(params.multibrot_power_float) << ",\n";
     js << "    \"multibrot_power_imag\": " << static_cast<double>(params.multibrot_power_imag) << ",\n";
+    js << "    \"burning_ship_fold_mix\": " << static_cast<double>(params.burning_ship_fold_mix) << ",\n";
+    js << "    \"celtic_abs_mix\": " << static_cast<double>(params.celtic_abs_mix) << ",\n";
+    js << "    \"perpendicular_fold_mix\": " << static_cast<double>(params.perpendicular_fold_mix) << ",\n";
     js << "    \"lambda_real\": " << static_cast<double>(params.lambda_real) << ",\n";
     js << "    \"lambda_imag\": " << static_cast<double>(params.lambda_imag) << ",\n";
     js << "    \"explaino_seed\": " << params.explaino_seed << ",\n";
