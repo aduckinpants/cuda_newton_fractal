@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "contract_id": "deferred_backlog_reprioritization",
+  "feature_id": "deferred_backlog_reprioritization",
+  "workflow_type": "workflow_only",
+  "plan_path": "docs/notes/deferred_backlog_reprioritization_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/notes/deferred_backlog_reprioritization_PHASED_PLAN.md",
+    "docs/contracts/deferred_backlog_reprioritization.contract.json",
+    "DEFERRED_THREADS.md",
+    "KNOWN_ISSUES.md",
+    "spec_intake/_STATUS.md",
+    "HANDOFF_LOG.md",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "review all deferred issues",
+    "reprioritize by difficulty-to-reward ratio",
+    "compare current planning against work left on the floor",
+    "update repo documentation only"
+  ],
+  "forbidden_operator_prompts": [
+    "change product code or tests",
+    "change Color Pipeline behavior",
+    "change FPS pacing policy",
+    "change capture finding behavior",
+    "add new fractal types or controls",
+    "claim unresolved implementation work is complete without current proof"
+  ],
+  "required_defaults": {
+    "scope": "documentation_only",
+    "posture": "repo_truth_over_chat_memory",
+    "priority_axis": "difficulty_to_reward"
+  },
+  "forbidden_defaults": {
+    "product_mutation": "forbidden",
+    "runtime_publish": "not_required_for_docs_only",
+    "physical_mouse": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/deferred_backlog_reprioritization.contract.json --out-json artifacts/validation/deferred_backlog_reprioritization_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/notes/deferred_backlog_reprioritization_PHASED_PLAN.md --out-json artifacts/validation/deferred_backlog_reprioritization_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/deferred_backlog_reprioritization_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label deferred_backlog_diff_check --log artifacts/logs/deferred_backlog_diff_check.log --out-json artifacts/validation/deferred_backlog_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The deferred backlog reprioritization contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deferred_backlog_reprioritization_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The deferred backlog reprioritization hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/deferred_backlog_reprioritization_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

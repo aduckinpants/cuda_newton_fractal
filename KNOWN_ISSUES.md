@@ -3,9 +3,11 @@
 Catalogued issues for the CUDA fractal viewer clone repo.
 Priority tiers: **P0** (blocks demo quality), **P1** (materially degrades experience), **P2** (nice to fix).
 
+Last reconciled: 2026-05-23 on `codex/parameter-functionality-campaign` at `55be8c8`.
+
 ---
 
-## ~~P0 — Nova violates its own escape-time contract~~ RESOLVED
+## ~~P0 - Nova violates its own escape-time contract~~ RESOLVED
 
 **Status:** fixed (common-fractal wave + Nova repair slice)
 
@@ -15,32 +17,32 @@ Probe coverage confirms Nova is sampleable and escape-time classified.
 
 ---
 
-## P0 — Dive depth is shallow and untuned
+## P0 - Dive depth is shallow and untuned
 
 **Status:** open
 **Area:** camera / auto-dive
 
-The auto-dive loop (`ApplyAutoDivePerFrame`) applies a fixed per-frame zoom increment of `1.0 + 0.002 * speed`. At the default `dive_speed = 1.0` the viewer zooms in very slowly and the resulting depth never reaches visually dramatic levels in a reasonable session.
+The auto-dive loop (`ApplyAutoDivePerFrame`) still applies a conservative flat zoom model. It is not dt-aware, does not accelerate with depth, and does not steer toward interesting regions.
 
 Root causes:
-- The zoom-per-frame constant (0.002) was chosen conservatively during initial bringup.
+- The zoom-per-frame constant was chosen conservatively during initial bringup.
 - There is no acceleration curve; the dive rate does not increase as zoom deepens.
 - There is no dt-aware timing; the increment is per-frame, so dive speed depends on framerate.
 - There is no per-fractal tuning of dive targets or interesting-region steering.
-- The camera behavior enum (`complexity`, `orbit`, `entropy`) is wired to the schema but only `complexity` is implemented, and its implementation is the same flat zoom increment.
+- The camera behavior enum (`complexity`, `orbit`, `entropy`) is wired to the schema but still lacks real distinct behavior.
 
 Potential fixes:
 1. Make `dlog2` proportional to `io.DeltaTime` so dive speed is framerate-independent.
-2. Add an acceleration ramp: e.g. `dlog2 = base_rate * (1.0 + 0.1 * log2_zoom)`.
-3. Set per-fractal dive-speed defaults (escape-time fractals benefit from deeper zoom than root-finders).
-4. Implement the `complexity` camera behavior properly: steer toward high-iteration-count regions, not just straight zoom.
+2. Add an acceleration ramp, bounded by stability and usability tests.
+3. Set per-fractal dive-speed defaults and interesting-region presets.
+4. Implement one real behavior mode first, preferably `complexity`, with deterministic proof around high-iteration or high-variance regions.
 
-**File:** `ui_app/src/main.cpp` — `ApplyAutoDivePerFrame()`
-**Depends on:** view_hp_sync, fractal_types.h
+**File:** `ui_app/src/main.cpp` - `ApplyAutoDivePerFrame()`
+**Depends on:** view preset/catalog work, `fractal_types.h`
 
 ---
 
-## P1 — Smooth-escape coloring needs per-type tuning
+## P1 - Smooth-escape coloring needs per-type tuning
 
 **Status:** partially addressed (cyclic palette landed in 34b7024)
 **Area:** renderer / coloring
@@ -50,113 +52,142 @@ The 5-stop cyclic palette is a large improvement over the flat ramp, but:
 - Interior (non-escaped) pixels are solid black regardless of fractal type.
 - No histogram equalization or adaptive normalization; at very deep zoom the visible band range collapses.
 
-**File:** `ui_app/src/fractal_renderer.cu` — escape-time coloring block
+**File:** `ui_app/src/fractal_renderer.cu` - escape-time coloring block
 
 ---
 
-## P1 — No view preset dropdown
+## P1 - No view preset dropdown
 
-**Status:** open (idea only, no prior sketch found)
-**Area:** UI / schema
+**Status:** open
+**Area:** UI / schema / catalog
 
-When switching fractal types, each type lands on a single hardcoded canonical view. There is no dropdown to pick from multiple interesting locations (e.g. Seahorse Valley, Elephant Valley, Mini-brot for Mandelbrot alone).
+When switching fractal types, each type lands on a single canonical view. There is no dropdown to pick from multiple interesting locations such as Seahorse Valley, Elephant Valley, Mini-brot, Phoenix bifurcation regions, Magnet examples, or Explaino family showcase views.
 
 Design direction:
-- A `view_preset` combo in the View panel, populated from a small JSON catalog per fractal type.
+- A `view_preset` combo in the View panel, populated from a small catalog per fractal type.
 - Selecting a preset applies center + zoom + optional rotation.
-- "Custom" entry preserves the current user-navigated view.
+- `Custom` preserves the current user-navigated view.
+- This pairs naturally with the categorized fractal selector; it should happen before adding many more catalog families.
 
-**File:** `ui_app/src/fractal_derived_fields.cpp` — `ApplyFractalViewPresetDefaults()`
+**File:** `ui_app/src/fractal_derived_fields.cpp` - `ApplyFractalViewPresetDefaults()`
 
 ---
 
-## P1 — Camera behavior modes are stubs
+## P1 - Camera behavior modes are stubs
 
 **Status:** open
 **Area:** camera
 
-`CameraBehavior::complexity`, `orbit`, `entropy` are selectable in the UI but all three execute the same flat zoom increment. The original design intent was:
-- `complexity` — steer toward high-iteration regions (minibrots, spiral arms).
-- `orbit` — follow a periodic orbit path.
-- `entropy` — seek visually complex regions based on render-buffer variance.
+`CameraBehavior::complexity`, `orbit`, and `entropy` are selectable in the UI, but they do not yet implement distinct user-visible behavior.
 
-None of these have real implementations yet.
+Original design intent:
+- `complexity` - steer toward high-iteration or high-detail regions.
+- `orbit` - follow a periodic orbit path.
+- `entropy` - seek visually complex regions based on render-buffer variance.
 
-**File:** `ui_app/src/main.cpp` — `ApplyAutoDivePerFrame()`
+**File:** `ui_app/src/main.cpp` - `ApplyAutoDivePerFrame()`
 
 ---
 
-## P1 — Advanced color reset and mode controls can desync live color state
+## P1 - Viewer responsiveness lacks end-to-end latency proof
+
+**Status:** open measurement follow-up, not a current code-change license
+**Area:** pacing / runtime harness
+
+Later pacing/capture work repaired several concrete bugs: unknown-timing downscale, f32 over-aggression, f64/camera-center preview activation, nonzero live render timing, focused pacing helper target, and Capture Finding f64 output. The remaining gap is proof quality: current tests prove timing fields, preview dimensions, and settle behavior, but they do not fully measure end-to-end input-to-frame latency or whole-desktop responsiveness under extreme workloads.
+
+Next correct step:
+- Add a persistent no-mouse telemetry harness that records input mutation time, render start/end, report publish time, preview scale, target/live dimensions, and settle timing in one viewer process.
+- Do not change pacing policy again until that harness shows the actual failure mode.
+
+**Files:** `ui_app/src/viewer_render_pacing.*`, `ui_app/src/main.cpp`, `tests/test_fractal_runtime_resolution_pacing.py`
+
+---
+
+## P1 - Advanced color reset and mode controls can desync live color state
 
 **Status:** resolved by `ck:80387857`
 **Area:** advanced color / UI / reset semantics
 
 Resolution summary:
-- `Reset All` now restores the Color-panel saturation, contrast, and tint defaults through the same shared preset authority that already resets the widened programmable color owners.
-- While the advanced color window is open, the simple `Coloring Mode` and `Grading` combos are now disabled so the advanced editor owns the live color path instead of fighting the legacy dropdown seam.
-- The reported `smooth_escape_ramp` no-op symptom was not reproducible after those state-ownership repairs, and the existing smooth-escape runtime regressions stayed green without any separate renderer math change.
-
-Owning seams touched by the fix:
-- `ui_app/src/main.cpp` — reset-all dispatch and the legacy `coloring_mode` UI path
-- `ui_app/src/fractal_derived_fields.cpp` — shared color default authority used by reset and preset application
-- `ui_app/src/color_pipeline_window.h` — draft/live adoption, lane selection, and advanced-color import/apply behavior
-- `ui_app/tests/test_runtime_reset.cpp` and `ui_app/tests/test_schema_binding.cpp` — focused regressions for the reset/default seam and the live control-ownership seam
+- `Reset All` restores Color-panel saturation, contrast, and tint defaults through the shared preset authority.
+- While the advanced color window is open, simple `Coloring Mode` and `Grading` combos are disabled so the advanced editor owns the live color path.
+- Existing smooth-escape runtime regressions stayed green without a renderer math change.
 
 Checkpoint: `ck:80387857`
 
-**Files:** `ui_app/src/main.cpp`, `ui_app/src/fractal_derived_fields.cpp`, `ui_app/src/color_pipeline_window.h`, `ui_app/tests/test_runtime_reset.cpp`, `ui_app/tests/test_schema_binding.cpp`
-
 ---
 
-## P2 — Perturbation deep zoom only for Mandelbrot / Julia
+## P2 - Perturbation deep zoom only for Mandelbrot / Julia
 
 **Status:** open
-**Area:** renderer
+**Area:** renderer / precision
 
-The perturbation reference-orbit path is implemented only for `Mandelbrot` and `Julia`. Other escape-time families (Burning Ship, Multibrot, Phoenix) lose precision at deep zoom because they run in float32.
+The perturbation reference-orbit path is implemented only for `Mandelbrot` and `Julia`. Other escape-time families such as Burning Ship, Multibrot, Phoenix, and Magnet still need recurrence-specific precision work before deep zoom can be trusted.
 
-**File:** `ui_app/src/fractal_renderer.cu` — perturbation block
+**File:** `ui_app/src/fractal_renderer.cu` - perturbation block
 
 ---
 
-## ~~P2 — Phoenix parameterization is one-shot~~ RESOLVED
+## ~~P2 - Phoenix parameterization is one-shot~~ RESOLVED
 
 **Status:** resolved (parameter functionality campaign)
 **Area:** presets / schema / runtime proof
 
-Phoenix now exposes `phoenix_p_real` and `phoenix_p_imag` as runtime-backed controls and the no-mouse parameter proof campaign covers the visible control path. Future work may still add named Phoenix presets, but the old "single hardcoded p" control-surface bug is closed.
-
-**Files:** `ui/fractal_binding_surface_v1.ui_schema.json`, `ui_app/src/fractal_sample_device.inl`, `tests/test_fractal_runtime_parameter_functionality.py`
+Phoenix now exposes `phoenix_p_real` and `phoenix_p_imag` as runtime-backed controls and the no-mouse parameter proof campaign covers the visible control path. Future work may still add named Phoenix presets, but the old single-hardcoded-`p` control-surface bug is closed.
 
 ---
 
-## P2 — Diagnostics capture is a single rolling bundle
+## P2 - Diagnostics capture is a single rolling bundle
 
 **Status:** open
 **Area:** tooling
 
-Headless `--capture-diagnostic` always writes to `runtime/diagnostics/last/`. Concurrent or rapid sequential captures overwrite each other. A proper solution would timestamp each bundle or accept an `--out-dir` override.
+Headless `--capture-diagnostic` always writes to `runtime/diagnostics/last/`. Concurrent or rapid sequential captures overwrite each other. A proper solution should timestamp each bundle or accept an explicit `--out-dir` override.
 
 **File:** `ui_app/src/diagnostics_capture.cpp`
 
 ---
 
-## P2 — Sweep mode combined-seed fix live validation completed
+## P2 - Lens SDF downsample/control truth is unresolved
 
-**Status:** resolved (helper tests green and live sweep regression now covers motion plus Space-pause behavior)
-**Area:** sweep viewer
+**Status:** open
+**Area:** Lens SDF / control surface
 
-The sweep-mode seed path now has both focused headless coverage and a live runtime regression. `ui_app/tests/test_viewer_sweep.cpp` pins combined-seed application plus pause/step semantics, and `tests/test_fractal_runtime_sweep_pause.py` verifies that the live viewer image changes while the sweep is running and becomes stable after a Space-key pause.
+The deferred Lens SDF follow-up still needs a truth decision for `lens.downsample`: either wire it as a real render-path control with proof, hide it, or remove it until behavior exists. Do not leave it as a visible ambiguous control.
 
-**Files:** `ui_app/src/main.cpp`, `ui_app/src/viewer_sweep.cpp`, `tests/test_fractal_runtime_sweep_pause.py`
+**Files:** `ui_app/src/lens_sdf.cpp`, Lens SDF schema/binding surfaces
 
 ---
 
-## ~~P2 — Live GUI sweep regression test is fragile~~ RESOLVED
+## P2 - K4 low-tuning findings remain polish items
+
+**Status:** open polish backlog
+**Area:** defaults / visual tuning
+
+`spec_intake/_STATUS.md` still records low-priority tuning findings:
+- Collatz RGBA fast-escape pixels can render black.
+- Some escape types have 3-12% max-iter exhaustion in the neither band.
+- Nova / Explaino-Nova and Lambda / Explaino-Lambda defaults can be visually degenerate or low-interest.
+
+These are not current parameter-authority bugs, but they are good low-risk polish candidates after view presets and color tuning are organized.
+
+---
+
+## P2 - Sweep mode combined-seed fix live validation completed
+
+**Status:** resolved (helper tests green and live sweep regression covers motion plus Space-pause behavior)
+**Area:** sweep viewer
+
+The sweep-mode seed path now has focused headless coverage and a live runtime regression.
+
+---
+
+## ~~P2 - Live GUI sweep regression test is fragile~~ RESOLVED
 
 **Status:** resolved (2026-04-12 live-runtime proof hardening)
 **Area:** testing
 
-`tests/test_fractal_runtime_sweep_pause.py::test_runtime_sweep_changes_live_view_and_space_pauses_it` no longer relies on the stale `>1.0` whole-window diff threshold. The live harness now waits for a visible non-zero client area, retries until the window produces a real frame, and compares adjacent live intervals against the observed runtime signal. The headless sweep coverage in `ui_app/tests/test_viewer_sweep.cpp` remains the primary contract test, and the live runtime regression is now a trustworthy companion proof rather than a known-fragile threshold check.
+`tests/test_fractal_runtime_sweep_pause.py::test_runtime_sweep_changes_live_view_and_space_pauses_it` no longer relies on the stale `>1.0` whole-window diff threshold. The live harness waits for a visible non-zero client area and compares against the observed runtime signal.
 
 Residual constraint: the live GUI runtime tests are still Windows-only and require a visible desktop session. That is an environment contract, not an open product bug.

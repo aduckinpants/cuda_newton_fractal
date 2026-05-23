@@ -5,230 +5,215 @@ Purpose: keep intentionally paused threads visible so they do not vanish between
 Active specs: see `spec_intake/_STATUS.md` for the current planning surface.
 Agent protocol: see `AGENT_WORKING_PROTOCOL.md` for working rules.
 
+Last reconciled: 2026-05-23 on `codex/parameter-functionality-campaign` at `55be8c8`.
+
+## Current Difficulty / Reward Priority
+
+This table is the current backlog order after reconciling the older deferred notes, the parameter functionality campaign, the capture/pacing repairs, the generic equation-pack pause README, and the modular Magnet/toolkit plan. It is planning guidance, not permission to skip a new plan/contract for implementation.
+
+| Rank | Work thread | Difficulty | Reward | Current next gate |
+|------|-------------|------------|--------|-------------------|
+| 1 | Backlog truth refresh | Low | High trust | This docs-only slice reconciles stale planning text. |
+| 2 | Diagnostics capture output paths | Low | Medium | Add timestamped or explicit `--out-dir` bundles so captures stop overwriting `runtime/diagnostics/last`. |
+| 3 | Lens SDF control truth | Low/Medium | Medium | Classify `lens.downsample` as real, hidden, or removed with focused proof. |
+| 4 | Categorized selector + view presets | Medium | High | Organize the growing catalog and add per-fractal view preset choices before more catalog growth. |
+| 5 | Camera/dive behavior | Medium | High | Make auto-dive dt-aware and implement at least one real behavior mode instead of flat zoom stubs. |
+| 6 | Smooth-escape/color tuning | Medium | Medium/High | Per-family color tuning and interior treatment, without reopening Color Pipeline architecture broadly. |
+| 7 | Viewer responsiveness telemetry follow-up | Medium/High | High | If pacing is still painful, measure end-to-end input-to-frame latency before another pacing policy change. |
+| 8 | Generic equation-pack productization | Medium/High | High strategic | Persistence first, then catalog picker, authoring UX, Salticid adapter, performance profiling. |
+| 9 | Callable/transpiler handoff | High | High strategic | Finish the handoff boundary without pretending dynamic backend execution already exists. |
+| 10 | Catalog/family authority refactor | High | High | Move remaining family defaults, visibility, and validation out of brittle monolithic paths before larger families. |
+| 11 | Perturbation deep-zoom expansion | High | Very high | Start with Mandelbrot/Multibrot recurrence proof and precision tests; do not generalize blindly. |
+| 12 | New substrate families | Very high | High | Lyapunov, IFS, attractor density, 3D DE/raymarch, and explanation-state families each need their own rendering/state contracts. |
+
 ## 1. Viewer Responsiveness / Adaptive Render Recovery
 
-Status: deferred on 2026-04-06
+Status: deferred follow-up; older April text is superseded by later capture/pacing repairs.
 
-Why paused:
-- A viewport-capped gradual recovery experiment caused obvious stutter on normal Explaino panning.
-- The live viewer path was reverted to the previous stepped-preview plus single settle-render behavior.
+Current shipped state:
+- Interaction preview scaling and one full-quality settle render remain.
+- Later capture/pacing work made preview activation measurement-gated instead of unknown-timing aggressive.
+- Slow measured interaction has no-mouse proof that it enters preview and then settles.
+- Capture Finding now preserves visible aspect/camera at high resolution and forces standard/f64 output.
+- The focused pacing helper target exists: `ui_app/build_tests_vsdevcmd.cmd test_viewer_render_pacing`.
 
-Current safe state:
-- interaction-time preview scaling remains
-- one full-quality settle render after debounce remains
-- live width/height telemetry remains visible in the viewer UI
-- Capture Finding rerenders at 4096x4096 instead of reusing the last live buffer
+Remaining risk:
+- The existing proof focuses on render dimensions, timing reports, and no-mouse camera/control edits. It does not fully prove whole-PC responsiveness or end-to-end input-to-frame latency under every extreme f64 workload.
 
 Resume constraints:
-- do not change live pacing policy again without a focused runtime regression or telemetry harness for smoothness
-- prefer instrumentation and measurement before policy changes
-- keep capture-quality work separate from live-view responsiveness work
+- Do not tune live pacing policy by feel.
+- Add instrumentation first if the user reports remaining responsiveness pain: capture input mutation time, render start/end, preview scale, target size, actual size, and UI report latency in one persistent viewer session.
+- Keep capture-quality rendering separate from live-view responsiveness work.
 
 Key references:
-- ui_app/src/viewer_render_pacing.h
-- ui_app/src/viewer_render_pacing.cpp
-- ui_app/src/main.cpp
-- ui_app/tests/test_viewer_render_pacing.cpp
+- `ui_app/src/viewer_render_pacing.h`
+- `ui_app/src/viewer_render_pacing.cpp`
+- `ui_app/src/main.cpp`
+- `ui_app/tests/test_viewer_render_pacing.cpp`
+- `tests/test_fractal_runtime_resolution_pacing.py`
+- `docs/contracts/fps_debounce_measurement_PHASED_PLAN.md`
+- `docs/notes/capture_finding_aspect_camera_PHASED_PLAN.md`
 
 ## 2. Explaino Design-Space Deep Dive
 
-Status: deferred on 2026-04-06
+Status: deferred research / later family-growth planning.
 
-Why paused:
-- The observation lane and the family-growth lane should stay separate.
-- Near-term priority is recognizable catalog growth without walking into a CUDA structure wall.
+Current shipped state:
+- The core Explaino family expansion, selector/control repairs, `explaino_all` registry-axis behavior, parameter authority work through Step 9, and generated/internal editor authority are closed in the current parameter campaign chain.
+- The immediate slider-authority campaign no longer owns new Explaino design-space research.
+
+Remaining work:
+- Future Explaino research should start from a concrete hypothesis or sample_fn/sidecar proof surface, not from broad historical archaeology.
+- FITS/invariance/joy/LUT/atlas research remains outside this repo's immediate implementation path unless a fresh plan pulls one bounded thread in.
 
 Resume constraints:
-- use Salticid / CLI / broker probing first where possible
-- keep joy/LUT/atlas work separate from new `FractalType` growth
-- do not treat the legacy Explaino LUT as a new fractal type
+- Use Salticid / CLI / broker probing first where possible.
+- Keep observation lanes separate from new `FractalType` growth.
+- Do not treat legacy Explaino LUT or old sidecar narratives as shipped product behavior.
 
 Planning sources:
-- spec_intake/ExplainoDesignSpace_DeepDive_2026-04-05.md
-- spec_intake/ExplainoFamilyExpansion_V1_SpecIntake.md
-
-Note: All 4 Explaino solver variants now landed (ripple, splice, vortex, tension).
-The next Explaino work is the CUDA sample_fn extraction + Optimization Staging +
-Reflexive sidecar initiative — see active specs in _STATUS.md.
+- `spec_intake/ExplainoDesignSpace_DeepDive_2026-04-05.md`
+- `spec_intake/ExplainoFamilyExpansion_V1_SpecIntake.md`
+- `docs/contracts/parameter_functionality_campaign_PHASED_PLAN.md`
 
 ## 3. Common Fractal Catalog Expansion + 2-Layer Dropdown
 
-Status: queued, not started
+Status: partially shipped; remaining work is mostly selector/view-preset product polish.
 
-User goals recorded for the next thread:
-- make the fractal chooser a 2-layer / categorized UI
-- change startup default to baseline `explaino` with `joy_basins` coloring (the current "Explaino joy" surface), not a new `explaino_joy` enum
-- add more recognizable/common fractals without forcing a premature major renderer rewrite
+Shipped since the original deferred note:
+- Spider and Collatz exploration controls were added through the parameter functionality campaign.
+- Celtic Mandelbrot, Burning Ship, and Perpendicular Burning Ship fold/mix controls were added.
+- Magnet Type I shipped as the first modular fractal-toolkit slice with explicit controls and proof.
+- Multibrot real/complex exponent work shipped earlier in the QoL branch.
 
-Recommended next safe wave for the current 2D single-pass substrate:
-- Spider
-- Celtic Mandelbrot
-- Perpendicular Burning Ship
-- one preset-driven Magnet family only if the parameter surface stays explicit and bounded
+Remaining high-reward work:
+- Make the fractal chooser easier to use as the catalog grows: grouped/categorized selector, clearer naming, and a default landing path that is intentional.
+- Add a `view_preset` style control/catalog so each fractal has multiple interesting starting views instead of one hardcoded canonical view.
+- Decide whether startup should default to baseline `explaino` with `joy_basins` coloring, as originally requested, or remain current behavior. Do not slip that into unrelated work.
 
-Requested but not safe in the same bounded wave:
-- Sierpinski gasket / carpet and Apollonian-style gaskets: these want an IFS / geometry contract, not just another complex-plane switch
-- Menger sponge and Mandelbulb: these are 3D DE/raymarch work with a different camera, normal, and shading contract
+Still not safe as a small catalog wave:
+- Sierpinski gasket / carpet and Apollonian-style gaskets need an IFS / geometry contract.
+- Menger sponge and Mandelbulb need 3D DE/raymarch camera, normal, lighting, and performance contracts.
 
 Planning sources:
-- spec_intake/CommonFractalCatalog_Deferred_2026-04-06.md
-- spec_intake/FractalTypeDropdown_and_MultiFractalKernel_SpecIntake.md
-- spec_intake/FractalCatalog_WaveTwo_SpecIntake.md
-
-Stop rule:
-- do at most one bounded catalog wave before the CUDA refactor thread below
+- `spec_intake/CommonFractalCatalog_Deferred_2026-04-06.md`
+- `spec_intake/FractalTypeDropdown_and_MultiFractalKernel_SpecIntake.md`
+- `spec_intake/FractalCatalog_WaveTwo_SpecIntake.md`
+- `docs/notes/fractal_toolkit_modular_catalog_magnet_wave_PHASED_PLAN.md`
 
 ## 4. CUDA Catalog Refactor Before Break-Wall
 
-Status: partially complete (escape-time and specialized formula extraction landed),
-        remaining work queued after active CUDA sample_fn initiative
-
-Problem:
-- the fractal renderer switch surface is growing faster than the shared math and family-rules seams
+Status: partially complete; still strategically important before larger family additions.
 
 Completed seams:
-- escape_time_direct_formulas.h (shared state-machine for 10 direct escape-time types)
-- escape_time_specialized_formulas.h (McMullen, Collatz)
-- perturbation_reference_orbit.h (perturbation cache/request/orbit)
-- escape_time_coloring.h (palette + final color grading)
-- explaino_collatz_formulas.h (Collatz residual/derivative/step)
-- polynomial_eval_real_coeffs.h (Horner evaluators)
-- basin_coloring.h (root-count, root-index, palette)
-- fractal_runtime_validation.h (shared fail-fast param validation)
+- `escape_time_direct_formulas.h`
+- `escape_time_specialized_formulas.h`
+- `perturbation_reference_orbit.h`
+- `escape_time_coloring.h`
+- `explaino_collatz_formulas.h`
+- `polynomial_eval_real_coeffs.h`
+- `basin_coloring.h`
+- `fractal_runtime_validation.h`
+- sample/probe/callable surfaces through the K1-K5/V2 work listed in `spec_intake/_STATUS.md`
 
 Remaining seams:
-- explicit family defaults / visibility / validation outside the monolithic kernel switch
-- cleaner organization for the future categorized dropdown surface
+- Explicit family defaults / visibility / validation still need cleaner ownership outside monolithic switch pressure.
+- The future categorized dropdown/view-preset work needs cleaner catalog metadata than historical hardcoded defaults.
+- The all-fractal control-surface proof expansion remains open after animation applicability Phase 1.
 
 Timing rule:
-- perform remaining refactoring before any 3D, IFS, distance-estimator, or Mandelbulb-style work
-- the CUDA sample_fn extraction (K1-K5) will naturally drive further cleanup of the iteration path
+- Do this before 3D, IFS, distance-estimator, Mandelbulb, or density-field work.
 
 ## 5. Lens SDF Follow-Ups
 
-Status: deferred on 2026-04-06
+Status: deferred, low-to-medium difficulty cleanup.
 
 Why paused:
-- The family-aware lens mask semantics are fixed for basin vs escape-time families.
-- The remaining work is follow-up verification and control-surface cleanup, not a blocker for the selector/catalog thread.
+- Family-aware lens mask semantics are fixed for basin vs escape-time families.
+- The remaining work is control-surface truth and visual verification.
 
 Deferred follow-ups:
-- visually verify Lens SDF output on escape-time families such as Phoenix, Mandelbrot, and Explaino-Lambda
-- decide whether `lens.downsample` becomes a real render-path control or stays hidden/removed until it has behavior
+- Visually verify Lens SDF output on Phoenix, Mandelbrot, and Explaino-Lambda or replace that with deterministic render/hash proof if possible.
+- Decide whether `lens.downsample` is a real render-path control. If not, hide/remove it until it has behavior.
 
 Resume constraints:
-- do not mix this with the organized-selector/common-fractal thread
+- Do not mix this with organized selector/common-fractal implementation unless the selector slice directly surfaces stale Lens controls.
 
 ## 6. CUDA-Resident sample_fn + Optimization Staging + Reflexive Sidecar
 
-Status: **ACTIVE** — this is the current initiative (2026-04-09)
+Status: core initiative closed; follow-ons only.
 
-Three interconnected specs with a shared critical path. See `spec_intake/_STATUS.md`.
+Current shipped state:
+- K1-K5 are done.
+- CLI Bridge V2-A through V2-G are done.
+- `fractal.sample`, `generic.sample`, `--describe-functions`, sample/session transport, cost metadata, NDJSON streaming, and named-pipe alternate transport are represented in current docs.
+- Broader socket/multi-client transport remains deferred.
 
-Critical path: K1-K3 (extract `fractal_sample_device()` from renderer)
-  → enables Optimization Staging Phase 1 (measurement)
-  → enables CLI Bridge V2 session protocol
-  → enables Reflexive sidecar demonstrations
-
-Specs:
-- spec_intake/CliBridgeV2_GpuSampleFn_SpecIntake.md (K1-K5 kernel extraction + V2 session)
-- spec_intake/OptimizationStaging_ExplainoZeroAxis_SpecIntake.md (zero-axis measurement + cost profiling)
-- spec_intake/ExplainoAll_SmartSidecar_SpecIntake.md (Explaino Reflexive — engine explaining itself)
-
-Design constraint: sample_fn is fully on CUDA. No CPU fallback.
-
-First slice: K1 — extract `fractal_sample_device()` __device__ function from
-`fractal_renderer.cu`, with a focused headless test proving equivalence to the
-existing renderer output for at least one fractal type.
-- keep any `lens.downsample` decision tied to explicit mask/SDF resolution behavior and tests
+Remaining work:
+- Do not reopen K1-K5 as if the extraction is still active.
+- Use the callable/transpiler handoff plan for later backend/kernel-registration work.
 
 Key references:
-- ui_app/src/fractal_family_rules.h
-- ui_app/src/fractal_renderer.cu
-- ui_app/src/lens_sdf.cpp
-- ui_app/src/fractal_types.h
-- ui_app/tests/test_fractal_family_rules.cpp
-- ui_app/tests/test_lens_sdf.cpp
+- `spec_intake/CliBridgeV2_GpuSampleFn_SpecIntake.md`
+- `docs/notes/callable_engine_surface_wrap_PHASED_PLAN.md`
+- `tests/test_fractal_runtime_session.py`
 
 ## 7. CLI Bridge V2 Multi-Client / Socket Transport Follow-On
 
-Status: deferred on 2026-04-11
+Status: deferred.
 
 Why paused:
-- V2-G landed as a bounded Windows named-pipe transport that reuses the existing one-line session protocol for one external client/session per process.
-- The surviving V2-G spec text still implied concurrent callers, but the shipped implementation does not provide multi-client pipe fan-in or socket transport.
-- That broader transport surface is a follow-on thread, not required to close the current V2-G slice.
+- V2-G landed as a bounded Windows named-pipe transport for one external client/session per process.
+- The broader multi-client pipe fan-in or socket transport surface is not shipped.
 
 Resume constraints:
-- do not advertise concurrent callers again until the runtime actually supports multiple simultaneous clients or a socket-based equivalent
-- if resumed, add focused tests for per-client session isolation and concurrent connect/close behavior
-- preserve the existing JSON line protocol and fail-fast semantics; transport changes should not fork request/response behavior
-
-Key references:
-- spec_intake/CliBridgeV2_GpuSampleFn_SpecIntake.md
-- ui_app/src/headless_modes.cpp
-- ui_app/src/headless_modes.h
-- tests/test_fractal_runtime_session.py
+- Do not advertise concurrent callers until the runtime supports multiple simultaneous clients or a socket equivalent.
+- Add focused tests for per-client session isolation and concurrent connect/close behavior.
+- Preserve the JSON line protocol and fail-fast semantics.
 
 ## 8. Generic CUDA Equation Pack Feature Vertical
 
-Status: paused on 2026-05-21 after merge/pause documentation
+Status: paused after initial product vertical; high strategic reward, medium/high difficulty.
 
-Why paused:
-- The first usable vertical is now shipped: v1 AST packs, native parser/lowerer, workbench scaffolding, normal `generic_equation_pack` dropdown lane, left Controls JSON/control flow, `SampleGenericFunction` main-viewport bridge, no-mouse automation, and Color Pipeline-backed viewport coloring.
-- The next work is productization and integration depth, not more quick scaffolding.
-- The user wants to switch to small viewer QoL items before resuming this feature line.
+Current shipped state:
+- v1 AST packs, parser/lowerer, workbench scaffolding, normal `generic_equation_pack` dropdown lane, left Controls JSON/control flow, `SampleGenericFunction` main-viewport bridge, no-mouse automation, and Color Pipeline-backed viewport coloring are shipped.
+- This is real formula execution through the existing Generic CUDA evaluator.
+- Dynamic CUDA kernel registration, Salticid `sample_fn` lowering, and shared-CUDA ABI integration are not shipped.
 
-Current safe state:
-- equation-pack formulas execute through the existing Generic CUDA evaluator path
-- generic equation-pack main viewport color routes through existing Color Pipeline helpers
-- runtime proof uses persistent no-mouse automation, not physical cursor tests
-- dynamic CUDA kernel registration and Salticid `sample_fn` lowering are not shipped
+Resume order:
+1. Persistence: save and reload the active pack with viewer state.
+2. Catalog: curated pack picker instead of requiring JSON paste every session.
+3. Authoring UX: safer text/editor surface that still lowers to v1 AST pack authority.
+4. Salticid adapter: lower the limited expression/composition surface into this schema.
+5. Performance: profile where `SampleGenericFunction` is enough and where compiled kernels are required.
+6. Mainline merge work: map schema/descriptor contracts into Salticid/shared-CUDA architecture.
 
-Resume constraints:
-- read `docs/notes/generic_cuda_equation_pack_PAUSE_README.md` first
-- do persistence before catalog UX if the next slice needs saved user packs
-- do not describe dynamic kernel registration, Salticid lowering, or shared-CUDA ABI integration as already done
-- keep detached workbench scaffolding subordinate to the normal dropdown and left Controls product flow
-- keep Color Pipeline ownership intact for any viewport-visible coloring changes
+Key reference:
+- `docs/notes/generic_cuda_equation_pack_PAUSE_README.md`
 
-Key references:
-- docs/notes/generic_cuda_equation_pack_PAUSE_README.md
-- docs/notes/generic_cuda_equation_pack_color_pipeline_PHASED_PLAN.md
-- ui_app/src/generic_equation_pack.cpp
-- ui_app/src/generic_equation_pack_live.cpp
-- ui_app/src/generic_equation_pack_workbench.cpp
-- tests/test_fractal_runtime_generic_equation_pack_interactive_ui.py
+## 9. Recommended Next Campaigns
 
-## 9. Current Pause Point
+1. Quick trust cleanup campaign: diagnostics capture output path, Lens SDF control truth, and any stale doc leftovers discovered by plan sync.
+2. Viewer product polish campaign: categorized selector, view presets, startup/default choice, and camera/dive behavior.
+3. Visual tuning campaign: smooth-escape per-family tuning and interior treatment without broad Color Pipeline redesign.
+4. Measurement campaign if needed: end-to-end responsiveness telemetry before any more FPS/debounce policy changes.
+5. Equation-pack productization campaign: persistence, catalog, authoring UX, then Salticid adapter boundary.
+6. Engine substrate campaign: family authority refactor, perturbation proof expansion, then new-substrate fractals.
 
 ## 10. Explaino Replay Proof Expansion Follow-On
 
-Status: deferred on 2026-04-13
-
-Why paused:
-- `ExplainoSidecarMutationReplay` now lands cleanly as a completed shipped feature at the headless parameter-replay boundary.
-- The remaining ideas were proof-expansion work, not missing runtime behavior required for the current branch: frame-delta replay proof and live-window replay proof.
-- Keeping those ambitions in the active spec list would leave the branch looking half-built even though the useful replay behavior is implemented, tested, and checkpointed.
+Status: deferred.
 
 Current shipped state:
-- persisted `sidecar_mutation_history` round-trips through `state.json`, finding/state load, and headless/live mutation recording
-- headless replay can deterministically reapply ordered persisted parameter targets via `--sidecar-replay-mutation-history-count`
-- replay fails fast on out-of-range replay counts and preserves the persisted mutation-history payload during headless capture
+- Persisted `sidecar_mutation_history` round-trips through `state.json`, finding/state load, and headless/live mutation recording.
+- Headless replay can deterministically reapply ordered persisted parameter targets via `--sidecar-replay-mutation-history-count`.
+- Replay fails fast on out-of-range replay counts and preserves the persisted payload during headless capture.
+
+Deferred follow-ups:
+- Frame-delta replay proof.
+- Live-window replay proof.
 
 Resume constraints:
-- treat any future replay-expansion work as a new bounded thread, not a reopening of an active half-finished feature
-- prove frame-delta behavior with a deterministic artifact or hash-based harness before attempting live-window proof
-- keep `state.json` as the only replay authority; do not add a second sidecar replay file or ad hoc baseline surface
-
-Key references:
-- docs/notes/explaino_sidecar_mutation_replay_PHASED_PLAN.md
-- ui_app/src/headless_modes.cpp
-- ui_app/src/main.cpp
-- tests/test_fractal_runtime_explaino_escape_variants.py
-
-If work resumes from this file alone, the intended next order is:
-1. keep live responsiveness stable and do not reopen pacing experimentation casually
-2. start the common-fractal catalog planning/coding thread
-3. land only one bounded wave of safe 2D additions
-4. refactor the CUDA catalog seams before any deeper expansion
+- Treat this as a new bounded thread, not a reopening of a half-finished feature.
+- Prove frame-delta behavior with deterministic artifact or hash-based harness before attempting live-window proof.
+- Keep `state.json` as the only replay authority.
