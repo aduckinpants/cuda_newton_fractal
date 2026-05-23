@@ -195,6 +195,11 @@ enum class McMullenPreset : int {
     custom = 4,  // direct m/n/lambda controls own the formula
 };
 
+enum class ExplainoJuliaConstantMode : int {
+    seeded = 0,
+    custom = 1,
+};
+
 enum class FractalType : int {
     newton = 0,
     nova = 1,
@@ -363,6 +368,9 @@ struct KernelParams {
     float phoenix_p_imag{0.0f};
     float julia_c_real{-0.7f};
     float julia_c_imag{0.27015f};
+    ExplainoJuliaConstantMode explaino_julia_constant_mode{ExplainoJuliaConstantMode::seeded};
+    float explaino_julia_c_real{-0.7f};
+    float explaino_julia_c_imag{0.27015f};
     PolyKind poly_kind{PolyKind::z3_minus_1};
     float poly_coeffs[5]{-1.0f, 0.0f, 0.0f, 1.0f, 0.0f}; // z^3 - 1
     CounterfactualPairRootFamily counterfactual_pair_root_family{CounterfactualPairRootFamily::cubic_unit_roots};

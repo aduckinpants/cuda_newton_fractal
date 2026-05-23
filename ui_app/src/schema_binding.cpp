@@ -806,6 +806,9 @@ std::string BindingContext::GetEnumId(const std::string& path) const {
     if (params && path == "fractal.params.mcmullen_preset") {
         return EnumIdOrEmpty(McMullenPresetId(params->mcmullen_preset));
     }
+    if (params && path == "fractal.params.explaino_julia_constant_mode") {
+        return EnumIdOrEmpty(ExplainoJuliaConstantModeId(params->explaino_julia_constant_mode));
+    }
     if (params && path == "fractal.params.coloring_mode") {
         return EnumIdOrEmpty(ColoringModeId(params->coloring_mode));
     }
@@ -863,6 +866,9 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
         }
         return true;
     }
+    if (params && path == "fractal.params.explaino_julia_constant_mode") {
+        return ParseAndAssignEnumId(id, &params->explaino_julia_constant_mode, TryParseExplainoJuliaConstantModeId);
+    }
     if (params && path == "fractal.params.coloring_mode") {
         return SetColoringMode(this, id);
     }
@@ -896,6 +902,12 @@ bool BindingContext::SetEnumId(const std::string& path, const std::string& id) {
 }
 
 bool BindingContext::GetBoolValue(const std::string& path, bool& out) const {
+    if (path == "fractal.params.explaino_julia_custom_constants_active") {
+        out = view && params &&
+            view->fractal_type == FractalType::explaino_julia &&
+            params->explaino_julia_constant_mode == ExplainoJuliaConstantMode::custom;
+        return true;
+    }
     bool* ptr = nullptr;
     BindingContext* self = const_cast<BindingContext*>(this);
     if (!self->BindBool(path, &ptr) || !ptr) return false;
@@ -1035,6 +1047,8 @@ bool BindingContext::BindFloat(const std::string& path, float** outPtr) {
         if (path == "fractal.params.phoenix_p_imag") { *outPtr = &params->phoenix_p_imag; return true; }
         if (path == "fractal.params.julia_c_real") { *outPtr = &params->julia_c_real; return true; }
         if (path == "fractal.params.julia_c_imag") { *outPtr = &params->julia_c_imag; return true; }
+        if (path == "fractal.params.explaino_julia_c_real") { *outPtr = &params->explaino_julia_c_real; return true; }
+        if (path == "fractal.params.explaino_julia_c_imag") { *outPtr = &params->explaino_julia_c_imag; return true; }
         if (path == "fractal.params.lambda_real") { *outPtr = &params->lambda_real; return true; }
         if (path == "fractal.params.lambda_imag") { *outPtr = &params->lambda_imag; return true; }
         if (path == "fractal.params.magnet_seed_real") { *outPtr = &params->magnet_seed_real; return true; }

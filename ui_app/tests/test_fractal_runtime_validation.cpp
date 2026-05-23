@@ -666,6 +666,32 @@ int main() {
         }
     }
 
+    {
+        ViewState view{};
+        KernelParams params{};
+        std::string error;
+        view.fractal_type = FractalType::explaino_julia;
+        params.coloring_mode = ColoringMode::smooth_escape;
+        params.explaino_julia_constant_mode = ExplainoJuliaConstantMode::custom;
+        params.explaino_julia_c_real = 0.285f;
+        params.explaino_julia_c_imag = 0.01f;
+        if (!ValidateFractalRuntimeState(view, params, &error)) {
+            std::cerr << "Expected Explaino Julia validation to accept finite custom constants, got: " << error << "\n";
+            return 1;
+        }
+        params.explaino_julia_c_imag = std::numeric_limits<float>::quiet_NaN();
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "explaino_julia_c_real/imag must be finite when custom mode is active") {
+            std::cerr << "Expected Explaino Julia validation to reject non-finite custom constants\n";
+            return 1;
+        }
+        params.explaino_julia_c_imag = 0.01f;
+        params.explaino_julia_constant_mode = static_cast<ExplainoJuliaConstantMode>(99);
+        if (ValidateFractalRuntimeState(view, params, &error) || error != "explaino_julia_constant_mode must be seeded or custom") {
+            std::cerr << "Expected Explaino Julia validation to reject invalid authority mode\n";
+            return 1;
+        }
+    }
+
     std::cout << "test_fractal_runtime_validation: all passed\n";
     return 0;
 }

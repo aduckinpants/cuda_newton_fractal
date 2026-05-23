@@ -161,6 +161,11 @@ const char* CaptureMcMullenPresetId(McMullenPreset preset) {
     return "unknown";
 }
 
+const char* CaptureExplainoJuliaConstantModeId(ExplainoJuliaConstantMode mode) {
+    const char* id = ::ExplainoJuliaConstantModeId(mode);
+    return (id && id[0] != '\0') ? id : "unknown";
+}
+
 const char* CaptureCounterfactualPairRootFamilyId(CounterfactualPairRootFamily rootFamily) {
     const char* id = ::CounterfactualPairRootFamilyId(rootFamily);
     return (id && id[0] != '\0') ? id : "unknown";
@@ -611,6 +616,9 @@ std::string BuildStateJson(
     js << "    \"phoenix_p_imag\": " << static_cast<double>(params.phoenix_p_imag) << ",\n";
     js << "    \"julia_c_real\": " << static_cast<double>(params.julia_c_real) << ",\n";
     js << "    \"julia_c_imag\": " << static_cast<double>(params.julia_c_imag) << ",\n";
+    js << "    \"explaino_julia_constant_mode\": \"" << CaptureExplainoJuliaConstantModeId(params.explaino_julia_constant_mode) << "\",\n";
+    js << "    \"explaino_julia_c_real\": " << static_cast<double>(params.explaino_julia_c_real) << ",\n";
+    js << "    \"explaino_julia_c_imag\": " << static_cast<double>(params.explaino_julia_c_imag) << ",\n";
     js << "    \"multibrot_power\": " << params.multibrot_power << ",\n";
     js << "    \"multibrot_power_float\": " << static_cast<double>(params.multibrot_power_float) << ",\n";
     js << "    \"multibrot_power_imag\": " << static_cast<double>(params.multibrot_power_imag) << ",\n";

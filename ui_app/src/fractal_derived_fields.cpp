@@ -191,6 +191,9 @@ static void ApplyCommonPresetDefaults(KernelParams& params) {
     params.perpendicular_fold_mix = 1.0f;
     params.julia_c_real = -0.7f;
     params.julia_c_imag = 0.27015f;
+    params.explaino_julia_constant_mode = ExplainoJuliaConstantMode::seeded;
+    params.explaino_julia_c_real = -0.7f;
+    params.explaino_julia_c_imag = 0.27015f;
     params.magnet_seed_real = 0.0f;
     params.magnet_seed_imag = 0.0f;
     params.magnet_relaxation = 1.0f;

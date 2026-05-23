@@ -215,6 +215,8 @@
             { "id": "multibrot_power", "label": "Multibrot Power", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "multibrot" } },
             { "id": "julia_c_real", "label": "Julia C (Real)", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" } },
             { "id": "julia_c_imag", "label": "Julia C (Imag)", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" } },
+            { "id": "explaino_julia_c_real", "label": "Explaino Julia C (Real)", "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true } },
+            { "id": "explaino_julia_c_imag", "label": "Explaino Julia C (Imag)", "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true } },
             { "id": "lambda_real", "label": "Lambda (Real)", "visible_if": { "op": "in", "path": "fractal.view.fractal_type", "value": "lambda,explaino_lambda" } },
             { "id": "magnet_relaxation", "label": "Magnet Relaxation", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
             { "id": "magnet_bailout", "label": "Magnet Bailout", "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "magnet" } },
@@ -404,6 +406,40 @@
           "binding": { "kind": "param", "path": "fractal.params.julia_c_imag" },
           "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "julia" },
           "help": "Imaginary part of the Julia constant c in z_{n+1} = z_n^2 + c."
+        },
+        {
+          "id": "explaino_julia_constant_mode",
+          "type": "combo",
+          "label": "Explaino Julia Constant Source",
+          "value_type": "enum",
+          "default": "seeded",
+          "options": [
+            { "id": "seeded", "label": "Seeded" },
+            { "id": "custom", "label": "Custom" }
+          ],
+          "binding": { "kind": "param", "path": "fractal.params.explaino_julia_constant_mode" },
+          "visible_if": { "op": "eq", "path": "fractal.view.fractal_type", "value": "explaino_julia" },
+          "help": "Select whether Explaino Julia derives c from the seeded Explaino root surface or from direct custom constants."
+        },
+        {
+          "id": "explaino_julia_c_real",
+          "type": "drag_float",
+          "label": "Explaino Julia C (Real)",
+          "value_type": "float",
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.001, "default": -0.7,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_julia_c_real" },
+          "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true },
+          "help": "Real part of the custom Explaino Julia constant c in z_{n+1} = z_n^2 + c."
+        },
+        {
+          "id": "explaino_julia_c_imag",
+          "type": "drag_float",
+          "label": "Explaino Julia C (Imag)",
+          "value_type": "float",
+          "ui_min": -2.0, "ui_max": 2.0, "step": 0.001, "default": 0.27015,
+          "binding": { "kind": "param", "path": "fractal.params.explaino_julia_c_imag" },
+          "visible_if": { "op": "eq", "path": "fractal.params.explaino_julia_custom_constants_active", "value": true },
+          "help": "Imaginary part of the custom Explaino Julia constant c in z_{n+1} = z_n^2 + c."
         },
         {
           "id": "lambda_real",

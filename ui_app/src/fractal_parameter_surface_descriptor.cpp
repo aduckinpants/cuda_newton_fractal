@@ -56,6 +56,9 @@ BindingContext MakeDescriptorBindingContextForFractal(
     render = RenderSettings{};
     lens = LensSettings{};
     view.fractal_type = fractalType;
+    if (fractalType == FractalType::explaino_julia) {
+        params.explaino_julia_constant_mode = ExplainoJuliaConstantMode::custom;
+    }
     return MakeDescriptorBindingContext(view, params, render, lens);
 }
 

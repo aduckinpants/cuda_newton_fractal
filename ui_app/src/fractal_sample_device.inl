@@ -2755,10 +2755,13 @@
         double seed = LogisticAreaUToSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
 
-        // Julia constant c from the first seeded root (falls back to classic if no roots).
-        Cx cJ = (params.explaino_root_count > 0)
-            ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
-            : Cx{-0.7f, 0.27015f};
+        const bool useCustomJuliaConstant =
+            params.explaino_julia_constant_mode == ExplainoJuliaConstantMode::custom;
+        Cx cJ = useCustomJuliaConstant
+            ? Cx{params.explaino_julia_c_real, params.explaino_julia_c_imag}
+            : ((params.explaino_root_count > 0)
+                ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
+                : Cx{-0.7f, 0.27015f});
 
         for (; it < maxIter; ++it) {
             Cx z2 = cx_mul(z, z);

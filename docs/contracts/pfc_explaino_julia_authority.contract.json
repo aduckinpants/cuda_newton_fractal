@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "contract_id": "pfc_explaino_julia_authority",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_explaino_julia_authority_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start from codex/parameter-functionality-campaign on a feature branch",
+    "add explicit seeded/custom authority for explaino_julia direct constants",
+    "keep owner-specific Julia authority controls off explaino_all",
+    "use no-mouse persistent runtime proof and avoid repeated viewer relaunch loops"
+  ],
+  "forbidden_operator_prompts": [
+    "add a new FractalType for Explaino Julia authority",
+    "change standalone julia semantics",
+    "add owner-specific Julia constant controls to explaino_all",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, or generated editors",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "selector": "explaino_julia",
+    "authority_mode": "explicit seeded/custom",
+    "owner_lane": "explaino_julia",
+    "explaino_all_owner_control": "forbidden",
+    "runtime_or_public_path_proof": "required"
+  },
+  "forbidden_defaults": {
+    "new_fractal_type": "forbidden",
+    "standalone_julia_behavior_change": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "unclassified_default_behavior_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_explaino_julia_authority.contract.json --out-json artifacts/validation/pfc_explaino_julia_authority_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_explaino_julia_authority_PHASED_PLAN.md --out-json artifacts/validation/pfc_explaino_julia_authority_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_explaino_julia_authority_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_schema --log artifacts/logs/pfc_explaino_julia_authority_schema.log --out-json artifacts/validation/pfc_explaino_julia_authority_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_sample --log artifacts/logs/pfc_explaino_julia_authority_sample.log --out-json artifacts/validation/pfc_explaino_julia_authority_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_descriptor --log artifacts/logs/pfc_explaino_julia_authority_descriptor.log --out-json artifacts/validation/pfc_explaino_julia_authority_descriptor.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_state --log artifacts/logs/pfc_explaino_julia_authority_state.log --out-json artifacts/validation/pfc_explaino_julia_authority_state.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_diagnostics_state_io",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_generic_probe --log artifacts/logs/pfc_explaino_julia_authority_generic_probe.log --out-json artifacts/validation/pfc_explaino_julia_authority_generic_probe.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_generic_probe",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_safe_mode --log artifacts/logs/pfc_explaino_julia_authority_safe_mode.log --out-json artifacts/validation/pfc_explaino_julia_authority_safe_mode.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_safe_mode_schema",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_sample_tier --log artifacts/logs/pfc_explaino_julia_authority_sample_tier.log --out-json artifacts/validation/pfc_explaino_julia_authority_sample_tier.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_sample_tier_resolver",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_ui_schema_bundle_after_safe_mode_fix --log artifacts/logs/pfc_explaino_julia_authority_ui_schema_bundle_after_safe_mode_fix.log --out-json artifacts/validation/pfc_explaino_julia_authority_ui_schema_bundle_after_safe_mode_fix.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_explaino_counterfactual_repair",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_full_native_final_retry --log artifacts/logs/pfc_explaino_julia_authority_full_native_final_retry.log --out-json artifacts/validation/pfc_explaino_julia_authority_full_native_final_retry.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_runtime_publish_final --log artifacts/logs/pfc_explaino_julia_authority_runtime_publish_final.log --out-json artifacts/validation/pfc_explaino_julia_authority_runtime_publish_final.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_runtime_pytest_final --log artifacts/logs/pfc_explaino_julia_authority_runtime_pytest_final.log --out-json artifacts/validation/pfc_explaino_julia_authority_runtime_pytest_final.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 -m pytest tests/test_function_descriptor_cli.py tests/test_callable_engine_adversarial_cli.py tests/test_fractal_parameter_surface_descriptor_cli.py tests/test_fractal_runtime_explaino_julia_authority.py -q --junitxml artifacts/pytest/pfc_explaino_julia_authority_runtime_final.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_julia_authority_diff_check --log artifacts/logs/pfc_explaino_julia_authority_diff_check.log --out-json artifacts/validation/pfc_explaino_julia_authority_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Explaino Julia authority contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_julia_authority_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Explaino Julia authority hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_julia_authority_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

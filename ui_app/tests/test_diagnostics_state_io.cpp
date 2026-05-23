@@ -2570,6 +2570,74 @@ int main() {
         }
     }
 
+    // Explaino-Julia custom authority state round-trip
+    {
+        const fs::path statePath = tempRoot / "explaino_julia_authority_state.json";
+        std::ofstream file(statePath, std::ios::out | std::ios::binary | std::ios::trunc);
+        file << R"({
+  "state_version": 2,
+  "fractal_type": "explaino_julia",
+  "view": {
+    "center_x": -0.25,
+    "center_y": 0.1,
+    "zoom": 3.0,
+    "rotation_degrees": 0,
+    "center_hp_x": -0.25,
+    "center_hp_y": 0.1,
+    "log2_zoom": 1.58,
+    "explaino_phase": 0,
+    "explaino_seed_drift": 0,
+    "explaino_seed_tween": true
+  },
+  "params": {
+    "max_iter": 1200,
+    "epsilon": 0.000001,
+    "exposure": 1.4,
+    "poly_kind": 2,
+    "coloring_mode": "smooth_escape",
+    "nova_alpha": 0.5,
+    "phoenix_p_real": 0.0,
+    "phoenix_p_imag": 0.0,
+    "multibrot_power": 3,
+    "explaino_julia_constant_mode": "custom",
+    "explaino_julia_c_real": 0.285,
+    "explaino_julia_c_imag": 0.01,
+    "explaino_seed": 3.5,
+    "explaino_warp_strength": 0.2,
+    "explaino_root_count": 4,
+    "poly_coeffs": [-1, 0, 0, 1, 0]
+  },
+  "render": {
+    "width": 1024,
+    "height": 768,
+    "block_size": 256,
+    "device_id": 0
+  },
+  "stats": {
+    "last_render_ms": 0,
+    "last_iters_avg": 0,
+    "last_device_id": 0
+  }
+})";
+        file.close();
+
+        ViewState view{};
+        KernelParams params{};
+        RenderSettings render{};
+        std::string error;
+        if (!LoadDiagnosticsStateFile(statePath.string(), &view, &params, &render, &error)) {
+            std::cerr << "Expected explaino_julia authority state to load: " << error << "\n";
+            return 1;
+        }
+        if (view.fractal_type != FractalType::explaino_julia ||
+            params.explaino_julia_constant_mode != ExplainoJuliaConstantMode::custom ||
+            !NearlyEqual(params.explaino_julia_c_real, 0.285f, 1.0e-6) ||
+            !NearlyEqual(params.explaino_julia_c_imag, 0.01f, 1.0e-6)) {
+            std::cerr << "Expected Explaino Julia custom constant authority to round-trip from saved state\n";
+            return 1;
+        }
+    }
+
     // Explaino-Rational-Escape state round-trip
     {
         const fs::path statePath = tempRoot / "explaino_rational_escape_state.json";

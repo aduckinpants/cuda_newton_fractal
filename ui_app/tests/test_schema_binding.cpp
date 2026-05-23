@@ -821,6 +821,7 @@ bool ValidateVisibleControlMatrix() {
     const MatrixCase cases[] = {
         {"julia_c_real", FractalType::julia, "fractal.params.julia_c_real", "float"},
         {"julia_c_imag", FractalType::julia, "fractal.params.julia_c_imag", "float"},
+        {"explaino_julia_constant_mode", FractalType::explaino_julia, "fractal.params.explaino_julia_constant_mode", "enum"},
         {"epsilon", FractalType::newton, "fractal.params.epsilon", "float"},
         {"poly_kind", FractalType::newton, "fractal.params.poly_kind", "enum"},
         {"poly_c0", FractalType::newton, "fractal.params.poly_coeffs.0", "float"},
@@ -1254,6 +1255,8 @@ int main() {
         }
         float* juliaCReal = nullptr;
         float* juliaCImag = nullptr;
+        float* explainoJuliaCReal = nullptr;
+        float* explainoJuliaCImag = nullptr;
         if (!ctx.BindFloat("fractal.params.julia_c_real", &juliaCReal) ||
             !ctx.BindFloat("fractal.params.julia_c_imag", &juliaCImag) ||
             juliaCReal != &params.julia_c_real ||
@@ -1261,6 +1264,27 @@ int main() {
             !NearlyEqual(*juliaCReal, -0.7f) ||
             !NearlyEqual(*juliaCImag, 0.27015f)) {
             std::cerr << "Expected standalone Julia constant controls to bind to explicit KernelParams fields\n";
+            return 1;
+        }
+        if (ctx.GetEnumId("fractal.params.explaino_julia_constant_mode") != "seeded" ||
+            !ctx.SetEnumId("fractal.params.explaino_julia_constant_mode", "custom") ||
+            ctx.GetEnumId("fractal.params.explaino_julia_constant_mode") != "custom" ||
+            !ctx.BindFloat("fractal.params.explaino_julia_c_real", &explainoJuliaCReal) ||
+            !ctx.BindFloat("fractal.params.explaino_julia_c_imag", &explainoJuliaCImag) ||
+            explainoJuliaCReal != &params.explaino_julia_c_real ||
+            explainoJuliaCImag != &params.explaino_julia_c_imag) {
+            std::cerr << "Expected Explaino Julia authority controls to bind and round-trip through explicit KernelParams fields\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::explaino_julia;
+        bool customActive = false;
+        if (!ctx.GetBoolValue("fractal.params.explaino_julia_custom_constants_active", customActive) || !customActive) {
+            std::cerr << "Expected Explaino Julia custom-constants visibility predicate to activate only in custom mode on explaino_julia\n";
+            return 1;
+        }
+        view.fractal_type = FractalType::explaino_all;
+        if (!ctx.GetBoolValue("fractal.params.explaino_julia_custom_constants_active", customActive) || customActive) {
+            std::cerr << "Expected Explaino Julia custom-constants visibility predicate to stay false on explaino_all\n";
             return 1;
         }
         float* magnetSeedReal = nullptr;

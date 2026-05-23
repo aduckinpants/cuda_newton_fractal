@@ -638,6 +638,9 @@ int main() {
         bool foundLambdaImag = false;
         bool foundJuliaCReal = false;
         bool foundJuliaCImag = false;
+        bool foundExplainoJuliaConstantMode = false;
+        bool foundExplainoJuliaCReal = false;
+        bool foundExplainoJuliaCImag = false;
         bool foundFractalTypeCommonGroup = false;
         bool foundFractalTypeRootFindingGroup = false;
         bool foundCounterfactualPairRootFindingGroup = false;
@@ -780,6 +783,37 @@ int main() {
                     !ctrl.has_min && !ctrl.has_max && VisibleIfIncludesFractalType(ctrl, "julia") &&
                     !VisibleIfIncludesFractalType(ctrl, "explaino_julia")) {
                     foundJuliaCImag = true;
+                }
+                if (ctrl.id == "explaino_julia_constant_mode" && ctrl.value_type == "enum" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.params.explaino_julia_constant_mode" &&
+                    ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "seeded" &&
+                    VisibleIfIncludesFractalType(ctrl, "explaino_julia") &&
+                    !VisibleIfIncludesFractalType(ctrl, "explaino_all")) {
+                    bool foundSeeded = false;
+                    bool foundCustom = false;
+                    for (const UISchemaOption& option : ctrl.options) {
+                        foundSeeded = foundSeeded || option.id == "seeded";
+                        foundCustom = foundCustom || option.id == "custom";
+                    }
+                    foundExplainoJuliaConstantMode = foundSeeded && foundCustom;
+                }
+                if (ctrl.id == "explaino_julia_c_real" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.params.explaino_julia_c_real" &&
+                    ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 &&
+                    !ctrl.has_min && !ctrl.has_max &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.params.explaino_julia_custom_constants_active" &&
+                    ctrl.visible_if.value == "true") {
+                    foundExplainoJuliaCReal = true;
+                }
+                if (ctrl.id == "explaino_julia_c_imag" &&
+                    ctrl.has_binding && ctrl.binding.path == "fractal.params.explaino_julia_c_imag" &&
+                    ctrl.has_ui_min && ctrl.ui_min == -2.0 && ctrl.has_ui_max && ctrl.ui_max == 2.0 &&
+                    !ctrl.has_min && !ctrl.has_max &&
+                    ctrl.has_visible_if && ctrl.visible_if.op == "eq" &&
+                    ctrl.visible_if.path == "fractal.params.explaino_julia_custom_constants_active" &&
+                    ctrl.visible_if.value == "true") {
+                    foundExplainoJuliaCImag = true;
                 }
                 if (ctrl.id == "fractal_type") {
                     if (ctrl.has_default && ctrl.def.is_string() && ctrl.def.as_string() == "explaino_all") {
@@ -1278,6 +1312,10 @@ int main() {
             std::cerr << "Did not find standalone Julia constant controls in schema\n";
             return 1;
         }
+        if (!foundExplainoJuliaConstantMode || !foundExplainoJuliaCReal || !foundExplainoJuliaCImag) {
+            std::cerr << "Did not find Explaino Julia authority-mode custom constant controls in schema\n";
+            return 1;
+        }
         if (!foundNovaPolyC4Visible) {
             std::cerr << "Did not find Nova-visible poly_c4 owner control in schema\n";
             return 1;
@@ -1397,7 +1435,7 @@ int main() {
             return 1;
         }
         if (!fractalPanel || fractalPanel->label != "Fractal (Safe Mode)" || !fractalPanel->has_order || fractalPanel->order != 20 ||
-            fractalPanel->controls.size() != 26) {
+            fractalPanel->controls.size() != 29) {
             std::cerr << "Safe-mode schema did not expose the expected fractal panel shape\n";
             return 1;
         }

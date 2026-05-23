@@ -67,6 +67,11 @@ inline constexpr EnumIdPair<McMullenPreset> kMcMullenPresetIds[] = {
     {McMullenPreset::custom, "custom"},
 };
 
+inline constexpr EnumIdPair<ExplainoJuliaConstantMode> kExplainoJuliaConstantModeIds[] = {
+    {ExplainoJuliaConstantMode::seeded, "seeded"},
+    {ExplainoJuliaConstantMode::custom, "custom"},
+};
+
 inline constexpr EnumIdPair<ColoringMode> kColoringModeIds[] = {
     {ColoringMode::root_basin, "root_basin"},
     {ColoringMode::iteration_count, "iteration_count"},
@@ -228,6 +233,14 @@ inline const char* McMullenPresetId(McMullenPreset value) {
 
 inline bool TryParseMcMullenPresetId(std::string_view id, McMullenPreset* outValue) {
     return enum_id_utils::TryParseEnumId(id, enum_id_utils::kMcMullenPresetIds, outValue);
+}
+
+inline const char* ExplainoJuliaConstantModeId(ExplainoJuliaConstantMode value) {
+    return enum_id_utils::LookupEnumId(value, enum_id_utils::kExplainoJuliaConstantModeIds);
+}
+
+inline bool TryParseExplainoJuliaConstantModeId(std::string_view id, ExplainoJuliaConstantMode* outValue) {
+    return enum_id_utils::TryParseEnumId(id, enum_id_utils::kExplainoJuliaConstantModeIds, outValue);
 }
 
 inline const char* ColoringModeId(ColoringMode value) {

@@ -1013,6 +1013,63 @@ void TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults() 
     }
 }
 
+void TestExplainoJuliaAuthorityModeAffectsSamplesAndPreservesSeededDefaults() {
+    constexpr int N = 49;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -3; yi <= 3; ++yi) {
+        for (int xi = -3; xi <= 3; ++xi) {
+            coords[next++] = MakeDouble2(0.24 * static_cast<double>(xi), 0.24 * static_cast<double>(yi));
+        }
+    }
+
+    RenderSettings render{};
+    ViewState seededView{};
+    ViewState seededIgnoredCustomView{};
+    ViewState customView{};
+    KernelParams seededParams{};
+    KernelParams seededIgnoredCustomParams{};
+    KernelParams customParams{};
+    MakeDefaults(FractalType::explaino_julia, seededView, seededParams, render);
+    MakeDefaults(FractalType::explaino_julia, seededIgnoredCustomView, seededIgnoredCustomParams, render);
+    MakeDefaults(FractalType::explaino_julia, customView, customParams, render);
+
+    seededParams.max_iter = 700;
+    seededIgnoredCustomParams.max_iter = 700;
+    customParams.max_iter = 700;
+    seededParams.explaino_julia_constant_mode = ExplainoJuliaConstantMode::seeded;
+    seededIgnoredCustomParams.explaino_julia_constant_mode = ExplainoJuliaConstantMode::seeded;
+    customParams.explaino_julia_constant_mode = ExplainoJuliaConstantMode::custom;
+    seededParams.explaino_root_count = 1;
+    seededIgnoredCustomParams.explaino_root_count = 1;
+    customParams.explaino_root_count = 1;
+    seededParams.explaino_roots[0] = {-0.2f, 0.65f};
+    seededIgnoredCustomParams.explaino_roots[0] = {-0.2f, 0.65f};
+    customParams.explaino_roots[0] = {-0.2f, 0.65f};
+    seededIgnoredCustomParams.explaino_julia_c_real = 0.285f;
+    seededIgnoredCustomParams.explaino_julia_c_imag = 0.01f;
+    customParams.explaino_julia_c_real = 0.285f;
+    customParams.explaino_julia_c_imag = 0.01f;
+
+    FractalSampleResult seededResults[N]{};
+    FractalSampleResult seededIgnoredCustomResults[N]{};
+    FractalSampleResult customResults[N]{};
+    const char* error = nullptr;
+    CHECK("explaino julia seeded sample ok", SampleFractalPoints(coords, N, seededView, seededParams, render, seededResults, &error));
+    CHECK("explaino julia seeded ignores custom constants sample ok", SampleFractalPoints(coords, N, seededIgnoredCustomView, seededIgnoredCustomParams, render, seededIgnoredCustomResults, &error));
+    CHECK("explaino julia custom constants sample ok", SampleFractalPoints(coords, N, customView, customParams, render, customResults, &error));
+
+    bool seededIgnoresCustomFields = true;
+    bool sawCustomDifference = false;
+    for (int i = 0; i < N; ++i) {
+        seededIgnoresCustomFields = seededIgnoresCustomFields && SameFractalSampleResult(seededResults[i], seededIgnoredCustomResults[i]);
+        sawCustomDifference = sawCustomDifference || !SameFractalSampleResult(seededResults[i], customResults[i]);
+    }
+
+    CHECK("explaino julia seeded mode ignores custom constant fields", seededIgnoresCustomFields);
+    CHECK("explaino julia custom mode changes SampleFractalPoints results", sawCustomDifference);
+}
+
 void TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults() {
     constexpr int N = 7;
     Double2 coords[N] = {
@@ -1465,6 +1522,7 @@ int main() {
     TestExplainoLambdaPhaseStrengthControlsWarpedMap();
     TestExplainoNovaWarpAndDampingAffectSamplesAndPreserveDefaults();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
+    TestExplainoJuliaAuthorityModeAffectsSamplesAndPreservesSeededDefaults();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
     TestExplainoCollatzDirectAffectsSamplesAndPreservesExistingCollatz();
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();

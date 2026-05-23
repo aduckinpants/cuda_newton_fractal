@@ -1710,9 +1710,13 @@ bool SamplePoint(const ProbeState& state,
     if (ft == FractalType::explaino_julia || ft == FractalType::explaino_lambda || ft == FractalType::explaino_rational_escape || ft == FractalType::explaino_rational) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
         if (ft == FractalType::explaino_julia) {
-            const Cx cJ = (params.explaino_root_count > 0)
-                ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
-                : Cx{-0.7f, 0.27015f};
+            const bool useCustomJuliaConstant =
+                params.explaino_julia_constant_mode == ExplainoJuliaConstantMode::custom;
+            const Cx cJ = useCustomJuliaConstant
+                ? Cx{params.explaino_julia_c_real, params.explaino_julia_c_imag}
+                : ((params.explaino_root_count > 0)
+                    ? Cx{params.explaino_roots[0].x, params.explaino_roots[0].y}
+                    : Cx{-0.7f, 0.27015f});
             for (; it < maxIter; ++it) {
                 z = CxAdd(CxMul(z, z), cJ);
                 if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }

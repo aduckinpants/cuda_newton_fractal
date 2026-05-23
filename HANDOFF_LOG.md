@@ -171,3 +171,5 @@
 - `ck:160ff1c0` 2026-05-23 07:53 UTC | score 96 — Repaired PFC Step 7 receipt gate by removing an invalid focused target from the checked-in contract after receipt proof caught it; contract, plan sync, and hostile audit revalidated.
 - `ck:160ff1c0` 2026-05-23 07:55 UTC | score 96 — Integrated PFC Step 7 into the campaign holder and updated the holder plan so Step 8, codex/pfc-explaino-julia-authority, is the next slice.
 - `ck:160ff1c0` 2026-05-23 07:57 UTC | score 96 — Removed stale closeout wording from the closed PFC Step 7 plan after the post-closeout stale-plan grep found it.
+- `ck:c342fa74` 2026-05-23 08:01 UTC — session-start | branch=codex/pfc-explaino-julia-authority | head=e784817 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 8 Explaino Julia authority mode
+- `ck:c342fa74` 2026-05-23 09:07 UTC | score 96 — Closed PFC Step 8 Explaino Julia authority mode: seeded/custom mode, owner-only custom constants, native/runtime no-mouse proof, full native retry green after stale safe-mode duplicate assertion fix.

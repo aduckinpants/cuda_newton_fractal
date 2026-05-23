@@ -180,7 +180,9 @@ int main() {
         !ExpectOwnerControl(parsed.value, "perpendicular_burning_ship", "perpendicular_fold_mix", "fractal.params.perpendicular_fold_mix") ||
         !ExpectOwnerControl(parsed.value, "spider", "spider_feedback", "fractal.params.spider_feedback") ||
         !ExpectOwnerControl(parsed.value, "collatz", "collatz_transition_strength", "fractal.params.collatz_transition_strength") ||
-        !ExpectOwnerControl(parsed.value, "explaino_collatz_direct", "collatz_transition_strength", "fractal.params.collatz_transition_strength")) {
+        !ExpectOwnerControl(parsed.value, "explaino_collatz_direct", "collatz_transition_strength", "fractal.params.collatz_transition_strength") ||
+        !ExpectOwnerControl(parsed.value, "explaino_julia", "explaino_julia_c_real", "fractal.params.explaino_julia_c_real") ||
+        !ExpectOwnerControl(parsed.value, "explaino_julia", "explaino_julia_c_imag", "fractal.params.explaino_julia_c_imag")) {
         return 1;
     }
 

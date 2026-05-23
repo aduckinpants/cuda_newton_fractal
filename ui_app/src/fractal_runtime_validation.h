@@ -143,6 +143,20 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
         (!std::isfinite(params.julia_c_real) || !std::isfinite(params.julia_c_imag))) {
         return FailFractalRuntimeValidation("julia_c_real/imag must be finite", outError);
     }
+    if (view.fractal_type == FractalType::explaino_julia) {
+        switch (params.explaino_julia_constant_mode) {
+        case ExplainoJuliaConstantMode::seeded:
+            break;
+        case ExplainoJuliaConstantMode::custom:
+            if (!std::isfinite(params.explaino_julia_c_real) ||
+                !std::isfinite(params.explaino_julia_c_imag)) {
+                return FailFractalRuntimeValidation("explaino_julia_c_real/imag must be finite when custom mode is active", outError);
+            }
+            break;
+        default:
+            return FailFractalRuntimeValidation("explaino_julia_constant_mode must be seeded or custom", outError);
+        }
+    }
     if (view.fractal_type == FractalType::nova || view.fractal_type == FractalType::explaino_nova) {
         if (!std::isfinite(params.nova_alpha) || params.nova_alpha <= 0.0f || params.nova_alpha > 2.0f) {
             return FailFractalRuntimeValidation("nova_alpha must be finite and in (0,2]", outError);

@@ -112,6 +112,17 @@ static bool IsJuliaVisibleControl(const UISchemaControl* control, const char* bi
         control->visible_if.value == "julia";
 }
 
+static bool IsExplainoJuliaCustomConstantControl(const UISchemaControl* control, const char* bindingPath) {
+    return control &&
+        control->has_binding &&
+        control->binding.kind == "param" &&
+        control->binding.path == bindingPath &&
+        control->has_visible_if &&
+        control->visible_if.op == "eq" &&
+        control->visible_if.path == "fractal.params.explaino_julia_custom_constants_active" &&
+        control->visible_if.value == "true";
+}
+
 static bool IsPhoenixVisibleControl(const UISchemaControl* control, const char* bindingPath) {
     return control &&
         control->has_binding &&
@@ -145,7 +156,7 @@ static void TestSafeModeSchemaExposesExpectedPanelsAndActions() {
 
     Check(viewPanel && viewPanel->label == "View (Safe Mode)" && viewPanel->has_order && viewPanel->order == 10 && viewPanel->controls.size() == 11,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_ViewPanelShape");
-    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 26,
+    Check(fractalPanel && fractalPanel->label == "Fractal (Safe Mode)" && fractalPanel->has_order && fractalPanel->order == 20 && fractalPanel->controls.size() == 29,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_FractalPanelShape");
     Check(renderPanel && renderPanel->label == "Render (Safe Mode)" && renderPanel->has_order && renderPanel->order == 30 && renderPanel->controls.size() == 7,
         "TestSafeModeSchemaExposesExpectedPanelsAndActions_RenderPanelShape");
@@ -380,6 +391,9 @@ static void TestSafeModeSchemaExposesJuliaControls() {
 
     const UISchemaControl* real = FindControlById(*fractalPanel, "julia_c_real");
     const UISchemaControl* imag = FindControlById(*fractalPanel, "julia_c_imag");
+    const UISchemaControl* explainoMode = FindControlById(*fractalPanel, "explaino_julia_constant_mode");
+    const UISchemaControl* explainoReal = FindControlById(*fractalPanel, "explaino_julia_c_real");
+    const UISchemaControl* explainoImag = FindControlById(*fractalPanel, "explaino_julia_c_imag");
     Check(IsJuliaVisibleControl(real, "fractal.params.julia_c_real") &&
             real->has_default && real->def.is_number() && real->def.as_number() == -0.7 &&
             real->has_ui_min && real->ui_min == -2.0 && real->has_ui_max && real->ui_max == 2.0,
@@ -388,6 +402,26 @@ static void TestSafeModeSchemaExposesJuliaControls() {
             imag->has_default && imag->def.is_number() && imag->def.as_number() == 0.27015 &&
             imag->has_ui_min && imag->ui_min == -2.0 && imag->has_ui_max && imag->ui_max == 2.0,
         "TestSafeModeSchemaExposesJuliaControls_Imag");
+    Check(explainoMode &&
+            explainoMode->value_type == "enum" &&
+            explainoMode->has_binding &&
+            explainoMode->binding.path == "fractal.params.explaino_julia_constant_mode" &&
+            explainoMode->has_default &&
+            explainoMode->def.is_string() &&
+            explainoMode->def.as_string() == "seeded" &&
+            explainoMode->has_visible_if &&
+            explainoMode->visible_if.op == "eq" &&
+            explainoMode->visible_if.path == "fractal.view.fractal_type" &&
+            explainoMode->visible_if.value == "explaino_julia",
+        "TestSafeModeSchemaExposesJuliaControls_ExplainoMode");
+    Check(IsExplainoJuliaCustomConstantControl(explainoReal, "fractal.params.explaino_julia_c_real") &&
+            explainoReal->has_default && explainoReal->def.is_number() && explainoReal->def.as_number() == -0.7 &&
+            explainoReal->has_ui_min && explainoReal->ui_min == -2.0 && explainoReal->has_ui_max && explainoReal->ui_max == 2.0,
+        "TestSafeModeSchemaExposesJuliaControls_ExplainoReal");
+    Check(IsExplainoJuliaCustomConstantControl(explainoImag, "fractal.params.explaino_julia_c_imag") &&
+            explainoImag->has_default && explainoImag->def.is_number() && explainoImag->def.as_number() == 0.27015 &&
+            explainoImag->has_ui_min && explainoImag->ui_min == -2.0 && explainoImag->has_ui_max && explainoImag->ui_max == 2.0,
+        "TestSafeModeSchemaExposesJuliaControls_ExplainoImag");
 }
 
 static void TestSafeModeSchemaExposesPhoenixControls() {

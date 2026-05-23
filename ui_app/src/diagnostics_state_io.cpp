@@ -1918,6 +1918,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
     double phoenixPImag = 0.0;
     double juliaCReal = static_cast<double>(nextParams.julia_c_real);
     double juliaCImag = static_cast<double>(nextParams.julia_c_imag);
+    ExplainoJuliaConstantMode explainoJuliaConstantMode = nextParams.explaino_julia_constant_mode;
+    double explainoJuliaCReal = static_cast<double>(nextParams.explaino_julia_c_real);
+    double explainoJuliaCImag = static_cast<double>(nextParams.explaino_julia_c_imag);
     int multibrotPower = 0;
     double multibrotPowerFloat = static_cast<double>(nextParams.multibrot_power_float);
     double multibrotPowerImag = static_cast<double>(nextParams.multibrot_power_imag);
@@ -1977,6 +1980,19 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         if (!GetRequiredNumber(*paramsObject, "phoenix_p_imag", &phoenixPImag, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "julia_c_real", &juliaCReal, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "julia_c_imag", &juliaCImag, nullptr, outError)) return false;
+        if (const json_min::Value* explainoJuliaModeValue = paramsObject->get("explaino_julia_constant_mode")) {
+            if (!explainoJuliaModeValue->is_string()) {
+                if (outError) *outError = "Invalid explaino_julia_constant_mode field";
+                return false;
+            }
+            const std::string modeId = explainoJuliaModeValue->as_string();
+            if (!TryParseExplainoJuliaConstantModeId(modeId, &explainoJuliaConstantMode)) {
+                if (outError) *outError = "Unknown explaino_julia_constant_mode: " + modeId;
+                return false;
+            }
+        }
+        if (!GetOptionalNumber(*paramsObject, "explaino_julia_c_real", &explainoJuliaCReal, nullptr, outError)) return false;
+        if (!GetOptionalNumber(*paramsObject, "explaino_julia_c_imag", &explainoJuliaCImag, nullptr, outError)) return false;
         if (!ParseIntField(*paramsObject, "multibrot_power", &multibrotPower, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_float", &multibrotPowerFloat, nullptr, outError)) return false;
         if (!GetOptionalNumber(*paramsObject, "multibrot_power_imag", &multibrotPowerImag, nullptr, outError)) return false;
@@ -2086,6 +2102,9 @@ bool LoadDiagnosticsStateJson(const std::string& text,
         nextParams.phoenix_p_imag = static_cast<float>(phoenixPImag);
         nextParams.julia_c_real = static_cast<float>(juliaCReal);
         nextParams.julia_c_imag = static_cast<float>(juliaCImag);
+        nextParams.explaino_julia_constant_mode = explainoJuliaConstantMode;
+        nextParams.explaino_julia_c_real = static_cast<float>(explainoJuliaCReal);
+        nextParams.explaino_julia_c_imag = static_cast<float>(explainoJuliaCImag);
         nextParams.multibrot_power = multibrotPower;
         nextParams.multibrot_power_float = static_cast<float>(multibrotPowerFloat);
         nextParams.multibrot_power_imag = static_cast<float>(multibrotPowerImag);

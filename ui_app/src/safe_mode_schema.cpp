@@ -464,6 +464,42 @@ UISchemaControl BuildJuliaFloatControl(
     return control;
 }
 
+UISchemaControl BuildExplainoJuliaConstantModeControl() {
+    UISchemaControl control = MakeParamControl(
+        "explaino_julia_constant_mode",
+        "combo",
+        "Explaino Julia Constant Source",
+        "enum",
+        "fractal.params.explaino_julia_constant_mode",
+        json_min::Value{std::string("seeded")});
+    control.options = {
+        {"seeded", "Seeded", ""},
+        {"custom", "Custom", ""},
+    };
+    SetVisibleForFractalType(&control, "explaino_julia");
+    return control;
+}
+
+UISchemaControl BuildExplainoJuliaFloatControl(
+    const char* id,
+    const char* label,
+    const char* path,
+    double defaultValue) {
+    UISchemaControl control = MakeUiRangedParamControl(
+        id,
+        "drag_float",
+        label,
+        "float",
+        -2.0,
+        2.0,
+        0.001,
+        path,
+        json_min::Value{defaultValue});
+    control.has_visible_if = true;
+    control.visible_if = MakeEqVisibleIf("fractal.params.explaino_julia_custom_constants_active", "true");
+    return control;
+}
+
 UISchemaControl BuildPhoenixFloatControl(
     const char* id,
     const char* label,
@@ -582,6 +618,9 @@ std::vector<UISchemaControl> BuildSafeModeFractalControls() {
         BuildExplainoRationalEscapeDenominatorPowerControl(),
         BuildJuliaFloatControl("julia_c_real", "Julia C (Real)", "fractal.params.julia_c_real", -0.7),
         BuildJuliaFloatControl("julia_c_imag", "Julia C (Imag)", "fractal.params.julia_c_imag", 0.27015),
+        BuildExplainoJuliaConstantModeControl(),
+        BuildExplainoJuliaFloatControl("explaino_julia_c_real", "Explaino Julia C (Real)", "fractal.params.explaino_julia_c_real", -0.7),
+        BuildExplainoJuliaFloatControl("explaino_julia_c_imag", "Explaino Julia C (Imag)", "fractal.params.explaino_julia_c_imag", 0.27015),
         BuildPhoenixFloatControl("phoenix_p_real", "Phoenix p (real)", "fractal.params.phoenix_p_real"),
         BuildPhoenixFloatControl("phoenix_p_imag", "Phoenix p (imag)", "fractal.params.phoenix_p_imag"),
         BuildMagnetFloatControl("magnet_seed_real", "Magnet Seed Real", "fractal.params.magnet_seed_real", -2.0, 2.0, 0.01, 0.0),
