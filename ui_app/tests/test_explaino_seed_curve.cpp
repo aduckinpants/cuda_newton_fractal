@@ -54,6 +54,8 @@ void TestLogisticAreaUToSeedContract() {
     const double u25 = LogisticAreaUToSeed(0.25);
     const double u525 = LogisticAreaUToSeed(5.25);
     const double u75 = LogisticAreaUToSeed(0.75);
+    const double warp25 = ExplainoCombinedSeedToWarpSeed(0.25);
+    const double warp525 = ExplainoCombinedSeedToWarpSeed(5.25);
 
     Check(NearlyEqual(u25, 0.942416285139079, 1.0e-12),
         "TestLogisticAreaUToSeedContract_RegressionValue");
@@ -65,6 +67,8 @@ void TestLogisticAreaUToSeedContract() {
         "TestLogisticAreaUToSeedContract_Bounded");
     Check(!NearlyEqual(u25, u75, 1.0e-12),
         "TestLogisticAreaUToSeedContract_DistinctFractionsDiffer");
+    Check(!NearlyEqual(warp25, warp525, 1.0e-12),
+        "TestLogisticAreaUToSeedContract_WarpSeedIncludesIntegerComponent");
 }
 
 void TestHashHelpersDeterministic() {

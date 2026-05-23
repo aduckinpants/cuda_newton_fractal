@@ -494,7 +494,7 @@ bool SamplePoint(const ProbeState& state,
 
     auto explainoSeed = [&]() {
         const double combinedSeed = params.explaino_seed + static_cast<double>(view.explaino_seed_drift);
-        return LogisticAreaUToSeed(combinedSeed);
+        return ExplainoCombinedSeedToWarpSeed(combinedSeed);
     };
 
     if (ft == FractalType::newton) {

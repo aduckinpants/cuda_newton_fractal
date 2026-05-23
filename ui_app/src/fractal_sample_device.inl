@@ -93,7 +93,7 @@
         const float explainoWarpStrength = params.explaino_warp_strength;
         const float explainoDamping = isfinite(params.explaino_damping) ? fmaxf(0.0f, params.explaino_damping) : 1.0f;
         const double explainoSeed = explainoProjectionAndFlow
-            ? LogisticAreaUToSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
+            ? ExplainoCombinedSeedToWarpSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
             : 0.0;
 
         if (useFP64) {
@@ -486,7 +486,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         const bool useExplicitRoots = params.explaino_root_count > 0;
         const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
         const int pairRootCount = useExplicitRoots ? params.explaino_root_count : polynomialRootCount;
@@ -727,7 +727,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
@@ -772,7 +772,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         const bool useExplicitRoots = params.explaino_root_count > 0;
         const int polynomialRootCount = ResolvePolynomialRootCount(params.poly_kind);
         const int rootCount = useExplicitRoots ? params.explaino_root_count : polynomialRootCount;
@@ -999,7 +999,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
@@ -1080,7 +1080,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
         Cx zPrev = z;
 
@@ -1167,7 +1167,7 @@
         const float novaWarpStrength = isExplainoNova ? params.explaino_warp_strength : 0.0f;
         const float novaPhase = isExplainoNova ? view.explaino_phase : 0.0f;
         const double novaSeed = isExplainoNova
-            ? LogisticAreaUToSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
+            ? ExplainoCombinedSeedToWarpSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
             : 0.0;
         z = {0.0f, 0.0f};
         cConst = isExplainoNova
@@ -1231,7 +1231,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
@@ -1287,7 +1287,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_phx = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
@@ -1386,7 +1386,7 @@
         float userDamp = params.explaino_damping;
         float joyCoupling = params.joy_coupling;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_joy = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
@@ -1509,7 +1509,7 @@
         float userDamp = params.explaino_damping;
         float foldAlpha = params.fold_coupling;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_fold = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
@@ -1625,7 +1625,7 @@
         float userDamp = params.explaino_damping;
         float bellBeta = params.bell_coupling;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_bell = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
@@ -1746,7 +1746,7 @@
         float V = params.vortex_strength;
         float T = params.tension_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int nRootsForPull = params.explaino_root_count;
         int bestIt_composed = 0;
         const bool useSplice = params.splice_offset != 0.0f;
@@ -2085,7 +2085,7 @@
         float userDamp = params.explaino_damping;
         float rippleA = params.ripple_amplitude;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_ripple = 0;
         const float kTwoPI = 6.2831853071795864f;
         const float kRipplePeriod = 8.0f;
@@ -2207,7 +2207,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_splice = 0;
         float coeffsA[5], coeffsB[5];
         #pragma unroll
@@ -2325,7 +2325,7 @@
         float userDamp = params.explaino_damping;
         float V = params.vortex_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int bestIt_vortex = 0;
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
@@ -2452,7 +2452,7 @@
         float userDamp = params.explaino_damping;
         float T = params.tension_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         int nRootsForPull = params.explaino_root_count;
         int bestIt_tension = 0;
         if (useFP64) {
@@ -2619,7 +2619,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
 
         TranscendentalFunc tf = params.transcendental_func;
         if (useFP64) {
@@ -2692,7 +2692,7 @@
         float userDamp = params.explaino_damping;
         float beta = params.momentum_beta;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             Cxd zPrevD = zd;
@@ -2752,7 +2752,7 @@
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
 
         const bool useCustomJuliaConstant =
@@ -2783,7 +2783,7 @@
         float phaseStrength = isfinite(view.explaino_phase_strength) ? view.explaino_phase_strength : 1.0f;
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase * phaseStrength, strength);
 
         Cx lambdaC{params.lambda_real, params.lambda_imag};
@@ -2808,7 +2808,7 @@
         float phase = view.explaino_phase;
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         z = explaino_warp_start(coord, seed, phase, strength);
 
         float coeffs[5];
@@ -2856,7 +2856,7 @@
         float userDamp = params.explaino_damping;
         float ratAlpha = params.explaino_cluster_radius;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);
             double pAbsD = 0.0;
@@ -3014,7 +3014,7 @@
         float phase = view.explaino_phase * view.explaino_phase_strength;
         float strength = params.explaino_warp_strength;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
 
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, (double)phase, (double)strength);
@@ -3052,7 +3052,7 @@
         float strength = params.explaino_warp_strength;
         float userDamp = params.explaino_damping;
         double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
-        double seed = LogisticAreaUToSeed(combinedSeed);
+        double seed = ExplainoCombinedSeedToWarpSeed(combinedSeed);
 
         if (useFP64) {
             Cxd zd = explaino_warp_start_d(coordD, seed, phase, strength);

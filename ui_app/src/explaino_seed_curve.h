@@ -88,4 +88,14 @@ EXPLAINO_SEED_CURVE_HD inline double LogisticAreaUToSeed(double s) {
     return static_cast<double>(h) / denom;
 }
 
+EXPLAINO_SEED_CURVE_HD inline double ExplainoCombinedSeedToWarpSeed(double s) {
+    const double fractionalSeed = LogisticAreaUToSeed(s);
+    const double base = floor(s);
+    const std::uint64_t h = ExplainoSplitmix64(
+        ExplainoDoubleBits(fractionalSeed) ^
+        ExplainoSplitmix64(ExplainoDoubleBits(base)));
+    const double denom = 18446744073709551615.0;
+    return static_cast<double>(h) / denom;
+}
+
 #undef EXPLAINO_SEED_CURVE_HD

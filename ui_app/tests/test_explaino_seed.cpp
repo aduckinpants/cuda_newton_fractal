@@ -58,6 +58,10 @@ int main() {
             std::cerr << "LogisticAreaUToSeed should depend only on the fractional seed component\n";
             return 1;
         }
+        if (NearlyEqual(ExplainoCombinedSeedToWarpSeed(5.25), ExplainoCombinedSeedToWarpSeed(0.25), 1.0e-12)) {
+            std::cerr << "ExplainoCombinedSeedToWarpSeed should include the integer seed component so warp-only lanes are not inert\n";
+            return 1;
+        }
         if (NearlyEqual(LogisticAreaUToSeed(0.25), 0.25, 1.0e-6)) {
             std::cerr << "LogisticAreaUToSeed should not collapse to raw linear fractional drift\n";
             return 1;

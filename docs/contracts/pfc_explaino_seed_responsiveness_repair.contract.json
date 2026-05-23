@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "contract_id": "pfc_explaino_seed_responsiveness_repair",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_explaino_seed_responsiveness_repair_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "repair reported Explaino Seed inertness before Step 9",
+    "preserve Explaino Julia seeded/custom constant authority",
+    "use no-mouse runtime proof"
+  ],
+  "forbidden_operator_prompts": [
+    "start Step 9 before this seed repair is classified or fixed",
+    "change standalone julia semantics",
+    "move owner-specific controls to explaino_all",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, or generated/internal editors",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "selector": "explaino_julia",
+    "seed_control": "authoritative on visible owner lane",
+    "runtime_or_public_path_proof": "required",
+    "physical_mouse": "forbidden"
+  },
+  "forbidden_defaults": {
+    "proxy_only_proof": "forbidden",
+    "standalone_julia_behavior_change": "forbidden",
+    "explaino_all_owner_control_leak": "forbidden",
+    "unrelated_feature_work": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_explaino_seed_responsiveness_repair.contract.json --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_explaino_seed_responsiveness_repair_PHASED_PLAN.md --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_explaino_seed_responsiveness_repair_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_derived --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_derived.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_derived.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_explaino_counterfactual_repair",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_sample --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_sample.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_schema --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_schema.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_runtime_publish --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_runtime_publish.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_runtime_pytest --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_runtime_pytest.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_runtime_pytest.json --heartbeat-seconds 30 --timeout-seconds 1200 -- py -3.14 -m pytest tests/test_fractal_runtime_explaino_julia_authority.py -q --junitxml artifacts/pytest/pfc_explaino_seed_responsiveness_repair_runtime.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_full_native --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_full_native.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_full_native.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_seed_responsiveness_repair_diff_check --log artifacts/logs/pfc_explaino_seed_responsiveness_repair_diff_check.log --out-json artifacts/validation/pfc_explaino_seed_responsiveness_repair_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Explaino seed responsiveness repair contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_seed_responsiveness_repair_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Explaino seed responsiveness hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_seed_responsiveness_repair_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

@@ -394,6 +394,7 @@ static void ApplyExplainoPresetDefaults(FractalType fractalType, KernelParams& p
     ApplyPhoenixStepCarrierDefaults(fractalType, params);
     ApplyExplainoClusterRadiusDefaults(fractalType, params);
     if (fractalType == FractalType::explaino_transcendental ||
+        fractalType == FractalType::explaino_julia ||
         fractalType == FractalType::explaino_lambda) {
         params.explaino_warp_strength = 0.25f;
     }

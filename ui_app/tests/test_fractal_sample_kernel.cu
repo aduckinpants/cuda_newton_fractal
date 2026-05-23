@@ -1070,6 +1070,50 @@ void TestExplainoJuliaAuthorityModeAffectsSamplesAndPreservesSeededDefaults() {
     CHECK("explaino julia custom mode changes SampleFractalPoints results", sawCustomDifference);
 }
 
+void TestExplainoJuliaSeedAffectsCustomAuthoritySamplesThroughVisibleSeedSurface() {
+    constexpr int N = 49;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -3; yi <= 3; ++yi) {
+        for (int xi = -3; xi <= 3; ++xi) {
+            coords[next++] = MakeDouble2(0.18 * static_cast<double>(xi), 0.18 * static_cast<double>(yi));
+        }
+    }
+
+    RenderSettings render{};
+    ViewState seedAView{};
+    ViewState seedBView{};
+    KernelParams seedAParams{};
+    KernelParams seedBParams{};
+    MakeDefaults(FractalType::explaino_julia, seedAView, seedAParams, render);
+    MakeDefaults(FractalType::explaino_julia, seedBView, seedBParams, render);
+    seedAParams.explaino_julia_constant_mode = ExplainoJuliaConstantMode::custom;
+    seedBParams.explaino_julia_constant_mode = ExplainoJuliaConstantMode::custom;
+    seedAParams.explaino_julia_c_real = -0.7f;
+    seedAParams.explaino_julia_c_imag = 0.27015f;
+    seedBParams.explaino_julia_c_real = -0.7f;
+    seedBParams.explaino_julia_c_imag = 0.27015f;
+    seedAParams.explaino_warp_strength = 0.25f;
+    seedBParams.explaino_warp_strength = 0.25f;
+    seedAParams.explaino_seed = 2.0;
+    seedBParams.explaino_seed = 7.0;
+    seedAView.explaino_seed_drift = 0.0f;
+    seedBView.explaino_seed_drift = 0.0f;
+
+    FractalSampleResult seedAResults[N]{};
+    FractalSampleResult seedBResults[N]{};
+    const char* error = nullptr;
+    CHECK("explaino julia custom seed A sample ok", SampleFractalPoints(coords, N, seedAView, seedAParams, render, seedAResults, &error));
+    CHECK("explaino julia custom seed B sample ok", SampleFractalPoints(coords, N, seedBView, seedBParams, render, seedBResults, &error));
+
+    bool sawSeedDifference = false;
+    for (int i = 0; i < N; ++i) {
+        sawSeedDifference = sawSeedDifference || !SameFractalSampleResult(seedAResults[i], seedBResults[i]);
+    }
+
+    CHECK("explaino julia visible seed affects custom-authority samples", sawSeedDifference);
+}
+
 void TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults() {
     constexpr int N = 7;
     Double2 coords[N] = {
@@ -1523,6 +1567,7 @@ int main() {
     TestExplainoNovaWarpAndDampingAffectSamplesAndPreserveDefaults();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
     TestExplainoJuliaAuthorityModeAffectsSamplesAndPreservesSeededDefaults();
+    TestExplainoJuliaSeedAffectsCustomAuthoritySamplesThroughVisibleSeedSurface();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
     TestExplainoCollatzDirectAffectsSamplesAndPreservesExistingCollatz();
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();

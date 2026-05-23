@@ -74,3 +74,12 @@ def test_explaino_julia_custom_constants_change_live_output_no_mouse(tmp_path: P
             assert imag_edited.get("set_value_consumed") is True
             assert isinstance(imag_hash, str) and imag_hash
             assert imag_hash != real_hash
+
+            seed_control = "fractal_control.explaino_seed.primary"
+            viewer.wait_for_control(seed_control, timeout_seconds=15.0)
+            seed_edited = viewer.set_control_value(seed_control, 6.5, timeout_seconds=15.0)
+            seed_hash = seed_edited.get("rendered_frame_hash")
+            assert seed_edited.get("current_fractal_type") == "explaino_julia"
+            assert seed_edited.get("set_value_consumed") is True
+            assert isinstance(seed_hash, str) and seed_hash
+            assert seed_hash != imag_hash

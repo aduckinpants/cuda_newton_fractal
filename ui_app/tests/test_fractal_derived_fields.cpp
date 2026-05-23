@@ -501,6 +501,41 @@ int main() {
         }
     }
 
+    // Explaino-Julia defaults
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_julia;
+        params.explaino_seed = 7.0;
+        params.explaino_warp_strength = 0.99f;
+        params.coloring_mode = ColoringMode::joy_basins;
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Julia defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 1200) {
+            std::cerr << "Explaino-Julia should use Julia-tuned max_iter (1200)\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Julia should default to smooth_escape\n";
+            return 1;
+        }
+        if (params.explaino_julia_constant_mode != ExplainoJuliaConstantMode::seeded) {
+            std::cerr << "Explaino-Julia should default to seeded constant authority\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.25f)) {
+            std::cerr << "Explaino-Julia should keep seed-driven warp active by default so the visible seed slider is not inert\n";
+            return 1;
+        }
+    }
+
     // Explaino-Collatz Direct defaults
     {
         ViewState view{};
