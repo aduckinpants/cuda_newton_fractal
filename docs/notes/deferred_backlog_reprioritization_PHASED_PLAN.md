@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Complete - backlog docs reconciled, validated, and ready for checkpoint.
+Complete - backlog docs reconciled, validated, checkpointed, and receipt-backed.
 
 ## Phase Checklist
 
@@ -77,7 +77,7 @@ The refreshed docs should leave future work in four buckets:
 
 - [done] Pass 1 - stale-state audit found `DEFERRED_THREADS.md` still described K1-K5/sample_fn as active and common catalog work as queued despite later shipped work.
 - [done] Pass 2 - priority-order audit moved quick docs/tooling/Lens cleanup ahead of larger view/camera/color work, and kept perturbation/new substrates behind architecture gates.
-- [done] Pass 3 - stale-phrase audit found no remaining `ACTIVE`, `queued, not started`, or pre-closeout phrases in the refreshed planning surfaces except expected shipped-work names.
+- [done] Pass 3 - stale-phrase audit found no remaining stale active-state, old queued-state, or pre-closeout phrases in the refreshed planning surfaces except expected shipped-work names.
 - [done] Pass 4 - clean re-read after validation found no additional real issue in the refreshed docs boundary, and product code/test/schema/runtime files remain untouched.
 
 ## Audit Findings
