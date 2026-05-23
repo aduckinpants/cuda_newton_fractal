@@ -88,7 +88,7 @@ Phase 1 is complete: implementation, validation, and hostile audit are complete 
 - Did I preserve standalone Collatz default behavior and current Explaino-all registry/common-axis behavior? Yes. The standalone Collatz branch is unchanged, and `explaino_all` registry-axis behavior was not edited.
 - Did I prove selector identity and frame sensitivity through no-mouse published-runtime automation? Yes. The final pytest kept `current_fractal_type == "explaino_collatz_direct"` and proved frame hash changes through in-process set-value commands.
 - Did I avoid Color Pipeline, capture finding, FPS pacing, equation-pack, perturbation, generated-editor, or broad engine drift? Yes. The touched files are limited to selector/schema/catalog/runtime/test surfaces for this bounded selector; Color Pipeline focused checks under the schema rail remained green.
-- Did I close with receipts, push, clean tree, and no stale plan text? This plan is prepared for wrapper checkpoint, receipt, push, and clean-tree closure with the stale closeout text removed.
+- Did I close with receipts, push, clean tree, and no stale plan text? Yes; wrapper checkpoint, receipts, feature-branch push, holder integration, holder push, stale-plan grep, and clean-tree proof are recorded for this closed slice.
 
 ## Audit Passes
 
