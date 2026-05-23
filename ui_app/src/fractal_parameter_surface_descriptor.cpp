@@ -133,6 +133,15 @@ bool FloatBindingResolves(BindingContext& ctx, const std::string& path) {
     return ctx.BindFloat(path, &value) && value;
 }
 
+std::string AnimationOptionIdForControl(const std::string& controlId) {
+    if (controlId == "explaino_seed") return "seed";
+    if (controlId == "explaino_damping") return "damping";
+    if (controlId == "explaino_warp_strength") return "warp_strength";
+    if (controlId == "explaino_root_spread") return "root_spread";
+    if (controlId == "explaino_mix") return "mix";
+    return controlId;
+}
+
 bool ControlIsAnimatableForContext(
     const UISchemaControl& control,
     const UISchemaControl* animTarget,
@@ -140,12 +149,18 @@ bool ControlIsAnimatableForContext(
     if (!animTarget || control.id.empty()) {
         return false;
     }
+    const std::string optionId = AnimationOptionIdForControl(control.id);
     for (const UISchemaOption& option : animTarget->options) {
-        if (option.id != control.id || !OptionVisibleForContext(option, ctx)) {
+        if (option.id != optionId || !OptionVisibleForContext(option, ctx)) {
             continue;
         }
+        if (option.id == "seed") {
+            return true;
+        }
         return FloatBindingResolves(ctx, "fractal.params." + control.id) ||
-            FloatBindingResolves(ctx, "fractal.view." + control.id);
+            FloatBindingResolves(ctx, "fractal.view." + control.id) ||
+            FloatBindingResolves(ctx, "fractal.params." + option.id) ||
+            FloatBindingResolves(ctx, "fractal.view." + option.id);
     }
     return false;
 }

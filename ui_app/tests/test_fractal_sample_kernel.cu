@@ -852,6 +852,78 @@ void TestExplainoLambdaPhaseStrengthControlsWarpedMap() {
         sawPhaseStrengthDifference);
 }
 
+void TestExplainoNovaWarpAndDampingAffectSamplesAndPreserveDefaults() {
+    constexpr int N = 49;
+    Double2 coords[N];
+    int next = 0;
+    for (int yi = -3; yi <= 3; ++yi) {
+        for (int xi = -3; xi <= 3; ++xi) {
+            coords[next++] = MakeDouble2(0.28 * static_cast<double>(xi), 0.28 * static_cast<double>(yi));
+        }
+    }
+
+    ViewState canonicalView{};
+    ViewState explicitDefaultView{};
+    ViewState warpActiveView{};
+    ViewState dampingActiveView{};
+    KernelParams canonicalParams{};
+    KernelParams explicitDefaultParams{};
+    KernelParams warpActiveParams{};
+    KernelParams dampingActiveParams{};
+    RenderSettings render{};
+    MakeDefaults(FractalType::explaino_nova, canonicalView, canonicalParams, render);
+    MakeDefaults(FractalType::explaino_nova, explicitDefaultView, explicitDefaultParams, render);
+    MakeDefaults(FractalType::explaino_nova, warpActiveView, warpActiveParams, render);
+    MakeDefaults(FractalType::explaino_nova, dampingActiveView, dampingActiveParams, render);
+
+    canonicalParams.max_iter = 500;
+    explicitDefaultParams.max_iter = 500;
+    warpActiveParams.max_iter = 500;
+    dampingActiveParams.max_iter = 500;
+    canonicalView.explaino_phase = 1.1f;
+    explicitDefaultView.explaino_phase = 1.1f;
+    warpActiveView.explaino_phase = 1.1f;
+    dampingActiveView.explaino_phase = 1.1f;
+    canonicalParams.explaino_warp_strength = 0.0f;
+    canonicalParams.explaino_damping = 1.0f;
+    explicitDefaultParams.explaino_warp_strength = 0.0f;
+    explicitDefaultParams.explaino_damping = 1.0f;
+    warpActiveParams.explaino_warp_strength = 0.45f;
+    warpActiveParams.explaino_damping = 1.0f;
+    dampingActiveParams.explaino_warp_strength = 0.0f;
+    dampingActiveParams.explaino_damping = 0.35f;
+
+    FractalSampleResult canonicalResults[N]{};
+    FractalSampleResult explicitDefaultResults[N]{};
+    FractalSampleResult warpActiveResults[N]{};
+    FractalSampleResult dampingActiveResults[N]{};
+    const char* error = nullptr;
+    CHECK("explaino nova canonical sample ok",
+        SampleFractalPoints(coords, N, canonicalView, canonicalParams, render, canonicalResults, &error));
+    CHECK("explaino nova explicit default sample ok",
+        SampleFractalPoints(coords, N, explicitDefaultView, explicitDefaultParams, render, explicitDefaultResults, &error));
+    CHECK("explaino nova active warp sample ok",
+        SampleFractalPoints(coords, N, warpActiveView, warpActiveParams, render, warpActiveResults, &error));
+    CHECK("explaino nova active damping sample ok",
+        SampleFractalPoints(coords, N, dampingActiveView, dampingActiveParams, render, dampingActiveResults, &error));
+    if (error) {
+        std::cerr << "    error: " << error << "\n";
+    }
+
+    bool defaultParity = true;
+    bool sawWarpDifference = false;
+    bool sawDampingDifference = false;
+    for (int i = 0; i < N; ++i) {
+        defaultParity = defaultParity && SameFractalSampleResult(canonicalResults[i], explicitDefaultResults[i]);
+        sawWarpDifference = sawWarpDifference || !SameFractalSampleResult(canonicalResults[i], warpActiveResults[i]);
+        sawDampingDifference = sawDampingDifference || !SameFractalSampleResult(canonicalResults[i], dampingActiveResults[i]);
+    }
+
+    CHECK("explaino nova warp/damping defaults preserve canonical samples", defaultParity);
+    CHECK("explaino nova warp strength changes SampleFractalPoints results", sawWarpDifference);
+    CHECK("explaino nova damping changes SampleFractalPoints results", sawDampingDifference);
+}
+
 void TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults() {
     constexpr int N = 49;
     Double2 coords[N];
@@ -1311,6 +1383,7 @@ int main() {
     TestExplainoCounterfactualPairStaysExplicitAndReadsExplainoControls();
     TestExplainoProjectionAndFlowStaysExplicitAndReadsExplainoControls();
     TestExplainoLambdaPhaseStrengthControlsWarpedMap();
+    TestExplainoNovaWarpAndDampingAffectSamplesAndPreserveDefaults();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();

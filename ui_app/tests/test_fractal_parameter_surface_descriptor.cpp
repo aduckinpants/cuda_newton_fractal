@@ -124,6 +124,29 @@ bool ExpectOwnerControl(
     return true;
 }
 
+bool ExpectCommonControl(
+    const json_min::Value& root,
+    const char* lane,
+    const char* controlId,
+    const char* bindingPath,
+    const char* runtimeBindingKind) {
+    const json_min::Value* control = FindControlOnLane(root, lane, controlId);
+    if (!control) {
+        std::cerr << "Missing descriptor control " << controlId << " on " << lane << "\n";
+        return false;
+    }
+    if (!JsonStringFieldEquals(*control, "binding_path", bindingPath) ||
+        !JsonStringFieldEquals(*control, "runtime_binding_kind", runtimeBindingKind) ||
+        !JsonStringFieldEquals(*control, "state_io_key", controlId) ||
+        !JsonBoolField(*control, "binding_resolves") ||
+        !JsonBoolField(*control, "has_validation_range") ||
+        !JsonBoolField(*control, "animatable")) {
+        std::cerr << "Descriptor common control " << controlId << " on " << lane << " is missing authority fields\n";
+        return false;
+    }
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -157,6 +180,11 @@ int main() {
         !ExpectOwnerControl(parsed.value, "perpendicular_burning_ship", "perpendicular_fold_mix", "fractal.params.perpendicular_fold_mix") ||
         !ExpectOwnerControl(parsed.value, "spider", "spider_feedback", "fractal.params.spider_feedback") ||
         !ExpectOwnerControl(parsed.value, "collatz", "collatz_transition_strength", "fractal.params.collatz_transition_strength")) {
+        return 1;
+    }
+
+    if (!ExpectCommonControl(parsed.value, "explaino_nova", "explaino_warp_strength", "fractal.params.explaino_warp_strength", "float") ||
+        !ExpectCommonControl(parsed.value, "explaino_nova", "explaino_damping", "fractal.params.explaino_damping", "float")) {
         return 1;
     }
 

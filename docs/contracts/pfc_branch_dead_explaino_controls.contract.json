@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "contract_id": "pfc_branch_dead_explaino_controls",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_branch_dead_explaino_controls_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui/fractal_binding_surface_v1.ui_schema.json",
+    "ui_app/src/fractal_sample_device.inl",
+    "ui_app/src/fractal_probe_runner.cpp",
+    "ui_app/src/fractal_parameter_surface_descriptor.cpp",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "continue parameter functionality campaign step 6 from the sprint holder branch",
+    "audit hidden or branch-dead Explaino controls before repair",
+    "repair default-preserving controls only when runtime authority is clear",
+    "prove repaired controls with native sample and no-mouse published-runtime evidence"
+  ],
+  "forbidden_operator_prompts": [
+    "re-expose ambiguous controls without runtime authority proof",
+    "change Explaino-all registry/common-axis behavior",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, generated editors, Explaino Collatz, Explaino Julia authority modes, or broad renderer architecture",
+    "claim a slider is fixed without native and published-runtime proof",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "fractal_type": "explaino_nova",
+    "control_ids": [
+      "explaino_warp_strength",
+      "explaino_damping"
+    ],
+    "runtime_control_ids": [
+      "fractal_control.explaino_warp_strength.primary",
+      "fractal_control.explaino_damping.primary"
+    ],
+    "default_behavior": "preserved",
+    "runtime_proof": "required_no_mouse"
+  },
+  "forbidden_defaults": {
+    "ambiguous_control_reexposure": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "feature_widening": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_branch_dead_explaino_controls.contract.json --out-json artifacts/validation/pfc_branch_dead_explaino_controls_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_branch_dead_explaino_controls_PHASED_PLAN.md --out-json artifacts/validation/pfc_branch_dead_explaino_controls_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_branch_dead_explaino_controls_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_branch_dead_schema_binding --log artifacts/logs/pfc_branch_dead_schema_binding.log --out-json artifacts/validation/pfc_branch_dead_schema_binding.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_explaino_counterfactual_repair",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_branch_dead_descriptor --log artifacts/logs/pfc_branch_dead_descriptor.log --out-json artifacts/validation/pfc_branch_dead_descriptor.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_branch_dead_sample --log artifacts/logs/pfc_branch_dead_sample.log --out-json artifacts/validation/pfc_branch_dead_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_branch_dead_runtime_publish --log artifacts/logs/pfc_branch_dead_runtime_publish.log --out-json artifacts/validation/pfc_branch_dead_runtime_publish.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_fractal_runtime_branch_dead_explaino_controls.py -q --junitxml artifacts/pytest/pfc_branch_dead_runtime.junit.xml",
+    "py -3.14 -m pytest tests/test_fractal_parameter_surface_descriptor_cli.py -q --junitxml artifacts/pytest/pfc_branch_dead_descriptor_cli.junit.xml"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The branch-dead Explaino controls contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_branch_dead_explaino_controls_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The branch-dead Explaino controls hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_branch_dead_explaino_controls_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

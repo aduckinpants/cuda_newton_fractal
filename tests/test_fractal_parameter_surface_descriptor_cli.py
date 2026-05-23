@@ -58,6 +58,20 @@ def test_parameter_surface_descriptor_cli_owner_controls() -> None:
         assert control["state_io_key"] == control_id
         assert _find_control(descriptor, "explaino_all", control_id) is None
 
+    common_expected = [
+        ("explaino_warp_strength", "fractal.params.explaino_warp_strength"),
+        ("explaino_damping", "fractal.params.explaino_damping"),
+    ]
+    for control_id, binding_path in common_expected:
+        control = _find_control(descriptor, "explaino_nova", control_id)
+        assert control is not None
+        assert control["binding_path"] == binding_path
+        assert control["runtime_binding_kind"] == "float"
+        assert control["binding_resolves"] is True
+        assert control["has_validation_range"] is True
+        assert control["animatable"] is True
+        assert control["state_io_key"] == control_id
+
 
 def test_parameter_surface_descriptor_json_file_output(tmp_path) -> None:
     if sys.platform != "win32":

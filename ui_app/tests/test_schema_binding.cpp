@@ -318,15 +318,14 @@ bool ExplainoCommonControlExpectedVisible(const char* controlId, FractalType fra
             fractalType != FractalType::explaino_rational_escape;
     }
     if (std::string_view(controlId) == "explaino_warp_strength") {
-        return fractalType != FractalType::explaino_nova;
+        return true;
     }
     if (std::string_view(controlId) == "explaino_root_spread") {
         return fractalType != FractalType::explaino_transcendental &&
             fractalType != FractalType::explaino_lambda;
     }
     if (std::string_view(controlId) == "explaino_damping") {
-        return fractalType != FractalType::explaino_nova &&
-            fractalType != FractalType::explaino_julia &&
+        return fractalType != FractalType::explaino_julia &&
             fractalType != FractalType::explaino_lambda &&
             fractalType != FractalType::explaino_rational_escape;
     }

@@ -1160,16 +1160,29 @@
         }
     } else if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
         // Nova (V1): z_{n+1} = z_n - alpha * f(z_n)/f'(z_n) + c
+        const bool isExplainoNova = ft == FractalType::explaino_nova;
+        const float novaDamping = isExplainoNova
+            ? (isfinite(params.explaino_damping) ? fmaxf(0.0f, params.explaino_damping) : 1.0f)
+            : 1.0f;
+        const float novaWarpStrength = isExplainoNova ? params.explaino_warp_strength : 0.0f;
+        const float novaPhase = isExplainoNova ? view.explaino_phase : 0.0f;
+        const double novaSeed = isExplainoNova
+            ? LogisticAreaUToSeed(params.explaino_seed + static_cast<double>(view.explaino_seed_drift))
+            : 0.0;
         z = {0.0f, 0.0f};
-        cConst = coord;
+        cConst = isExplainoNova
+            ? explaino_warp_start(coord, novaSeed, novaPhase, novaWarpStrength)
+            : coord;
 
         float alpha = params.nova_alpha;
         if (!(alpha > 0.0f) || !(alpha <= 2.0f) || !isfinite(alpha)) {
             escaped = true;
         } else if (useFP64) {
             Cxd zd = {0.0, 0.0};
-            Cxd cConstD = coordD;
-            double alphaD = (double)alpha;
+            Cxd cConstD = isExplainoNova
+                ? explaino_warp_start_d(coordD, novaSeed, novaPhase, novaWarpStrength)
+                : coordD;
+            double alphaD = (double)alpha * (double)novaDamping;
             double pAbsD = 0.0;
             for (; it < maxIter; ++it) {
                 Cxd P, dP;
@@ -1192,6 +1205,7 @@
             z = {(float)zd.x, (float)zd.y};
             pAbs = (float)pAbsD;
         } else {
+            float alphaStep = alpha * novaDamping;
             for (; it < maxIter; ++it) {
                 Cx P, dP;
                 float coeffs[5];
@@ -1204,7 +1218,7 @@
                 // Nova: when derivative is zero, skip Newton step but still apply +c.
                 if (dAbs2 >= 1e-20f) {
                     Cx step = cx_div(P, dP);
-                    z = cx_sub(z, cx_scale(step, alpha));
+                    z = cx_sub(z, cx_scale(step, alphaStep));
                 }
                 z = cx_add(z, cConst);
                 if (!isfinite(z.x) || !isfinite(z.y)) { escaped = true; break; }

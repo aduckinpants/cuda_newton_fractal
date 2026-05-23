@@ -897,7 +897,14 @@ bool SamplePoint(const ProbeState& state,
     }
 
     if (ft == FractalType::nova || ft == FractalType::explaino_nova) {
-        Cx cConst = coord;
+        const bool isExplainoNova = ft == FractalType::explaino_nova;
+        const float novaDamping = isExplainoNova && std::isfinite(params.explaino_damping)
+            ? std::max(0.0f, params.explaino_damping)
+            : 1.0f;
+        const Cx cConst = isExplainoNova
+            ? ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength)
+            : coord;
+        const float alphaStep = params.nova_alpha * novaDamping;
         z = {0.0f, 0.0f};
         for (; it < maxIter; ++it) {
             Cx P, dP;
@@ -905,7 +912,7 @@ bool SamplePoint(const ProbeState& state,
             pAbs = CxAbs(P);
             if (pAbs < eps) { status = FractalProbeSampleStatus::converged; break; }
             if (CxAbs2(dP) >= 1.0e-20f) {
-                z = CxSub(z, CxScale(CxDiv(P, dP), params.nova_alpha));
+                z = CxSub(z, CxScale(CxDiv(P, dP), alphaStep));
             }
             z = CxAdd(z, cConst);
             if (!IsFiniteCx(z)) { status = FractalProbeSampleStatus::nonfinite; break; }
