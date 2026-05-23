@@ -191,7 +191,8 @@ inline bool ValidateFractalRuntimeStateImpl(const ViewState& view,
             return FailFractalRuntimeValidation("multibrot_power must be in [2,12]", outError);
         }
     }
-    if (view.fractal_type == FractalType::collatz) {
+    if (view.fractal_type == FractalType::collatz ||
+        view.fractal_type == FractalType::explaino_collatz_direct) {
         if (!std::isfinite(params.collatz_transition_strength) ||
             params.collatz_transition_strength < 0.0f ||
             params.collatz_transition_strength > 4.0f) {

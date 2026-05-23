@@ -208,30 +208,33 @@ int main() {
         ViewState view{};
         KernelParams params{};
         std::string error;
-        view.fractal_type = FractalType::collatz;
         params.coloring_mode = ColoringMode::smooth_escape;
-        const float acceptedStrengths[] = {0.0f, 1.0f, 4.0f};
-        for (float strength : acceptedStrengths) {
-            params.collatz_transition_strength = strength;
+        const FractalType collatzLanes[] = {FractalType::collatz, FractalType::explaino_collatz_direct};
+        for (FractalType collatzLane : collatzLanes) {
+            view.fractal_type = collatzLane;
+            const float acceptedStrengths[] = {0.0f, 1.0f, 4.0f};
+            for (float strength : acceptedStrengths) {
+                params.collatz_transition_strength = strength;
+                error.clear();
+                if (!ValidateFractalRuntimeState(view, params, &error)) {
+                    std::cerr << "Expected Collatz validation to accept transition strength " << strength << ", got: " << error << "\n";
+                    return 1;
+                }
+            }
+            params.collatz_transition_strength = -0.01f;
             error.clear();
-            if (!ValidateFractalRuntimeState(view, params, &error)) {
-                std::cerr << "Expected Collatz validation to accept transition strength " << strength << ", got: " << error << "\n";
+            if (ValidateFractalRuntimeState(view, params, &error) ||
+                error != "collatz_transition_strength must be finite and in [0,4]") {
+                std::cerr << "Expected Collatz validation to reject transition strength below the hard floor\n";
                 return 1;
             }
-        }
-        params.collatz_transition_strength = -0.01f;
-        error.clear();
-        if (ValidateFractalRuntimeState(view, params, &error) ||
-            error != "collatz_transition_strength must be finite and in [0,4]") {
-            std::cerr << "Expected Collatz validation to reject transition strength below the hard floor\n";
-            return 1;
-        }
-        params.collatz_transition_strength = 4.01f;
-        error.clear();
-        if (ValidateFractalRuntimeState(view, params, &error) ||
-            error != "collatz_transition_strength must be finite and in [0,4]") {
-            std::cerr << "Expected Collatz validation to reject transition strength above the hard cap\n";
-            return 1;
+            params.collatz_transition_strength = 4.01f;
+            error.clear();
+            if (ValidateFractalRuntimeState(view, params, &error) ||
+                error != "collatz_transition_strength must be finite and in [0,4]") {
+                std::cerr << "Expected Collatz validation to reject transition strength above the hard cap\n";
+                return 1;
+            }
         }
     }
 

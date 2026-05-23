@@ -91,6 +91,11 @@ static void TestConcreteEnumIdWrappers() {
         "TestConcreteEnumIdWrappers_FractalTypeGenericEquationPackLookup");
     Check(TryParseFractalTypeId("generic_equation_pack", &fractalType) && fractalType == FractalType::generic_equation_pack,
         "TestConcreteEnumIdWrappers_FractalTypeGenericEquationPackParse");
+    Check(std::string_view(FractalTypeId(FractalType::explaino_collatz_direct)) == "explaino_collatz_direct",
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoCollatzDirectLookup");
+    Check(TryParseFractalTypeId("explaino_collatz_direct", &fractalType) &&
+            fractalType == FractalType::explaino_collatz_direct,
+        "TestConcreteEnumIdWrappers_FractalTypeExplainoCollatzDirectParse");
     Check(TryParseFractalTypeId("lambda", &fractalType) && fractalType == FractalType::lambda_map,
         "TestConcreteEnumIdWrappers_FractalTypeParseAlias");
 

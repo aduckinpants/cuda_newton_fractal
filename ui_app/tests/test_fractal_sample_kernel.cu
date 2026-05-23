@@ -273,6 +273,7 @@ void TestAllFractalTypes() {
         {FractalType::halley, "halley"},
         {FractalType::collatz, "collatz"},
         {FractalType::explaino_collatz, "explaino_collatz"},
+        {FractalType::explaino_collatz_direct, "explaino_collatz_direct"},
         {FractalType::mcmullen, "mcmullen"},
         {FractalType::lambda_map, "lambda_map"},
         {FractalType::magnet, "magnet"},
@@ -1062,6 +1063,85 @@ void TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults() {
     CHECK("collatz transition strength changes SampleFractalPoints results", sawDifference);
 }
 
+void TestExplainoCollatzDirectAffectsSamplesAndPreservesExistingCollatz() {
+    constexpr int N = 7;
+    Double2 coords[N] = {
+        MakeDouble2(-1.0, 0.0),
+        MakeDouble2(-0.5, 0.0),
+        MakeDouble2(-0.25, 0.0),
+        MakeDouble2(0.0, 0.0),
+        MakeDouble2(0.25, 0.0),
+        MakeDouble2(0.5, 0.0),
+        MakeDouble2(1.0, 0.0),
+    };
+
+    RenderSettings render{};
+    ViewState standaloneView{};
+    ViewState directView{};
+    ViewState transitionView{};
+    ViewState warpView{};
+    ViewState existingNewtonView{};
+    KernelParams standaloneParams{};
+    KernelParams directParams{};
+    KernelParams transitionParams{};
+    KernelParams warpParams{};
+    KernelParams existingNewtonParams{};
+    MakeDefaults(FractalType::collatz, standaloneView, standaloneParams, render);
+    MakeDefaults(FractalType::explaino_collatz_direct, directView, directParams, render);
+    MakeDefaults(FractalType::explaino_collatz_direct, transitionView, transitionParams, render);
+    MakeDefaults(FractalType::explaino_collatz_direct, warpView, warpParams, render);
+    MakeDefaults(FractalType::explaino_collatz, existingNewtonView, existingNewtonParams, render);
+    standaloneParams.max_iter = 500;
+    directParams.max_iter = 500;
+    transitionParams.max_iter = 500;
+    warpParams.max_iter = 500;
+    existingNewtonParams.max_iter = 500;
+    directParams.explaino_warp_strength = 0.0f;
+    directView.explaino_phase = 0.0f;
+    directView.explaino_phase_strength = 1.0f;
+    transitionParams.explaino_warp_strength = 0.0f;
+    transitionParams.collatz_transition_strength = 0.35f;
+    warpParams.explaino_warp_strength = 0.35f;
+    warpParams.collatz_transition_strength = 1.0f;
+    warpView.explaino_phase = 0.45f;
+    warpView.explaino_phase_strength = 1.0f;
+
+    FractalSampleResult standaloneResults[N]{};
+    FractalSampleResult directResults[N]{};
+    FractalSampleResult transitionResults[N]{};
+    FractalSampleResult warpResults[N]{};
+    FractalSampleResult existingNewtonResults[N]{};
+    const char* error = nullptr;
+    CHECK("explaino collatz direct standalone sample ok", SampleFractalPoints(coords, N, standaloneView, standaloneParams, render, standaloneResults, &error));
+    CHECK("explaino collatz direct default sample ok", SampleFractalPoints(coords, N, directView, directParams, render, directResults, &error));
+    CHECK("explaino collatz direct transition sample ok", SampleFractalPoints(coords, N, transitionView, transitionParams, render, transitionResults, &error));
+    CHECK("explaino collatz direct warp sample ok", SampleFractalPoints(coords, N, warpView, warpParams, render, warpResults, &error));
+    CHECK("existing explaino collatz still samples", SampleFractalPoints(coords, N, existingNewtonView, existingNewtonParams, render, existingNewtonResults, &error));
+
+    bool neutralMatchesStandalone = true;
+    bool transitionChanged = false;
+    bool warpChanged = false;
+    bool existingNewtonRemainsDifferent = false;
+    for (int i = 0; i < N; ++i) {
+        if (!SameFractalSampleResult(standaloneResults[i], directResults[i])) {
+            neutralMatchesStandalone = false;
+        }
+        if (!SameFractalSampleResult(directResults[i], transitionResults[i])) {
+            transitionChanged = true;
+        }
+        if (!SameFractalSampleResult(directResults[i], warpResults[i])) {
+            warpChanged = true;
+        }
+        if (!SameFractalSampleResult(directResults[i], existingNewtonResults[i])) {
+            existingNewtonRemainsDifferent = true;
+        }
+    }
+    CHECK("explaino collatz direct neutral path matches standalone Collatz", neutralMatchesStandalone);
+    CHECK("explaino collatz direct transition strength changes SampleFractalPoints results", transitionChanged);
+    CHECK("explaino collatz direct warp controls change SampleFractalPoints results", warpChanged);
+    CHECK("existing explaino_collatz remains a distinct Newton lane", existingNewtonRemainsDifferent);
+}
+
 void TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults() {
     constexpr int N = 9;
     Double2 coords[N] = {
@@ -1386,6 +1466,7 @@ int main() {
     TestExplainoNovaWarpAndDampingAffectSamplesAndPreserveDefaults();
     TestParameterFunctionalityBatch1ControlsAffectSamplesAndPreserveDefaults();
     TestCollatzTransitionStrengthAffectsSamplesAndPreservesDefaults();
+    TestExplainoCollatzDirectAffectsSamplesAndPreservesExistingCollatz();
     TestPhoenixParameterizationAffectsSamplesAndPreservesDefaults();
     TestFixedFamilyFoldMixControlsAffectSamplesAndPreserveDefaults();
     TestExplainoYEpsilonTunedWitnessAffectsSamples();

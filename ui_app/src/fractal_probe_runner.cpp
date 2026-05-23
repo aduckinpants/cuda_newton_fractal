@@ -1664,6 +1664,29 @@ bool SamplePoint(const ProbeState& state,
         return true;
     }
 
+    if (ft == FractalType::explaino_collatz_direct) {
+        z = ExplainoWarpStartHost(
+            coord,
+            explainoSeed(),
+            view.explaino_phase * view.explaino_phase_strength,
+            params.explaino_warp_strength);
+
+        for (; it < maxIter; ++it) {
+            StepCollatzEscapeState(&z, params.collatz_transition_strength);
+            if (!IsFiniteCx(z)) {
+                status = FractalProbeSampleStatus::nonfinite;
+                break;
+            }
+            if (CxAbs2(z) > SpecializedEscapeRadiusSquared()) {
+                status = FractalProbeSampleStatus::escaped;
+                break;
+            }
+        }
+
+        SetFinalSample(outSample, sequenceIndex, gridX, gridY, coordX, coordY, it, status, z, 0.0f, false, params, false);
+        return true;
+    }
+
     if (ft == FractalType::explaino_collatz) {
         z = ExplainoWarpStartHost(coord, explainoSeed(), view.explaino_phase, params.explaino_warp_strength);
 

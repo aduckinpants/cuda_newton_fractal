@@ -104,6 +104,7 @@ std::vector<FractalProbeCase> AllProbeCases() {
             {"fractal.params.lambda_imag", FractalProbeScalar::Number(-0.27446103)},
         }},
         {"explaino_rational_escape", "explaino_rational_escape", false, true, {}},
+        {"explaino_collatz_direct", "explaino_collatz_direct", false, true, {}},
     };
 }
 

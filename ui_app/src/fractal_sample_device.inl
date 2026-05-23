@@ -3007,6 +3007,42 @@
                 break;
             }
         }
+    } else if (ft == FractalType::explaino_collatz_direct) {
+        float phase = view.explaino_phase * view.explaino_phase_strength;
+        float strength = params.explaino_warp_strength;
+        double combinedSeed = params.explaino_seed + (double)view.explaino_seed_drift;
+        double seed = LogisticAreaUToSeed(combinedSeed);
+
+        if (useFP64) {
+            Cxd zd = explaino_warp_start_d(coordD, seed, (double)phase, (double)strength);
+            const double escapeRadiusSquaredD = (double)SpecializedEscapeRadiusSquared();
+            for (; it < maxIter; ++it) {
+                StepCollatzEscapeState(&zd, params.collatz_transition_strength);
+                if (cxd_abs2(zd) > escapeRadiusSquaredD) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(zd.x) || !isfinite(zd.y)) {
+                    escaped = true;
+                    break;
+                }
+            }
+            z = {(float)zd.x, (float)zd.y};
+        } else {
+            z = explaino_warp_start(coord, seed, phase, strength);
+            const float escapeRadiusSquared = SpecializedEscapeRadiusSquared();
+            for (; it < maxIter; ++it) {
+                StepCollatzEscapeState(&z, params.collatz_transition_strength);
+                if (cx_abs2(z) > escapeRadiusSquared) {
+                    escaped = true;
+                    break;
+                }
+                if (!isfinite(z.x) || !isfinite(z.y)) {
+                    escaped = true;
+                    break;
+                }
+            }
+        }
     } else if (ft == FractalType::explaino_collatz) {
         // Explaino-Collatz: Newton's method on fixed points of the Collatz map.
         float phase = view.explaino_phase;

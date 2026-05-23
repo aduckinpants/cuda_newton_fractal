@@ -166,3 +166,5 @@
 - `ck:b2f3d530` 2026-05-23 06:05 UTC | score 5 — PFC Step 6 branch-dead Explaino controls closed: Explaino Nova warp/damping restored with native, full-helper, no-mouse runtime, descriptor, code-quality, contract, plan-sync, and hostile-audit proof.
 - `ck:b2f3d530` 2026-05-23 06:07 UTC | score 5 — PFC holder integrated Step 6 at 32dd3e9; next implementation branch is codex/pfc-explaino-collatz-direct.
 - `ck:b2f3d530` 2026-05-23 06:09 UTC | score 5 — PFC Step 6 stale-plan cleanup closed on holder head; Step 6 plan now states closed and no workflow-closure text remains.
+- `ck:160ff1c0` 2026-05-23 06:22 UTC — session-start | branch=codex/pfc-explaino-collatz-direct | head=6ff4ef9 | status=dirty | profile=runtime | intent=parameter functionality campaign slice 7 Explaino Collatz direct variant
+- `ck:160ff1c0` 2026-05-23 07:52 UTC | score 96 — Closed PFC Step 7: added explaino_collatz_direct as an additive direct Collatz escape-time Explaino selector, preserved existing explaino_collatz Newton lane, kept collatz_transition_strength off explaino_all, and validated final native/runtime proof.

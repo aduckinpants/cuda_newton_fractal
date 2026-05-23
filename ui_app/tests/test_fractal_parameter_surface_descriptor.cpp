@@ -179,7 +179,8 @@ int main() {
         !ExpectOwnerControl(parsed.value, "celtic_mandelbrot", "celtic_abs_mix", "fractal.params.celtic_abs_mix") ||
         !ExpectOwnerControl(parsed.value, "perpendicular_burning_ship", "perpendicular_fold_mix", "fractal.params.perpendicular_fold_mix") ||
         !ExpectOwnerControl(parsed.value, "spider", "spider_feedback", "fractal.params.spider_feedback") ||
-        !ExpectOwnerControl(parsed.value, "collatz", "collatz_transition_strength", "fractal.params.collatz_transition_strength")) {
+        !ExpectOwnerControl(parsed.value, "collatz", "collatz_transition_strength", "fractal.params.collatz_transition_strength") ||
+        !ExpectOwnerControl(parsed.value, "explaino_collatz_direct", "collatz_transition_strength", "fractal.params.collatz_transition_strength")) {
         return 1;
     }
 

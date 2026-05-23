@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "contract_id": "pfc_explaino_collatz_direct",
+  "feature_id": "parameter_functionality_campaign",
+  "workflow_type": "viewer_first",
+  "plan_path": "docs/contracts/pfc_explaino_collatz_direct_PHASED_PLAN.md",
+  "allowed_mutation_scope": [
+    "docs/contracts",
+    "HANDOFF_LOG.md",
+    "ui",
+    "ui_app/src",
+    "ui_app/tests",
+    "tests",
+    "artifacts"
+  ],
+  "required_operator_inputs": [
+    "start from codex/parameter-functionality-campaign on a feature branch",
+    "add a direct Explaino Collatz selector without changing the existing explaino_collatz Newton lane",
+    "keep collatz_transition_strength off explaino_all",
+    "use no-mouse persistent runtime proof and avoid repeated viewer relaunch loops"
+  ],
+  "forbidden_operator_prompts": [
+    "repurpose or rewrite the existing explaino_collatz Newton/fixed-point semantics",
+    "add collatz_transition_strength to explaino_all",
+    "change Color Pipeline, capture finding, FPS pacing, equation-pack viewport integration, perturbation zoom, or generated editors",
+    "use OS mouse automation or physical cursor tests"
+  ],
+  "required_defaults": {
+    "new_selector": "explaino_collatz_direct",
+    "existing_selector_preserved": "explaino_collatz",
+    "collatz_transition_strength_default": 1.0,
+    "collatz_transition_strength_owner_lanes": "collatz, explaino_collatz_direct",
+    "runtime_or_public_path_proof": "required"
+  },
+  "forbidden_defaults": {
+    "explaino_all_owner_control": "forbidden",
+    "existing_explaino_collatz_rewrite": "forbidden",
+    "proxy_only_proof": "forbidden",
+    "physical_mouse": "forbidden",
+    "default_behavior_change": "forbidden"
+  },
+  "required_validation_commands": [
+    "py -3.14 tools/viewer_host_validate_slice_contract.py --contract docs/contracts/pfc_explaino_collatz_direct.contract.json --out-json artifacts/validation/pfc_explaino_collatz_direct_contract.json",
+    "py -3.14 tools/viewer_host_assert_phased_plan_sync.py",
+    "py -3.14 tools/viewer_host_validate_hostile_audit.py --plan docs/contracts/pfc_explaino_collatz_direct_PHASED_PLAN.md --out-json artifacts/validation/pfc_explaino_collatz_direct_hostile_audit.json",
+    "py -3.14 tools/code_quality_audit.py --check-baseline --out artifacts/validation/pfc_explaino_collatz_direct_code_quality.json",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_schema --log artifacts/logs/pfc_explaino_collatz_direct_schema.log --out-json artifacts/validation/pfc_explaino_collatz_direct_schema.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd advanced_color_grading_owner",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_family --log artifacts/logs/pfc_explaino_collatz_direct_family.log --out-json artifacts/validation/pfc_explaino_collatz_direct_family.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_family_rules",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_sample --log artifacts/logs/pfc_explaino_collatz_direct_sample.log --out-json artifacts/validation/pfc_explaino_collatz_direct_sample.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_sample_kernel",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_descriptor --log artifacts/logs/pfc_explaino_collatz_direct_descriptor.log --out-json artifacts/validation/pfc_explaino_collatz_direct_descriptor.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_fractal_parameter_surface_descriptor",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_generic_probe --log artifacts/logs/pfc_explaino_collatz_direct_generic_probe.log --out-json artifacts/validation/pfc_explaino_collatz_direct_generic_probe.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_generic_probe",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_safe_mode --log artifacts/logs/pfc_explaino_collatz_direct_safe_mode.log --out-json artifacts/validation/pfc_explaino_collatz_direct_safe_mode.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_safe_mode_schema",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_sample_tier --log artifacts/logs/pfc_explaino_collatz_direct_sample_tier.log --out-json artifacts/validation/pfc_explaino_collatz_direct_sample_tier.json --heartbeat-seconds 30 --timeout-seconds 900 -- ui_app/build_tests_vsdevcmd.cmd test_sample_tier_resolver",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_full_native_final --log artifacts/logs/pfc_explaino_collatz_direct_full_native_final.log --out-json artifacts/validation/pfc_explaino_collatz_direct_full_native_final.json --heartbeat-seconds 30 --timeout-seconds 2400 -- ui_app/build_tests_vsdevcmd.cmd",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_runtime_publish_final --log artifacts/logs/pfc_explaino_collatz_direct_runtime_publish_final.log --out-json artifacts/validation/pfc_explaino_collatz_direct_runtime_publish_final.json --heartbeat-seconds 30 --timeout-seconds 1200 -- ui_app/build_vsdevcmd.cmd",
+    "py -3.14 -m pytest tests/test_function_descriptor_cli.py tests/test_callable_engine_adversarial_cli.py tests/test_fractal_parameter_surface_descriptor_cli.py tests/test_fractal_runtime_explaino_collatz_direct.py -q --junitxml artifacts/pytest/pfc_explaino_collatz_direct_runtime_final.junit.xml",
+    "py -3.14 tools/viewer_host_run_logged_command.py --label pfc_explaino_collatz_direct_diff_check --log artifacts/logs/pfc_explaino_collatz_direct_diff_check.log --out-json artifacts/validation/pfc_explaino_collatz_direct_diff_check.json --heartbeat-seconds 30 --timeout-seconds 120 -- git diff --check"
+  ],
+  "required_acceptance_assertions": [
+    {
+      "assertion_id": "contract_schema_valid",
+      "description": "The Explaino Collatz direct contract validates successfully",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_collatz_direct_contract.json",
+      "json_path": "checks.contract_schema_valid",
+      "equals": true
+    },
+    {
+      "assertion_id": "hostile_audit_ok",
+      "description": "The Explaino Collatz direct hostile audit is complete",
+      "evidence_kind": "validator_json",
+      "artifact_path": "artifacts/validation/pfc_explaino_collatz_direct_hostile_audit.json",
+      "json_path": "ok",
+      "equals": true
+    }
+  ]
+}

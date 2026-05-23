@@ -501,6 +501,41 @@ int main() {
         }
     }
 
+    // Explaino-Collatz Direct defaults
+    {
+        ViewState view{};
+        KernelParams params{};
+        view.fractal_type = FractalType::explaino_collatz_direct;
+        params.explaino_warp_strength = 0.0f;
+        params.collatz_transition_strength = 0.35f;
+        params.coloring_mode = ColoringMode::joy_basins;
+
+        bool dirty = false;
+        ApplyFractalPresetDefaults(view, params, &dirty);
+        UpdateExplainoPolynomial(view, params, &dirty);
+
+        if (!dirty) {
+            std::cerr << "Explaino-Collatz Direct defaults should mark dirty\n";
+            return 1;
+        }
+        if (params.max_iter != 300) {
+            std::cerr << "Explaino-Collatz Direct should use Collatz-tuned max_iter (300)\n";
+            return 1;
+        }
+        if (params.coloring_mode != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Collatz Direct should default to smooth_escape\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.collatz_transition_strength, 1.0f)) {
+            std::cerr << "Explaino-Collatz Direct should preserve canonical Collatz transition strength by default\n";
+            return 1;
+        }
+        if (!NearlyEqual(params.explaino_warp_strength, 0.25f)) {
+            std::cerr << "Explaino-Collatz Direct should keep seed-driven warp active by default so the visible seed slider is not inert\n";
+            return 1;
+        }
+    }
+
     // Explaino-Rational-Escape defaults
     {
         ViewState view{};

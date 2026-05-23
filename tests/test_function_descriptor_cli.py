@@ -78,6 +78,7 @@ def test_describe_functions_emits_valid_catalog() -> None:
         "halley",
         "collatz",
         "explaino_collatz",
+        "explaino_collatz_direct",
         "mcmullen",
         "lambda",
         "magnet",

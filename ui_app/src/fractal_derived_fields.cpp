@@ -109,6 +109,7 @@ static FractalViewPresetDefaults ResolveFractalViewPresetDefaults(FractalType fr
     case FractalType::explaino_julia:
     case FractalType::explaino_rational:
     case FractalType::explaino_collatz:
+    case FractalType::explaino_collatz_direct:
     case FractalType::explaino_joy:
     case FractalType::explaino_fold:
     case FractalType::explaino_bell:
@@ -349,6 +350,7 @@ static int DefaultExplainoMaxIter(FractalType fractalType) {
     case FractalType::explaino_inertial:
     case FractalType::explaino_rational:
     case FractalType::explaino_collatz:
+    case FractalType::explaino_collatz_direct:
     case FractalType::explaino_joy:
     case FractalType::explaino_fold:
     case FractalType::explaino_bell:
@@ -452,6 +454,15 @@ static void ApplyCollatzPresetDefaults(FractalType fractalType, KernelParams& pa
     params.collatz_transition_strength = 1.0f;
 }
 
+static void ApplyExplainoCollatzDirectPresetDefaults(KernelParams& params) {
+    ApplyExplainoPresetDefaults(FractalType::explaino_collatz_direct, params);
+    params.max_iter = 300;
+    params.exposure = 1.0f;
+    params.collatz_transition_strength = 1.0f;
+    params.explaino_warp_strength = 0.25f;
+    ApplyDefaultColoringSelection(FractalType::explaino_collatz_direct, params);
+}
+
 static void ApplyMcMullenPresetDefaults(FractalType fractalType, KernelParams& params) {
     params.max_iter = 500;
     ApplyDefaultColoringSelection(fractalType, params);
@@ -520,6 +531,9 @@ void ApplyFractalPresetDefaults(const ViewState& view, KernelParams& params, boo
         break;
     case FractalType::collatz:
         ApplyCollatzPresetDefaults(view.fractal_type, params);
+        break;
+    case FractalType::explaino_collatz_direct:
+        ApplyExplainoCollatzDirectPresetDefaults(params);
         break;
     case FractalType::mcmullen:
         ApplyMcMullenPresetDefaults(view.fractal_type, params);

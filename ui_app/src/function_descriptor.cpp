@@ -73,6 +73,7 @@ bool IsSupportedProbeFractalType(FractalType fractalType) {
     case FractalType::explaino_vortex:
     case FractalType::explaino_tension:
     case FractalType::explaino_collatz:
+    case FractalType::explaino_collatz_direct:
     case FractalType::explaino_lambda:
     case FractalType::explaino_rational_escape:
     case FractalType::explaino_projection_and_flow:

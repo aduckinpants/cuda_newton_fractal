@@ -206,6 +206,7 @@ inline constexpr ExplainoSelectorDescriptor kExplainoSelectorRegistry[] = {
     {FractalType::explaino_julia, "explaino_julia", ExplainoSelectorRole::legacy_family_nonprojection},
     {FractalType::explaino_rational, "explaino_rational", ExplainoSelectorRole::legacy_family_nonprojection},
     {FractalType::explaino_collatz, "explaino_collatz", ExplainoSelectorRole::legacy_family_nonprojection},
+    {FractalType::explaino_collatz_direct, "explaino_collatz_direct", ExplainoSelectorRole::legacy_family_nonprojection},
     {FractalType::explaino_lambda, "explaino_lambda", ExplainoSelectorRole::legacy_family_nonprojection},
     {FractalType::explaino_rational_escape, "explaino_rational_escape", ExplainoSelectorRole::legacy_family_nonprojection},
     {FractalType::explaino_joy, "explaino_joy", ExplainoSelectorRole::legacy_family_nonprojection},
@@ -716,7 +717,8 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsCoreExplainoFamily(FractalType f
     case FractalType::explaino_fp: case FractalType::explaino_nova: case FractalType::explaino_halley:
     case FractalType::explaino_dual: case FractalType::explaino_mult: case FractalType::explaino_phoenix:
     case FractalType::explaino_transcendental: case FractalType::explaino_inertial: case FractalType::explaino_julia:
-    case FractalType::explaino_rational: case FractalType::explaino_collatz: case FractalType::explaino_lambda:
+    case FractalType::explaino_rational: case FractalType::explaino_collatz:
+    case FractalType::explaino_collatz_direct: case FractalType::explaino_lambda:
         return true;
     default: return false;
     }
@@ -773,6 +775,7 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool IsEscapeTimeFamily(FractalType fra
         fractalType == FractalType::magnet ||
         fractalType == FractalType::generic_equation_pack ||
         fractalType == FractalType::explaino_lambda ||
+        fractalType == FractalType::explaino_collatz_direct ||
         fractalType == FractalType::explaino_rational_escape ||
         fractalType == FractalType::spider ||
         fractalType == FractalType::celtic_mandelbrot ||
@@ -968,7 +971,9 @@ FRACTAL_FAMILY_RULES_HD inline constexpr bool DefaultAutoMaxIterForFractal(Fract
 inline int ComputeAutoMaxIter(double log2_zoom, FractalType fractalType) {
     double depth = log2_zoom < 0.0 ? -log2_zoom : log2_zoom;
     int base, scale;
-    if (fractalType == FractalType::collatz || fractalType == FractalType::explaino_collatz) {
+    if (fractalType == FractalType::collatz ||
+        fractalType == FractalType::explaino_collatz ||
+        fractalType == FractalType::explaino_collatz_direct) {
         base = 300; scale = 80;
     } else if (fractalType == FractalType::nova || fractalType == FractalType::explaino_nova) {
         base = 400; scale = 120;

@@ -1540,7 +1540,8 @@ int main() {
             !collatzTransitionStrength->has_max || collatzTransitionStrength->max != 4.0 ||
             !collatzTransitionStrength->has_ui_min || collatzTransitionStrength->ui_min != 0.0 ||
             !collatzTransitionStrength->has_ui_max || collatzTransitionStrength->ui_max != 2.0 ||
-            !collatzTransitionStrength->has_visible_if || collatzTransitionStrength->visible_if.value != "collatz") {
+            !collatzTransitionStrength->has_visible_if ||
+            collatzTransitionStrength->visible_if.value != "collatz,explaino_collatz_direct") {
             std::cerr << "Safe-mode schema Collatz transition-strength control drifted from the bounded owner seam\n";
             return 1;
         }

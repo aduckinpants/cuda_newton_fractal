@@ -46,6 +46,7 @@ def test_parameter_surface_descriptor_cli_owner_controls() -> None:
         ("perpendicular_burning_ship", "perpendicular_fold_mix", "fractal.params.perpendicular_fold_mix"),
         ("spider", "spider_feedback", "fractal.params.spider_feedback"),
         ("collatz", "collatz_transition_strength", "fractal.params.collatz_transition_strength"),
+        ("explaino_collatz_direct", "collatz_transition_strength", "fractal.params.collatz_transition_strength"),
     ]
     for lane, control_id, binding_path in expected:
         control = _find_control(descriptor, lane, control_id)

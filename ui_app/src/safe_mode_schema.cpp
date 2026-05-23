@@ -44,6 +44,7 @@ constexpr SafeModeFractalTypeOptionDef kSafeModeFractalTypeOptionDefs[] = {
     {"explaino_julia", "Explaino Julia", "Explaino"},
     {"explaino_rational", "Explaino Rational", "Explaino"},
     {"explaino_collatz", "Explaino Collatz", "Explaino"},
+    {"explaino_collatz_direct", "Explaino Collatz Direct", "Explaino"},
     {"explaino_lambda", "Explaino Lambda", "Explaino"},
     {"explaino_rational_escape", "Explaino Rational Escape", "Explaino"},
     {"explaino_joy", "Explaino Joy", "Explaino"},
@@ -384,7 +385,7 @@ UISchemaControl BuildCollatzTransitionStrengthControl() {
     control.ui_max = 2.0;
     control.has_ui_min = true;
     control.has_ui_max = true;
-    SetVisibleForFractalType(&control, "collatz");
+    SetVisibleForFractalTypes(&control, "collatz,explaino_collatz_direct");
     return control;
 }
 

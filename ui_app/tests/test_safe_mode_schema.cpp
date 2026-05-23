@@ -361,7 +361,7 @@ static void TestSafeModeSchemaExposesParameterFunctionalityBatch1Controls() {
             collatzTransitionStrength->has_binding &&
             collatzTransitionStrength->binding.path == "fractal.params.collatz_transition_strength" &&
             collatzTransitionStrength->has_visible_if &&
-            collatzTransitionStrength->visible_if.value == "collatz" &&
+            collatzTransitionStrength->visible_if.value == "collatz,explaino_collatz_direct" &&
             collatzTransitionStrength->has_min && collatzTransitionStrength->min == 0.0 &&
             collatzTransitionStrength->has_max && collatzTransitionStrength->max == 4.0 &&
             collatzTransitionStrength->has_ui_min && collatzTransitionStrength->ui_min == 0.0 &&

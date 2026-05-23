@@ -51,7 +51,7 @@ double AutoStandardThresholdLog2(FractalType fractalType) {
     case FractalType::multicorn:
     case FractalType::mcmullen:
     case FractalType::lambda_map:
-    case FractalType::collatz:
+    case FractalType::collatz: case FractalType::explaino_collatz_direct:
     case FractalType::explaino_lambda:
     case FractalType::explaino_phoenix:
     case FractalType::explaino_rational_escape:

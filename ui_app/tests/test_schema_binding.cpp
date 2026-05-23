@@ -16,7 +16,7 @@
 
 namespace {
 
-constexpr std::size_t kExpectedFractalCount = 45;
+constexpr std::size_t kExpectedFractalCount = 46;
 
 struct ImGuiTestContext {
     ImGuiContext* context = nullptr;
@@ -315,19 +315,22 @@ bool ExplainoCommonControlExpectedVisible(const char* controlId, FractalType fra
     if (std::string_view(controlId) == "epsilon") {
         return fractalType != FractalType::explaino_julia &&
             fractalType != FractalType::explaino_lambda &&
-            fractalType != FractalType::explaino_rational_escape;
+            fractalType != FractalType::explaino_rational_escape &&
+            fractalType != FractalType::explaino_collatz_direct;
     }
     if (std::string_view(controlId) == "explaino_warp_strength") {
         return true;
     }
     if (std::string_view(controlId) == "explaino_root_spread") {
         return fractalType != FractalType::explaino_transcendental &&
-            fractalType != FractalType::explaino_lambda;
+            fractalType != FractalType::explaino_lambda &&
+            fractalType != FractalType::explaino_collatz_direct;
     }
     if (std::string_view(controlId) == "explaino_damping") {
         return fractalType != FractalType::explaino_julia &&
             fractalType != FractalType::explaino_lambda &&
-            fractalType != FractalType::explaino_rational_escape;
+            fractalType != FractalType::explaino_rational_escape &&
+            fractalType != FractalType::explaino_collatz_direct;
     }
     return true;
 }
@@ -499,7 +502,7 @@ bool SchemaFractalOptionsMatchEnumIds(const json_min::Value& schemaRoot) {
         schemaIds.push_back(id);
     }
     if (schemaIds.size() != kExpectedFractalCount || std::size(enum_id_utils::kFractalTypeIds) != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory expected exactly 45 schema and enum fractal ids\n";
+        std::cerr << "All-fractal inventory expected exactly 46 schema and enum fractal ids\n";
         return false;
     }
     for (const auto& enumId : enum_id_utils::kFractalTypeIds) {
@@ -583,7 +586,7 @@ bool ValidateGeneratedAllFractalControlInventory() {
         }
     }
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "All-fractal inventory did not visit all 45 fractal lanes\n";
+        std::cerr << "All-fractal inventory did not visit all 46 fractal lanes\n";
         return false;
     }
     if (visibleFamilyControlCells < 200) {
@@ -766,7 +769,7 @@ bool ValidateAndExportAllFractalControlDescriptor(const json_min::Value& schemaR
     }
 
     if (laneCount != kExpectedFractalCount) {
-        std::cerr << "Descriptor export did not visit all 45 fractal lanes\n";
+        std::cerr << "Descriptor export did not visit all 46 fractal lanes\n";
         return false;
     }
     if (visibleControlCells < 200) {
@@ -855,6 +858,7 @@ bool ValidateVisibleControlMatrix() {
         {"mcmullen_n", FractalType::mcmullen, "fractal.params.mcmullen_n", "int"},
         {"mcmullen_lambda", FractalType::mcmullen, "fractal.params.mcmullen_lambda", "float"},
         {"collatz_transition_strength", FractalType::collatz, "fractal.params.collatz_transition_strength", "float"},
+        {"collatz_transition_strength", FractalType::explaino_collatz_direct, "fractal.params.collatz_transition_strength", "float"},
         {"spider_feedback", FractalType::spider, "fractal.params.spider_feedback", "float"},
         {"explaino_rational_escape_denominator_power", FractalType::explaino_rational_escape, "fractal.params.explaino_rational_escape_denominator_power", "int"},
         {"magnet_seed_real", FractalType::magnet, "fractal.params.magnet_seed_real", "float"},

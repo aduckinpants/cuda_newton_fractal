@@ -280,6 +280,7 @@ bool TestParseFractalTypeAllValues() {
         {"halley", FractalType::halley},
         {"collatz", FractalType::collatz},
         {"explaino_collatz", FractalType::explaino_collatz},
+        {"explaino_collatz_direct", FractalType::explaino_collatz_direct},
         {"mcmullen", FractalType::mcmullen},
         {"lambda", FractalType::lambda_map},
         {"explaino_lambda", FractalType::explaino_lambda},

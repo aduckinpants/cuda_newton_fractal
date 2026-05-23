@@ -1075,6 +1075,30 @@ int main() {
         }
     }
 
+    // Explaino-Collatz Direct: explaino family + escape-time + no basin coloring
+    {
+        if (!IsExplainoFamily(FractalType::explaino_collatz_direct)) {
+            std::cerr << "Explaino-Collatz Direct should be in the Explaino family\n";
+            return 1;
+        }
+        if (!IsEscapeTimeFamily(FractalType::explaino_collatz_direct)) {
+            std::cerr << "Explaino-Collatz Direct should be escape-time\n";
+            return 1;
+        }
+        if (SupportsBasinColoring(FractalType::explaino_collatz_direct)) {
+            std::cerr << "Explaino-Collatz Direct should not support basin coloring\n";
+            return 1;
+        }
+        if (DefaultColoringModeForFractal(FractalType::explaino_collatz_direct) != ColoringMode::smooth_escape) {
+            std::cerr << "Explaino-Collatz Direct should default to smooth_escape\n";
+            return 1;
+        }
+        if (IsColoringModeAllowedForFractal(FractalType::explaino_collatz_direct, ColoringMode::joy_basins)) {
+            std::cerr << "Explaino-Collatz Direct should reject joy_basins coloring\n";
+            return 1;
+        }
+    }
+
     // McMullen: not explaino + escape-time + no basin coloring
     {
         if (IsExplainoFamily(FractalType::mcmullen)) {
